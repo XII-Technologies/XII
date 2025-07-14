@@ -126,7 +126,7 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (auto pCommandQueue = pDevice->GetDefaultCommandQueue())
+  if (auto pCommandQueue = pDevice->GetCommandQueue())
   {
     auto pCommandList = pCommandQueue->BeginCommandList();
 

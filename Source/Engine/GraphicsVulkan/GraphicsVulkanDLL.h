@@ -117,7 +117,7 @@ class xiiGALStagingBufferPoolVulkan;
 class xiiGALCommandBufferPoolVulkan;
 class xiiGALCpuWaitOnlyFenceVulkan;
 
-struct xiiGALQueueInformationVulkan
+struct XII_GRAPHICSVULKAN_DLL xiiGALQueueInformationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
@@ -126,7 +126,7 @@ struct xiiGALQueueInformationVulkan
   xiiUInt32 m_uiQueueIndex       = 0U;
 };
 
-struct xiiGALDynamicBufferAllocationVulkan
+struct XII_GRAPHICSVULKAN_DLL xiiGALDynamicBufferAllocationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
@@ -135,11 +135,21 @@ struct xiiGALDynamicBufferAllocationVulkan
   xiiUInt64               m_uiOffset;
 };
 
-struct xiiGALStagingBufferAllocationVulkan
+struct XII_GRAPHICSVULKAN_DLL xiiGALStagingBufferAllocationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
   vk::Buffer              m_vkBuffer;
   struct VmaAllocation_T* m_VmaAllocation;
   xiiUInt64               m_uiOffset;
+};
+
+template <typename T, typename = void>
+struct XII_GRAPHICSVULKAN_DLL HasObjectType : std::false_type
+{
+};
+
+template <typename T>
+struct XII_GRAPHICSVULKAN_DLL HasObjectType<T, std::void_t<decltype(T::objectType)>> : std::true_type
+{
 };

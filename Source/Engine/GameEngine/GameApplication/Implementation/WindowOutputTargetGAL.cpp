@@ -95,7 +95,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
     return XII_FAILURE;
   }
 
-  auto pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
+  auto pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
 
   if (auto pCommandList = pGraphicsQueue->BeginCommandList())
   {
@@ -118,7 +118,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
       const xiiUInt32 uiStride      = 4 * textureDescription.m_Size.width;
       const xiiUInt32 uiDepthStride = 4 * textureDescription.m_Size.width * textureDescription.m_Size.height;
 
-      auto pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
+      auto pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
 
       if (auto pCommandList = pGraphicsQueue->BeginCommandList())
       {

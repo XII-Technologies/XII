@@ -77,63 +77,22 @@ public:
   };
 
 public:
-  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
+  virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
-  void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {}) const
-  {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    if (m_DebugMode != DebugMode::Disabled)
-    {
-      if (vkObject == VK_NULL_HANDLE)
-        return;
-
-      vk::DebugUtilsObjectNameInfoEXT vkDebugObjectNameInfo = {};
-      vkDebugObjectNameInfo.pNext                           = nullptr;
-      vkDebugObjectNameInfo.objectType                      = vkObject.objectType;
-      vkDebugObjectNameInfo.objectHandle                    = (uint64_t)static_cast<typename ObjectHandle::NativeType>(vkObject);
-      vkDebugObjectNameInfo.pObjectName                     = szDebugName;
-
-      m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
-
-      if (vmaAllocation != nullptr)
-      {
-        vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, (void*)vkDebugObjectNameInfo.pObjectName);
-      }
-    }
-#else
-    XII_IGNORE_UNUSED(vkObject);
-    XII_IGNORE_UNUSED(szDebugName);
-    XII_IGNORE_UNUSED(vmaAllocation);
-#endif
-  }
-
-  template <typename T, typename = void>
-  struct HasObjectType : std::false_type
-  {};
-
-  template <typename T>
-  struct HasObjectType<T, std::void_t<decltype(T::objectType)>> : std::true_type
-  {};
+  XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {}) const;
 
   template <typename T, typename = std::enable_if_t<std::is_class_v<T> && HasObjectType<T>::value>>
-  void SafeReleaseDeviceObject(T&& vkObject, VmaAllocation&& vmaAllocation = nullptr)
-  {
-    if (vkObject == VK_NULL_HANDLE)
-      return;
-
-    SafeReleaseDeviceObjectInternal(vkObject.objectType, static_cast<void*>(vkObject), vmaAllocation);
-  }
+  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, VmaAllocation&& vmaAllocation = nullptr);
 
   template <typename T>
-  void ReclaimLater(T&& vkObject)
-  {
-    ReclaimLaterInternal(vkObject.objectType, (void*)vkObject);
-  }
+  XII_ALWAYS_INLINE void ReclaimLater(T&& vkObject) { ReclaimLaterInternal(vkObject.objectType, (void*)vkObject); }
 
-  void ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer);
+  [[nodiscard]] vk::CommandBuffer RequestCommandBuffer(xiiBitflags<xiiGALCommandQueueFlags> queueFlags);
+
+  void ReclaimCommandBufferLater(vk::CommandBuffer&& vkCommandBuffer);
 
   // Internal objects retrieval.
 
@@ -166,34 +125,22 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() const { return m_LogicalDeviceSupportedAccessFlags; }
   [[nodiscard]] XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetGraphicsQueueInformation() const { return m_GraphicsQueueInformation; }
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetComputeQueueInformation() const { return m_ComputeQueueInformation; }
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetTransferQueueInformation() const { return m_TransferQueueInformation; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetCommandQueueInformation(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan*              GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
+
+  [[nodiscard]] xiiGALCommandBufferPoolVulkan* GetCommandBufferPool();
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*         GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan*     GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanGraphicsCommandQueueQueryPool() const { return m_pGraphicsCommandQueueQueryPool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanComputeCommandQueueQueryPool() const { return m_pComputeCommandQueueQueryPool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetVulkanTransferCommandQueueQueryPool() const { return m_pTransferCommandQueueQueryPool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* GetQueryPoolForCommandQueue(xiiGALCommandQueueVulkan* pCommandQueueVulkan) const
-  {
-    if (m_pGraphicsCommandQueue == pCommandQueueVulkan)
-      return m_pGraphicsCommandQueueQueryPool.Borrow();
-
-    if (m_pComputeCommandQueue == pCommandQueueVulkan)
-      return m_pComputeCommandQueueQueryPool ? m_pComputeCommandQueueQueryPool.Borrow() : nullptr;
-
-    if (m_pTransferCommandQueue == pCommandQueueVulkan)
-      return m_pTransferCommandQueueQueryPool ? m_pTransferCommandQueueQueryPool.Borrow() : nullptr;
-
-    return nullptr;
-  }
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetFrameNumber() const { return m_uiFrameCounter; }
+
+  // Deactivate Doxygen document generation for the following block. (API implementation only)
+  /// \cond
 
   // These functions are implemented by a graphics API implementation.
 protected:
@@ -204,7 +151,7 @@ protected:
   virtual void EndFramePlatform() override final;
 
   virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
-  virtual xiiInternal::NewInstance<xiiGALCommandList>                 CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
+  virtual xiiInternal::NewInstance<xiiGALCommandList>               CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALDepthStencilState>         CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override final;
@@ -227,6 +174,8 @@ protected:
   virtual void WaitIdlePlatform() override final;
 
   virtual xiiResult FillCapabilitiesPlatform() override final;
+
+  /// \endcond
 
 private:
   class DeferredDeletionQueue
@@ -401,12 +350,13 @@ private:
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
 
   // Pools.
-  xiiUniquePtr<xiiGALFencePoolVulkan>         m_pFencePool;
-  xiiUniquePtr<xiiGALSemaphorePoolVulkan>     m_pSemaphorePool;
-  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pDescriptorSetPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pGraphicsCommandQueueQueryPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pComputeCommandQueueQueryPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALFencePoolVulkan>                            m_pFencePool;
+  xiiUniquePtr<xiiGALSemaphorePoolVulkan>                        m_pSemaphorePool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan>                    m_pDescriptorSetPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>                            m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>                            m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>                            m_pTransferCommandQueueQueryPool;
+  xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_ThreadLocalCommandBufferPool;
 
   // Deletion Queue.
   xiiUniquePtr<DeferredDeletionQueue> m_pDeferredDeletionQueue;
@@ -429,3 +379,5 @@ private:
 
   xiiUInt32 FindQueueFamily(vk::QueueFlags queueFlags, xiiArrayPtr<xiiUInt32> excludedQueueIndices = xiiArrayPtr<xiiUInt32>()) const;
 };
+
+#include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

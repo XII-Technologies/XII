@@ -1268,9 +1268,27 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
   }
 }
 
-void xiiGALDeviceVulkan::ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
+vk::CommandBuffer xiiGALDeviceVulkan::RequestCommandBuffer(xiiBitflags<xiiGALCommandQueueFlags> queueFlags)
 {
-  m_pDeferredDeletionQueue->EnqueueResource(pCommandBufferPool, vkCommandBuffer);
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALCommandQueue* pCommandQueue = GetCommandQueue(queueFlags);
+
+  if (!m_ThreadLocalCommandBufferPool.Contains(xiiThreadUtils::GetCurrentThreadID()))
+  {
+    m_ThreadLocalCommandBufferPool[xiiThreadUtils::GetCurrentThreadID()] = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_QueueInformation, vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+
+    xiiStringBuilder sb;
+    sb.SetFormat("Command Buffer Pool - Thread {}", static_cast<xiiUInt64>(xiiThreadUtils::GetCurrentThreadID()));
+    m_ThreadLocalCommandBufferPool[xiiThreadUtils::GetCurrentThreadID()]->SetDebugName(sb.GetView());
+  }
+
+  return m_ThreadLocalCommandBufferPool[xiiThreadUtils::GetCurrentThreadID()]->RequestCommandBuffer();
+}
+
+void xiiGALDeviceVulkan::ReclaimCommandBufferLater(vk::CommandBuffer&& vkCommandBuffer)
+{
+  m_pDeferredDeletionQueue->EnqueueResource(nullptr, vkCommandBuffer);
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform()
@@ -1282,7 +1300,7 @@ void xiiGALDeviceVulkan::EndFramePlatform()
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
@@ -1290,7 +1308,7 @@ xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGA
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueue.Borrow();
 
-  return GetDefaultCommandQueue(xiiGALCommandQueueFlags::Graphics);
+  return m_pGraphicsCommandQueue.Borrow();
 }
 
 void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
@@ -2882,7 +2900,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
 
       if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {

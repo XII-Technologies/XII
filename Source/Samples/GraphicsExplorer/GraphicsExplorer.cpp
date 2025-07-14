@@ -154,7 +154,7 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pGraphicsQueue = m_pDevice->GetDefaultCommandQueue();
+      auto pGraphicsQueue = m_pDevice->GetCommandQueue();
 
       if (auto pCommandList = pGraphicsQueue->BeginCommandList())
       {

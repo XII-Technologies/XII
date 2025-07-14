@@ -107,7 +107,7 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       task->m_bHasNewData = false;
 
       xiiSharedPtr<xiiGALDevice> pGALDevice       = xiiGALDevice::GetDefaultDevice();
-      xiiGALCommandQueue*        pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
+      xiiGALCommandQueue*        pGALCommandQueue = pGALDevice->GetCommandQueue();
 
       if (xiiSharedPtr<xiiGALCommandList> pGALCommandList = pGALCommandQueue->BeginCommandList())
       {

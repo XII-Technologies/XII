@@ -36,7 +36,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     m_pCubemap->SetDebugName("Reflection Cubemap");
   }
 
-  auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList();
+  auto pCommandList = pDevice->GetCommandQueue()->BeginCommandList();
 
   xiiStringBuilder sName;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)

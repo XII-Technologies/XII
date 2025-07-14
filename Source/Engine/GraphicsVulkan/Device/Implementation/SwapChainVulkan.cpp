@@ -650,7 +650,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2).
     // Swapchain image may be used as render target or as destination for copy command.
 
-    xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+    xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueType::Graphics));
 
     if (auto pCommandListVulkan = pGraphicsQueueVulkan->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
     {
@@ -702,7 +702,7 @@ void xiiGALSwapChainVulkan::Present()
     return;
 
   xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*         pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  xiiGALCommandQueueVulkan*         pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueType::Graphics));
   xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
 
   if (auto pCommandListVulkan = pGraphicsQueueVulkan->BeginCommandList().Downcast<xiiGALCommandListVulkan>())

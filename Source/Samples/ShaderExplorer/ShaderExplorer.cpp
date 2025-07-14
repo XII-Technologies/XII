@@ -209,7 +209,7 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue();
+      auto pDefaultQueue = m_pDevice->GetCommandQueue();
 
       if (auto pCommandList = pDefaultQueue->BeginCommandList())
       {

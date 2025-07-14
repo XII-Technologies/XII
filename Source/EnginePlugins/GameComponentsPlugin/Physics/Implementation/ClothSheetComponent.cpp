@@ -485,7 +485,7 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     instanceData[0].GameObjectID        = pRenderData->m_uiUniqueID;
     instanceData[0].Color               = pRenderData->m_Color;
 
-    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    if (auto pGraphicsOrTransferQueue = pDevice->GetCommandQueue(xiiGALCommandQueueType::Transfer))
     {
       auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
 

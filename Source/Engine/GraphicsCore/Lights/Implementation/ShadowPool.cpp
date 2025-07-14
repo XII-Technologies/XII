@@ -971,7 +971,7 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
+  if (auto pGraphicsQueue = pDevice->GetCommandQueue())
   {
     auto pCommandList = pGraphicsQueue->BeginCommandList();
 
