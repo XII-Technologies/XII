@@ -170,6 +170,8 @@ xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALComm
 {
   VerifyMultithreadedAccess();
 
+  XII_ASSERT_ALWAYS(!description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary), "Secondary command lists are not yet supported!");
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const bool bSecondary       = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
   const bool bMultiSubmit     = description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit);

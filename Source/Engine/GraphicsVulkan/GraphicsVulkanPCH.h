@@ -3,10 +3,6 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Logging/Log.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
-#endif
-
 #define VK_ENABLE_BETA_EXTENSIONS
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  define VK_USE_PLATFORM_WIN32_KHR
@@ -21,11 +17,26 @@
 #  define VK_USE_PLATFORM_IOS_MVK
 #endif
 
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
-
+// Enable dynamic Vulkan functions.
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+
+// Tell vk-hpp to generate only the plain C-style structs (aggregate init).
+#define VULKAN_HPP_NO_CONSTRUCTORS
+#define VULKAN_HPP_NO_SETTERS
+
+// Disable all smart-handle/RAII wrappers and exceptions.
+#define VULKAN_HPP_NO_SMART_HANDLE
+#define VULKAN_HPP_NO_SPACESHIP_OPERATOR
+#define VULKAN_HPP_NO_EXCEPTIONS
+#define VULKAN_HPP_RAII_NO_EXCEPTIONS
+
+// Turn off any "enhanced mode" function overloads (ArrayProxy, return-value transforms...).
+#define VULKAN_HPP_DISABLE_ENHANCED_MODE
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  define VULKAN_HPP_NO_WIN32_PROTOTYPES
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#endif
 
 #include <vulkan/vulkan.hpp>
 
@@ -87,12 +98,3 @@ XII_DEFINE_AS_POD_TYPE(vk::MultiDrawIndexedInfoEXT);
 #define VK_REMAINING_MIP_LEVELS   (~0U)
 
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
-
-#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
-
-#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
-#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
-#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
-#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
-#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
-#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>

@@ -12,7 +12,14 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -481,9 +488,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
 
-    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
-    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures(m_InstanceDispatchLoader);
-    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties(m_InstanceDispatchLoader);
+    m_PhysicalDevice.getProperties(&m_PhysicalDeviceProperties, m_InstanceDispatchLoader);
+    m_PhysicalDevice.getFeatures(&m_PhysicalDeviceFeatures, m_InstanceDispatchLoader);
+    m_PhysicalDevice.getMemoryProperties(&m_PhysicalDeviceMemoryProperties, m_InstanceDispatchLoader);
 
     xiiUInt32 uiQueueFamilyCount = 0U;
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
@@ -2081,7 +2088,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       const vk::QueueFamilyProperties& sourceQueue      = m_PhysicalDeviceQueueFamilyProperties[uiQueueIndex];
       xiiGALCommandQueueProperties&    destinationQueue = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
 
-      destinationQueue.m_Flags                      = xiiVulkanTypeConversions::GetGALCommandQueueFlags(sourceQueue.queueFlags);
+      destinationQueue.m_Flags                     = xiiVulkanTypeConversions::GetGALCommandQueueFlags(sourceQueue.queueFlags);
       destinationQueue.m_uiMaxDeviceContexts       = sourceQueue.queueCount;
       destinationQueue.m_TextureCopyGranularity[0] = sourceQueue.minImageTransferGranularity.width;
       destinationQueue.m_TextureCopyGranularity[1] = sourceQueue.minImageTransferGranularity.height;

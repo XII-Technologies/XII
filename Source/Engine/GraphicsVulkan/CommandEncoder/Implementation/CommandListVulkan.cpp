@@ -3,7 +3,12 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -1763,8 +1768,7 @@ void xiiGALCommandListVulkan::DispatchComputeIndirectPlatform(const xiiGALDispat
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
-  xiiGALQueryPoolVulkan*           pQueryPoolVulkan    = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
+  xiiGALQueryPoolVulkan*           pQueryPoolVulkan    = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
   xiiSharedPtr<xiiGALQueryVulkan>  pQueryVulkan        = pQuery.Downcast<xiiGALQueryVulkan>();
   xiiGALQueryType::Enum            queryType           = pQueryVulkan->GetDescription().m_Type;
   vk::QueryPool                    vkQueryPool         = pQueryPoolVulkan->GetQueryPool(queryType);
@@ -1822,8 +1826,7 @@ void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuer
 void xiiGALCommandListVulkan::EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
-  xiiGALQueryPoolVulkan*           pQueryPoolVulkan    = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
+  xiiGALQueryPoolVulkan*           pQueryPoolVulkan    = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
   xiiSharedPtr<xiiGALQueryVulkan>  pQueryVulkan        = pQuery.Downcast<xiiGALQueryVulkan>();
   xiiGALQueryType::Enum            queryType           = pQueryVulkan->GetDescription().m_Type;
   vk::QueryPool                    vkQueryPool         = pQueryPoolVulkan->GetQueryPool(queryType);
@@ -2713,7 +2716,7 @@ void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const
     vkDebugUtilsLabel.color[2]               = color.b;
     vkDebugUtilsLabel.color[3]               = color.a;
 
-    m_vkCommandBuffer.beginDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.beginDebugUtilsLabelEXT(&vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   }
 }
 
@@ -2747,7 +2750,7 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
     vkDebugUtilsLabel.color[2]               = color.b;
     vkDebugUtilsLabel.color[3]               = color.a;
 
-    m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.insertDebugUtilsLabelEXT(&vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   }
 }
 
