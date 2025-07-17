@@ -62,6 +62,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateFlags
   };
 };
 
+XII_DECLARE_FLAGS_OPERATORS(xiiVulkanAllocationCreateFlags);
+
 /// \brief Abstract representation of Vulkan memory property flags.
 ///
 /// Helps describe physical device memory types in a readable and type-safe way.
@@ -91,6 +93,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryPropertyFlags
     StorageType Protected : 1;
   };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiVulkanMemoryPropertyFlags);
 
 /// \brief Describes the parameters used to create a Vulkan memory allocation.
 ///
