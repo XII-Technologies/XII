@@ -42,8 +42,8 @@ void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
   xiiVulkanAllocationCreateInfo allocationCreateInfo;
-  allocationCreateInfo.m_Usage                    = xiiVulkanMemoryUsage::Auto;
-  allocationCreateInfo.m_Flags                    = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
+  allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_Flags = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
   VK_ASSERT_DEV(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, stagingBufferPage.m_vkBuffer, stagingBufferPage.m_VulkanAllocation));
 
@@ -85,9 +85,9 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
     const auto& largeAllocation = m_LargeAllocations.PeekBack();
 
     xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
-    stagingBufferAllocation.m_vkBuffer      = largeAllocation.m_vkBuffer;
+    stagingBufferAllocation.m_vkBuffer         = largeAllocation.m_vkBuffer;
     stagingBufferAllocation.m_VulkanAllocation = largeAllocation.m_VulkanAllocation;
-    stagingBufferAllocation.m_uiOffset      = 0;
+    stagingBufferAllocation.m_uiOffset         = 0;
 
     return stagingBufferAllocation;
   }
@@ -113,11 +113,11 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
     uiBufferID = m_StagingBufferPages.GetCount() - 1;
   }
 
-  // Sub allocate from current page.
+  // Sub-allocate from current page.
   xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
-  stagingBufferAllocation.m_vkBuffer      = m_StagingBufferPages[uiBufferID].m_vkBuffer;
+  stagingBufferAllocation.m_vkBuffer         = m_StagingBufferPages[uiBufferID].m_vkBuffer;
   stagingBufferAllocation.m_VulkanAllocation = m_StagingBufferPages[uiBufferID].m_VulkanAllocation;
-  stagingBufferAllocation.m_uiOffset      = uiBufferAllocationOffset;
+  stagingBufferAllocation.m_uiOffset         = uiBufferAllocationOffset;
 
   m_uiPageAllocationCounter   = uiBufferID;
   m_uiOffsetAllocationCounter = uiBufferAllocationOffset + uiSize;
