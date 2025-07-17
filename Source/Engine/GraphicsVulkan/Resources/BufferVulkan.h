@@ -19,7 +19,7 @@ public:
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
-  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
 
   [[nodiscard]] vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
 
@@ -43,5 +43,5 @@ protected:
 
 private:
   vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
-  VmaAllocation m_BufferMemoryAllocation = {};
+  xiiVulkanAllocation m_BufferMemoryAllocation = {};
 };
