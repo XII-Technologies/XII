@@ -12,7 +12,6 @@ XII_WARNING_DISABLE_CLANG("-Wunused-variable")
 XII_WARNING_DISABLE_CLANG("-Wunused-private-field")
 
 #define VMA_IMPLEMENTATION
-#define VMA_VULKAN_VERSION           VK_API_VERSION_1_0 // Equivalent to 1000000.
 #define VMA_STATIC_VULKAN_FUNCTIONS  0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #define VMA_STATS_STRING_ENABLED     1
@@ -49,7 +48,7 @@ namespace
     return VMA_MEMORY_USAGE_UNKNOWN;
   }
 
-  XII_ALWAYS_INLINE static VmaAllocationCreateFlags ConvertFlags(const xiiBitflags<xiiVulkanAllocationCreateFlags>& flags)
+  XII_ALWAYS_INLINE static VmaAllocationCreateFlags ConvertFlags(xiiBitflags<xiiVulkanAllocationCreateFlags> flags)
   {
     VmaAllocationCreateFlags allocationCreateFlags = 0U;
 
@@ -80,6 +79,26 @@ namespace
 
     return allocationCreateFlags;
   }
+
+  XII_ALWAYS_INLINE VkMemoryPropertyFlags ConvertMemoryPropertyFlags(xiiBitflags<xiiVulkanMemoryPropertyFlags> flags)
+  {
+    VkMemoryPropertyFlags vkMemoryPropertyFlags = 0U;
+
+    if (flags.IsSet(xiiVulkanMemoryPropertyFlags::DeviceLocal))
+      vkMemoryPropertyFlags |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (flags.IsSet(xiiVulkanMemoryPropertyFlags::HostVisible))
+      vkMemoryPropertyFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    if (flags.IsSet(xiiVulkanMemoryPropertyFlags::HostCoherent))
+      vkMemoryPropertyFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    if (flags.IsSet(xiiVulkanMemoryPropertyFlags::HostCached))
+      vkMemoryPropertyFlags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    if (flags.IsSet(xiiVulkanMemoryPropertyFlags::LazilyAllocated))
+      vkMemoryPropertyFlags |= VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+    if (flags.IsSet(xiiVulkanMemoryPropertyFlags::Protected))
+      vkMemoryPropertyFlags |= VK_MEMORY_PROPERTY_PROTECTED_BIT;
+
+    return vkMemoryPropertyFlags;
+  }
 } // namespace
 
 //////////////////////////////////////////////////////////////////////////
@@ -107,7 +126,7 @@ xiiVulkanMemoryAllocator::~xiiVulkanMemoryAllocator() = default;
 //////////////////////////////////////////////////////////////////////////
 // Initialize / DeInitialize
 
-vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiPreferredBlockSize)
+vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiPreferredBlockSize /*= 0U*/)
 {
   // We prefer dynamically finding the function pointers.
 
@@ -123,13 +142,14 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
   vmaVulkanFunctions.vkGetInstanceProcAddr = dynamicDispatchLoader.vkGetInstanceProcAddr;
   vmaVulkanFunctions.vkGetDeviceProcAddr   = dynamicDispatchLoader.vkGetDeviceProcAddr;
 
-  VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-  vmaAllocatorCreateInfo.vulkanApiVersion       = physicalDeviceProperties.apiVersion;
-  vmaAllocatorCreateInfo.instance               = m_pImplementation->m_vkInstance;
-  vmaAllocatorCreateInfo.physicalDevice         = m_pImplementation->m_vkPhysicalDevice;
-  vmaAllocatorCreateInfo.device                 = m_pImplementation->m_vkLogicalDevice;
-  vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
-  vmaAllocatorCreateInfo.flags                  = {};
+  VmaAllocatorCreateInfo vmaAllocatorCreateInfo      = {};
+  vmaAllocatorCreateInfo.vulkanApiVersion            = physicalDeviceProperties.apiVersion;
+  vmaAllocatorCreateInfo.instance                    = m_pImplementation->m_vkInstance;
+  vmaAllocatorCreateInfo.physicalDevice              = m_pImplementation->m_vkPhysicalDevice;
+  vmaAllocatorCreateInfo.device                      = m_pImplementation->m_vkLogicalDevice;
+  vmaAllocatorCreateInfo.preferredLargeHeapBlockSize = uiPreferredBlockSize;
+  vmaAllocatorCreateInfo.pVulkanFunctions            = &vmaVulkanFunctions;
+  vmaAllocatorCreateInfo.flags                       = {};
 
   const xiiGALDeviceVulkan::ExtensionFeatures& physicalDeviceExtensionFeatures = pDeviceVulkan->GetPhysicalDeviceExtensionFeatures();
 
@@ -139,9 +159,7 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
     vmaAllocatorCreateInfo.flags |= VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
   }
 
-  VK_SUCCEED_OR_RETURN(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_pImplementation->m_VmaAllocator));
-
-  return vk::Result::eSuccess;
+  return static_cast<vk::Result>(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_pImplementation->m_VmaAllocator));
 }
 
 void xiiVulkanMemoryAllocator::DeInitialize()
@@ -156,6 +174,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
   vmaAllocationCreateInfo.usage                   = ConvertUsage(allocationCreateInfo.m_Usage);
   vmaAllocationCreateInfo.flags                   = ConvertFlags(allocationCreateInfo.m_Flags);
+  vmaAllocationCreateInfo.requiredFlags           = ConvertMemoryPropertyFlags(allocationCreateInfo.m_RequiredFlags);
+  vmaAllocationCreateInfo.preferredFlags          = ConvertMemoryPropertyFlags(allocationCreateInfo.m_PreferredFlags);
   vmaAllocationCreateInfo.pUserData               = (void*)allocationCreateInfo.m_pUserData;
 
   return static_cast<vk::Result>(vmaCreateBuffer(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&out_buffer), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
@@ -179,6 +199,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
   vmaAllocationCreateInfo.usage                   = ConvertUsage(allocationCreateInfo.m_Usage);
   vmaAllocationCreateInfo.flags                   = ConvertFlags(allocationCreateInfo.m_Flags);
+  vmaAllocationCreateInfo.requiredFlags           = ConvertMemoryPropertyFlags(allocationCreateInfo.m_RequiredFlags);
+  vmaAllocationCreateInfo.preferredFlags          = ConvertMemoryPropertyFlags(allocationCreateInfo.m_PreferredFlags);
   vmaAllocationCreateInfo.pUserData               = (void*)allocationCreateInfo.m_pUserData;
 
   return static_cast<vk::Result>(vmaCreateImage(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&out_image), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));

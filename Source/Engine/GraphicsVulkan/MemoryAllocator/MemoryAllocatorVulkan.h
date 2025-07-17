@@ -62,6 +62,36 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateFlags
   };
 };
 
+/// \brief Abstract representation of Vulkan memory property flags.
+///
+/// Helps describe physical device memory types in a readable and type-safe way.
+struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryPropertyFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    DeviceLocal     = 0x00000001, ///< Memory is physically located on the device (fast access for GPU).
+    HostVisible     = 0x00000002, ///< Memory is visible to the host (CPU) and can be mapped.
+    HostCoherent    = 0x00000004, ///< Host writes are automatically visible to the device without flushing.
+    HostCached      = 0x00000008, ///< Host memory access is cached (may require flushing/invalidation).
+    LazilyAllocated = 0x00000010, ///< Memory is lazily allocated by the driver (used with transient resources).
+    Protected       = 0x00000020, ///< Memory with protection features—typically used for secure buffers.
+
+    Default = 0U ///< No flags set.
+  };
+
+  struct Bits
+  {
+    StorageType DeviceLocal : 1;
+    StorageType HostVisible : 1;
+    StorageType HostCoherent : 1;
+    StorageType HostCached : 1;
+    StorageType LazilyAllocated : 1;
+    StorageType Protected : 1;
+  };
+};
+
 /// \brief Describes the parameters used to create a Vulkan memory allocation.
 ///
 /// This structure defines how memory should be allocated, including usage hints, allocation strategy flags, and optional user metadata.
@@ -69,6 +99,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateInfo
 {
   xiiBitflags<xiiVulkanAllocationCreateFlags> m_Flags;               ///< Flags that control allocation strategy and behavior.
   xiiEnum<xiiVulkanMemoryUsage>               m_Usage;               ///< Intended usage pattern for the allocation (e.g., GPU-only, CPU-to-GPU).
+  xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_RequiredFlags;       ///< Memory property flags that must be present in the selected memory type. Used to enforce strict compatibility (e.g., HostVisible, DeviceLocal).
+  xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_PreferredFlags;      ///< Memory property flags that are desirable but not mandatory. The allocator will prioritize memory types that include these flags when multiple options are available.
   const char*                                 m_pUserData = nullptr; ///< Optional pointer to user-defined data associated with the allocation.
 };
 
