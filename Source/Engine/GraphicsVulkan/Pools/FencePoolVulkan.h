@@ -2,6 +2,11 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+namespace vk
+{
+  class Fence;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALFencePoolVulkan
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALFencePoolVulkan);
