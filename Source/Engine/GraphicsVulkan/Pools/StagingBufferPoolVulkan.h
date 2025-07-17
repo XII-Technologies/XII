@@ -2,6 +2,11 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+namespace vk
+{
+  class Buffer;
+} // namespace vk
+
 class XII_GRAPHICSVULKAN_DLL xiiGALStagingBufferPoolVulkan
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALStagingBufferPoolVulkan);
