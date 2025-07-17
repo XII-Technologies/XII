@@ -108,28 +108,6 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
     }
   }
 
-  /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the Vulkan buffer.
-#if 0
-  xiiHybridArray<xiiUInt32, 3U> queueFamilies;
-  queueFamilies.PushBack(pDeviceVulkan->GetGraphicsQueueInformation().m_uiQueueFamilyIndex);
-  if (pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex != xiiInvalidIndex && !queueFamilies.Contains(pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex))
-  {
-    queueFamilies.PushBack(pDeviceVulkan->GetComputeQueueInformation().m_uiQueueFamilyIndex);
-  }
-  if (pDeviceVulkan->GetTransferQueueInformation().m_uiQueueFamilyIndex != xiiInvalidIndex && !queueFamilies.Contains(pDeviceVulkan->GetTransferQueueInformation().m_uiQueueFamilyIndex))
-  {
-    queueFamilies.PushBack(pDeviceVulkan->GetTransferQueueInformation().m_uiQueueFamilyIndex);
-  }
-
-  if (queueFamilies.GetCount() > 1U)
-  {
-    // If sharingMode is vk::SharingMode::eConcurrent, queueFamilyIndexCount must be greater than 1.
-    vkBufferCreateInfo.sharingMode           = vk::SharingMode::eConcurrent;
-    vkBufferCreateInfo.pQueueFamilyIndices   = queueFamilies.GetData();
-    vkBufferCreateInfo.queueFamilyIndexCount = queueFamilies.GetCount();
-  }
-#endif
-
   constexpr vk::BufferUsageFlags usageFlagsThatRequireBackingBuffer = vk::BufferUsageFlagBits::eStorageTexelBuffer | vk::BufferUsageFlagBits::eUniformTexelBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
   const bool                     bRequiresBackingBuffer             = (vkBufferCreateInfo.usage & usageFlagsThatRequireBackingBuffer) ||
     // We only need a backing buffer for the storage buffer if there is an unordered access bind flag (aka RW structured buffers).
