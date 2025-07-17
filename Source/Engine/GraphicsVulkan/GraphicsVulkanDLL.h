@@ -116,6 +116,9 @@ class xiiGALStagingBufferPoolVulkan;
 class xiiGALDynamicBufferPoolVulkan;
 class xiiGALCommandBufferPoolVulkan;
 class xiiGALCpuWaitOnlyFenceVulkan;
+class xiiVulkanMemoryAllocator;
+
+VK_DEFINE_HANDLE(xiiVulkanAllocation)
 
 struct XII_GRAPHICSVULKAN_DLL xiiGALQueueInformationVulkan
 {
@@ -130,18 +133,18 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALDynamicBufferAllocationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
-  vk::Buffer              m_vkBuffer;
-  struct VmaAllocation_T* m_VmaAllocation;
-  xiiUInt64               m_uiOffset;
+  vk::Buffer          m_vkBuffer;
+  xiiVulkanAllocation m_VulkanAllocation;
+  xiiUInt64           m_uiOffset;
 };
 
 struct XII_GRAPHICSVULKAN_DLL xiiGALStagingBufferAllocationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
-  vk::Buffer              m_vkBuffer;
-  struct VmaAllocation_T* m_VmaAllocation;
-  xiiUInt64               m_uiOffset;
+  vk::Buffer          m_vkBuffer;
+  xiiVulkanAllocation m_VulkanAllocation;
+  xiiUInt64           m_uiOffset;
 };
 
 template <typename T, typename = void>

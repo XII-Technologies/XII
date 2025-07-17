@@ -7,6 +7,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
@@ -16,8 +17,8 @@
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 #include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
 #include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
-#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
@@ -175,10 +176,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
     m_pSemaphorePool.Clear();
   }
 
-  if (m_vkVmaAllocator != VK_NULL_HANDLE)
-  {
-    vmaDestroyAllocator(m_vkVmaAllocator);
-  }
+  m_pVulkanMemoryAllocator.Clear();
 
   if (m_LogicalDevice != VK_NULL_HANDLE)
   {
@@ -1156,29 +1154,11 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
-  // Initialize Vulkan Memory Allocator (VMA). We prefer dynamically finding the function pointers.
+  // Initialize Vulkan Memory Allocator (VMA).
   {
-    const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+    m_pVulkanMemoryAllocator = XII_NEW(&m_Allocator, xiiVulkanMemoryAllocator);
 
-    VmaVulkanFunctions vmaVulkanFunctions    = {};
-    vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
-    vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
-
-    VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-    vmaAllocatorCreateInfo.vulkanApiVersion       = deviceProperties.apiVersion;
-    vmaAllocatorCreateInfo.instance               = m_Instance;
-    vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
-    vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
-    vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
-    vmaAllocatorCreateInfo.flags                  = {};
-
-    if (IsLogicalDeviceExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
-    {
-      // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation for ray tracing.
-      vmaAllocatorCreateInfo.flags |= VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-    }
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_pVulkanMemoryAllocator->Initialize(this));
   }
 
   // Create pools.
@@ -1239,11 +1219,11 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
-  if (vmaAllocation != VK_NULL_HANDLE)
+  if (allocation != VK_NULL_HANDLE)
   {
-    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vmaAllocation);
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, allocation);
   }
   else
   {
@@ -1272,6 +1252,14 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
     break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName)
+{
+  if (allocation != VK_NULL_HANDLE)
+  {
+    m_pVulkanMemoryAllocator->SetAllocationUserData(allocation, szDebugName);
   }
 }
 
@@ -2795,11 +2783,11 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   entry.m_pObject                             = pObject;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
   XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
-  XII_ASSERT_DEV(vmaAllocation != VK_NULL_HANDLE, "VMA allocation must be valid.");
+  XII_ASSERT_DEV(allocation != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
@@ -2807,7 +2795,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
-  entry.m_VmaAllocation                       = vmaAllocation;
+  entry.m_VulkanAllocation                       = allocation;
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer)
@@ -2889,9 +2877,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       {
         DestroyFence(entry.m_pFencePool, std::move(entry.m_vkFence));
       }
-      else if (entry.m_VmaAllocation != VK_NULL_HANDLE)
+      else if (entry.m_VulkanAllocation != VK_NULL_HANDLE)
       {
-        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VmaAllocation);
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VulkanAllocation);
       }
       else
       {
@@ -2927,9 +2915,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         {
           DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
         }
-        else if (it->m_VmaAllocation != VK_NULL_HANDLE)
+        else if (it->m_VulkanAllocation != VK_NULL_HANDLE)
         {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VmaAllocation);
+          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VulkanAllocation);
         }
         else
         {
@@ -3047,18 +3035,18 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
   }
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
   switch (vkObjectType)
   {
     case vk::ObjectType::eBuffer:
     {
-      vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Buffer&>(pObject), vmaAllocation);
+      m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyBuffer(reinterpret_cast<vk::Buffer&>(pObject), allocation);
     }
     break;
     case vk::ObjectType::eImage:
     {
-      vmaDestroyImage(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Image&>(pObject), vmaAllocation);
+      m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyImage(reinterpret_cast<vk::Image&>(pObject), allocation);
     }
     break;
 

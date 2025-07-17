@@ -82,10 +82,10 @@ public:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
-  XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation = {}) const;
+  XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation = {});
 
   template <typename T, typename = std::enable_if_t<std::is_class_v<T> && HasObjectType<T>::value>>
-  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, VmaAllocation&& vmaAllocation = nullptr);
+  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation = nullptr);
 
   template <typename T>
   XII_ALWAYS_INLINE void ReclaimLater(T&& vkObject) { ReclaimLaterInternal(vkObject.objectType, (void*)vkObject); }
@@ -97,7 +97,7 @@ public:
   // Internal objects retrieval.
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
-  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocator      GetVulkanMemoryAllocator() const { return m_vkVmaAllocator; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanMemoryAllocator*      GetVulkanMemoryAllocator() const { return m_pVulkanMemoryAllocator.Borrow(); }
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
@@ -185,7 +185,7 @@ private:
     ~DeferredDeletionQueue();
 
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
-    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
 
     void EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer);
     void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
@@ -203,7 +203,7 @@ private:
 
       vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
       void*          m_pObject       = VK_NULL_HANDLE;
-      VmaAllocation  m_VmaAllocation = VK_NULL_HANDLE;
+      xiiVulkanAllocation  m_VulkanAllocation = VK_NULL_HANDLE;
 
       xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool = nullptr;
       vk::CommandBuffer              m_vkCommandBuffer    = VK_NULL_HANDLE;
@@ -219,12 +219,12 @@ private:
 
       XII_ALWAYS_INLINE constexpr bool operator==(const DeletionEntry& rhs) const
       {
-        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VmaAllocation == rhs.m_VmaAllocation && m_vkCommandBuffer == rhs.m_vkCommandBuffer && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
+        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VulkanAllocation == rhs.m_VulkanAllocation && m_vkCommandBuffer == rhs.m_vkCommandBuffer && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
       }
     };
 
     void DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject);
-    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
 
     void DestroyCommandBuffer(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer);
     void DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore);
@@ -236,8 +236,9 @@ private:
     xiiMutex                m_DeletionQueueMutex;
   };
 
-  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation);
+  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
   void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
+  void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName);
 
   enum class VulkanObjectType : xiiUInt32
   {
@@ -272,7 +273,7 @@ private:
 
     vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
     void*          m_pObject       = nullptr;
-    VmaAllocation  m_VmaAllocation = {};
+    xiiVulkanAllocation m_VulkanAllocation = {};
   };
 
   struct SafeReclaimResource
@@ -334,8 +335,8 @@ private:
   vk::DebugUtilsMessengerEXT m_DebugMessenger;
   vk::DebugReportCallbackEXT m_DebugCallback;
 
-  // Vulkan Memory Allocation.
-  VmaAllocator m_vkVmaAllocator = VK_NULL_HANDLE;
+  // Vulkan Memory Allocator.
+  xiiUniquePtr<xiiVulkanMemoryAllocator> m_pVulkanMemoryAllocator;
 
   // Graphics Queue Information.
   xiiGALQueueInformationVulkan           m_GraphicsQueueInformation;

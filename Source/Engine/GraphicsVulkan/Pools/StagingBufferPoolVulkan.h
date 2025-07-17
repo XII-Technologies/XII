@@ -9,9 +9,9 @@ class XII_GRAPHICSVULKAN_DLL xiiGALStagingBufferPoolVulkan
 public:
   struct StagingBufferPage
   {
-    vk::Buffer    m_vkBuffer;
-    VmaAllocation m_VmaAllocation;
-    xiiUInt64     m_uiSize;
+    vk::Buffer          m_vkBuffer;
+    xiiVulkanAllocation m_VulkanAllocation;
+    xiiUInt64           m_uiSize;
   };
 
   void CreateStagingBufferPage();

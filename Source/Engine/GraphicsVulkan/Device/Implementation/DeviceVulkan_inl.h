@@ -1,6 +1,6 @@
 
 template <typename ObjectHandle, typename>
-XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, VmaAllocation vmaAllocation /*= {}*/) const
+XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_DebugMode != DebugMode::Disabled)
@@ -16,25 +16,22 @@ XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle&
 
     m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
 
-    if (vmaAllocation != nullptr)
-    {
-      vmaSetAllocationUserData(m_vkVmaAllocator, vmaAllocation, (void*)vkDebugObjectNameInfo.pObjectName);
-    }
+    SetVulkanAllocationDebugName(allocation, szDebugName);
   }
 #else
   XII_IGNORE_UNUSED(vkObject);
   XII_IGNORE_UNUSED(szDebugName);
-  XII_IGNORE_UNUSED(vmaAllocation);
+  XII_IGNORE_UNUSED(allocation);
 #endif
 }
 
 template <typename T, typename>
-XII_FORCE_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject, VmaAllocation&& vmaAllocation /*= nullptr*/)
+XII_FORCE_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation /*= nullptr*/)
 {
   if (vkObject == VK_NULL_HANDLE)
     return;
 
-  SafeReleaseDeviceObjectInternal(vkObject.objectType, static_cast<void*>(vkObject), vmaAllocation);
+  SafeReleaseDeviceObjectInternal(vkObject.objectType, static_cast<void*>(vkObject), allocation);
 }
 
 XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& xiiGALDeviceVulkan::GetCommandQueueInformation(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const

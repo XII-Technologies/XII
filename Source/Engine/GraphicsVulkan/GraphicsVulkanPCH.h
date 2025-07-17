@@ -97,4 +97,6 @@ XII_DEFINE_AS_POD_TYPE(vk::MultiDrawIndexedInfoEXT);
 #define VK_REMAINING_ARRAY_LAYERS (~0U)
 #define VK_REMAINING_MIP_LEVELS   (~0U)
 
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>

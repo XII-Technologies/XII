@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <GraphicsFoundation/Resources/RenderPass.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
