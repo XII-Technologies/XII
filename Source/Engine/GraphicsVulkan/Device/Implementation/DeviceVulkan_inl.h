@@ -14,7 +14,7 @@ XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle&
     vkDebugObjectNameInfo.objectHandle                    = (uint64_t)static_cast<typename ObjectHandle::NativeType>(vkObject);
     vkDebugObjectNameInfo.pObjectName                     = szDebugName;
 
-    m_LogicalDevice.setDebugUtilsObjectNameEXT(vkDebugObjectNameInfo, m_InstanceDispatchLoader);
+    VK_ASSERT_DEV(m_LogicalDevice.setDebugUtilsObjectNameEXT(&vkDebugObjectNameInfo, m_InstanceDispatchLoader));
 
     SetVulkanAllocationDebugName(allocation, szDebugName);
   }

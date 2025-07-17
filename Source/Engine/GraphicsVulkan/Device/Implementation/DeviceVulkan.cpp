@@ -397,7 +397,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr)
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
-        m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
+
+        VK_SUCCEED_OR_RETURN(vk::enumerateInstanceVersion(&m_uiVulkanVersion, m_InstanceDispatchLoader));
       }
       else
       {
@@ -543,11 +544,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
-
-      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
-                  VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
-                  VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
+      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", m_PhysicalDeviceProperties.deviceName,
+                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion),
+                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.driverVersion));
     }
     else
     {
@@ -2127,7 +2126,8 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   {
     for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties(m_InstanceDispatchLoader);
+      vk::PhysicalDeviceProperties deviceProperties;
+      physicalDevice.getProperties(&deviceProperties, m_InstanceDispatchLoader);
 
       if (IsGraphicsAndComputeQueueSupported(physicalDevice))
       {
