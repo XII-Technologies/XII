@@ -1,6 +1,17 @@
 
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+{
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueue.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  return m_pGraphicsCommandQueue.Borrow();
+}
+
 template <typename ObjectHandle, typename>
-XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/)
+XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_DebugMode == DebugMode::Utils)
@@ -26,7 +37,7 @@ XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle&
 }
 
 template <typename T, typename>
-XII_FORCE_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation /*= nullptr*/)
+XII_ALWAYS_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation /*= nullptr*/)
 {
   if (vkObject == VK_NULL_HANDLE)
     return;
@@ -43,6 +54,17 @@ XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& xiiGALDeviceVulkan::GetCom
     return m_ComputeQueueInformation;
 
   return m_GraphicsQueueInformation;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan* xiiGALDeviceVulkan::GetCommandBufferPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+{
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandBufferPool.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandBufferPool.Borrow();
+
+  return m_pGraphicsCommandBufferPool.Borrow();
 }
 
 XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* xiiGALDeviceVulkan::GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const

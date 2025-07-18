@@ -148,7 +148,7 @@ private:
   /// queueFlags              – The queue flags for all command pools
   /// poolCreateFlags         – Flags for vkCreateCommandPool (e.g. RESET_COMMAND_BUFFER_BIT)
   /// uiInitialCountPerThread – How many buffers to preallocate per thread.
-  xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, xiiUInt32 uiInitialCountPerThread = 32U);
+  xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, xiiUInt32 uiInitialCountPerThread = 16U);
 
   ~xiiGALCommandBufferPoolVulkan();
 
@@ -168,8 +168,4 @@ private:
 
   xiiMutex                        m_PoolMutex;
   xiiMap<xiiThreadID, ThreadPool> m_CommandBufferPoolsPerThread;
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  xiiAtomicIntegerU32 m_BufferCounter = 0;
-#endif
 };

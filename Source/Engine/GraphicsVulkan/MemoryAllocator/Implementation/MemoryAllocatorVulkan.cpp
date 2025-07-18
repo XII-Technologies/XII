@@ -169,7 +169,7 @@ void xiiVulkanMemoryAllocator::DeInitialize()
 //////////////////////////////////////////////////////////////////////////
 // Create / Destroy Buffer
 
-vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vkBufferCreateInfo, const xiiVulkanAllocationCreateInfo& allocationCreateInfo, vk::Buffer& out_buffer, xiiVulkanAllocation& out_allocation, xiiVulkanAllocationInfo* pAllocationInfo)
+vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vkBufferCreateInfo, const xiiVulkanAllocationCreateInfo& allocationCreateInfo, vk::Buffer& out_buffer, xiiVulkanAllocation& out_allocation, xiiVulkanAllocationInfo* pAllocationInfo) const
 {
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
   vmaAllocationCreateInfo.usage                   = ConvertUsage(allocationCreateInfo.m_Usage);
@@ -181,7 +181,7 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
   return static_cast<vk::Result>(vmaCreateBuffer(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&out_buffer), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
 }
 
-void xiiVulkanMemoryAllocator::DestroyBuffer(vk::Buffer& vkBuffer, xiiVulkanAllocation& allocation)
+void xiiVulkanMemoryAllocator::DestroyBuffer(vk::Buffer& vkBuffer, xiiVulkanAllocation& allocation) const
 {
   vmaSetAllocationUserData(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), nullptr);
 
@@ -194,7 +194,7 @@ void xiiVulkanMemoryAllocator::DestroyBuffer(vk::Buffer& vkBuffer, xiiVulkanAllo
 //////////////////////////////////////////////////////////////////////////
 // Create / Destroy Image
 
-vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiVulkanAllocationCreateInfo& allocationCreateInfo, vk::Image& out_image, xiiVulkanAllocation& out_allocation, xiiVulkanAllocationInfo* pAllocationInfo)
+vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiVulkanAllocationCreateInfo& allocationCreateInfo, vk::Image& out_image, xiiVulkanAllocation& out_allocation, xiiVulkanAllocationInfo* pAllocationInfo) const
 {
   VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
   vmaAllocationCreateInfo.usage                   = ConvertUsage(allocationCreateInfo.m_Usage);
@@ -206,7 +206,7 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
   return static_cast<vk::Result>(vmaCreateImage(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&out_image), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
 }
 
-void xiiVulkanMemoryAllocator::DestroyImage(vk::Image& vkImage, xiiVulkanAllocation& allocation)
+void xiiVulkanMemoryAllocator::DestroyImage(vk::Image& vkImage, xiiVulkanAllocation& allocation) const
 {
   vmaSetAllocationUserData(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), nullptr);
 
@@ -219,7 +219,7 @@ void xiiVulkanMemoryAllocator::DestroyImage(vk::Image& vkImage, xiiVulkanAllocat
 //////////////////////////////////////////////////////////////////////////
 // Info / UserData
 
-xiiVulkanAllocationInfo xiiVulkanMemoryAllocator::GetAllocationInfo(xiiVulkanAllocation allocation)
+xiiVulkanAllocationInfo xiiVulkanMemoryAllocator::GetAllocationInfo(xiiVulkanAllocation allocation) const
 {
   VmaAllocationInfo vmaAllocationInfo;
 
@@ -228,7 +228,7 @@ xiiVulkanAllocationInfo xiiVulkanMemoryAllocator::GetAllocationInfo(xiiVulkanAll
   return reinterpret_cast<xiiVulkanAllocationInfo&>(vmaAllocationInfo);
 }
 
-vk::MemoryPropertyFlags xiiVulkanMemoryAllocator::GetMemoryPropertyFlags(xiiVulkanAllocation allocation)
+vk::MemoryPropertyFlags xiiVulkanMemoryAllocator::GetMemoryPropertyFlags(xiiVulkanAllocation allocation) const
 {
   VkMemoryPropertyFlags vkMemoryPropertyFlags;
 
@@ -237,7 +237,7 @@ vk::MemoryPropertyFlags xiiVulkanMemoryAllocator::GetMemoryPropertyFlags(xiiVulk
   return reinterpret_cast<vk::MemoryPropertyFlags&>(vkMemoryPropertyFlags);
 }
 
-void xiiVulkanMemoryAllocator::SetAllocationUserData(xiiVulkanAllocation allocation, const char* pUserData)
+void xiiVulkanMemoryAllocator::SetAllocationUserData(xiiVulkanAllocation allocation, const char* pUserData) const
 {
   vmaSetAllocationUserData(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), (void*)pUserData);
 }
@@ -245,27 +245,27 @@ void xiiVulkanMemoryAllocator::SetAllocationUserData(xiiVulkanAllocation allocat
 //////////////////////////////////////////////////////////////////////////
 // Map / Unmap / Flush / Invalidate
 
-vk::Result xiiVulkanMemoryAllocator::MapMemory(xiiVulkanAllocation allocation, void** pData)
+vk::Result xiiVulkanMemoryAllocator::MapMemory(xiiVulkanAllocation allocation, void** pData) const
 {
   return static_cast<vk::Result>(vmaMapMemory(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), pData));
 }
 
-void xiiVulkanMemoryAllocator::UnmapMemory(xiiVulkanAllocation allocation)
+void xiiVulkanMemoryAllocator::UnmapMemory(xiiVulkanAllocation allocation) const
 {
   vmaUnmapMemory(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation));
 }
 
-vk::Result xiiVulkanMemoryAllocator::FlushAllocation(xiiVulkanAllocation allocation, vk::DeviceSize offset, vk::DeviceSize size)
+vk::Result xiiVulkanMemoryAllocator::FlushAllocation(xiiVulkanAllocation allocation, vk::DeviceSize offset, vk::DeviceSize size) const
 {
   return static_cast<vk::Result>(vmaFlushAllocation(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), offset, size));
 }
 
-vk::Result xiiVulkanMemoryAllocator::InvalidateAllocation(xiiVulkanAllocation allocation, vk::DeviceSize offset, vk::DeviceSize size)
+vk::Result xiiVulkanMemoryAllocator::InvalidateAllocation(xiiVulkanAllocation allocation, vk::DeviceSize offset, vk::DeviceSize size) const
 {
   return static_cast<vk::Result>(vmaInvalidateAllocation(m_pImplementation->m_VmaAllocator, reinterpret_cast<VmaAllocation&>(allocation), offset, size));
 }
 
-xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics()
+xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
 {
   xiiVulkanMemoryStatistics vkMemoryStatistics;
 

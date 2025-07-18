@@ -82,7 +82,7 @@ public:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
   template <typename ObjectHandle, typename = typename std::enable_if<std::is_object<ObjectHandle>::value>::type>
-  XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation = {});
+  XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation = {}) const;
 
   template <typename T, typename = std::enable_if_t<std::is_class_v<T> && HasObjectType<T>::value>>
   XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation = nullptr);
@@ -90,14 +90,10 @@ public:
   template <typename T>
   XII_ALWAYS_INLINE void ReclaimLater(T&& vkObject) { ReclaimLaterInternal(vkObject.objectType, (void*)vkObject); }
 
-  [[nodiscard]] vk::CommandBuffer RequestCommandBuffer(xiiBitflags<xiiGALCommandQueueFlags> queueFlags);
-
-  void ReclaimCommandBufferLater(vk::CommandBuffer&& vkCommandBuffer);
-
   // Internal objects retrieval.
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanMemoryAllocator*      GetVulkanMemoryAllocator() const { return m_pVulkanMemoryAllocator.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase*         GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanMemoryAllocator* GetVulkanMemoryAllocator() const { return m_pVulkanMemoryAllocator.Borrow(); }
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
@@ -126,6 +122,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetCommandQueueInformation(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan*      GetCommandBufferPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan*              GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
@@ -187,7 +184,6 @@ private:
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
 
-    void EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer);
     void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
     void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
     void EnqueueResource(xiiGALFencePoolVulkan* pFencePool, vk::Fence vkFence);
@@ -201,12 +197,9 @@ private:
     {
       xiiUInt64 m_uiFenceValue = 0ULL;
 
-      vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
-      void*          m_pObject       = VK_NULL_HANDLE;
-      xiiVulkanAllocation  m_VulkanAllocation = VK_NULL_HANDLE;
-
-      xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool = nullptr;
-      vk::CommandBuffer              m_vkCommandBuffer    = VK_NULL_HANDLE;
+      vk::ObjectType      m_vkObjectType     = vk::ObjectType::eUnknown;
+      void*               m_pObject          = VK_NULL_HANDLE;
+      xiiVulkanAllocation m_VulkanAllocation = VK_NULL_HANDLE;
 
       xiiGALSemaphorePoolVulkan* m_pSemaphorePool = nullptr;
       vk::Semaphore              m_vkSemaphore    = VK_NULL_HANDLE;
@@ -219,14 +212,13 @@ private:
 
       XII_ALWAYS_INLINE constexpr bool operator==(const DeletionEntry& rhs) const
       {
-        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VulkanAllocation == rhs.m_VulkanAllocation && m_vkCommandBuffer == rhs.m_vkCommandBuffer && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
+        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VulkanAllocation == rhs.m_VulkanAllocation && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
       }
     };
 
     void DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject);
     void DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
 
-    void DestroyCommandBuffer(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer);
     void DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore);
     void DestroyFence(xiiGALFencePoolVulkan* pFencePool, vk::Fence&& vkReclaimFence);
     void DestroyDescriptorSetPool(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool&& vkDescriptorPool);
@@ -238,7 +230,7 @@ private:
 
   void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
   void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
-  void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName);
+  void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const;
 
   enum class VulkanObjectType : xiiUInt32
   {
@@ -271,8 +263,8 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    vk::ObjectType m_vkObjectType  = vk::ObjectType::eUnknown;
-    void*          m_pObject       = nullptr;
+    vk::ObjectType      m_vkObjectType     = vk::ObjectType::eUnknown;
+    void*               m_pObject          = nullptr;
     xiiVulkanAllocation m_VulkanAllocation = {};
   };
 
@@ -339,25 +331,27 @@ private:
   xiiUniquePtr<xiiVulkanMemoryAllocator> m_pVulkanMemoryAllocator;
 
   // Graphics Queue Information.
-  xiiGALQueueInformationVulkan           m_GraphicsQueueInformation;
-  xiiUniquePtr<xiiGALCommandQueueVulkan> m_pGraphicsCommandQueue;
+  xiiGALQueueInformationVulkan                m_GraphicsQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueVulkan>      m_pGraphicsCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandBufferPoolVulkan> m_pGraphicsCommandBufferPool;
 
   // Compute Queue Information.
-  xiiGALQueueInformationVulkan           m_ComputeQueueInformation;
-  xiiUniquePtr<xiiGALCommandQueueVulkan> m_pComputeCommandQueue;
+  xiiGALQueueInformationVulkan                m_ComputeQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueVulkan>      m_pComputeCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandBufferPoolVulkan> m_pComputeCommandBufferPool;
 
   // Transfer Queue Information.
-  xiiGALQueueInformationVulkan           m_TransferQueueInformation;
-  xiiUniquePtr<xiiGALCommandQueueVulkan> m_pTransferCommandQueue;
+  xiiGALQueueInformationVulkan                m_TransferQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueVulkan>      m_pTransferCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandBufferPoolVulkan> m_pTransferCommandBufferPool;
 
   // Pools.
-  xiiUniquePtr<xiiGALFencePoolVulkan>                            m_pFencePool;
-  xiiUniquePtr<xiiGALSemaphorePoolVulkan>                        m_pSemaphorePool;
-  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan>                    m_pDescriptorSetPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>                            m_pGraphicsCommandQueueQueryPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>                            m_pComputeCommandQueueQueryPool;
-  xiiUniquePtr<xiiGALQueryPoolVulkan>                            m_pTransferCommandQueueQueryPool;
-  xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_ThreadLocalCommandBufferPool;
+  xiiUniquePtr<xiiGALFencePoolVulkan>         m_pFencePool;
+  xiiUniquePtr<xiiGALSemaphorePoolVulkan>     m_pSemaphorePool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pDescriptorSetPool;
 
   // Deletion Queue.
   xiiUniquePtr<DeferredDeletionQueue> m_pDeferredDeletionQueue;

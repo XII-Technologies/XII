@@ -32,7 +32,7 @@ void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(vk::CommandBuffer v
 //////////////////////////////////////////////////////////////////////////
 // Constructor / Destructor
 
-xiiGALCommandBufferPoolVulkan::xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags, xiiUInt32 uiInitialCountPerThread) :
+xiiGALCommandBufferPoolVulkan::xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags /*= vk::CommandPoolCreateFlagBits::eResetCommandBuffer*/, xiiUInt32 uiInitialCountPerThread /*= 16U*/) :
   m_pDeviceVulkan(pDeviceVulkan), m_QueueFlags(queueFlags), m_vkCommandPoolCreateFlags(poolCreateFlags), m_uiInitialReserveCount(uiInitialCountPerThread)
 {
   XII_ASSERT_DEV(m_pDeviceVulkan != nullptr, "Invalid Vulkan device implementation.");
