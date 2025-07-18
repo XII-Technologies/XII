@@ -42,7 +42,7 @@ public:
   /// \param pCommandList - The command list to be submitted. Must not be null. Its recording state must be 'Ended' or 'Recording'.
   ///
   /// \return The fence value that can be used to query GPU completion status for this submission.
-  [[nodiscard]] virtual xiiUInt64 Submit(xiiSharedPtr<xiiGALCommandList> pCommandList);
+  virtual xiiUInt64 Submit(xiiSharedPtr<xiiGALCommandList> pCommandList);
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;

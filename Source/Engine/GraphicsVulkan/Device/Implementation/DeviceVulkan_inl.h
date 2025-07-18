@@ -1,15 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
-{
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
-    return m_pTransferCommandQueue.Borrow();
-
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
-    return m_pComputeCommandQueue.Borrow();
-
-  return m_pGraphicsCommandQueue.Borrow();
-}
-
 template <typename ObjectHandle, typename>
 XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/) const
 {

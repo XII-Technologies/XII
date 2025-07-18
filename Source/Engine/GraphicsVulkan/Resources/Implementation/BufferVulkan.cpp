@@ -188,11 +188,11 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
       }
       else if (auto pCommandQueue = pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics))
       {
-        if (auto pImmediateCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+        if (auto pImmediateCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
         {
           XII_SUCCEED_OR_RETURN(UploadStagingData(pImmediateCommandListVulkan));
 
-          pImmediateCommandListVulkan->Submit();
+          pCommandQueue->Submit(pImmediateCommandListVulkan);
         }
       }
     }

@@ -1286,6 +1286,17 @@ void xiiGALDeviceVulkan::EndFramePlatform()
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+{
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueue.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  return m_pGraphicsCommandQueue.Borrow();
+}
+
 void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiStringBuilder tmp;
