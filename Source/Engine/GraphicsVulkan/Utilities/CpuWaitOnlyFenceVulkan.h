@@ -8,7 +8,7 @@ namespace vk
   class Semaphore;
 } // namespace vk
 
-class XII_GRAPHICSVULKAN_DLL xiiGALCpuWaitOnlyFenceVulkan final
+class XII_GRAPHICSVULKAN_DLL xiiGALCpuWaitOnlyFenceVulkan
 {
 public:
   struct SyncPointData

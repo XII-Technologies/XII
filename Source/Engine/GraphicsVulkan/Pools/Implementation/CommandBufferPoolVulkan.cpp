@@ -1,7 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 
 //////////////////////////////////////////////////////////////////////////
 // ThreadPool Push
@@ -20,12 +22,20 @@ void xiiGALCommandBufferPoolVulkan::ThreadPool::Push(vk::CommandBuffer vkCommand
   }
 }
 
+void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue)
+{
+  XII_LOCK(m_Mutex);
+
+  m_InFlightCommandBuffers.PushBack({vkCommandBuffer, bIsSecondary, uiFenceValue});
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Constructor / Destructor
 
 xiiGALCommandBufferPoolVulkan::xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags, xiiUInt32 uiInitialCountPerThread) :
   m_pDeviceVulkan(pDeviceVulkan), m_QueueFlags(queueFlags), m_vkCommandPoolCreateFlags(poolCreateFlags), m_uiInitialReserveCount(uiInitialCountPerThread)
 {
+  XII_ASSERT_DEV(m_pDeviceVulkan != nullptr, "Invalid Vulkan device implementation.");
 }
 
 xiiGALCommandBufferPoolVulkan::~xiiGALCommandBufferPoolVulkan()
@@ -59,55 +69,58 @@ xiiGALCommandBufferPoolVulkan::ThreadPool& xiiGALCommandBufferPoolVulkan::GetOrC
 
   XII_LOCK(m_PoolMutex);
 
-  // Find existing thread pool.s
+  // Find or create new sub‐pool for this thread.
+
+  bool bExisted;
+  auto it = m_CommandBufferPoolsPerThread.FindOrAdd(uiThreadID, &bExisted);
+
+  if (!bExisted)
   {
-    auto it = m_CommandBufferPoolsPerThread.Find(uiThreadID);
+    ThreadPool&                  threadPool       = it.Value();
+    xiiGALQueueInformationVulkan queueInformation = m_pDeviceVulkan->GetCommandQueueInformation(m_QueueFlags);
 
-    if (it.IsValid())
-      return it.Value();
-  }
+    vk::CommandPoolCreateInfo vkCommandPoolCreateInfo = {};
+    vkCommandPoolCreateInfo.pNext                     = nullptr;
+    vkCommandPoolCreateInfo.flags                     = m_vkCommandPoolCreateFlags;
+    vkCommandPoolCreateInfo.queueFamilyIndex          = queueInformation.m_uiQueueFamilyIndex;
 
-  // Create new sub‐pool for this thread.
-  ThreadPool                   threadPool;
-  xiiGALQueueInformationVulkan queueInformation = m_pDeviceVulkan->GetCommandQueueInformation(m_QueueFlags);
+    VK_ASSERT_DEV(vkLogicalDevice.createCommandPool(&vkCommandPoolCreateInfo, nullptr, &threadPool.m_vkPrimaryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_ASSERT_DEV(vkLogicalDevice.createCommandPool(&vkCommandPoolCreateInfo, nullptr, &threadPool.m_vkSecondaryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  vk::CommandPoolCreateInfo vkCommandPoolCreateInfo = {};
-  vkCommandPoolCreateInfo.pNext                     = nullptr;
-  vkCommandPoolCreateInfo.flags                     = m_vkCommandPoolCreateFlags;
-  vkCommandPoolCreateInfo.queueFamilyIndex          = queueInformation.m_uiQueueFamilyIndex;
-
-  VK_ASSERT_DEV(vkLogicalDevice.createCommandPool(&vkCommandPoolCreateInfo, nullptr, &threadPool.m_vkPrimaryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-  VK_ASSERT_DEV(vkLogicalDevice.createCommandPool(&vkCommandPoolCreateInfo, nullptr, &threadPool.m_vkSecondaryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-  // Preallocate a batch of buffers for speed.
-  if (m_uiInitialReserveCount > 0U)
-  {
-    // Allocate primary buffers.
-    xiiHybridArray<vk::CommandBuffer, 16U> tmp;
-    tmp.SetCountUninitialized(m_uiInitialReserveCount);
-
-    vk::CommandBufferAllocateInfo vkCommandBufferAllocationInfo = {};
-    vkCommandBufferAllocationInfo.pNext                         = nullptr;
-    vkCommandBufferAllocationInfo.commandPool                   = threadPool.m_vkPrimaryPool;
-    vkCommandBufferAllocationInfo.level                         = vk::CommandBufferLevel::ePrimary;
-    vkCommandBufferAllocationInfo.commandBufferCount            = tmp.GetCount();
-
-    VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, tmp.GetData(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
+    // Preallocate a batch of buffers for speed.
+    if (m_uiInitialReserveCount > 0U)
     {
-      XII_LOCK(threadPool.m_Mutex);
+      // Allocate primary buffers.
+      xiiHybridArray<vk::CommandBuffer, 16U> tmp;
+      tmp.SetCountUninitialized(m_uiInitialReserveCount);
 
-      threadPool.m_PrimaryFreeCommandBuffers.PushBackRange(tmp);
+      vk::CommandBufferAllocateInfo vkCommandBufferAllocationInfo = {};
+      vkCommandBufferAllocationInfo.pNext                         = nullptr;
+      vkCommandBufferAllocationInfo.commandPool                   = threadPool.m_vkPrimaryPool;
+      vkCommandBufferAllocationInfo.level                         = vk::CommandBufferLevel::ePrimary;
+      vkCommandBufferAllocationInfo.commandBufferCount            = tmp.GetCount();
+
+      VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, tmp.GetData(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+      {
+        XII_LOCK(threadPool.m_Mutex);
+
+        threadPool.m_PrimaryFreeCommandBuffers.PushBackRange(tmp);
+      }
+
+      // Allocate secondary buffers.
+      vkCommandBufferAllocationInfo.commandPool = threadPool.m_vkSecondaryPool;
+      vkCommandBufferAllocationInfo.level       = vk::CommandBufferLevel::eSecondary;
+
+      {
+        XII_LOCK(threadPool.m_Mutex);
+
+        threadPool.m_SecondaryFreeCommandBuffers.PushBackRange(tmp);
+      }
+
+      VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, tmp.GetData(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
     }
-
-    // Allocate secondary buffers.
-    vkCommandBufferAllocationInfo.commandPool = threadPool.m_vkSecondaryPool;
-    vkCommandBufferAllocationInfo.level       = vk::CommandBufferLevel::eSecondary;
-
-    VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, tmp.GetData(), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
-
-  auto it = m_CommandBufferPoolsPerThread.Insert(uiThreadID, threadPool);
 
   return it.Value();
 }
@@ -138,7 +151,7 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
   vk::Device        vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
   vk::CommandBuffer vkCommandBuffer;
 
-  vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   return {&threadPool, vkCommandBuffer, false};
 }
@@ -169,9 +182,69 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
   vk::Device        vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
   vk::CommandBuffer vkCommandBuffer;
 
-  vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(vkLogicalDevice.allocateCommandBuffers(&vkCommandBufferAllocationInfo, &vkCommandBuffer, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   return {&threadPool, vkCommandBuffer, true};
+}
+
+void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue)
+{
+  if (commandBuffer.m_pOwner == nullptr || commandBuffer.m_vkCommandBuffer == VK_NULL_HANDLE)
+    return;
+
+  // Relieve control of the command buffer from AutoCommandBuffer.
+  ThreadPool*       pOwner          = commandBuffer.m_pOwner;
+  vk::CommandBuffer vkCommandBuffer = commandBuffer.m_vkCommandBuffer;
+  bool              bIsSecondary    = commandBuffer.m_bIsSecondary;
+
+  commandBuffer.m_pOwner          = nullptr;
+  commandBuffer.m_vkCommandBuffer = VK_NULL_HANDLE;
+
+  // Track it until fence signals.
+  // Defer recycling until that fence-value is reached:
+  pOwner->PushInFlight(vkCommandBuffer, bIsSecondary, uiFenceValue);
+}
+
+void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
+{
+  vk::Device                vkLogicalDevice       = m_pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiGALCommandQueueVulkan* pCommandQueueVulkan   = static_cast<xiiGALCommandQueueVulkan*>(m_pDeviceVulkan->GetCommandQueue(m_QueueFlags));
+  xiiUInt64                 uiCompletedFenceValue = pCommandQueueVulkan->GetCompletedFenceValue();
+
+  XII_LOCK(m_PoolMutex);
+
+  for (auto& it : m_CommandBufferPoolsPerThread)
+  {
+    ThreadPool& threadPool = it.Value();
+
+    XII_LOCK(threadPool.m_Mutex);
+
+    for (xiiUInt32 i = 0; i < threadPool.m_InFlightCommandBuffers.GetCount();)
+    {
+      InFlightCommandBuffer& inFlightCommandBuffer = threadPool.m_InFlightCommandBuffers[i];
+
+      if (inFlightCommandBuffer.m_uiFenceValue <= uiCompletedFenceValue)
+      {
+        // GPU is done with this command buffer.
+        VK_ASSERT_DEV(inFlightCommandBuffer.m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+        if (inFlightCommandBuffer.m_bIsSecondary)
+        {
+          threadPool.m_SecondaryFreeCommandBuffers.PushBack(inFlightCommandBuffer.m_vkCommandBuffer);
+        }
+        else
+        {
+          threadPool.m_PrimaryFreeCommandBuffers.PushBack(inFlightCommandBuffer.m_vkCommandBuffer);
+        }
+
+        threadPool.m_InFlightCommandBuffers.RemoveAtAndSwap(i);
+      }
+      else
+      {
+        ++i;
+      }
+    }
+  }
 }
 
 void xiiGALCommandBufferPoolVulkan::ResetPools()
@@ -184,8 +257,8 @@ void xiiGALCommandBufferPoolVulkan::ResetPools()
   {
     ThreadPool& threadPool = it.Value();
 
-    vkLogicalDevice.resetCommandPool(threadPool.m_vkPrimaryPool, vk::CommandPoolResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    vkLogicalDevice.resetCommandPool(threadPool.m_vkSecondaryPool, vk::CommandPoolResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    VK_ASSERT_DEV(vkLogicalDevice.resetCommandPool(threadPool.m_vkPrimaryPool, vk::CommandPoolResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_ASSERT_DEV(vkLogicalDevice.resetCommandPool(threadPool.m_vkSecondaryPool, vk::CommandPoolResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     // Clear free‐lists so buffers get re‐created on demand.
     {
@@ -193,6 +266,7 @@ void xiiGALCommandBufferPoolVulkan::ResetPools()
 
       threadPool.m_PrimaryFreeCommandBuffers.Clear();
       threadPool.m_SecondaryFreeCommandBuffers.Clear();
+      threadPool.m_InFlightCommandBuffers.Clear();
     }
   }
 }
