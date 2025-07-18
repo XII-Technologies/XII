@@ -654,6 +654,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
     if (auto pCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
     {
+      pCommandListVulkan->Begin();
       {
         xiiGALScopedDebugGroup debugGroup(pCommandListVulkan, "Add Swap Chain Wait Semaphore");
 
@@ -667,6 +668,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
           m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
         }
       }
+      pCommandListVulkan->End();
 
       auto pCommandQueue = pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
 
@@ -708,8 +710,12 @@ void xiiGALSwapChainVulkan::Present()
 
   if (auto pCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
   {
-    pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-    pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+    pCommandListVulkan->Begin();
+    {
+      pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+      pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+    }
+    pCommandListVulkan->End();
 
     auto pCommandQueue = pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
 

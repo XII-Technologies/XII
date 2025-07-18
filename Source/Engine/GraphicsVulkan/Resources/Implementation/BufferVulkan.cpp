@@ -166,7 +166,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
       auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> xiiResult {
         // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
         xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(pInitialData->m_uiDataSize);
-        void* pMappedMemory           = nullptr;
+        void*                               pMappedMemory           = nullptr;
 
         VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
         VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, pInitialData->m_uiDataSize));
@@ -190,7 +190,11 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
       {
         if (auto pImmediateCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
         {
-          XII_SUCCEED_OR_RETURN(UploadStagingData(pImmediateCommandListVulkan));
+          pImmediateCommandListVulkan->Begin();
+          {
+            XII_SUCCEED_OR_RETURN(UploadStagingData(pImmediateCommandListVulkan));
+          }
+          pImmediateCommandListVulkan->End();
 
           pCommandQueue->Submit(pImmediateCommandListVulkan);
         }

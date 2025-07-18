@@ -156,22 +156,26 @@ public:
 
       auto pGraphicsQueue = m_pDevice->GetCommandQueue();
 
-      if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+      if (auto pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}))
       {
-        xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
+        pCommandList->Begin();
+        {
+          xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
 
-        auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
-        depthClearValue.m_DepthStencil.m_uiStencil = 0U;
+          auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+          depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
+          depthClearValue.m_DepthStencil.m_uiStencil = 0U;
 
-        float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+          float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+          auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+          colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
-        pCommandList->BeginRenderPass(beginRenderPass);
-        pCommandList->EndRenderPass();
+          pCommandList->BeginRenderPass(beginRenderPass);
+          pCommandList->EndRenderPass();
+        }
+        pCommandList->End();
 
-        pCommandList->Submit();
+        pGraphicsQueue->Submit(pCommandList);
       }
 
       m_pSwapChain->Present();

@@ -446,7 +446,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 {
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
   auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> void {
@@ -494,13 +494,13 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
     {
       for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
       {
-        const xiiGALTextureSubResourceData&              subResourceData  = pInitialData->m_pSubResources[uiSubResourceIndex];
-        vk::BufferImageCopy      vkCopyRegion     = {};
-        xiiGALMipLevelProperties mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+        const xiiGALTextureSubResourceData& subResourceData  = pInitialData->m_pSubResources[uiSubResourceIndex];
+        vk::BufferImageCopy                 vkCopyRegion     = {};
+        xiiGALMipLevelProperties            mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
         // The allocation will stay in the upload heap until the command list is reset, at which point all upload pages will be discarded.
         xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);
-        void* pMappedMemory = nullptr;
+        void*                               pMappedMemory           = nullptr;
 
         VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
         VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, mipLevelProperty.m_uiMipSize));
@@ -563,7 +563,11 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
   {
     if (auto pImmediateCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
     {
-      UploadStagingData(pImmediateCommandListVulkan);
+      pImmediateCommandListVulkan->Begin();
+      {
+        UploadStagingData(pImmediateCommandListVulkan);
+      }
+      pImmediateCommandListVulkan->End();
 
       pCommandQueue->Submit(pImmediateCommandListVulkan);
     }
