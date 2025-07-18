@@ -24,8 +24,9 @@ xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
+  xiiGALDeviceVulkan*                         pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALCommandListVulkan>       pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
+  const xiiGALCommandListCreationDescription& description        = pCommandList->GetDescription();
 
   XII_LOCK(m_QueueMutex);
 
@@ -113,7 +114,10 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     XII_IGNORE_UNUSED(syncPoint);
   }
 
-  pCommandListVulkan->ResetPlatform();
+  if (!description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary) && !description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit))
+  {
+    pCommandListVulkan->Reset();
+  }
 
   return uiFenceValue;
 }
@@ -129,103 +133,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 
   m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());
   m_pQueueFence->Reset(uiFenceValue);
-
-  return uiFenceValue;
-}
-
-xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)
-{
-  xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
-
-  XII_LOCK(m_QueueMutex);
-
-  bool bTimelineSemaphoreInUse = false;
-  for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
-  {
-    if (fenceInfo.m_pFenceVulkan == nullptr || !fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
-      continue;
-
-    bTimelineSemaphoreInUse = true;
-
-    fenceInfo.m_pFenceVulkan->ValidateFenceSignal(fenceInfo.m_uiWaitValue);
-
-    pCommandListVulkan->m_vkSignalSemaphores.PushBack(fenceInfo.m_pFenceVulkan->GetVulkanTimelineSemaphore());
-    pCommandListVulkan->m_vkSignalSemaphoreValues.PushBack(fenceInfo.m_uiWaitValue);
-  }
-
-  for (const auto& fenceInfo : pCommandListVulkan->m_WaitFences)
-  {
-    fenceInfo.m_pFenceVulkan->ValidateDeviceWaitForFence(fenceInfo.m_uiWaitValue);
-
-    if (!fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
-      continue;
-
-    bTimelineSemaphoreInUse = true;
-
-    vk::Semaphore vkWaitSemaphore = fenceInfo.m_pFenceVulkan->GetVulkanTimelineSemaphore();
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    for (xiiUInt32 i = 0; i < pCommandListVulkan->m_vkWaitSemaphores.GetCount(); ++i)
-    {
-      XII_ASSERT_DEV(pCommandListVulkan->m_vkWaitSemaphores[i] != vkWaitSemaphore, "Fence '{}' with value ({}) is already added to wait operation with value ({}).", fenceInfo.m_pFenceVulkan->GetDebugName(), fenceInfo.m_uiWaitValue, pCommandListVulkan->m_vkWaitSemaphoreValues[i]);
-    }
-#endif
-
-    pCommandListVulkan->m_vkWaitSemaphores.PushBack(vkWaitSemaphore);
-    pCommandListVulkan->m_vkWaitSemaphoreValues.PushBack(fenceInfo.m_uiWaitValue);
-    pCommandListVulkan->m_vkWaitDestinationStageFlags.PushBack(vk::PipelineStageFlagBits::eAllCommands);
-  }
-
-  XII_ASSERT_DEV(pCommandListVulkan->m_vkWaitSemaphores.GetCount() == pCommandListVulkan->m_vkWaitSemaphoreValues.GetCount(), "The wait semaphores and wait semaphore values must have the same count.");
-  XII_ASSERT_DEV(pCommandListVulkan->m_vkSignalSemaphores.GetCount() == pCommandListVulkan->m_vkSignalSemaphoreValues.GetCount(), "The signal semaphores and signal semaphore values must have the same count.");
-  XII_ASSERT_DEV(pCommandListVulkan->m_vkWaitDestinationStageFlags.GetCount() == pCommandListVulkan->m_vkWaitSemaphores.GetCount(), "The wait semaphores and wait destination stage flags must have the same count.");
-
-  vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
-
-  vk::SubmitInfo vkSubmitInformation       = {};
-  vkSubmitInformation.pNext                = nullptr;
-  vkSubmitInformation.waitSemaphoreCount   = pCommandListVulkan->m_vkWaitSemaphores.GetCount();
-  vkSubmitInformation.pWaitSemaphores      = pCommandListVulkan->m_vkWaitSemaphores.IsEmpty() ? nullptr : pCommandListVulkan->m_vkWaitSemaphores.GetData();
-  vkSubmitInformation.pWaitDstStageMask    = pCommandListVulkan->m_vkWaitDestinationStageFlags.IsEmpty() ? nullptr : pCommandListVulkan->m_vkWaitDestinationStageFlags.GetData();
-  vkSubmitInformation.pCommandBuffers      = &vkCommandBuffer;
-  vkSubmitInformation.commandBufferCount   = 1U;
-  vkSubmitInformation.signalSemaphoreCount = pCommandListVulkan->m_vkSignalSemaphores.GetCount();
-  vkSubmitInformation.pSignalSemaphores    = pCommandListVulkan->m_vkSignalSemaphores.IsEmpty() ? nullptr : pCommandListVulkan->m_vkSignalSemaphores.GetData();
-
-  vk::TimelineSemaphoreSubmitInfo vkTimelineSemaphoreSubmitInfo = {};
-  if (bTimelineSemaphoreInUse)
-  {
-    vkSubmitInformation.pNext = &vkTimelineSemaphoreSubmitInfo;
-
-    vkTimelineSemaphoreSubmitInfo.pNext                     = nullptr;
-    vkTimelineSemaphoreSubmitInfo.waitSemaphoreValueCount   = vkSubmitInformation.waitSemaphoreCount;
-    vkTimelineSemaphoreSubmitInfo.pWaitSemaphoreValues      = vkSubmitInformation.waitSemaphoreCount > 0 ? pCommandListVulkan->m_vkWaitSemaphoreValues.GetData() : nullptr;
-    vkTimelineSemaphoreSubmitInfo.signalSemaphoreValueCount = vkSubmitInformation.signalSemaphoreCount;
-    vkTimelineSemaphoreSubmitInfo.pSignalSemaphoreValues    = vkSubmitInformation.signalSemaphoreCount > 0 ? pCommandListVulkan->m_vkSignalSemaphoreValues.GetData() : nullptr;
-  }
-
-  // Increment the value before submitting the buffer to be overly safe.
-  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
-  {
-    const auto& syncPoint = m_pQueueFence->CreateSyncPoint(uiFenceValue);
-
-    VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-    m_LastSyncPoint = syncPoint;
-  }
-
-  for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
-  {
-    if (fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
-      continue;
-
-    const auto& syncPoint = fenceInfo.m_pFenceVulkan->CreateSyncPoint(fenceInfo.m_uiWaitValue);
-
-    XII_IGNORE_UNUSED(syncPoint);
-  }
-
-  pCommandListVulkan->ResetPlatform();
 
   return uiFenceValue;
 }

@@ -24,10 +24,6 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
-
-private:
-  xiiUInt64 SubmitCommandList(xiiGALCommandList* pCommandList);
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
