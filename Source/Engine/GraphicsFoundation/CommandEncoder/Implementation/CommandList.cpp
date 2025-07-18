@@ -242,7 +242,7 @@ void xiiGALCommandList::End()
 void xiiGALCommandList::Reset()
 {
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and cannot be resetted until after queue execution.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and cannot be reset until after queue execution.");
 
   if (m_RecordingState == RecordingState::Recording)
   {
@@ -254,22 +254,24 @@ void xiiGALCommandList::Reset()
   }
 }
 
-xiiUInt64 xiiGALCommandList::Submit()
+void xiiGALCommandList::Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList)
 {
-  XII_ASSERT_DEV(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Command list is already reset.");
-  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Command list is already submitted!");
+  XII_VERIFY_COMMAND_LIST(pSecondaryCommandList != nullptr, "xiiGALCommandList::Submit(): secondary list pointer is null.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiGALCommandListCreationDescription& description  = pSecondaryCommandList->GetDescription();
+  const bool                                  bIsSecondary = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
+  const bool                                  bIsPrimary   = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
+
+  XII_ASSERT_DEV(bIsSecondary, "Submit(): provided list must be flagged Secondary (got Flags={0}).", description.m_Flags.GetValue());
+  XII_ASSERT_DEV(!bIsPrimary, "Submit(): cannot inject a secondary into another secondary; primary required.");
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary must be Recording (current state={0}).", static_cast<xiiUInt8>(m_RecordingState));
+  XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == RecordingState::Ended, "Submit(): secondary must be Ended before submission (current state={0}).", static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState()));
+#endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;
 
-  if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
-  {
-    End();
-  }
-
-  XII_ASSERT_DEV(m_RecordingState == xiiGALCommandList::RecordingState::Ended, "Command list must have been ended if it was in recording state.");
-
-  return SubmitPlatform();
+  return SubmitPlatform(pSecondaryCommandList);
 }
 
 void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState)

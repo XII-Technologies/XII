@@ -124,10 +124,10 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetCommandQueueInformation(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan*      GetCommandBufferPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan*              GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+  [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineStageFlags GetSupportedStagesFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+  [[nodiscard]] XII_ALWAYS_INLINE vk::AccessFlags GetSupportedAccessFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
-
-  [[nodiscard]] xiiGALCommandBufferPoolVulkan* GetCommandBufferPool();
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*         GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan*     GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }

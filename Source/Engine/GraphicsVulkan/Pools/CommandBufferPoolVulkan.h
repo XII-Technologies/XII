@@ -164,7 +164,6 @@ private:
   xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
   vk::CommandPoolCreateFlags           m_vkCommandPoolCreateFlags;
   xiiUInt32                            m_uiInitialReserveCount;
-  vk::CommandBufferLevel               m_vkDefaultCommandBufferLevel;
 
   xiiMutex                        m_PoolMutex;
   xiiMap<xiiThreadID, ThreadPool> m_CommandBufferPoolsPerThread;

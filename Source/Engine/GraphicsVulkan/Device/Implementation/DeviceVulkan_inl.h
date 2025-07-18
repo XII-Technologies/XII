@@ -77,3 +77,17 @@ XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* xiiGALDeviceVulkan::GetCommandQueueQuer
 
   return m_pGraphicsCommandQueueQueryPool.Borrow();
 }
+
+XII_ALWAYS_INLINE vk::PipelineStageFlags xiiGALDeviceVulkan::GetSupportedStagesFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+{
+  const xiiGALQueueInformationVulkan& queueInformation = GetCommandQueueInformation(queueFlags);
+
+  return GetVulkanLogicalDeviceSupportedStagesFlags(queueInformation.m_uiQueueFamilyIndex);
+}
+
+XII_ALWAYS_INLINE vk::AccessFlags xiiGALDeviceVulkan::GetSupportedAccessFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+{
+  const xiiGALQueueInformationVulkan& queueInformation = GetCommandQueueInformation(queueFlags);
+
+  return GetVulkanLogicalDeviceSupportedAccessFlags(queueInformation.m_uiQueueFamilyIndex);
+}

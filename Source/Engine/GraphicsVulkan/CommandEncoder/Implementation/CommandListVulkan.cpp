@@ -518,25 +518,54 @@ xiiResult xiiGALCommandListVulkan::InitPlatform()
     m_pNullVertexBuffer = pNullVertexBuffer.Downcast<xiiGALBufferVulkan>();
   }
 
-  m_vkCommandBuffer = VK_NULL_HANDLE; ///< \todo request command buffer.
-
   return XII_SUCCESS;
 }
 
 void xiiGALCommandListVulkan::BeginPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiGALCommandBufferPoolVulkan*   pCommandBufferPool = pDeviceVulkan->GetCommandBufferPool(m_Description.m_QueueFlags);
 
-  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    m_CommandBufferAllocation = pCommandBufferPool->AllocateSecondaryCommandBuffer();
+  }
+  else
+  {
+    m_CommandBufferAllocation = pCommandBufferPool->AllocatePrimaryCommandBuffer();
+  }
 
-  m_PipelineBarrier.m_vkSupportedStageFlags  = pCommandQueueVulkan->GetSupportedStagesFlags();
-  m_PipelineBarrier.m_vkSupportedAccessFlags = pCommandQueueVulkan->GetSupportedAccessFlags();
+  m_vkCommandBuffer = m_CommandBufferAllocation.Get();
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "Failed to allocate a Vulkan command buffer.");
+
+  m_PipelineBarrier.m_vkSupportedStageFlags  = pDeviceVulkan->GetSupportedStagesFlags(m_Description.m_QueueFlags);
+  m_PipelineBarrier.m_vkSupportedAccessFlags = pDeviceVulkan->GetSupportedAccessFlags(m_Description.m_QueueFlags);
+
+  vk::CommandBufferUsageFlagBits vkCommandBufferUsageFlags = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit) ? vk::CommandBufferUsageFlagBits::eSimultaneousUse : vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
   vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
   vkCommandBufferBeginInfo.pNext                      = nullptr;
-  vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit; // Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
-  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr;                                        // Ignored for a primary command buffer.
+  vkCommandBufferBeginInfo.flags                      = vkCommandBufferUsageFlags;
+  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr; // Ignored for a primary command buffer.
+
+  vk::CommandBufferInheritanceInfo vkCommandBufferInheritanceInfo = {};
+  vkCommandBufferInheritanceInfo.pNext                            = nullptr;
+  vkCommandBufferInheritanceInfo.subpass                          = m_Description.m_uiSubPassIndex;
+
+  if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    vkCommandBufferBeginInfo.flags |= vk::CommandBufferUsageFlagBits::eRenderPassContinue;
+
+    if (xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan = m_Description.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>())
+    {
+      vkCommandBufferInheritanceInfo.renderPass = pRenderPassVulkan->GetVulkanRenderPass();
+    }
+    if (xiiSharedPtr<xiiGALFramebufferVulkan> pFramebufferVulkan = m_Description.m_pFramebuffer.Downcast<xiiGALFramebufferVulkan>())
+    {
+      vkCommandBufferInheritanceInfo.framebuffer = pFramebufferVulkan->GetVulkanFramebuffer();
+    }
+    vkCommandBufferBeginInfo.pInheritanceInfo = &vkCommandBufferInheritanceInfo;
+  }
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
@@ -551,7 +580,7 @@ void xiiGALCommandListVulkan::EndPlatform()
 
   FlushBarriers();
 
-  m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_RecordingState = RecordingState::Ended;
 }
@@ -562,7 +591,8 @@ void xiiGALCommandListVulkan::ResetPlatform()
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  pDeviceVulkan->ReclaimCommandBufferLater(m_pCommandBufferPool, std::move(m_vkCommandBuffer));
+  m_CommandBufferAllocation = {};
+  m_vkCommandBuffer         = VK_NULL_HANDLE;
 
   InvalidateState();
 
@@ -572,13 +602,16 @@ void xiiGALCommandListVulkan::ResetPlatform()
   m_RecordingState = RecordingState::Reset;
 }
 
-xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform()
+void xiiGALCommandListVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList)
 {
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  m_RecordingState = RecordingState::Submitted;
+  xiiSharedPtr<xiiGALDeviceVulkan>      pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pSecondaryCommandList.Downcast<xiiGALCommandListVulkan>();
 
-  return pCommandQueueVulkan->SubmitCommandList(this);
+  vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
+
+  m_vkCommandBuffer.executeCommands(1U, &vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
@@ -1972,14 +2005,14 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
       xiiLog::Warning("Vulkan backend never waits for GPU when mapping staging buffers for reading. Applications must use fences or other synchronization methods to explicitly synchronize access and use xiiGALMapFlags::DoNotWait flag.");
     }
 
-    VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(pBufferVulkan->GetAllocationDescription(), &pMappedData));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(pBufferVulkan->GetAllocationDescription(), &pMappedData));
     VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
   }
   else if (mapType == xiiGALMapType::Write)
   {
     if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
     {
-      VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(pBufferVulkan->GetAllocationDescription(), &pMappedData));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(pBufferVulkan->GetAllocationDescription(), &pMappedData));
       VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
     }
     else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
@@ -1989,7 +2022,7 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
       xiiGALDynamicBufferAllocationVulkan dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(bufferDescription.m_uiSize);
 
       void* pMappedMemory = nullptr;
-      VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
       VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(dynamicBufferAllocation.m_VulkanAllocation, dynamicBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
 
       pMappedData                      = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
@@ -2490,7 +2523,7 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
     xiiGALDynamicBufferAllocationVulkan dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(copyDescription.m_uiMemorySize);
 
     void* pMappedMemory = nullptr;
-    VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
     VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(dynamicBufferAllocation.m_VulkanAllocation, dynamicBufferAllocation.m_uiOffset, copyDescription.m_uiMemorySize));
 
     pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
@@ -2513,7 +2546,7 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
     xiiUInt64 uiMapStartOffset = uiSubResourceOffset + (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
 
     void* pMappedMemory = nullptr;
-    VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedMemory));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedMemory));
 
     mappedData.m_pData         = xiiMemoryUtils::AddByteOffset(pMappedMemory, uiMapStartOffset);
     mappedData.m_uiStride      = mipLevelProperties.m_uiRowSize;

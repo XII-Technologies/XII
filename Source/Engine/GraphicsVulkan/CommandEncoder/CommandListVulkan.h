@@ -7,6 +7,18 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+
+namespace vk
+{
+  class CommandBuffer;
+  class RenderPass;
+  class Framebuffer;
+  class Pipeline;
+  class Buffer;
+  class Image;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListVulkan, xiiGALCommandList);
@@ -115,7 +127,7 @@ protected:
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
 
-  virtual xiiUInt64 SubmitPlatform() override final;
+  virtual void SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList) override final;
 
   virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) override final;
 
@@ -294,10 +306,11 @@ private:
     xiiDynamicArray<xiiSharedPtr<xiiGALSamplerVulkan>>     m_pBoundSamplerStates;
   };
 
-  vk::CommandBuffer             m_vkCommandBuffer;
-  CommandListState              m_CommandListState;
-  xiiBitflags<CommandListFlags> m_CommandListFlags;
-  PipelineBarrier               m_PipelineBarrier;
+  xiiGALCommandBufferPoolVulkan::AutoCommandBuffer m_CommandBufferAllocation;
+  vk::CommandBuffer                                m_vkCommandBuffer;
+  CommandListState                                 m_CommandListState;
+  xiiBitflags<CommandListFlags>                    m_CommandListFlags;
+  PipelineBarrier                                  m_PipelineBarrier;
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 

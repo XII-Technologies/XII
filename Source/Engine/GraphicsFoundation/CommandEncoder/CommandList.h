@@ -728,6 +728,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
   /// These flags define whether the command list is secondary, supports multiple submissions, or is immediately submitted after encoding.
   /// Use these flags to optimize command list lifetimes and submission patterns.
   xiiBitflags<xiiGALCommandListFlags> m_Flags = xiiGALCommandListFlags::None;
+
+  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+  xiiUInt32                       m_uiSubPassIndex = 0U;
 };
 
 /// \brief Interface that defines methods to manipulate a command list object.
@@ -770,10 +774,8 @@ public:
   /// \remarks This method can be called only if the command list has not yet been submitted for execution.
   void Reset();
 
-  /// \brief Submits a command list to the command queue for execution. The command list is reset after the execution on the command queue.
-  ///
-  /// \return The current internal fence value.
-  xiiUInt64 Submit();
+  /// \brief Submits a secondary command list to a primary command list for execution.
+  void Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList);
 
   // State functions.
 
@@ -1214,11 +1216,11 @@ public:
 
 public:
   /// \brief Enum class representing the state of a command list recording.
-  enum class RecordingState
+  enum class RecordingState : xiiUInt8
   {
+    Reset=0U,     ///< The command list has been reset and is ready to be recorded again.
     Recording, ///< The command list is currently being recorded.
     Ended,     ///< The recording of the command list has ended.
-    Reset,     ///< The command list has been reset and is ready to be recorded again.
     Submitted  ///< The command list has been submitted and is no longer available for recording commands. A new command list has to be requested for recording more commands.
   };
 
@@ -1270,7 +1272,7 @@ protected:
   virtual void EndPlatform()   = 0;
   virtual void ResetPlatform() = 0;
 
-  virtual xiiUInt64 SubmitPlatform() = 0;
+  virtual void SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList) = 0;
 
   virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) = 0;
 
