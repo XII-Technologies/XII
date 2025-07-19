@@ -1288,6 +1288,9 @@ void xiiGALDeviceVulkan::EndFramePlatform()
 
 xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+    return m_pGraphicsCommandQueue.Borrow();
+  
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
