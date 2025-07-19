@@ -727,8 +727,23 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
   /// Use these flags to optimize command list lifetimes and submission patterns.
   xiiBitflags<xiiGALCommandListFlags> m_Flags = xiiGALCommandListFlags::None;
 
+  /// \brief Specifies the render pass to be used when recording this command list.
+  ///
+  /// The render pass defines the sequence of rendering operations and attachment formats.
+  /// This must match the layout expected by the framebuffer. Required for command lists that record graphics operations within a render pass scope.
   xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+
+  /// \brief Specifies the framebuffer associated with the selected render pass.
+  ///
+  /// The framebuffer provides the actual image attachments used during rendering.
+  /// It must be compatible with the render pass and is required when submitting graphics commands that depend on render targets.
   xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+
+  /// \brief Indicates the subpass within the render pass that this command list targets.
+  ///
+  /// Used to determine which subpass to begin encoding commands in.
+  /// If multiple subpasses are defined in the render pass, this value selects the active one during recording.
+  /// Must be within the bounds defined by the render pass configuration.
   xiiUInt32                       m_uiSubPassIndex = 0U;
 };
 
