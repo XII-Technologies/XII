@@ -23,7 +23,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListFlags
     None            = 0U,         ///< No flags set. Creates a primary command list with single-use behavior.
     Secondary       = XII_BIT(0), ///< Command list is secondary and must be executed through a primary list. Limited commands allowed.
     MultiSubmit     = XII_BIT(1), ///< Command list may be submitted multiple times without re-recording.
-    ImmediateSubmit = XII_BIT(2), ///< Command list is automatically submitted upon recording completion. Cannot be reused.
 
     Default = None
   };
@@ -32,7 +31,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListFlags
   {
     StorageType Secondary : 1;
     StorageType MultiSubmit : 1;
-    StorageType ImmediateSubmit : 1;
   };
 };
 

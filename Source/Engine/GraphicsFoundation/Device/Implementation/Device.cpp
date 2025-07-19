@@ -170,15 +170,31 @@ xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALComm
 {
   VerifyMultithreadedAccess();
 
-  XII_ASSERT_ALWAYS(!description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary), "Secondary command lists are not yet supported!");
-
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const bool bSecondary       = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
   const bool bMultiSubmit     = description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit);
-  const bool bImmediateSubmit = description.m_Flags.IsSet(xiiGALCommandListFlags::ImmediateSubmit);
 
-  // ImmediateSubmit is mutually exclusive.
-  XII_GAL_DEVICE_CHECK(!(bImmediateSubmit && (bSecondary || bMultiSubmit)), "ImmediateSubmit flag cannot be combined with Secondary or MultiSubmit flags.");
+  // Validate Secondary usage
+  if (bSecondary)
+  {
+    if (description.m_pRenderPass)
+    {
+      XII_ASSERT_DEV( description.m_uiSubPassIndex < description.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index is out of bounds for the provided render pass.");
+    }
+    else
+    {
+      XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Secondary command lists should specify a zero subpass index if no render pass is specified.");
+    }
+  }
+  else
+  {
+    XII_ASSERT_DEV(description.m_pRenderPass == nullptr, "Primary command lists should not specify a render pass.");
+    XII_ASSERT_DEV(description.m_pFramebuffer == nullptr, "Primary command lists should not specify a framebuffer.");
+    XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Primary command lists should not specify a non-zero subpass index.");
+  }
+
+  // Validate queue compatibility
+  XII_ASSERT_DEV(description.m_QueueFlags != xiiGALCommandQueueFlags::None, "Command list must declare at least one queue capability (Graphics, Compute, Transfer, etc.).");
 #endif
 
   return CreateCommandListPlatform(description);
