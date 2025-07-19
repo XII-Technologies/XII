@@ -116,6 +116,10 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
 
   if (!description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary) && !description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit))
   {
+    xiiGALCommandBufferPoolVulkan* pCommandBufferPoolVulkan = pDeviceVulkan->GetCommandBufferPool(description.m_QueueFlags);
+
+    pCommandBufferPoolVulkan->RecycleAfterSubmit(std::move(pCommandListVulkan->m_CommandBufferAllocation), m_LastSyncPoint.m_uiValue);
+
     pCommandListVulkan->Reset();
   }
 

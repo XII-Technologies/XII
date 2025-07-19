@@ -587,10 +587,6 @@ void xiiGALCommandListVulkan::EndPlatform()
 
 void xiiGALCommandListVulkan::ResetPlatform()
 {
-  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
-
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-
   m_CommandBufferAllocation = {};
   m_vkCommandBuffer         = VK_NULL_HANDLE;
 
