@@ -151,9 +151,9 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
   vmaAllocatorCreateInfo.pVulkanFunctions            = &vmaVulkanFunctions;
   vmaAllocatorCreateInfo.flags                       = {};
 
-  const xiiGALDeviceVulkan::ExtensionFeatures& physicalDeviceExtensionFeatures = pDeviceVulkan->GetPhysicalDeviceExtensionFeatures();
+  const xiiGALDeviceVulkan::ExtensionFeatures& logicalDeviceExtensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
-  if (physicalDeviceExtensionFeatures.m_BufferDeviceAddress.bufferDeviceAddress == vk::True)
+  if (logicalDeviceExtensionFeatures.m_BufferDeviceAddress.bufferDeviceAddress == vk::True)
   {
     // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation for ray tracing.
     vmaAllocatorCreateInfo.flags |= VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;

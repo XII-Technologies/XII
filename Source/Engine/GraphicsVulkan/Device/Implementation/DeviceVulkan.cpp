@@ -352,8 +352,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         if (m_DebugMode != DebugMode::Utils)
         {
-          // On Android, VK_EXT_debug_utils extension may not be supported by the loader,
-          // but supported by the layer.
+          // On Android, VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
           xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
