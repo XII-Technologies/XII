@@ -36,30 +36,35 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     m_pCubemap->SetDebugName("Reflection Cubemap");
   }
 
-  auto pCommandList = pDevice->GetCommandQueue()->BeginCommandList();
+  xiiGALCommandQueue*             pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList> pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  xiiStringBuilder sName;
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)
+  pCommandList->Begin();
   {
-    xiiGALTextureViewCreationDescription viewDesc;
-    viewDesc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
-    viewDesc.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
-    viewDesc.m_uiFirstArrayOrDepthSlice  = i;
-    viewDesc.m_uiArrayOrDepthSlicesCount = 1;
-    viewDesc.m_uiMipLevelCount           = 1;
-    viewDesc.m_uiMostDetailedMip         = 0;
+    xiiStringBuilder sName;
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)
+    {
+      xiiGALTextureViewCreationDescription viewDesc;
+      viewDesc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+      viewDesc.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
+      viewDesc.m_uiFirstArrayOrDepthSlice  = i;
+      viewDesc.m_uiArrayOrDepthSlicesCount = 1;
+      viewDesc.m_uiMipLevelCount           = 1;
+      viewDesc.m_uiMostDetailedMip         = 0;
 
-    m_pCubemapFaceRenderTargets[i] = m_pCubemap->CreateView(viewDesc);
+      m_pCubemapFaceRenderTargets[i] = m_pCubemap->CreateView(viewDesc);
 
-    XII_ASSERT_DEV(m_pCubemapFaceRenderTargets[i] != nullptr, "");
+      XII_ASSERT_DEV(m_pCubemapFaceRenderTargets[i] != nullptr, "");
 
-    sName.SetFormat("Reflection Cubemap View {}", i);
-    m_pCubemapFaceRenderTargets[i]->SetDebugName(sName);
+      sName.SetFormat("Reflection Cubemap View {}", i);
+      m_pCubemapFaceRenderTargets[i]->SetDebugName(sName);
 
-    pCommandList->ClearRenderTargetView(m_pCubemapFaceRenderTargets[i], xiiColor::Black);
+      pCommandList->ClearRenderTargetView(m_pCubemapFaceRenderTargets[i], xiiColor::Black);
+    }
   }
+  pCommandList->End();
 
-  pCommandList->Submit();
+  pCommandQueue->Submit(pCommandList);
 }
 
 xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
