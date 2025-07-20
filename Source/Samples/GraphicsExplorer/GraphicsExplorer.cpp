@@ -156,27 +156,24 @@ public:
 
       auto pGraphicsQueue = m_pDevice->GetCommandQueue();
 
-      if (auto pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}))
+      m_pCommandList->Begin();
       {
-        pCommandList->Begin();
-        {
-          xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
+        xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
 
-          auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-          depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
-          depthClearValue.m_DepthStencil.m_uiStencil = 0U;
+        auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+        depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
+        depthClearValue.m_DepthStencil.m_uiStencil = 0U;
 
-          float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-          auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-          colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+        float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+        auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+        colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
-          pCommandList->BeginRenderPass(beginRenderPass);
-          pCommandList->EndRenderPass();
-        }
-        pCommandList->End();
-
-        pGraphicsQueue->Submit(pCommandList);
+        m_pCommandList->BeginRenderPass(beginRenderPass);
+        m_pCommandList->EndRenderPass();
       }
+      m_pCommandList->End();
+
+      pGraphicsQueue->Submit(m_pCommandList);
 
       m_pSwapChain->Present();
 
@@ -374,6 +371,8 @@ public:
 
     {
       m_pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+
+      XII_ASSERT_DEV(m_pCommandList != nullptr, "Failed to create command list!");
     }
 
     UpdateSwapChain();
