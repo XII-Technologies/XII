@@ -264,8 +264,8 @@ void xiiGALCommandList::Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommand
 
   XII_ASSERT_DEV(bIsSecondary, "Submit(): provided list must be flagged Secondary (got Flags={0}).", description.m_Flags.GetValue());
   XII_ASSERT_DEV(!bIsPrimary, "Submit(): cannot inject a secondary into another secondary; primary required.");
-  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary must be Recording (current state={0}).", static_cast<xiiUInt8>(m_RecordingState));
-  XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == RecordingState::Ended, "Submit(): secondary must be Ended before submission (current state={0}).", static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState()));
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary command list must be Recording (current state={0}).", static_cast<xiiUInt8>(m_RecordingState));
+  XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Ended, "Submit(): secondary command list must have been Ended before submission (current state={0}).", static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState()));
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;

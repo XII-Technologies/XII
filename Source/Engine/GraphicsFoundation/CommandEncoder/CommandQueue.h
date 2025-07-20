@@ -33,9 +33,6 @@ public:
 
   /// \brief Submits a recorded command list to the GPU queue for execution.
   ///
-  /// This method finalizes and queues a command list for execution on the underlying GPU.
-  /// If the command list is still in recording state, it will be implicitly ended before submission.
-  ///
   /// \note Command list must be compatible with the queue's flag configuration.
   /// Invalid or misconfigured lists may trigger assertions in development builds.
   ///

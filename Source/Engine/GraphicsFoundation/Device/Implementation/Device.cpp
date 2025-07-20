@@ -171,11 +171,7 @@ xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALComm
   VerifyMultithreadedAccess();
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  const bool bSecondary       = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
-  const bool bMultiSubmit     = description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit);
-
-  // Validate Secondary usage
-  if (bSecondary)
+  if (description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
   {
     if (description.m_pRenderPass)
     {
@@ -193,7 +189,6 @@ xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALComm
     XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Primary command lists should not specify a non-zero subpass index.");
   }
 
-  // Validate queue compatibility
   XII_ASSERT_DEV(description.m_QueueFlags != xiiGALCommandQueueFlags::None, "Command list must declare at least one queue capability (Graphics, Compute, Transfer, etc.).");
 #endif
 
