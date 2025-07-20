@@ -384,6 +384,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALPrimitiveTopology, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 const char* xiiGALPrimitiveTopology::Names[ENUM_COUNT] = {
+  "Undefined",
   "TriangleList",
   "TriangleStrip",
   "PointList",

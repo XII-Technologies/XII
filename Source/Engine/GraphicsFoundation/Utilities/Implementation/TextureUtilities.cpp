@@ -193,7 +193,7 @@ public:
     m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::UAVFormat; \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::ShadingRate]          = xiiGALResourceFormat::Unknown;   \
   }
-    static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type above, if necessary");
+    static_assert(xiiGALTextureViewType::ENUM_COUNT == 7U, "Please handle the new view type above, if necessary");
 
     // clang-format off
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::Unknown,                  Unknown, Unknown, Unknown, Unknown);
@@ -352,7 +352,7 @@ public:
               XII_REPORT_FAILURE("Unexpected texture view type");
               return xiiGALResourceFormat::Unknown;
           }
-          static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type in the switch above, if necessary.");
+          static_assert(xiiGALTextureViewType::ENUM_COUNT == 7U, "Please handle the new view type in the switch above, if necessary.");
         }
         [[fallthrough]];
       }

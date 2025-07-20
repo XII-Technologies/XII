@@ -372,6 +372,10 @@ public:
       xiiGALDevice::SetDefaultDevice(m_pDevice);
     }
 
+    {
+      m_pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    }
+
     UpdateSwapChain();
 
     CreateRenderPass();
@@ -394,6 +398,7 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+    m_pCommandList.Clear();
     m_FramebufferCache.Clear();
     m_pRenderPass.Clear();
     m_pDepthStencilTexture.Clear();
@@ -568,6 +573,7 @@ private:
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
   xiiSharedPtr<xiiGALTexture>   m_pDepthStencilTexture;
 
+  xiiSharedPtr<xiiGALCommandList>                     m_pCommandList;
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
 };
