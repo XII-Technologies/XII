@@ -238,8 +238,6 @@ public:
   [[nodiscard]] xiiMutex& GetMutex() const;
 
   /// \brief Sets a default graphics device.
-  ///
-  /// \remarks This does not increase the reference count on the device.
   static void SetDefaultDevice(xiiSharedPtr<xiiGALDevice> pDefaultDevice);
 
   /// \brief Retrieves the default device. This will be nullptr if none is set.
