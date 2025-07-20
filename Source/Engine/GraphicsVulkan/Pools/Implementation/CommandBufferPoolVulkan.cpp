@@ -22,11 +22,11 @@ void xiiGALCommandBufferPoolVulkan::ThreadPool::Push(vk::CommandBuffer vkCommand
   }
 }
 
-void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue)
+void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(xiiGALCommandQueueVulkan* pCommandQueueVulkan, vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue)
 {
   XII_LOCK(m_Mutex);
 
-  m_InFlightCommandBuffers.PushBack({vkCommandBuffer, bIsSecondary, uiFenceValue});
+  m_InFlightCommandBuffers.PushBack({pCommandQueueVulkan, vkCommandBuffer, bIsSecondary, uiFenceValue});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
   return {&threadPool, vkCommandBuffer, true};
 }
 
-void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue)
+void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(xiiGALCommandQueueVulkan* pCommandQueueVulkan, AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue)
 {
   if (commandBuffer.m_pOwner == nullptr || commandBuffer.m_vkCommandBuffer == VK_NULL_HANDLE)
     return;
@@ -202,15 +202,11 @@ void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& comma
 
   // Track it until fence signals.
   // Defer recycling until that fence-value is reached:
-  pOwner->PushInFlight(vkCommandBuffer, bIsSecondary, uiFenceValue);
+  pOwner->PushInFlight(pCommandQueueVulkan, vkCommandBuffer, bIsSecondary, uiFenceValue);
 }
 
 void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
 {
-  vk::Device                vkLogicalDevice       = m_pDeviceVulkan->GetVulkanLogicalDevice();
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan   = static_cast<xiiGALCommandQueueVulkan*>(m_pDeviceVulkan->GetCommandQueue(m_QueueFlags));
-  xiiUInt64                 uiCompletedFenceValue = pCommandQueueVulkan->GetCompletedFenceValue();
-
   XII_LOCK(m_PoolMutex);
 
   for (auto& it : m_CommandBufferPoolsPerThread)
@@ -222,6 +218,7 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
     for (xiiUInt32 i = 0; i < threadPool.m_InFlightCommandBuffers.GetCount();)
     {
       InFlightCommandBuffer& inFlightCommandBuffer = threadPool.m_InFlightCommandBuffers[i];
+      const xiiUInt64        uiCompletedFenceValue = inFlightCommandBuffer.m_pCommandQueueVulkan->GetCompletedFenceValue();
 
       if (inFlightCommandBuffer.m_uiFenceValue <= uiCompletedFenceValue)
       {

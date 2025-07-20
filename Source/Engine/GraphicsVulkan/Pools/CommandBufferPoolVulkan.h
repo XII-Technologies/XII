@@ -16,9 +16,10 @@ class XII_GRAPHICSVULKAN_DLL xiiGALCommandBufferPoolVulkan
 public:
   struct InFlightCommandBuffer
   {
-    vk::CommandBuffer m_vkCommandBuffer;
-    bool              m_bIsSecondary;
-    xiiUInt64         m_uiFenceValue;
+    xiiGALCommandQueueVulkan* m_pCommandQueueVulkan;
+    vk::CommandBuffer         m_vkCommandBuffer;
+    bool                      m_bIsSecondary;
+    xiiUInt64                 m_uiFenceValue;
   };
 
   struct ThreadPool
@@ -62,7 +63,7 @@ public:
     void Push(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary);
 
     /// \brief Defer recycle: GPU is still using it.
-    void PushInFlight(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue);
+    void PushInFlight(xiiGALCommandQueueVulkan* pCommandQueueVulkan, vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue);
   };
 
   /// \brief RAII handle for a VkCommandBuffer allocated from this pool.
@@ -131,7 +132,7 @@ public:
   AutoCommandBuffer AllocateSecondaryCommandBuffer();
 
   /// Submit wrapper: after vkQueueSubmit(..., fence), call this to defer recycling.
-  void RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue);
+  void RecycleAfterSubmit(xiiGALCommandQueueVulkan* pCommandQueueVulkan, AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue);
 
   /// \brief Poll fences and reclaim any completed buffers.
   /// Call at the start of each frame or from a dedicated thread.

@@ -204,6 +204,12 @@ private:
   void PrepareForRayTracing();
 
 private:
+  struct CommandQueueRecord
+  {
+    xiiGALCommandQueueVulkan* m_pCommandQueue;
+    xiiUInt64                 m_uiFenceValue;
+  };
+
   struct PipelineBarrier
   {
     vk::PipelineStageFlags m_vkMemorySourceStages      = {};
@@ -311,6 +317,7 @@ private:
   CommandListState                                 m_CommandListState;
   xiiBitflags<CommandListFlags>                    m_CommandListFlags;
   PipelineBarrier                                  m_PipelineBarrier;
+  CommandQueueRecord                               m_SubmittedCommandQueueRecord;
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 

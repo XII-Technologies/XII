@@ -26,7 +26,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
 {
   xiiGALDeviceVulkan*                         pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiSharedPtr<xiiGALCommandListVulkan>       pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
-  const xiiGALCommandListCreationDescription& description        = pCommandList->GetDescription();
 
   XII_LOCK(m_QueueMutex);
 
@@ -114,14 +113,8 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     XII_IGNORE_UNUSED(syncPoint);
   }
 
-  if (!description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary) && !description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit))
-  {
-    xiiGALCommandBufferPoolVulkan* pCommandBufferPoolVulkan = pDeviceVulkan->GetCommandBufferPool(description.m_QueueFlags);
-
-    pCommandBufferPoolVulkan->RecycleAfterSubmit(std::move(pCommandListVulkan->m_CommandBufferAllocation), m_LastSyncPoint.m_uiValue);
-
-    pCommandListVulkan->Reset();
-  }
+  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;
+  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_uiFenceValue  = uiFenceValue;
 
   return uiFenceValue;
 }
