@@ -2093,7 +2093,7 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer
       else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
       {
         VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(mappedBuffer->m_DynamicAllocation.m_VulkanAllocation, mappedBuffer->m_DynamicAllocation.m_uiOffset, pBuffer->GetSize()));
-        pVulkanMemoryAllocator->UnmapMemory(pBufferVulkan->GetAllocationDescription());
+        pVulkanMemoryAllocator->UnmapMemory(mappedBuffer->m_DynamicAllocation.m_VulkanAllocation);
 
         UpdateBufferRegion(pBufferVulkan, mappedBuffer->m_DynamicAllocation.m_vkBuffer, mappedBuffer->m_DynamicAllocation.m_uiOffset, 0U, pBufferVulkan->GetSize());
       }

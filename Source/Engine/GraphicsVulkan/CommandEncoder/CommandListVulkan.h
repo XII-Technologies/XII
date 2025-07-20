@@ -241,7 +241,7 @@ private:
       {
         xiiHashStreamWriter32 writer;
 
-        writer << key.m_pTextureVulkan;
+        writer << key.m_pTextureVulkan.Borrow();
         writer << key.m_uiMipLevel;
         writer << key.m_uiArraySlice;
 
@@ -277,7 +277,7 @@ private:
       {
         xiiHashStreamWriter32 writer;
 
-        writer << key.m_pBufferVulkan;
+        writer << key.m_pBufferVulkan.Borrow();
         writer << key.m_MapType;
 
         return writer.GetHashValue();
