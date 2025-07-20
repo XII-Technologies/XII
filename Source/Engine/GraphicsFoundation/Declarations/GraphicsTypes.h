@@ -701,11 +701,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALComparisonFunctio
 /// \brief This describes the topology of how vertices are interpreted by the pipeline.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 {
-  using StorageType = xiiUInt8;
+  using StorageType = xiiInt8;
 
   enum Enum : StorageType
   {
-    Undefined = 0U,          ///< Undefined topology.
+    Undefined = -1,          ///< Undefined topology.
     PointList,               ///< Interpret the vertex data as a list of points.
     LineList,                ///< Interpret the vertex data as a list of lines.
     TriangleList,            ///< Interpret the vertex data as a list of triangles.

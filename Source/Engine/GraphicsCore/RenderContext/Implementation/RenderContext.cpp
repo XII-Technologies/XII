@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Containers/Blob.h>
+#include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -12,10 +13,17 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
-xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList) :
-  m_pCommandList(pCommandList)
+xiiRenderContext*                     xiiRenderContext::s_pDefaultInstance = nullptr;
+xiiHybridArray<xiiRenderContext*, 2U> xiiRenderContext::s_Instances;
+
+xiiRenderContext::xiiRenderContext()
 {
-  XII_ASSERT_DEV(m_pCommandList != nullptr, "An invalid command list is given. A render context requires a valid command list reference.");
+  s_Instances.PushBack(this);
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(m_pCommandList != nullptr, "Failed to create command list!");
 
   m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants), "xiiGlobalConstants");
   m_pGlobalConstants       = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
@@ -23,6 +31,8 @@ xiiRenderContext::xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList)
   xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
 
   XII_ASSERT_DEBUG(!m_pGlobalConstants.IsEmpty(), "Invalid global constants buffer.");
+
+  ResetContextState();
 }
 
 xiiRenderContext::~xiiRenderContext()
@@ -31,6 +41,27 @@ xiiRenderContext::~xiiRenderContext()
 
   m_pGlobalConstants.Clear();
   m_pGlobalConstantsBuffer.Clear();
+}
+
+xiiRenderContext* xiiRenderContext::GetDefaultInstance()
+{
+  if (s_pDefaultInstance == nullptr)
+  {
+    s_pDefaultInstance = CreateInstance();
+  }
+
+  XII_ASSERT_DEBUG(s_pDefaultInstance != nullptr, "Default instance should have been created during device creation.");
+  return s_pDefaultInstance;
+}
+
+xiiRenderContext* xiiRenderContext::CreateInstance()
+{
+  return XII_DEFAULT_NEW(xiiRenderContext);
+}
+
+void xiiRenderContext::DestroyInstance(xiiRenderContext* pRenderContext)
+{
+  XII_DEFAULT_DELETE(pRenderContext);
 }
 
 void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoRendering)
@@ -74,6 +105,8 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
     pGlobalConstants->NumMsaaSamples     = uiSampleCount;
   }
 
+  m_pCommandList->Begin();
+
   {
     m_bHasDebugGroup = !sName.IsEmpty();
 
@@ -106,6 +139,13 @@ void xiiRenderContext::EndRendering()
     m_bHasDebugGroup = false;
   }
 
+  m_pCommandList->End();
+
+  xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*        pCommandQueue = pDevice->GetCommandQueue();
+
+  pCommandQueue->Submit(m_pCommandList);
+
   m_bStereoRendering   = false;
   m_RenderContextScope = RenderContextScope::None;
 }
@@ -115,6 +155,8 @@ void xiiRenderContext::BeginCompute(xiiStringView sName)
   XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::None, "Already in a scope.");
 
   m_RenderContextScope = RenderContextScope::Compute;
+
+  m_pCommandList->Begin();
 
   {
     m_bHasDebugGroup = !sName.IsEmpty();
@@ -136,6 +178,13 @@ void xiiRenderContext::EndCompute()
 
     m_bHasDebugGroup = false;
   }
+
+  m_pCommandList->End();
+
+  xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*        pCommandQueue = pDevice->GetCommandQueue();
+
+  pCommandQueue->Submit(m_pCommandList);
 
   m_RenderContextScope = RenderContextScope::None;
 }
@@ -1236,6 +1285,17 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexS
   return XII_SUCCESS;
 }
 
+void xiiRenderContext::SetGlobalAndWorldTimeConstants()
+{
+  xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
+
+  // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
+  const double fWrapAround     = 1000.0;
+  pGlobalConstants->DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
+  pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), fWrapAround);
+  pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
+}
+
 // static
 xiiGALSamplerCreationDescription xiiRenderContext::GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags)
 {
@@ -1256,4 +1316,16 @@ xiiGALSamplerCreationDescription xiiRenderContext::GetDefaultSamplerDescription(
   samplerDescription.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
 
   return samplerDescription;
+}
+
+// static
+void xiiRenderContext::GALStaticDeviceEventHandler(const xiiGALDeviceEvent& e)
+{
+  if (e.m_Type == xiiGALDeviceEventType::BeforeBeginFrame)
+  {
+    if (s_pDefaultInstance)
+    {
+      s_pDefaultInstance->ResetContextState();
+    }
+  }
 }
