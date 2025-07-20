@@ -1289,7 +1289,7 @@ xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALComman
 {
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueue.Borrow();
-  
+
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 

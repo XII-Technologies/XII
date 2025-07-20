@@ -20,9 +20,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListFlags
 
   enum Enum : StorageType
   {
-    None            = 0U,         ///< No flags set. Creates a primary command list with single-use behavior.
-    Secondary       = XII_BIT(0), ///< Command list is secondary and must be executed through a primary list. Limited commands allowed.
-    MultiSubmit     = XII_BIT(1), ///< Command list may be submitted multiple times without re-recording.
+    None        = 0U,         ///< No flags set. Creates a primary command list with single-use behavior.
+    Secondary   = XII_BIT(0), ///< Command list is secondary and must be executed through a primary list. Limited commands allowed.
+    MultiSubmit = XII_BIT(1), ///< Command list may be submitted multiple times without re-recording.
 
     Default = None
   };
@@ -731,7 +731,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
   ///
   /// The render pass defines the sequence of rendering operations and attachment formats.
   /// This must match the layout expected by the framebuffer. Required for command lists that record graphics operations within a render pass scope.
-  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
+  xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
 
   /// \brief Specifies the framebuffer associated with the selected render pass.
   ///
@@ -744,7 +744,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public 
   /// Used to determine which subpass to begin encoding commands in.
   /// If multiple subpasses are defined in the render pass, this value selects the active one during recording.
   /// Must be within the bounds defined by the render pass configuration.
-  xiiUInt32                       m_uiSubPassIndex = 0U;
+  xiiUInt32 m_uiSubPassIndex = 0U;
 };
 
 /// \brief Interface that defines methods to manipulate a command list object.
@@ -1231,9 +1231,9 @@ public:
   /// \brief Enum class representing the state of a command list recording.
   enum class RecordingState : xiiUInt8
   {
-    Reset=0U,     ///< The command list has been reset and is ready to be recorded again.
-    Recording, ///< The command list is currently being recorded.
-    Ended,     ///< The recording of the command list has ended.
+    Reset = 0U, ///< The command list has been reset and is ready to be recorded again.
+    Recording,  ///< The command list is currently being recorded.
+    Ended,      ///< The recording of the command list has ended.
   };
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };

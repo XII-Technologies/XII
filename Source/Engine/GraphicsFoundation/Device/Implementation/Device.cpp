@@ -175,7 +175,7 @@ xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALComm
   {
     if (description.m_pRenderPass)
     {
-      XII_ASSERT_DEV( description.m_uiSubPassIndex < description.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index is out of bounds for the provided render pass.");
+      XII_ASSERT_DEV(description.m_uiSubPassIndex < description.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index is out of bounds for the provided render pass.");
     }
     else
     {

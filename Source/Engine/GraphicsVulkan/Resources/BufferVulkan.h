@@ -18,7 +18,7 @@ public:
   virtual void                         InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
-  [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanBuffer() const { return m_vkBuffer; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer          GetVulkanBuffer() const { return m_vkBuffer; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanAllocation GetAllocationDescription() const { return m_BufferMemoryAllocation; }
 
   [[nodiscard]] vk::DeviceAddress GetVulkanBufferDeviceAddress() const;
@@ -42,6 +42,6 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  vk::Buffer    m_vkBuffer               = VK_NULL_HANDLE;
+  vk::Buffer          m_vkBuffer               = VK_NULL_HANDLE;
   xiiVulkanAllocation m_BufferMemoryAllocation = {};
 };

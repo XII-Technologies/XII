@@ -1,8 +1,8 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/FenceVulkan.h>
 #include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Resources/FenceVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;

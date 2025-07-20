@@ -17,7 +17,7 @@ namespace vk
   class Pipeline;
   class Buffer;
   class Image;
-}
+} // namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {

@@ -24,8 +24,8 @@ xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  xiiGALDeviceVulkan*                         pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiSharedPtr<xiiGALCommandListVulkan>       pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
+  xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
 
   XII_LOCK(m_QueueMutex);
 
