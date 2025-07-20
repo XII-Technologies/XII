@@ -7,12 +7,20 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -148,16 +156,19 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_pTransferCommandQueue.Clear();
+      m_pTransferCommandBufferPool.Clear();
       m_pTransferCommandQueueQueryPool.Clear();
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_pComputeCommandQueue.Clear();
+      m_pComputeCommandBufferPool.Clear();
       m_pComputeCommandQueueQueryPool.Clear();
     }
 
     m_pGraphicsCommandQueue.Clear();
+    m_pGraphicsCommandBufferPool.Clear();
     m_pGraphicsCommandQueueQueryPool.Clear();
   }
 
@@ -168,31 +179,28 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
     m_pSemaphorePool.Clear();
   }
 
-  if (m_vkVmaAllocator != VK_NULL_HANDLE)
-  {
-    vmaDestroyAllocator(m_vkVmaAllocator);
-  }
+  m_pVulkanMemoryAllocator.Clear();
 
   if (m_LogicalDevice != VK_NULL_HANDLE)
   {
     m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
   }
 
-  if (m_DebugMode != DebugMode::Disabled && m_Instance != VK_NULL_HANDLE)
-  {
-    if (m_DebugMessenger != VK_NULL_HANDLE)
-    {
-      m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
-    }
-
-    if (m_DebugCallback != VK_NULL_HANDLE)
-    {
-      m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
-    }
-  }
-
   if (m_Instance != VK_NULL_HANDLE)
   {
+    if (m_DebugMode != DebugMode::Disabled)
+    {
+      if (m_DebugMessenger != VK_NULL_HANDLE)
+      {
+        m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
+      }
+
+      if (m_DebugCallback != VK_NULL_HANDLE)
+      {
+        m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
+      }
+    }
+
     m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
   }
 }
@@ -344,8 +352,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         if (m_DebugMode != DebugMode::Utils)
         {
-          // On Android, VK_EXT_debug_utils extension may not be supported by the loader,
-          // but supported by the layer.
+          // On Android, VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
           xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
@@ -392,7 +399,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr)
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
-        m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
+
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceVersion(&m_uiVulkanVersion, m_InstanceDispatchLoader));
       }
       else
       {
@@ -481,9 +489,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
 
-    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
-    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures(m_InstanceDispatchLoader);
-    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties(m_InstanceDispatchLoader);
+    m_PhysicalDevice.getProperties(&m_PhysicalDeviceProperties, m_InstanceDispatchLoader);
+    m_PhysicalDevice.getFeatures(&m_PhysicalDeviceFeatures, m_InstanceDispatchLoader);
+    m_PhysicalDevice.getMemoryProperties(&m_PhysicalDeviceMemoryProperties, m_InstanceDispatchLoader);
 
     xiiUInt32 uiQueueFamilyCount = 0U;
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
@@ -538,11 +546,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
-
-      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
-                  VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
-                  VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
+      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", m_PhysicalDeviceProperties.deviceName,
+                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion),
+                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.driverVersion));
     }
     else
     {
@@ -1149,29 +1155,11 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
-  // Initialize Vulkan Memory Allocator (VMA). We prefer dynamically finding the function pointers.
+  // Initialize Vulkan Memory Allocator (VMA).
   {
-    const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+    m_pVulkanMemoryAllocator = XII_NEW(&m_Allocator, xiiVulkanMemoryAllocator);
 
-    VmaVulkanFunctions vmaVulkanFunctions    = {};
-    vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
-    vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
-
-    VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-    vmaAllocatorCreateInfo.vulkanApiVersion       = deviceProperties.apiVersion;
-    vmaAllocatorCreateInfo.instance               = m_Instance;
-    vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
-    vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
-    vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
-    vmaAllocatorCreateInfo.flags                  = {};
-
-    if (IsLogicalDeviceExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
-    {
-      // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation for ray tracing.
-      vmaAllocatorCreateInfo.flags |= VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-    }
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_pVulkanMemoryAllocator->Initialize(this));
   }
 
   // Create pools.
@@ -1187,8 +1175,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_GraphicsQueueInformation);
+      m_pGraphicsCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, xiiGALCommandQueueFlags::Graphics);
       m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
@@ -1200,8 +1189,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_ComputeQueueInformation);
+      m_pComputeCommandBufferPool                            = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, xiiGALCommandQueueFlags::Compute);
       m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
       m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
@@ -1213,8 +1203,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_TransferQueueInformation);
+      m_pTransferCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, xiiGALCommandQueueFlags::Transfer);
       m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
       m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
@@ -1232,11 +1223,11 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
-  if (vmaAllocation != VK_NULL_HANDLE)
+  if (allocation != VK_NULL_HANDLE)
   {
-    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vmaAllocation);
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, allocation);
   }
   else
   {
@@ -1268,13 +1259,25 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
   }
 }
 
-void xiiGALDeviceVulkan::ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
+void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const
 {
-  m_pDeferredDeletionQueue->EnqueueResource(pCommandBufferPool, vkCommandBuffer);
+  if (allocation != VK_NULL_HANDLE)
+  {
+    m_pVulkanMemoryAllocator->SetAllocationUserData(allocation, szDebugName);
+  }
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform()
 {
+  if (m_pTransferCommandBufferPool)
+  {
+    m_pTransferCommandBufferPool->ReclaimCompleted();
+  }
+  if (m_pComputeCommandBufferPool)
+  {
+    m_pComputeCommandBufferPool->ReclaimCompleted();
+  }
+  m_pGraphicsCommandBufferPool->ReclaimCompleted();
 }
 
 void xiiGALDeviceVulkan::EndFramePlatform()
@@ -1282,18 +1285,18 @@ void xiiGALDeviceVulkan::EndFramePlatform()
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics))
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueue.Borrow();
 
-  if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
-    return m_pComputeCommandQueue.Borrow();
-
-  if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
-  return GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  return m_pGraphicsCommandQueue.Borrow();
 }
 
 void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
@@ -1314,6 +1317,19 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceVulkan::CreateSwapChainPla
   }
 
   return pSwapChainVulkan;
+}
+
+xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceVulkan::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALCommandListVulkan> pCommandListVulkan = XII_NEW(&m_Allocator, xiiGALCommandListVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+
+  if (pCommandListVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pCommandListVulkan.m_pAllocator, pCommandListVulkan.m_pInstance);
+    return nullptr;
+  }
+
+  return pCommandListVulkan;
 }
 
 xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -1552,16 +1568,17 @@ xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceVulkan::CreateTile
 
 void xiiGALDeviceVulkan::WaitIdlePlatform()
 {
-  if (xiiGALCommandQueueVulkan* pGraphicsQueue = m_pGraphicsCommandQueue.Borrow())
-    pGraphicsQueue->WaitForIdle();
+  if (m_pTransferCommandQueue)
+  {
+    m_pTransferCommandQueue->WaitForIdle();
+  }
+  if (m_pComputeCommandQueue)
+  {
+    m_pComputeCommandQueue->WaitForIdle();
+  }
+  m_pGraphicsCommandQueue->WaitForIdle();
 
-  if (xiiGALCommandQueueVulkan* pComputeQueue = m_pComputeCommandQueue.Borrow())
-    pComputeQueue->WaitForIdle();
-
-  if (xiiGALCommandQueueVulkan* pTransferQueue = m_pTransferCommandQueue.Borrow())
-    pTransferQueue->WaitForIdle();
-
-  m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
+  VK_ASSERT_DEV(m_LogicalDevice.waitIdle(m_InstanceDispatchLoader));
 
   m_pDeferredDeletionQueue->ReleaseResources(true);
 }
@@ -2053,7 +2070,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       const vk::QueueFamilyProperties& sourceQueue      = m_PhysicalDeviceQueueFamilyProperties[uiQueueIndex];
       xiiGALCommandQueueProperties&    destinationQueue = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
 
-      destinationQueue.m_Type                      = xiiVulkanTypeConversions::GetGALCommandQueueType(sourceQueue.queueFlags);
+      destinationQueue.m_Flags                     = xiiVulkanTypeConversions::GetGALCommandQueueFlags(sourceQueue.queueFlags);
       destinationQueue.m_uiMaxDeviceContexts       = sourceQueue.queueCount;
       destinationQueue.m_TextureCopyGranularity[0] = sourceQueue.minImageTransferGranularity.width;
       destinationQueue.m_TextureCopyGranularity[1] = sourceQueue.minImageTransferGranularity.height;
@@ -2104,7 +2121,8 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   {
     for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties(m_InstanceDispatchLoader);
+      vk::PhysicalDeviceProperties deviceProperties;
+      physicalDevice.getProperties(&deviceProperties, m_InstanceDispatchLoader);
 
       if (IsGraphicsAndComputeQueueSupported(physicalDevice))
       {
@@ -2760,11 +2778,11 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   entry.m_pObject                             = pObject;
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
   XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
-  XII_ASSERT_DEV(vmaAllocation != VK_NULL_HANDLE, "VMA allocation must be valid.");
+  XII_ASSERT_DEV(allocation != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
@@ -2772,20 +2790,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
-  entry.m_VmaAllocation                       = vmaAllocation;
-}
-
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer)
-{
-  XII_ASSERT_DEV(pCommandBufferPool != nullptr, "Command buffer pool must be valid.");
-  XII_ASSERT_DEV(vkCommandBuffer != VK_NULL_HANDLE, "Command buffer must be valid.");
-
-  XII_LOCK(m_DeletionQueueMutex);
-
-  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
-  entry.m_pCommandBufferPool                  = pCommandBufferPool;
-  entry.m_vkCommandBuffer                     = vkCommandBuffer;
+  entry.m_VulkanAllocation                    = allocation;
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
@@ -2838,11 +2843,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release all resources.
     for (auto& entry : m_DeletionQueue)
     {
-      if (entry.m_pCommandBufferPool != nullptr)
-      {
-        DestroyCommandBuffer(entry.m_pCommandBufferPool, std::move(entry.m_vkCommandBuffer));
-      }
-      else if (entry.m_pSemaphorePool != nullptr)
+      if (entry.m_pSemaphorePool != nullptr)
       {
         DestroySemaphore(entry.m_pSemaphorePool, std::move(entry.m_vkSemaphore));
       }
@@ -2854,9 +2855,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       {
         DestroyFence(entry.m_pFencePool, std::move(entry.m_vkFence));
       }
-      else if (entry.m_VmaAllocation != VK_NULL_HANDLE)
+      else if (entry.m_VulkanAllocation != VK_NULL_HANDLE)
       {
-        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VmaAllocation);
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VulkanAllocation);
       }
       else
       {
@@ -2872,15 +2873,11 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics)->GetCompletedFenceValue();
+      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
 
       if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {
-        if (it->m_pCommandBufferPool != nullptr)
-        {
-          DestroyCommandBuffer(it->m_pCommandBufferPool, std::move(it->m_vkCommandBuffer));
-        }
-        else if (it->m_pSemaphorePool != nullptr)
+        if (it->m_pSemaphorePool != nullptr)
         {
           DestroySemaphore(it->m_pSemaphorePool, std::move(it->m_vkSemaphore));
         }
@@ -2892,9 +2889,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         {
           DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
         }
-        else if (it->m_VmaAllocation != VK_NULL_HANDLE)
+        else if (it->m_VulkanAllocation != VK_NULL_HANDLE)
         {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VmaAllocation);
+          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VulkanAllocation);
         }
         else
         {
@@ -3012,28 +3009,23 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
   }
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
   switch (vkObjectType)
   {
     case vk::ObjectType::eBuffer:
     {
-      vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Buffer&>(pObject), vmaAllocation);
+      m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyBuffer(reinterpret_cast<vk::Buffer&>(pObject), allocation);
     }
     break;
     case vk::ObjectType::eImage:
     {
-      vmaDestroyImage(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Image&>(pObject), vmaAllocation);
+      m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyImage(reinterpret_cast<vk::Image&>(pObject), allocation);
     }
     break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-}
-
-void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyCommandBuffer(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
-{
-  pCommandBufferPool->ReclaimCommandBuffer(std::move(vkCommandBuffer));
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore)

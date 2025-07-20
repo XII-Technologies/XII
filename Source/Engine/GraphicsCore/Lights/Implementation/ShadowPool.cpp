@@ -969,12 +969,12 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   if (s_pData->m_pShadowAtlasTexture == nullptr || s_pData->m_pShadowDataBuffer == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>      pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*             pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList> pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
+  pCommandList->Begin();
   {
-    auto pCommandList = pGraphicsQueue->BeginCommandList();
-
     pCommandList->BeginDebugGroup("Shadow Atlas");
     {
       pCommandList->ClearDepthStencilView(s_pData->m_pShadowAtlasTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
@@ -990,8 +990,10 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
       }
     }
     pCommandList->EndDebugGroup();
-    pCommandList->Submit();
   }
+  pCommandList->End();
+
+  pCommandQueue->Submit(pCommandList);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ShadowPool);

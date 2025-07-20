@@ -1,6 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 #include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 xiiGALCpuWaitOnlyFenceVulkan::xiiGALCpuWaitOnlyFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan) :
@@ -69,7 +70,7 @@ void xiiGALCpuWaitOnlyFenceVulkan::Reset(xiiUInt64 uiValue)
 {
   XII_LOCK(m_SyncPointGuard);
 
-  XII_ASSERT_DEV(uiValue >= m_LastCompletedFenceValue, "Resetting cpu wait only fence to the value ({}) that is smaller than the last completed value ({}).", uiValue, m_LastCompletedFenceValue);
+  XII_ASSERT_DEV(uiValue >= m_LastCompletedFenceValue, "Resetting CPU wait-only fence to the value ({}) that is smaller than the last completed value ({}).", uiValue, m_LastCompletedFenceValue);
 
   UpdateLastCompletedFenceValue(uiValue);
 }

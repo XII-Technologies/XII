@@ -3,9 +3,7 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
-#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
@@ -14,6 +12,12 @@
 #include <Foundation/Utilities/Stats.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandListFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::Secondary),
+  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::MultiSubmit),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSetVertexBufferFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::Reset),
@@ -97,10 +101,9 @@ namespace
   }
 } // namespace
 
-xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_pCommandQueue(pCommandQueue), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
+xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
 {
-  XII_ASSERT_DEV(m_pCommandQueue != nullptr, "Invalid command queue provided.");
 }
 
 xiiGALCommandList::~xiiGALCommandList() = default;
@@ -221,8 +224,7 @@ void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationD
 
 void xiiGALCommandList::Begin()
 {
-  XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
-  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and is no longer available for recording commands.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Reset, "The command list has not been reset.");
 
   BeginPlatform();
 }
@@ -238,7 +240,6 @@ void xiiGALCommandList::End()
 void xiiGALCommandList::Reset()
 {
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and cannot be resetted until after queue execution.");
 
   if (m_RecordingState == RecordingState::Recording)
   {
@@ -250,22 +251,24 @@ void xiiGALCommandList::Reset()
   }
 }
 
-xiiUInt64 xiiGALCommandList::Submit()
+void xiiGALCommandList::Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList)
 {
-  XII_ASSERT_DEV(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Reset, "Command list is already reset.");
-  XII_ASSERT_DEV(m_RecordingState != xiiGALCommandList::RecordingState::Submitted, "Command list is already submitted!");
+  XII_VERIFY_COMMAND_LIST(pSecondaryCommandList != nullptr, "xiiGALCommandList::Submit(): secondary list pointer is null.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiGALCommandListCreationDescription& description  = pSecondaryCommandList->GetDescription();
+  const bool                                  bIsSecondary = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
+  const bool                                  bIsPrimary   = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
+
+  XII_ASSERT_DEV(bIsSecondary, "Submit(): provided list must be flagged Secondary (got Flags={0}).", description.m_Flags.GetValue());
+  XII_ASSERT_DEV(!bIsPrimary, "Submit(): cannot inject a secondary into another secondary; primary required.");
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary command list must be Recording (current state={0}).", static_cast<xiiUInt8>(m_RecordingState));
+  XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Ended, "Submit(): secondary command list must have been Ended before submission (current state={0}).", static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState()));
+#endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;
 
-  if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
-  {
-    End();
-  }
-
-  XII_ASSERT_DEV(m_RecordingState == xiiGALCommandList::RecordingState::Ended, "Command list must have been ended if it was in recording state.");
-
-  return SubmitPlatform();
+  return SubmitPlatform(pSecondaryCommandList);
 }
 
 void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
@@ -293,7 +296,7 @@ void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipe
 
 void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetStencilRef arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetStencilRef arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
 
   if (m_uiStencilRef != uiStencilRef)
   {
@@ -307,7 +310,7 @@ void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
 
 void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetBlendFactor arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetBlendFactor arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
 
   if (blendFactor != m_BlendFactors)
   {
@@ -321,7 +324,7 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
 
 void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewports)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
 
   XII_ASSERT_DEV(pViewports.GetCount() < XII_GAL_MAX_VIEWPORT_COUNT, "The number of viewports ({0}) exceeds the maximum viewport count ({1}).", pViewports.GetCount(), XII_GAL_MAX_VIEWPORT_COUNT);
 
@@ -351,7 +354,7 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewport
 
 void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
 
   XII_ASSERT_DEV(pRects.GetCount() < XII_GAL_MAX_VIEWPORT_COUNT, "The number of scissor rects ({0}) exceeds the maximum scissor rect count ({1}).", pRects.GetCount(), XII_GAL_MAX_VIEWPORT_COUNT);
 
@@ -372,7 +375,7 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
 
 void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetIndexBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetIndexBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pRenderPass == nullptr || transitionMode != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
 
   if (m_pIndexBuffer == pIndexBuffer && m_uiIndexDataOffset == uiByteOffset)
@@ -397,7 +400,7 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
 
 void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetVertexBuffers arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetVertexBuffers arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(uiStartSlot < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The start slot ({0}) is out of range [0, {1}].", uiStartSlot, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
   XII_ASSERT_DEV((uiStartSlot + pVertexBuffers.GetCount()) < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The range of vertex buffer slots being set [{0}, {1}] is out of allowed range [0, {2}].", uiStartSlot, uiStartSlot + pVertexBuffers.GetCount() - 1, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
   XII_ASSERT_DEV(m_pRenderPass == nullptr || transitionMode != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
@@ -439,7 +442,7 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
 
 void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetConstantBuffer requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -465,7 +468,7 @@ void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescriptio
 
 void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetShaderResourceBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -491,7 +494,7 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
 
 void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetShaderResourceTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -517,7 +520,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 
 void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetUnorderedAccessBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -543,7 +546,7 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
 
 void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetUnorderedAccessTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -569,7 +572,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
 
 void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "SetSampler requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -594,7 +597,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 
 void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetConstantBuffer requires a pipeline state to be set.");
 
   const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -610,7 +613,7 @@ void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& s
 
 void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBusfferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetShaderResourceBufferView requires a pipeline state to be set.");
 
   const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -625,7 +628,7 @@ void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashe
 
 void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetShaderResourceTextureView requires a pipeline state to be set.");
 
   const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -640,7 +643,7 @@ void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHash
 
 void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBufferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetUnorderedAccessBufferView requires a pipeline state to be set.");
 
   const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -655,7 +658,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHash
 
 void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Compute), "ResolveAndSetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics or xiiGALCommandQueueType::Compute flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetUnorderedAccessTextureView requires a pipeline state to be set.");
 
   const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -670,7 +673,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHas
 
 void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALSampler> pSampler, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pPipelineState != nullptr, "ResolveAndSetSampler requires a pipeline state to be set.");
 
   const auto& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -692,7 +695,7 @@ xiiResult xiiGALCommandList::CommitShaderResources(xiiEnum<xiiGALStateTransition
 
 void xiiGALCommandList::ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearRenderTargetView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ClearRenderTargetView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(pRenderTargetView != nullptr, "ClearRenderTargetView arguments are invalid. The texture view handle has been invalidated.");
 
   const auto& viewDescription = pRenderTargetView->GetDescription();
@@ -706,7 +709,7 @@ void xiiGALCommandList::ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pR
 
 void xiiGALCommandList::ClearDepthStencilView(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearDepthStencilView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ClearDepthStencilView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(pDepthStencilView != nullptr, "ClearDepthStencilView arguments are invalid. The texture view handle has been invalidated.");
 
   const auto& viewDescription = pDepthStencilView->GetDescription();
@@ -721,7 +724,7 @@ void xiiGALCommandList::ClearDepthStencilView(xiiSharedPtr<xiiGALTextureView> pD
 
 void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(beginRenderPass.m_pRenderPass != nullptr, "BeginRenderPass: Render pass handle is invalid.");
   XII_VERIFY_COMMAND_LIST(beginRenderPass.m_pFramebuffer != nullptr, "BeginRenderPass: Framebuffer handle is invalid.");
 
@@ -762,7 +765,7 @@ void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& 
 
 void xiiGALCommandList::NextSubpass()
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
   XII_VERIFY_COMMAND_LIST(m_pFramebuffer != nullptr, "NextSubpass: Framebuffer handle is invalid.");
 
@@ -773,7 +776,7 @@ void xiiGALCommandList::NextSubpass()
 
 void xiiGALCommandList::EndRenderPass()
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass != nullptr, "NextSubpass: Render pass handle is invalid.");
   XII_VERIFY_COMMAND_LIST(m_pFramebuffer != nullptr, "NextSubpass: Framebuffer handle is invalid.");
 
@@ -786,7 +789,7 @@ void xiiGALCommandList::EndRenderPass()
 void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "Draw arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "Draw arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
 
@@ -815,7 +818,7 @@ void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
 void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "DrawIndexed command arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "DrawIndexed command arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawIndexed command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "DrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "DrawIndexed command arguments are invalid. No index buffer is set.");
@@ -846,7 +849,7 @@ void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& descript
 void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(description.m_pCounterBuffer == nullptr || m_pDevice->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer), "DrawIndirect command arguments are invalid. Counter buffer requires the xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer capability.");
 
   // There is no need to check xiiGALDrawCommandCapabilityFlags::DrawIndirect because an indirect buffer can only be created if this capability is supported.
@@ -889,7 +892,7 @@ void xiiGALCommandList::DrawIndirect(const xiiGALDrawIndirectDescription& descri
 void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(description.m_pCounterBuffer == nullptr || m_pDevice->GetGraphicsDeviceAdapterProperties().m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer), "DrawIndexedIndirect command arguments are invalid. Counter buffer requires the xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer capability.");
 
   // There is no need to check xiiGALDrawCommandCapabilityFlags::DrawIndirect because an indirect buffer can only be created if this capability is supported.
@@ -934,7 +937,7 @@ void xiiGALCommandList::DrawIndexedIndirect(const xiiGALDrawIndexedIndirectDescr
 void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMesh command arguments are invalid. Mesh shaders are not supported by this device.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMesh command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMesh command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
@@ -971,7 +974,7 @@ void xiiGALCommandList::DrawMesh(const xiiGALDrawMeshDescription& description)
 void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pDevice->GetFeatures().m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "DrawMeshIndirect command arguments are invalid. Mesh shaders are not supported by this device.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "DrawMeshIndirect command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Mesh, "DrawMeshIndirect command arguments are invalid. Pipeline state {0} is not a mesh pipeline.", m_pPipelineState->GetDebugName());
@@ -1005,7 +1008,7 @@ void xiiGALCommandList::DrawMeshIndirect(const xiiGALDrawMeshIndirectDescription
 void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDraw command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDraw command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDraw command arguments are invalid. No index buffer is set.");
@@ -1041,7 +1044,7 @@ void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "Draw arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "MultiDrawIndexed command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Graphics, "MultiDrawIndexed command arguments are invalid. Pipeline state {0} is not a graphics pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pIndexBuffer != nullptr, "MultiDrawIndexed command arguments are invalid. No index buffer is set.");
@@ -1078,7 +1081,7 @@ void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription
 void xiiGALCommandList::DispatchCompute(const xiiGALDispatchComputeDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute), "Dispatch arguments are invalid. The command list does not have the xiiGALCommandQueueType::Compute flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Compute), "Dispatch arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "Dispatch command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
@@ -1105,7 +1108,7 @@ void xiiGALCommandList::DispatchCompute(const xiiGALDispatchComputeDescription& 
 void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute), "DispatchIndirect arguments are invalid. The command list does not have the xiiGALCommandQueueType::Compute flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Compute), "DispatchIndirect arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "DispatchIndirect command arguments are invalid. No pipeline state is set.");
   XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "DispatchIndirect command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pPipelineState->GetDebugName());
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "DispatchIndirect command arguments are invalid. DispatchIndirect command must be performed outside of render pass.");
@@ -1130,7 +1133,7 @@ void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
   const auto& queryDescription = pQuery->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueType::Transfer : xiiGALCommandQueueType::Graphics), "BeginQuery command arguments are invalid. Invalid command queue of query type.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics), "BeginQuery command arguments are invalid. Invalid command queue of query type.");
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiBeginQuery;
 
@@ -1143,7 +1146,7 @@ void xiiGALCommandList::EndQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 
   const auto& queryDescription = pQuery->GetDescription();
 
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueType::Transfer : xiiGALCommandQueueType::Graphics), "EndQuery command arguments are invalid. Invalid command queue of query type.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics), "EndQuery command arguments are invalid. Invalid command queue of query type.");
 
   EndQueryPlatform(pQuery);
 }
@@ -1278,8 +1281,8 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
           XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
 
-      XII_VERIFY_COMMAND_LIST(VerifyResourceState(barrier.m_OldState, m_Description.m_QueueType, "OldState"), "");
-      XII_VERIFY_COMMAND_LIST(VerifyResourceState(barrier.m_NewState, m_Description.m_QueueType, "NewState"), "");
+      XII_VERIFY_COMMAND_LIST(VerifyResourceState(barrier.m_OldState, m_Description.m_QueueFlags, "OldState"), "");
+      XII_VERIFY_COMMAND_LIST(VerifyResourceState(barrier.m_NewState, m_Description.m_QueueFlags, "NewState"), "");
     }
   }
 
@@ -1337,7 +1340,7 @@ void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt
 {
   const auto& graphicsAdapterProperties = m_pDevice->GetGraphicsDeviceAdapterProperties();
 
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(pBuffer != nullptr, "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "UpdateBuffer command must be used outside of render pass.");
 
@@ -1363,7 +1366,7 @@ void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt
 
 void xiiGALCommandList::CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(pSourceBuffer != nullptr, "CopyBuffer arguments are invalid. The source buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(pDestinationBuffer != nullptr, "CopyBuffer arguments are invalid. The destination buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyBuffer command must be used outside of render pass.");
@@ -1380,7 +1383,7 @@ void xiiGALCommandList::CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xii
 
 void xiiGALCommandList::CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(pSourceBuffer != nullptr, "CopyBufferRegion arguments are invalid. The source buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(pDestinationBuffer != nullptr, "CopyBufferRegion arguments are invalid. The destination buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyBufferRegion command must be used outside of render pass.");
@@ -1478,7 +1481,7 @@ xiiResult xiiGALCommandList::UnmapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xii
 
 void xiiGALCommandList::UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(pTexture != nullptr, "UpdateTexture arguments are invalid. The texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "UpdateTexture command must be used outside of render pass.");
 
@@ -1491,7 +1494,7 @@ void xiiGALCommandList::UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, cons
 
 void xiiGALCommandList::CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "CopyTexture arguments are invalid. The source texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "CopyTexture arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyTexture command must be used outside of render pass.");
@@ -1509,7 +1512,7 @@ void xiiGALCommandList::CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, 
 
 void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer), "The command list does not have the xiiGALCommandQueueFlags::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "CopyTextureRegion arguments are invalid. The source texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "CopyTextureRegion arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "CopyTextureRegion command must be used outside of render pass.");
@@ -1527,7 +1530,7 @@ void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTex
 
 void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(pSourceTexture != nullptr, "ResolveTextureSubResource arguments are invalid. The source texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(pDestinationTexture != nullptr, "ResolveTextureSubResource arguments are invalid. The destination texture handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "ResolveTextureSubResource command must be used outside of render pass.");
@@ -1569,7 +1572,7 @@ void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pS
 
 void xiiGALCommandList::GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureView)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_VERIFY_COMMAND_LIST(pTextureView != nullptr, "GenerateMips arguments are invalid. The texture view handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "GenerateMips command must be used outside of render pass.");
 
@@ -1649,7 +1652,7 @@ void xiiGALCommandList::InvalidateState()
   InvalidateStatePlatform();
 }
 
-bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const
+bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, const char* szParameterName) const
 {
   XII_IGNORE_UNUSED(szParameterName);
 
@@ -1663,10 +1666,10 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
       case xiiGALResourceStateFlags::CopyDestination:
       case xiiGALResourceStateFlags::Common:
       {
-        if (!queueType.IsSet(xiiGALCommandQueueType::Transfer))
+        if (!queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
         {
           bResult = false;
-          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueType.GetValue());
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueFlags.GetValue());
         }
       }
       break;
@@ -1678,10 +1681,10 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
       case xiiGALResourceStateFlags::BuildASWrite:
       case xiiGALResourceStateFlags::RayTracing:
       {
-        if (!queueType.IsSet(xiiGALCommandQueueType::Compute))
+        if (!queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
         {
           bResult = false;
-          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueType.GetValue());
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueFlags.GetValue());
         }
       }
       break;
@@ -1697,10 +1700,10 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
       case xiiGALResourceStateFlags::Present:
       case xiiGALResourceStateFlags::ShadingRate:
       {
-        if (!queueType.IsSet(xiiGALCommandQueueType::Graphics))
+        if (!queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
         {
           bResult = false;
-          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueType.GetValue());
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueFlags.GetValue());
         }
       }
       break;

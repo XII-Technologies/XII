@@ -4,6 +4,12 @@
 
 #include <Foundation/Algorithm/HashingUtils.h>
 
+namespace vk
+{
+  class DescriptorPool;
+  class DescriptorSetLayout;
+} // namespace vk
+
 template <>
 struct xiiHashHelper<vk::DescriptorType>
 {

@@ -124,33 +124,35 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   if (m_RequireUpdate.IsEmpty())
     return;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>      pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*             pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList> pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  if (auto pCommandQueue = pDevice->GetDefaultCommandQueue())
+  pCommandList->Begin();
   {
-    auto pCommandList = pCommandQueue->BeginCommandList();
-
     pCommandList->BeginDebugGroup("Update Instanced Mesh Data");
     {
       for (const auto& componentToUpdate : m_RequireUpdate)
       {
-        xiiInstancedMeshComponent* pComp = nullptr;
-        if (!TryGetComponent(componentToUpdate.m_hComponent, pComp))
+        xiiInstancedMeshComponent* pInstancedMeshComponent = nullptr;
+        if (!TryGetComponent(componentToUpdate.m_hComponent, pInstancedMeshComponent))
           continue;
 
-        if (pComp->m_pExplicitInstanceData)
+        if (pInstancedMeshComponent->m_pExplicitInstanceData)
         {
-          xiiUInt32 uiOffset     = 0;
-          auto      instanceData = pComp->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
-          instanceData.CopyFrom(componentToUpdate.m_InstanceData);
+          xiiUInt32                       uiOffset      = 0;
+          xiiArrayPtr<xiiPerInstanceData> pInstanceData = pInstancedMeshComponent->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
+          pInstanceData.CopyFrom(componentToUpdate.m_InstanceData);
 
-          pComp->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
+          pInstancedMeshComponent->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, pInstanceData.GetCount());
         }
       }
     }
     pCommandList->EndDebugGroup();
-    pCommandList->Submit();
   }
+  pCommandList->End();
+
+  pCommandQueue->Submit(pCommandList);
 
   m_RequireUpdate.Clear();
 }

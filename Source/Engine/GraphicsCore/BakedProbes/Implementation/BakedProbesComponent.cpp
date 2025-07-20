@@ -106,13 +106,14 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
     {
       task->m_bHasNewData = false;
 
-      xiiSharedPtr<xiiGALDevice> pGALDevice       = xiiGALDevice::GetDefaultDevice();
-      xiiGALCommandQueue*        pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
+      xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
+      xiiGALCommandQueue*        pCommandQueue = pDevice->GetCommandQueue();
 
-      if (xiiSharedPtr<xiiGALCommandList> pGALCommandList = pGALCommandQueue->BeginCommandList())
+      if (xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}))
       {
+        pCommandList->Begin();
         {
-          xiiGALScopedDebugGroup group(pGALCommandList, "BakingDebugView");
+          xiiGALScopedDebugGroup group(pCommandList, "BakingDebugView");
 
           xiiBoundingBoxU32 destBox;
           destBox.m_vMin.SetZero();
@@ -122,9 +123,11 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
           sourceData.m_pData    = task->m_PixelData.GetByteArrayPtr();
           sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
-          pGALCommandList->UpdateTexture(pComponent->m_pDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+          pCommandList->UpdateTexture(pComponent->m_pDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
         }
-        pGALCommandList->Submit();
+        pCommandList->End();
+
+        pCommandQueue->Submit(pCommandList);
       }
     }
   }

@@ -10,7 +10,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueCreationDescription : public
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALCommandQueueType> m_QueueType = xiiGALCommandQueueType::Unknown; ///< The command queue type that this command list uses.
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags = xiiGALCommandQueueFlags::None; ///< The command queue flags.
 };
 
 /// \brief Interface that defines methods to manipulate a command queue object.
@@ -31,11 +31,18 @@ public:
   /// \brief This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() = 0;
 
+  /// \brief Submits a recorded command list to the GPU queue for execution.
+  ///
+  /// \note Command list must be compatible with the queue's flag configuration.
+  /// Invalid or misconfigured lists may trigger assertions in development builds.
+  ///
+  /// \param pCommandList - The command list to be submitted. Must not be null. Its recording state must be 'Ended' or 'Recording'.
+  ///
+  /// \return The fence value that can be used to query GPU completion status for this submission.
+  virtual xiiUInt64 Submit(xiiSharedPtr<xiiGALCommandList> pCommandList);
+
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
-
-  /// \brief This begins a command list for recording commands.
-  [[nodiscard]] virtual xiiSharedPtr<xiiGALCommandList> BeginCommandList() = 0;
 
 protected:
   friend class xiiGALDevice;
@@ -43,6 +50,8 @@ protected:
   xiiGALCommandQueue(xiiGALDevice* pDevice, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueue();
+
+  virtual xiiUInt64 SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList) = 0;
 
 protected:
   xiiGALCommandQueueCreationDescription m_Description;

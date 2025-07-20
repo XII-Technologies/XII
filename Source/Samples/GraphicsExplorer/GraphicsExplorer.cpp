@@ -154,9 +154,9 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pGraphicsQueue = m_pDevice->GetDefaultCommandQueue();
+      auto pGraphicsQueue = m_pDevice->GetCommandQueue();
 
-      if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+      m_pCommandList->Begin();
       {
         xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
 
@@ -168,11 +168,12 @@ public:
         auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
         colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
-        pCommandList->BeginRenderPass(beginRenderPass);
-        pCommandList->EndRenderPass();
-
-        pCommandList->Submit();
+        m_pCommandList->BeginRenderPass(beginRenderPass);
+        m_pCommandList->EndRenderPass();
       }
+      m_pCommandList->End();
+
+      pGraphicsQueue->Submit(m_pCommandList);
 
       m_pSwapChain->Present();
 
@@ -368,6 +369,12 @@ public:
       xiiGALDevice::SetDefaultDevice(m_pDevice);
     }
 
+    {
+      m_pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+
+      XII_ASSERT_DEV(m_pCommandList != nullptr, "Failed to create command list!");
+    }
+
     UpdateSwapChain();
 
     CreateRenderPass();
@@ -390,6 +397,7 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+    m_pCommandList.Clear();
     m_FramebufferCache.Clear();
     m_pRenderPass.Clear();
     m_pDepthStencilTexture.Clear();
@@ -564,6 +572,7 @@ private:
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
   xiiSharedPtr<xiiGALTexture>   m_pDepthStencilTexture;
 
+  xiiSharedPtr<xiiGALCommandList>                     m_pCommandList;
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
 };

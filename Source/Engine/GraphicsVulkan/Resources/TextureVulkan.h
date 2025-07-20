@@ -17,11 +17,11 @@ class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
 public:
   [[nodiscard]] XII_ALWAYS_INLINE virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final { return m_SparseTextureProperties; }
 
-  [[nodiscard]] XII_ALWAYS_INLINE vk::Image     GetVulkanImage() const { return m_vkImage; }
-  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetAllocationDescription() const { return m_ImageMemoryAllocation; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Image           GetVulkanImage() const { return m_vkImage; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanAllocation GetAllocationDescription() const { return m_ImageMemoryAllocation; }
 
-  [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer    GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
-  [[nodiscard]] XII_ALWAYS_INLINE VmaAllocation GetStagingBufferAllocationDescription() const { return m_StagingBufferMemoryAllocation; }
+  [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer          GetVulkanStagingBuffer() const { return m_vkStagingBuffer; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanAllocation GetStagingBufferAllocationDescription() const { return m_StagingBufferMemoryAllocation; }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExistingNativeObject != nullptr; }
 
@@ -57,11 +57,11 @@ private:
 
   static void ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
 
-  vk::Image     m_vkImage;
-  VmaAllocation m_ImageMemoryAllocation;
+  vk::Image           m_vkImage;
+  xiiVulkanAllocation m_ImageMemoryAllocation;
 
-  vk::Buffer    m_vkStagingBuffer;
-  VmaAllocation m_StagingBufferMemoryAllocation;
+  vk::Buffer          m_vkStagingBuffer;
+  xiiVulkanAllocation m_StagingBufferMemoryAllocation;
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 };

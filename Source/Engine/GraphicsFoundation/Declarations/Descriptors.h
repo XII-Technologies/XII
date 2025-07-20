@@ -311,9 +311,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALCommandQueueType> m_Type                       = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                           m_uiMaxDeviceContexts        = 0U;                              ///< The maximum number of command queues that may be created for this queue.
-  xiiUInt32                           m_TextureCopyGranularity[3U] = {};                              ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+  xiiBitflags<xiiGALCommandQueueFlags> m_Flags                      = xiiGALCommandQueueFlags::None; ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                            m_uiMaxDeviceContexts        = 0U;                            ///< The maximum number of command queues that may be created for this queue.
+  xiiUInt32                            m_TextureCopyGranularity[3U] = {};                            ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
 /// \brief This describes the graphics device adapter properties.

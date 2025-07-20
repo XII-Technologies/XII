@@ -7,6 +7,18 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+
+namespace vk
+{
+  class CommandBuffer;
+  class RenderPass;
+  class Framebuffer;
+  class Pipeline;
+  class Buffer;
+  class Image;
+} // namespace vk
+
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListVulkan, xiiGALCommandList);
@@ -104,16 +116,18 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListVulkan();
+
+  virtual xiiResult InitPlatform() override final;
 
 protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
 
-  virtual xiiUInt64 SubmitPlatform() override final;
+  virtual void SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList) override final;
 
   virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) override final;
 
@@ -190,6 +204,12 @@ private:
   void PrepareForRayTracing();
 
 private:
+  struct CommandQueueRecord
+  {
+    xiiGALCommandQueueVulkan* m_pCommandQueue;
+    xiiUInt64                 m_uiFenceValue;
+  };
+
   struct PipelineBarrier
   {
     vk::PipelineStageFlags m_vkMemorySourceStages      = {};
@@ -221,7 +241,7 @@ private:
       {
         xiiHashStreamWriter32 writer;
 
-        writer << key.m_pTextureVulkan;
+        writer << key.m_pTextureVulkan.Borrow();
         writer << key.m_uiMipLevel;
         writer << key.m_uiArraySlice;
 
@@ -257,7 +277,7 @@ private:
       {
         xiiHashStreamWriter32 writer;
 
-        writer << key.m_pBufferVulkan;
+        writer << key.m_pBufferVulkan.Borrow();
         writer << key.m_MapType;
 
         return writer.GetHashValue();
@@ -292,12 +312,12 @@ private:
     xiiDynamicArray<xiiSharedPtr<xiiGALSamplerVulkan>>     m_pBoundSamplerStates;
   };
 
-  xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool;
-
-  vk::CommandBuffer             m_vkCommandBuffer;
-  CommandListState              m_CommandListState;
-  xiiBitflags<CommandListFlags> m_CommandListFlags;
-  PipelineBarrier               m_PipelineBarrier;
+  xiiGALCommandBufferPoolVulkan::AutoCommandBuffer m_CommandBufferAllocation;
+  vk::CommandBuffer                                m_vkCommandBuffer;
+  CommandListState                                 m_CommandListState;
+  xiiBitflags<CommandListFlags>                    m_CommandListFlags;
+  PipelineBarrier                                  m_PipelineBarrier;
+  CommandQueueRecord                               m_SubmittedCommandQueueRecord;
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 

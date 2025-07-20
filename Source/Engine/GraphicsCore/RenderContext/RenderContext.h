@@ -129,13 +129,21 @@ class XII_GRAPHICSCORE_DLL xiiRenderContext
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderContext);
 
-public:
-  /// \brief Initializes the render context with a command list.
-  explicit xiiRenderContext(xiiSharedPtr<xiiGALCommandList> pCommandList);
+private:
+  friend class xiiMemoryUtils;
 
-  /// \brief Cleans up stateful bindings.
+  explicit xiiRenderContext();
   ~xiiRenderContext();
 
+  static xiiRenderContext*                     s_pDefaultInstance;
+  static xiiHybridArray<xiiRenderContext*, 2U> s_Instances;
+
+public:
+  static xiiRenderContext* GetDefaultInstance();
+  static xiiRenderContext* CreateInstance();
+  static void              DestroyInstance(xiiRenderContext* pRenderContext);
+
+public:
   /// \brief Begins a graphics render pass with the given setup and viewport.
   ///
   /// \param renderingSetup Defines attachments and render pass config.
@@ -238,9 +246,6 @@ public:
   /// \param bForce Forces binding even if the state hasn't changed.
   xiiResult ApplyContextStates(bool bForce = false);
 
-  /// \brief Resets all context bindings and internal states.
-  void ResetContextState();
-
 public:
   /// \brief Specifies the context scope in which rendering commands can be issued.
   ///
@@ -313,6 +318,9 @@ public:
   /// \param uiPrimitiveCount - The number of primitives to render.
   XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount) { BindMeshBuffer(nullptr, nullptr, nullptr, topology, uiPrimitiveCount); }
 
+  void SetGlobalAndWorldTimeConstants();
+  void SetGlobalAndWorldTimeConstants(xiiTime worldTime);
+
   /// \brief Retrieves a default sampler creation description based on the given flags.
   ///
   /// This utility function returns commonly used sampler settings such as filtering and addressing modes, derived from the specified flags.
@@ -322,6 +330,11 @@ public:
   static xiiGALSamplerCreationDescription GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags);
 
 private:
+  static void GALStaticDeviceEventHandler(const xiiGALDeviceEvent& e);
+
+  /// \brief Resets all context bindings and internal states.
+  void ResetContextState();
+
   void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue);
 
   void BindShaderInternal(const xiiShaderResourceHandle& hShader, xiiBitflags<xiiShaderBindFlags> flags);

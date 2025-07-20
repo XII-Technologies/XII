@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueVulkan, 1, xiiRTTINoAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription, const xiiGALQueueInformationVulkan& queueInformation) :
-  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_QueueInformation(queueInformation), m_vkSupportedStageFlags(pDeviceVulkan->GetVulkanLogicalDeviceSupportedStagesFlags(m_QueueInformation.m_uiQueueFamilyIndex)), m_vkSupportedAccessFlags(pDeviceVulkan->GetVulkanLogicalDeviceSupportedAccessFlags(m_QueueInformation.m_uiQueueFamilyIndex))
+  xiiGALCommandQueue(pDeviceVulkan, creationDescription), m_QueueInformation(queueInformation)
 {
   m_pQueueFence = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCpuWaitOnlyFenceVulkan, pDeviceVulkan);
 }
@@ -22,67 +22,10 @@ xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
   m_CommandBufferPool.Clear();
 }
 
-xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
+xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-
-  // Update last completed fence value to unlock all waiting events.
-  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
-
-  m_QueueInformation.m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-
-  // TODO (VERIFY): For some reason after idling the queue not all fences are signaled.
-  m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());
-  m_pQueueFence->Reset(uiFenceValue);
-
-  return uiFenceValue;
-}
-
-xiiSharedPtr<xiiGALCommandList> xiiGALCommandQueueVulkan::BeginCommandList()
-{
-  xiiGALDeviceVulkan*                               pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALCommandBufferPoolVulkan*                    pCommandBufferPool     = GetCommandBufferPool();
-  xiiGALCommandListCreationDescription              commandListDescription = {.m_QueueType = m_Description.m_QueueType};
-  xiiInternal::NewInstance<xiiGALCommandListVulkan> pCommandListVulkan     = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandListVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(pDeviceVulkan, pDeviceVulkan->GetAllocator()), this, pCommandBufferPool, commandListDescription);
-
-  xiiStringBuilder sb;
-  sb.SetFormat("Command List - Thread {}", static_cast<xiiUInt64>(xiiThreadUtils::GetCurrentThreadID()));
-  pCommandListVulkan->SetDebugName(sb.GetView());
-
-  XII_ASSERT_DEV(pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Reset, "Command list is not reset.");
-
-  pCommandListVulkan->Begin();
-
-  XII_ASSERT_DEV(pCommandListVulkan != nullptr && pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Recording, "The created command list is not begun.");
-
-  return pCommandListVulkan;
-}
-
-xiiGALCommandBufferPoolVulkan* xiiGALCommandQueueVulkan::GetCommandBufferPool()
-{
-  if (!m_CommandBufferPool.Contains(xiiThreadUtils::GetCurrentThreadID()))
-  {
-    xiiGALDeviceVulkan* pDeviceVulkan                         = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-    m_CommandBufferPool[xiiThreadUtils::GetCurrentThreadID()] = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCommandBufferPoolVulkan, pDeviceVulkan, m_QueueInformation, vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-
-    xiiStringBuilder sb;
-    sb.SetFormat("Command Buffer Pool - Thread {}", static_cast<xiiUInt64>(xiiThreadUtils::GetCurrentThreadID()));
-    m_CommandBufferPool[xiiThreadUtils::GetCurrentThreadID()]->SetDebugName(sb.GetView());
-  }
-  return m_CommandBufferPool[xiiThreadUtils::GetCurrentThreadID()].Borrow();
-}
-
-xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pCommandList)
-{
-  xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
-
-  pCommandListVulkan->FlushBarriers();
-
-  if (pCommandListVulkan->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
-  {
-    pCommandListVulkan->End();
-  }
+  xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
 
   XII_LOCK(m_QueueMutex);
 
@@ -142,16 +85,15 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
   vk::TimelineSemaphoreSubmitInfo vkTimelineSemaphoreSubmitInfo = {};
   if (bTimelineSemaphoreInUse)
   {
-    vkSubmitInformation.pNext = &vkTimelineSemaphoreSubmitInfo;
-
     vkTimelineSemaphoreSubmitInfo.pNext                     = nullptr;
     vkTimelineSemaphoreSubmitInfo.waitSemaphoreValueCount   = vkSubmitInformation.waitSemaphoreCount;
     vkTimelineSemaphoreSubmitInfo.pWaitSemaphoreValues      = vkSubmitInformation.waitSemaphoreCount > 0 ? pCommandListVulkan->m_vkWaitSemaphoreValues.GetData() : nullptr;
     vkTimelineSemaphoreSubmitInfo.signalSemaphoreValueCount = vkSubmitInformation.signalSemaphoreCount;
     vkTimelineSemaphoreSubmitInfo.pSignalSemaphoreValues    = vkSubmitInformation.signalSemaphoreCount > 0 ? pCommandListVulkan->m_vkSignalSemaphoreValues.GetData() : nullptr;
+
+    vkSubmitInformation.pNext = &vkTimelineSemaphoreSubmitInfo;
   }
 
-  // Increment the value before submitting the buffer to be overly safe.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
   {
     const auto& syncPoint = m_pQueueFence->CreateSyncPoint(uiFenceValue);
@@ -171,14 +113,25 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitCommandList(xiiGALCommandList* pComman
     XII_IGNORE_UNUSED(syncPoint);
   }
 
-  pCommandListVulkan->ResetPlatform();
+  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;
+  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_uiFenceValue  = uiFenceValue;
 
   return uiFenceValue;
 }
 
-void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName) const
+xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 {
-  XII_IGNORE_UNUSED(sName);
+  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+
+  // Update last completed fence value to unlock all waiting events.
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
+
+  VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());
+  m_pQueueFence->Reset(uiFenceValue);
+
+  return uiFenceValue;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);

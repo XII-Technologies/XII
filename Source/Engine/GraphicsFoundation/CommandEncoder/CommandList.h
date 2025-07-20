@@ -10,6 +10,34 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
+/// \brief Specifies flags for configuring the behavior of a GAL command list.
+///
+/// This enum encapsulates flags used when creating or modifying command list behavior within the Graphics Abstraction Layer (GAL).
+/// These flags determine how a command list can be recorded, submitted, and reused in a rendering pipeline.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None        = 0U,         ///< No flags set. Creates a primary command list with single-use behavior.
+    Secondary   = XII_BIT(0), ///< Command list is secondary and must be executed through a primary list. Limited commands allowed.
+    MultiSubmit = XII_BIT(1), ///< Command list may be submitted multiple times without re-recording.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType Secondary : 1;
+    StorageType MultiSubmit : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandListFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandListFlags);
+
 /// \brief This describes the pipeline state shading rate flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
 {
@@ -676,12 +704,47 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListStatistics
   }
 };
 
-/// \brief This describes the command list creation description.
+/// \brief Describes the parameters for creating a GAL command list.
+///
+/// This structure is used to configure a command list in the Graphics Abstraction Layer (GAL).
+/// It defines which queue capabilities this command list targets and how it behaves in terms of submission and encoding.
+///
+/// The queue flags represent the functional domains this command list is allowed to access (e.g., graphics, compute, copy), which are used to validate command recording.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALCommandQueueType> m_QueueType = xiiGALCommandQueueType::Unknown; ///< The command queue type that this command list uses.
+  /// \brief Specifies the functional capabilities required by this command list.
+  ///
+  /// This bitmask defines which domains the command list can operate in (such as graphics, compute, or copy), and is used to validate that recorded commands are compatible with the submission queue.
+  ///
+  /// For example, command lists with graphics draw calls must declare support for the Graphics flag.
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags = xiiGALCommandQueueFlags::None;
+
+  /// \brief Flags controlling command list submission and recording behavior.
+  ///
+  /// These flags define whether the command list is secondary, supports multiple submissions, or is immediately submitted after encoding.
+  /// Use these flags to optimize command list lifetimes and submission patterns.
+  xiiBitflags<xiiGALCommandListFlags> m_Flags = xiiGALCommandListFlags::None;
+
+  /// \brief Specifies the render pass to be used when recording this command list.
+  ///
+  /// The render pass defines the sequence of rendering operations and attachment formats.
+  /// This must match the layout expected by the framebuffer. Required for command lists that record graphics operations within a render pass scope.
+  xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
+
+  /// \brief Specifies the framebuffer associated with the selected render pass.
+  ///
+  /// The framebuffer provides the actual image attachments used during rendering.
+  /// It must be compatible with the render pass and is required when submitting graphics commands that depend on render targets.
+  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
+
+  /// \brief Indicates the subpass within the render pass that this command list targets.
+  ///
+  /// Used to determine which subpass to begin encoding commands in.
+  /// If multiple subpasses are defined in the render pass, this value selects the active one during recording.
+  /// Must be within the bounds defined by the render pass configuration.
+  xiiUInt32 m_uiSubPassIndex = 0U;
 };
 
 /// \brief Interface that defines methods to manipulate a command list object.
@@ -692,9 +755,6 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
 public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& GetDescription() const { return m_Description; };
-
-  /// \brief This returns the command queue for this object.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueue* GetCommandQueue() const { return m_pCommandQueue; };
 
   /// \brief This returns the active pipeline state handle for this object.
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALPipelineState> GetPipelineState() const { return m_pPipelineState; };
@@ -712,10 +772,23 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALCommandListStatistics& GetCommandListStatistics() const { return m_CommandListStatistics; };
 
 public:
-  /// \brief Submits a command list to the command queue for execution. The command list is reset after the execution on the command queue.
+  /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
   ///
-  /// \return The current internal fence value.
-  xiiUInt64 Submit();
+  /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
+  void Begin();
+
+  /// \brief Ends the command list. This method should be called after all commands are issued.
+  ///
+  /// \remarks This method is called automatically when using xiiGALCommandQueue::Submit execute a command list.
+  void End();
+
+  /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
+  ///
+  /// \remarks This method can be called only if the command list has not yet been submitted for execution.
+  void Reset();
+
+  /// \brief Submits a secondary command list to a primary command list for execution.
+  void Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList);
 
   // State functions.
 
@@ -1156,12 +1229,11 @@ public:
 
 public:
   /// \brief Enum class representing the state of a command list recording.
-  enum class RecordingState
+  enum class RecordingState : xiiUInt8
   {
-    Recording, ///< The command list is currently being recorded.
-    Ended,     ///< The recording of the command list has ended.
-    Reset,     ///< The command list has been reset and is ready to be recorded again.
-    Submitted  ///< The command list has been submitted and is no longer available for recording commands. A new command list has to be requested for recording more commands.
+    Reset = 0U, ///< The command list has been reset and is ready to be recorded again.
+    Recording,  ///< The command list is currently being recorded.
+    Ended,      ///< The recording of the command list has ended.
   };
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
@@ -1176,29 +1248,16 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandList();
 
-  /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
-  ///
-  /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
-  void Begin();
-
-  /// \brief Ends the command list. This method should be called after all commands are issued.
-  ///
-  /// \remarks This method is called automatically when using xiiGALCommandQueue::Submit execute a command list.
-  void End();
-
-  /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
-  ///
-  /// \remarks This method can be called only if the command list has not yet been submitted for execution.
-  void Reset();
+  virtual xiiResult InitPlatform() = 0;
 
   void ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box);
   void ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData);
 
-  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueType> queueType, const char* szParameterName) const;
+  bool VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, const char* szParameterName) const;
   bool VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const;
 
   void VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName);
@@ -1225,7 +1284,7 @@ protected:
   virtual void EndPlatform()   = 0;
   virtual void ResetPlatform() = 0;
 
-  virtual xiiUInt64 SubmitPlatform() = 0;
+  virtual void SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList) = 0;
 
   virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) = 0;
 
@@ -1299,8 +1358,6 @@ protected:
   static constexpr xiiUInt32 s_uiDrawMeshIndirectCommandStride = sizeof(xiiUInt32) * 3; // Vulkan: 8 bytes (task count, first task), D3D12: 12 bytes (x, y, z dimension).
 
   xiiGALCommandListCreationDescription m_Description;
-
-  xiiGALCommandQueue* m_pCommandQueue;
 
   RecordingState m_RecordingState = RecordingState::Reset;
   const bool     m_bNativeMultiDrawSupported;

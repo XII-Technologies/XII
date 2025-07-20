@@ -158,12 +158,41 @@ xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChai
 {
   VerifyMultithreadedAccess();
 
-  XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
-  XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "The swap chain color buffer format is invalid.");
-  XII_GAL_DEVICE_CHECK(!description.m_UsageFlags.IsNoFlagSet(), "The swap chain usage is not set.");
-  XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue > 0.0f, "The swap chain usage is not set.");
+  XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "Swap chain creation failed: Window handle (m_pWindow) is null. A valid window reference is required.");
+  XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "Swap chain creation failed: Color buffer format is 'Unknown'. Specify a valid format for rendering output.");
+  XII_GAL_DEVICE_CHECK(!description.m_UsageFlags.IsNoFlagSet(), "Swap chain creation failed: No usage flags specified. Define at least one usage via m_UsageFlags.");
+  XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue > 0.0f, "Swap chain creation failed: Default depth value must be greater than zero. Check m_fDefaultDepthValue.");
 
   return CreateSwapChainPlatform(description);
+}
+
+xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALCommandListCreationDescription& description)
+{
+  VerifyMultithreadedAccess();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  if (description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    if (description.m_pRenderPass)
+    {
+      XII_ASSERT_DEV(description.m_uiSubPassIndex < description.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index is out of bounds for the provided render pass.");
+    }
+    else
+    {
+      XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Secondary command lists should specify a zero subpass index if no render pass is specified.");
+    }
+  }
+  else
+  {
+    XII_ASSERT_DEV(description.m_pRenderPass == nullptr, "Primary command lists should not specify a render pass.");
+    XII_ASSERT_DEV(description.m_pFramebuffer == nullptr, "Primary command lists should not specify a framebuffer.");
+    XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Primary command lists should not specify a non-zero subpass index.");
+  }
+
+  XII_ASSERT_DEV(description.m_QueueFlags != xiiGALCommandQueueFlags::None, "Command list must declare at least one queue capability (Graphics, Compute, Transfer, etc.).");
+#endif
+
+  return CreateCommandListPlatform(description);
 }
 
 xiiSharedPtr<xiiGALBlendState> xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
@@ -391,7 +420,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the buffer with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the buffer with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
   }
 
   if (bHasInitialData)
@@ -611,7 +640,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
 
   if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the texture with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the texture with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
   }
 
   xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);

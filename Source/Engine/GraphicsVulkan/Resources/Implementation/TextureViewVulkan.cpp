@@ -1,5 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>

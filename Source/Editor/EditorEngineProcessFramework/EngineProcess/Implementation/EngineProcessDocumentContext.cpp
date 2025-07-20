@@ -437,7 +437,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
       // Download image
       {
-        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
+        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
 
         auto pGALCommandList = pGALCommandQueue->BeginCommandList();
 

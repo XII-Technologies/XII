@@ -3,7 +3,12 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -426,17 +431,18 @@ void xiiGALCommandListVulkan::CopyTextureRegion(xiiGALTextureVulkan* pSourceText
 
 void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiGALTextureVulkan* pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const auto&                      textureDescription = pTextureVulkan->GetDescription();
+  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*               pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  const xiiGALTextureCreationDescription& textureDescription     = pTextureVulkan->GetDescription();
 
   XII_VERIFY_COMMAND_LIST(textureDescription.m_uiSampleCount == 1U, "Only single-sample textures can be updated with vkCmdCopyBufferToImage().");
 
-  const auto&                                deviceLimits                   = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
+  const vk::PhysicalDeviceLimits&            deviceLimits                   = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
   const xiiGALBufferToTextureCopyDescription bufferToTextureCopyDescription = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(textureDescription.m_Format, destinationBox, static_cast<xiiUInt32>(deviceLimits.optimalBufferCopyRowPitchAlignment));
   const xiiUInt32                            uiUpdateRegionDepth            = bufferToTextureCopyDescription.m_Region.GetExtents().z;
 
   // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-  auto stagingBufferAllocation = m_pUploadStagingBufferPool->Allocate(bufferToTextureCopyDescription.m_uiMemorySize);
+  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = m_pUploadStagingBufferPool->Allocate(bufferToTextureCopyDescription.m_uiMemorySize);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
@@ -448,8 +454,8 @@ void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUI
 #endif
 
   void* pMappedMemory = nullptr;
-  VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
-  VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiMemorySize));
+  VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiMemorySize));
 
   pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
@@ -461,9 +467,8 @@ void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUI
     }
   }
 
-  VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiMemorySize));
-
-  vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiMemorySize));
+  pVulkanMemoryAllocator->UnmapMemory(stagingBufferAllocation.m_VulkanAllocation);
 
   CopyBufferToTexture(stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiRowStrideInTexels, pTextureVulkan, bufferToTextureCopyDescription.m_Region, uiMipLevel, uiSlice);
 }
@@ -485,8 +490,17 @@ void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUIn
   m_vkSignalSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(std::move(pDeviceVulkan), pCommandQueueVulkan, creationDescription), m_pCommandBufferPool(pCommandBufferPool), m_vkCommandBuffer(m_pCommandBufferPool->RequestCommandBuffer())
+xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(std::move(pDeviceVulkan), creationDescription)
+{
+}
+
+xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
+{
+  Reset();
+}
+
+xiiResult xiiGALCommandListVulkan::InitPlatform()
 {
   m_pDynamicBufferPoolVulkan = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALDynamicBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer);
   m_pUploadStagingBufferPool = XII_NEW(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator(), xiiGALStagingBufferPoolVulkan, static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow()), 16U, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst);
@@ -503,27 +517,55 @@ xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan
 
     m_pNullVertexBuffer = pNullVertexBuffer.Downcast<xiiGALBufferVulkan>();
   }
-}
 
-xiiGALCommandListVulkan::~xiiGALCommandListVulkan()
-{
-  Reset();
+  return XII_SUCCESS;
 }
 
 void xiiGALCommandListVulkan::BeginPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiGALCommandBufferPoolVulkan*   pCommandBufferPool = pDeviceVulkan->GetCommandBufferPool(m_Description.m_QueueFlags);
 
-  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    m_CommandBufferAllocation = pCommandBufferPool->AllocateSecondaryCommandBuffer();
+  }
+  else
+  {
+    m_CommandBufferAllocation = pCommandBufferPool->AllocatePrimaryCommandBuffer();
+  }
 
-  m_PipelineBarrier.m_vkSupportedStageFlags  = pCommandQueueVulkan->GetSupportedStagesFlags();
-  m_PipelineBarrier.m_vkSupportedAccessFlags = pCommandQueueVulkan->GetSupportedAccessFlags();
+  m_vkCommandBuffer = m_CommandBufferAllocation.Get();
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "Failed to allocate a Vulkan command buffer.");
+
+  m_PipelineBarrier.m_vkSupportedStageFlags  = pDeviceVulkan->GetSupportedStagesFlags(m_Description.m_QueueFlags);
+  m_PipelineBarrier.m_vkSupportedAccessFlags = pDeviceVulkan->GetSupportedAccessFlags(m_Description.m_QueueFlags);
+
+  vk::CommandBufferUsageFlagBits vkCommandBufferUsageFlags = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::MultiSubmit) ? vk::CommandBufferUsageFlagBits::eSimultaneousUse : vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
   vk::CommandBufferBeginInfo vkCommandBufferBeginInfo = {};
   vkCommandBufferBeginInfo.pNext                      = nullptr;
-  vkCommandBufferBeginInfo.flags                      = vk::CommandBufferUsageFlagBits::eOneTimeSubmit; // Each recording of the command buffer will only be submitted once, and the command buffer will be reset and recorded again between each submission.
-  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr;                                        // Ignored for a primary command buffer.
+  vkCommandBufferBeginInfo.flags                      = vkCommandBufferUsageFlags;
+  vkCommandBufferBeginInfo.pInheritanceInfo           = nullptr; // Ignored for a primary command buffer.
+
+  vk::CommandBufferInheritanceInfo vkCommandBufferInheritanceInfo = {};
+  vkCommandBufferInheritanceInfo.pNext                            = nullptr;
+  vkCommandBufferInheritanceInfo.subpass                          = m_Description.m_uiSubPassIndex;
+
+  if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    vkCommandBufferBeginInfo.flags |= vk::CommandBufferUsageFlagBits::eRenderPassContinue;
+
+    if (xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan = m_Description.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>())
+    {
+      vkCommandBufferInheritanceInfo.renderPass = pRenderPassVulkan->GetVulkanRenderPass();
+    }
+    if (xiiSharedPtr<xiiGALFramebufferVulkan> pFramebufferVulkan = m_Description.m_pFramebuffer.Downcast<xiiGALFramebufferVulkan>())
+    {
+      vkCommandBufferInheritanceInfo.framebuffer = pFramebufferVulkan->GetVulkanFramebuffer();
+    }
+    vkCommandBufferBeginInfo.pInheritanceInfo = &vkCommandBufferInheritanceInfo;
+  }
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
@@ -538,18 +580,26 @@ void xiiGALCommandListVulkan::EndPlatform()
 
   FlushBarriers();
 
-  m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(m_vkCommandBuffer.end(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_RecordingState = RecordingState::Ended;
 }
 
 void xiiGALCommandListVulkan::ResetPlatform()
 {
-  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
+  // For one-time submit command buffers, they are invalidated once submitted to a queue.
+  if (m_vkCommandBuffer != VK_NULL_HANDLE && m_SubmittedCommandQueueRecord.m_pCommandQueue != nullptr)
+  {
+    xiiSharedPtr<xiiGALDeviceVulkan>             pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    const xiiGALCommandQueueCreationDescription& description              = m_SubmittedCommandQueueRecord.m_pCommandQueue->GetDescription();
+    xiiGALCommandBufferPoolVulkan*               pCommandBufferPoolVulkan = pDeviceVulkan->GetCommandBufferPool(description.m_QueueFlags);
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+    pCommandBufferPoolVulkan->RecycleAfterSubmit(m_SubmittedCommandQueueRecord.m_pCommandQueue, std::move(m_CommandBufferAllocation), m_SubmittedCommandQueueRecord.m_uiFenceValue);
+  }
 
-  pDeviceVulkan->ReclaimCommandBufferLater(m_pCommandBufferPool, std::move(m_vkCommandBuffer));
+  m_CommandBufferAllocation     = {};
+  m_vkCommandBuffer             = VK_NULL_HANDLE;
+  m_SubmittedCommandQueueRecord = {};
 
   InvalidateState();
 
@@ -559,13 +609,16 @@ void xiiGALCommandListVulkan::ResetPlatform()
   m_RecordingState = RecordingState::Reset;
 }
 
-xiiUInt64 xiiGALCommandListVulkan::SubmitPlatform()
+void xiiGALCommandListVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList)
 {
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(GetCommandQueue());
+  XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
 
-  m_RecordingState = RecordingState::Submitted;
+  xiiSharedPtr<xiiGALDeviceVulkan>      pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pSecondaryCommandList.Downcast<xiiGALCommandListVulkan>();
 
-  return pCommandQueueVulkan->SubmitCommandList(this);
+  vk::CommandBuffer vkCommandBuffer = pCommandListVulkan->GetVulkanCommandBuffer();
+
+  m_vkCommandBuffer.executeCommands(1U, &vkCommandBuffer, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
@@ -1754,13 +1807,12 @@ void xiiGALCommandListVulkan::DispatchComputeIndirectPlatform(const xiiGALDispat
 
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
-  xiiGALQueryPoolVulkan*           pQueryPoolVulkan    = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
-  xiiSharedPtr<xiiGALQueryVulkan>  pQueryVulkan        = pQuery.Downcast<xiiGALQueryVulkan>();
-  xiiGALQueryType::Enum            queryType           = pQueryVulkan->GetDescription().m_Type;
-  vk::QueryPool                    vkQueryPool         = pQueryPoolVulkan->GetQueryPool(queryType);
-  xiiUInt32                        uiIndex             = pQueryVulkan->GetQueryPoolIndex(0);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiGALQueryPoolVulkan*           pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
+  xiiSharedPtr<xiiGALQueryVulkan>  pQueryVulkan     = pQuery.Downcast<xiiGALQueryVulkan>();
+  xiiGALQueryType::Enum            queryType        = pQueryVulkan->GetDescription().m_Type;
+  vk::QueryPool                    vkQueryPool      = pQueryPoolVulkan->GetQueryPool(queryType);
+  xiiUInt32                        uiIndex          = pQueryVulkan->GetQueryPoolIndex(0);
 
   XII_VERIFY_COMMAND_LIST(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
@@ -1813,13 +1865,12 @@ void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuer
 
 void xiiGALCommandListVulkan::EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan       = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*        pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandQueue);
-  xiiGALQueryPoolVulkan*           pQueryPoolVulkan    = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
-  xiiSharedPtr<xiiGALQueryVulkan>  pQueryVulkan        = pQuery.Downcast<xiiGALQueryVulkan>();
-  xiiGALQueryType::Enum            queryType           = pQueryVulkan->GetDescription().m_Type;
-  vk::QueryPool                    vkQueryPool         = pQueryPoolVulkan->GetQueryPool(queryType);
-  xiiUInt32                        uiIndex             = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiGALQueryPoolVulkan*           pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
+  xiiSharedPtr<xiiGALQueryVulkan>  pQueryVulkan     = pQuery.Downcast<xiiGALQueryVulkan>();
+  xiiGALQueryType::Enum            queryType        = pQueryVulkan->GetDescription().m_Type;
+  vk::QueryPool                    vkQueryPool      = pQueryPoolVulkan->GetQueryPool(queryType);
+  xiiUInt32                        uiIndex          = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
 
   XII_VERIFY_COMMAND_LIST(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
@@ -1873,26 +1924,25 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 
 void xiiGALCommandListVulkan::UpdateBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pBuffer.Downcast<xiiGALBufferVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan          = pBuffer.Downcast<xiiGALBufferVulkan>();
 
   XII_VERIFY_COMMAND_LIST(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
   // The allocation will stay in the upload heap until the end of the frame at which point all upload pages will be discarded.
-  auto stagingBufferAllocation = m_pUploadStagingBufferPool->Allocate(pBufferVulkan->GetSize());
+  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = m_pUploadStagingBufferPool->Allocate(pBufferVulkan->GetSize());
 
   void* pMappedMemory = nullptr;
-  VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
-  VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+  VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
 
   pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
-
   xiiMemoryUtils::RawByteCopy(pMappedMemory, pSourceData.GetPtr(), pSourceData.GetCount());
 
-  VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
-
-  vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+  pVulkanMemoryAllocator->UnmapMemory(stagingBufferAllocation.m_VulkanAllocation);
 
   UpdateBufferRegion(pBufferVulkan, stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, uiDestinationOffset, pSourceData.GetCount());
 }
@@ -1943,15 +1993,15 @@ void xiiGALCommandListVulkan::CopyBufferRegionPlatform(xiiSharedPtr<xiiGALBuffer
 
 xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pBuffer.Downcast<xiiGALBufferVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan          = pBuffer.Downcast<xiiGALBufferVulkan>();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
-  const auto& bufferDescription = pBufferVulkan->GetDescription();
-
-  MappedBuffer mappedBuffer = {.m_MapType = mapType, .m_DynamicAllocation = {}};
+  const xiiGALBufferCreationDescription& bufferDescription = pBufferVulkan->GetDescription();
+  MappedBuffer                           mappedBuffer      = {.m_MapType = mapType, .m_DynamicAllocation = {}};
 
   if (mapType == xiiGALMapType::Read)
   {
@@ -1962,28 +2012,27 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
       xiiLog::Warning("Vulkan backend never waits for GPU when mapping staging buffers for reading. Applications must use fences or other synchronization methods to explicitly synchronize access and use xiiGALMapFlags::DoNotWait flag.");
     }
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
-    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(pBufferVulkan->GetAllocationDescription(), &pMappedData));
+    VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
   }
   else if (mapType == xiiGALMapType::Write)
   {
     if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
     {
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), &pMappedData));
-      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(pBufferVulkan->GetAllocationDescription(), &pMappedData));
+      VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
     }
     else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
     {
       XII_VERIFY_COMMAND_LIST_RESULT(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite), "Failed to map buffer '{}': Vulkan buffer must be mapped for writing with xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.", pBufferVulkan->GetDebugName());
 
-      auto dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(bufferDescription.m_uiSize);
+      xiiGALDynamicBufferAllocationVulkan dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(bufferDescription.m_uiSize);
 
       void* pMappedMemory = nullptr;
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, &pMappedMemory));
-      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, dynamicBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+      VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(dynamicBufferAllocation.m_VulkanAllocation, dynamicBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
 
-      pMappedData = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
-
+      pMappedData                      = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
       mappedBuffer.m_DynamicAllocation = dynamicBufferAllocation;
     }
     else
@@ -2010,8 +2059,9 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> 
 
 xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan = pBuffer.Downcast<xiiGALBufferVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiSharedPtr<xiiGALBufferVulkan> pBufferVulkan          = pBuffer.Downcast<xiiGALBufferVulkan>();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
@@ -2029,24 +2079,21 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer
     {
       if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
       {
-        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
-
-        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+        VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+        pVulkanMemoryAllocator->UnmapMemory(pBufferVulkan->GetAllocationDescription());
       }
     }
     else if (mapType == xiiGALMapType::Write)
     {
       if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
       {
-        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
-
-        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pBufferVulkan->GetAllocationDescription());
+        VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(pBufferVulkan->GetAllocationDescription(), 0U, vk::WholeSize));
+        pVulkanMemoryAllocator->UnmapMemory(pBufferVulkan->GetAllocationDescription());
       }
       else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
       {
-        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), mappedBuffer->m_DynamicAllocation.m_VmaAllocation, mappedBuffer->m_DynamicAllocation.m_uiOffset, pBufferVulkan->GetSize()));
-
-        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), mappedBuffer->m_DynamicAllocation.m_VmaAllocation);
+        VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(mappedBuffer->m_DynamicAllocation.m_VulkanAllocation, mappedBuffer->m_DynamicAllocation.m_uiOffset, pBuffer->GetSize()));
+        pVulkanMemoryAllocator->UnmapMemory(mappedBuffer->m_DynamicAllocation.m_VulkanAllocation);
 
         UpdateBufferRegion(pBufferVulkan, mappedBuffer->m_DynamicAllocation.m_vkBuffer, mappedBuffer->m_DynamicAllocation.m_uiOffset, 0U, pBufferVulkan->GetSize());
       }
@@ -2439,14 +2486,15 @@ void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureVie
 
 xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan  = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan = pTexture.Downcast<xiiGALTextureVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*         pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan         = pTexture.Downcast<xiiGALTextureVulkan>();
 
   XII_VERIFY_COMMAND_LIST_RESULT(m_vkCommandBuffer != VK_NULL_HANDLE, "");
   XII_VERIFY_COMMAND_LIST_RESULT(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
-  const auto& textureDescription = pTextureVulkan->GetDescription();
-  const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+  const xiiGALTextureCreationDescription& textureDescription = pTextureVulkan->GetDescription();
+  const xiiGALResourceFormatDescription&  formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
   xiiBoundingBoxU32 fullExtentBox = xiiBoundingBoxU32::MakeZero();
   if (pTextureBox == nullptr)
@@ -2476,14 +2524,14 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
       xiiLog::Info("In Vulkan implementation, mapping textures with flags xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite has no effect.");
     }
 
-    const auto&                                vkDeviceLimits  = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
+    const vk::PhysicalDeviceLimits&            vkDeviceLimits  = pDeviceVulkan->GetVulkanPhysicalDeviceProperties().limits;
     const xiiGALBufferToTextureCopyDescription copyDescription = xiiGALTextureUtilities::GetBufferToTextureCopyDescription(textureDescription.m_Format, *pTextureBox, static_cast<xiiUInt32>(vkDeviceLimits.optimalBufferCopyRowPitchAlignment));
 
-    auto dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(copyDescription.m_uiMemorySize);
+    xiiGALDynamicBufferAllocationVulkan dynamicBufferAllocation = m_pDynamicBufferPoolVulkan->Allocate(copyDescription.m_uiMemorySize);
 
     void* pMappedMemory = nullptr;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, &pMappedMemory));
-    VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), dynamicBufferAllocation.m_VmaAllocation, dynamicBufferAllocation.m_uiOffset, copyDescription.m_uiMemorySize));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+    VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(dynamicBufferAllocation.m_VulkanAllocation, dynamicBufferAllocation.m_uiOffset, copyDescription.m_uiMemorySize));
 
     pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
 
@@ -2495,19 +2543,19 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
   }
   else if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
   {
-    xiiUInt64                uiSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(textureDescription, textureMipLevelData.m_uiArraySlice, textureMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment);
+    xiiUInt64                uiSubResourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(textureDescription, textureMipLevelData.m_uiArraySlice, textureMipLevelData.m_uiMipLevel, xiiGALTextureVulkan::s_uiStagingBufferOffsetAlignment);
     xiiGALMipLevelProperties mipLevelProperties  = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
 
     // Address of (x,y,z) = region->bufferOffset + (((z * imageHeight) + y) * rowLength + x) * texelBlockSize; (18.4.1)
     // For compressed-block formats, RowSize is the size of one compressed row.
     // For non-compressed formats, BlockHeight is 1.
     // For non-compressed formats, BlockWidth is 1.
-    xiiUInt64 uiMapStartOffset = uiSubresourceOffset + (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
+    xiiUInt64 uiMapStartOffset = uiSubResourceOffset + (pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + pTextureBox->m_vMin.x / formatProperties.m_uiBlockWidth * xiiUInt64{formatProperties.GetElementSize()};
 
-    void* pMappedData = nullptr;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedData));
+    void* pMappedMemory = nullptr;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(pTextureVulkan->GetStagingBufferAllocationDescription(), &pMappedMemory));
 
-    mappedData.m_pData         = xiiMemoryUtils::AddByteOffset(pMappedData, uiMapStartOffset);
+    mappedData.m_pData         = xiiMemoryUtils::AddByteOffset(pMappedMemory, uiMapStartOffset);
     mappedData.m_uiStride      = mipLevelProperties.m_uiRowSize;
     mappedData.m_uiDepthStride = mipLevelProperties.m_uiDepthSliceSize;
 
@@ -2528,7 +2576,7 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
       xiiUInt32 uiBlockAlignedMaxY = xiiMemoryUtils::AlignSize(pTextureBox->m_vMax.y, xiiUInt32{formatProperties.m_uiBlockHeight});
       xiiUInt64 uiMapEndOffset     = ((pTextureBox->m_vMax.z - 1) * mipLevelProperties.m_StorageSize.height + (uiBlockAlignedMaxY - formatProperties.m_uiBlockHeight)) / formatProperties.m_uiBlockHeight * mipLevelProperties.m_uiRowSize + (uiBlockAlignedMaxX / formatProperties.m_uiBlockWidth) * xiiUInt64{formatProperties.GetElementSize()};
 
-      VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), pTextureVulkan->GetStagingBufferAllocationDescription(), uiMapStartOffset, uiMapEndOffset - uiMapStartOffset));
+      VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(pTextureVulkan->GetStagingBufferAllocationDescription(), uiMapStartOffset, uiMapEndOffset - uiMapStartOffset));
     }
     else if (mapType == xiiGALMapType::Write)
     {
@@ -2705,7 +2753,7 @@ void xiiGALCommandListVulkan::BeginDebugGroupPlatform(xiiStringView sName, const
     vkDebugUtilsLabel.color[2]               = color.b;
     vkDebugUtilsLabel.color[3]               = color.a;
 
-    m_vkCommandBuffer.beginDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.beginDebugUtilsLabelEXT(&vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   }
 }
 
@@ -2739,7 +2787,7 @@ void xiiGALCommandListVulkan::InsertDebugLabelPlatform(xiiStringView sName, cons
     vkDebugUtilsLabel.color[2]               = color.b;
     vkDebugUtilsLabel.color[3]               = color.a;
 
-    m_vkCommandBuffer.insertDebugUtilsLabelEXT(vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    m_vkCommandBuffer.insertDebugUtilsLabelEXT(&vkDebugUtilsLabel, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
   }
 }
 

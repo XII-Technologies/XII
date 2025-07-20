@@ -209,26 +209,17 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue();
+      xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
 
-      if (auto pCommandList = pDefaultQueue->BeginCommandList())
+      xiiRenderingSetup renderingSetup;
+      renderingSetup.AddColorAttachment({.m_pRenderTarget = m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget), .m_LoadOp = xiiGALAttachmentLoadOperation::Clear})
+        .SetDepthStencilAttachment({.m_pDSTarget = m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), .m_LoadOp = xiiGALAttachmentLoadOperation::Clear, .m_StencilLoadOp = xiiGALAttachmentLoadOperation::Clear})
+        .Build();
+
+      pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
       {
-        float fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-
-        xiiRenderingSetup renderingSetup;
-        renderingSetup
-          .AddColorAttachment({.m_pRenderTarget = m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget),
-                               .m_LoadOp        = xiiGALAttachmentLoadOperation::Clear})
-          .SetDepthStencilAttachment({.m_pDSTarget     = m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil),
-                                      .m_LoadOp        = xiiGALAttachmentLoadOperation::Clear,
-                                      .m_StencilLoadOp = xiiGALAttachmentLoadOperation::Clear})
-          .Build();
-
-        xiiRenderContext renderContext(pCommandList);
-        renderContext.BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
-
         {
-          xiiGlobalConstants* pGlobalConstants = renderContext.GetGlobalConstants();
+          xiiGlobalConstants* pGlobalConstants = pRenderContext->GetGlobalConstants();
 
           xiiMat4 m0, m1;
           m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
@@ -239,18 +230,14 @@ public:
           pGlobalConstants->CameraToWorldMatrix[1] = m1.GetInverse();
           pGlobalConstants->ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
 
-          // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-          pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-          pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
+          pRenderContext->SetGlobalAndWorldTimeConstants();
         }
 
-        renderContext.BindMaterial(m_hMaterial);
-        renderContext.BindMeshBuffer(m_hQuadMeshBuffer);
-        renderContext.DrawMeshBuffer().IgnoreResult();
-        renderContext.EndRendering();
-
-        pCommandList->Submit();
+        pRenderContext->BindMaterial(m_hMaterial);
+        pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+        pRenderContext->DrawMeshBuffer().IgnoreResult();
       }
+      pRenderContext->EndRendering();
 
       m_pSwapChain->Present();
 

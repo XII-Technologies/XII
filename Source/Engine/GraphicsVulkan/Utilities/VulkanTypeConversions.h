@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <GraphicsFoundation/Resources/RenderPass.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -69,7 +70,7 @@ public:
   static vk::Extent2D                        ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e);
   static xiiBitflags<xiiGALShadingRateFlags> FragmentSizeToShadingRate(vk::Extent2D e);
 
-  static xiiBitflags<xiiGALCommandQueueType> GetGALCommandQueueType(vk::QueueFlags e);
+  static xiiBitflags<xiiGALCommandQueueFlags> GetGALCommandQueueFlags(vk::QueueFlags e);
 
   static vk::SurfaceTransformFlagsKHR GetSurfaceTransform(xiiGALSurfaceTransform::Enum e);
   static xiiGALSurfaceTransform::Enum GetGALSurfaceTransform(vk::SurfaceTransformFlagsKHR e);

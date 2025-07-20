@@ -19,9 +19,9 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarBool xiiRenderPipeline::cvar_SpatialCullingVis("Spatial.Culling.Vis", false, xiiCVarFlags::Default, "Enables debug visualization of visibility culling");

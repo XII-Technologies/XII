@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-class  xiiRenderDataBatch
+class xiiRenderDataBatch
 {
 private:
   struct SortableRenderData

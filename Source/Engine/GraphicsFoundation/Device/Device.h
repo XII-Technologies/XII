@@ -35,6 +35,14 @@ public:
   [[nodiscard]] xiiSharedPtr<xiiGALSwapChain> CreateSwapChain(const xiiGALSwapChainCreationDescription& description);
 
 
+  /// \brief This creates a command list object.
+  ///
+  /// \param description - The command list description. See xiiGALCommandListCreationDescription.
+  ///
+  /// \return The reference-counted pointer to the created command list object.
+  [[nodiscard]] xiiSharedPtr<xiiGALCommandList> CreateCommandList(const xiiGALCommandListCreationDescription& description);
+
+
   /// \brief This creates a new blend state object.
   ///
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.
@@ -215,7 +223,7 @@ public:
   /// \param queueType - The queue type that has the required feature.
   ///
   /// \note The default graphics queue is guaranteed to exist, for a successful device initialization.
-  [[nodiscard]] virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics) const = 0;
+  [[nodiscard]] virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics) const = 0;
 
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   [[nodiscard]] const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
@@ -230,8 +238,6 @@ public:
   [[nodiscard]] xiiMutex& GetMutex() const;
 
   /// \brief Sets a default graphics device.
-  ///
-  /// \remarks This does not increase the reference count on the device.
   static void SetDefaultDevice(xiiSharedPtr<xiiGALDevice> pDefaultDevice);
 
   /// \brief Retrieves the default device. This will be nullptr if none is set.
@@ -274,6 +280,7 @@ protected:
   virtual void EndFramePlatform()   = 0;
 
   virtual xiiInternal::NewInstance<xiiGALSwapChain>                 CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)                                              = 0;
+  virtual xiiInternal::NewInstance<xiiGALCommandList>               CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)                                          = 0;
   virtual xiiInternal::NewInstance<xiiGALBlendState>                CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)                                            = 0;
   virtual xiiInternal::NewInstance<xiiGALDepthStencilState>         CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)                              = 0;
   virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)                                  = 0;

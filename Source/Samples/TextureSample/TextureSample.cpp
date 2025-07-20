@@ -160,7 +160,7 @@ public:
       renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
       renderingSetup.m_bClearDepth             = true;
 
-      if (auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue())
+      if (auto pDefaultQueue = m_pDevice->GetCommandQueue())
       {
         xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
 

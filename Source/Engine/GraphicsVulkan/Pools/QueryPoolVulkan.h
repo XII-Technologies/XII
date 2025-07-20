@@ -2,6 +2,11 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+namespace vk
+{
+  class QueryPool;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALQueryPoolVulkan
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALQueryPoolVulkan);
