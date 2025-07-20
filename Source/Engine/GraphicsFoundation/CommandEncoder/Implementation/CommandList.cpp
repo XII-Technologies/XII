@@ -224,8 +224,7 @@ void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationD
 
 void xiiGALCommandList::Begin()
 {
-  XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
-  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and is no longer available for recording commands.");
+  XII_VERIFY_COMMAND_LIST(m_RecordingState == RecordingState::Reset, "The command list has not been reset.");
 
   BeginPlatform();
 }
@@ -241,7 +240,6 @@ void xiiGALCommandList::End()
 void xiiGALCommandList::Reset()
 {
   XII_VERIFY_COMMAND_LIST(m_pRenderPass == nullptr, "The current active render pass has not been ended.");
-  XII_VERIFY_COMMAND_LIST(m_RecordingState != RecordingState::Submitted, "The command list has been submitted and cannot be reset until after queue execution.");
 
   if (m_RecordingState == RecordingState::Recording)
   {

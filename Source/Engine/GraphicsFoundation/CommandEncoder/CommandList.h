@@ -1234,7 +1234,6 @@ public:
     Reset=0U,     ///< The command list has been reset and is ready to be recorded again.
     Recording, ///< The command list is currently being recorded.
     Ended,     ///< The recording of the command list has ended.
-    Submitted  ///< The command list has been submitted and is no longer available for recording commands. A new command list has to be requested for recording more commands.
   };
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };
