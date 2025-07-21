@@ -330,6 +330,10 @@ public:
   static xiiGALSamplerCreationDescription GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags);
 
 private:
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RendererContext);
+
+  static void OnEngineStartup();
+  static void OnEngineShutdown();
   static void GALStaticDeviceEventHandler(const xiiGALDeviceEvent& e);
 
   /// \brief Resets all context bindings and internal states.

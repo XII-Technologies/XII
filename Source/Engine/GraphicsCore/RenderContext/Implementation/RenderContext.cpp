@@ -11,7 +11,37 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Shader/ShaderUtils.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererContext)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+  }
+
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    xiiRenderContext::OnEngineStartup();
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    xiiRenderContext::OnEngineShutdown();
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 xiiRenderContext*                     xiiRenderContext::s_pDefaultInstance = nullptr;
 xiiHybridArray<xiiRenderContext*, 2U> xiiRenderContext::s_Instances;
@@ -1296,6 +1326,17 @@ void xiiRenderContext::SetGlobalAndWorldTimeConstants()
   pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
 }
 
+void xiiRenderContext::SetGlobalAndWorldTimeConstants(xiiTime worldTime)
+{
+  xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
+
+  // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
+  const double fWrapAround     = 1000.0;
+  pGlobalConstants->DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
+  pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), fWrapAround);
+  pGlobalConstants->WorldTime  = (float)xiiMath::Mod(worldTime.GetSeconds(), fWrapAround);
+}
+
 // static
 xiiGALSamplerCreationDescription xiiRenderContext::GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags)
 {
@@ -1316,6 +1357,25 @@ xiiGALSamplerCreationDescription xiiRenderContext::GetDefaultSamplerDescription(
   samplerDescription.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
 
   return samplerDescription;
+}
+
+// static
+void xiiRenderContext::OnEngineStartup()
+{
+  xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiRenderContext::GALStaticDeviceEventHandler));
+}
+
+// static
+void xiiRenderContext::OnEngineShutdown()
+{
+  for (xiiRenderContext* pRenderContext : s_Instances)
+  {
+    XII_DEFAULT_DELETE(pRenderContext);
+  }
+
+  s_Instances.Clear();
+
+  xiiGALDevice::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiRenderContext::GALStaticDeviceEventHandler));
 }
 
 // static
