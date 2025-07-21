@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief Provides shader utilities through static methods.
-class XII_GRAPHICSFOUNDATION_DLL xiiShaderUtilities
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderUtilities
 {
 public:
   enum class xiiBuiltinShaderType

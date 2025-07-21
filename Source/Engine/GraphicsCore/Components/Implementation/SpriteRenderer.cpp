@@ -101,10 +101,10 @@ void xiiSpriteRenderer::FillSpriteData(const xiiRenderDataBatch& batch) const
     spriteData.Size               = pRenderData->m_fSize;
     spriteData.MaxScreenSize      = pRenderData->m_fMaxScreenSize;
     spriteData.AspectRatio        = pRenderData->m_fAspectRatio;
-    spriteData.ColorRG            = xiiShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_color.r, pRenderData->m_color.g));
-    spriteData.ColorBA            = xiiShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_color.b, pRenderData->m_color.a));
-    spriteData.TexCoordScale      = xiiShaderUtilities::Float2ToRG16F(pRenderData->m_texCoordScale);
-    spriteData.TexCoordOffset     = xiiShaderUtilities::Float2ToRG16F(pRenderData->m_texCoordOffset);
+    spriteData.ColorRG            = xiiGALShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_color.r, pRenderData->m_color.g));
+    spriteData.ColorBA            = xiiGALShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_color.b, pRenderData->m_color.a));
+    spriteData.TexCoordScale      = xiiGALShaderUtilities::Float2ToRG16F(pRenderData->m_texCoordScale);
+    spriteData.TexCoordOffset     = xiiGALShaderUtilities::Float2ToRG16F(pRenderData->m_texCoordOffset);
     spriteData.GameObjectID       = pRenderData->m_uiUniqueID;
     spriteData.Reserved           = 0;
   }
