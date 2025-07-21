@@ -69,6 +69,18 @@ xiiRenderContext::~xiiRenderContext()
 {
   xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
 
+  m_pActiveRenderPass = nullptr;
+  m_RenderPassCache.Clear();
+
+  m_GraphicsPipelineDescription = {};
+  m_pGraphicsPipelineState.Clear();
+  m_GraphicsPipelineCreationCache.Clear();
+
+  m_ComputePipelineDescription = {};
+  m_pComputePipelineState.Clear();
+  m_ComputePipelineCreationCache.Clear();
+
+  m_pCommandList.Clear();
   m_pGlobalConstants.Clear();
   m_pGlobalConstantsBuffer.Clear();
 }
@@ -853,6 +865,33 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
 void xiiRenderContext::ResetContextState()
 {
+  m_StateFlags      = xiiRenderContextFlags::AllStatesInvalid;
+  m_ShaderBindFlags = xiiShaderBindFlags::None;
+
+  m_VertexBuffers.Clear();
+  m_VertexBuffersOffsets.Clear();
+
+  m_pIndexBuffer      = nullptr;
+  m_uiIndexDataOffset = 0ULL;
+
+  m_BoundConstantBuffers.Clear();
+  m_BoundBufferSRVs.Clear();
+  m_BoundTextureSRVs.Clear();
+  m_BoundBufferUAVs.Clear();
+  m_BoundTextureUAVs.Clear();
+  m_BoundSamplers.Clear();
+
+  m_hActiveShader.Invalidate();
+  m_ActiveGALShaders.Clear();
+  m_hActiveShaderPermutation.Invalidate();
+  m_pInputLayoutInfo = nullptr;
+  m_InputLayouts.Clear();
+
+  m_hNewMaterial.Invalidate();
+  m_hMaterial.Invalidate();
+  m_uiMeshBufferPrimitiveCount = 0U;
+
+  m_PermutationVariables.Clear();
 }
 
 void xiiRenderContext::SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue)
