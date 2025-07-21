@@ -13,8 +13,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return {}; }          \
   } while (false)
 
-xiiDelegate<void(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)> xiiShaderUtilities::g_RequestBuiltinShaderCallback;
-
 xiiGALShader::xiiGALShader(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription)
 {
