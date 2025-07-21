@@ -46,6 +46,9 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiRenderContext*                     xiiRenderContext::s_pDefaultInstance = nullptr;
 xiiHybridArray<xiiRenderContext*, 2U> xiiRenderContext::s_Instances;
 
+xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>  xiiRenderContext::s_RenderPassCache;
+xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash> xiiRenderContext::s_FramebufferCache;
+
 xiiRenderContext::xiiRenderContext()
 {
   s_Instances.PushBack(this);
@@ -68,9 +71,6 @@ xiiRenderContext::xiiRenderContext()
 xiiRenderContext::~xiiRenderContext()
 {
   xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
-
-  m_pActiveRenderPass = nullptr;
-  m_RenderPassCache.Clear();
 
   m_GraphicsPipelineDescription = {};
   m_pGraphicsPipelineState.Clear();
@@ -790,7 +790,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         {
           if (m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState->GetDescription().m_bScissorEnable)
           {
-            const auto& framebufferDescription = GetCurrentFramebuffer()->GetDescription();
+            const auto& framebufferDescription = GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup)->GetDescription();
 
             m_pCommandList->SetScissorRect({framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height});
           }
@@ -867,6 +867,8 @@ void xiiRenderContext::ResetContextState()
 {
   m_StateFlags      = xiiRenderContextFlags::AllStatesInvalid;
   m_ShaderBindFlags = xiiShaderBindFlags::None;
+
+  m_pActiveRenderPass = nullptr;
 
   m_VertexBuffers.Clear();
   m_VertexBuffersOffsets.Clear();
@@ -1184,57 +1186,6 @@ void xiiRenderContext::ApplySamplerBindings()
   }
 }
 
-xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description)
-{
-  RenderPassCache* pRenderPassCache;
-  if (m_RenderPassCache.TryGetValue(description, pRenderPassCache))
-  {
-    return pRenderPassCache->m_pRenderPass;
-  }
-
-  xiiSharedPtr<xiiGALDevice>     pDevice     = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(description);
-
-  XII_ASSERT_DEV(pRenderPass != nullptr, "Failed to create render pass.");
-
-  m_RenderPassCache.Insert(description, RenderPassCache{pRenderPass});
-
-  return pRenderPass;
-}
-
-xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetCurrentFramebuffer()
-{
-  XII_ASSERT_DEV(m_pActiveRenderPass != nullptr, "GetCurrentFramebuffer() may only be called once an active render pass has been created.");
-
-  RenderPassCache* pRenderPassCache;
-  if (m_RenderPassCache.TryGetValue(m_pActiveRenderPass->GetDescription(), pRenderPassCache))
-  {
-    for (xiiUInt32 i = 0; i < pRenderPassCache->m_FramebufferCache.GetCount(); ++i)
-    {
-      const auto& pFrameBuffer = pRenderPassCache->m_FramebufferCache[i];
-      const auto& description  = pFrameBuffer->GetDescription();
-
-      XII_ASSERT_DEBUG(description.m_pRenderPass == pRenderPassCache->m_pRenderPass, "Render pass mismatch for the same render pass description.");
-
-      if (description.m_Attachments == m_RenderingSetup.GetFramebufferDescription().m_Attachments && description.m_FramebufferSize == m_RenderingSetup.GetFramebufferDescription().m_FramebufferSize && description.m_uiArraySliceCount == m_RenderingSetup.GetFramebufferDescription().m_uiArraySliceCount)
-      {
-        return pFrameBuffer;
-      }
-    }
-
-    xiiGALFramebufferCreationDescription framebufferDescription = m_RenderingSetup.GetFramebufferDescription();
-    framebufferDescription.m_pRenderPass                        = pRenderPassCache->m_pRenderPass;
-
-    xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-    xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
-
-    pRenderPassCache->m_FramebufferCache.PushBack(pFramebuffer);
-
-    return pFramebuffer;
-  }
-  return nullptr;
-}
-
 void xiiRenderContext::BeginInternalRenderPass()
 {
   XII_ASSERT_DEV(m_RenderContextScope == RenderContextScope::Graphics, "Render pass can only be begun in a graphics scope.");
@@ -1247,10 +1198,10 @@ void xiiRenderContext::BeginInternalRenderPass()
     }
     else if (!m_pActiveRenderPass || m_pActiveRenderPass->GetDescription() != m_RenderingSetup.GetRenderPassDescription())
     {
-      m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
+      m_pActiveRenderPass = GetOrCreateRenderPass(m_RenderingSetup.GetRenderPassDescription());
     }
 
-    m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer()});
+    m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup)});
 
     m_bIsRenderPassActive = true;
   }
@@ -1264,9 +1215,9 @@ void xiiRenderContext::BeginClearThenLoadInternalRenderPass()
   {
     if (m_bNeedsClear)
     {
-      m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
+      m_pActiveRenderPass = GetOrCreateRenderPass(m_RenderingSetup.GetRenderPassDescription());
 
-      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetCurrentFramebuffer(), m_RenderingSetup.GetClearValues()});
+      m_pCommandList->BeginRenderPass({m_pActiveRenderPass, GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup), m_RenderingSetup.GetClearValues()});
 
       m_bNeedsClear         = false;
       m_bIsRenderPassActive = true;
@@ -1286,7 +1237,7 @@ void xiiRenderContext::BeginClearThenLoadInternalRenderPass()
       }
     }
 
-    m_pActiveRenderPass = CreateInternalRenderPass(m_RenderingSetup.GetRenderPassDescription());
+    m_pActiveRenderPass = GetOrCreateRenderPass(m_RenderingSetup.GetRenderPassDescription());
   }
 }
 
@@ -1354,6 +1305,58 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexS
   return XII_SUCCESS;
 }
 
+// static
+xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description)
+{
+  RenderPassCache* pRenderPassCache;
+  if (s_RenderPassCache.TryGetValue(description, pRenderPassCache))
+  {
+    return pRenderPassCache->m_pRenderPass;
+  }
+
+  xiiSharedPtr<xiiGALDevice>     pDevice     = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(description);
+
+  XII_ASSERT_DEV(pRenderPass != nullptr, "Failed to create render pass.");
+
+  s_RenderPassCache.Insert(description, RenderPassCache{pRenderPass});
+
+  return pRenderPass;
+}
+
+xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const xiiGALRenderPassCreationDescription& description, const xiiRenderingSetup& renderingSetup)
+{
+  RenderPassCache* pRenderPassCache;
+  if (s_RenderPassCache.TryGetValue(description, pRenderPassCache))
+  {
+    auto framebufferCache = s_FramebufferCache.FindOrAdd(description);
+
+    for (xiiUInt32 i = 0; i < framebufferCache.m_Framebuffers.GetCount(); ++i)
+    {
+      auto&       pFrameBuffer           = framebufferCache.m_Framebuffers[i];
+      const auto& framebufferDescription = pFrameBuffer->GetDescription();
+
+      XII_ASSERT_DEBUG(framebufferDescription.m_pRenderPass == pRenderPassCache->m_pRenderPass, "Render pass mismatch for the same render pass framebufferDescription.");
+
+      if (framebufferDescription.m_Attachments == renderingSetup.GetFramebufferDescription().m_Attachments && framebufferDescription.m_FramebufferSize == renderingSetup.GetFramebufferDescription().m_FramebufferSize && framebufferDescription.m_uiArraySliceCount == renderingSetup.GetFramebufferDescription().m_uiArraySliceCount)
+      {
+        return pFrameBuffer;
+      }
+    }
+
+    xiiGALFramebufferCreationDescription framebufferDescription = renderingSetup.GetFramebufferDescription();
+    framebufferDescription.m_pRenderPass                        = pRenderPassCache->m_pRenderPass;
+
+    xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+
+    framebufferCache.m_Framebuffers.PushBack(pFramebuffer);
+
+    return pFramebuffer;
+  }
+  return nullptr;
+}
+
 void xiiRenderContext::SetGlobalAndWorldTimeConstants()
 {
   xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
@@ -1407,11 +1410,13 @@ void xiiRenderContext::OnEngineStartup()
 // static
 void xiiRenderContext::OnEngineShutdown()
 {
+  s_FramebufferCache.Clear();
+  s_RenderPassCache.Clear();
+
   for (xiiRenderContext* pRenderContext : s_Instances)
   {
     XII_DEFAULT_DELETE(pRenderContext);
   }
-
   s_Instances.Clear();
 
   xiiGALDevice::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiRenderContext::GALStaticDeviceEventHandler));

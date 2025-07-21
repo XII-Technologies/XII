@@ -352,8 +352,6 @@ private:
   void                          ApplyTextureUAVBindings();
   void                          ApplySamplerBindings();
 
-  xiiSharedPtr<xiiGALRenderPass>  CreateInternalRenderPass(const xiiGALRenderPassCreationDescription& description);
-  xiiSharedPtr<xiiGALFramebuffer> GetCurrentFramebuffer();
   void                            BeginInternalRenderPass();
   void                            BeginClearThenLoadInternalRenderPass();
   void                            EndInternalRenderPass();
@@ -370,8 +368,14 @@ private:
     {
     }
 
-    xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
-    xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
+    xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
+  };
+
+  struct FramebufferCache
+  {
+    XII_ALWAYS_INLINE FramebufferCache() = default;
+
+    xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_Framebuffers;
   };
 
   struct ShaderVertexDeclaration
@@ -384,6 +388,15 @@ private:
     XII_FORCE_INLINE bool operator==(const ShaderVertexDeclaration& rhs) const { return (m_pShader == rhs.m_pShader && m_uiInputLayoutHash == rhs.m_uiInputLayoutHash); }
   };
 
+  static xiiSharedPtr<xiiGALRenderPass> GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description);
+
+  static xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(const xiiGALRenderPassCreationDescription& description, const xiiRenderingSetup& renderingSetup);
+
+private:
+  static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>  s_RenderPassCache;
+  static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash> s_FramebufferCache;
+
+private:
   xiiSharedPtr<xiiGALCommandList> m_pCommandList;
 
   RenderContextScope                 m_RenderContextScope       = RenderContextScope::None;
@@ -392,11 +405,10 @@ private:
   bool                               m_bAllowAsyncShaderLoading = false;
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
 
-  xiiRenderingSetup                                                                        m_RenderingSetup;
-  bool                                                                                     m_bNeedsClear         = false;
-  bool                                                                                     m_bIsRenderPassActive = false;
-  xiiSharedPtr<xiiGALRenderPass>                                                           m_pActiveRenderPass;
-  xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
+  xiiRenderingSetup              m_RenderingSetup;
+  bool                           m_bNeedsClear         = false;
+  bool                           m_bIsRenderPassActive = false;
+  xiiSharedPtr<xiiGALRenderPass> m_pActiveRenderPass;
 
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_pGlobalConstantsBuffer;
