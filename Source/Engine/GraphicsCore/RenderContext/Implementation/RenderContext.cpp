@@ -44,12 +44,13 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererContext)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiRenderContext*                     xiiRenderContext::s_pDefaultInstance = nullptr;
-xiiHybridArray<xiiRenderContext*, 2U> xiiRenderContext::s_Instances;
-
-xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>  xiiRenderContext::s_RenderPassCache;
-xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash> xiiRenderContext::s_FramebufferCache;
-xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          xiiRenderContext::s_InputLayouts;
+xiiRenderContext*                                                                                                             xiiRenderContext::s_pDefaultInstance = nullptr;
+xiiHybridArray<xiiRenderContext*, 2U>                                                                                         xiiRenderContext::s_Instances;
+xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>                    xiiRenderContext::s_RenderPassCache;
+xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash>                   xiiRenderContext::s_FramebufferCache;
+xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                                            xiiRenderContext::s_InputLayouts;
+xiiHashTable<xiiGALGraphicsPipelineStateCreationDescription, xiiSharedPtr<xiiGALGraphicsPipelineState>, xiiGALDescriptorHash> xiiRenderContext::s_GraphicsPipelineCreationCache;
+xiiHashTable<xiiGALComputePipelineStateCreationDescription, xiiSharedPtr<xiiGALComputePipelineState>, xiiGALDescriptorHash>   xiiRenderContext::s_ComputePipelineCreationCache;
 
 xiiRenderContext::xiiRenderContext()
 {
@@ -76,11 +77,9 @@ xiiRenderContext::~xiiRenderContext()
 
   m_GraphicsPipelineDescription = {};
   m_pGraphicsPipelineState.Clear();
-  m_GraphicsPipelineCreationCache.Clear();
 
   m_ComputePipelineDescription = {};
   m_pComputePipelineState.Clear();
-  m_ComputePipelineCreationCache.Clear();
 
   m_pCommandList.Clear();
   m_pGlobalConstants.Clear();
@@ -758,31 +757,21 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
           }
         }
 
-        if (!m_GraphicsPipelineCreationCache.TryGetValue(m_GraphicsPipelineDescription, m_pGraphicsPipelineState))
-        {
-          m_pGraphicsPipelineState = pDevice->CreateGraphicsPipelineState(m_GraphicsPipelineDescription);
+        m_pGraphicsPipelineState = GetOrCreatePipelineState(m_GraphicsPipelineDescription);
 
-          XII_VERIFY(!m_GraphicsPipelineCreationCache.Insert(m_GraphicsPipelineDescription, m_pGraphicsPipelineState), "Overwriting an existing cached pipeline state, this is unexpected behavior.");
+        m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
 
-          m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
-
-          bPipelineStateInvalidated = true;
-        }
+        bPipelineStateInvalidated = true;
       }
       else if (m_RenderContextScope == RenderContextScope::Compute)
       {
         m_ComputePipelineDescription.m_pComputeShader = m_ActiveGALShaders[xiiGALShaderType::Compute];
 
-        if (!m_ComputePipelineCreationCache.TryGetValue(m_ComputePipelineDescription, m_pComputePipelineState))
-        {
-          m_pComputePipelineState = pDevice->CreateComputePipelineState(m_ComputePipelineDescription);
+        m_pComputePipelineState = GetOrCreatePipelineState(m_ComputePipelineDescription);
 
-          XII_VERIFY(!m_ComputePipelineCreationCache.Insert(m_ComputePipelineDescription, m_pComputePipelineState), "Overwriting an existing cached pipeline state, this is unexpected behavior.");
+        m_pCommandList->SetPipelineState(m_pComputePipelineState);
 
-          m_pCommandList->SetPipelineState(m_pComputePipelineState);
-
-          bPipelineStateInvalidated = true;
-        }
+        bPipelineStateInvalidated = true;
       }
 
       XII_ASSERT_DEV(m_pGraphicsPipelineState || m_pComputePipelineState, "Implementation error!");
@@ -1285,7 +1274,7 @@ xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const x
   RenderPassCache* pRenderPassCache;
   if (s_RenderPassCache.TryGetValue(description, pRenderPassCache))
   {
-    auto framebufferCache = s_FramebufferCache.FindOrAdd(description);
+    auto& framebufferCache = s_FramebufferCache.FindOrAdd(description);
 
     for (xiiUInt32 i = 0; i < framebufferCache.m_Framebuffers.GetCount(); ++i)
     {
@@ -1311,6 +1300,36 @@ xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const x
     return pFramebuffer;
   }
   return nullptr;
+}
+
+//static
+xiiSharedPtr<xiiGALGraphicsPipelineState> xiiRenderContext::GetOrCreatePipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description)
+{
+  xiiSharedPtr<xiiGALGraphicsPipelineState>& pGraphicsPipelineState = s_GraphicsPipelineCreationCache.FindOrAdd(description);
+
+  if (!pGraphicsPipelineState)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    pGraphicsPipelineState = pDevice->CreateGraphicsPipelineState(description);
+  }
+
+  return pGraphicsPipelineState;
+}
+
+//static
+xiiSharedPtr<xiiGALComputePipelineState> xiiRenderContext::GetOrCreatePipelineState(const xiiGALComputePipelineStateCreationDescription& description)
+{
+  xiiSharedPtr<xiiGALComputePipelineState>& pComputePipelineState = s_ComputePipelineCreationCache.FindOrAdd(description);
+
+  if (!pComputePipelineState)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    pComputePipelineState = pDevice->CreateComputePipelineState(description);
+  }
+
+  return pComputePipelineState;
 }
 
 // static
