@@ -1,5 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Containers/Blob.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Material/MaterialResource.h>
@@ -48,6 +49,7 @@ xiiHybridArray<xiiRenderContext*, 2U> xiiRenderContext::s_Instances;
 
 xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>  xiiRenderContext::s_RenderPassCache;
 xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash> xiiRenderContext::s_FramebufferCache;
+xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          xiiRenderContext::s_InputLayouts;
 
 xiiRenderContext::xiiRenderContext()
 {
@@ -667,7 +669,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
       {
-        m_pCommandList->SetVertexBuffers(0, m_VertexBuffers, xiiArrayPtr<xiiUInt64>());
+        m_pCommandList->SetVertexBuffers(0, m_VertexBuffers, m_VertexBufferOffsets);
 
         if (m_pIndexBuffer)
         {
@@ -675,17 +677,21 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         }
       }
 
-      if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_ActiveGALShaders[xiiGALShaderType::Vertex], *m_pInputLayoutInfo, m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pInputLayout).Failed())
+      xiiSharedPtr<xiiGALInputLayout> pInputLayout;
+      const bool                      bHasInputLayout = m_pInputLayoutInfo != nullptr || !m_CustomInputLayout.m_VertexStreams.IsEmpty();
+      if (bHasInputLayout && BuildInputLayout(m_ActiveGALShaders[xiiGALShaderType::Vertex], m_VertexBufferStrides, m_VertexBufferFrequencies, *m_pInputLayoutInfo, m_CustomInputLayout, pInputLayout).Failed())
         return XII_FAILURE;
 
       // If there is a vertex buffer we need a valid vertex declaration as well.
-      for (const auto& pVertexBuffer : m_VertexBuffers)
+      for (const xiiSharedPtr<xiiGALBuffer>& pVertexBuffer : m_VertexBuffers)
       {
         if (pVertexBuffer != nullptr && !m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pInputLayout)
         {
           return XII_FAILURE;
         }
       }
+
+      m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
 
       m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
     }
@@ -871,7 +877,10 @@ void xiiRenderContext::ResetContextState()
   m_pActiveRenderPass = nullptr;
 
   m_VertexBuffers.Clear();
-  m_VertexBuffersOffsets.Clear();
+  m_VertexBufferOffsets.Clear();
+  m_VertexBufferStrides.Clear();
+  m_VertexBufferFrequencies.Clear();
+  m_CustomInputLayout = {};
 
   m_pIndexBuffer      = nullptr;
   m_uiIndexDataOffset = 0ULL;
@@ -1251,60 +1260,6 @@ void xiiRenderContext::EndInternalRenderPass()
   }
 }
 
-xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, const xiiInputLayoutInfo& declaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration)
-{
-  ShaderVertexDeclaration vertexDeclaration;
-  vertexDeclaration.m_pShader           = pVertexShader;
-  vertexDeclaration.m_uiInputLayoutHash = declaration.m_uiHash;
-
-  bool bExisted = false;
-  auto it       = m_InputLayouts.FindOrAdd(vertexDeclaration, &bExisted);
-
-  if (!bExisted)
-  {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-    xiiGALInputLayoutCreationDescription inputLayoutDescription;
-
-    for (xiiUInt32 uiSlot = 0; uiSlot < declaration.m_VertexStreams.GetCount(); ++uiSlot)
-    {
-      auto& stream = declaration.m_VertexStreams[uiSlot];
-
-      xiiGALLayoutElement& layoutElement     = inputLayoutDescription.m_LayoutElements.ExpandAndGetRef();
-      layoutElement.m_Format                 = stream.m_Format;
-      layoutElement.m_Semantic               = stream.m_Semantic;
-      layoutElement.m_uiRelativeOffset       = stream.m_uiOffset;
-      layoutElement.m_uiStride               = m_VertexBuffers[stream.m_uiVertexBufferSlot]->GetDescription().m_uiElementByteStride;
-      layoutElement.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
-      layoutElement.m_Frequency              = xiiGALInputElementFrequency::PerVertex;
-      layoutElement.m_uiInstanceDataStepRate = 0;
-    }
-
-    out_Declaration = pVertexShader->CreateInputLayout(inputLayoutDescription);
-
-    if (!out_Declaration)
-    {
-      /*
-        This can happen when the resource system gives you a fallback resource, which then selects a shader that does not fit the mesh layout.
-        E.g. when a material is not yet loaded and the fallback material is used, that fallback material may use another shader, that requires more data streams, than what the mesh provides.
-        This problem will go away, once the proper material is loaded.
-        
-        This can be fixed by ensuring that the fallback material uses a shader that only requires data that is always there, e.g. only position and maybe a texcoord, and of course all meshes must provide at least those data streams.
-        
-        Otherwise, this is harmless, the renderer will ignore invalid drawcalls and once all the correct stuff is available, it will work.
-      */
-
-      xiiLog::Warning("Failed to create vertex input layout.");
-      return XII_FAILURE;
-    }
-
-    it.Value() = out_Declaration;
-  }
-
-  out_Declaration = it.Value();
-  return XII_SUCCESS;
-}
-
 // static
 xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description)
 {
@@ -1324,6 +1279,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiRenderContext::GetOrCreateRenderPass(const xii
   return pRenderPass;
 }
 
+// static
 xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const xiiGALRenderPassCreationDescription& description, const xiiRenderingSetup& renderingSetup)
 {
   RenderPassCache* pRenderPassCache;
@@ -1355,6 +1311,87 @@ xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const x
     return pFramebuffer;
   }
   return nullptr;
+}
+
+// static
+xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, xiiArrayPtr<xiiUInt32> pVertexBufferStrides, xiiArrayPtr<xiiEnum<xiiGALInputElementFrequency>> pInputElementFrequencies, const xiiInputLayoutInfo& declaration, const xiiInputLayoutInfo& customDeclaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration)
+{
+  xiiInt32 iHighestUsedBinding = -1;
+  for (xiiUInt32 uiSlot = 0; uiSlot < declaration.m_VertexStreams.GetCount(); ++uiSlot)
+  {
+    iHighestUsedBinding = xiiMath::Max(iHighestUsedBinding, static_cast<xiiInt32>(declaration.m_VertexStreams[uiSlot].m_uiVertexBufferSlot));
+  }
+  for (xiiUInt32 uiSlot = 0; uiSlot < customDeclaration.m_VertexStreams.GetCount(); ++uiSlot)
+  {
+    iHighestUsedBinding = xiiMath::Max(iHighestUsedBinding, static_cast<xiiInt32>(customDeclaration.m_VertexStreams[uiSlot].m_uiVertexBufferSlot));
+  }
+
+  XII_ASSERT_DEBUG(iHighestUsedBinding < (xiiInt32)pVertexBufferStrides.GetCount(), "Not enough vertex buffer strides.");
+  XII_ASSERT_DEBUG(iHighestUsedBinding < (xiiInt32)pInputElementFrequencies.GetCount(), "Not enough vertex buffer binding rates.");
+
+  ShaderVertexDeclaration vertexDeclaration;
+  {
+    vertexDeclaration.m_pShader = pVertexShader;
+
+    xiiHashStreamWriter32 writer;
+    writer << declaration.m_uiHash;
+    writer << customDeclaration.m_uiHash;
+
+    for (xiiUInt32 uiBufferIndex = 0U; uiBufferIndex <= iHighestUsedBinding; ++uiBufferIndex)
+    {
+      writer << pVertexBufferStrides[uiBufferIndex];
+      writer << pInputElementFrequencies[uiBufferIndex];
+    }
+
+    vertexDeclaration.m_uiInputLayoutHash = writer.GetHashValue();
+  }
+
+  bool bExisted = false;
+  auto it       = s_InputLayouts.FindOrAdd(vertexDeclaration, &bExisted);
+
+  if (!bExisted)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    xiiGALInputLayoutCreationDescription inputLayoutDescription;
+
+    for (xiiUInt32 uiBufferIndex = 0; uiBufferIndex < declaration.m_VertexStreams.GetCount(); ++uiBufferIndex)
+    {
+      auto& stream = declaration.m_VertexStreams[uiBufferIndex];
+
+      xiiGALLayoutElement& layoutElement     = inputLayoutDescription.m_LayoutElements.ExpandAndGetRef();
+      layoutElement.m_Format                 = stream.m_Format;
+      layoutElement.m_Semantic               = stream.m_Semantic;
+      layoutElement.m_uiRelativeOffset       = stream.m_uiOffset;
+      layoutElement.m_uiStride               = pVertexBufferStrides[uiBufferIndex];
+      layoutElement.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
+      layoutElement.m_Frequency              = pInputElementFrequencies[uiBufferIndex];
+      layoutElement.m_uiInstanceDataStepRate = 0;
+    }
+
+    out_Declaration = pVertexShader->CreateInputLayout(inputLayoutDescription);
+
+    if (!out_Declaration)
+    {
+      /*
+        This can happen when the resource system gives you a fallback resource, which then selects a shader that does not fit the mesh layout.
+        E.g. when a material is not yet loaded and the fallback material is used, that fallback material may use another shader, that requires more data streams, than what the mesh provides.
+        This problem will go away, once the proper material is loaded.
+        
+        This can be fixed by ensuring that the fallback material uses a shader that only requires data that is always there, e.g. only position and maybe a texcoord, and of course all meshes must provide at least those data streams.
+        
+        Otherwise, this is harmless, the renderer will ignore invalid drawcalls and once all the correct stuff is available, it will work.
+      */
+
+      xiiLog::Warning("Failed to create vertex input layout.");
+      return XII_FAILURE;
+    }
+
+    it.Value() = out_Declaration;
+  }
+
+  out_Declaration = it.Value();
+  return XII_SUCCESS;
 }
 
 void xiiRenderContext::SetGlobalAndWorldTimeConstants()
@@ -1412,6 +1449,9 @@ void xiiRenderContext::OnEngineShutdown()
 {
   s_FramebufferCache.Clear();
   s_RenderPassCache.Clear();
+  s_InputLayouts.Clear();
+  s_GraphicsPipelineCreationCache.Clear();
+  s_ComputePipelineCreationCache.Clear();
 
   for (xiiRenderContext* pRenderContext : s_Instances)
   {

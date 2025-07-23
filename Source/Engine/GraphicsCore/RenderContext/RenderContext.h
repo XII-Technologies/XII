@@ -352,11 +352,10 @@ private:
   void                          ApplyTextureUAVBindings();
   void                          ApplySamplerBindings();
 
-  void                            BeginInternalRenderPass();
-  void                            BeginClearThenLoadInternalRenderPass();
-  void                            EndInternalRenderPass();
+  void BeginInternalRenderPass();
+  void BeginClearThenLoadInternalRenderPass();
+  void EndInternalRenderPass();
 
-  xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, const xiiInputLayoutInfo& declaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
 
 private:
   struct RenderPassCache
@@ -392,9 +391,12 @@ private:
 
   static xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(const xiiGALRenderPassCreationDescription& description, const xiiRenderingSetup& renderingSetup);
 
+  static xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, xiiArrayPtr<xiiUInt32> pVertexBufferStrides, xiiArrayPtr<xiiEnum<xiiGALInputElementFrequency>> pInputElementFrequencies, const xiiInputLayoutInfo& declaration, const xiiInputLayoutInfo& customDeclaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
+
 private:
-  static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>  s_RenderPassCache;
-  static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash> s_FramebufferCache;
+  static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>                                      s_RenderPassCache;
+  static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash>                                     s_FramebufferCache;
+  static xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                                                              s_InputLayouts;
 
 private:
   xiiSharedPtr<xiiGALCommandList> m_pCommandList;
@@ -438,8 +440,11 @@ private:
   xiiMaterialResourceHandle m_hNewMaterial;
   xiiMaterialResourceHandle m_hMaterial;
 
-  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 4U> m_VertexBuffers;
-  xiiHybridArray<xiiUInt64, 4U>                  m_VertexBuffersOffsets;
+  xiiHybridArray<xiiSharedPtr<xiiGALBuffer>, 4U>           m_VertexBuffers;
+  xiiHybridArray<xiiUInt64, 4U>                            m_VertexBufferOffsets;
+  xiiHybridArray<xiiUInt32, 4U>                            m_VertexBufferStrides;
+  xiiHybridArray<xiiEnum<xiiGALInputElementFrequency>, 4U> m_VertexBufferFrequencies;
+  xiiInputLayoutInfo                                       m_CustomInputLayout;
 
   xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
   xiiUInt64                  m_uiIndexDataOffset = 0ULL;
