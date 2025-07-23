@@ -14,7 +14,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshResource);
 xiiUInt32 xiiMeshResource::s_uiMeshBufferNameSuffix = 0;
 
 xiiMeshResource::xiiMeshResource() :
-  xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
+  xiiResource(DoUpdate::OnAnyThread, 1)
 {
   m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
 }

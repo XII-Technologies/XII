@@ -11,8 +11,6 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiResource, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiResource::DoUpdate xiiResource::UpdateGraphicsResource = xiiResource::DoUpdate::OnAnyThread;
-
 XII_CORE_DLL void IncreaseResourceRefCount(xiiResource* pResource, const void* pOwner)
 {
 #if XII_ENABLED(XII_RESOURCEHANDLE_STACK_TRACES)
@@ -76,14 +74,9 @@ xiiResource::~xiiResource()
   XII_ASSERT_DEV(!xiiResourceManager::IsQueuedForLoading(this), "Cannot deallocate a resource while it is still qeued for loading");
 }
 
-xiiResource::xiiResource(DoUpdate ResourceUpdateThread, xiiUInt8 uiQualityLevelsLoadable)
+xiiResource::xiiResource(DoUpdate resourceUpdateThread, xiiUInt8 uiQualityLevelsLoadable)
 {
-  if (ResourceUpdateThread == DoUpdate::OnGraphicsResourceThreads)
-  {
-    ResourceUpdateThread = UpdateGraphicsResource;
-  }
-
-  m_Flags.AddOrRemove(xiiResourceFlags::UpdateOnMainThread, ResourceUpdateThread == DoUpdate::OnMainThread);
+  m_Flags.AddOrRemove(xiiResourceFlags::UpdateOnMainThread, resourceUpdateThread == DoUpdate::OnMainThread);
 
   m_uiQualityLevelsLoadable = uiQualityLevelsLoadable;
 }

@@ -1302,7 +1302,7 @@ xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const x
   return nullptr;
 }
 
-//static
+// static
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiRenderContext::GetOrCreatePipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description)
 {
   xiiSharedPtr<xiiGALGraphicsPipelineState>& pGraphicsPipelineState = s_GraphicsPipelineCreationCache.FindOrAdd(description);
@@ -1317,7 +1317,7 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiRenderContext::GetOrCreatePipelineS
   return pGraphicsPipelineState;
 }
 
-//static
+// static
 xiiSharedPtr<xiiGALComputePipelineState> xiiRenderContext::GetOrCreatePipelineState(const xiiGALComputePipelineStateCreationDescription& description)
 {
   xiiSharedPtr<xiiGALComputePipelineState>& pComputePipelineState = s_ComputePipelineCreationCache.FindOrAdd(description);
