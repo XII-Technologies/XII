@@ -29,6 +29,6 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
 private:
-  vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};
-  xiiStaticArray<vk::PipelineColorBlendAttachmentState, 2U> m_BlendAttachmentState;
+  vk::PipelineColorBlendStateCreateInfo                     m_BlendState = {};
+  xiiHybridArray<vk::PipelineColorBlendAttachmentState, 2U> m_BlendAttachmentState;
 };
