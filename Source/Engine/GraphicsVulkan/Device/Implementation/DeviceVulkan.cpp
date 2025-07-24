@@ -1812,8 +1812,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, shadingRates.GetData(), m_InstanceDispatchLoader));
       }
 
-      const xiiUInt32 uiShadingRateCount = static_cast<xiiUInt8>(xiiMath::Min(shadingRates.GetCount(), XII_GAL_MAX_SHADING_RATE));
-      for (xiiUInt32 i = 0; i < uiShadingRateCount; ++i)
+      for (xiiUInt32 i = 0U; i < shadingRates.GetCount(); ++i)
       {
         const auto& srcShadingRate = shadingRates[i];
         auto&       dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
@@ -1926,7 +1925,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       }
     }
 
-    static_assert(sizeof(m_AdapterDescription.m_ShadingRateProperties) == 80, "There may be uninitialized shading rate properties.");
+    static_assert(sizeof(m_AdapterDescription.m_ShadingRateProperties) == 64, "There may be uninitialized shading rate properties.");
   }
 
   // Draw Command Properties
@@ -2061,11 +2060,74 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     static_assert(sizeof(m_AdapterDescription.m_MemoryProperties) == 40, "There may be uninitialized memory properties.");
   }
 
+  // Device Limits
+  {
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxConstantBuffers = m_PhysicalDeviceProperties.limits.maxPerStageDescriptorUniformBuffers;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxVertexBuffers   = m_PhysicalDeviceProperties.limits.maxVertexInputBindings;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxSamplers        = m_PhysicalDeviceProperties.limits.maxPerStageDescriptorSamplers;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxRenderTargets   = m_PhysicalDeviceProperties.limits.maxColorAttachments;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxViewports       = m_PhysicalDeviceProperties.limits.maxViewports;
+
+    // KHR_fragment_shading_rate support.
+    if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate == vk::True)
+    {
+      // maxFragmentSize.width/height is the largest texel coverage (e.g. 4x4).
+      xiiUInt32 uiMaxWidth = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.width;
+      xiiUInt32 uiMaxHeight = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.height;
+
+      // Compute how many discrete rates per axis: {1,2,4,...,max}
+      xiiUInt32 uiXRates = xiiMath::FirstBitHigh(uiMaxWidth) + 1U;
+      xiiUInt32 uiYRates = xiiMath::FirstBitHigh(uiMaxHeight) + 1U;
+
+      // Total combinations = all pairs of (xRate, yRate)
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = uiXRates * uiYRates;
+
+      // X-rate bits sit in the high half of a 4-bit enum: shift = log2(uiMaxWidth)
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift = xiiMath::FirstBitHigh(uiMaxWidth);
+    }
+    // EXT_fragment_density_map (desktop) fallback.
+    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap == vk::True)
+    {
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 1U;
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
+    }
+    // EXT_fragment_density_map2 (mobile deferred) fallback.
+    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.fragmentDensityMapDeferred == vk::True)
+    {
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 1U;
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
+    }
+    // No variable‐rate shading support.
+    else
+    {
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 0U;
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
+    }  
+
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxResourceSignatures = m_PhysicalDeviceProperties.limits.maxBoundDescriptorSets;
+
+    // Buffer sizes.
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize  = m_PhysicalDeviceProperties.limits.maxPushConstantsSize;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxUniformBufferRange = m_PhysicalDeviceProperties.limits.maxUniformBufferRange;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxStorageBufferRange = m_PhysicalDeviceProperties.limits.maxStorageBufferRange;
+
+    // Descriptor counts per set.
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxSampledImages         = m_PhysicalDeviceProperties.limits.maxDescriptorSetSampledImages;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxStorageImages         = m_PhysicalDeviceProperties.limits.maxDescriptorSetStorageImages;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxStorageBuffers        = m_PhysicalDeviceProperties.limits.maxDescriptorSetStorageBuffers;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxCombinedImageSamplers = m_PhysicalDeviceProperties.limits.maxDescriptorSetSampledImages;
+
+    // Compute shader limits.
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupInvocations = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupInvocations;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupSizeX       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[0];
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupSizeY       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[1];
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupSizeZ       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[2];
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeSharedMemorySize     = m_PhysicalDeviceProperties.limits.maxComputeSharedMemorySize;
+  }
+
   // Queue Information
   {
-    const xiiUInt32 uiMaxAdapterQueues = xiiMath::Min(XII_GAL_MAX_ADAPTER_QUEUE_COUNT, m_PhysicalDeviceQueueFamilyProperties.GetCount());
-
-    for (xiiUInt32 uiQueueIndex = 0U; uiQueueIndex < uiMaxAdapterQueues; ++uiQueueIndex)
+    for (xiiUInt32 uiQueueIndex = 0U; uiQueueIndex < m_PhysicalDeviceQueueFamilyProperties.GetCount(); ++uiQueueIndex)
     {
       const vk::QueueFamilyProperties& sourceQueue      = m_PhysicalDeviceQueueFamilyProperties[uiQueueIndex];
       xiiGALCommandQueueProperties&    destinationQueue = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
