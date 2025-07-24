@@ -659,7 +659,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
     }
 
-    xiiLogBlock applyBindingsBlock("Applying Shader Bindings", pShaderPermutation != nullptr ? pShaderPermutation->GetResourceDescription().GetData() : "");
+    xiiLogBlock applyBindingsBlock("Applying Shader Bindings", pShaderPermutation != nullptr ? pShaderPermutation->GetResourceDescription().GetView() : xiiStringView());
 
     if ((bForce || bRebuildInputLayout) && m_RenderContextScope == RenderContextScope::Graphics)
     {
@@ -676,9 +676,8 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
         }
       }
 
-      xiiSharedPtr<xiiGALInputLayout> pInputLayout;
-      const bool                      bHasInputLayout = m_pInputLayoutInfo != nullptr || !m_CustomInputLayout.m_VertexStreams.IsEmpty();
-      if (bHasInputLayout && BuildInputLayout(m_ActiveGALShaders[xiiGALShaderType::Vertex], m_VertexBufferStrides, m_VertexBufferFrequencies, *m_pInputLayoutInfo, m_CustomInputLayout, pInputLayout).Failed())
+      const bool bHasInputLayout = m_pInputLayoutInfo != nullptr || !m_CustomInputLayout.m_VertexStreams.IsEmpty();
+      if (bHasInputLayout && BuildInputLayout(m_ActiveGALShaders[xiiGALShaderType::Vertex], m_VertexBufferStrides, m_VertexBufferFrequencies, *m_pInputLayoutInfo, m_CustomInputLayout, m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pInputLayout).Failed())
         return XII_FAILURE;
 
       // If there is a vertex buffer we need a valid vertex declaration as well.
@@ -691,7 +690,6 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
 
       m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
-
       m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
     }
 
