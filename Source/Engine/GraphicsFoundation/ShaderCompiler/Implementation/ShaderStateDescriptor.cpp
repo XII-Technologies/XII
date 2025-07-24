@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 struct xiiGALShaderStateVersion
 {
@@ -170,7 +171,7 @@ void xiiGALShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
 
 xiiUInt32 xiiGALShaderStateResourceDescriptor::CalculateHash() const
 {
-  return m_BlendDescription.CalculateHash() + m_RasterizerDescription.CalculateHash() + m_DepthStencilDescription.CalculateHash();
+  return xiiGALDescriptorHash::Hash(m_BlendDescription) + m_RasterizerDescription.CalculateHash() + m_DepthStencilDescription.CalculateHash();
 }
 
 static xiiStringView InsertNumber(const char* szString, xiiUInt32 uiNumber, xiiStringBuilder& ref_sTemp)
@@ -412,7 +413,7 @@ xiiResult xiiGALShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 
     xiiStringBuilder s;
 
-    m_BlendDescription.m_RenderTargets.SetCount(XII_GAL_MAX_RENDERTARGET_COUNT);
+    m_BlendDescription.m_RenderTargets.SetCount(8U);
     for (xiiUInt32 i = 0; i < m_BlendDescription.m_RenderTargets.GetCount(); ++i)
     {
       m_BlendDescription.m_RenderTargets[i].m_bBlendEnable          = GetBoolStateVariable(VariableValues, InsertNumber("BlendEnable{0}", i, s), m_BlendDescription.m_RenderTargets[0].m_bBlendEnable);

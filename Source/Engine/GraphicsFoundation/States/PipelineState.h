@@ -156,21 +156,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescri
 };
 
 /// \brief This describes the ray tracing pipeline information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public xiiHashableStruct<xiiGALRayTracingPipelineDescription>
 {
   XII_DECLARE_POD_TYPE();
-
-  XII_ALWAYS_INLINE bool operator==(const xiiGALRayTracingPipelineDescription& rhs) const = default;
 
   xiiUInt16 m_uiShaderRecordSize  = 0U; ///< Size of the additional data passed to the shader. Shader record size plus shader group size (32 bytes) must be aligned to 32 bytes. Shader record size plus shader group size (32 bytes) must not exceed 4096 bytes
   xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
 };
 
 /// \brief This describes the tile pipeline information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription : public xiiHashableStruct<xiiGALTilePipelineDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription
 {
-  xiiEnum<xiiGALSampleCount>                                                    m_SampleCount = xiiGALSampleCount::OneSample; ///< The number of samples in the render targets.
-  xiiStaticArray<xiiEnum<xiiGALResourceFormat>, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargetFormats;                        ///< The render target formats.
+  XII_ALWAYS_INLINE bool operator==(const xiiGALTilePipelineDescription& rhs) const = default;
+
+  xiiEnum<xiiGALSampleCount>                        m_SampleCount = xiiGALSampleCount::OneSample; ///< The number of samples in the render targets.
+  xiiHybridArray<xiiEnum<xiiGALResourceFormat>, 2U> m_RenderTargetFormats;                        ///< The render target formats.
 };
 
 /// \brief This describes the pipeline state creation description.
