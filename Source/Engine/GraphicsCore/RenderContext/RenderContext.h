@@ -230,7 +230,7 @@ public:
   /// \brief Binds raw GPU buffers with custom vertex/index layout.
   ///
   /// Allows procedural or non-resource-backed geometry.
-  void BindMeshBuffer(xiiSharedPtr<xiiGALBuffer> pVertexBuffer0, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers = {});
+  void BindMeshBuffer(xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount);
 
   /// \brief Issues a draw call for the currently bound mesh buffer.
   ///
@@ -317,7 +317,7 @@ public:
   ///
   /// \param topology         - The type of primitive topology to use.
   /// \param uiPrimitiveCount - The number of primitives to render.
-  XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount) { BindMeshBuffer(nullptr, nullptr, nullptr, topology, uiPrimitiveCount); }
+  XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount) { BindMeshBuffer({}, nullptr, nullptr, topology, uiPrimitiveCount); }
 
   void SetGlobalAndWorldTimeConstants();
   void SetGlobalAndWorldTimeConstants(xiiTime worldTime);
@@ -357,6 +357,10 @@ private:
   void BeginClearThenLoadInternalRenderPass();
   void EndInternalRenderPass();
 
+  void PrepareGraphicsPipelineDescriptor(xiiShaderPermutationResource* pShaderPermutation);
+  void PrepareComputePipelineDescriptor(xiiShaderPermutationResource* pShaderPermutation);
+
+  void ApplyScissor();
 
 private:
   struct RenderPassCache
