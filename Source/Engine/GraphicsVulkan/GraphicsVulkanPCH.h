@@ -85,7 +85,6 @@ XII_DEFINE_AS_POD_TYPE(vk::Semaphore);
 XII_DEFINE_AS_POD_TYPE(vk::ExtensionProperties);
 XII_DEFINE_AS_POD_TYPE(vk::Fence);
 XII_DEFINE_AS_POD_TYPE(vk::PhysicalDevice);
-XII_DEFINE_AS_POD_TYPE(vk::Image);
 XII_DEFINE_AS_POD_TYPE(vk::QueueFamilyProperties);
 XII_DEFINE_AS_POD_TYPE(vk::PhysicalDeviceFragmentShadingRateKHR);
 XII_DEFINE_AS_POD_TYPE(vk::DescriptorType);
@@ -94,6 +93,10 @@ XII_DEFINE_AS_POD_TYPE(vk::WriteDescriptorSet);
 XII_DEFINE_AS_POD_TYPE(vk::MultiDrawInfoEXT);
 XII_DEFINE_AS_POD_TYPE(vk::MultiDrawIndexedInfoEXT);
 XII_DEFINE_AS_POD_TYPE(vk::CommandBuffer);
+XII_DEFINE_AS_POD_TYPE(vk::Image);
+XII_DEFINE_AS_POD_TYPE(vk::Buffer);
+XII_DEFINE_AS_POD_TYPE(vk::Viewport);
+XII_DEFINE_AS_POD_TYPE(vk::Rect2D);
 
 #define VK_REMAINING_ARRAY_LAYERS (~0U)
 #define VK_REMAINING_MIP_LEVELS   (~0U)

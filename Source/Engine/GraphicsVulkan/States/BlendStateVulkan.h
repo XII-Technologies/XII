@@ -30,5 +30,5 @@ protected:
 
 private:
   vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};
-  xiiStaticArray<vk::PipelineColorBlendAttachmentState, XII_GAL_MAX_RENDERTARGET_COUNT> m_BlendAttachmentState;
+  xiiStaticArray<vk::PipelineColorBlendAttachmentState, 2U> m_BlendAttachmentState;
 };

@@ -644,11 +644,12 @@ void xiiGALCommandListVulkan::SetBlendFactorPlatform(const xiiColor& blendFactor
 
 void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
-  XII_VERIFY_COMMAND_LIST(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
+  XII_ASSERT_DEV(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  vk::Viewport vkViewPorts[XII_GAL_MAX_VIEWPORT_COUNT];
+  xiiHybridArray<vk::Viewport, 2U> vkViewPorts(pDeviceVulkan->GetAllocator());
+  vkViewPorts.SetCountUninitialized(pViewports.GetCount());
 
   for (xiiUInt32 uiViewPortIndex = 0; uiViewPortIndex < pViewports.GetCount(); ++uiViewPortIndex)
   {
@@ -685,16 +686,17 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
     vkViewPorts[uiViewPortIndex].height = -vkViewPorts[uiViewPortIndex].height;
   }
 
-  m_vkCommandBuffer.setViewport(0, m_Viewports.GetCount(), vkViewPorts, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_vkCommandBuffer.setViewport(0, vkViewPorts.GetCount(), vkViewPorts.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
-  XII_VERIFY_COMMAND_LIST(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
+  XII_ASSERT_DEV(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  vk::Rect2D vkScissorRects[XII_GAL_MAX_VIEWPORT_COUNT];
+  xiiHybridArray<vk::Rect2D, 2U> vkScissorRects(pDeviceVulkan->GetAllocator());
+  vkScissorRects.SetCountUninitialized(pRects.GetCount());
 
   for (xiiUInt32 uiScissorRectIndex = 0; uiScissorRectIndex < pRects.GetCount(); ++uiScissorRectIndex)
   {
@@ -702,7 +704,7 @@ void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pR
     vkScissorRects[uiScissorRectIndex].extent = vk::Extent2D{pRects[uiScissorRectIndex].width, pRects[uiScissorRectIndex].height};
   }
 
-  m_vkCommandBuffer.setScissor(0, m_ScissorRects.GetCount(), vkScissorRects, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_vkCommandBuffer.setScissor(0, vkScissorRects.GetCount(), vkScissorRects.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode)
@@ -2840,8 +2842,11 @@ void xiiGALCommandListVulkan::PrepareForDraw()
   {
     xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-    vk::Buffer     vkVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
-    vk::DeviceSize vkVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT];
+    xiiHybridArray<vk::Buffer, 2U> vkVertexBuffers(pDeviceVulkan->GetAllocator());
+    vkVertexBuffers.SetCountUninitialized(m_VertexStreams.GetCount());
+
+    xiiHybridArray<vk::DeviceSize, 2U> vkVertexBufferOffsets(pDeviceVulkan->GetAllocator());
+    vkVertexBufferOffsets.SetCountUninitialized(m_VertexStreams.GetCount());
 
     for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
     {
@@ -2862,7 +2867,7 @@ void xiiGALCommandListVulkan::PrepareForDraw()
 
     if (!m_VertexStreams.IsEmpty())
     {
-      m_vkCommandBuffer.bindVertexBuffers(0, m_VertexStreams.GetCount(), vkVertexBuffers, vkVertexBufferOffsets, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      m_vkCommandBuffer.bindVertexBuffers(0, m_VertexStreams.GetCount(), vkVertexBuffers.GetData(), vkVertexBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
     }
 
     m_CommandListFlags.Remove(CommandListFlags::CommittedVertexBuffersModified);
