@@ -699,8 +699,6 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       // Set render state from shader.
       // Create pipeline state that is valid for this scope.
 
-      xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
       if (m_RenderContextScope == RenderContextScope::Graphics)
       {
         m_GraphicsPipelineDescription.m_pPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : nullptr;
