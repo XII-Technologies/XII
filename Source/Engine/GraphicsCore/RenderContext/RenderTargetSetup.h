@@ -11,7 +11,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderTargets
 {
   bool operator==(const xiiRenderTargets& other) const;
 
-  xiiSharedPtr<xiiGALTextureView> m_pRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
+  xiiSharedPtr<xiiGALTextureView> m_pRTs[8];
   xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
 };
 

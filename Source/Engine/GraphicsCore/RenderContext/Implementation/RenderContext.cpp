@@ -5,7 +5,6 @@
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
-#include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
@@ -1352,10 +1351,10 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexS
     writer << declaration.m_uiHash;
     writer << customDeclaration.m_uiHash;
 
-    for (xiiUInt32 uiBufferIndex = 0U; uiBufferIndex <= iHighestUsedBinding; ++uiBufferIndex)
+    for (xiiInt32 iBufferIndex = 0; iBufferIndex <= iHighestUsedBinding; ++iBufferIndex)
     {
-      writer << pVertexBufferStrides[uiBufferIndex];
-      writer << pInputElementFrequencies[uiBufferIndex];
+      writer << pVertexBufferStrides[iBufferIndex];
+      writer << pInputElementFrequencies[iBufferIndex];
     }
 
     vertexDeclaration.m_uiInputLayoutHash = writer.GetHashValue();

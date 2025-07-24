@@ -3,6 +3,7 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
+#include <GraphicsCore/Meshes/MeshBufferResource.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 

@@ -7,7 +7,7 @@ bool xiiRenderTargets::operator==(const xiiRenderTargets& other) const
   if (m_pDSTarget != other.m_pDSTarget)
     return false;
 
-  for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_GAL_MAX_RENDERTARGET_COUNT; ++uiRTIndex)
+  for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_ARRAY_SIZE(m_pRTs); ++uiRTIndex)
   {
     if (m_pRTs[uiRTIndex] != other.m_pRTs[uiRTIndex])
       return false;
