@@ -231,6 +231,9 @@ public:
   /// \brief This retrieves the device feature states. See xiiGALDeviceFeatures.
   [[nodiscard]] const xiiGALDeviceFeatures& GetFeatures() const;
 
+  /// \brief This retrieves the device limits. See xiiGALDeviceLimits.
+  [[nodiscard]] const xiiGALDeviceLimits& GetLimits() const;
+
   /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
   [[nodiscard]] xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
 

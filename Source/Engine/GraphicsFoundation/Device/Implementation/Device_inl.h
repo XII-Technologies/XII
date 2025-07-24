@@ -24,6 +24,11 @@ XII_ALWAYS_INLINE const xiiGALDeviceFeatures& xiiGALDevice::GetFeatures() const
   return m_AdapterDescription.m_Features;
 }
 
+XII_ALWAYS_INLINE const xiiGALDeviceLimits& xiiGALDevice::GetLimits() const
+{
+  return m_AdapterDescription.m_DeviceLimits;
+}
+
 XII_ALWAYS_INLINE xiiEnum<xiiGALGraphicsDeviceType> xiiGALDevice::GetGraphicsDeviceType() const
 {
   return m_Description.m_GraphicsDeviceType;
