@@ -95,16 +95,21 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
     return XII_FAILURE;
   }
 
-  auto pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
+  xiiSharedPtr<xiiGALDevice> pDevice        = xiiGALDevice::GetDefaultDevice();
+  auto                       pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
 
-  if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
+
+  pCommandList->Begin();
   {
     m_pImageCapture->Capture(m_pSwapChain, pCommandList, m_uiCurrentFrame);
 
     ++m_uiCurrentFrame;
-
-    pCommandList->Submit();
   }
+  pCommandList->End();
+
+  pGraphicsQueue->Submit(pCommandList);
 
   if (m_pImageCapture)
   {
@@ -118,9 +123,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
       const xiiUInt32 uiStride      = 4 * textureDescription.m_Size.width;
       const xiiUInt32 uiDepthStride = 4 * textureDescription.m_Size.width * textureDescription.m_Size.height;
 
-      auto pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
-
-      if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+      pCommandList->Begin();
       {
         xiiGALTextureMipLevelData      sourceSubResource;
         xiiGALMappedTextureSubresource mappedSubResource;
@@ -157,8 +160,10 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
         }
 
         pCommandList->UnmapTextureSubresource(capture.m_pTexture, sourceSubResource).IgnoreResult();
-        pCommandList->Submit();
       }
+      pCommandList->End();
+
+      pGraphicsQueue->Submit(pCommandList);
 
       m_pImageCapture->RecycleStagingTexture(std::move(capture.m_pTexture));
       xiiImageHeader header;
