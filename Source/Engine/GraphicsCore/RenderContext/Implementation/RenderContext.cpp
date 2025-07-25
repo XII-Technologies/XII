@@ -1417,9 +1417,23 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexS
       layoutElement.m_Format                 = stream.m_Format;
       layoutElement.m_Semantic               = stream.m_Semantic;
       layoutElement.m_uiRelativeOffset       = stream.m_uiOffset;
-      layoutElement.m_uiStride               = pVertexBufferStrides[uiBufferIndex];
+      layoutElement.m_uiStride               = pVertexBufferStrides[stream.m_uiVertexBufferSlot];
       layoutElement.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
-      layoutElement.m_Frequency              = pInputElementFrequencies[uiBufferIndex];
+      layoutElement.m_Frequency              = pInputElementFrequencies[stream.m_uiVertexBufferSlot];
+      layoutElement.m_uiInstanceDataStepRate = 0;
+    }
+
+    for (xiiUInt32 uiBufferIndex = 0; uiBufferIndex < customDeclaration.m_VertexStreams.GetCount(); ++uiBufferIndex)
+    {
+      auto& stream = customDeclaration.m_VertexStreams[uiBufferIndex];
+
+      xiiGALLayoutElement& layoutElement     = inputLayoutDescription.m_LayoutElements.ExpandAndGetRef();
+      layoutElement.m_Format                 = stream.m_Format;
+      layoutElement.m_Semantic               = stream.m_Semantic;
+      layoutElement.m_uiRelativeOffset       = stream.m_uiOffset;
+      layoutElement.m_uiStride               = pVertexBufferStrides[stream.m_uiVertexBufferSlot];
+      layoutElement.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
+      layoutElement.m_Frequency              = pInputElementFrequencies[stream.m_uiVertexBufferSlot];
       layoutElement.m_uiInstanceDataStepRate = 0;
     }
 
