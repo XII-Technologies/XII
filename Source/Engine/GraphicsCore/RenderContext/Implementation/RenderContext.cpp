@@ -974,7 +974,7 @@ void xiiRenderContext::ApplyConstantBufferBindings()
 
   const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
-  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
     if (binding.m_ResourceType != xiiGALShaderResourceType::ConstantBuffer)
       continue;
@@ -1012,7 +1012,7 @@ void xiiRenderContext::ApplyBufferSRVBindings()
 
   const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
-  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
     if (binding.m_ResourceType != xiiGALShaderResourceType::BufferSRV)
       continue;
@@ -1040,9 +1040,9 @@ void xiiRenderContext::ApplyTextureSRVBindings()
 
   const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
-  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureSRV)
+    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureSRV && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
@@ -1068,7 +1068,7 @@ void xiiRenderContext::ApplyBufferUAVBindings()
 
   const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
-  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
     if (binding.m_ResourceType != xiiGALShaderResourceType::BufferUAV)
       continue;
@@ -1096,7 +1096,7 @@ void xiiRenderContext::ApplyTextureUAVBindings()
 
   const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
-  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
     if (binding.m_ResourceType != xiiGALShaderResourceType::TextureUAV)
       continue;
@@ -1124,7 +1124,7 @@ void xiiRenderContext::ApplySamplerBindings()
 
   const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
-  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
     if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
       continue;
