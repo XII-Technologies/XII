@@ -7,7 +7,7 @@ bool xiiRenderTargets::operator==(const xiiRenderTargets& other) const
   if (m_pDSTarget != other.m_pDSTarget)
     return false;
 
-  for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_GAL_MAX_RENDERTARGET_COUNT; ++uiRTIndex)
+  for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_ARRAY_SIZE(m_pRTs); ++uiRTIndex)
   {
     if (m_pRTs[uiRTIndex] != other.m_pRTs[uiRTIndex])
       return false;
@@ -25,12 +25,13 @@ void xiiRenderingSetup::Build()
 
   for (xiiUInt32 i = 0; i < m_Attachments.GetCount(); ++i)
   {
-    const Attachment& attachment      = m_Attachments[i];
-    const auto&       viewDescription = attachment.m_pView->GetDescription();
+    const Attachment&                           attachment         = m_Attachments[i];
+    const xiiGALTextureViewCreationDescription& viewDescription    = attachment.m_pView->GetDescription();
+    const xiiGALTextureCreationDescription&     textureDescription = attachment.m_pView->GetTexture()->GetDescription();
 
     xiiGALRenderPassAttachmentDescription renderPassAttachment;
     renderPassAttachment.m_Format         = viewDescription.m_Format;
-    renderPassAttachment.m_uiSampleCount  = attachment.m_pView->GetTexture()->GetDescription().m_uiSampleCount;
+    renderPassAttachment.m_uiSampleCount  = textureDescription.m_uiSampleCount;
     renderPassAttachment.m_LoadOperation  = attachment.m_LoadOp;
     renderPassAttachment.m_StoreOperation = attachment.m_StoreOp;
 
@@ -66,8 +67,8 @@ void xiiRenderingSetup::Build()
 
     for (xiiUInt32 i = 0; i < m_Attachments.GetCount(); ++i)
     {
-      const Attachment& attachment      = m_Attachments[i];
-      const auto&       viewDescription = attachment.m_pView->GetDescription();
+      const Attachment&                           attachment      = m_Attachments[i];
+      const xiiGALTextureViewCreationDescription& viewDescription = attachment.m_pView->GetDescription();
 
       if (xiiGALResourceFormat::IsDepthFormat(viewDescription.m_Format))
       {

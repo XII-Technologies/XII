@@ -437,14 +437,22 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
       // Download image
       {
-        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
+        xiiSharedPtr<xiiGALDevice> pDevice        = xiiGALDevice::GetDefaultDevice();
+        auto                       pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
 
-        auto pGALCommandList = pGALCommandQueue->BeginCommandList();
+        xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+        XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-        pGALCommandList->BeginDebugGroup("Thumbnail Readback");
-        pGALCommandList->CopyTexture(m_pThumbnailColorRT, m_pThumbnailColorRTStaging);
-
-        pGALCommandList->EndDebugGroup();
+        pCommandList->Begin();
+        {
+          pCommandList->BeginDebugGroup("Thumbnail Readback");
+          {
+            pCommandList->CopyTexture(m_pThumbnailColorRT, m_pThumbnailColorRTStaging);
+          }
+          pCommandList->EndDebugGroup();
+        }
+        pCommandList->End();
+        pGraphicsQueue->Submit(pCommandList);
 
         const xiiEnum<xiiGALResourceFormat> format = m_pThumbnailColorRT->GetDescription().m_Format;
 
@@ -460,49 +468,52 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         const xiiUInt32 uiDepthStride = 4U * m_uiThumbnailWidth * m_uiThumbnailHeight;
         auto*           pImageData    = image.GetPixelPointer<xiiUInt8>();
 
-        xiiGALTextureMipLevelData sourceSubResource;
-
-        pGALCommandList->BeginDebugGroup("Thumbnail Readback Download");
-
-        xiiGALMappedTextureSubresource mappedSubResource;
-        if (pGALCommandList->MapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
+        pCommandList->Begin();
         {
-          const auto& textureDescription = m_pThumbnailColorRTStaging->GetDescription();
-          const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-          if (mappedSubResource.m_pData)
+          pCommandList->BeginDebugGroup("Thumbnail Readback Download");
           {
-            /// \todo Support depth pitch.
-            if (mappedSubResource.m_uiStride == uiStride)
+            xiiGALTextureMipLevelData      sourceSubResource;
+            xiiGALMappedTextureSubresource mappedSubResource;
+            if (pCommandList->MapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
             {
-              const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+              const auto& textureDescription = m_pThumbnailColorRTStaging->GetDescription();
+              const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
-              memcpy(pImageData, mappedSubResource.m_pData, uiMemorySize);
-            }
-            else
-            {
-              // Copy row by row.
-              const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-              for (xiiUInt32 y = 0; y < uiHeight; ++y)
+              if (mappedSubResource.m_pData)
               {
-                const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-                void*       pDestination = xiiMemoryUtils::AddByteOffset(pImageData, y * uiStride);
+                /// \todo Support depth pitch.
+                if (mappedSubResource.m_uiStride == uiStride)
+                {
+                  const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
 
-                memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
+                  memcpy(pImageData, mappedSubResource.m_pData, uiMemorySize);
+                }
+                else
+                {
+                  // Copy row by row.
+                  const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+
+                  for (xiiUInt32 y = 0; y < uiHeight; ++y)
+                  {
+                    const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
+                    void*       pDestination = xiiMemoryUtils::AddByteOffset(pImageData, y * uiStride);
+
+                    memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
+                  }
+                }
               }
+              else
+              {
+                xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
+              }
+
+              pCommandList->UnmapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
             }
           }
-          else
-          {
-            xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
-          }
-
-          pGALCommandList->UnmapTextureSubresource(m_pThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
+          pCommandList->EndDebugGroup();
         }
-
-        pGALCommandList->EndDebugGroup();
-        pGALCommandList->Submit();
+        pCommandList->End();
+        pGraphicsQueue->Submit(pCommandList);
 
         xiiImage  imageSwap;
         xiiImage* pImage     = &image;

@@ -121,6 +121,8 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
 
 xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 {
+  XII_LOCK(m_QueueMutex);
+
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // Update last completed fence value to unlock all waiting events.

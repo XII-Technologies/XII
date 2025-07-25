@@ -18,20 +18,13 @@
 #include <Core/System/Window.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <GraphicsFoundation/States/PipelineState.h>
-#include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsCore/Textures/Texture2DResource.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -389,47 +382,6 @@ public:
     // Create a device
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
-      deviceCreationDescription.m_DeviceFeatures.m_SeparablePrograms                  = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceQueries              = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WireframeFill                      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ComputeShaders                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_GeometryShaders                    = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_Tessellation                       = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MeshShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_RayTracing                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BindlessResources                  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_OcclusionQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BinaryOcclusionQueries             = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TimestampQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PipelineStatisticsQueries          = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_DurationQueries                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthBiasClamp                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthClamp                         = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_IndependentBlend                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DualSourceBlend                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultiViewport                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PixelUAVWritesAndAtomics           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderFloat16                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer16BitAccess          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer16BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInputOutput16                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInt8                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SparseResources                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
       deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -561,7 +513,6 @@ public:
 
   void UpdateSwapChain()
   {
-    // Create a Swapchain
     if (!m_pSwapChain)
     {
       xiiGALSwapChainCreationDescription swapChainDesc;
@@ -622,9 +573,8 @@ private:
 
 #if XII_ENABLED(USE_DIRECTORY_WATCHER)
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  bool                              m_bFileModified = false;
 #endif
-
-  bool m_bFileModified = false;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiShaderExplorerApp);

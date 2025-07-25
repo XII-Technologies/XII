@@ -508,7 +508,7 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
 //////////////////////////////////////////////////////////////////////////
 
 xiiMeshBufferResource::xiiMeshBufferResource() :
-  xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
+  xiiResource(DoUpdate::OnAnyThread, 1)
 {
 }
 

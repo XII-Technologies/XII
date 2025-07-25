@@ -4,28 +4,11 @@
 
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Math/Vec3.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief Provides shader utilities through static methods.
-class XII_GRAPHICSFOUNDATION_DLL xiiShaderUtilities
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderUtilities
 {
 public:
-  enum class xiiBuiltinShaderType
-  {
-    CopyImage,
-    CopyImageArray,
-    DownscaleImage,
-    DownscaleImageArray,
-  };
-
-  struct xiiBuiltinShader
-  {
-    xiiSharedPtr<xiiGALShader>            m_pActiveGALShaders[xiiGALShaderType::ENUM_COUNT];
-    xiiSharedPtr<xiiGALBlendState>        m_pBlendState;
-    xiiSharedPtr<xiiGALDepthStencilState> m_pDepthStencilState;
-    xiiSharedPtr<xiiGALRasterizerState>   m_pRasterizerState;
-  };
-
   /// \brief Converts a 3-component 32-bit vector into the RGB10 format.
   XII_ALWAYS_INLINE static xiiUInt32 Float3ToRGB10(xiiVec3 value)
   {
@@ -61,12 +44,5 @@ public:
   {
     out_uiRG = Float2ToRG16F(xiiVec2(value.x, value.y));
     out_uiBA = Float2ToRG16F(xiiVec2(value.z, value.w));
-  }
-
-  static xiiDelegate<void(xiiBuiltinShaderType type, xiiBuiltinShader& out_shader)> g_RequestBuiltinShaderCallback;
-
-  XII_ALWAYS_INLINE static void RequestBuiltinShader(xiiBuiltinShaderType type, xiiBuiltinShader& out_Shader)
-  {
-    g_RequestBuiltinShaderCallback(type, out_Shader);
   }
 };

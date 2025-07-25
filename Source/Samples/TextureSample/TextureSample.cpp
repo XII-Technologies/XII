@@ -10,6 +10,7 @@
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Foundation/Utilities/GraphicsUtils.h>
 #include <Texture/Image/ImageConversion.h>
 
 #include <Core/Graphics/Camera.h>
@@ -22,15 +23,33 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 // Constant buffer definition is shared between shader code and C++
 #include <GraphicsCore/../../../Data/Samples/TextureSample/Shaders/SampleConstantBuffer.h>
+
+#if !defined(USE_FILESERVE)
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
+// on sandboxed platforms, we can only load data through fileserve, so enforce use of this plugin
+#    define USE_FILESERVE XII_ON
+#  else
+#    define USE_FILESERVE XII_OFF
+#  endif
+#endif
+
+#if XII_DISABLED(USE_FILESERVE) && XII_ENABLED(XII_SUPPORTS_DIRECTORY_WATCHER)
+#  define USE_DIRECTORY_WATCHER XII_ON
+#else
+#  define USE_DIRECTORY_WATCHER XII_OFF
+#endif
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -134,6 +153,7 @@ public:
     }
 
     // Reload resources if modified
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
     {
       m_bFileModified = false;
       m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiTextureSampleApp::OnFileChanged, this));
@@ -143,85 +163,71 @@ public:
         xiiResourceManager::ReloadAllResources(false);
       }
     }
+#endif
 
     // Perform rendering
     {
-      // Before starting to render in a frame call this function
-      m_pDevice->EnqueueFrameSwapChain(m_hSwapChain);
+      // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      // Must always retrieve the current swapchain render target
-      const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
-      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-      xiiGALTextureViewHandle hBBDSV            = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+      xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
 
-      xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
-      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-      renderingSetup.m_bClearDepth             = true;
+      xiiRenderingSetup renderingSetup;
+      renderingSetup.AddColorAttachment({.m_pRenderTarget = m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget), .m_LoadOp = xiiGALAttachmentLoadOperation::Clear})
+        .SetDepthStencilAttachment({.m_pDSTarget = m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), .m_LoadOp = xiiGALAttachmentLoadOperation::Clear, .m_StencilLoadOp = xiiGALAttachmentLoadOperation::Clear})
+        .Build();
 
-      if (auto pDefaultQueue = m_pDevice->GetCommandQueue())
+      pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
       {
-        xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
+        pRenderContext->BindConstantBuffer(XII_PP_STRINGIFY(xiiTextureSampleConstants), m_pSampleConstantBuffer);
+        pRenderContext->BindMaterial(m_hMaterial);
 
-        if (auto pCommandList = pDefaultQueue->BeginCommandList())
+        xiiMat4 mProjection      = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
+        xiiMat4 mTransform = xiiMat4::MakeIdentity();
+
+        xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
+        xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
+        xiiInt32 iRightBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.x + g_uiWindowWidth * 0.5f) / 100.0f) + 1;
+        xiiInt32 iUpperBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.y + g_uiWindowHeight * 0.5f) / 100.0f) + 1;
+
+        iLeftBound  = xiiMath::Max(iLeftBound, -g_iMaxHalfExtent);
+        iRightBound = xiiMath::Min(iRightBound, g_iMaxHalfExtent);
+        iLowerBound = xiiMath::Max(iLowerBound, -g_iMaxHalfExtent);
+        iUpperBound = xiiMath::Min(iUpperBound, g_iMaxHalfExtent);
+
+        xiiStringBuilder sResourceName;
+        for (xiiInt32 y = iLowerBound; y < iUpperBound; ++y)
         {
-          pRenderContext->SetCommandList(pCommandList);
-          pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiTextureSampleMainPass");
-
-          pRenderContext->BindConstantBuffer(XII_PP_STRINGIFY(xiiTextureSampleConstants), m_hSampleConstants);
-          pRenderContext->BindMaterial(m_hMaterial);
-
-          xiiMat4 mProj      = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
-          xiiMat4 mTransform = xiiMat4::MakeIdentity();
-
-          xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
-          xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
-          xiiInt32 iRightBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.x + g_uiWindowWidth * 0.5f) / 100.0f) + 1;
-          xiiInt32 iUpperBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.y + g_uiWindowHeight * 0.5f) / 100.0f) + 1;
-
-          iLeftBound  = xiiMath::Max(iLeftBound, -g_iMaxHalfExtent);
-          iRightBound = xiiMath::Min(iRightBound, g_iMaxHalfExtent);
-          iLowerBound = xiiMath::Max(iLowerBound, -g_iMaxHalfExtent);
-          iUpperBound = xiiMath::Min(iUpperBound, g_iMaxHalfExtent);
-
-          xiiStringBuilder sResourceName;
-          for (xiiInt32 y = iLowerBound; y < iUpperBound; ++y)
+          for (xiiInt32 x = iLeftBound; x < iRightBound; ++x)
           {
-            for (xiiInt32 x = iLeftBound; x < iRightBound; ++x)
+            mTransform.SetTranslationVector(xiiVec3((float)x * 100.0f, (float)y * 100.0f, 0));
+
+            // Update the constant buffer.
             {
-              mTransform.SetTranslationVector(xiiVec3((float)x * 100.0f, (float)y * 100.0f, 0));
-
-              // Update the constant buffer
-              {
-                xiiTextureSampleConstants& cb = m_pSampleConstantBuffer->GetDataForWriting();
-                cb.ModelMatrix                = mTransform;
-                cb.ViewProjectionMatrix       = mProj;
-              }
-
-              sResourceName.SetPrintf("Loaded_%+03i_%+03i_D", x, y);
-
-              xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
-
-              // force immediate loading
-              if (g_bForceImmediateLoading)
-              {
-                xiiResourceLock<xiiTexture2DResource> l(hTexture, xiiResourceAcquireMode::BlockTillLoaded);
-              }
-
-              pRenderContext->BindTexture2D("DiffuseTexture", hTexture);
-              pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
-              pRenderContext->DrawMeshBuffer().IgnoreResult();
+              xiiGALMapHelper<xiiTextureSampleConstants> pTextureSampleConstants(pRenderContext->GetCommandList(), m_pSampleConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+              pTextureSampleConstants->ModelMatrix = mTransform;
+              pTextureSampleConstants->ViewProjectionMatrix = mProjection;
             }
+
+            sResourceName.SetPrintf("Loaded_%+03i_%+03i_D", x, y);
+
+            xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
+
+            // Force immediate loading.
+            if (g_bForceImmediateLoading)
+            {
+              xiiResourceLock<xiiTexture2DResource> l(hTexture, xiiResourceAcquireMode::BlockTillLoaded);
+            }
+
+            pRenderContext->BindTexture2D("DiffuseTexture", hTexture);
+            pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+            pRenderContext->DrawMeshBuffer().IgnoreResult();
           }
-
-          pRenderContext->EndRendering();
-          pRenderContext->SetCommandList(nullptr);
-
-          pCommandList->Submit();
         }
-        pRenderContext->ResetContextState();
       }
+      pRenderContext->EndRendering();
+
+      m_pSwapChain->Present();
 
       m_pDevice->EndFrame();
     }
@@ -242,10 +248,20 @@ public:
 
   virtual void AfterCoreSystemsStartup() override
   {
+#if XII_ENABLED(USE_FILESERVE)
+    xiiPlugin::LoadPlugin("xiiFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
+#endif
+
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/TextureSample";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
+
+    #if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+#endif
+
 
     // setup the 'asset management system'
     {
@@ -254,9 +270,6 @@ public:
       // which platform assets to use
       xiiDataDirectory::FolderType::s_sRedirectionPrefix = "AssetCache/PC/";
     }
-
-    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
-    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
 
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
@@ -280,12 +293,6 @@ public:
     m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
 
     XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory.");
-
-#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
-    constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#else
-    constexpr const char* szDefaultGraphicsAPI = "Null";
-#endif
 
     // Register Input
     {
@@ -337,47 +344,6 @@ public:
     // Create a device
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
-      deviceCreationDescription.m_DeviceFeatures.m_SeparablePrograms                  = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceQueries              = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WireframeFill                      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ComputeShaders                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_GeometryShaders                    = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_Tessellation                       = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MeshShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_RayTracing                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BindlessResources                  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_OcclusionQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BinaryOcclusionQueries             = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TimestampQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PipelineStatisticsQueries          = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_DurationQueries                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthBiasClamp                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthClamp                         = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_IndependentBlend                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DualSourceBlend                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultiViewport                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PixelUAVWritesAndAtomics           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderFloat16                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer16BitAccess          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer16BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInputOutput16                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInt8                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SparseResources                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
       deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -386,7 +352,7 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
       xiiStringView sShaderModel     = {};
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
@@ -433,7 +399,7 @@ public:
 
     // Setup constant buffer that this sample uses
     {
-      m_hSampleConstants = xiiRenderContext::CreateConstantBufferStorage(m_pSampleConstantBuffer);
+      m_pSampleConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(m_pDevice, sizeof(xiiTextureSampleConstants), XII_PP_STRINGIFY(xiiTextureSampleConstants));
     }
 
     // Pre-allocate all textures
@@ -461,11 +427,10 @@ public:
 
   void UpdateSwapChain()
   {
-    // Create a Swapchain
-    if (m_hSwapChain.IsInvalidated())
+    if (!m_pSwapChain)
     {
       xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = m_pWindow;
+      swapChainDesc.m_pWindow               = m_pWindow.Borrow();
       swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
       swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
       swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
@@ -475,38 +440,35 @@ public:
       swapChainDesc.m_fDefaultDepthValue    = 1.0f;
       swapChainDesc.m_uiDefaultStencilValue = 0U;
 
-      m_hSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+
+      m_pSwapChain->SetPresentMode(xiiGALPresentMode::VSync);
     }
     else
     {
-      auto pSwapChain  = m_pDevice->GetSwapChain(m_hSwapChain);
       auto currentSize = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
 
-      if (pSwapChain->GetCurrentSize() != currentSize)
+      if (m_pSwapChain->GetCurrentSize() != currentSize)
       {
-        pSwapChain->Resize(currentSize).IgnoreResult();
+        // Clear frame buffer cache since swap chain images and depth stencil will be recreated.
+        m_pDepthStencilTexture.Clear();
+
+        m_pSwapChain->Resize(currentSize).IgnoreResult();
       }
     }
 
-    // Do not destroy the texture if the swapchain is minimized
-    if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && m_pWindow->GetClientAreaSize().HasNonZeroArea())
+    if (!m_pDepthStencilTexture)
     {
-      m_pDevice->DestroyTexture(m_hDepthStencilTexture);
+      xiiGALTextureCreationDescription textureDescription;
+      textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+      textureDescription.m_Size.width  = g_uiWindowWidth;
+      textureDescription.m_Size.height = g_uiWindowHeight;
+      textureDescription.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
+      textureDescription.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
-      m_hDepthStencilTexture.Invalidate();
-    }
+      m_pDepthStencilTexture = m_pDevice->CreateTexture(textureDescription);
 
-    // Create depth texture
-    if (m_pWindow->GetClientAreaSize().HasNonZeroArea())
-    {
-      xiiGALTextureCreationDescription texDesc;
-      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
-      texDesc.m_Size.width  = g_uiWindowWidth;
-      texDesc.m_Size.height = g_uiWindowHeight;
-      texDesc.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
-      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
-
-      m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
+      m_pDepthStencilTexture->SetDebugName("Depth Stencil");
     }
   }
 
@@ -572,29 +534,33 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
     m_pDirectoryWatcher->CloseDirectory();
+    m_pDirectoryWatcher.Clear();
+#endif
 
-    m_pDevice->DestroyTexture(m_hDepthStencilTexture);
-    m_hDepthStencilTexture.Invalidate();
+    m_pSampleConstantBuffer.Clear();
 
     m_hMaterial.Invalidate();
     m_hQuadMeshBuffer.Invalidate();
-    m_pDevice->DestroySwapChain(m_hSwapChain);
-    m_hSwapChain.Invalidate();
+
+    m_pDepthStencilTexture.Clear();
+    m_pSwapChain.Clear();
 
     // Tell the engine that we are about to destroy window and graphics device and that it therefore needs to cleanup anything that depends on that.
     xiiStartup::ShutdownHighLevelSystems();
 
+    if (xiiGALDevice::GetDefaultDevice() == m_pDevice)
+    {
+      xiiGALDevice::SetDefaultDevice(nullptr);
+    }
+
     // Now we can shutdown the graphics device.
-    m_pDevice->Shutdown().IgnoreResult();
+    m_pDevice.Clear();
 
-    XII_DEFAULT_DELETE(m_pDevice);
-
-    // Finally destroy the window
+    // Finally destroy the window.
     m_pWindow->Destroy().IgnoreResult();
-    XII_DEFAULT_DELETE(m_pWindow);
-
-    m_pDirectoryWatcher.Clear();
+    m_pWindow.Clear();
   }
 
   virtual void BeforeCoreSystemsShutdown() override
@@ -610,24 +576,25 @@ public:
   }
 
 private:
-  xiiTextureSample* m_pWindow = nullptr;
+  xiiUniquePtr<xiiTextureSample> m_pWindow;
 
-  xiiGALDevice* m_pDevice = nullptr;
+  xiiSharedPtr<xiiGALDevice> m_pDevice;
 
-  xiiGALSwapChainHandle m_hSwapChain;
-  xiiGALTextureHandle   m_hDepthStencilTexture;
+  xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
+  xiiSharedPtr<xiiGALTexture>   m_pDepthStencilTexture;
 
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
 
   xiiVec2 m_vCameraPosition = xiiVec2::MakeZero();
 
+  CustomTextureResourceLoader m_TextureResourceLoader;
+  xiiSharedPtr<xiiGALBuffer>  m_pSampleConstantBuffer;
+
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
   bool                              m_bFileModified = false;
-
-  CustomTextureResourceLoader                          m_TextureResourceLoader;
-  xiiConstantBufferStorageHandle                       m_hSampleConstants;
-  xiiConstantBufferStorage<xiiTextureSampleConstants>* m_pSampleConstantBuffer;
+#endif
 };
 
 xiiResourceLoadData CustomTextureResourceLoader::OpenDataStream(const xiiResource* pResource)

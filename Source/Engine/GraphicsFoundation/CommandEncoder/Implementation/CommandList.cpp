@@ -324,28 +324,26 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
 
 void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewports)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiGALDeviceLimits&   deviceLimits   = m_pDevice->GetLimits();
+  const xiiGALDeviceFeatures& deviceFeatures = m_pDevice->GetFeatures();
 
-  XII_ASSERT_DEV(pViewports.GetCount() < XII_GAL_MAX_VIEWPORT_COUNT, "The number of viewports ({0}) exceeds the maximum viewport count ({1}).", pViewports.GetCount(), XII_GAL_MAX_VIEWPORT_COUNT);
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(pViewports.GetCount() < deviceLimits.m_uiMaxViewports, "The number of viewports ({0}) exceeds the maximum viewport count ({1}).", pViewports.GetCount(), deviceLimits.m_uiMaxViewports);
+  XII_ASSERT_DEV(pViewports.GetCount() <= 1U || deviceFeatures.m_MultiViewport == xiiGALDeviceFeatureState::Enabled, "SetViewports arguments are invalid. The device does does not have the Multi-Viewport feature enabled.");
 
-  xiiUInt32 uiViewportCount = xiiMath::Min<xiiUInt32>(XII_GAL_MAX_VIEWPORT_COUNT, pViewports.GetCount());
-
-  if (uiViewportCount > 1)
+  for (xiiUInt32 i = 0; i < pViewports.GetCount(); ++i)
   {
-    XII_VERIFY_COMMAND_LIST(m_pDevice->GetFeatures().m_MultiViewport == xiiGALDeviceFeatureState::Enabled, "SetViewports arguments are invalid. The device does does not have the Multi Viewport feature enabled.");
+    const xiiGALViewport& viewport = pViewports[i];
+
+    XII_ASSERT_DEV(viewport.m_fWidth >= 0.0f, "SetViewports arguments are invalid. Incorrect viewport width ({0}) for index {1}.", viewport.m_fWidth, i);
+    XII_ASSERT_DEV(viewport.m_fHeight >= 0.0f, "SetViewports arguments are invalid. Incorrect viewport height ({0}) for index {1}.", viewport.m_fHeight, i);
+    XII_ASSERT_DEV(viewport.m_fMaxDepth >= viewport.m_fMinDepth, "SetViewports arguments are invalid. Incorrect viewport depth range [{0}, {1}] for index {2}.", viewport.m_fMinDepth, viewport.m_fMaxDepth, i);
   }
+#endif
 
   m_Viewports.Clear();
   m_Viewports.PushBackRange(pViewports);
-
-  for (xiiUInt32 i = 0; i < m_Viewports.GetCount(); ++i)
-  {
-    const auto& viewport = m_Viewports[i];
-
-    XII_VERIFY_COMMAND_LIST(viewport.m_fWidth >= 0.0f, "SetViewports arguments are invalid. Incorrect viewport width ({0}) for index {1}.", viewport.m_fWidth, i);
-    XII_VERIFY_COMMAND_LIST(viewport.m_fHeight >= 0.0f, "SetViewports arguments are invalid. Incorrect viewport height ({0}) for index {1}.", viewport.m_fHeight, i);
-    XII_VERIFY_COMMAND_LIST(viewport.m_fMaxDepth >= viewport.m_fMinDepth, "SetViewports arguments are invalid. Incorrect viewport depth range [{0}, {1}] for index {2}.", viewport.m_fMinDepth, viewport.m_fMaxDepth, i);
-  }
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSetViewports;
 
@@ -354,16 +352,14 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<const xiiGALViewport> pViewport
 
 void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiGALDeviceLimits&   deviceLimits   = m_pDevice->GetLimits();
+  const xiiGALDeviceFeatures& deviceFeatures = m_pDevice->GetFeatures();
 
-  XII_ASSERT_DEV(pRects.GetCount() < XII_GAL_MAX_VIEWPORT_COUNT, "The number of scissor rects ({0}) exceeds the maximum scissor rect count ({1}).", pRects.GetCount(), XII_GAL_MAX_VIEWPORT_COUNT);
-
-  xiiUInt32 uiRectCount = pRects.GetCount();
-
-  if (uiRectCount > 1)
-  {
-    XII_VERIFY_COMMAND_LIST(m_pDevice->GetFeatures().m_MultiViewport == xiiGALDeviceFeatureState::Enabled, "SetScissorRects arguments are invalid. The device does does not have the Multi Viewport feature enabled.");
-  }
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(pRects.GetCount() < deviceLimits.m_uiMaxViewports, "The number of scissor rects ({0}) exceeds the maximum scissor rect count ({1}).", pRects.GetCount(), deviceLimits.m_uiMaxViewports);
+  XII_ASSERT_DEV(pRects.GetCount() <= 1U || deviceFeatures.m_MultiViewport == xiiGALDeviceFeatureState::Enabled, "SetScissorRects arguments are invalid. The device does does not have the Multi Viewport feature enabled.");
+#endif
 
   m_ScissorRects.Clear();
   m_ScissorRects.PushBackRange(pRects);
@@ -384,7 +380,7 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (pIndexBuffer)
   {
-    const auto& bufferDescription = pIndexBuffer->GetDescription();
+    const xiiGALBufferCreationDescription& bufferDescription = pIndexBuffer->GetDescription();
 
     XII_ASSERT_DEV(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer), "SetIndexBuffer arguments are invalid. The Index buffer '{0}' was not created with the xiiGALBindFlags::IndexBuffer bind flag.", pIndexBuffer->GetDebugName());
   }
@@ -400,10 +396,14 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
 
 void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiGALDeviceLimits& deviceLimits = m_pDevice->GetLimits();
+
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetVertexBuffers arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
-  XII_ASSERT_DEV(uiStartSlot < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The start slot ({0}) is out of range [0, {1}].", uiStartSlot, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
-  XII_ASSERT_DEV((uiStartSlot + pVertexBuffers.GetCount()) < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "SetVertexBuffers arguments are invalid. The range of vertex buffer slots being set [{0}, {1}] is out of allowed range [0, {2}].", uiStartSlot, uiStartSlot + pVertexBuffers.GetCount() - 1, XII_GAL_MAX_VERTEX_BUFFER_COUNT - 1);
+  XII_ASSERT_DEV(uiStartSlot < deviceLimits.m_uiMaxVertexBuffers, "SetVertexBuffers arguments are invalid. The start slot ({0}) is out of range [0, {1}].", uiStartSlot, deviceLimits.m_uiMaxVertexBuffers - 1);
+  XII_ASSERT_DEV((uiStartSlot + pVertexBuffers.GetCount()) < deviceLimits.m_uiMaxVertexBuffers, "SetVertexBuffers arguments are invalid. The range of vertex buffer slots being set [{0}, {1}] is out of allowed range [0, {2}].", uiStartSlot, uiStartSlot + pVertexBuffers.GetCount() - 1U, deviceLimits.m_uiMaxVertexBuffers - 1U);
   XII_ASSERT_DEV(m_pRenderPass == nullptr || transitionMode != xiiGALStateTransitionMode::Transition, "Resource state transitions are not permitted inside a render pass and may result in an undefined behavior. Do not use xiiGALStateTransitionMode::Transition or end the render pass first.");
+#endif
 
   if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
   {
@@ -425,9 +425,9 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
     if (pVertexBuffers[i] != nullptr)
     {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-      const auto& bufferDescription = pVertexBuffers[i]->GetDescription();
+      const xiiGALBufferCreationDescription& bufferDescription = pVertexBuffers[i]->GetDescription();
 
-      XII_VERIFY_COMMAND_LIST(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
+      XII_ASSERT_DEV(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "SetVertexBuffer arguments are invalid. The Vertex buffer '{0}' was not created with the xiiGALBindFlags::VertexBuffer bind flag.", pVertexBuffers[i]->GetDebugName());
 #endif
 
       m_VertexStreams[i].m_pBuffer  = pVertexBuffers[i];

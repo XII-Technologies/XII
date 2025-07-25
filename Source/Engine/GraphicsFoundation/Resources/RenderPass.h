@@ -89,7 +89,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
 };
 
 /// \brief This describes the render pass sub pass.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription : public xiiHashableStruct<xiiGALSubPassDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription
 {
   xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_InputAttachments;        ///< An array of input attachments.
   xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_RenderTargetAttachments; ///< An array of color render target attachments. Each element of the m_RenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_RenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
@@ -97,6 +97,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription : public xiiHashableS
   xiiStaticArray<xiiGALAttachmentReferenceDescription, 1U>   m_DepthStencilAttachment;  ///< An array of depth-stencil attachment. Note that this array can only hold a single depth stencil attachment reference.
   xiiDynamicArray<xiiUInt32>                                 m_PreserveAttachments;     ///< An array of preserve attachments.
   xiiStaticArray<xiiGALShadingRateAttachmentDescription, 1U> m_ShadingRateAttachment;   ///< An array of shading rate attachment. Note that this array can only hold a single shading rate attachment reference.
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALSubPassDescription& rhs) const = default;
 };
 
 /// \brief This describes the sub pass dependency.

@@ -321,12 +321,12 @@ private:
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 
-  xiiSharedPtr<xiiGALTextureViewVulkan> m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  xiiSharedPtr<xiiGALTextureViewVulkan> m_pBoundDepthStencilTarget;
-  xiiUInt32                             m_uiBoundRenderTargetCount = 0U;
+  xiiHybridArray<xiiSharedPtr<xiiGALTextureViewVulkan>, 2U> m_pBoundRenderTargets;
+  xiiSharedPtr<xiiGALTextureViewVulkan>                     m_pBoundDepthStencilTarget;
+  xiiUInt32                                                 m_uiBoundRenderTargetCount = 0U;
 
-  xiiUInt32                                                          m_uiSubpassIndex = 0U;
-  xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
+  xiiUInt32                          m_uiSubpassIndex = 0U;
+  xiiHybridArray<vk::ClearValue, 2U> m_AttachmentClearValues;
 
   bool m_bPipelineStateModified = false;
 
