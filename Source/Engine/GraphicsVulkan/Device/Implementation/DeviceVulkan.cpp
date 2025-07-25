@@ -1074,7 +1074,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
   }
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 42, "There may be uninitialized device features.");
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
@@ -2584,8 +2584,6 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 #define INITIALIZE_DEVICE_FEATURE(featureName, bIsFeatureSupported) deviceFeatures.m_##featureName = (bIsFeatureSupported) ? optionalState : xiiGALDeviceFeatureState::Disabled
 
   // The following features are always enabled.
-  deviceFeatures.m_SeparablePrograms             = xiiGALDeviceFeatureState::Enabled;
-  deviceFeatures.m_ShaderResourceQueries         = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_MultithreadedResourceCreation = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_BindlessResources             = xiiGALDeviceFeatureState::Enabled;
@@ -2655,7 +2653,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   deviceFeatures.m_AsynchronousShaderCompilation = xiiGALDeviceFeatureState::Enabled;
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 42, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2694,18 +2692,11 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
     return xiiGALDeviceFeatureState::Disabled;
   };
 
-  if (supportedDeviceFeatures.m_SeparablePrograms == xiiGALDeviceFeatureState::Enabled && requestedDeviceFeatures.m_SeparablePrograms == xiiGALDeviceFeatureState::Disabled)
-  {
-    xiiLog::Info("Can not disable Separable Programs device feature state.");
-  }
-
   xiiGALDeviceFeatures deviceFeatures;
 
 #define ENABLE_DEVICE_FEATURE(feature, featureName) deviceFeatures.m_##feature = GetFeatureState(requestedDeviceFeatures.m_##feature, supportedDeviceFeatures.m_##feature, featureName)
 
   // clang-format off
-  ENABLE_DEVICE_FEATURE(SeparablePrograms,                  "Separable programs are");
-  ENABLE_DEVICE_FEATURE(ShaderResourceQueries,              "Shader resource queries are");
   ENABLE_DEVICE_FEATURE(WireframeFill,                      "Wireframe fill is");
   ENABLE_DEVICE_FEATURE(MultithreadedResourceCreation,      "Multithreaded resource creation is");
   ENABLE_DEVICE_FEATURE(ComputeShaders,                     "Compute shaders are");
@@ -2752,7 +2743,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
 
 #undef ENABLE_DEVICE_FEATURE
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 42, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }

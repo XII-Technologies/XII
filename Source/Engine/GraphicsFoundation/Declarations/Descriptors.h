@@ -16,8 +16,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALDeviceFeatureState> m_SeparablePrograms                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports separable shader programs.
-  xiiEnum<xiiGALDeviceFeatureState> m_ShaderResourceQueries              = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports resource queries from shader objects.
   xiiEnum<xiiGALDeviceFeatureState> m_WireframeFill                      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports wireframe fill mode.
   xiiEnum<xiiGALDeviceFeatureState> m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports multithreaded resource creation.
   xiiEnum<xiiGALDeviceFeatureState> m_ComputeShaders                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports compute shaders.
