@@ -1273,10 +1273,14 @@ void xiiRenderContext::ApplyScissor()
 {
   if (m_pGraphicsPipelineState && m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState)
   {
-    const xiiGALRasterizerStateCreationDescription& description            = m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState->GetDescription();
-    const xiiGALFramebufferCreationDescription&     framebufferDescription = GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup)->GetDescription();
+    const xiiGALRasterizerStateCreationDescription& description = m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState->GetDescription();
 
-    m_pCommandList->SetScissorRect({framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height});
+    if (description.m_bScissorEnable)
+    {
+      const xiiGALFramebufferCreationDescription& framebufferDescription = GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup)->GetDescription();
+
+      m_pCommandList->SetScissorRect({framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height});
+    }
   }
 }
 
