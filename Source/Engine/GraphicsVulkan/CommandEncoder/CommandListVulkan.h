@@ -317,7 +317,7 @@ private:
   CommandListState                                 m_CommandListState;
   xiiBitflags<CommandListFlags>                    m_CommandListFlags;
   PipelineBarrier                                  m_PipelineBarrier;
-  CommandQueueRecord                               m_SubmittedCommandQueueRecord;
+  CommandQueueRecord                               m_SubmittedCommandQueueRecord = {};
 
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
 

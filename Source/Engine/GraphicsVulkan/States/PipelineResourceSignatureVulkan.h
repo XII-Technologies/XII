@@ -31,7 +31,7 @@ public:
   struct ImmutableSamplerStorage
   {
     void Initialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription);
-    void DeInitialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan);
+    void DeInitialize();
 
     XII_ALWAYS_INLINE explicit operator bool() const { return m_pSamplerVulkan != nullptr; }
 

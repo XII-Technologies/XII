@@ -2714,7 +2714,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   ENABLE_DEVICE_FEATURE(DepthClamp,                         "Depth clamp is");
   ENABLE_DEVICE_FEATURE(IndependentBlend,                   "Independent blend is");
   ENABLE_DEVICE_FEATURE(DualSourceBlend,                    "Dual-source blend is");
-  ENABLE_DEVICE_FEATURE(MultiViewport,                      "Multiviewport is");
+  ENABLE_DEVICE_FEATURE(MultiViewport,                      "Multi-viewport is");
   ENABLE_DEVICE_FEATURE(TextureCompressionBC,               "BC texture compression is");
   ENABLE_DEVICE_FEATURE(VertexPipelineUAVWritesAndAtomics,  "Vertex pipeline UAV writes and atomics are");
   ENABLE_DEVICE_FEATURE(PixelUAVWritesAndAtomics,           "Pixel UAV writes and atomics are");
