@@ -447,8 +447,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   m_DrawCompleteSemaphores.SetCountUninitialized(uiSwapChainImageCount);
   m_ImageAcquiredFences.SetCountUninitialized(uiSwapChainImageCount);
 
-  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
-  auto pFencePool     = pDeviceVulkan->GetVulkanFencePool();
+  xiiGALSemaphorePoolVulkan* pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+  xiiGALFencePoolVulkan*     pFencePool     = pDeviceVulkan->GetVulkanFencePool();
 
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
@@ -523,7 +523,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
   m_uiSemaphoreIndex = 0U;
 
-  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+  xiiGALSemaphorePoolVulkan* pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
 
   for (xiiUInt32 i = 0; i < m_DrawCompleteSemaphores.GetCount(); ++i)
   {
@@ -537,7 +537,8 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   }
   m_ImageAcquiredSemaphores.Clear();
 
-  auto pFencePool = pDeviceVulkan->GetVulkanFencePool();
+  xiiGALFencePoolVulkan* pFencePool = pDeviceVulkan->GetVulkanFencePool();
+
   for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
   {
     pFencePool->ReclaimFence(std::move(m_ImageAcquiredFences[i]));

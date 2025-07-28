@@ -58,8 +58,8 @@ public:
 
   void UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiGALTextureVulkan* pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox);
 
-  void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
-  void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
+  void AddWaitSemaphore(vk::Semaphore vkSemaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
+  void AddSignalSemaphore(vk::Semaphore vkSemaphore, xiiUInt64 uiValue = 0ULL);
 
   XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
 

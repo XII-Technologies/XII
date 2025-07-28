@@ -24,8 +24,8 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -182,8 +182,8 @@ public:
         pRenderContext->BindConstantBuffer(XII_PP_STRINGIFY(xiiTextureSampleConstants), m_pSampleConstantBuffer);
         pRenderContext->BindMaterial(m_hMaterial);
 
-        xiiMat4 mProjection      = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
-        xiiMat4 mTransform = xiiMat4::MakeIdentity();
+        xiiMat4 mProjection = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
+        xiiMat4 mTransform  = xiiMat4::MakeIdentity();
 
         xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
         xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
@@ -205,7 +205,7 @@ public:
             // Update the constant buffer.
             {
               xiiGALMapHelper<xiiTextureSampleConstants> pTextureSampleConstants(pRenderContext->GetCommandList(), m_pSampleConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-              pTextureSampleConstants->ModelMatrix = mTransform;
+              pTextureSampleConstants->ModelMatrix          = mTransform;
               pTextureSampleConstants->ViewProjectionMatrix = mProjection;
             }
 
@@ -257,7 +257,7 @@ public:
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
-    #if XII_ENABLED(USE_DIRECTORY_WATCHER)
+#if XII_ENABLED(USE_DIRECTORY_WATCHER)
     m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
     m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
 #endif

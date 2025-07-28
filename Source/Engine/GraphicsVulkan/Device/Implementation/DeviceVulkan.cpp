@@ -2072,7 +2072,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate == vk::True)
     {
       // maxFragmentSize.width/height is the largest texel coverage (e.g. 4x4).
-      xiiUInt32 uiMaxWidth = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.width;
+      xiiUInt32 uiMaxWidth  = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.width;
       xiiUInt32 uiMaxHeight = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.height;
 
       // Compute how many discrete rates per axis: {1,2,4,...,max}
@@ -2102,7 +2102,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     {
       m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 0U;
       m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
-    }  
+    }
 
     m_AdapterDescription.m_DeviceLimits.m_uiMaxResourceSignatures = m_PhysicalDeviceProperties.limits.maxBoundDescriptorSets;
 

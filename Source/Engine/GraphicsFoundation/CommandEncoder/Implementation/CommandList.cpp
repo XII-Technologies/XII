@@ -483,7 +483,7 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
 
   XII_ASSERT_DEV(bResourceFound, "The buffer resource view '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
   XII_ASSERT_DEV(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::ShaderResource if not invalidated.");
-  #endif
+#endif
 
   SetShaderResourceBufferViewPlatform(bindingInformation, pBufferView);
 }
@@ -511,7 +511,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 
   XII_ASSERT_DEV(bResourceFound, "The texture resource view '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
   XII_ASSERT_DEV(pTextureView == nullptr || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::ShaderResource, "Incorrect buffer view type. The view must be created with xiiGALTextureViewType::ShaderResource if not invalidated.");
-  #endif
+#endif
 
   SetShaderResourceTextureViewPlatform(bindingInformation, pTextureView);
 }
@@ -539,7 +539,7 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
 
   XII_ASSERT_DEV(bResourceFound, "The unordered access buffer view '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
   XII_ASSERT_DEV(pBufferView == nullptr || pBufferView->GetDescription().m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect buffer view type. The view must be created with xiiGALBufferViewType::UnorderedAccess if not invalidated.");
-  #endif
+#endif
 
   SetUnorderedAccessBufferViewPlatform(bindingInformation, pBufferView);
 }
@@ -567,7 +567,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
 
   XII_ASSERT_DEV(bResourceFound, "The unordered access texture view '{0}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
   XII_ASSERT_DEV(pTextureView == nullptr || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::UnorderedAccess, "Incorrect buffer view type. The view must be created with xiiGALTextureViewType::UnorderedAccess if not invalidated.");
-  #endif
+#endif
 
   SetUnorderedAccessTextureViewPlatform(bindingInformation, pTextureView);
 }
@@ -594,7 +594,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   }
 
   XII_ASSERT_DEV(bResourceFound, "The sampler resource '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
-  #endif
+#endif
 
   SetSamplerPlatform(bindingInformation, pSampler);
 }

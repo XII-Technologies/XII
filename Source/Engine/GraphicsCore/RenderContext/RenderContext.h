@@ -1,9 +1,9 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
-#include <GraphicsCore/Meshes/MeshBufferResource.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -426,11 +426,11 @@ private:
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_pGlobalConstantsBuffer;
 
-  xiiGALGraphicsPipelineStateCreationDescription                                                                                m_GraphicsPipelineDescription;
-  xiiSharedPtr<xiiGALGraphicsPipelineState>                                                                                     m_pGraphicsPipelineState;
+  xiiGALGraphicsPipelineStateCreationDescription m_GraphicsPipelineDescription;
+  xiiSharedPtr<xiiGALGraphicsPipelineState>      m_pGraphicsPipelineState;
 
-  xiiGALComputePipelineStateCreationDescription                                                                               m_ComputePipelineDescription;
-  xiiSharedPtr<xiiGALComputePipelineState>                                                                                    m_pComputePipelineState;
+  xiiGALComputePipelineStateCreationDescription m_ComputePipelineDescription;
+  xiiSharedPtr<xiiGALComputePipelineState>      m_pComputePipelineState;
 
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBuffer>>      m_BoundConstantBuffers;
   xiiHashTable<xiiUInt64, xiiSharedPtr<xiiGALBufferView>>  m_BoundBufferSRVs;

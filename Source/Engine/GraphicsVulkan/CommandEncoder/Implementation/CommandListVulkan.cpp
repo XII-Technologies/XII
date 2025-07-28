@@ -216,7 +216,7 @@ namespace
 
     XII_ASSERT_DEV(region.IsValid(), "[{} .. {}) x [{} .. {}) x [{} .. {}) is not a valid region.", region.m_vMin.x, region.m_vMax.x, region.m_vMin.y, region.m_vMax.y, region.m_vMin.z, region.m_vMax.z);
 
-    xiiVec3U32 vExtents                        = region.GetExtents();
+    xiiVec3U32 vExtents                 = region.GetExtents();
     vkBufferImageCopyRegion.imageExtent = vk::Extent3D{vExtents.x, vExtents.y, vExtents.z};
 
     return vkBufferImageCopyRegion;
@@ -474,20 +474,20 @@ void xiiGALCommandListVulkan::UpdateTextureRegion(const void* pSourceData, xiiUI
   CopyBufferToTexture(stagingBufferAllocation.m_vkBuffer, stagingBufferAllocation.m_uiOffset, bufferToTextureCopyDescription.m_uiRowStrideInTexels, pTextureVulkan, bufferToTextureCopyDescription.m_Region, uiMipLevel, uiSlice);
 }
 
-void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue)
+void xiiGALCommandListVulkan::AddWaitSemaphore(vk::Semaphore vkSemaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue)
 {
-  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(vkSemaphore != VK_NULL_HANDLE, "");
 
-  m_vkWaitSemaphores.PushBack(semaphore);
+  m_vkWaitSemaphores.PushBack(vkSemaphore);
   m_vkWaitDestinationStageFlags.PushBack(pipelineFlags);
   m_vkWaitSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
-void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue)
+void xiiGALCommandListVulkan::AddSignalSemaphore(vk::Semaphore vkSemaphore, xiiUInt64 uiValue)
 {
-  XII_ASSERT_DEV(semaphore != VK_NULL_HANDLE, "");
+  XII_ASSERT_DEV(vkSemaphore != VK_NULL_HANDLE, "");
 
-  m_vkSignalSemaphores.PushBack(semaphore);
+  m_vkSignalSemaphores.PushBack(vkSemaphore);
   m_vkSignalSemaphoreValues.PushBack(uiValue); // Ignored for binary semaphore.
 }
 
