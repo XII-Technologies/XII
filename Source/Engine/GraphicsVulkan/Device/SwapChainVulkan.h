@@ -58,7 +58,8 @@ private:
 private:
   vk::SurfaceKHR   m_vkSurface;
   vk::SwapchainKHR m_vkSwapChain;
-  vk::Format       m_vkColorFormat = vk::Format::eUndefined;
+  vk::Format       m_vkColorFormat        = vk::Format::eUndefined;
+  xiiUInt32        m_uiDesiredBufferCount = 0U;
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
   // Surface extent corresponding to identity transform. We have to store this value,
@@ -70,12 +71,9 @@ private:
   vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransform = {};
 #endif
 
-  xiiUInt32 m_uiDesiredBufferCount = 0U;
-
   xiiDynamicArray<vk::Semaphore> m_ImageAcquiredSemaphores;
   xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
 
-  xiiDynamicArray<vk::Image>                   m_SwapChainImages;
   xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_SwapChainTextures;
   xiiDynamicArray<bool>                        m_SwapChainImagesInitialized;
   xiiUInt32                                    m_uiBackBufferIndex = 0U;
@@ -84,6 +82,7 @@ private:
   xiiSharedPtr<xiiGALFence> m_pFrameCompleteFence;
   xiiUInt64                 m_uiFrameIndex = 1ULL;
 
-  bool m_bIsMinimized    = false;
-  bool m_bIsVSyncEnabled = false;
+  bool m_bIsImageAcquired = false;
+  bool m_bIsMinimized     = false;
+  bool m_bIsVSyncEnabled  = false;
 };

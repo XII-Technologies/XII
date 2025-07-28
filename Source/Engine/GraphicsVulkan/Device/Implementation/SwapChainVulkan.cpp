@@ -28,7 +28,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(std::move(pDeviceVulkan), creationDescription), m_ImageAcquiredSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_DrawCompleteSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImages(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainTextures(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImagesInitialized(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
+  xiiGALSwapChain(std::move(pDeviceVulkan), creationDescription), m_ImageAcquiredSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_DrawCompleteSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainTextures(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImagesInitialized(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
 {
 }
 
@@ -530,7 +530,6 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
     m_pFrameCompleteFence->Wait(m_uiFrameIndex - 1ULL);
   }
 
-  m_SwapChainImages.Clear();
   m_SwapChainTextures.Clear();
   m_SwapChainImagesInitialized.Clear();
 
@@ -583,13 +582,15 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   }
 #endif
 
-  m_SwapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
+  xiiHybridArray<vk::Image, 2U> swapChainImages(pDeviceVulkan->GetAllocator());
+  swapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
+
   m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
   m_SwapChainImagesInitialized.SetCount(m_Description.m_uiBufferCount, false);
 
   xiiUInt32 uiSwapChainImageCount = m_Description.m_uiBufferCount;
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, m_SwapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-  XII_ASSERT_DEV(uiSwapChainImageCount == m_SwapChainImages.GetCount(), "");
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, swapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_ASSERT_DEV(uiSwapChainImageCount == swapChainImages.GetCount(), "");
 
   xiiStringBuilder sb;
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
@@ -606,7 +607,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
     textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Mutable;
     textureCreationDescription.m_CPUAccessFlags        = xiiGALCPUAccessFlag::None;
     textureCreationDescription.m_MiscFlags             = xiiGALMiscTextureFlags::None;
-    textureCreationDescription.m_pExistingNativeObject = m_SwapChainImages[i];
+    textureCreationDescription.m_pExistingNativeObject = swapChainImages[i];
 
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(m_SwapChainTextures[i] != nullptr, "Failed to create native backbuffer texture object!");
