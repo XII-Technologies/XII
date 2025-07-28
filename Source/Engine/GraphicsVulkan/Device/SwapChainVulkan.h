@@ -49,12 +49,11 @@ private:
   xiiResult CreateVulkanSwapChain();
   xiiResult RecreateVulkanSwapChain();
   void      ReleaseSwapChainResources(bool bReleaseSwapChain);
+  void      ThrottleFrameSubmission();
 
   xiiResult CreateBackBufferInternal();
 
   vk::Result AcquireNextImage();
-
-  void WaitForImageAcquiredFences();
 
 private:
   vk::SurfaceKHR   m_vkSurface;
@@ -75,14 +74,15 @@ private:
 
   xiiDynamicArray<vk::Semaphore> m_ImageAcquiredSemaphores;
   xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
-  xiiDynamicArray<vk::Fence>     m_ImageAcquiredFences;
 
   xiiDynamicArray<vk::Image>                   m_SwapChainImages;
   xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_SwapChainTextures;
   xiiDynamicArray<bool>                        m_SwapChainImagesInitialized;
-  xiiDynamicArray<bool>                        m_ImageAcquiredFenceSubmitted;
   xiiUInt32                                    m_uiBackBufferIndex = 0U;
   xiiUInt32                                    m_uiSemaphoreIndex  = 0U;
+
+  xiiSharedPtr<xiiGALFence> m_pFrameCompleteFence;
+  xiiUInt64                 m_uiFrameIndex = 1ULL;
 
   bool m_bIsMinimized    = false;
   bool m_bIsVSyncEnabled = false;
