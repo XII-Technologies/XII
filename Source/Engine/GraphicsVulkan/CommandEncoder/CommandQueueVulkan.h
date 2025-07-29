@@ -52,5 +52,5 @@ private:
 
   xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan> m_pQueueFence;
   xiiAtomicIntegerU64                        m_uiNextFenceValue{1ULL};
-  SyncPointData                              m_LastSyncPoint;
+  xiiUInt64                                  m_uiLastSyncPointValue{0ULL};
 };

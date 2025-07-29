@@ -106,12 +106,12 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 
   while (!m_SyncPoints.IsEmpty())
   {
-    SyncPointData& syncData = m_SyncPoints.PeekFront();
+    SyncPointData&  syncData         = m_SyncPoints.PeekFront();
+    const xiiUInt64 uiCompletedValue = syncData.m_pCommandQueueVulkan->GetCompletedFenceValue();
 
-    vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    if (status == vk::Result::eSuccess)
+    if (syncData.m_uiFenceValue <= uiCompletedValue)
     {
-      UpdateLastCompletedFenceValue(syncData.m_uiValue);
+      UpdateLastCompletedFenceValue(syncData.m_uiWaitValue);
 
       m_SyncPoints.PopFront();
     }
@@ -166,7 +166,7 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
   }
 }
 
-void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiUInt64 uiValue, const vk::Fence& vkFence, const xiiUInt64 uiFenceValue)
+void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiUInt64 uiWaitValue, const xiiUInt64 uiFenceValue)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
@@ -175,15 +175,13 @@ void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQu
     XII_REPORT_FAILURE("AddPendingSyncPoint() is not supported for timeline semaphore.");
   }
 
-  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "The pending sync point fence is invalidated.");
-
   ValidateFenceSignal(uiFenceValue);
 
   XII_LOCK(m_SyncPointGuard);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
-    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiValue;
+    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiWaitValue;
 
     XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
   }
@@ -202,8 +200,7 @@ void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQu
 
   xiiGALFenceVulkan::SyncPointData& syncPoint = m_SyncPoints.ExpandAndGetRef();
   syncPoint.m_pCommandQueueVulkan             = pCommandQueueVulkan;
-  syncPoint.m_uiValue                         = uiValue;
-  syncPoint.m_vkFence                         = vkFence;
+  syncPoint.m_uiWaitValue                     = uiWaitValue;
   syncPoint.m_uiFenceValue                    = uiFenceValue;
 }
 
@@ -231,13 +228,12 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
     {
       SyncPointData& syncData = m_SyncPoints.PeekFront();
 
-      if (syncData.m_uiValue > uiValue)
+      if (syncData.m_uiWaitValue > uiValue)
         break;
 
       syncData.m_pCommandQueueVulkan->GetWaitOnlyFence()->Wait(syncData.m_uiFenceValue);
 
-
-      UpdateLastCompletedFenceValue(syncData.m_uiValue);
+      UpdateLastCompletedFenceValue(syncData.m_uiWaitValue);
 
       m_SyncPoints.PopFront();
     }

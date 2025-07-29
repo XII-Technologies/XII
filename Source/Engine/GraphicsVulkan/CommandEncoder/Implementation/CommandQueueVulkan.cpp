@@ -105,8 +105,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
 
     VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-    m_LastSyncPoint.m_vkFence = syncPoint.m_vkFence;
-    m_LastSyncPoint.m_uiValue = syncPoint.m_uiValue;
+    m_uiLastSyncPointValue = syncPoint.m_uiValue;
   }
 
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
@@ -114,7 +113,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     if (fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
       continue;
 
-    fenceInfo.m_pFenceVulkan->AddPendingSyncPoint(this, fenceInfo.m_uiWaitValue, m_LastSyncPoint.m_vkFence, m_LastSyncPoint.m_uiValue);
+    fenceInfo.m_pFenceVulkan->AddPendingSyncPoint(this, fenceInfo.m_uiWaitValue, m_uiLastSyncPointValue);
   }
 
   pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;
