@@ -4,7 +4,10 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
-#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
+namespace vk
+{
+  class Fence;
+}
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
@@ -15,9 +18,11 @@ public:
   XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue; }
 
   /// \brief This returns the last completed value of the internal fence.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final { return m_pQueueFence->GetCompletedValue(); }
+  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
+
+  XII_ALWAYS_INLINE xiiGALCpuWaitOnlyFenceVulkan* GetWaitOnlyFence() const { return m_pQueueFence.Borrow(); } 
 
   virtual xiiUInt64 SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList) override final;
 
@@ -34,12 +39,18 @@ protected:
   virtual ~xiiGALCommandQueueVulkan();
 
 private:
+  struct SyncPointData
+  {
+    xiiUInt64 m_uiValue;
+    vk::Fence m_vkFence;
+  };
+
   xiiGALQueueInformationVulkan                                   m_QueueInformation;
   xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 
   xiiMutex m_QueueMutex;
 
-  xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan>  m_pQueueFence;
-  xiiAtomicIntegerU64                         m_uiNextFenceValue{1ULL};
-  xiiGALCpuWaitOnlyFenceVulkan::SyncPointData m_LastSyncPoint;
+  xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan> m_pQueueFence;
+  xiiAtomicIntegerU64                        m_uiNextFenceValue{1ULL};
+  xiiUInt64                                  m_uiLastSyncPointValue{0ULL};
 };

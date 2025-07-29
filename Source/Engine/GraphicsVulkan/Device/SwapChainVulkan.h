@@ -49,17 +49,17 @@ private:
   xiiResult CreateVulkanSwapChain();
   xiiResult RecreateVulkanSwapChain();
   void      ReleaseSwapChainResources(bool bReleaseSwapChain);
+  void      ThrottleFrameSubmission();
 
   xiiResult CreateBackBufferInternal();
 
   vk::Result AcquireNextImage();
 
-  void WaitForImageAcquiredFences();
-
 private:
   vk::SurfaceKHR   m_vkSurface;
   vk::SwapchainKHR m_vkSwapChain;
-  vk::Format       m_vkColorFormat = vk::Format::eUndefined;
+  vk::Format       m_vkColorFormat        = vk::Format::eUndefined;
+  xiiUInt32        m_uiDesiredBufferCount = 0U;
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
   // Surface extent corresponding to identity transform. We have to store this value,
@@ -71,19 +71,18 @@ private:
   vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransform = {};
 #endif
 
-  xiiUInt32 m_uiDesiredBufferCount = 0U;
-
   xiiDynamicArray<vk::Semaphore> m_ImageAcquiredSemaphores;
   xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
-  xiiDynamicArray<vk::Fence>     m_ImageAcquiredFences;
 
-  xiiDynamicArray<vk::Image>                   m_SwapChainImages;
   xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_SwapChainTextures;
   xiiDynamicArray<bool>                        m_SwapChainImagesInitialized;
-  xiiDynamicArray<bool>                        m_ImageAcquiredFenceSubmitted;
   xiiUInt32                                    m_uiBackBufferIndex = 0U;
   xiiUInt32                                    m_uiSemaphoreIndex  = 0U;
 
-  bool m_bIsMinimized    = false;
-  bool m_bIsVSyncEnabled = false;
+  xiiSharedPtr<xiiGALFence> m_pFrameCompleteFence;
+  xiiUInt64                 m_uiFrameIndex = 1ULL;
+
+  bool m_bIsImageAcquired = false;
+  bool m_bIsMinimized     = false;
+  bool m_bIsVSyncEnabled  = false;
 };

@@ -1807,7 +1807,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         xiiUInt32 uiShadingRateCount = 0U;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));
 
-        shadingRates.SetCountUninitialized(uiShadingRateCount);
+        shadingRates.SetCount(uiShadingRateCount);
 
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, shadingRates.GetData(), m_InstanceDispatchLoader));
       }

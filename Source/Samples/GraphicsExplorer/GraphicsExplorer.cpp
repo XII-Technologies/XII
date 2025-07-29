@@ -377,7 +377,7 @@ public:
 
   void UpdateSwapChain()
   {
-    // Create a Swapchain
+    // Create a Swap Chain
     if (!m_pSwapChain)
     {
       xiiGALSwapChainCreationDescription swapChainDesc;
