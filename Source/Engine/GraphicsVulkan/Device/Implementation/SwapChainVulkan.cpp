@@ -332,8 +332,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   m_vkCurrentSurfaceTransform = surfaceCapabilities.currentTransform;
 #endif
 
-  swapchainExtent.width             = xiiMath::Max(swapchainExtent.width, 1U);
-  swapchainExtent.height            = xiiMath::Max(swapchainExtent.height, 1U);
   m_Description.m_Resolution.width  = swapchainExtent.width;
   m_Description.m_Resolution.height = swapchainExtent.height;
 
