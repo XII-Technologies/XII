@@ -7,7 +7,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
-#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 #include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
@@ -633,14 +632,22 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   // This also ensures that there are no more than BufferCount frames in flight at any time.
   ThrottleFrameSubmission();
 
-  const vk::Semaphore& imageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
+  const vk::Semaphore& vkImageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
 
-  vk::Result result = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), imageAcquiredSemaphore, VK_NULL_HANDLE, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  vk::Result result  = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), vkImageAcquiredSemaphore, VK_NULL_HANDLE, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_bIsImageAcquired = (result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
 
-  if (result == vk::Result::eSuccess)
+#if XII_ENABLED(XII_PLATFORM_OSX)
+  if (result == vk::Result::eSuboptimalKHR)
+  {
+    // https://github.com/KhronosGroup/MoltenVK/issues/2542
+    m_bIsImageAcquired = false;
+  }
+#endif
+  if (m_bIsImageAcquired)
   {
     // Next command in the device context must wait for the next image to be acquired.
-    // Unlike fences or events, the act of waiting for a semaphore also un-signals that semaphore (6.4.2).
+    // Unlike fences or events, the act of waiting for a semaphore also un-signals that semaphore.
     // SwapChain image may be used as render target or as destination for copy command.
 
     if (auto pCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
@@ -649,7 +656,7 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
       {
         xiiGALScopedDebugGroup debugGroup(pCommandListVulkan, "Add Swap Chain Wait Semaphore");
 
-        pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+        pCommandListVulkan->AddWaitSemaphore(vkImageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
 
         // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
         if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
@@ -674,18 +681,24 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
 void xiiGALSwapChainVulkan::Present()
 {
-  if (m_bIsMinimized)
-    return;
-
   xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
+
+  const vk::Semaphore& vkDrawCompleteSemaphore = m_DrawCompleteSemaphores[m_uiBackBufferIndex];
 
   if (auto pCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
   {
     pCommandListVulkan->Begin();
     {
-      pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-      pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+      // To properly handle the case where vkAcquireNextImageKHR returns the same index twice in a row, use
+      // a separate semaphore per swap chain image and index these semaphores using the index of the acquired image.
+      if (m_bIsImageAcquired && !m_bIsMinimized)
+      {
+        pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+        pCommandListVulkan->AddSignalSemaphore(vkDrawCompleteSemaphore);
+      }
+
+      pCommandListVulkan->EnqueueSignal(m_pFrameCompleteFence, m_uiFrameIndex++);
     }
     pCommandListVulkan->End();
 
@@ -694,21 +707,27 @@ void xiiGALSwapChainVulkan::Present()
     pCommandQueue->Submit(pCommandListVulkan);
   }
 
+  if (!m_bIsMinimized)
   {
-    // Unlike fences or events, the act of waiting for a semaphore also un-signals that semaphore. (6.4.2)
-    vk::Result result = vk::Result::eSuccess;
+    vk::Result result = vk::Result::eErrorOutOfDateKHR;
 
-    vk::PresentInfoKHR vkPresentInformation = {};
-    vkPresentInformation.pNext              = nullptr;
-    vkPresentInformation.pResults           = &result;
-    vkPresentInformation.pSwapchains        = &m_vkSwapChain;
-    vkPresentInformation.pImageIndices      = &m_uiBackBufferIndex;
-    vkPresentInformation.swapchainCount     = 1U;
-    vkPresentInformation.pWaitSemaphores    = &m_DrawCompleteSemaphores[m_uiSemaphoreIndex];
-    vkPresentInformation.waitSemaphoreCount = 1U;
+    // Only present if the image was acquired successfully.
+    if (m_bIsImageAcquired)
+    {
+      // Unlike fences or events, the act of waiting for a semaphore also un-signals that semaphore.
 
-    vk::Queue vkQueue = pDeviceVulkan->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_vkQueue;
-    XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      vk::PresentInfoKHR vkPresentInformation = {};
+      vkPresentInformation.pNext              = nullptr;
+      vkPresentInformation.pResults           = &result;
+      vkPresentInformation.pSwapchains        = &m_vkSwapChain;
+      vkPresentInformation.pImageIndices      = &m_uiBackBufferIndex;
+      vkPresentInformation.swapchainCount     = 1U;
+      vkPresentInformation.pWaitSemaphores    = &vkDrawCompleteSemaphore;
+      vkPresentInformation.waitSemaphoreCount = 1U;
+
+      vk::Queue vkQueue = pDeviceVulkan->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_vkQueue;
+      XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    }
 
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
     {
@@ -722,6 +741,7 @@ void xiiGALSwapChainVulkan::Present()
     }
   }
 
+  if (!m_bIsMinimized)
   {
     ++m_uiSemaphoreIndex;
     if (m_uiSemaphoreIndex >= m_Description.m_uiBufferCount)
@@ -750,7 +770,12 @@ void xiiGALSwapChainVulkan::Present()
       }
 #endif
     }
-    XII_ASSERT_DEV(result == vk::Result::eSuccess, "Failed to acquire next swap chain image.");
+
+    // The image may still be out of date if the window keeps changing size.
+  }
+  else
+  {
+    ThrottleFrameSubmission();
   }
 }
 

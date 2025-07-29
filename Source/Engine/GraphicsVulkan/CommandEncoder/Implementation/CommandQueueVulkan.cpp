@@ -3,8 +3,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -22,6 +22,11 @@ xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
   m_CommandBufferPool.Clear();
 }
 
+xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
+{
+  return m_pQueueFence->GetCompletedValue();
+}
+
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
@@ -32,7 +37,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
   bool bTimelineSemaphoreInUse = false;
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
-    if (fenceInfo.m_pFenceVulkan == nullptr || !fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
+    if (!fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
       continue;
 
     bTimelineSemaphoreInUse = true;
@@ -100,7 +105,8 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
 
     VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-    m_LastSyncPoint = syncPoint;
+    m_LastSyncPoint.m_vkFence = syncPoint.m_vkFence;
+    m_LastSyncPoint.m_uiValue = syncPoint.m_uiValue;
   }
 
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
@@ -108,9 +114,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     if (fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
       continue;
 
-    const auto& syncPoint = fenceInfo.m_pFenceVulkan->CreateSyncPoint(fenceInfo.m_uiWaitValue);
-
-    XII_IGNORE_UNUSED(syncPoint);
+    fenceInfo.m_pFenceVulkan->AddPendingSyncPoint(this, fenceInfo.m_uiWaitValue, m_LastSyncPoint.m_vkFence, m_LastSyncPoint.m_uiValue);
   }
 
   pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;

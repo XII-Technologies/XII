@@ -1,8 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -112,8 +113,6 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
     {
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
 
-      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(std::move(syncData.m_vkFence));
-
       m_SyncPoints.PopFront();
     }
     else
@@ -167,14 +166,16 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
   }
 }
 
-const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
+void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiUInt64 uiValue, const vk::Fence& vkFence, const xiiUInt64 uiFenceValue)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (IsTimelineSemaphore())
   {
-    XII_REPORT_FAILURE("CreateSyncPoint() is not supported for timeline semaphore.");
+    XII_REPORT_FAILURE("AddPendingSyncPoint() is not supported for timeline semaphore.");
   }
+
+  XII_ASSERT_DEV(vkFence != VK_NULL_HANDLE, "The pending sync point fence is invalidated.");
 
   ValidateFenceSignal(uiFenceValue);
 
@@ -186,6 +187,10 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 
     XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
   }
+  if (!m_SyncPoints.IsEmpty())
+  {
+    XII_ASSERT_DEV(m_SyncPoints.PeekBack().m_pCommandQueueVulkan == pCommandQueueVulkan, "Fence enqueued for signal operation in command queue {}, but previous signal operation was in command queue {}. This may cause data rase or deadlock. Call Wait() to ensure that all pending signal operation have been completed.", pCommandQueueVulkan->GetDebugName(), m_SyncPoints.PeekBack().m_pCommandQueueVulkan->GetDebugName());
+  }
 #endif
 
   // If fence is used only for synchronization between queues it will accumulate many more sync points.
@@ -196,10 +201,10 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
   }
 
   xiiGALFenceVulkan::SyncPointData& syncPoint = m_SyncPoints.ExpandAndGetRef();
-  syncPoint.m_vkFence                         = pDeviceVulkan->GetVulkanFencePool()->RequestFence();
-  syncPoint.m_uiValue                         = uiFenceValue;
-
-  return syncPoint;
+  syncPoint.m_pCommandQueueVulkan             = pCommandQueueVulkan;
+  syncPoint.m_uiValue                         = uiValue;
+  syncPoint.m_vkFence                         = vkFence;
+  syncPoint.m_uiFenceValue                    = uiFenceValue;
 }
 
 void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
@@ -214,7 +219,7 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
     vkWaitInformation.flags                 = {};
     vkWaitInformation.semaphoreCount        = 1U;
     vkWaitInformation.pSemaphores           = &m_vkTimelineSemaphore;
-    vkWaitInformation.pValues               = reinterpret_cast<const uint64_t*>(&uiValue);
+    vkWaitInformation.pValues               = &uiValue;
 
     VK_ASSERT_DEV(vkLogicalDevice.waitSemaphoresKHR(&vkWaitInformation, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
@@ -229,17 +234,10 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
       if (syncData.m_uiValue > uiValue)
         break;
 
-      vk::Result vkFenceStatus = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      if (vkFenceStatus == vk::Result::eNotReady)
-      {
-        vkFenceStatus = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      }
+      syncData.m_pCommandQueueVulkan->GetWaitOnlyFence()->Wait(syncData.m_uiFenceValue);
 
-      XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "All pending fences must now be complete!");
 
       UpdateLastCompletedFenceValue(syncData.m_uiValue);
-
-      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(std::move(syncData.m_vkFence));
 
       m_SyncPoints.PopFront();
     }
