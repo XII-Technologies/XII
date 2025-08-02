@@ -2591,7 +2591,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
   deviceFeatures.m_SubpassFramebufferFetch       = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_TextureComponentSwizzle       = xiiGALDeviceFeatureState::Enabled;
 
-  // Timestamps are nnot a feature and cannot be disabled. They are either supported by the device, or not supported by the device.
+  // Timestamps are not a feature and cannot be disabled. They are either supported by the device, or not supported by the device.
   deviceFeatures.m_TimestampQueries = vkDeviceProperties.limits.timestampComputeAndGraphics ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_DurationQueries  = vkDeviceProperties.limits.timestampComputeAndGraphics ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
 
