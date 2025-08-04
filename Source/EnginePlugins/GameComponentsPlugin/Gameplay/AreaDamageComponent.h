@@ -18,7 +18,6 @@ public:
 
 private:
   friend class xiiAreaDamageComponent;
-  xiiPhysicsWorldModuleInterface* m_pPhysicsInterface = nullptr;
 };
 
 /// \brief Used to apply damage to objects in the vicinity and push physical objects away.
