@@ -2808,7 +2808,6 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
   return uiQueueFamilyIndex;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////
 
 xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan) :
@@ -2826,21 +2825,21 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
-  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
+  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid Vulkan memory allocation.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
   XII_ASSERT_DEV(allocation != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
   entry.m_VulkanAllocation                    = allocation;
@@ -2854,7 +2853,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphoreP
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pSemaphorePool                      = pSemaphorePool;
   entry.m_vkSemaphore                         = vkSemaphore;
 }
@@ -2867,7 +2866,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptor
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
   entry.m_vkDescriptorPool                    = vkDescriptorPool;
 }
@@ -2880,7 +2879,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolV
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
+  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pFencePool                          = pFencePool;
   entry.m_vkFence                             = vkFence;
 }
@@ -2979,12 +2978,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
     break;
     case vk::ObjectType::eBuffer:
     {
-      XII_REPORT_FAILURE("Buffer must be destroyed using the VMA allocator.");
+      XII_REPORT_FAILURE("Buffer must be destroyed using the Vulkan memory allocator.");
     }
     break;
     case vk::ObjectType::eImage:
     {
-      XII_REPORT_FAILURE("Image must be destroyed using the VMA allocator.");
+      XII_REPORT_FAILURE("Image must be destroyed using the Vulkan memory allocator.");
     }
     break;
     case vk::ObjectType::eEvent:

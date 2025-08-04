@@ -133,8 +133,6 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan*     GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetFrameNumber() const { return m_uiFrameCounter; }
-
   // Deactivate Doxygen document generation for the following block. (API implementation only)
   /// \cond
 
@@ -354,9 +352,6 @@ private:
 
   // Deletion Queue.
   xiiUniquePtr<DeferredDeletionQueue> m_pDeferredDeletionQueue;
-
-  // Per Frame Data.
-  xiiUInt32 m_uiFrameCounter = 0U;
 
 private:
   vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;

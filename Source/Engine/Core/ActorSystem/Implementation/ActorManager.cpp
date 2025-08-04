@@ -39,7 +39,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Core, xiiActorManager)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-
 //////////////////////////////////////////////////////////////////////////
 
 struct xiiActorManagerImpl
