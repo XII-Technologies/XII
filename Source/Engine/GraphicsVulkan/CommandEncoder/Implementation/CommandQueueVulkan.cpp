@@ -119,6 +119,12 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
   pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;
   pCommandListVulkan->m_SubmittedCommandQueueRecord.m_uiFenceValue  = uiFenceValue;
 
+  auto pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
+  if (pDeferredDeletionQueue->HasTimelineSemaphore())
+  {
+    pDeferredDeletionQueue->Signal();
+  }
+
   return uiFenceValue;
 }
 
