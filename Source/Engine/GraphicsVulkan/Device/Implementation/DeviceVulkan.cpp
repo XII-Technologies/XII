@@ -2984,7 +2984,16 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release only resources that are not in use.
     for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
     {
-      const xiiUInt64 uiCompletedFenceValue = HasTimelineSemaphore() ? m_uiTimelineValue : m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+      xiiUInt64 uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
+
+      if (HasTimelineSemaphore())
+      {
+        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiCompletedFenceValue, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+      else
+      {
+        uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+      }
 
       if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {
