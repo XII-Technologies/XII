@@ -1180,7 +1180,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_GraphicsQueueInformation);
-      m_pGraphicsCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, xiiGALCommandQueueFlags::Graphics);
+      m_pGraphicsCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_pGraphicsCommandQueue.Borrow());
       m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
@@ -1194,7 +1194,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_ComputeQueueInformation);
-      m_pComputeCommandBufferPool                            = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, xiiGALCommandQueueFlags::Compute);
+      m_pComputeCommandBufferPool                            = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_pComputeCommandQueue.Borrow());
       m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
       m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
@@ -1208,7 +1208,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_TransferQueueInformation);
-      m_pTransferCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, xiiGALCommandQueueFlags::Transfer);
+      m_pTransferCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_pTransferCommandQueue.Borrow());
       m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
       m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
