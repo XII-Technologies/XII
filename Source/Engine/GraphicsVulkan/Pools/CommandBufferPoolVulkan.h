@@ -16,10 +16,9 @@ class XII_GRAPHICSVULKAN_DLL xiiGALCommandBufferPoolVulkan
 public:
   struct InFlightCommandBuffer
   {
-    xiiGALCommandQueueVulkan* m_pCommandQueueVulkan;
-    vk::CommandBuffer         m_vkCommandBuffer;
-    bool                      m_bIsSecondary;
-    xiiUInt64                 m_uiFenceValue;
+    vk::CommandBuffer m_vkCommandBuffer;
+    bool              m_bIsSecondary;
+    xiiUInt64         m_uiFenceValue;
   };
 
   struct ThreadPool
@@ -63,7 +62,7 @@ public:
     void Push(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary);
 
     /// \brief Defer recycle: GPU is still using it.
-    void PushInFlight(xiiGALCommandQueueVulkan* pCommandQueueVulkan, vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue);
+    void PushInFlight(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue);
   };
 
   /// \brief RAII handle for a VkCommandBuffer allocated from this pool.
@@ -132,7 +131,7 @@ public:
   AutoCommandBuffer AllocateSecondaryCommandBuffer();
 
   /// Submit wrapper: after vkQueueSubmit(..., fence), call this to defer recycling.
-  void RecycleAfterSubmit(xiiGALCommandQueueVulkan* pCommandQueueVulkan, AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue);
+  void RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue);
 
   /// \brief Poll fences and reclaim any completed buffers.
   /// Call at the start of each frame or from a dedicated thread.
@@ -146,10 +145,10 @@ public:
 private:
   /// \brief Constructs a multithreaded command‐buffer pool.
   /// pDeviceVulkan           – Vulkan device implementation.
-  /// queueFlags              – The queue flags for all command pools
+  /// pCommandQueueVulkan     - The command queue.
   /// poolCreateFlags         – Flags for vkCreateCommandPool (e.g. RESET_COMMAND_BUFFER_BIT)
   /// uiInitialCountPerThread – How many buffers to preallocate per thread.
-  xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, xiiUInt32 uiInitialCountPerThread = 16U);
+  xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, vk::CommandPoolCreateFlags poolCreateFlags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, xiiUInt32 uiInitialCountPerThread = 16U);
 
   ~xiiGALCommandBufferPoolVulkan();
 
@@ -161,10 +160,10 @@ private:
   friend class xiiGALDeviceVulkan;
   friend class xiiGALCommandQueueVulkan;
 
-  xiiGALDeviceVulkan*                  m_pDeviceVulkan;
-  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
-  vk::CommandPoolCreateFlags           m_vkCommandPoolCreateFlags;
-  xiiUInt32                            m_uiInitialReserveCount;
+  xiiGALDeviceVulkan*        m_pDeviceVulkan;
+  xiiGALCommandQueueVulkan*  m_pCommandQueueVulkan;
+  vk::CommandPoolCreateFlags m_vkCommandPoolCreateFlags;
+  xiiUInt32                  m_uiInitialReserveCount;
 
   xiiMutex                        m_PoolMutex;
   xiiMap<xiiThreadID, ThreadPool> m_CommandBufferPoolsPerThread;

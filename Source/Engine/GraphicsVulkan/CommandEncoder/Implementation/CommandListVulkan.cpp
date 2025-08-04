@@ -589,13 +589,12 @@ void xiiGALCommandListVulkan::EndPlatform()
 void xiiGALCommandListVulkan::ResetPlatform()
 {
   // For one-time submit command buffers, they are invalidated once submitted to a queue.
-  if (m_vkCommandBuffer != VK_NULL_HANDLE && m_SubmittedCommandQueueRecord.m_pCommandQueue != nullptr)
+  if (m_vkCommandBuffer != VK_NULL_HANDLE && m_SubmittedCommandQueueRecord.m_uiFenceValue != xiiInvalidIndex)
   {
     xiiSharedPtr<xiiGALDeviceVulkan>             pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-    const xiiGALCommandQueueCreationDescription& description              = m_SubmittedCommandQueueRecord.m_pCommandQueue->GetDescription();
-    xiiGALCommandBufferPoolVulkan*               pCommandBufferPoolVulkan = pDeviceVulkan->GetCommandBufferPool(description.m_QueueFlags);
+    xiiGALCommandBufferPoolVulkan*               pCommandBufferPoolVulkan = pDeviceVulkan->GetCommandBufferPool(m_Description.m_QueueFlags);
 
-    pCommandBufferPoolVulkan->RecycleAfterSubmit(m_SubmittedCommandQueueRecord.m_pCommandQueue, std::move(m_CommandBufferAllocation), m_SubmittedCommandQueueRecord.m_uiFenceValue);
+    pCommandBufferPoolVulkan->RecycleAfterSubmit(std::move(m_CommandBufferAllocation), m_SubmittedCommandQueueRecord.m_uiFenceValue);
   }
 
   m_CommandBufferAllocation     = {};

@@ -116,8 +116,7 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     fenceInfo.m_pFenceVulkan->AddPendingSyncPoint(this, fenceInfo.m_uiWaitValue, m_uiLastSyncPointValue);
   }
 
-  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;
-  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_uiFenceValue  = uiFenceValue;
+  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_uiFenceValue = uiFenceValue;
 
   auto pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
   if (pDeferredDeletionQueue->HasTimelineSemaphore())

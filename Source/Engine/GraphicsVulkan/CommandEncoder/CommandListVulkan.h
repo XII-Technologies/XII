@@ -206,8 +206,7 @@ private:
 private:
   struct CommandQueueRecord
   {
-    xiiGALCommandQueueVulkan* m_pCommandQueue;
-    xiiUInt64                 m_uiFenceValue;
+    xiiUInt64 m_uiFenceValue = xiiInvalidIndex;
   };
 
   struct PipelineBarrier
