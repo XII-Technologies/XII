@@ -4,8 +4,8 @@
 
 #include <Foundation/Algorithm/HashStream.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsVulkan/CommandEncoder/CommandListDataVulkan.h>
 
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
 
@@ -61,7 +61,7 @@ public:
   void AddWaitSemaphore(vk::Semaphore vkSemaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
   void AddSignalSemaphore(vk::Semaphore vkSemaphore, xiiUInt64 uiValue = 0ULL);
 
-  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_CommandListData.m_pUploadStagingBufferPool.Borrow(); }
 
   struct CommandListState
   {
@@ -204,11 +204,6 @@ private:
   void PrepareForRayTracing();
 
 private:
-  struct CommandQueueRecord
-  {
-    xiiUInt64 m_uiFenceValue = xiiInvalidIndex;
-  };
-
   struct PipelineBarrier
   {
     vk::PipelineStageFlags m_vkMemorySourceStages      = {};
@@ -301,39 +296,14 @@ private:
     xiiUInt64                       m_uiWaitValue = 0U;
   };
 
-  struct ResourceSetBindings
-  {
-    xiiDynamicArray<xiiSharedPtr<xiiGALBufferVulkan>>      m_pBoundConstantBuffers;
-    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>  m_pBoundBufferResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundTextureResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>  m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALSamplerVulkan>>     m_pBoundSamplerStates;
-  };
-
   xiiGALCommandBufferPoolVulkan::AutoCommandBuffer m_CommandBufferAllocation;
   vk::CommandBuffer                                m_vkCommandBuffer;
-  CommandListState                                 m_CommandListState;
   xiiBitflags<CommandListFlags>                    m_CommandListFlags;
-  PipelineBarrier                                  m_PipelineBarrier;
-  CommandQueueRecord                               m_SubmittedCommandQueueRecord = {};
+  CommandListState                                 m_CommandListState;
+  xiiGALCommandListDataVulkan                      m_CommandListData;
 
+  PipelineBarrier                         m_PipelineBarrier;
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
-
-  xiiHybridArray<xiiSharedPtr<xiiGALTextureViewVulkan>, 2U> m_pBoundRenderTargets;
-  xiiSharedPtr<xiiGALTextureViewVulkan>                     m_pBoundDepthStencilTarget;
-  xiiUInt32                                                 m_uiBoundRenderTargetCount = 0U;
-
-  xiiUInt32                          m_uiSubpassIndex = 0U;
-  xiiHybridArray<vk::ClearValue, 2U> m_AttachmentClearValues;
-
-  bool m_bPipelineStateModified = false;
-
-  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
-  xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;
-  xiiDeque<vk::DescriptorBufferInfo>      m_DynamicUniformBuffers;
-  xiiHybridArray<xiiUInt32, 6U>           m_DynamicUniformBufferOffsets;
-  bool                                    m_bDescriptorsModified = false;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
@@ -353,11 +323,4 @@ private:
 
   xiiHashTable<MappedBufferKey, MappedBuffer, MappedBufferKey::Hasher>    m_MappedBuffers;
   xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
-
-  xiiUniquePtr<xiiGALDynamicBufferPoolVulkan> m_pDynamicBufferPoolVulkan;
-  xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;
-
-  xiiUInt32 m_uiActiveQueriesCounter = 0U;
-
-  xiiSharedPtr<xiiGALBufferVulkan> m_pNullVertexBuffer; ///< In Vulkan, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
 };

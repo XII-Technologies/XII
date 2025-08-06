@@ -194,10 +194,9 @@ public:
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*         GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan*     GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolVulkan* GetVulkanDescriptorSetPool() const { return m_pDescriptorSetPool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE DeferredDeletionQueue*         GetDeferredDeletionQueue() const { return m_pDeferredDeletionQueue.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*     GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE DeferredDeletionQueue*     GetDeferredDeletionQueue() const { return m_pDeferredDeletionQueue.Borrow(); }
 
   // Deactivate Doxygen document generation for the following block. (API implementation only)
   /// \cond
@@ -359,9 +358,8 @@ private:
   xiiUniquePtr<xiiGALCommandBufferPoolVulkan> m_pTransferCommandBufferPool;
 
   // Pools.
-  xiiUniquePtr<xiiGALFencePoolVulkan>         m_pFencePool;
-  xiiUniquePtr<xiiGALSemaphorePoolVulkan>     m_pSemaphorePool;
-  xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pDescriptorSetPool;
+  xiiUniquePtr<xiiGALFencePoolVulkan>     m_pFencePool;
+  xiiUniquePtr<xiiGALSemaphorePoolVulkan> m_pSemaphorePool;
 
   // Deletion Queue.
   xiiUniquePtr<DeferredDeletionQueue> m_pDeferredDeletionQueue;

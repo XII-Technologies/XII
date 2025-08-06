@@ -39,11 +39,11 @@ XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& xiiGALDeviceVulkan::GetCom
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_GraphicsQueueInformation;
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
-    return m_TransferQueueInformation;
-
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_ComputeQueueInformation;
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_TransferQueueInformation;
 
   return m_GraphicsQueueInformation;
 }
@@ -53,11 +53,11 @@ XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan* xiiGALDeviceVulkan::GetCommandB
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandBufferPool.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
-    return m_pTransferCommandBufferPool.Borrow();
-
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandBufferPool.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandBufferPool.Borrow();
 
   return m_pGraphicsCommandBufferPool.Borrow();
 }
@@ -67,11 +67,11 @@ XII_ALWAYS_INLINE xiiGALQueryPoolVulkan* xiiGALDeviceVulkan::GetCommandQueueQuer
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueueQueryPool.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
-    return m_pTransferCommandQueueQueryPool.Borrow();
-
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueueQueryPool.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueueQueryPool.Borrow();
 
   return m_pGraphicsCommandQueueQueryPool.Borrow();
 }

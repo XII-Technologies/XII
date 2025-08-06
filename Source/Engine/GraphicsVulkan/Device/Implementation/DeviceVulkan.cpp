@@ -174,7 +174,6 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 
   {
     m_pDeferredDeletionQueue.Clear();
-    m_pDescriptorSetPool.Clear();
     m_pFencePool.Clear();
     m_pSemaphorePool.Clear();
   }
@@ -227,7 +226,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   {
     XII_LOG_BLOCK("Available Vulkan Instance Layers");
 
-    for (const auto& layer : m_Layers)
+    for (const vk::LayerProperties& layer : m_Layers)
     {
       xiiLog::Dev("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
     }
@@ -248,7 +247,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     XII_ASSERT_DEV(m_Extensions.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, m_Extensions.GetCount());
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    for (const auto& extension : m_Extensions)
+    for (const vk::ExtensionProperties& extension : m_Extensions)
     {
       xiiLog::Dev("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
     }
@@ -510,7 +509,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       XII_LOG_BLOCK(sb);
 
-      for (const auto& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
+      for (const vk::QueueFamilyProperties& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
       {
         xiiLog::Dev("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
       }
@@ -1169,7 +1168,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   {
     m_pFencePool             = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
     m_pSemaphorePool         = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
-    m_pDescriptorSetPool     = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
     m_pDeferredDeletionQueue = XII_NEW(&m_Allocator, DeferredDeletionQueue, this);
   }
 
@@ -1252,11 +1250,6 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
       m_pDeferredDeletionQueue->EnqueueResource(m_pFencePool.Borrow(), reinterpret_cast<vk::Fence&>(pObject));
     }
     break;
-    case vk::ObjectType::eDescriptorPool:
-    {
-      m_pDeferredDeletionQueue->EnqueueResource(m_pDescriptorSetPool.Borrow(), reinterpret_cast<vk::DescriptorPool&>(pObject));
-    }
-    break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -1272,6 +1265,10 @@ void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation alloca
 
 void xiiGALDeviceVulkan::BeginFramePlatform()
 {
+}
+
+void xiiGALDeviceVulkan::EndFramePlatform()
+{
   if (m_pTransferCommandBufferPool)
   {
     m_pTransferCommandBufferPool->ReclaimCompleted();
@@ -1281,10 +1278,7 @@ void xiiGALDeviceVulkan::BeginFramePlatform()
     m_pComputeCommandBufferPool->ReclaimCompleted();
   }
   m_pGraphicsCommandBufferPool->ReclaimCompleted();
-}
 
-void xiiGALDeviceVulkan::EndFramePlatform()
-{
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
@@ -1293,11 +1287,11 @@ xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALComman
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueue.Borrow();
 
-  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
-    return m_pTransferCommandQueue.Borrow();
-
   if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueue.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueue.Borrow();
 
   return m_pGraphicsCommandQueue.Borrow();
 }

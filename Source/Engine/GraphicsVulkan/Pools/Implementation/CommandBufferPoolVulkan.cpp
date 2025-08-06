@@ -21,11 +21,11 @@ void xiiGALCommandBufferPoolVulkan::ThreadPool::Push(vk::CommandBuffer vkCommand
   }
 }
 
-void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue)
+void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(vk::CommandBuffer vkCommandBuffer, xiiGALCommandListDataVulkan&& commandListData, bool bIsSecondary, xiiUInt64 uiFenceValue)
 {
   XII_LOCK(m_Mutex);
 
-  m_InFlightCommandBuffers.PushBack({vkCommandBuffer, bIsSecondary, uiFenceValue});
+  m_InFlightCommandBuffers.PushBack({vkCommandBuffer, bIsSecondary, uiFenceValue, std::move(commandListData)});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -187,7 +187,7 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
   return {&threadPool, vkCommandBuffer, true};
 }
 
-void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue)
+void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiGALCommandListDataVulkan&& commandListData, xiiUInt64 uiFenceValue)
 {
   if (commandBuffer.m_pOwner == nullptr || commandBuffer.m_vkCommandBuffer == VK_NULL_HANDLE)
     return;
@@ -202,7 +202,7 @@ void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& comma
 
   // Track it until fence signals.
   // Defer recycling until that fence-value is reached:
-  pOwner->PushInFlight(vkCommandBuffer, bIsSecondary, uiFenceValue);
+  pOwner->PushInFlight(vkCommandBuffer, std::move(commandListData), bIsSecondary, uiFenceValue);
 }
 
 void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
