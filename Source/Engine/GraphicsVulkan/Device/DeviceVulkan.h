@@ -186,7 +186,9 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::AccessFlags> GetVulkanLogicalDeviceSupportedAccessFlags() const { return m_LogicalDeviceSupportedAccessFlags; }
   [[nodiscard]] XII_ALWAYS_INLINE vk::AccessFlags GetVulkanLogicalDeviceSupportedAccessFlags(xiiUInt32 uiQueueFamilyIndex) const { return m_LogicalDeviceSupportedAccessFlags[uiQueueFamilyIndex]; }
 
+  XII_ALWAYS_INLINE void                                              LockCommandQueueAndRun(xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(const vk::Queue&)> action);
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetCommandQueueInformation(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiMutex&                           GetCommandQueueMutex(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandBufferPoolVulkan*      GetCommandBufferPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolVulkan*              GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineStageFlags GetSupportedStagesFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
@@ -340,18 +342,21 @@ private:
   xiiUniquePtr<xiiVulkanMemoryAllocator> m_pVulkanMemoryAllocator;
 
   // Graphics Queue Information.
+  mutable xiiMutex                            m_GraphicsQueueMutex;
   xiiGALQueueInformationVulkan                m_GraphicsQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan>      m_pGraphicsCommandQueue;
   xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pGraphicsCommandQueueQueryPool;
   xiiUniquePtr<xiiGALCommandBufferPoolVulkan> m_pGraphicsCommandBufferPool;
 
   // Compute Queue Information.
+  mutable xiiMutex                            m_ComputeQueueMutex;
   xiiGALQueueInformationVulkan                m_ComputeQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan>      m_pComputeCommandQueue;
   xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pComputeCommandQueueQueryPool;
   xiiUniquePtr<xiiGALCommandBufferPoolVulkan> m_pComputeCommandBufferPool;
 
   // Transfer Queue Information.
+  mutable xiiMutex                            m_TransferQueueMutex;
   xiiGALQueueInformationVulkan                m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueVulkan>      m_pTransferCommandQueue;
   xiiUniquePtr<xiiGALQueryPoolVulkan>         m_pTransferCommandQueueQueryPool;

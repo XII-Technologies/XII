@@ -48,8 +48,6 @@ private:
   xiiGALQueueInformationVulkan                                   m_QueueInformation;
   xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 
-  xiiMutex m_QueueMutex;
-
   xiiUniquePtr<xiiGALCpuWaitOnlyFenceVulkan> m_pQueueFence;
   xiiAtomicIntegerU64                        m_uiNextFenceValue{1ULL};
   xiiUInt64                                  m_uiLastSyncPointValue{0ULL};
