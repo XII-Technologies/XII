@@ -653,7 +653,7 @@ void xiiGALCommandListVulkan::SetBlendFactorPlatform(const xiiColor& blendFactor
 
 void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
-  XII_ASSERT_DEV(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
+  XII_ASSERT_DEBUG(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
@@ -676,17 +676,17 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
     //
     //       Image                Direct3D                                       Image               Vulkan
     //        row                                                                 row
-    //         0 _   (0,0)_______________________(1,0)                  Tex Height _   (0,1)_______________________(1,1)
-    //         1 _       |                       |      |             VP Top + Hght _ _ _ _|   __________          |      A
-    //         2 _       |                       |      |                          .       |  |   .--> +x|         |      |
-    //           .       |                       |      |                          .       |  |   |      |         |      |
-    //           .       |                       |      | V Coord                          |  |   V +y   |         |      | V Coord
-    //     VP Top _ _ _ _|   __________          |      |                    VP Top _ _ _ _|  |__________|         |      |
-    //           .       |  |    A +y  |         |      |                          .       |                       |      |
-    //           .       |  |    |     |         |      |                          .       |                       |      |
-    //           .       |  |    '-->+x|         |      |                        2 _       |                       |      |
-    //           .       |  |__________|         |      |                        1 _       |                       |      |
-    //Tex Height _       |_______________________|      V                        0 _       |_______________________|      |
+    //         0 _   (0,0)_______________________(1,0)                  Tex Height _     (0,1)_______________________(1,1)
+    //         1 _       |                       |      |             VP Top + Height _ _ _ _|   __________          |      A
+    //         2 _       |                       |      |                          .         |  |   .--> +x|         |      |
+    //           .       |                       |      |                          .         |  |   |      |         |      |
+    //           .       |                       |      | V Coord                  .         |  |   V +y   |         |      | V Coord
+    //     VP Top _ _ _ _|   __________          |      |                    VP Top   _ _ _ _|  |__________|         |      |
+    //           .       |  |    A +y  |         |      |                          .         |                       |      |
+    //           .       |  |    |     |         |      |                          .         |                       |      |
+    //           .       |  |    '-->+x|         |      |                        2 _         |                       |      |
+    //           .       |  |__________|         |      |                        1 _         |                       |      |
+    //Tex Height _       |_______________________|      V                        0 _         |_______________________|      |
     //               (0,1)                       (1,1)                                 (0,0)                       (1,0)
     //
     //
@@ -700,7 +700,7 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
 
 void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
-  XII_ASSERT_DEV(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
+  XII_ASSERT_DEBUG(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 

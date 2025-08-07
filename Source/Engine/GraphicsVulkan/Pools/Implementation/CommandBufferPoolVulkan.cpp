@@ -127,6 +127,8 @@ xiiGALCommandBufferPoolVulkan::ThreadPool& xiiGALCommandBufferPoolVulkan::GetOrC
 
 xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::AllocatePrimaryCommandBuffer()
 {
+  XII_LOCK(m_PoolMutex);
+
   ThreadPool& threadPool = GetOrCreateThreadPool();
 
   {
@@ -158,6 +160,8 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
 
 xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::AllocateSecondaryCommandBuffer()
 {
+  XII_LOCK(m_PoolMutex);
+
   ThreadPool& threadPool = GetOrCreateThreadPool();
 
   {
@@ -167,6 +171,9 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
     {
       vk::CommandBuffer vkCommandBuffer = threadPool.m_SecondaryFreeCommandBuffers.PeekBack();
       threadPool.m_SecondaryFreeCommandBuffers.PopBack();
+
+      // GPU is done with this command buffer.
+      VK_ASSERT_DEV(vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
       return {&threadPool, vkCommandBuffer, true};
     }
@@ -218,13 +225,14 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
     for (xiiUInt32 i = 0; i < threadPool.m_InFlightCommandBuffers.GetCount();)
     {
       InFlightCommandBuffer& inFlightCommandBuffer = threadPool.m_InFlightCommandBuffers[i];
-      const xiiUInt64        uiCompletedFenceValue = m_pCommandQueueVulkan->GetCompletedFenceValue();
+      xiiUInt64              uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
+
+      m_pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&](const vk::Queue&) -> void {
+        uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+      });
 
       if (inFlightCommandBuffer.m_uiFenceValue <= uiCompletedFenceValue)
       {
-        // GPU is done with this command buffer.
-        VK_ASSERT_DEV(inFlightCommandBuffer.m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
         if (inFlightCommandBuffer.m_bIsSecondary)
         {
           threadPool.m_SecondaryFreeCommandBuffers.PushBack(inFlightCommandBuffer.m_vkCommandBuffer);

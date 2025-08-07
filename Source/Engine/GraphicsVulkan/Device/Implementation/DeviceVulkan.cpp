@@ -2986,7 +2986,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       }
       else
       {
-        uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+        m_pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&](const vk::Queue&) -> void {
+          uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+        });
       }
 
       if (it->m_uiFenceValue <= uiCompletedFenceValue)
