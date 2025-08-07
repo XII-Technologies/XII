@@ -36,6 +36,8 @@ XII_ALWAYS_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject,
 
 XII_ALWAYS_INLINE void xiiGALDeviceVulkan::LockCommandQueueAndRun(xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(const vk::Queue&)> action)
 {
+  XII_ASSERT_DEBUG(queueFlags.IsAnyFlagSet(), "Invalid queue flags.");
+
   XII_LOCK(GetCommandQueueMutex(queueFlags));
 
   const xiiGALQueueInformationVulkan& queueInformation = GetCommandQueueInformation(queueFlags);

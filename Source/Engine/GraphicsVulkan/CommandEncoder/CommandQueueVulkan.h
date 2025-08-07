@@ -45,6 +45,8 @@ private:
     vk::Fence m_vkFence;
   };
 
+  mutable xiiMutex m_Mutex;
+
   xiiGALQueueInformationVulkan                                   m_QueueInformation;
   xiiMap<xiiUInt64, xiiUniquePtr<xiiGALCommandBufferPoolVulkan>> m_CommandBufferPool;
 

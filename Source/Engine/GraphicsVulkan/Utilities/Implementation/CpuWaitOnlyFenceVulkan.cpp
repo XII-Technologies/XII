@@ -37,6 +37,8 @@ xiiUInt64 xiiGALCpuWaitOnlyFenceVulkan::GetCompletedValue()
 
 xiiUInt64 xiiGALCpuWaitOnlyFenceVulkan::InternalGetCompletedValue()
 {
+  XII_LOCK(m_SyncPointGuard);
+
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 
   while (!m_SyncPoints.IsEmpty())

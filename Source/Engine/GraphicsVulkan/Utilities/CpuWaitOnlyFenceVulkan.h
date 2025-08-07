@@ -38,7 +38,7 @@ private:
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
-  xiiMutex                m_SyncPointGuard;
+  mutable xiiMutex        m_SyncPointGuard;
   xiiDeque<SyncPointData> m_SyncPoints;
 
   xiiAtomicIntegerU64 m_LastCompletedFenceValue;
