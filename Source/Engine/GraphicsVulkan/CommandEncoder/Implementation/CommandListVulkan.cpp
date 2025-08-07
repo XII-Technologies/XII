@@ -150,10 +150,29 @@ namespace
     return vkAccessFlags;
   }
 
+  /// \brief Checks whether two 1D line segments overlap.
+  ///
+  /// This function determines if the intervals [min0, max0] and [min1, max1] overlap.
+  /// The behavior depends on the template parameter `AllowTouch`:
+  /// - If `AllowTouch` is true, touching endpoints are considered overlapping.
+  /// - If `AllowTouch` is false, touching endpoints are not considered overlapping.
+  ///
+  /// \tparam AllowTouch - If true, segments that touch at endpoints are considered overlapping.
+  /// \tparam T          - A numeric type (e.g., float, double, int) used for the segment bounds.
+  /// 
+  /// \param min0 - Lower bound of the first segment.
+  /// \param max0 - Upper bound of the first segment.
+  /// \param min1 - Lower bound of the second segment.
+  /// \param max1 - Upper bound of the second segment.
+  /// 
+  /// \return True if the segments overlap (or touch, depending on AllowTouch); false otherwise.
+  ///
+  /// \note The function assumes that min0 <= max0 and min1 <= max1.
   template <bool AllowTouch, typename T>
   bool CheckLineSectionOverlap(T min0, T max0, T min1, T max1)
   {
-    XII_ASSERT_DEV(min0 <= max0 && min1 <= max1, "");
+    // Ensure valid intervals: min must not exceed max for either segment
+    XII_ASSERT_DEV(min0 <= max0 && min1 <= max1, "Invalid segment bounds: min must be <= max");
     //     [------]         [------]
     //   min0    max0    min1     max1
     //
