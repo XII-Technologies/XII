@@ -31,17 +31,18 @@ public:
 private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceVulkan;
+  friend class xiiGALCommandListVulkan;
 
-  xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize);
+  xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize, xiiUInt32 uiMaxSets);
   ~xiiGALDescriptorSetPoolVulkan();
 
   vk::DescriptorPool CreateVulkanDescriptorPool();
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
-  xiiMutex                            m_PoolMutex;
   xiiDynamicArray<vk::DescriptorPool> m_DescriptorPools;
   xiiDeque<vk::DescriptorPool>        m_QueuedDescriptorPools;
   xiiUInt32                           m_uiBaseSize = 0U;
+  xiiUInt32                           m_uiMaxSets  = 0U;
   vk::DescriptorPool                  m_vkCurrentDescriptorPool;
 };

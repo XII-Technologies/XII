@@ -49,7 +49,6 @@ void xiiCommandInterpreter::FindPossibleFunctions(xiiStringView sVariable, xiiDe
   }
 }
 
-
 const xiiString xiiQuakeConsole::GetValueAsString(xiiCVar* pCVar)
 {
   xiiStringBuilder s = "undefined";

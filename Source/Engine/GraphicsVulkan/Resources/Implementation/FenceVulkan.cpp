@@ -84,7 +84,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
     // GetSemaphoreCounter() is thread safe.
 
-    uint64_t uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
+    xiiUInt64 uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
     VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiSemaphoreCounter, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     return uiSemaphoreCounter;

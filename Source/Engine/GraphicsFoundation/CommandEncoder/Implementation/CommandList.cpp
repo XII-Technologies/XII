@@ -237,6 +237,9 @@ void xiiGALCommandList::Reset()
   {
     End();
   }
+
+  InvalidateState();
+
   if (m_RecordingState != RecordingState::Reset)
   {
     ResetPlatform();

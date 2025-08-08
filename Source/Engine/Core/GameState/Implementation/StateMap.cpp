@@ -5,7 +5,6 @@
 xiiStateMap::xiiStateMap()  = default;
 xiiStateMap::~xiiStateMap() = default;
 
-
 void xiiStateMap::Clear()
 {
   m_Bools.Clear();

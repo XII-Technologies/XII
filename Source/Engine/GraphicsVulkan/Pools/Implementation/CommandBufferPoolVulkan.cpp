@@ -3,7 +3,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
-#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
 
 //////////////////////////////////////////////////////////////////////////
 // ThreadPool Push
@@ -22,20 +21,21 @@ void xiiGALCommandBufferPoolVulkan::ThreadPool::Push(vk::CommandBuffer vkCommand
   }
 }
 
-void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(xiiGALCommandQueueVulkan* pCommandQueueVulkan, vk::CommandBuffer vkCommandBuffer, bool bIsSecondary, xiiUInt64 uiFenceValue)
+void xiiGALCommandBufferPoolVulkan::ThreadPool::PushInFlight(vk::CommandBuffer vkCommandBuffer, xiiGALCommandListDataVulkan&& commandListData, bool bIsSecondary, xiiUInt64 uiFenceValue)
 {
   XII_LOCK(m_Mutex);
 
-  m_InFlightCommandBuffers.PushBack({pCommandQueueVulkan, vkCommandBuffer, bIsSecondary, uiFenceValue});
+  m_InFlightCommandBuffers.PushBack({vkCommandBuffer, bIsSecondary, uiFenceValue, std::move(commandListData)});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Constructor / Destructor
 
-xiiGALCommandBufferPoolVulkan::xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, vk::CommandPoolCreateFlags poolCreateFlags /*= vk::CommandPoolCreateFlagBits::eResetCommandBuffer*/, xiiUInt32 uiInitialCountPerThread /*= 16U*/) :
-  m_pDeviceVulkan(pDeviceVulkan), m_QueueFlags(queueFlags), m_vkCommandPoolCreateFlags(poolCreateFlags), m_uiInitialReserveCount(uiInitialCountPerThread)
+xiiGALCommandBufferPoolVulkan::xiiGALCommandBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, vk::CommandPoolCreateFlags poolCreateFlags /*= vk::CommandPoolCreateFlagBits::eResetCommandBuffer*/, xiiUInt32 uiInitialCountPerThread /*= 16U*/) :
+  m_pDeviceVulkan(pDeviceVulkan), m_pCommandQueueVulkan(pCommandQueueVulkan), m_vkCommandPoolCreateFlags(poolCreateFlags), m_uiInitialReserveCount(uiInitialCountPerThread)
 {
-  XII_ASSERT_DEV(m_pDeviceVulkan != nullptr, "Invalid Vulkan device implementation.");
+  XII_ASSERT_DEBUG(m_pDeviceVulkan != nullptr, "Invalid Vulkan device implementation.");
+  XII_ASSERT_DEBUG(m_pCommandQueueVulkan != nullptr, "Invalid Vulkan command queue provided.");
 }
 
 xiiGALCommandBufferPoolVulkan::~xiiGALCommandBufferPoolVulkan()
@@ -76,8 +76,8 @@ xiiGALCommandBufferPoolVulkan::ThreadPool& xiiGALCommandBufferPoolVulkan::GetOrC
 
   if (!bExisted)
   {
-    ThreadPool&                  threadPool       = it.Value();
-    xiiGALQueueInformationVulkan queueInformation = m_pDeviceVulkan->GetCommandQueueInformation(m_QueueFlags);
+    ThreadPool&                         threadPool       = it.Value();
+    const xiiGALQueueInformationVulkan& queueInformation = m_pCommandQueueVulkan->GetQueueInformation();
 
     vk::CommandPoolCreateInfo vkCommandPoolCreateInfo = {};
     vkCommandPoolCreateInfo.pNext                     = nullptr;
@@ -127,6 +127,8 @@ xiiGALCommandBufferPoolVulkan::ThreadPool& xiiGALCommandBufferPoolVulkan::GetOrC
 
 xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::AllocatePrimaryCommandBuffer()
 {
+  XII_LOCK(m_PoolMutex);
+
   ThreadPool& threadPool = GetOrCreateThreadPool();
 
   {
@@ -158,6 +160,8 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
 
 xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::AllocateSecondaryCommandBuffer()
 {
+  XII_LOCK(m_PoolMutex);
+
   ThreadPool& threadPool = GetOrCreateThreadPool();
 
   {
@@ -167,6 +171,9 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
     {
       vk::CommandBuffer vkCommandBuffer = threadPool.m_SecondaryFreeCommandBuffers.PeekBack();
       threadPool.m_SecondaryFreeCommandBuffers.PopBack();
+
+      // GPU is done with this command buffer.
+      VK_ASSERT_DEV(vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
       return {&threadPool, vkCommandBuffer, true};
     }
@@ -187,7 +194,7 @@ xiiGALCommandBufferPoolVulkan::AutoCommandBuffer xiiGALCommandBufferPoolVulkan::
   return {&threadPool, vkCommandBuffer, true};
 }
 
-void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(xiiGALCommandQueueVulkan* pCommandQueueVulkan, AutoCommandBuffer&& commandBuffer, xiiUInt64 uiFenceValue)
+void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(AutoCommandBuffer&& commandBuffer, xiiGALCommandListDataVulkan&& commandListData, xiiUInt64 uiFenceValue)
 {
   if (commandBuffer.m_pOwner == nullptr || commandBuffer.m_vkCommandBuffer == VK_NULL_HANDLE)
     return;
@@ -202,7 +209,7 @@ void xiiGALCommandBufferPoolVulkan::RecycleAfterSubmit(xiiGALCommandQueueVulkan*
 
   // Track it until fence signals.
   // Defer recycling until that fence-value is reached:
-  pOwner->PushInFlight(pCommandQueueVulkan, vkCommandBuffer, bIsSecondary, uiFenceValue);
+  pOwner->PushInFlight(vkCommandBuffer, std::move(commandListData), bIsSecondary, uiFenceValue);
 }
 
 void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
@@ -218,13 +225,14 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
     for (xiiUInt32 i = 0; i < threadPool.m_InFlightCommandBuffers.GetCount();)
     {
       InFlightCommandBuffer& inFlightCommandBuffer = threadPool.m_InFlightCommandBuffers[i];
-      const xiiUInt64        uiCompletedFenceValue = inFlightCommandBuffer.m_pCommandQueueVulkan->GetCompletedFenceValue();
+      xiiUInt64              uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
+
+      m_pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&](const vk::Queue&) -> void {
+        uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+      });
 
       if (inFlightCommandBuffer.m_uiFenceValue <= uiCompletedFenceValue)
       {
-        // GPU is done with this command buffer.
-        VK_ASSERT_DEV(inFlightCommandBuffer.m_vkCommandBuffer.reset(vk::CommandBufferResetFlagBits::eReleaseResources, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
         if (inFlightCommandBuffer.m_bIsSecondary)
         {
           threadPool.m_SecondaryFreeCommandBuffers.PushBack(inFlightCommandBuffer.m_vkCommandBuffer);

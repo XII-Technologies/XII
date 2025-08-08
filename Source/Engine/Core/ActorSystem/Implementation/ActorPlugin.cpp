@@ -2,10 +2,8 @@
 
 #include <Core/ActorSystem/ActorPlugin.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPlugin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiActorPlugin::xiiActorPlugin()  = default;
 xiiActorPlugin::~xiiActorPlugin() = default;

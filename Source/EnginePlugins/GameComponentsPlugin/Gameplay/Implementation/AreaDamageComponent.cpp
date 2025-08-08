@@ -164,13 +164,10 @@ void xiiAreaDamageComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
 xiiAreaDamageComponentManager::xiiAreaDamageComponentManager(xiiWorld* pWorld) :
   SUPER(pWorld)
-
 {
 }
 
 void xiiAreaDamageComponentManager::Initialize()
 {
   SUPER::Initialize();
-
-  m_pPhysicsInterface = GetWorld()->GetOrCreateModule<xiiPhysicsWorldModuleInterface>();
 }

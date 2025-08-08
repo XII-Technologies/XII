@@ -32,8 +32,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
   xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
 
-  XII_LOCK(m_QueueMutex);
-
   bool bTimelineSemaphoreInUse = false;
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
@@ -99,14 +97,15 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     vkSubmitInformation.pNext = &vkTimelineSemaphoreSubmitInfo;
   }
 
-  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
-  {
+  xiiUInt64 uiFenceValue = xiiMath::MaxValue<xiiUInt64>();
+  pDeviceVulkan->LockCommandQueueAndRun(m_Description.m_QueueFlags, [&](const vk::Queue& vkQueue) -> void {
+    uiFenceValue          = m_uiNextFenceValue.PostIncrement();
     const auto& syncPoint = m_pQueueFence->CreateSyncPoint(uiFenceValue);
 
-    VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_ASSERT_DEV(vkQueue.submit(1U, &vkSubmitInformation, syncPoint.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     m_uiLastSyncPointValue = syncPoint.m_uiValue;
-  }
+  });
 
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
@@ -116,22 +115,25 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
     fenceInfo.m_pFenceVulkan->AddPendingSyncPoint(this, fenceInfo.m_uiWaitValue, m_uiLastSyncPointValue);
   }
 
-  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_pCommandQueue = this;
-  pCommandListVulkan->m_SubmittedCommandQueueRecord.m_uiFenceValue  = uiFenceValue;
+  auto pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
+  if (pDeferredDeletionQueue->HasTimelineSemaphore())
+  {
+    pDeferredDeletionQueue->Signal();
+  }
 
   return uiFenceValue;
 }
 
 xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 {
-  XII_LOCK(m_QueueMutex);
-
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
 
   // Update last completed fence value to unlock all waiting events.
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
 
-  VK_ASSERT_DEV(m_QueueInformation.m_vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  pDeviceVulkan->LockCommandQueueAndRun(m_Description.m_QueueFlags, [pDeviceVulkan](const vk::Queue& vkQueue) -> void {
+    VK_ASSERT_DEV(vkQueue.waitIdle(pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  });
 
   m_pQueueFence->Wait(xiiMath::MaxValue<xiiUInt64>());
   m_pQueueFence->Reset(uiFenceValue);

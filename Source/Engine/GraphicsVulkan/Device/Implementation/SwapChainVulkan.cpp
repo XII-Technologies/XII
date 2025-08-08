@@ -723,8 +723,9 @@ void xiiGALSwapChainVulkan::Present()
       vkPresentInformation.pWaitSemaphores    = &vkDrawCompleteSemaphore;
       vkPresentInformation.waitSemaphoreCount = 1U;
 
-      vk::Queue vkQueue = pDeviceVulkan->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics).m_vkQueue;
-      XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&pDeviceVulkan, & vkPresentInformation](const vk::Queue& vkQueue) -> void {
+        XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      });
     }
 
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
