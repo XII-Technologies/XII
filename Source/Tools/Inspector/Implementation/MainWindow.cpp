@@ -52,7 +52,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   xiiQtSubsystemsWidget*   pSubsystemsWidget    = new xiiQtSubsystemsWidget(m_pDockManager);
   xiiQtFileWidget*         pFileWidget          = new xiiQtFileWidget(m_pDockManager);
   xiiQtPluginsWidget*      pPluginsWidget       = new xiiQtPluginsWidget(m_pDockManager);
-  xiiQtGlobalEventsWidget* pGlobalEventesWidget = new xiiQtGlobalEventsWidget(m_pDockManager);
+  xiiQtGlobalEventsWidget* pGlobalEventsWidget = new xiiQtGlobalEventsWidget(m_pDockManager);
   xiiQtReflectionWidget*   pReflectionWidget    = new xiiQtReflectionWidget(m_pDockManager);
   xiiQtDataWidget*         pDataWidget          = new xiiQtDataWidget(m_pDockManager);
   xiiQtResourceWidget*     pResourceWidget      = new xiiQtResourceWidget(m_pDockManager);
@@ -67,7 +67,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   XII_VERIFY(nullptr != QWidget::connect(pSubsystemsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pFileWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pPluginsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
-  XII_VERIFY(nullptr != QWidget::connect(pGlobalEventesWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
+  XII_VERIFY(nullptr != QWidget::connect(pGlobalEventsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pDataWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pResourceWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
 
@@ -106,7 +106,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   m_pDockManager->addDockWidget(ads::CenterDockWidgetArea, pLogWidget);
 
   m_pDockManager->addDockWidget(ads::RightDockWidgetArea, pCVarsWidget);
-  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pGlobalEventesWidget);
+  m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pGlobalEventsWidget);
   m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pDataWidget);
   m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pInputWidget);
   m_pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pPluginsWidget);

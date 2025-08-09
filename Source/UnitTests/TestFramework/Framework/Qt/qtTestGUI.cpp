@@ -298,7 +298,7 @@ void xiiQtTestGUI::on_actionEnableOnlyThis_triggered()
 
   m_pTestFramework->SetAllTestsEnabledStatus(false);
 
-  for (auto idx : testTreeView->selectionModel()->selectedIndexes())
+  for (auto& idx : testTreeView->selectionModel()->selectedIndexes())
   {
     // Need to set data on column 0
     CurrentIndex = m_pModel->index(idx.row(), 0, idx.parent());
