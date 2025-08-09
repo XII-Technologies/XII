@@ -1097,7 +1097,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 #endif
 }
 
-void xiiRenderPipeline::Render()
+void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 {
   XII_PROFILE_SCOPE(m_sName.GetView());
 
@@ -1117,48 +1117,41 @@ void xiiRenderPipeline::Render()
   const xiiCamera*           pLodCamera = &data.GetLodCamera();
   const xiiViewData*         pViewData  = &data.GetViewData();
 
-#ifdef CORE_ENABLE
   // Set Global Constants.
   {
-    xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pGlobalConstants)
+    xiiGlobalConstants* pGlobalConstants = pRenderContext->GetGlobalConstants();
 
-      // Camera matrices.
-      for (xiiInt32 i = 0; i < 2; ++i)
+    for (xiiUInt32 i = 0; i < 2; ++i)
     {
-      m_GlobalConstants.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
-      m_GlobalConstants.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
-      m_GlobalConstants.WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
-      m_GlobalConstants.CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
-      m_GlobalConstants.WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
-      m_GlobalConstants.ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
+      pGlobalConstants->CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
+      pGlobalConstants->ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
+      pGlobalConstants->WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
+      pGlobalConstants->CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
+      pGlobalConstants->WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
+      pGlobalConstants->ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
     }
 
-    // Viewport size.
     const xiiRectFloat& viewport   = pViewData->m_ViewPortRect;
-    m_GlobalConstants.ViewportSize = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+    pGlobalConstants->ViewportSize = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
 
-    // Clip planes.
     float fNear                  = pCamera->GetNearPlane();
     float fFar                   = pCamera->GetFarPlane();
-    m_GlobalConstants.ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
+    pGlobalConstants->ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
 
-    // Max Z value.
     const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
-    m_GlobalConstants.MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
+    pGlobalConstants->MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
 
-    // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-    m_GlobalConstants.DeltaTime  = (float)xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds();
-    m_GlobalConstants.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-    m_GlobalConstants.WorldTime  = (float)xiiMath::Mod(data.GetWorldTime().GetSeconds(), 20790.0);
-    m_GlobalConstants.Exposure   = pCamera->GetExposure();
-    m_GlobalConstants.RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
+    pGlobalConstants->Exposure   = pCamera->GetExposure();
+    pGlobalConstants->RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
+
+    pRenderContext->SetGlobalAndWorldTimeConstants(data.GetWorldTime());
   }
-#endif
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
   renderViewContext.m_pLodCamera         = pLodCamera;
   renderViewContext.m_pViewData          = pViewData;
+  renderViewContext.m_pRenderContext     = pRenderContext;
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
 

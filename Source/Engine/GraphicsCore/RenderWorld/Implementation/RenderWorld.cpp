@@ -524,7 +524,7 @@ void xiiRenderWorld::ExtractMainViews()
   s_bInExtract = false;
 }
 
-void xiiRenderWorld::Render()
+void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
 {
   const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
 
@@ -573,7 +573,7 @@ void xiiRenderWorld::Render()
     // If we are the only one holding a reference to the pipeline skip rendering. The pipeline is not needed anymore and will be deleted soon.
     if (pRenderPipeline->GetRefCount() > 1)
     {
-      pRenderPipeline->Render();
+      pRenderPipeline->Render(pRenderContext);
     }
     pRenderPipeline = nullptr;
   }

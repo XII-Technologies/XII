@@ -26,6 +26,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Formats/TgaFileFormat.h>
 #include <Texture/Image/Image.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 xiiGameApplication*                                                             xiiGameApplication::s_pGameApplicationInstance = nullptr;
 xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
@@ -121,7 +122,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   RenderFps();
   RenderConsole();
 
-  xiiRenderWorld::Render();
+  xiiRenderWorld::Render(xiiRenderContext::GetDefaultInstance());
 
   if (xiiRenderWorld::GetUseMultithreadedRendering())
   {
