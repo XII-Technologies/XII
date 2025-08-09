@@ -4,26 +4,28 @@
 
 #include <GuiFoundation/Style/DarkThemeColours.h>
 
-#include <QApplication>
 #include <QProxyStyle>
-#include <QStyleFactory>
 
-// A QProxyStyle that builds on Fusion and applies our dark theme
+/// \brief A QProxyStyle that builds on Fusion and applies our dark theme.
 class XII_GUIFOUNDATION_DLL xiiQtDarkEditorStyle : public QProxyStyle
 {
   Q_OBJECT
 
 public:
+  /// \brief Creates the style, defaulting to Fusion if no base style is passed.
   explicit xiiQtDarkEditorStyle(QStyle* pBaseStyle = nullptr);
+
   ~xiiQtDarkEditorStyle() override = default;
 
-  // Install the QPalette using our colors
+  /// \brief Install the dark palette globally on the current application.
   void ApplyPalette();
 
-  // Override key painting methods
-  void drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget = nullptr) const override;
+  /// \brief Returns a standard palette constructed from dark theme colours.
+  QPalette standardPalette() const override;
 
-  void drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget = nullptr) const override;
+private:
+  /// \brief Helper to build a palette from the theme colours.
+  QPalette BuildPaletteFromTheme() const;
 
 private:
   xiiQtDarkThemeColours m_DarkThemeColours;

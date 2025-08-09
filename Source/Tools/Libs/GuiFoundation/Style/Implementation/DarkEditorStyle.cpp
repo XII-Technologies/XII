@@ -2,10 +2,6 @@
 
 #include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 
-#include <QPainter>
-#include <QStyleOptionButton>
-#include <QStyleOptionTab>
-
 xiiQtDarkEditorStyle::xiiQtDarkEditorStyle(QStyle* pBaseStyle) :
   QProxyStyle(pBaseStyle ? pBaseStyle : QStyleFactory::create("fusion"))
 {
@@ -14,7 +10,19 @@ xiiQtDarkEditorStyle::xiiQtDarkEditorStyle(QStyle* pBaseStyle) :
 
 void xiiQtDarkEditorStyle::ApplyPalette()
 {
-  QPalette palette = proxy()->standardPalette();
+  QPalette palette = BuildPaletteFromTheme();
+
+  QApplication::setPalette(palette);
+}
+
+QPalette xiiQtDarkEditorStyle::standardPalette() const
+{
+  return BuildPaletteFromTheme();
+}
+
+QPalette xiiQtDarkEditorStyle::BuildPaletteFromTheme() const
+{
+  QPalette palette;
 
   // Base surfaces
   palette.setColor(QPalette::Window, m_DarkThemeColours.m_Window);
@@ -57,15 +65,5 @@ void xiiQtDarkEditorStyle::ApplyPalette()
   // NoRole fallback
   palette.setBrush(QPalette::NoRole, QBrush(m_DarkThemeColours.m_NoRole, Qt::NoBrush));
 
-  qApp->setPalette(palette);
-}
-
-void xiiQtDarkEditorStyle::drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
-{
-  QProxyStyle::drawPrimitive(element, option, painter, widget);
-}
-
-void xiiQtDarkEditorStyle::drawControl(ControlElement element, const QStyleOption* option, QPainter* painter, const QWidget* widget) const
-{
-  QProxyStyle::drawControl(element, option, painter, widget);
+  return palette;
 }

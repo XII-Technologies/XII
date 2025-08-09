@@ -96,10 +96,10 @@ void xiiQtEditorApp::InitQt(int iArgc, char** pArgv)
 
   if (qApp != nullptr)
   {
-    m_pQtApplication = qApp;
-    bool      ok     = false;
-    const int iCount = m_pQtApplication->property("Shared").toInt(&ok);
-    XII_ASSERT_DEV(ok, "Existing QApplication was not constructed by XII!");
+    m_pQtApplication      = qApp;
+    bool           bIsOk  = false;
+    const xiiInt32 iCount = m_pQtApplication->property("Shared").toInt(&bIsOk);
+    XII_ASSERT_DEV(bIsOk, "Existing QApplication was not constructed by XII!");
     m_pQtApplication->setProperty("Shared", QVariant::fromValue(iCount + 1));
   }
   else
@@ -121,7 +121,7 @@ void xiiQtEditorApp::InitQt(int iArgc, char** pArgv)
 
 void xiiQtEditorApp::DeInitQt()
 {
-  const int iCount = m_pQtApplication->property("Shared").toInt();
+  const xiiInt32 iCount = m_pQtApplication->property("Shared").toInt();
   if (iCount == 1)
   {
     delete m_pQtApplication;

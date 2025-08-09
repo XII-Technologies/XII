@@ -293,7 +293,7 @@ private:
   xiiRecentFilesList m_RecentProjects;
   xiiRecentFilesList m_RecentDocuments;
 
-  int                               m_iArgc          = 0;
+  xiiInt32                          m_iArgc          = 0;
   QApplication*                     m_pQtApplication = nullptr;
   xiiLongOpControllerManager        m_LongOpControllerManager;
   xiiEditorEngineProcessConnection* m_pEngineViewProcess;
