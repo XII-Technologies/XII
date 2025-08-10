@@ -4,7 +4,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALPipelineResourceFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::NoDynamicBuffers),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::CombinedSampler),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::Formattedbuffer),

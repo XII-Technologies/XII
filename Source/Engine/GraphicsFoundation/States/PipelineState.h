@@ -24,8 +24,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableFlags
                                    ///<
                                    ///< \note This flag is only valid in Vulkan.
 
-    ENUM_COUNT = 3U,
-
     Default = None
   };
 

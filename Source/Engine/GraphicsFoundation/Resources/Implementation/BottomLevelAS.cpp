@@ -4,7 +4,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingBuildASFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::AllowUpdate),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::AllowCompaction),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::PreferFastTrace),

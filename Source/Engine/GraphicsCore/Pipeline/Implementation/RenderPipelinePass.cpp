@@ -8,13 +8,11 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelinePassCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassCapabilityFlags::StereoAware),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassCapabilityFlags::AllowSubpassFuse),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelinePassFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::None),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::AsyncCompute),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::AsyncTransfer),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::DynamicResolution),

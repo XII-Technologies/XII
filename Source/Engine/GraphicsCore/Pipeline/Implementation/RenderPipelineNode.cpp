@@ -4,7 +4,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelineNodePinFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::Unknown),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::Input),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::Output),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelineNodePinFlags::PassThrough),
