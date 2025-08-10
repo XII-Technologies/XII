@@ -45,7 +45,7 @@ xiiQtMainWidget::~xiiQtMainWidget()
   SaveFavorites();
 }
 
-void xiiQtMainWidget::ProcessTelemetry(void* pUnuseed)
+void xiiQtMainWidget::ProcessTelemetry(void* pUnused)
 {
   if (!s_pWidget)
     return;

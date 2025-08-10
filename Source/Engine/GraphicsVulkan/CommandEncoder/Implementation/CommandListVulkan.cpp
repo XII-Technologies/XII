@@ -159,12 +159,12 @@ namespace
   ///
   /// \tparam AllowTouch - If true, segments that touch at endpoints are considered overlapping.
   /// \tparam T          - A numeric type (e.g., float, double, int) used for the segment bounds.
-  /// 
+  ///
   /// \param min0 - Lower bound of the first segment.
   /// \param max0 - Upper bound of the first segment.
   /// \param min1 - Lower bound of the second segment.
   /// \param max1 - Upper bound of the second segment.
-  /// 
+  ///
   /// \return True if the segments overlap (or touch, depending on AllowTouch); false otherwise.
   ///
   /// \note The function assumes that min0 <= max0 and min1 <= max1.

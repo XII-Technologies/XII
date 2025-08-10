@@ -22,7 +22,7 @@ public:
 
   XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
 
-  XII_ALWAYS_INLINE xiiGALCpuWaitOnlyFenceVulkan* GetWaitOnlyFence() const { return m_pQueueFence.Borrow(); } 
+  XII_ALWAYS_INLINE xiiGALCpuWaitOnlyFenceVulkan* GetWaitOnlyFence() const { return m_pQueueFence.Borrow(); }
 
   virtual xiiUInt64 SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList) override final;
 

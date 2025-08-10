@@ -3,9 +3,9 @@
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
-#include <GraphicsFoundation/Utilities/DescriptorHash.h>
-#include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
