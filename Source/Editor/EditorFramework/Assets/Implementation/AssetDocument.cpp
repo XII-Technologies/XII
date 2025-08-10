@@ -776,7 +776,7 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, xiiSt
 
   GetEditorEngineConnection()->SendMessage(&msg);
 
-  xiiStatus                                              status(XII_FAILURE);
+  xiiStatus                                              status(XII_SUCCESS);
   xiiProcessCommunicationChannel::WaitForMessageCallback callback = [&status](xiiProcessMessage* pMsg) -> bool {
     xiiExportDocumentMsgToEditor* pMsg2 = xiiDynamicCast<xiiExportDocumentMsgToEditor*>(pMsg);
 
