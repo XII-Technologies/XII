@@ -13,8 +13,8 @@ public:
   virtual void LoadRuntimeData(xiiChunkStreamReader& inout_stream) override;
 
   xiiString m_sMainRenderPipeline;
-  // xiiString m_sEditorRenderPipeline;
-  // xiiString m_sDebugRenderPipeline;
+  xiiString m_sEditorRenderPipeline;
+  xiiString m_sDebugRenderPipeline;
 
   xiiMap<xiiString, xiiString> m_CameraPipelines;
 };

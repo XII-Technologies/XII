@@ -30,7 +30,7 @@ public:
 private:
   void CreateRenderTargetTexture(const xiiView& view);
   void CreateRenderTargetView(const xiiView& view);
-  void UpdateRenderTargetCamera(const xiiCameraComponent* pCamComp);
+  void UpdateRenderTargetCamera(const xiiCameraComponent* pCameraComponent);
 
   xiiSceneContext*                   m_pSceneContext;
   xiiViewHandle                      m_hRenderTargetView;
