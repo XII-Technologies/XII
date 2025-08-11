@@ -114,6 +114,9 @@ public:
   //
   //
 
+  /// \brief Returns whether we are between StartupEditor and ShutdownEditor.
+  bool IsRunning() const { return m_bIsRunning; }
+
   /// \brief Can be set via the command line option '-safe'. In this mode the editor will not automatically load recent documents
   bool IsInSafeMode() const { return m_StartupFlags.IsSet(StartupFlags::SafeMode); }
 
@@ -278,6 +281,7 @@ private:
   bool m_bLoadingProjectInProgress = false;
   bool m_bAnyProjectOpened         = false;
   bool m_bWroteCrashIndicatorFile  = false;
+  bool m_bIsRunning                = false;
 
   xiiBitflags<StartupFlags>  m_StartupFlags;
   xiiDynamicArray<xiiString> m_DocumentsToOpen;

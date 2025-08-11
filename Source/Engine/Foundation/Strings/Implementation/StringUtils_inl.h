@@ -29,7 +29,7 @@ XII_ALWAYS_INLINE constexpr bool xiiStringUtils::IsNullOrEmpty(const T* pString)
 template <typename T>
 XII_ALWAYS_INLINE bool xiiStringUtils::IsNullOrEmpty(const T* pString, const T* pStringEnd)
 {
-  return (pString == nullptr) || (pString[0] == '\0') || pString == pStringEnd;
+  return (pString == nullptr) || pString == pStringEnd || (pString[0] == '\0');
 }
 
 template <typename T>
@@ -69,7 +69,7 @@ xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString, const T* pStri
     return (xiiUInt32)(pStringEnd - pString);
 
   xiiUInt32 uiCount = 0;
-  while ((*pString != '\0') && (pString < pStringEnd))
+  while ((pString < pStringEnd) && (*pString != '\0'))
   {
     ++pString;
     ++uiCount;
@@ -85,7 +85,7 @@ inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const cha
 
   xiiUInt32 uiCharacters = 0;
 
-  while ((*szUtf8 != '\0') && (szUtf8 < pStringEnd))
+  while ((szUtf8 < pStringEnd) && (*szUtf8 != '\0'))
   {
     // skip all the Utf8 continuation bytes
     if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8)) ++uiCharacters;

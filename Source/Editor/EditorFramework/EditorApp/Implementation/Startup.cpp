@@ -407,6 +407,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   LoadEditorPlugins();
   CloseSplashScreen();
 
+  m_bIsRunning = true;
   {
     xiiEditorAppEvent e;
     e.m_Type = xiiEditorAppEvent::Type::EditorStarted;
@@ -466,6 +467,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
 void xiiQtEditorApp::ShutdownEditor()
 {
+  m_bIsRunning = false;
+
   xiiStackTraceLogParser::Unregister();
 
   xiiToolsProject::SaveProjectState();
