@@ -61,7 +61,7 @@ xiiSharedPtr<xiiGALDeviceObject> xiiTargetPass::QueryResourceProvider(const xiiR
     {
       if (pPin->m_uiInputIndex == 0)
       {
-        return m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+        return m_pSwapChain->GetBackBufferTexture();
       }
     }
     else
