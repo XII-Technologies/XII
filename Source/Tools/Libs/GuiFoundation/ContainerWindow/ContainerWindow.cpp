@@ -53,7 +53,7 @@ namespace
 
 xiiQtContainerWindow::xiiQtContainerWindow()
 {
-  setMinimumSize(QSize(800, 600));
+  setMinimumSize(QSize(960, 540));
 
   m_bWindowLayoutRestored         = false;
   m_pStatusBarLabel               = nullptr;
