@@ -626,8 +626,22 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
   // Inconvenient loop to gather all ResourceUsageData indices that are not provider resources and valid.
   for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
   {
+    // If a resource descriptor has this hash, it is uninitialized and no resource will be created at runtime.
+    static xiiUInt32 uiDefaultTextureHash = xiiGALTextureCreationDescription().CalculateHash();
+    static xiiUInt32 uiDefaultBufferHash  = xiiGALBufferCreationDescription().CalculateHash();
+    static xiiUInt32 uiDefaultSamplerHash = xiiGALSamplerCreationDescription().CalculateHash();
+
     ResourceUsageData& data = m_ResourceUsage[i];
-    if (data.m_pResourceProvider || data.m_UsedBy[0]->m_Resource.m_Type == xiiRenderPipelineNodePinResourceType::Unknown)
+    if (data.m_pResourceProvider)
+      continue;
+
+    if (data.m_UsedBy[0]->m_Resource.IsBuffer() && data.m_UsedBy[0]->m_Resource.m_Buffer.m_Description.CalculateHash() == uiDefaultBufferHash)
+      continue;
+
+    if (data.m_UsedBy[0]->m_Resource.IsTexture() && data.m_UsedBy[0]->m_Resource.m_Texture.m_Description.CalculateHash() == uiDefaultTextureHash)
+      continue;
+
+    if (data.m_UsedBy[0]->m_Resource.IsSampler() && data.m_UsedBy[0]->m_Resource.m_Sampler.m_Description.CalculateHash() == uiDefaultSamplerHash)
       continue;
 
     m_ResourceUsageIdxSortedByFirstUsage.PushBack((xiiUInt16)i);
