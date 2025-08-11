@@ -79,7 +79,7 @@ protected:
   virtual void Init_SetupGraphicsDevice() override;
   virtual void Deinit_ShutdownGraphicsDevice() override;
 
-  virtual bool IsGameUpdateEnabled() const override;
+  virtual xiiGameUpdateMode GetGameUpdateMode() const override;
 
   virtual bool Run_ProcessApplicationInput() override;
   virtual void Run_AcquireImage() override;

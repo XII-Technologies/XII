@@ -182,7 +182,7 @@ xiiResult xiiGALShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamic
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform)
+xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform, xiiTokenizedFileCache* pFileCache)
 {
   XII_PROFILE_SCOPE("xiiGALShaderCompiler::CompileShaderPermutationForPlatforms");
 
@@ -330,22 +330,27 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
     }
   }
 
-  // Try out every compiler that we can find
-  // clang-format off
-  xiiResult result = XII_SUCCESS;
-  xiiRTTI::ForEachDerivedType<xiiGALShaderProgramCompiler>([&](const xiiRTTI* pRtti) {
-    xiiUniquePtr<xiiGALShaderProgramCompiler> pCompiler = pRtti->GetAllocator()->Allocate<xiiGALShaderProgramCompiler>();
+  // Try out every compiler that we can find.
+  xiiHybridArray<const xiiRTTI*, 2U> compilers;
+  xiiRTTI::ForEachDerivedType<xiiGALShaderProgramCompiler>(
+    [&](const xiiRTTI* pRtti) -> void {
+      compilers.PushBack(pRtti);
+    },
+    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
-    if (RunShaderCompiler(sFile, sPlatform, pCompiler.Borrow(), pLog).Failed())
+  xiiResult result = XII_SUCCESS;
+  for (auto pCompilerRtti : compilers)
+  {
+    xiiUniquePtr<xiiGALShaderProgramCompiler> pCompiler = pCompilerRtti->GetAllocator()->Allocate<xiiGALShaderProgramCompiler>();
+
+    if (RunShaderCompiler(sFile, sPlatform, pCompiler.Borrow(), pLog, pFileCache).Failed())
       result = XII_FAILURE;
-  },
-  xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
-  // clang-format on
+  }
 
   return result;
 }
 
-xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog)
+xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog, xiiTokenizedFileCache* pFileCache)
 {
   XII_PROFILE_SCOPE("xiiGALShaderCompiler::RunShaderCompiler");
 
@@ -394,7 +399,7 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
       XII_LOG_BLOCK(pLog, "Preprocessing Shader State Source");
 
       xiiPreprocessor pp;
-      pp.SetCustomFileCache(&m_FileCache);
+      pp.SetCustomFileCache(pFileCache != nullptr ? pFileCache : &m_FileCache);
       pp.SetLogInterface(xiiLog::GetThreadLocalLogSystem());
       pp.SetFileOpenFunction(xiiPreprocessor::FileOpenCB(&xiiGALShaderCompiler::FileOpen, this));
       pp.SetPassThroughPragma(false);
@@ -454,7 +459,7 @@ xiiResult xiiGALShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiString
       bool bFoundUndefinedVariables = false;
 
       xiiPreprocessor pp;
-      pp.SetCustomFileCache(&m_FileCache);
+      pp.SetCustomFileCache(pFileCache != nullptr ? pFileCache : &m_FileCache);
       pp.SetLogInterface(xiiLog::GetThreadLocalLogSystem());
       pp.SetFileOpenFunction(xiiPreprocessor::FileOpenCB(&xiiGALShaderCompiler::FileOpen, this));
       pp.SetPassThroughPragma(true);

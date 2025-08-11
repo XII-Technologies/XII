@@ -36,10 +36,10 @@ public:
 class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCompiler
 {
 public:
-  xiiResult CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform = "ALL");
+  xiiResult CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiGALPermutationVariable>& permutationVariables, xiiLogInterface* pLog, xiiStringView sPlatform = "ALL", xiiTokenizedFileCache* pFileCache = nullptr);
 
 private:
-  xiiResult RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog);
+  xiiResult RunShaderCompiler(xiiStringView sFile, xiiStringView sPlatform, xiiGALShaderProgramCompiler* pCompiler, xiiLogInterface* pLog, xiiTokenizedFileCache* pFileCache = nullptr);
 
   void WriteFailedShaderSource(xiiGALShaderProgramData& spd, xiiLogInterface* pLog);
 

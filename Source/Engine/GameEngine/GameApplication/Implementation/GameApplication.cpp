@@ -96,9 +96,15 @@ xiiString xiiGameApplication::FindProjectDirectory() const
   return result;
 }
 
-bool xiiGameApplication::IsGameUpdateEnabled() const
+xiiGameUpdateMode xiiGameApplication::GetGameUpdateMode() const
 {
-  return xiiRenderWorld::GetMainViews().GetCount() > 0;
+  const bool bViewsScheduled     = !xiiRenderWorld::GetMainViews().IsEmpty();
+  const bool bRenderingScheduled = xiiRenderWorld::IsRenderingScheduled();
+  if (bViewsScheduled)
+  {
+    return xiiGameUpdateMode::UpdateInputAndRender;
+  }
+  return bRenderingScheduled ? xiiGameUpdateMode::Render : xiiGameUpdateMode::Skip;
 }
 
 void xiiGameApplication::Run_WorldUpdateAndRender()

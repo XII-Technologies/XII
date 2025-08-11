@@ -274,6 +274,7 @@ static xiiInt32 GetIntStateVariable(const xiiMap<xiiString, xiiString>& variable
 }
 
 // Global variables don't use memory tracking, so these won't reported as memory leaks.
+static xiiMutex                    StateValuesLock;
 static xiiMap<xiiString, xiiInt32> StateValuesBlendFactor;
 static xiiMap<xiiString, xiiInt32> StateValuesBlendOperation;
 static xiiMap<xiiString, xiiInt32> StateValuesFillMode;
@@ -314,93 +315,97 @@ xiiResult xiiGALShaderStateResourceDescriptor::Parse(xiiStringView sSource)
     }
   }
 
-  if (StateValuesBlendFactor.IsEmpty())
   {
-    // xiiGALBlendFactor
-    {
-      StateValuesBlendFactor["BlendFactor_Zero"]                    = xiiGALBlendFactor::Zero;
-      StateValuesBlendFactor["BlendFactor_One"]                     = xiiGALBlendFactor::One;
-      StateValuesBlendFactor["BlendFactor_SourceColor"]             = xiiGALBlendFactor::SourceColor;
-      StateValuesBlendFactor["BlendFactor_InverseSourceColor"]      = xiiGALBlendFactor::InverseSourceColor;
-      StateValuesBlendFactor["BlendFactor_SourceAlpha"]             = xiiGALBlendFactor::SourceAlpha;
-      StateValuesBlendFactor["BlendFactor_InverseSourceAlpha"]      = xiiGALBlendFactor::InverseSourceAlpha;
-      StateValuesBlendFactor["BlendFactor_DestinationAlpha"]        = xiiGALBlendFactor::DestinationAlpha;
-      StateValuesBlendFactor["BlendFactor_InverseDestinationAlpha"] = xiiGALBlendFactor::InverseDestinationAlpha;
-      StateValuesBlendFactor["BlendFactor_DestinationColor"]        = xiiGALBlendFactor::DestinationColor;
-      StateValuesBlendFactor["BlendFactor_InverseDestinationColor"] = xiiGALBlendFactor::InverseDestinationColor;
-      StateValuesBlendFactor["BlendFactor_SourceAlphaSaturate"]     = xiiGALBlendFactor::SourceAlphaSaturate;
-      StateValuesBlendFactor["BlendFactor_BlendFactor"]             = xiiGALBlendFactor::BlendFactor;
-      StateValuesBlendFactor["BlendFactor_InverseBlendFactor"]      = xiiGALBlendFactor::InverseBlendFactor;
-      StateValuesBlendFactor["BlendFactor_SourceOneColor"]          = xiiGALBlendFactor::SourceOneColor;
-      StateValuesBlendFactor["BlendFactor_InverseSourceOneColor"]   = xiiGALBlendFactor::InverseSourceOneColor;
-      StateValuesBlendFactor["BlendFactor_SourceOneAlpha"]          = xiiGALBlendFactor::SourceOneAlpha;
-      StateValuesBlendFactor["BlendFactor_InverseSourceOneAlpha"]   = xiiGALBlendFactor::InverseSourceOneAlpha;
-    }
+    XII_LOCK(StateValuesLock);
 
-    // xiiGALBlendOperation
+    if (StateValuesBlendFactor.IsEmpty())
     {
-      StateValuesBlendOperation["BlendOperation_Add"]             = xiiGALBlendOperation::Add;
-      StateValuesBlendOperation["BlendOperation_Subtract"]        = xiiGALBlendOperation::Subtract;
-      StateValuesBlendOperation["BlendOperation_ReverseSubtract"] = xiiGALBlendOperation::ReverseSubtract;
-      StateValuesBlendOperation["BlendOperation_Min"]             = xiiGALBlendOperation::Min;
-      StateValuesBlendOperation["BlendOperation_Max"]             = xiiGALBlendOperation::Max;
-    }
+      // xiiGALBlendFactor
+      {
+        StateValuesBlendFactor["BlendFactor_Zero"]                    = xiiGALBlendFactor::Zero;
+        StateValuesBlendFactor["BlendFactor_One"]                     = xiiGALBlendFactor::One;
+        StateValuesBlendFactor["BlendFactor_SourceColor"]             = xiiGALBlendFactor::SourceColor;
+        StateValuesBlendFactor["BlendFactor_InverseSourceColor"]      = xiiGALBlendFactor::InverseSourceColor;
+        StateValuesBlendFactor["BlendFactor_SourceAlpha"]             = xiiGALBlendFactor::SourceAlpha;
+        StateValuesBlendFactor["BlendFactor_InverseSourceAlpha"]      = xiiGALBlendFactor::InverseSourceAlpha;
+        StateValuesBlendFactor["BlendFactor_DestinationAlpha"]        = xiiGALBlendFactor::DestinationAlpha;
+        StateValuesBlendFactor["BlendFactor_InverseDestinationAlpha"] = xiiGALBlendFactor::InverseDestinationAlpha;
+        StateValuesBlendFactor["BlendFactor_DestinationColor"]        = xiiGALBlendFactor::DestinationColor;
+        StateValuesBlendFactor["BlendFactor_InverseDestinationColor"] = xiiGALBlendFactor::InverseDestinationColor;
+        StateValuesBlendFactor["BlendFactor_SourceAlphaSaturate"]     = xiiGALBlendFactor::SourceAlphaSaturate;
+        StateValuesBlendFactor["BlendFactor_BlendFactor"]             = xiiGALBlendFactor::BlendFactor;
+        StateValuesBlendFactor["BlendFactor_InverseBlendFactor"]      = xiiGALBlendFactor::InverseBlendFactor;
+        StateValuesBlendFactor["BlendFactor_SourceOneColor"]          = xiiGALBlendFactor::SourceOneColor;
+        StateValuesBlendFactor["BlendFactor_InverseSourceOneColor"]   = xiiGALBlendFactor::InverseSourceOneColor;
+        StateValuesBlendFactor["BlendFactor_SourceOneAlpha"]          = xiiGALBlendFactor::SourceOneAlpha;
+        StateValuesBlendFactor["BlendFactor_InverseSourceOneAlpha"]   = xiiGALBlendFactor::InverseSourceOneAlpha;
+      }
 
-    // xiiGALFillMode
-    {
-      StateValuesFillMode["FillMode_Wireframe"] = xiiGALFillMode::Wireframe;
-      StateValuesFillMode["FillMode_Solid"]     = xiiGALFillMode::Solid;
-    }
+      // xiiGALBlendOperation
+      {
+        StateValuesBlendOperation["BlendOperation_Add"]             = xiiGALBlendOperation::Add;
+        StateValuesBlendOperation["BlendOperation_Subtract"]        = xiiGALBlendOperation::Subtract;
+        StateValuesBlendOperation["BlendOperation_ReverseSubtract"] = xiiGALBlendOperation::ReverseSubtract;
+        StateValuesBlendOperation["BlendOperation_Min"]             = xiiGALBlendOperation::Min;
+        StateValuesBlendOperation["BlendOperation_Max"]             = xiiGALBlendOperation::Max;
+      }
 
-    // xiiGALCullMode
-    {
-      StateValuesCullMode["CullMode_None"]  = xiiGALCullMode::None;
-      StateValuesCullMode["CullMode_Front"] = xiiGALCullMode::Front;
-      StateValuesCullMode["CullMode_Back"]  = xiiGALCullMode::Back;
-    }
+      // xiiGALFillMode
+      {
+        StateValuesFillMode["FillMode_Wireframe"] = xiiGALFillMode::Wireframe;
+        StateValuesFillMode["FillMode_Solid"]     = xiiGALFillMode::Solid;
+      }
 
-    // xiiGALComparisonFunction
-    {
-      StateValuesComparisonFunction["ComparisonFunction_Never"]        = xiiGALComparisonFunction::Never;
-      StateValuesComparisonFunction["ComparisonFunction_Less"]         = xiiGALComparisonFunction::Less;
-      StateValuesComparisonFunction["ComparisonFunction_Equal"]        = xiiGALComparisonFunction::Equal;
-      StateValuesComparisonFunction["ComparisonFunction_LessEqual"]    = xiiGALComparisonFunction::LessEqual;
-      StateValuesComparisonFunction["ComparisonFunction_Greater"]      = xiiGALComparisonFunction::Greater;
-      StateValuesComparisonFunction["ComparisonFunction_NotEqual"]     = xiiGALComparisonFunction::NotEqual;
-      StateValuesComparisonFunction["ComparisonFunction_GreaterEqual"] = xiiGALComparisonFunction::GreaterEqual;
-      StateValuesComparisonFunction["ComparisonFunction_Always"]       = xiiGALComparisonFunction::Always;
-    }
+      // xiiGALCullMode
+      {
+        StateValuesCullMode["CullMode_None"]  = xiiGALCullMode::None;
+        StateValuesCullMode["CullMode_Front"] = xiiGALCullMode::Front;
+        StateValuesCullMode["CullMode_Back"]  = xiiGALCullMode::Back;
+      }
 
-    // xiiGALStencilOperation
-    {
-      StateValuesStencilOperation["StencilOperation_Keep"]              = xiiGALStencilOperation::Keep;
-      StateValuesStencilOperation["StencilOperation_Zero"]              = xiiGALStencilOperation::Zero;
-      StateValuesStencilOperation["StencilOperation_Replace"]           = xiiGALStencilOperation::Replace;
-      StateValuesStencilOperation["StencilOperation_IncrementSaturate"] = xiiGALStencilOperation::IncrementSaturate;
-      StateValuesStencilOperation["StencilOperation_DecrementSaturate"] = xiiGALStencilOperation::DecrementSaturate;
-      StateValuesStencilOperation["StencilOperation_Invert"]            = xiiGALStencilOperation::Invert;
-      StateValuesStencilOperation["StencilOperation_IncrementWrap"]     = xiiGALStencilOperation::IncrementWrap;
-      StateValuesStencilOperation["StencilOperation_DecrementWrap"]     = xiiGALStencilOperation::DecrementWrap;
-    }
+      // xiiGALComparisonFunction
+      {
+        StateValuesComparisonFunction["ComparisonFunction_Never"]        = xiiGALComparisonFunction::Never;
+        StateValuesComparisonFunction["ComparisonFunction_Less"]         = xiiGALComparisonFunction::Less;
+        StateValuesComparisonFunction["ComparisonFunction_Equal"]        = xiiGALComparisonFunction::Equal;
+        StateValuesComparisonFunction["ComparisonFunction_LessEqual"]    = xiiGALComparisonFunction::LessEqual;
+        StateValuesComparisonFunction["ComparisonFunction_Greater"]      = xiiGALComparisonFunction::Greater;
+        StateValuesComparisonFunction["ComparisonFunction_NotEqual"]     = xiiGALComparisonFunction::NotEqual;
+        StateValuesComparisonFunction["ComparisonFunction_GreaterEqual"] = xiiGALComparisonFunction::GreaterEqual;
+        StateValuesComparisonFunction["ComparisonFunction_Always"]       = xiiGALComparisonFunction::Always;
+      }
 
-    // xiiGALLogicOperation
-    {
-      StateValuesLogicOperation["LogicOperation_Clear"]        = xiiGALLogicOperation::Clear;
-      StateValuesLogicOperation["LogicOperation_Set"]          = xiiGALLogicOperation::Set;
-      StateValuesLogicOperation["LogicOperation_Copy"]         = xiiGALLogicOperation::Copy;
-      StateValuesLogicOperation["LogicOperation_CopyInverted"] = xiiGALLogicOperation::CopyInverted;
-      StateValuesLogicOperation["LogicOperation_NoOperation"]  = xiiGALLogicOperation::NoOperation;
-      StateValuesLogicOperation["LogicOperation_Invert"]       = xiiGALLogicOperation::Invert;
-      StateValuesLogicOperation["LogicOperation_AND"]          = xiiGALLogicOperation::AND;
-      StateValuesLogicOperation["LogicOperation_NAND"]         = xiiGALLogicOperation::NAND;
-      StateValuesLogicOperation["LogicOperation_OR"]           = xiiGALLogicOperation::OR;
-      StateValuesLogicOperation["LogicOperation_NOR"]          = xiiGALLogicOperation::NOR;
-      StateValuesLogicOperation["LogicOperation_XOR"]          = xiiGALLogicOperation::XOR;
-      StateValuesLogicOperation["LogicOperation_Equivalent"]   = xiiGALLogicOperation::Equivalent;
-      StateValuesLogicOperation["LogicOperation_AndReversed"]  = xiiGALLogicOperation::AndReversed;
-      StateValuesLogicOperation["LogicOperation_AndInverted"]  = xiiGALLogicOperation::AndInverted;
-      StateValuesLogicOperation["LogicOperation_OrReversed"]   = xiiGALLogicOperation::OrReversed;
-      StateValuesLogicOperation["LogicOperation_OrInverted"]   = xiiGALLogicOperation::OrInverted;
+      // xiiGALStencilOperation
+      {
+        StateValuesStencilOperation["StencilOperation_Keep"]              = xiiGALStencilOperation::Keep;
+        StateValuesStencilOperation["StencilOperation_Zero"]              = xiiGALStencilOperation::Zero;
+        StateValuesStencilOperation["StencilOperation_Replace"]           = xiiGALStencilOperation::Replace;
+        StateValuesStencilOperation["StencilOperation_IncrementSaturate"] = xiiGALStencilOperation::IncrementSaturate;
+        StateValuesStencilOperation["StencilOperation_DecrementSaturate"] = xiiGALStencilOperation::DecrementSaturate;
+        StateValuesStencilOperation["StencilOperation_Invert"]            = xiiGALStencilOperation::Invert;
+        StateValuesStencilOperation["StencilOperation_IncrementWrap"]     = xiiGALStencilOperation::IncrementWrap;
+        StateValuesStencilOperation["StencilOperation_DecrementWrap"]     = xiiGALStencilOperation::DecrementWrap;
+      }
+
+      // xiiGALLogicOperation
+      {
+        StateValuesLogicOperation["LogicOperation_Clear"]        = xiiGALLogicOperation::Clear;
+        StateValuesLogicOperation["LogicOperation_Set"]          = xiiGALLogicOperation::Set;
+        StateValuesLogicOperation["LogicOperation_Copy"]         = xiiGALLogicOperation::Copy;
+        StateValuesLogicOperation["LogicOperation_CopyInverted"] = xiiGALLogicOperation::CopyInverted;
+        StateValuesLogicOperation["LogicOperation_NoOperation"]  = xiiGALLogicOperation::NoOperation;
+        StateValuesLogicOperation["LogicOperation_Invert"]       = xiiGALLogicOperation::Invert;
+        StateValuesLogicOperation["LogicOperation_AND"]          = xiiGALLogicOperation::AND;
+        StateValuesLogicOperation["LogicOperation_NAND"]         = xiiGALLogicOperation::NAND;
+        StateValuesLogicOperation["LogicOperation_OR"]           = xiiGALLogicOperation::OR;
+        StateValuesLogicOperation["LogicOperation_NOR"]          = xiiGALLogicOperation::NOR;
+        StateValuesLogicOperation["LogicOperation_XOR"]          = xiiGALLogicOperation::XOR;
+        StateValuesLogicOperation["LogicOperation_Equivalent"]   = xiiGALLogicOperation::Equivalent;
+        StateValuesLogicOperation["LogicOperation_AndReversed"]  = xiiGALLogicOperation::AndReversed;
+        StateValuesLogicOperation["LogicOperation_AndInverted"]  = xiiGALLogicOperation::AndInverted;
+        StateValuesLogicOperation["LogicOperation_OrReversed"]   = xiiGALLogicOperation::OrReversed;
+        StateValuesLogicOperation["LogicOperation_OrInverted"]   = xiiGALLogicOperation::OrInverted;
+      }
     }
   }
 

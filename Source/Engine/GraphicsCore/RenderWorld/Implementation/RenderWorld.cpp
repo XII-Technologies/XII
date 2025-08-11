@@ -249,6 +249,11 @@ xiiArrayPtr<xiiViewHandle> xiiRenderWorld::GetMainViews()
   return s_MainViews;
 }
 
+bool xiiRenderWorld::IsRenderingScheduled()
+{
+  return !s_MainViews.IsEmpty() || !s_FilteredRenderPipelines[GetDataIndexForRendering()].IsEmpty();
+}
+
 void xiiRenderWorld::CacheRenderData(const xiiView& view, const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent, xiiUInt16 uiComponentVersion, xiiArrayPtr<xiiInternal::RenderDataCacheEntry> cacheEntries)
 {
   if (cvar_RenderingCachingStaticObjects)

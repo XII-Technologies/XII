@@ -16,6 +16,7 @@ enum class xiiDependencyFileVersion : xiiUInt8
   Current = ENUM_COUNT - 1,
 };
 
+xiiMutex                                             xiiDependencyFile::s_FileTimestampsLock;
 xiiMap<xiiString, xiiDependencyFile::FileCheckCache> xiiDependencyFile::s_FileTimestamps;
 
 xiiDependencyFile::xiiDependencyFile()
@@ -144,6 +145,8 @@ xiiResult xiiDependencyFile::ReadDependencyFile(xiiStreamReader& ref_stream)
 xiiResult xiiDependencyFile::RetrieveFileTimeStamp(xiiStringView sFile, xiiTimestamp& out_Result)
 {
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
+
+  XII_LOCK(s_FileTimestampsLock);
 
   bool bExisted = false;
   auto it       = s_FileTimestamps.FindOrAdd(sFile, &bExisted);

@@ -49,6 +49,7 @@ public:
   static void                       RemoveMainView(const xiiViewHandle& hView);
   static void                       ClearMainViews();
   static xiiArrayPtr<xiiViewHandle> GetMainViews();
+  static bool                       IsRenderingScheduled();
 
   static void CacheRenderData(const xiiView& view, const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent, xiiUInt16 uiComponentVersion, xiiArrayPtr<xiiInternal::RenderDataCacheEntry> cacheEntries);
 

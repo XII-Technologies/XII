@@ -12,12 +12,15 @@ using namespace xiiTokenParseUtils;
 
 namespace
 {
+  static xiiMutex                                                       s_TableLock;
   static xiiHashTable<xiiStringView, const xiiRTTI*>                    s_NameToTypeTable;
   static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderResourceType>> s_NameToDescriptorTable;
   static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderTextureType>>  s_NameToTextureTable;
 
   void InitializeTables()
   {
+    XII_LOCK(s_TableLock);
+
     if (!s_NameToTypeTable.IsEmpty())
       return;
 
