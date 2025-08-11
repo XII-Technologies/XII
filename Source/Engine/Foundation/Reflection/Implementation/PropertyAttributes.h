@@ -225,6 +225,12 @@ public:
   {
   }
 
+  template <typename T>
+  xiiDefaultValueAttribute(const xiiBitflags<T>& flags) :
+    m_Value(flags.GetValue())
+  {
+  }
+
   const xiiVariant& GetValue() const { return m_Value; }
 
 private:
