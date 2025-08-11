@@ -185,7 +185,7 @@ xiiResult xiiRenderPipelineResourceLoader::ExportPipeline(xiiArrayPtr<const xiiR
 
   xiiStringDeduplicationWriteContext stringDeduplicationWriteContext(ref_streamWriter);
   xiiTypeVersionWriteContext         typeVersionWriteContext;
-  auto&                              stream = typeVersionWriteContext.Begin(stringDeduplicationWriteContext.Begin());
+  xiiStreamWriter&                   stream = typeVersionWriteContext.Begin(stringDeduplicationWriteContext.Begin());
 
   // Passes
   {

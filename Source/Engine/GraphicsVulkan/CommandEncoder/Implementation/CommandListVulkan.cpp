@@ -1457,10 +1457,10 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderP
       }
       else
       {
-        vkClearValue.color.float32[0] = clearValue.m_ClearColor.r;
-        vkClearValue.color.float32[1] = clearValue.m_ClearColor.g;
-        vkClearValue.color.float32[2] = clearValue.m_ClearColor.b;
-        vkClearValue.color.float32[3] = clearValue.m_ClearColor.a;
+        vkClearValue.color.float32[0] = clearValue.m_ClearColour.r;
+        vkClearValue.color.float32[1] = clearValue.m_ClearColour.g;
+        vkClearValue.color.float32[2] = clearValue.m_ClearColour.b;
+        vkClearValue.color.float32[3] = clearValue.m_ClearColour.a;
       }
 
       clearColorValues.PushBack(vkClearValue);

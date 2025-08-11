@@ -18,17 +18,17 @@ public:
 
   virtual xiiSharedPtr<xiiGALDeviceObject> QueryResourceProvider(const xiiRenderPipelineNodePin* pPin, const xiiRenderPipelineResourceRequest& request) override;
 
-  virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 protected:
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor0;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor1;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor2;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor3;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor4;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor5;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor6;
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColor7;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour0;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour1;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour2;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour3;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour4;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour5;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour6;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour7;
   xiiRenderPipelineNodeInputDepthAttachmentProviderPin  m_PinDepthStencil;
 
   xiiGALSwapChain* m_pSwapChain = nullptr;

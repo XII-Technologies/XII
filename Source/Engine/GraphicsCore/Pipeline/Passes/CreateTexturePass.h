@@ -34,6 +34,9 @@ private:
   xiiEnum<xiiGALResourceUsage>        m_Usage;
   xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags;
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags;
+
+  bool     m_bClear      = false;
+  xiiColor m_ClearColour = xiiColor::Black;
 };
 
 /// \brief Allocates a depth attachment to be consumed by compute or graphics passes.
@@ -68,4 +71,8 @@ private:
   xiiEnum<xiiGALResourceUsage>        m_Usage;
   xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags;
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags;
+
+  bool     m_bClear              = false;
+  float    m_fDepthClearValue    = 1.0f;
+  xiiUInt8 m_uiStencilClearValue = 0U;
 };

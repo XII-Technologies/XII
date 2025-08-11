@@ -75,7 +75,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALResourceFormat> m_ResourceFormat = xiiGALResourceFormat::Unknown; ///< Texture format.
-  xiiColor                      m_ClearColor     = xiiColor::Black;               ///< Render target clear value.
+  xiiColor                      m_ClearColour     = xiiColor::Black;               ///< Render target clear value.
   xiiGALDepthStencilClearValue  m_DepthStencil;                                   ///< Depth stencil clear value.
 };
 

@@ -430,7 +430,6 @@ xiiResult xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& v
     XII_ASSERT_DEBUG(data.m_Outputs.GetCount() == pPass->GetOutputPins().GetCount(), "Output pin count mismatch!");
 
     inputs.SetCount(data.m_Inputs.GetCount());
-    outputs.Clear();
     outputs.SetCount(data.m_Outputs.GetCount());
 
     // Fill inputs array.
@@ -462,8 +461,8 @@ xiiResult xiiRenderPipeline::InitializePassResourceDescriptions(const xiiView& v
     }
 
     // Check pass-through consistency of input / output target descriptions.
-    auto inputPins = pPass->GetInputPins();
-    for (const xiiRenderPipelineNodePin* pPin : inputPins)
+    auto pInputPins = pPass->GetInputPins();
+    for (const xiiRenderPipelineNodePin* pPin : pInputPins)
     {
       if (pPin->m_Flags.IsSet(xiiRenderPipelineNodePinFlags::PassThrough))
       {
@@ -501,8 +500,8 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
   // Gather all connections that share the same path-through resource and their first and last usage pass index.
   for (xiiUInt16 i = 0; i < static_cast<xiiUInt16>(m_Passes.GetCount()); ++i)
   {
-    const auto&     pPass = m_Passes[i].Borrow();
-    ConnectionData& data  = m_Connections[pPass];
+    const xiiRenderPipelinePassBase* pPass = m_Passes[i].Borrow();
+    ConnectionData&                  data  = m_Connections[pPass];
 
     for (xiiRenderPipelinePassConnection* pConnection : data.m_Inputs)
     {
