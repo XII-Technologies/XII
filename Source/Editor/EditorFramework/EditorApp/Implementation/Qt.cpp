@@ -53,7 +53,7 @@ void xiiQtEditorApp::SetStyleSheet()
   QApplication::setStyle(new xiiQtDarkEditorStyle);
 }
 
-static void QtDebugMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& sQMsg)
+static void xiiQtDebugMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& sQMsg)
 {
   QByteArray       localMsg = sQMsg.toUtf8();
   xiiStringBuilder sMsg     = localMsg.constData();
@@ -90,9 +90,9 @@ static void QtDebugMessageHandler(QtMsgType type, const QMessageLogContext& cont
   }
 }
 
-void xiiQtEditorApp::InitQt(int iArgc, char** pArgv)
+void xiiQtEditorApp::InitQt(xiiInt32 iArgc, char** pArgv)
 {
-  qInstallMessageHandler(QtDebugMessageHandler);
+  qInstallMessageHandler(xiiQtDebugMessageHandler);
 
   if (qApp != nullptr)
   {
@@ -106,7 +106,7 @@ void xiiQtEditorApp::InitQt(int iArgc, char** pArgv)
   {
     m_iArgc          = iArgc;
     m_pQtApplication = new QApplication(m_iArgc, pArgv);
-    m_pQtApplication->setProperty("Shared", QVariant::fromValue((int)1));
+    m_pQtApplication->setProperty("Shared", QVariant::fromValue((xiiInt32)1));
 
     // Locale fixes required by various third party libraries like RmlGui.
     QLocale::setDefault(QLocale::C);

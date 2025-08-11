@@ -143,7 +143,7 @@ public:
   /// \brief Reads the list of last open documents in the current project.
   xiiRecentFilesList LoadOpenDocumentsList();
 
-  void     InitQt(int iArgc, char** pArgv);
+  void     InitQt(xiiInt32 iArgc, char** pArgv);
   void     StartupEditor();
   void     StartupEditor(xiiBitflags<StartupFlags> startupFlags, const char* szUserDataFolder = nullptr);
   void     ShutdownEditor();
