@@ -32,8 +32,6 @@ jobs:
 
           & chmod +x ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0
 
-          & ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0 --version
-
           echo "Running ClangFormat"
 
           # Run once to detect whether there are any changes
