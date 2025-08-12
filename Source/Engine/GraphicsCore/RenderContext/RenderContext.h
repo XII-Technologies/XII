@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <GraphicsCore/Declarations.h>

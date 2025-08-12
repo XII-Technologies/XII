@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 /// \brief Preferred memory usage hints for Vulkan allocations using VMA.
