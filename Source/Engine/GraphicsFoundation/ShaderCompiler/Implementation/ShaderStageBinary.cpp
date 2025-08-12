@@ -19,6 +19,7 @@ struct xiiGALShaderStageBinaryVersion
   };
 };
 
+xiiMutex                                                                                           xiiGALShaderStageBinary::s_ShaderStageBinariesLock;
 xiiMap<xiiUInt32, xiiGALShaderStageBinary, xiiCompareHelper<xiiUInt32>, xiiStaticAllocatorWrapper> xiiGALShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
 
 xiiGALShaderStageBinary::xiiGALShaderStageBinary() = default;
@@ -255,6 +256,8 @@ xiiResult xiiGALShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog, xiiSt
 // static
 xiiGALShaderStageBinary* xiiGALShaderStageBinary::LoadStageBinary(xiiEnum<xiiGALShaderType> stage, xiiUInt32 uiHash, xiiStringView sPlatform)
 {
+  XII_LOCK(s_ShaderStageBinariesLock);
+
   auto itStage = s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(stage)].Find(uiHash);
 
   if (!itStage.IsValid())
@@ -289,6 +292,8 @@ xiiGALShaderStageBinary* xiiGALShaderStageBinary::LoadStageBinary(xiiEnum<xiiGAL
 // static
 void xiiGALShaderStageBinary::OnEngineStartup()
 {
+  XII_LOCK(s_ShaderStageBinariesLock);
+
   for (xiiUInt32 uiShaderType = 0; uiShaderType < xiiGALShaderType::ENUM_COUNT; ++uiShaderType)
   {
     s_ShaderStageBinaries[uiShaderType].Clear();
@@ -298,6 +303,8 @@ void xiiGALShaderStageBinary::OnEngineStartup()
 // static
 void xiiGALShaderStageBinary::OnEngineShutdown()
 {
+  XII_LOCK(s_ShaderStageBinariesLock);
+
   for (xiiUInt32 uiShaderType = 0; uiShaderType < xiiGALShaderType::ENUM_COUNT; ++uiShaderType)
   {
     s_ShaderStageBinaries[uiShaderType].Clear();

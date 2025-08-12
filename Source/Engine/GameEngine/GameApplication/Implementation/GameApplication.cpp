@@ -21,6 +21,7 @@
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -95,9 +96,15 @@ xiiString xiiGameApplication::FindProjectDirectory() const
   return result;
 }
 
-bool xiiGameApplication::IsGameUpdateEnabled() const
+xiiGameUpdateMode xiiGameApplication::GetGameUpdateMode() const
 {
-  return xiiRenderWorld::GetMainViews().GetCount() > 0;
+  const bool bViewsScheduled     = !xiiRenderWorld::GetMainViews().IsEmpty();
+  const bool bRenderingScheduled = xiiRenderWorld::IsRenderingScheduled();
+  if (bViewsScheduled)
+  {
+    return xiiGameUpdateMode::UpdateInputAndRender;
+  }
+  return bRenderingScheduled ? xiiGameUpdateMode::Render : xiiGameUpdateMode::Skip;
 }
 
 void xiiGameApplication::Run_WorldUpdateAndRender()
@@ -121,7 +128,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   RenderFps();
   RenderConsole();
 
-  xiiRenderWorld::Render();
+  xiiRenderWorld::Render(xiiRenderContext::GetDefaultInstance());
 
   if (xiiRenderWorld::GetUseMultithreadedRendering())
   {

@@ -2,7 +2,7 @@ HeaderV2
 {
 o
 {
-	Uuid %id{u4{5905517864249472942,5209686419954373345}}
+	Uuid %id{u4{15567984379713585827,5746483267533232556}}
 	s %t{"xiiAssetDocumentInfo"}
 	u3 %v{2}
 	s %n{"Header"}
@@ -10,8 +10,8 @@ o
 	{
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
-		Uuid %DocumentID{u4{5905517864249472942,5209686419954373345}}
-		u4 %Hash{12963215791881441923}
+		Uuid %DocumentID{u4{15567984379713585827,5746483267533232556}}
+		u4 %Hash{15796918107954044754}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -24,21 +24,21 @@ Objects
 {
 o
 {
-	Uuid %id{u4{10882186585332592097,1096254513375157454}}
-	s %t{"xiiRenderPipelineNodeInputDepthAttachmentProviderPin"}
+	Uuid %id{u4{10373021424078511701,2409841655043382455}}
+	s %t{"xiiRenderPipelineNodeOutputColourAttachmentPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
-	Uuid %id{u4{7293544696535925615,4559755855542399324}}
+	Uuid %id{u4{5667999586809927900,3764325666106691682}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
-	Uuid %id{u4{8056178295265405829,4733408663656269846}}
+	Uuid %id{u4{5834264350328050327,5130305204060430693}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
@@ -53,29 +53,36 @@ o
 	{
 		VarArray %Children
 		{
-			Uuid{u4{1369882857010135880,10731614432111299457}}
-			Uuid{u4{7044507577872988231,10922277272644884247}}
-			Uuid{u4{10049101333225453649,10844913344165404546}}
+			Uuid{u4{8932669438932745760,10544518367499427291}}
+			Uuid{u4{17611887915148063529,10657817279553532380}}
+			Uuid{u4{14607294159795598111,10735181208033012081}}
 		}
 	}
 }
 o
 {
-	Uuid %id{u4{4906408494604987798,8987442282170731985}}
+	Uuid %id{u4{4743046970586339392,7399976290756060882}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
-	Uuid %id{u4{17088125320064148441,10632862748974676816}}
+	Uuid %id{u4{7075772698072173214,10227550652643358004}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
-	Uuid %id{u4{1369882857010135880,10731614432111299457}}
+	Uuid %id{u4{11420986696979877624,10288601420139303164}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{8932669438932745760,10544518367499427291}}
 	s %t{"xiiCreateColourAttachmentPass"}
 	u3 %v{1}
 	p
@@ -92,79 +99,72 @@ o
 		u3 %MipLevels{1}
 		s %MiscFlags{""}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x8BDECB44,0x4DCA2D44}}
-		Uuid %Output{u4{15106744166712715260,10994843783296336747}}
+		Vec2 %Node::Pos{f{0x1994F144,0xDF0A2E44}}
+		Uuid %Output{u4{10373021424078511701,2409841655043382455}}
 		u3 %SampleCount{1}
 		s %Type{"xiiGALResourceDimension::Texture2D"}
 	}
 }
 o
 {
-	Uuid %id{u4{10049101333225453649,10844913344165404546}}
+	Uuid %id{u4{17611887915148063529,10657817279553532380}}
 	s %t{"xiiDocumentObject_ConnectionBase"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{1369882857010135880,10731614432111299457}}
+		Uuid %Source{u4{8932669438932745760,10544518367499427291}}
 		s %SourcePin{"Output"}
-		Uuid %Target{u4{7044507577872988231,10922277272644884247}}
+		Uuid %Target{u4{14607294159795598111,10735181208033012081}}
 		s %TargetPin{"Colour0"}
 	}
 }
 o
 {
-	Uuid %id{u4{7044507577872988231,10922277272644884247}}
+	Uuid %id{u4{14607294159795598111,10735181208033012081}}
 	s %t{"xiiTargetPass"}
 	u3 %v{1}
 	p
 	{
 		b %Active{1}
-		Uuid %Colour0{u4{1811903095011444629,15174644278418912329}}
-		Uuid %Colour1{u4{2881881430801170480,15632543051301046475}}
-		Uuid %Colour2{u4{16929864260553113603,14788599343419042925}}
-		Uuid %Colour3{u4{8056178295265405829,4733408663656269846}}
-		Uuid %Colour4{u4{1626442746065532647,13083122014287934189}}
-		Uuid %Colour5{u4{17088125320064148441,10632862748974676816}}
-		Uuid %Colour6{u4{7293544696535925615,4559755855542399324}}
-		Uuid %Colour7{u4{4906408494604987798,8987442282170731985}}
+		Uuid %Colour0{u4{12303511352626468987,12420540839630905433}}
+		Uuid %Colour1{u4{5667999586809927900,3764325666106691682}}
+		Uuid %Colour2{u4{15226194178245640962,16720995471829178834}}
+		Uuid %Colour3{u4{5957455898523935036,16055076009827898690}}
+		Uuid %Colour4{u4{5834264350328050327,5130305204060430693}}
+		Uuid %Colour5{u4{7075772698072173214,10227550652643358004}}
+		Uuid %Colour6{u4{11420986696979877624,10288601420139303164}}
+		Uuid %Colour7{u4{4743046970586339392,7399976290756060882}}
 		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
-		Uuid %DepthStencil{u4{10882186585332592097,1096254513375157454}}
+		Uuid %DepthStencil{u4{727829365830919004,14648846721646331799}}
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xAF5CF544,0xCE9E1A44}}
+		Vec2 %Node::Pos{f{0x1E890D45,0x60DF1A44}}
 	}
 }
 o
 {
-	Uuid %id{u4{15106744166712715260,10994843783296336747}}
-	s %t{"xiiRenderPipelineNodeOutputColourAttachmentPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{1626442746065532647,13083122014287934189}}
+	Uuid %id{u4{12303511352626468987,12420540839630905433}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
-	Uuid %id{u4{16929864260553113603,14788599343419042925}}
+	Uuid %id{u4{727829365830919004,14648846721646331799}}
+	s %t{"xiiRenderPipelineNodeInputDepthAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{5957455898523935036,16055076009827898690}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
 }
 o
 {
-	Uuid %id{u4{1811903095011444629,15174644278418912329}}
-	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
-	u3 %v{1}
-	p{}
-}
-o
-{
-	Uuid %id{u4{2881881430801170480,15632543051301046475}}
+	Uuid %id{u4{15226194178245640962,16720995471829178834}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}

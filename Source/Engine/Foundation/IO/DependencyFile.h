@@ -62,5 +62,6 @@ private:
     xiiTime      m_LastCheck;
   };
 
+  static xiiMutex                          s_FileTimestampsLock;
   static xiiMap<xiiString, FileCheckCache> s_FileTimestamps;
 };

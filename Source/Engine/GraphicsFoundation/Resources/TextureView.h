@@ -16,8 +16,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALUnorderedAccessViewFlags
     Write       = XII_BIT(1),   ///< Allow write operations on the unordered access view.
     ReadWrite   = Read | Write, ///< Allow read and write operations on the unordered access view.
 
-    ENUM_COUNT = 4U,
-
     Default = Unspecified
   };
 
@@ -42,8 +40,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewFlags
   {
     None               = 0U,         ///< No texture view flags.
     AllowMipGeneration = XII_BIT(0), ///< Allow automatic mipmap generation for this view. This flag is only allowed for xiiGALTextureViewType::ShaderResource view type. The texture must be created with the xiiGALMiscTextureFlags::GenerateMips flag.
-
-    ENUM_COUNT = 2U,
 
     Default = None
   };

@@ -159,12 +159,12 @@ namespace
   ///
   /// \tparam AllowTouch - If true, segments that touch at endpoints are considered overlapping.
   /// \tparam T          - A numeric type (e.g., float, double, int) used for the segment bounds.
-  /// 
+  ///
   /// \param min0 - Lower bound of the first segment.
   /// \param max0 - Upper bound of the first segment.
   /// \param min1 - Lower bound of the second segment.
   /// \param max1 - Upper bound of the second segment.
-  /// 
+  ///
   /// \return True if the segments overlap (or touch, depending on AllowTouch); false otherwise.
   ///
   /// \note The function assumes that min0 <= max0 and min1 <= max1.
@@ -1457,10 +1457,10 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderP
       }
       else
       {
-        vkClearValue.color.float32[0] = clearValue.m_ClearColor.r;
-        vkClearValue.color.float32[1] = clearValue.m_ClearColor.g;
-        vkClearValue.color.float32[2] = clearValue.m_ClearColor.b;
-        vkClearValue.color.float32[3] = clearValue.m_ClearColor.a;
+        vkClearValue.color.float32[0] = clearValue.m_ClearColour.r;
+        vkClearValue.color.float32[1] = clearValue.m_ClearColour.g;
+        vkClearValue.color.float32[2] = clearValue.m_ClearColour.b;
+        vkClearValue.color.float32[3] = clearValue.m_ClearColour.a;
       }
 
       clearColorValues.PushBack(vkClearValue);

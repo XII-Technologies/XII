@@ -5,7 +5,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMiscTextureFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::GenerateMips),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::Memoryless),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::SparseAlias),

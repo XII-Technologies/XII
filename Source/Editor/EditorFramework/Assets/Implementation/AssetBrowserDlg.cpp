@@ -12,6 +12,25 @@ xiiMap<xiiString, xiiString> xiiQtAssetBrowserDlg::s_TextFilter;
 xiiMap<xiiString, xiiString> xiiQtAssetBrowserDlg::s_PathFilter;
 xiiMap<xiiString, xiiString> xiiQtAssetBrowserDlg::s_TypeFilter;
 
+void ClampWindowGeometryToScreens(QRect& windowGeometry)
+{
+  const QList<QScreen*> screens = QGuiApplication::screens();
+
+  for (QScreen* screen : screens)
+  {
+    const QRect screenGeom = screen->availableGeometry();
+    if (screenGeom.intersects(windowGeometry))
+      return;
+  }
+
+  const QRect primaryGeom = QGuiApplication::primaryScreen()->availableGeometry();
+
+  const QSize size = windowGeometry.size();
+  windowGeometry.setLeft(xiiMath::Clamp(windowGeometry.left(), primaryGeom.left(), primaryGeom.right() - windowGeometry.width()));
+  windowGeometry.setTop(xiiMath::Clamp(windowGeometry.top(), primaryGeom.top(), primaryGeom.bottom() - windowGeometry.height()));
+  windowGeometry.setSize(size);
+}
+
 void xiiQtAssetBrowserDlg::Init(QWidget* pParent)
 {
   setupUi(this);
@@ -22,8 +41,14 @@ void xiiQtAssetBrowserDlg::Init(QWidget* pParent)
   Settings.beginGroup(QLatin1String("AssetBrowserDlg"));
   {
     restoreGeometry(Settings.value("WindowGeometry", saveGeometry()).toByteArray());
-    move(Settings.value("WindowPosition", pos()).toPoint());
-    resize(Settings.value("WindowSize", size()).toSize());
+
+    QRect windowGeometry;
+    windowGeometry.setTopLeft(Settings.value("WindowPosition", pos()).toPoint());
+    windowGeometry.setSize(Settings.value("WindowSize", size()).toSize());
+    ClampWindowGeometryToScreens(windowGeometry);
+
+    move(windowGeometry.topLeft());
+    resize(windowGeometry.size());
   }
   Settings.endGroup();
 

@@ -13,13 +13,11 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandListFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::Secondary),
   XII_BITFLAGS_CONSTANT(xiiGALCommandListFlags::MultiSubmit),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSetVertexBufferFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSetVertexBufferFlags::Reset),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
@@ -30,7 +28,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStateTransitionType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALStateTransitionFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::UpdateState),
   XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::DiscardContent),
   XII_BITFLAGS_CONSTANT(xiiGALStateTransitionFlags::Aliasing),

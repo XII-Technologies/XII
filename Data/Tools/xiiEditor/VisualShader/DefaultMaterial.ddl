@@ -105,7 +105,6 @@ float3 GetWorldPositionOffset(xiiPerInstanceData data, float3 worldPosition)
 Permutation BLEND_MODE;
 Permutation SHADING_MODE;
 Permutation TWO_SIDED;
-Permutation VERTEX_SKINNING;
 float MaskThreshold @Default($prop0);
 " }
 

@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCreateColourAttachmentPass>)
@@ -10,12 +11,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTIDefaul
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_ENUM_MEMBER_PROPERTY("Type", xiiGALResourceDimension, m_Type)->AddAttributes(new xiiDefaultValueAttribute(xiiGALResourceDimension::Texture2D)),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format)->AddAttributes(new xiiDefaultValueAttribute(xiiSourceFormat::Color4Channel8BitNormalized_sRGB)),
-    XII_MEMBER_PROPERTY("ArraySizeOrDepth", m_uiArraySizeOrDepth)->AddAttributes(new xiiDefaultValueAttribute(0U)),
+    XII_MEMBER_PROPERTY("ArraySizeOrDepth", m_uiArraySizeOrDepth)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(1U)),
-    XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags),
+    XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget)),
+    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAccessFlags::None)),
+    XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMiscTextureFlags::None)),
+
+    XII_MEMBER_PROPERTY("Clear", m_bClear)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("ClearColour", m_ClearColour)->AddAttributes(new xiiDefaultValueAttribute(xiiColor::Black), new xiiExposeColorAlphaAttribute()),
   }
   XII_END_PROPERTIES;
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -41,6 +45,8 @@ xiiResult xiiCreateColourAttachmentPass::Serialize(xiiStreamWriter& inout_stream
   inout_stream << m_Usage;
   inout_stream << m_AccessFlags;
   inout_stream << m_MiscFlags;
+  inout_stream << m_bClear;
+  inout_stream << m_ClearColour;
 
   return XII_SUCCESS;
 }
@@ -58,6 +64,8 @@ xiiResult xiiCreateColourAttachmentPass::Deserialize(xiiStreamReader& inout_stre
   inout_stream >> m_Usage;
   inout_stream >> m_AccessFlags;
   inout_stream >> m_MiscFlags;
+  inout_stream >> m_bClear;
+  inout_stream >> m_ClearColour;
 
   return XII_SUCCESS;
 }
@@ -102,6 +110,20 @@ xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& 
 
 void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(pInputs);
+
+  if (!m_bClear)
+    return;
+
+  auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
+  if (pOutput == nullptr)
+    return;
+
+  xiiRenderingSetup renderingSetup;
+  renderingSetup.AddColorAttachment({.m_pRenderTarget = pOutput->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget), .m_ClearColour = m_ClearColour, .m_LoadOp = xiiGALAttachmentLoadOperation::Clear}).Build();
+
+  renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, renderViewContext.m_pViewData->m_ViewPortRect, GetName());
+  renderViewContext.m_pRenderContext->EndRendering();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,9 +138,13 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateDepthAttachmentPass, 1, xiiRTTIDefault
     XII_MEMBER_PROPERTY("ArraySizeOrDepth", m_uiArraySizeOrDepth)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(1U)),
-    XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags),
-    XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags),
+    XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget)),
+    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAccessFlags::None)),
+    XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMiscTextureFlags::None)),
+
+    XII_MEMBER_PROPERTY("Clear", m_bClear)->AddAttributes(new xiiDefaultValueAttribute(false)),
+    XII_MEMBER_PROPERTY("DepthClearValue", m_fDepthClearValue)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
+    XII_MEMBER_PROPERTY("StencilClearValue", m_uiStencilClearValue)->AddAttributes(new xiiDefaultValueAttribute(0U)),
   }
   XII_END_PROPERTIES;
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -144,6 +170,9 @@ xiiResult xiiCreateDepthAttachmentPass::Serialize(xiiStreamWriter& inout_stream)
   inout_stream << m_Usage;
   inout_stream << m_AccessFlags;
   inout_stream << m_MiscFlags;
+  inout_stream << m_bClear;
+  inout_stream << m_fDepthClearValue;
+  inout_stream << m_uiStencilClearValue;
 
   return XII_SUCCESS;
 }
@@ -161,6 +190,9 @@ xiiResult xiiCreateDepthAttachmentPass::Deserialize(xiiStreamReader& inout_strea
   inout_stream >> m_Usage;
   inout_stream >> m_AccessFlags;
   inout_stream >> m_MiscFlags;
+  inout_stream >> m_bClear;
+  inout_stream >> m_fDepthClearValue;
+  inout_stream >> m_uiStencilClearValue;
 
   return XII_SUCCESS;
 }
@@ -194,4 +226,18 @@ xiiResult xiiCreateDepthAttachmentPass::GetResourceDescriptions(const xiiView& v
 
 void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(pInputs);
+
+  if (!m_bClear)
+    return;
+
+  auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
+  if (pOutput == nullptr)
+    return;
+
+  xiiRenderingSetup renderingSetup;
+  renderingSetup.SetDepthStencilAttachment({.m_pDSTarget = pOutput->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), .m_fDepthClear = m_fDepthClearValue, .m_uiStencilClear = m_uiStencilClearValue, .m_LoadOp = xiiGALAttachmentLoadOperation::Clear, .m_StencilLoadOp = xiiGALAttachmentLoadOperation::Clear}).Build();
+
+  renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, renderViewContext.m_pViewData->m_ViewPortRect, GetName());
+  renderViewContext.m_pRenderContext->EndRendering();
 }

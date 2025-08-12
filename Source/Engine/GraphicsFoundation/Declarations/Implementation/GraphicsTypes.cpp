@@ -64,7 +64,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALValueType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShaderType, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Unknown),
   XII_BITFLAGS_CONSTANT(xiiGALShaderType::Vertex),
   XII_BITFLAGS_CONSTANT(xiiGALShaderType::Pixel),
   XII_BITFLAGS_CONSTANT(xiiGALShaderType::Geometry),
@@ -103,7 +102,7 @@ xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
 // static
 xiiGALShaderType::Enum xiiGALShaderType::GetStageFlag(xiiUInt32 uiIndex)
 {
-  XII_ASSERT_DEV(uiIndex >= 0 && uiIndex < xiiGALShaderType::ENUM_COUNT, "The shader type index it out of range. Expeceted [0, {}), but got {}", xiiGALShaderType::ENUM_COUNT, uiIndex);
+  XII_ASSERT_DEV(uiIndex >= 0 && uiIndex < xiiGALShaderType::ENUM_COUNT, "The shader type index it out of range. Expected [0, {}), but got {}.", xiiGALShaderType::ENUM_COUNT, uiIndex);
 
   return static_cast<xiiGALShaderType::Enum>(XII_BIT(uiIndex));
 }
@@ -127,7 +126,6 @@ const char* xiiGALShaderType::Names[ENUM_COUNT] = {
 };
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALBindFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALBindFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALBindFlags::VertexBuffer),
   XII_BITFLAGS_CONSTANT(xiiGALBindFlags::IndexBuffer),
   XII_BITFLAGS_CONSTANT(xiiGALBindFlags::UniformBuffer),
@@ -152,7 +150,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALResourceUsage, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCPUAccessFlag, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALCPUAccessFlag::None),
   XII_BITFLAGS_CONSTANT(xiiGALCPUAccessFlag::Read),
   XII_BITFLAGS_CONSTANT(xiiGALCPUAccessFlag::Write),
 XII_END_STATIC_REFLECTED_BITFLAGS;
@@ -164,7 +161,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMapType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMapFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALMapFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALMapFlags::DoNotWait),
   XII_BITFLAGS_CONSTANT(xiiGALMapFlags::Discard),
   XII_BITFLAGS_CONSTANT(xiiGALMapFlags::NoOverWrite),
@@ -428,7 +424,6 @@ const char* xiiGALPrimitiveTopology::Names[ENUM_COUNT] = {
 };
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMemoryPropertyFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALMemoryPropertyFlags::Unknown),
   XII_BITFLAGS_CONSTANT(xiiGALMemoryPropertyFlags::HostCoherent),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
@@ -453,7 +448,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScanLineOrder, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSwapChainUsageFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALSwapChainUsageFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSwapChainUsageFlags::RenderTarget),
   XII_BITFLAGS_CONSTANT(xiiGALSwapChainUsageFlags::ShaderResource),
   XII_BITFLAGS_CONSTANT(xiiGALSwapChainUsageFlags::InputAttachment),
@@ -482,7 +476,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALQueryType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALWaveFeature, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Unknown),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Basic),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Vote),
   XII_BITFLAGS_CONSTANT(xiiGALWaveFeature::Arithmetic),
@@ -494,19 +487,16 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALWaveFeature, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALRayTracingCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingCapabilityFlags::StandaloneShaders),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingCapabilityFlags::InlineRayTracing),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingCapabilityFlags::IndirectRayTracing),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALValidationFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALValidationFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALValidationFlags::CheckShaderBufferSize),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandQueueFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::Transfer),
   XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::Compute),
   XII_BITFLAGS_CONSTANT(xiiGALCommandQueueFlags::Graphics),
@@ -557,7 +547,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSampleCount, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::None),
   XII_BITFLAGS_CONSTANT(xiiGALSampleCount::OneSample),
   XII_BITFLAGS_CONSTANT(xiiGALSampleCount::TwoSamples),
   XII_BITFLAGS_CONSTANT(xiiGALSampleCount::FourSamples),
@@ -579,7 +568,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMSAASampleCount, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALShadingRateCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALShadingRateCapabilityFlags::PerDraw),
   XII_BITFLAGS_CONSTANT(xiiGALShadingRateCapabilityFlags::PerPrimitive),
   XII_BITFLAGS_CONSTANT(xiiGALShadingRateCapabilityFlags::TextureBased),
@@ -603,7 +591,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShadingRateTextureAccess, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALDrawCommandCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALDrawCommandCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALDrawCommandCapabilityFlags::BaseVertex),
   XII_BITFLAGS_CONSTANT(xiiGALDrawCommandCapabilityFlags::DrawIndirect),
   XII_BITFLAGS_CONSTANT(xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance),
@@ -612,7 +599,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALDrawCommandCapabilityFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSparseResourceCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALSparseResourceCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency),
   XII_BITFLAGS_CONSTANT(xiiGALSparseResourceCapabilityFlags::Buffer),
   XII_BITFLAGS_CONSTANT(xiiGALSparseResourceCapabilityFlags::Texture2D),
@@ -648,7 +634,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALResourceFormatComponentType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALResourceDimensionCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALResourceDimensionCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALResourceDimensionCapabilityFlags::Buffer),
   XII_BITFLAGS_CONSTANT(xiiGALResourceDimensionCapabilityFlags::Texture1D),
   XII_BITFLAGS_CONSTANT(xiiGALResourceDimensionCapabilityFlags::Texture1DArray),
@@ -660,14 +645,12 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALResourceDimensionCapabilityFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSparseTextureFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALSparseTextureFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSparseTextureFlags::SingleMipTail),
   XII_BITFLAGS_CONSTANT(xiiGALSparseTextureFlags::AlignedMipSize),
   XII_BITFLAGS_CONSTANT(xiiGALSparseTextureFlags::NonStandardBlockSize),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALPipelineStageFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::Undefined),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::TopOfPipeline),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::DrawIndirect),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::VertexInput),
@@ -693,7 +676,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALPipelineStageFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALAccessFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::IndirectCommandRead),
   XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::IndexRead),
   XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::VertexRead),
@@ -719,7 +701,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALAccessFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALResourceStateFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::Unknown),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::Undefined),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::VertexBuffer),
   XII_BITFLAGS_CONSTANT(xiiGALResourceStateFlags::ConstantBuffer),

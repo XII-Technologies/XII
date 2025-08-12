@@ -166,7 +166,7 @@ public:
 
         float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
         auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+        colorClearValue.m_ClearColour = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
         m_pCommandList->BeginRenderPass(beginRenderPass);
         m_pCommandList->EndRenderPass();
@@ -380,18 +380,18 @@ public:
     // Create a Swap Chain
     if (!m_pSwapChain)
     {
-      xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = m_pWindow.Borrow();
-      swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
-      swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
-      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
-      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDesc.m_uiBufferCount         = 2U;
-      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
-      swapChainDesc.m_uiDefaultStencilValue = 0U;
+      xiiGALSwapChainCreationDescription swapChainDescription;
+      swapChainDescription.m_pWindow               = m_pWindow.Borrow();
+      swapChainDescription.m_Resolution.width      = g_uiWindowWidth;
+      swapChainDescription.m_Resolution.height     = g_uiWindowHeight;
+      swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDescription.m_uiBufferCount         = 2U;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_uiDefaultStencilValue = 0U;
 
-      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
 
       m_pSwapChain->SetPresentMode(xiiGALPresentMode::VSync);
     }

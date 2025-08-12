@@ -19,7 +19,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderTargets
 struct XII_GRAPHICSCORE_DLL xiiAttachmentSettings
 {
   xiiSharedPtr<xiiGALTextureView>         m_pRenderTarget;                                         ///< Target texture view.
-  xiiColor                                m_ClearColor   = xiiColor::Black;                        ///< Default clear color (black).
+  xiiColor                                m_ClearColour  = xiiColor::Black;                        ///< Default clear color (black).
   xiiEnum<xiiGALAttachmentLoadOperation>  m_LoadOp       = xiiGALAttachmentLoadOperation::Load;    ///< Default load operation.
   xiiEnum<xiiGALAttachmentStoreOperation> m_StoreOp      = xiiGALAttachmentStoreOperation::Store;  ///< Default store operation.
   xiiBitflags<xiiGALResourceStateFlags>   m_SubpassState = xiiGALResourceStateFlags::RenderTarget; ///< Default subpass state.
@@ -67,7 +67,7 @@ public:
   XII_FORCE_INLINE xiiRenderingSetup& AddColorAttachment(const xiiAttachmentSettings& attachmentSettings)
   {
     DeduceFramebufferSize(attachmentSettings.m_pRenderTarget);
-    AddColorAttachment(attachmentSettings.m_pRenderTarget, attachmentSettings.m_LoadOp, attachmentSettings.m_StoreOp, attachmentSettings.m_SubpassState, attachmentSettings.m_ClearColor);
+    AddColorAttachment(attachmentSettings.m_pRenderTarget, attachmentSettings.m_LoadOp, attachmentSettings.m_StoreOp, attachmentSettings.m_SubpassState, attachmentSettings.m_ClearColour);
     return *this;
   }
 

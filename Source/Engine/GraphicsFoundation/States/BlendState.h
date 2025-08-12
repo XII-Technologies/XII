@@ -84,8 +84,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALColorMask
     Blue  = XII_BIT(2), ///< Write to the blue component.
     Alpha = XII_BIT(3), ///< Write to the alpha component.
 
-    ENUM_COUNT = 5U,
-
     RG   = Red | Green,                ///< Write to the red and green components.
     RGB  = Red | Green | Blue,         ///< Write to the red, green and blue components.
     RGBA = Red | Green | Blue | Alpha, ///< Write to the red, green, blue, and alpha components.

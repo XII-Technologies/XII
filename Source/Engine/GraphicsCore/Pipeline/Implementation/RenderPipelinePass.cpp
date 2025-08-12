@@ -8,13 +8,11 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelinePassCapabilityFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassCapabilityFlags::None),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassCapabilityFlags::StereoAware),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassCapabilityFlags::AllowSubpassFuse),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelinePassFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::None),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::AsyncCompute),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::AsyncTransfer),
   XII_BITFLAGS_CONSTANT(xiiRenderPipelinePassFlags::DynamicResolution),
@@ -33,8 +31,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePassBase, 1, xiiRTTINoAllocato
   {
     XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
-    XII_BITFLAGS_ACCESSOR_PROPERTY("Flags", xiiRenderPipelinePassFlags, GetPassFlags, SetPassFlags),
-    XII_ENUM_ACCESSOR_PROPERTY("ConcurrencyHint", xiiRenderPipelinePassConcurrencyHint, GetPassConcurrencyHint, SetPassConcurrencyHint),
+    XII_BITFLAGS_ACCESSOR_PROPERTY("Flags", xiiRenderPipelinePassFlags, GetPassFlags, SetPassFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelinePassFlags::DynamicResolution)),
+    XII_ENUM_ACCESSOR_PROPERTY("ConcurrencyHint", xiiRenderPipelinePassConcurrencyHint, GetPassConcurrencyHint, SetPassConcurrencyHint)->AddAttributes(new xiiDefaultValueAttribute(xiiRenderPipelinePassConcurrencyHint::Sequential)),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES

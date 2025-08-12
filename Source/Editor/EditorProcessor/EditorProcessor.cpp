@@ -180,7 +180,20 @@ public:
     xiiQtEditorApp::GetSingleton()->StartupEditor(startupFlags, sOutputDir);
     xiiQtUiServices::SetHeadless(true);
 
+    QCoreApplication::sendPostedEvents();
+    qApp->processEvents();
+
+    XII_SCOPE_EXIT(xiiQtEditorApp::GetSingleton()->ShutdownEditor(););
+
     const xiiStringBuilder sProject = opt_Project.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+
+    // Project is opened by StartupEditor
+    if (!sProject.IsEmpty() && !xiiToolsProject::IsProjectOpen())
+    {
+      xiiLog::Error("Failed to open project: {}", sProject);
+      SetReturnCode(2);
+      return xiiApplication::Execution::Quit;
+    }
 
     if (!sTransformProfile.IsEmpty() || bCompile)
     {
@@ -253,8 +266,6 @@ public:
     }
     else if (opt_Resave.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified))
     {
-      xiiQtEditorApp::GetSingleton()->OpenProject(sProject).IgnoreResult();
-
       xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
         xiiAssetCurator::GetSingleton()->ResaveAllAssets({});
 
@@ -278,7 +289,6 @@ public:
       {
         m_IPC.m_Events.AddEventHandler(xiiMakeDelegate(&xiiEditorProcessorApplication::EventHandlerIPC, this));
 
-        xiiQtEditorApp::GetSingleton()->OpenProject(sProject).IgnoreResult();
         xiiQtEditorApp::GetSingleton()->connect(xiiQtEditorApp::GetSingleton(), &xiiQtEditorApp::IdleEvent, xiiQtEditorApp::GetSingleton(), [this]() {
           static bool bRecursionBlock = false;
           if (bRecursionBlock)
@@ -301,8 +311,6 @@ public:
         xiiLog::Error("Failed to connect with host process");
       }
     }
-
-    xiiQtEditorApp::GetSingleton()->ShutdownEditor();
 
     return xiiApplication::Execution::Quit;
   }

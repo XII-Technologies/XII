@@ -33,7 +33,6 @@ xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& ref_testFramework) :
   m_pStatusText = new QLabel(this);
   testStatusBar->addWidget(m_pStatusText);
 
-
   // Model
   m_pModel = new xiiQtTestModel(this, m_pTestFramework);
   testTreeView->setModel(m_pModel);
@@ -59,8 +58,7 @@ xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& ref_testFramework) :
 
   // connect current row changed signal
   QItemSelectionModel* pSelectionModel = testTreeView->selectionModel();
-  connect(pSelectionModel, SIGNAL(currentRowChanged(const QModelIndex&, const QModelIndex&)), this,
-          SLOT(onSelectionModelCurrentRowChanged(const QModelIndex&)));
+  connect(pSelectionModel, SIGNAL(currentRowChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onSelectionModelCurrentRowChanged(const QModelIndex&)));
 
   // Sync actions with test framework settings
   TestSettings settings = m_pTestFramework->GetSettings();
@@ -300,7 +298,7 @@ void xiiQtTestGUI::on_actionEnableOnlyThis_triggered()
 
   m_pTestFramework->SetAllTestsEnabledStatus(false);
 
-  for (auto idx : testTreeView->selectionModel()->selectedIndexes())
+  for (auto& idx : testTreeView->selectionModel()->selectedIndexes())
   {
     // Need to set data on column 0
     CurrentIndex = m_pModel->index(idx.row(), 0, idx.parent());

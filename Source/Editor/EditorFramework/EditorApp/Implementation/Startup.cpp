@@ -262,14 +262,17 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 {
   XII_PROFILE_SCOPE("StartupEditor");
 
-  QCoreApplication::setOrganizationDomain("www.xiitechnologies.com");
+  xiiStringBuilder sb;
+  sb.SetFormat("{}.{}.{}", BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
+
+  QCoreApplication::setOrganizationDomain("xiitechnologies.com");
   QCoreApplication::setOrganizationName("XII Technologies");
-  QCoreApplication::setApplicationName(xiiApplication::GetApplicationInstance()->GetApplicationName().GetData());
-  QCoreApplication::setApplicationVersion("1.0.0");
+  QCoreApplication::setApplicationName(xiiMakeQString(xiiApplication::GetApplicationInstance()->GetApplicationName()));
+  QCoreApplication::setApplicationVersion(xiiMakeQString(sb));
 
   m_StartupFlags = startupFlags;
 
-  auto* pCmd = xiiCommandLineUtils::GetGlobalInstance();
+  xiiCommandLineUtils* pCmd = xiiCommandLineUtils::GetGlobalInstance();
 
   if (!IsInHeadlessMode())
   {
@@ -282,9 +285,9 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_pQtProgressbar->SetProgressbar(m_pProgressbar);
   }
 
-  // custom command line arguments
+  // Custom command line arguments.
   {
-    // Make sure to disable the fileserve plugin
+    // Disable the FileServe plugin.
     pCmd->InjectCustomArgument("-fs_off");
   }
 
@@ -404,6 +407,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   LoadEditorPlugins();
   CloseSplashScreen();
 
+  m_bIsRunning = true;
   {
     xiiEditorAppEvent e;
     e.m_Type = xiiEditorAppEvent::Type::EditorStarted;
@@ -445,12 +449,11 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
   if (m_bWroteCrashIndicatorFile)
   {
-    QTimer::singleShot(1000, [this]() {
+    QTimer::singleShot(1000, [this]() -> void {
       xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
       sTemp.AppendPath("xiiEditorCrashIndicator");
       xiiOSFile::DeleteFile(sTemp).IgnoreResult();
       m_bWroteCrashIndicatorFile = false;
-      //
     });
   }
 
@@ -464,6 +467,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
 void xiiQtEditorApp::ShutdownEditor()
 {
+  m_bIsRunning = false;
+
   xiiStackTraceLogParser::Unregister();
 
   xiiToolsProject::SaveProjectState();

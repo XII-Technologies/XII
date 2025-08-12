@@ -18,8 +18,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
     PreferFastBuild = XII_BIT(3), ///< Indicates that the given acceleration structure build should prioritize build time over trace performance.
     LowMemory       = XII_BIT(4), ///< Indicates that this acceleration structure should minimize the size of the scratch memory and the final result build, potentially at the expense of build time or trace performance.
 
-    ENUM_COUNT,
-
     Default = None
   };
 

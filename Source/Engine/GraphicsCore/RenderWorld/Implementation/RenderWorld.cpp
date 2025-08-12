@@ -249,6 +249,11 @@ xiiArrayPtr<xiiViewHandle> xiiRenderWorld::GetMainViews()
   return s_MainViews;
 }
 
+bool xiiRenderWorld::IsRenderingScheduled()
+{
+  return !s_MainViews.IsEmpty() || !s_FilteredRenderPipelines[GetDataIndexForRendering()].IsEmpty();
+}
+
 void xiiRenderWorld::CacheRenderData(const xiiView& view, const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent, xiiUInt16 uiComponentVersion, xiiArrayPtr<xiiInternal::RenderDataCacheEntry> cacheEntries)
 {
   if (cvar_RenderingCachingStaticObjects)
@@ -524,7 +529,7 @@ void xiiRenderWorld::ExtractMainViews()
   s_bInExtract = false;
 }
 
-void xiiRenderWorld::Render()
+void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
 {
   const xiiUInt64 uiRenderFrame = xiiRenderWorld::GetUseMultithreadedRendering() ? xiiRenderWorld::GetFrameCounter() - 1 : xiiRenderWorld::GetFrameCounter();
 
@@ -573,7 +578,7 @@ void xiiRenderWorld::Render()
     // If we are the only one holding a reference to the pipeline skip rendering. The pipeline is not needed anymore and will be deleted soon.
     if (pRenderPipeline->GetRefCount() > 1)
     {
-      pRenderPipeline->Render();
+      pRenderPipeline->Render(pRenderContext);
     }
     pRenderPipeline = nullptr;
   }

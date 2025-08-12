@@ -74,6 +74,20 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     return XII_FAILURE;
   }
 
+  struct stat stats = {};
+  if (fstat(fd, &stats) != 0)
+  {
+    close(fd);
+    return XII_FAILURE;
+  }
+
+  // Prevent opening of directories
+  if ((stats.st_mode & S_IFMT) == S_IFDIR)
+  {
+    close(fd);
+    return XII_FAILURE;
+  }
+
   const xiiInt32 iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
   const xiiTime  sleepTime   = xiiTime::MakeFromMilliseconds(20);
   xiiInt32       iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
@@ -85,7 +99,6 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     if (iRetries == 0 || errorCode != EWOULDBLOCK)
     {
       // error, could not get a lock
-      xiiLog::Error("Failed to get a {} lock for file {}, error {}", (FileShareMode == xiiFileShareMode::Exclusive) ? "Exculsive" : "Shared", szFile, errno);
       close(fd);
       return XII_FAILURE;
     }
@@ -147,7 +160,6 @@ xiiResult xiiOSFile::InternalWrite(const void* pBuffer, xiiUInt64 uiBytes)
   {
     if (fwrite(pBuffer, 1, uiBatchBytes, m_FileData.m_pFileHandle) != uiBatchBytes)
     {
-      xiiLog::Error("fwrite 1GB failed for '{}'", m_sFileName);
       return XII_FAILURE;
     }
 
@@ -161,7 +173,6 @@ xiiResult xiiOSFile::InternalWrite(const void* pBuffer, xiiUInt64 uiBytes)
 
     if (fwrite(pBuffer, 1, uiBytes32, m_FileData.m_pFileHandle) != uiBytes)
     {
-      xiiLog::Error("fwrite failed for '{}'", m_sFileName);
       return XII_FAILURE;
     }
   }

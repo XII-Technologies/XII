@@ -90,7 +90,7 @@ private:
   void ExtractData(const xiiView& view);
   void FindVisibleObjects(const xiiView& view);
 
-  void Render();
+  void Render(xiiRenderContext* pRenderContext);
 
   xiiRasterizerView* PrepareOcclusionCulling(const xiiFrustum& frustum, const xiiView& view);
   void               PreviewOcclusionBuffer(const xiiRasterizerView& rasterizer, const xiiView& view);
@@ -127,7 +127,6 @@ private: // Member data
   /// \brief Contains all connections that share the same path-through resource and their first and last usage pass index.
   struct ResourceUsageData
   {
-    xiiEnum<xiiRenderPipelineNodePinResourceType>       m_ResourceType;
     xiiHybridArray<xiiRenderPipelinePassConnection*, 4> m_UsedBy;                      ///< All the connections that use this resource. Due to passthrough pins, this can be larger than 1.
     xiiUInt16                                           m_uiFirstUsageIdx;             ///< Used to decide when to acquire a temporary resource.
     xiiUInt16                                           m_uiLastUsageIdx;              ///< Used to decide when to return a temporary resource.

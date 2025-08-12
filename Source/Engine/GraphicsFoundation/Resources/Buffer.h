@@ -34,8 +34,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscBufferFlags
     None        = 0U,         ///< No miscellaneous buffer flags.
     SparseAlias = XII_BIT(0), ///< For a sparse buffer, allow binding the same memory region in different buffer ranges or in different sparse buffers.
 
-    ENUM_COUNT,
-
     Default = None
   };
 

@@ -514,8 +514,16 @@ void xiiSceneAction::LaunchPlayer(const char* szPlayerApp)
   xiiLog::Info("Running: {} {}", szPlayerApp, sCmd);
   m_pSceneDocument->ShowDocumentStatus(xiiFmt("Running: {} {}", szPlayerApp, sCmd));
 
+  xiiStringBuilder sPlayerApp = szPlayerApp;
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  if (sPlayerApp.IsRelativePath())
+  {
+    sPlayerApp.Prepend("./");
+  }
+#endif
+
   QProcess proc;
-  proc.startDetached(QString::fromUtf8(szPlayerApp), arguments);
+  proc.startDetached(xiiMakeQString(sPlayerApp), arguments);
 }
 
 QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_sSingleLine) const

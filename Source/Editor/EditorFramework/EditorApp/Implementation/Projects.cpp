@@ -47,7 +47,11 @@ xiiResult xiiQtEditorApp::OpenProject(const char* szProject, bool bImmediate /*=
 
 void xiiQtEditorApp::SlotQueuedOpenProject(QString sProject)
 {
-  CreateOrOpenProject(false, sProject.toUtf8().data()).IgnoreResult();
+  // Don't try to execute a queued project open if we have already shutdown the editor.
+  if (m_bIsRunning)
+  {
+    CreateOrOpenProject(false, sProject.toUtf8().data()).IgnoreResult();
+  }
 }
 
 xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0)

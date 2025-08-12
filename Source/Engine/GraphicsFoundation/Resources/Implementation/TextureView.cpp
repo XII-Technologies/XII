@@ -4,14 +4,11 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALUnorderedAccessViewFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Write),
-  XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::ReadWrite),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALTextureViewFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALTextureViewFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALTextureViewFlags::AllowMipGeneration),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
@@ -32,7 +29,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiGALTextureView::xiiGALTextureView(xiiSharedPtr<xiiGALDevice> pDevice, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALResourceView(std::move(pDevice)), m_pTexture(pTexture), m_Description(creationDescription)
 {
-  XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
+  XII_ASSERT_DEBUG(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }
 
 xiiGALTextureView::~xiiGALTextureView() = default;

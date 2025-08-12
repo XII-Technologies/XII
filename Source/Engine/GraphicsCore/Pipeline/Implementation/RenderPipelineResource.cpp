@@ -52,7 +52,7 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
     pRenderPipeline->AddPass(std::move(pPass));
   }
 
-  XII_VERIFY(pRenderPipeline->Connect(pColorSourcePass, "Output", pTargetPass, "Color0"), "Connect failed!");
+  XII_VERIFY(pRenderPipeline->Connect(pColorSourcePass, "Output", pTargetPass, "Colour0"), "Connect failed!");
 
   xiiRenderPipelineResourceDescriptor desc;
   xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(pRenderPipeline.Borrow(), desc);

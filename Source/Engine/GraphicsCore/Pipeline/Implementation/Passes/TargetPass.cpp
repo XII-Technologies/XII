@@ -8,14 +8,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTargetPass, 1, xiiRTTIDefaultAllocator<xiiTa
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Color0", m_PinColor0),
-    XII_MEMBER_PROPERTY("Color1", m_PinColor1),
-    XII_MEMBER_PROPERTY("Color2", m_PinColor2),
-    XII_MEMBER_PROPERTY("Color3", m_PinColor3),
-    XII_MEMBER_PROPERTY("Color4", m_PinColor4),
-    XII_MEMBER_PROPERTY("Color5", m_PinColor5),
-    XII_MEMBER_PROPERTY("Color6", m_PinColor6),
-    XII_MEMBER_PROPERTY("Color7", m_PinColor7),
+    XII_MEMBER_PROPERTY("Colour0", m_PinColour0),
+    XII_MEMBER_PROPERTY("Colour1", m_PinColour1),
+    XII_MEMBER_PROPERTY("Colour2", m_PinColour2),
+    XII_MEMBER_PROPERTY("Colour3", m_PinColour3),
+    XII_MEMBER_PROPERTY("Colour4", m_PinColour4),
+    XII_MEMBER_PROPERTY("Colour5", m_PinColour5),
+    XII_MEMBER_PROPERTY("Colour6", m_PinColour6),
+    XII_MEMBER_PROPERTY("Colour7", m_PinColour7),
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
   }
   XII_END_PROPERTIES;
@@ -61,7 +61,7 @@ xiiSharedPtr<xiiGALDeviceObject> xiiTargetPass::QueryResourceProvider(const xiiR
     {
       if (pPin->m_uiInputIndex == 0)
       {
-        return m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+        return m_pSwapChain->GetBackBufferTexture();
       }
     }
     else
@@ -72,8 +72,11 @@ xiiSharedPtr<xiiGALDeviceObject> xiiTargetPass::QueryResourceProvider(const xiiR
   return xiiSharedPtr<xiiGALDeviceObject>();
 }
 
-void xiiTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(renderViewContext);
+  XII_IGNORE_UNUSED(pInputs);
+  XII_IGNORE_UNUSED(pOutputs);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_TargetPass);

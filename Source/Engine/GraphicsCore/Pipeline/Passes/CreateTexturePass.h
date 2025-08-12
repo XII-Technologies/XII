@@ -22,6 +22,83 @@ public:
 
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
+public:
+  /// \brief Gets the resource dimension type (e.g., Texture2D).
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const { return m_Type; }
+
+  /// \brief Sets the resource dimension type.
+  XII_ALWAYS_INLINE void SetType(xiiEnum<xiiGALResourceDimension> type) { m_Type = type; }
+
+
+  /// \brief Gets the source format of the attachment.
+  XII_ALWAYS_INLINE xiiEnum<xiiSourceFormat> GetFormat() const { return m_Format; }
+
+  /// \brief Sets the source format of the attachment.
+  XII_ALWAYS_INLINE void SetFormat(xiiEnum<xiiSourceFormat> format) { m_Format = format; }
+
+
+  /// \brief Gets the array size or depth of the texture.
+  XII_ALWAYS_INLINE xiiUInt32 GetArraySizeOrDepth() const { return m_uiArraySizeOrDepth; }
+
+  /// \brief Sets the array size or depth of the texture.
+  XII_ALWAYS_INLINE void SetArraySizeOrDepth(xiiUInt32 sizeOrDepth) { m_uiArraySizeOrDepth = sizeOrDepth; }
+
+
+  /// \brief Gets the number of mipmap levels.
+  XII_ALWAYS_INLINE xiiUInt32 GetMipLevels() const { return m_uiMipLevels; }
+
+  /// \brief Sets the number of mipmap levels.
+  XII_ALWAYS_INLINE void SetMipLevels(xiiUInt32 mipLevels) { m_uiMipLevels = mipLevels; }
+
+
+  /// \brief Gets the sample count for multisampling.
+  XII_ALWAYS_INLINE xiiUInt32 GetSampleCount() const { return m_uiSampleCount; }
+
+  /// \brief Sets the sample count for multisampling.
+  XII_ALWAYS_INLINE void SetSampleCount(xiiUInt32 sampleCount) { m_uiSampleCount = sampleCount; }
+
+
+  /// \brief Gets the bind flags used for the attachment.
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALBindFlags> GetBindFlags() const { return m_BindFlags; }
+
+  /// \brief Sets the bind flags used for the attachment.
+  XII_ALWAYS_INLINE void SetBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags) { m_BindFlags = bindFlags; }
+
+
+  /// \brief Gets the resource usage type.
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceUsage> GetUsage() const { return m_Usage; }
+
+  /// \brief Sets the resource usage type.
+  XII_ALWAYS_INLINE void SetUsage(xiiEnum<xiiGALResourceUsage> usage) { m_Usage = usage; }
+
+
+  /// \brief Gets the CPU access flags.
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALCPUAccessFlag> GetAccessFlags() const { return m_AccessFlags; }
+
+  /// \brief Sets the CPU access flags.
+  XII_ALWAYS_INLINE void SetAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> accessFlags) { m_AccessFlags = accessFlags; }
+
+
+  /// \brief Gets miscellaneous texture flags.
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> GetMiscFlags() const { return m_MiscFlags; }
+
+  /// \brief Sets miscellaneous texture flags.
+  XII_ALWAYS_INLINE void SetMiscFlags(xiiBitflags<xiiGALMiscTextureFlags> miscFlags) { m_MiscFlags = miscFlags; }
+
+
+  /// \brief Returns whether the attachment should be cleared before use.
+  XII_ALWAYS_INLINE bool GetClear() const { return m_bClear; }
+
+  /// \brief Sets whether the attachment should be cleared before use.
+  XII_ALWAYS_INLINE void SetClear(bool bClear) { m_bClear = bClear; }
+
+
+  /// \brief Gets the clear colour used when clearing the attachment.
+  XII_ALWAYS_INLINE xiiColor GetClearColour() const { return m_ClearColour; }
+
+  /// \brief Sets the clear colour used when clearing the attachment.
+  XII_ALWAYS_INLINE void SetClearColour(const xiiColor& color) { m_ClearColour = color; }
+
 private:
   xiiRenderPipelineNodeOutputColourAttachmentPin m_PinOutput;
 
@@ -34,6 +111,9 @@ private:
   xiiEnum<xiiGALResourceUsage>        m_Usage;
   xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags;
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags;
+
+  bool     m_bClear      = false;
+  xiiColor m_ClearColour = xiiColor::Black;
 };
 
 /// \brief Allocates a depth attachment to be consumed by compute or graphics passes.
@@ -68,4 +148,8 @@ private:
   xiiEnum<xiiGALResourceUsage>        m_Usage;
   xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags;
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags;
+
+  bool     m_bClear              = false;
+  float    m_fDepthClearValue    = 1.0f;
+  xiiUInt8 m_uiStencilClearValue = 0U;
 };

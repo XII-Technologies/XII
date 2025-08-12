@@ -588,6 +588,10 @@ xiiResult xiiProcess::Execute(const xiiProcessOptions& opt, xiiInt32* out_iExitC
     {
       *out_iExitCode = WEXITSTATUS(childStatus);
     }
+    else if (WIFSIGNALED(childStatus))
+    {
+      *out_iExitCode = WTERMSIG(childStatus);
+    }
     else
     {
       *out_iExitCode = -1;
@@ -654,31 +658,42 @@ xiiResult xiiProcess::ResumeSuspended()
 
 xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
 {
-  xiiInt32 childStatus = 0;
-  XII_SCOPE_EXIT(m_pImpl->StopStreamWatcher());
+  if (m_pImpl->m_exitCodeAvailable)
+  {
+    return XII_SUCCESS;
+  }
 
   if (timeout.IsZero())
   {
-    if (waitpid(m_pImpl->m_childPid, &childStatus, 0) < 0)
+    xiiInt32 childStatus = 0;
+    xiiInt32 waitResult  = waitpid(m_pImpl->m_childPid, &childStatus, 0);
+    if (waitResult > 0)
     {
-      return XII_FAILURE;
+      m_iExitCode                  = WEXITSTATUS(childStatus);
+      m_pImpl->m_exitCodeAvailable = true;
+
+      m_pImpl->StopStreamWatcher();
+
+      return XII_SUCCESS;
     }
+    return XII_FAILURE;
   }
   else
   {
-    xiiInt32 waitResult = 0;
-    xiiTime  startWait  = xiiTime::Now();
+    xiiTime startWait = xiiTime::Now();
     while (true)
     {
-      waitResult = waitpid(m_pImpl->m_childPid, &childStatus, WNOHANG);
-      if (waitResult < 0)
+      const xiiProcessState state = GetState();
+      switch (state)
       {
-        return XII_FAILURE;
+        case xiiProcessState::NotStarted:
+          return XII_FAILURE;
+        case xiiProcessState::Running:
+          break;
+        case xiiProcessState::Finished:
+          return XII_SUCCESS;
       }
-      if (waitResult > 0)
-      {
-        break;
-      }
+
       xiiTime timeSpent = xiiTime::Now() - startWait;
       if (timeSpent > timeout)
       {
@@ -687,17 +702,6 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
       xiiThreadUtils::Sleep(xiiMath::Min(xiiTime::MakeFromMilliseconds(100.0), timeout - timeSpent));
     }
   }
-
-  if (WIFEXITED(childStatus))
-  {
-    m_iExitCode = WEXITSTATUS(childStatus);
-  }
-  else
-  {
-    m_iExitCode = -1;
-  }
-  m_pImpl->m_exitCodeAvailable = true;
-
   return XII_SUCCESS;
 }
 

@@ -45,6 +45,13 @@ struct xiiGameApplicationExecutionEvent
   Type m_Type;
 };
 
+enum class xiiGameUpdateMode
+{
+  Skip,                 ///< Do not update or render anything.
+  Render,               ///< Only render, no input update.
+  UpdateInputAndRender, ///< Update input and render.
+};
+
 // TODO: Document this and update xiiGameApplication comments
 
 class XII_CORE_DLL xiiGameApplicationBase : public xiiApplication
@@ -249,7 +256,7 @@ public:
   xiiTime GetFrameTime() const { return m_FrameTime; }
 
 protected:
-  virtual bool IsGameUpdateEnabled() const { return true; }
+  virtual xiiGameUpdateMode GetGameUpdateMode() const { return xiiGameUpdateMode::UpdateInputAndRender; }
 
   virtual void Run_InputUpdate();
   virtual bool Run_ProcessApplicationInput();

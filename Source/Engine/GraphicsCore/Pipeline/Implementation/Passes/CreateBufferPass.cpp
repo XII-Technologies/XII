@@ -76,4 +76,7 @@ xiiResult xiiCreateBufferPass::GetResourceDescriptions(const xiiView& view, cons
 
 void xiiCreateBufferPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(renderViewContext);
+  XII_IGNORE_UNUSED(pInputs);
+  XII_IGNORE_UNUSED(pOutputs);
 }

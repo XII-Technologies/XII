@@ -118,7 +118,7 @@ void xiiRenderingSetup::AddColorAttachment(const xiiSharedPtr<xiiGALTextureView>
   attachment.m_LoadOp                  = loadOp;
   attachment.m_StoreOp                 = storeOp;
   attachment.m_SubpassState            = subpassState;
-  attachment.m_ClearValue.m_ClearColor = clearColor;
+  attachment.m_ClearValue.m_ClearColour = clearColor;
 }
 
 void xiiRenderingSetup::AddDepthStencilAttachment(const xiiSharedPtr<xiiGALTextureView>& pView, xiiEnum<xiiGALAttachmentLoadOperation> loadOp, xiiEnum<xiiGALAttachmentStoreOperation> storeOp, xiiEnum<xiiGALAttachmentLoadOperation> stencilLoadOp, xiiEnum<xiiGALAttachmentStoreOperation> stencilStoreOp, xiiBitflags<xiiGALResourceStateFlags> subpassState, float fDepthClear, xiiUInt8 uiStencilClear)

@@ -21,7 +21,7 @@ This option has to be specified.",
                                       "");
 
 xiiCommandLineOptionPath opt_Project("_ShaderCompiler", "-project", "\
-Path to the folder of the project, for which shaders should be compiled.",
+Absolute path to the folder of the project, for which shaders should be compiled.",
                                      "");
 
 xiiCommandLineOptionString opt_Platform("_ShaderCompiler", "-platform", "The name of the platform for which to compile the shaders.\n\
@@ -108,6 +108,10 @@ xiiResult xiiShaderCompilerApplication::BeforeCoreSystemsStartup()
 
 void xiiShaderCompilerApplication::AfterCoreSystemsStartup()
 {
+  xiiSystemInformation info      = xiiSystemInformation::Get();
+  const xiiInt32       iCpuCores = info.GetCPUCoreCount();
+  xiiTaskSystem::SetWorkerThreadCount(iCpuCores);
+
   ExecuteInitFunctions();
 
   xiiStartup::StartupHighLevelSystems();
@@ -133,6 +137,7 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
       return;
 
     xiiHybridArray<xiiGALPermutationVariable, 16> permutationVariables;
+    xiiTokenizedFileCache                         fileCache;
 
     for (xiiUInt32 uiPermutationIndex = uiIndex; uiPermutationIndex < uiCount; ++uiPermutationIndex)
     {
@@ -143,7 +148,7 @@ xiiResult xiiShaderCompilerApplication::CompileShader(xiiStringView sShaderFile)
       m_PermutationGenerator.GetPermutation(uiPermutationIndex, permutationVariables);
 
       xiiGALShaderCompiler shaderCompiler;
-      if (shaderCompiler.CompileShaderPermutationForPlatforms(sShaderFile, permutationVariables, xiiLog::GetThreadLocalLogSystem(), m_sPlatforms).Failed())
+      if (shaderCompiler.CompileShaderPermutationForPlatforms(sShaderFile, permutationVariables, xiiLog::GetThreadLocalLogSystem(), m_sPlatforms, &fileCache).Failed())
       {
         bContinue = false;
         return;
@@ -276,42 +281,70 @@ xiiApplication::Execution xiiShaderCompilerApplication::Run()
 
   files.Split(false, allFiles, ";");
 
-  for (const xiiStringView& shader : allFiles)
+  xiiUInt32 uiErrors = 0;
+  for (const xiiStringView& sEntry : allFiles)
   {
-    xiiStringBuilder file = shader;
-    xiiStringBuilder relPath, absPath;
+    xiiStringBuilder sFileOrFolder;
+    // Relative paths are always relative to the project.
+    if (xiiPathUtils::IsRelativePath(sEntry))
+    {
+      sFileOrFolder = m_sAppProjectPath;
+      sFileOrFolder.AppendPath(sEntry);
+    }
+    else
+    {
+      sFileOrFolder = sEntry;
+    }
 
-    if (xiiFileSystem::ResolvePath(file, &absPath, &relPath).Succeeded())
+    xiiFileStats stats;
+    if (xiiOSFile::GetFileStats(sFileOrFolder, stats).Failed())
+    {
+      xiiLog::Error("Couldn't find path '{0}'.", sFileOrFolder);
+      ++uiErrors;
+      continue;
+    }
+
+    xiiStringBuilder relPath, absPath;
+    if (stats.m_bIsDirectory)
+    {
+      xiiFileSystemIterator fsIt;
+      xiiStringBuilder      fullPath;
+      for (fsIt.StartSearch(sFileOrFolder, xiiFileSystemIteratorFlags::ReportFilesRecursive); fsIt.IsValid(); fsIt.Next())
+      {
+        if (xiiPathUtils::HasExtension(fsIt.GetStats().m_sName, "xiiShader"))
+        {
+          fsIt.GetStats().GetFullPath(fullPath);
+          if (xiiFileSystem::ResolvePath(fullPath, &absPath, &relPath).Succeeded())
+          {
+            shadersToCompile.PushBack(relPath);
+          }
+          else
+          {
+            xiiLog::Error("Couldn't resolve path '{0}'.", fullPath);
+            ++uiErrors;
+          }
+        }
+      }
+    }
+    else if (xiiFileSystem::ResolvePath(sFileOrFolder, &absPath, &relPath).Succeeded())
     {
       if (absPath.HasExtension("xiiShader"))
       {
         shadersToCompile.PushBack(relPath);
       }
-      else if (xiiOSFile::ExistsDirectory(absPath))
+      else
       {
-        xiiFileSystemIterator fsIt;
-        for (fsIt.StartSearch(absPath, xiiFileSystemIteratorFlags::ReportFilesRecursive); fsIt.IsValid(); fsIt.Next())
-        {
-          if (xiiPathUtils::HasExtension(fsIt.GetStats().m_sName, "xiiShader"))
-          {
-            fsIt.GetStats().GetFullPath(relPath);
-
-            if (relPath.MakeRelativeTo(absPath).Succeeded())
-            {
-              shadersToCompile.PushBack(relPath);
-            }
-          }
-        }
+        xiiLog::Error("File '{0}' is not a shader.", absPath);
+        ++uiErrors;
       }
     }
     else
     {
-      xiiLog::Error("Failed to resolve path: '{0}'", file);
+      xiiLog::Error("Couldn't resolve path '{0}'.", sFileOrFolder);
     }
   }
 
-  xiiUInt32 uiErrors = 0U;
-  for (const auto& shader : shadersToCompile)
+  for (const xiiString& shader : shadersToCompile)
   {
     if (CompileShader(shader).Failed())
     {

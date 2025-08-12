@@ -104,4 +104,7 @@ xiiResult xiiCreateSamplerPass::GetResourceDescriptions(const xiiView& view, con
 
 void xiiCreateSamplerPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(renderViewContext);
+  XII_IGNORE_UNUSED(pInputs);
+  XII_IGNORE_UNUSED(pOutputs);
 }
