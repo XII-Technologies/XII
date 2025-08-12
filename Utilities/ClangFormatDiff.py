@@ -42,7 +42,7 @@ def main():
                                    'introduced.')
   parser.add_argument('-i', action='store_true', default=False,
                       help='apply edits to files instead of displaying a diff')
-  parser.add_argument('-p', metavar='NUM', default=0,
+  parser.add_argument('-p', metavar='NUM', type=int, default=0,
                       help='strip the smallest prefix containing P slashes')
   parser.add_argument('-regex', metavar='PATTERN', default=None,
                       help='custom pattern selecting file paths to reformat '
