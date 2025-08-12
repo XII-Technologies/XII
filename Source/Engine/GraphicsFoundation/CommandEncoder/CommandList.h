@@ -69,8 +69,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStateTransitionType
   enum Enum : StorageType
   {
     Immediate = 0U, ///< Perform the state transition immediately.
-    Begin,         ///< Begin split barrier. This mode only has effect in Direct3D12 backend, and corresponds to [D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY](https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_resource_barrier_flags) flag. See https://docs.microsoft.com/en-us/windows/desktop/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#split-barriers. In other implementations, begin-split barriers are ignored.
-    End,           ///< End split barrier. This mode only has effect in Direct3D12 backend, and corresponds to [D3D12_RESOURCE_BARRIER_FLAG_END_ONLY](https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_resource_barrier_flags) flag. See https://docs.microsoft.com/en-us/windows/desktop/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#split-barriers. In other backends, this mode is similar to xiiGALStateTransitionType::Immediate.
+    Begin,          ///< Begin split barrier. This mode only has effect in Direct3D12 backend, and corresponds to [D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY](https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_resource_barrier_flags) flag. See https://docs.microsoft.com/en-us/windows/desktop/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#split-barriers. In other implementations, begin-split barriers are ignored.
+    End,            ///< End split barrier. This mode only has effect in Direct3D12 backend, and corresponds to [D3D12_RESOURCE_BARRIER_FLAG_END_ONLY](https://docs.microsoft.com/en-us/windows/desktop/api/d3d12/ne-d3d12-d3d12_resource_barrier_flags) flag. See https://docs.microsoft.com/en-us/windows/desktop/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#split-barriers. In other backends, this mode is similar to xiiGALStateTransitionType::Immediate.
 
     ENUM_COUNT,
 
