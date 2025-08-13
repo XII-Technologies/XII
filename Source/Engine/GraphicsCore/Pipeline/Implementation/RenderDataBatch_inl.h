@@ -18,17 +18,9 @@ XII_ALWAYS_INLINE xiiRenderDataBatch::Iterator<T>::operator const T*() const
 }
 
 template <typename T>
-XII_FORCE_INLINE void xiiRenderDataBatch::Iterator<T>::Next()
+XII_ALWAYS_INLINE void xiiRenderDataBatch::Iterator<T>::Next()
 {
   ++m_pCurrent;
-
-  if (m_Filter.IsValid())
-  {
-    while (m_pCurrent < m_pEnd && m_Filter(m_pCurrent->m_pRenderData))
-    {
-      ++m_pCurrent;
-    }
-  }
 }
 
 template <typename T>
@@ -44,20 +36,9 @@ XII_ALWAYS_INLINE void xiiRenderDataBatch::Iterator<T>::operator++()
 }
 
 template <typename T>
-XII_FORCE_INLINE xiiRenderDataBatch::Iterator<T>::Iterator(const SortableRenderData* pStart, const SortableRenderData* pEnd, Filter filter) :
-  m_Filter(filter)
+XII_ALWAYS_INLINE xiiRenderDataBatch::Iterator<T>::Iterator(const SortableRenderData* pStart, const SortableRenderData* pEnd)
 {
-  const SortableRenderData* pCurrent = pStart;
-
-  if (m_Filter.IsValid())
-  {
-    while (pCurrent < pEnd && m_Filter(pCurrent->m_pRenderData))
-    {
-      ++pCurrent;
-    }
-  }
-
-  m_pCurrent = pCurrent;
+  m_pCurrent = pStart;
   m_pEnd     = pEnd;
 }
 
@@ -67,17 +48,16 @@ XII_ALWAYS_INLINE xiiUInt32 xiiRenderDataBatch::GetCount() const
 }
 
 template <typename T>
-XII_FORCE_INLINE const T* xiiRenderDataBatch::GetFirstData() const
+XII_ALWAYS_INLINE const T* xiiRenderDataBatch::GetFirstData() const
 {
-  auto it = Iterator<T>(m_Data.GetPtr(), m_Data.GetPtr() + m_Data.GetCount(), m_Filter);
-  return it.IsValid() ? (const T*)it : nullptr;
+  return m_Data.IsEmpty() == false ? xiiStaticCast<const T*>(m_Data.GetPtr()->m_pRenderData) : nullptr;
 }
 
 template <typename T>
-XII_FORCE_INLINE xiiRenderDataBatch::Iterator<T> xiiRenderDataBatch::GetIterator(xiiUInt32 uiStartIndex, xiiUInt32 uiCount) const
+XII_ALWAYS_INLINE xiiRenderDataBatch::Iterator<T> xiiRenderDataBatch::GetIterator(xiiUInt32 uiStartIndex, xiiUInt32 uiCount) const
 {
   xiiUInt32 uiEndIndex = xiiMath::Min(uiStartIndex + uiCount, m_Data.GetCount());
-  return Iterator<T>(m_Data.GetPtr() + uiStartIndex, m_Data.GetPtr() + uiEndIndex, m_Filter);
+  return Iterator<T>(m_Data.GetPtr() + uiStartIndex, m_Data.GetPtr() + uiEndIndex);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -87,10 +67,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiRenderDataBatchList::GetBatchCount() const
   return m_Batches.GetCount();
 }
 
-XII_FORCE_INLINE xiiRenderDataBatch xiiRenderDataBatchList::GetBatch(xiiUInt32 uiIndex) const
+XII_ALWAYS_INLINE const xiiRenderDataBatch& xiiRenderDataBatchList::GetBatch(xiiUInt32 uiIndex) const
 {
-  xiiRenderDataBatch batch = m_Batches[uiIndex];
-  batch.m_Filter           = m_Filter;
-
-  return batch;
+  return m_Batches[uiIndex];
 }

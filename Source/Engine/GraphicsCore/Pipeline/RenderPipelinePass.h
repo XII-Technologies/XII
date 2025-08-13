@@ -353,7 +353,7 @@ public:
 
   virtual ~xiiGraphicsPipelinePass();
 
-  void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
+  void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category);
 };
 
 class XII_GRAPHICSCORE_DLL xiiComputePipelinePass : public xiiRenderPipelinePassBase
