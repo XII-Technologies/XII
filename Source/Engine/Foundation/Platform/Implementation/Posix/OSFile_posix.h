@@ -340,8 +340,12 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
   out_Stats.m_uiFileSize   = tempStat.st_size;
   out_Stats.m_sParentPath  = sFileOrFolder;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName                = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
+  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
+#  ifdef __USE_XOPEN2K8
+  out_Stats.m_LastModificationTime = xiiTimestamp::MakeFromInt(tempStat.st_mtim.tv_sec * 1000000000ull + tempStat.st_mtim.tv_nsec, xiiSIUnitOfTime::Nanosecond);
+#  else
   out_Stats.m_LastModificationTime = xiiTimestamp::MakeFromInt(tempStat.st_mtime, xiiSIUnitOfTime::Second);
+#  endif
 
   return XII_SUCCESS;
 }
@@ -510,11 +514,15 @@ namespace
     struct stat fileStat = {};
     stat(absFileName.GetData(), &fileStat);
 
-    curFile.m_uiFileSize           = fileStat.st_size;
-    curFile.m_bIsDirectory         = hCurrentFile->d_type == DT_DIR;
-    curFile.m_sParentPath          = curPath;
-    curFile.m_sName                = hCurrentFile->d_name;
+    curFile.m_uiFileSize   = fileStat.st_size;
+    curFile.m_bIsDirectory = hCurrentFile->d_type == DT_DIR;
+    curFile.m_sParentPath  = curPath;
+    curFile.m_sName        = hCurrentFile->d_name;
+#  ifdef __USE_XOPEN2K8
+    curFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(fileStat.st_mtim.tv_sec * 1000000000ull + fileStat.st_mtim.tv_nsec, xiiSIUnitOfTime::Nanosecond);
+#  else
     curFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(fileStat.st_mtime, xiiSIUnitOfTime::Second);
+#  endif
 
     return XII_SUCCESS;
   }
