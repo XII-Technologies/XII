@@ -156,7 +156,7 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
     {
       for (auto& data : msg.m_ExtractedRenderData)
       {
-        extractedRenderData.AddRenderData(data.m_pRenderData, xiiRenderData::Category(data.m_uiCategory));
+        extractedRenderData.AddRenderData(data.m_pRenderData, data.m_Category);
       }
     }
 
@@ -226,7 +226,7 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
           {
             auto& newCacheEntry              = newCacheEntries.ExpandAndGetRef();
             newCacheEntry.m_pRenderData      = msg.m_ExtractedRenderData[uiPartIndex].m_pRenderData;
-            newCacheEntry.m_uiCategory       = msg.m_ExtractedRenderData[uiPartIndex].m_uiCategory;
+            newCacheEntry.m_uiCategory       = msg.m_ExtractedRenderData[uiPartIndex].m_Category.m_uiValue;
             newCacheEntry.m_uiComponentIndex = static_cast<xiiUInt16>(uiComponentIndex);
             newCacheEntry.m_uiPartIndex      = static_cast<xiiUInt16>(uiPartIndex);
           }

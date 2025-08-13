@@ -39,6 +39,9 @@ public:
   /// \brief Captures the current frame from the specified swap chain and command list.
   void Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSharedPtr<xiiGALCommandList> pCommandList, xiiUInt32 uiFrameIndex);
 
+  /// \brief Waits on the capture fence until the completed value is reached.
+  void WaitForCompletedValue();
+
   /// \brief Recycles a staging texture that is no longer needed.
   void RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture);
 

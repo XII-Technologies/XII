@@ -975,6 +975,11 @@ void xiiRenderPipeline::ExtractData(const xiiView& view)
     }
   }
 
+  for (auto& processor : m_RenderDataProcessors)
+  {
+    processor(data);
+  }
+
   data.SortAndBatch();
 
   for (auto& pExtractor : m_Extractors)
@@ -1376,10 +1381,17 @@ const xiiExtractedRenderData& xiiRenderPipeline::GetRenderData() const
   return m_Data[xiiRenderWorld::GetDataIndexForRendering()];
 }
 
-xiiRenderDataBatchList xiiRenderPipeline::GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter) const
+xiiRenderDataBatchList xiiRenderPipeline::GetRenderDataBatchesWithCategory(xiiRenderData::Category category) const
 {
   auto& data = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
-  return data.GetRenderDataBatchesWithCategory(category, filter);
+  return data.GetRenderDataBatchesWithCategory(category);
+}
+
+xiiUInt32 xiiRenderPipeline::AddRenderDataProcessor(RenderDataProcessor processor)
+{
+  xiiUInt32 uiIndex = m_RenderDataProcessors.GetCount();
+  m_RenderDataProcessors.PushBack(processor);
+  return uiIndex;
 }
 
 void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)

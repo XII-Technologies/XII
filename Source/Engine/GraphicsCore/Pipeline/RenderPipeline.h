@@ -51,7 +51,10 @@ public:
   xiiExtractor* GetExtractorByName(const xiiStringView& sExtractorName);
 
   const xiiExtractedRenderData& GetRenderData() const;
-  xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
+  xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(xiiRenderData::Category category) const;
+
+  using RenderDataProcessor = xiiDelegate<void(xiiExtractedRenderData&)>;
+  xiiUInt32 AddRenderDataProcessor(RenderDataProcessor processor);
 
   /// \brief Creates a DGML graph of all passes and resources. Can be used to verify that no accidental temporary resources are created due to poorly constructed pipelines or errors in code.
   void CreateDgmlGraph(xiiDGMLGraph& ref_graph);
@@ -145,6 +148,9 @@ private: // Member data
   // Data Providers
   mutable xiiDynamicArray<xiiUniquePtr<xiiFrameDataProviderBase>> m_DataProviders;
   mutable xiiHashTable<const xiiRTTI*, xiiUInt32>                 m_TypeToDataProviderIndex;
+
+  // Processors
+  xiiDynamicArray<RenderDataProcessor> m_RenderDataProcessors;
 
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 

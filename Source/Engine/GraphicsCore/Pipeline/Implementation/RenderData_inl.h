@@ -59,6 +59,8 @@ static T* xiiCreateRenderDataForThisFrame(const xiiGameObject* pOwner)
 
   if (pOwner != nullptr)
   {
+    pRenderData->m_Flags.AddOrRemove(xiiRenderData::Flags::Dynamic, pOwner->IsDynamic());
+
     pRenderData->m_hOwner = pOwner->GetHandle();
   }
 

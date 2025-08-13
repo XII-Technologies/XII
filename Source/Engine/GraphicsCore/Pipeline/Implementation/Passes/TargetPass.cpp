@@ -36,11 +36,6 @@ xiiResult xiiTargetPass::GetResourceDescriptions(const xiiView& view, const xiiA
   XII_IGNORE_UNUSED(pInputs);
   XII_IGNORE_UNUSED(pOutputs);
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiTargetPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
-{
   m_pSwapChain    = view.GetSwapChain();
   m_RenderTargets = view.GetRenderTargets();
 

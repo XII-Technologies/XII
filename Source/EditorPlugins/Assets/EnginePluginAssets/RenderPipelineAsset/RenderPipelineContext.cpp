@@ -109,5 +109,5 @@ xiiStatus xiiRenderPipelineContext::ExportDocument(const xiiExportDocumentMsgToE
   if (file.Close().Failed())
     return xiiStatus(xiiFmt("Writing to '{}' failed.", pMsg->m_sOutputFile));
 
-  return XII_SUCCESS;
+  return xiiStatus(XII_SUCCESS);
 }

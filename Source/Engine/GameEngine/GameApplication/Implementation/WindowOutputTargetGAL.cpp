@@ -33,37 +33,33 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
   m_Size        = desc.m_pWindow->GetClientAreaSize();
   m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice           = xiiGALDevice::GetDefaultDevice();
+  const bool                 bSwapChainExisted = m_pSwapChain != nullptr;
 
-  if (m_pSwapChain)
+  if (bSwapChainExisted)
   {
     m_pSwapChain->SetPresentMode(m_PresentMode);
-    m_pSwapChain->Resize(m_Size).IgnoreResult();
+    m_pSwapChain->Resize(m_Size).AssertSuccess("Failed to resize swap chain!");
 
     if (m_OnSwapChainChanged.IsValid())
     {
       // The swapchain may have a different size than the window advertised, e.g. if the window has been resized further in the meantime.
-      m_OnSwapChainChanged(m_pSwapChain, m_pSwapChain->GetCurrentSize());
+      xiiSizeU32 currentSize = m_pSwapChain->GetCurrentSize();
+
+      m_OnSwapChainChanged(m_pSwapChain, currentSize);
     }
   }
   else
   {
     m_pSwapChain = pDevice->CreateSwapChain(m_CurrentDesc);
 
-    if (m_pSwapChain)
-    {
-      m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
-
-      m_pSwapChain->SetPresentMode(m_PresentMode);
-    }
+    m_pSwapChain->SetPresentMode(m_PresentMode);
   }
 }
 
 void xiiWindowOutputTargetGAL::AcquireImage()
 {
-  // For now, the actual acquire call is done during xiiGALDevice::BeginFrame by calling xiiGALDevice::EnqueueFrameSwapChain before the render loop.
   // This call is only used to recreate the swapchain at a safe location.
-
   // Only re-create the swapchain if somebody is listening to changes.
   if (m_OnSwapChainChanged.IsValid())
   {
@@ -80,7 +76,7 @@ void xiiWindowOutputTargetGAL::AcquireImage()
 
 void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
 {
-  if (!m_pSwapChain)
+  if (m_pSwapChain == nullptr)
     return;
 
   m_pSwapChain->SetPresentMode(bEnableVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
@@ -89,7 +85,7 @@ void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
 
 xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
-  if (!m_pSwapChain)
+  if (m_pSwapChain == nullptr)
   {
     xiiLog::Error("No swapchain available for image capture.");
     return XII_FAILURE;
@@ -103,79 +99,77 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   pCommandList->Begin();
   {
-    m_pImageCapture->Capture(m_pSwapChain, pCommandList, m_uiCurrentFrame);
-
-    ++m_uiCurrentFrame;
+    m_pImageCapture->Capture(m_pSwapChain, pCommandList, m_uiCurrentFrame++);
   }
   pCommandList->End();
 
   pGraphicsQueue->Submit(pCommandList);
 
-  if (m_pImageCapture)
+  m_pImageCapture->WaitForCompletedValue();
+
+  while (auto capture = m_pImageCapture->GetCapture())
   {
-    while (auto capture = m_pImageCapture->GetCapture())
+    const auto& textureDescription = capture.m_pTexture->GetDescription();
+
+    xiiDynamicArray<xiiUInt8> backbufferData;
+    backbufferData.SetCountUninitialized(textureDescription.m_Size.width * textureDescription.m_Size.height * 4);
+
+    const xiiUInt32 uiStride      = 4 * textureDescription.m_Size.width;
+    const xiiUInt32 uiDepthStride = 4 * textureDescription.m_Size.width * textureDescription.m_Size.height;
+
+    pCommandList->Begin();
     {
-      const auto& textureDescription = capture.m_pTexture->GetDescription();
+      xiiGALTextureMipLevelData      sourceSubResource;
+      xiiGALMappedTextureSubresource mappedSubResource;
+      pCommandList->MapTextureSubresource(capture.m_pTexture, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).IgnoreResult();
 
-      xiiDynamicArray<xiiUInt8> backbufferData;
-      backbufferData.SetCountUninitialized(textureDescription.m_Size.width * textureDescription.m_Size.height * 4);
+      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
-      const xiiUInt32 uiStride      = 4 * textureDescription.m_Size.width;
-      const xiiUInt32 uiDepthStride = 4 * textureDescription.m_Size.width * textureDescription.m_Size.height;
-
-      pCommandList->Begin();
+      if (mappedSubResource.m_pData)
       {
-        xiiGALTextureMipLevelData      sourceSubResource;
-        xiiGALMappedTextureSubresource mappedSubResource;
-        pCommandList->MapTextureSubresource(capture.m_pTexture, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).IgnoreResult();
-
-        const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-        if (mappedSubResource.m_pData)
+        /// \todo Support depth pitch.
+        if (mappedSubResource.m_uiStride == uiStride)
         {
-          /// \todo Support depth pitch.
-          if (mappedSubResource.m_uiStride == uiStride)
-          {
-            const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+          const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
 
-            memcpy(backbufferData.GetData(), mappedSubResource.m_pData, uiMemorySize);
-          }
-          else
-          {
-            // Copy row by row.
-            const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-            for (xiiUInt32 y = 0; y < uiHeight; ++y)
-            {
-              const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-              void*       pDestination = xiiMemoryUtils::AddByteOffset(backbufferData.GetData(), y * uiStride);
-
-              memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
-            }
-          }
+          memcpy(backbufferData.GetData(), mappedSubResource.m_pData, uiMemorySize);
         }
         else
         {
-          xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
+          // Copy row by row.
+          const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+
+          for (xiiUInt32 y = 0; y < uiHeight; ++y)
+          {
+            const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
+            void*       pDestination = xiiMemoryUtils::AddByteOffset(backbufferData.GetData(), y * uiStride);
+
+            memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
+          }
         }
-
-        pCommandList->UnmapTextureSubresource(capture.m_pTexture, sourceSubResource).IgnoreResult();
       }
-      pCommandList->End();
+      else
+      {
+        xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
+      }
 
-      pGraphicsQueue->Submit(pCommandList);
-
-      m_pImageCapture->RecycleStagingTexture(std::move(capture.m_pTexture));
-      xiiImageHeader header;
-      header.SetWidth(textureDescription.m_Size.width);
-      header.SetHeight(textureDescription.m_Size.height);
-      header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(textureDescription.m_Format, true));
-      out_image.ResetAndAlloc(header);
-      xiiUInt8* pData = out_image.GetPixelPointer<xiiUInt8>();
-
-      xiiMemoryUtils::Copy(pData, backbufferData.GetData(), backbufferData.GetCount());
+      pCommandList->UnmapTextureSubresource(capture.m_pTexture, sourceSubResource).IgnoreResult();
     }
+    pCommandList->End();
+
+    pGraphicsQueue->Submit(pCommandList);
+
+    m_pImageCapture->RecycleStagingTexture(std::move(capture.m_pTexture));
+    xiiImageHeader header;
+    header.SetWidth(textureDescription.m_Size.width);
+    header.SetHeight(textureDescription.m_Size.height);
+    header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(textureDescription.m_Format, true));
+    out_image.ResetAndAlloc(header);
+    xiiUInt8* pData = out_image.GetPixelPointer<xiiUInt8>();
+
+    xiiMemoryUtils::Copy(pData, backbufferData.GetData(), backbufferData.GetCount());
   }
+
   return XII_SUCCESS;
 }
 

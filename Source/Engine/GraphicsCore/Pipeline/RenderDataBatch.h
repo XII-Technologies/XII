@@ -14,10 +14,7 @@ private:
   };
 
 public:
-  // XII_DECLARE_POD_TYPE(); // xiiDelegate has a destructor and therefore xiiRenderDataBatch can't be POD
-
-  /// \brief This function should return true if the given render data should be filtered and not rendered.
-  using Filter = xiiDelegate<bool(const xiiRenderData*)>;
+  XII_DECLARE_POD_TYPE();
 
   template <typename T>
   class Iterator
@@ -37,9 +34,8 @@ public:
   private:
     friend class xiiRenderDataBatch;
 
-    Iterator(const SortableRenderData* pStart, const SortableRenderData* pEnd, Filter filter);
+    Iterator(const SortableRenderData* pStart, const SortableRenderData* pEnd);
 
-    Filter                    m_Filter;
     const SortableRenderData* m_pCurrent = nullptr;
     const SortableRenderData* m_pEnd     = nullptr;
   };
@@ -56,7 +52,6 @@ private:
   friend class xiiExtractedRenderData;
   friend class xiiRenderDataBatchList;
 
-  Filter                          m_Filter;
   xiiArrayPtr<SortableRenderData> m_Data;
 };
 
@@ -65,12 +60,11 @@ class XII_GRAPHICSCORE_DLL xiiRenderDataBatchList
 public:
   xiiUInt32 GetBatchCount() const;
 
-  xiiRenderDataBatch GetBatch(xiiUInt32 uiIndex) const;
+  const xiiRenderDataBatch& GetBatch(xiiUInt32 uiIndex) const;
 
 private:
   friend class xiiExtractedRenderData;
 
-  xiiRenderDataBatch::Filter            m_Filter;
   xiiArrayPtr<const xiiRenderDataBatch> m_Batches;
 };
 

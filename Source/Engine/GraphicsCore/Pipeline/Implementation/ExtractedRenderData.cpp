@@ -79,18 +79,26 @@ void xiiExtractedRenderData::Clear()
   m_FrameData.Clear();
 }
 
-xiiRenderDataBatchList xiiExtractedRenderData::GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter) const
+xiiRenderDataBatchList xiiExtractedRenderData::GetRenderDataBatchesWithCategory(xiiRenderData::Category category) const
 {
   if (category.m_uiValue < m_DataPerCategory.GetCount())
   {
     xiiRenderDataBatchList list;
     list.m_Batches = m_DataPerCategory[category.m_uiValue].m_Batches;
-    list.m_Filter  = filter;
 
     return list;
   }
 
   return xiiRenderDataBatchList();
+}
+
+xiiArrayPtr<const xiiRenderDataBatch::SortableRenderData> xiiExtractedRenderData::GetRawRenderDataWithCategory(xiiRenderData::Category category) const
+{
+  if (category.m_uiValue < m_DataPerCategory.GetCount())
+  {
+    return m_DataPerCategory[category.m_uiValue].m_SortableRenderData;
+  }
+  return {};
 }
 
 const xiiRenderData* xiiExtractedRenderData::GetFrameData(const xiiRTTI* pRtti) const

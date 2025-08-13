@@ -36,7 +36,9 @@ public:
 
   void Clear();
 
-  xiiRenderDataBatchList GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
+  xiiRenderDataBatchList GetRenderDataBatchesWithCategory(xiiRenderData::Category category) const;
+
+  xiiArrayPtr<const xiiRenderDataBatch::SortableRenderData> GetRawRenderDataWithCategory(xiiRenderData::Category category) const;
 
   template <typename T>
   XII_ALWAYS_INLINE const T* GetFrameData() const
@@ -61,6 +63,6 @@ private:
   xiiDebugRendererContext m_WorldDebugContext;
   xiiDebugRendererContext m_ViewDebugContext;
 
-  xiiHybridArray<DataPerCategory, 16>      m_DataPerCategory;
-  xiiHybridArray<const xiiRenderData*, 16> m_FrameData;
+  xiiHybridArray<DataPerCategory, 32U>      m_DataPerCategory;
+  xiiHybridArray<const xiiRenderData*, 16U> m_FrameData;
 };

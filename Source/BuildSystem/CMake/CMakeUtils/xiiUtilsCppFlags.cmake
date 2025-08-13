@@ -184,7 +184,8 @@ endfunction()
 # #####################################
 function(xii_set_build_flags_gcc TARGET_NAME)
   # Wno-enum-compare removes all annoying enum cast warnings
-  target_compile_options(${TARGET_NAME} PRIVATE -fPIC -Wno-enum-compare -gdwarf-3 -pthread)
+  # -fno-gnu-unique prevents symbols like static inline or static templates to be marked with STB_GNU_UNIQUE, preventing the owning dll from being unloaded.
+  target_compile_options(${TARGET_NAME} PRIVATE -fPIC -Wno-enum-compare -gdwarf-3 -pthread -fno-gnu-unique)
 
   # Dynamic linking will fail without fPIC (plugins)
   # gdwarf-3 will use the old debug info which is compatible with older gdb versions.

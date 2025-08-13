@@ -62,7 +62,7 @@ void xiiGALImageCapture::Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSh
   XII_ASSERT_DEV(pSwapChain != nullptr, "Invalid swapchain provided.");
   XII_ASSERT_DEV(pCommandList != nullptr, "Invalid commandlist provided.");
 
-  const auto& swapchainDescription = pSwapChain->GetDescription();
+  const xiiGALSwapChainCreationDescription& swapchainDescription = pSwapChain->GetDescription();
 
   xiiGALScopedDebugGroup debugGroup(pCommandList, "Image Capture");
 
@@ -78,7 +78,7 @@ void xiiGALImageCapture::Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSh
 
       m_AvailableTextures.PopBack();
 
-      const auto& textureDescription = pStagingTexture->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pStagingTexture->GetDescription();
 
       // Check if the staging texture matches the back buffer texture description.
       if (textureDescription.m_Size != swapchainDescription.m_Resolution || textureDescription.m_Format != swapchainDescription.m_ColorBufferFormat)
@@ -101,6 +101,7 @@ void xiiGALImageCapture::Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSh
     stagingTextureDescription.m_uiSampleCount      = 1U;
     stagingTextureDescription.m_BindFlags          = xiiGALBindFlags::None;
     stagingTextureDescription.m_Usage              = xiiGALResourceUsage::Staging;
+    stagingTextureDescription.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
     pStagingTexture                                = m_pDevice->CreateTexture(stagingTextureDescription);
 
     pStagingTexture->SetDebugName("Image Capture Staging Texture");
@@ -116,10 +117,13 @@ void xiiGALImageCapture::Capture(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSh
   {
     XII_LOCK(m_PendingTexturesMutex);
 
-    m_PendingTextures.PushBack(PendingTextureDescription(std::move(pStagingTexture), uiFrameIndex, m_uiCurrentFenceValue));
+    m_PendingTextures.PushBack(PendingTextureDescription(std::move(pStagingTexture), uiFrameIndex, m_uiCurrentFenceValue++));
   }
+}
 
-  ++m_uiCurrentFenceValue;
+void xiiGALImageCapture::WaitForCompletedValue()
+{
+  m_pFence->Wait(m_uiCurrentFenceValue);
 }
 
 void xiiGALImageCapture::RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture)

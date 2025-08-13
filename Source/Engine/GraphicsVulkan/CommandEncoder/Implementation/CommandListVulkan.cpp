@@ -357,7 +357,7 @@ void xiiGALCommandListVulkan::CopyBufferToTexture(vk::Buffer vkSourceBuffer, xii
 
   TransitionOrVerifyTextureState(pDestinationTextureVulkan, xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, vk::ImageLayout::eTransferDstOptimal, "Using texture as transfer destination (xiiGALCommandList::CopyTexture)");
 
-  const auto& textureDescription = pDestinationTextureVulkan->GetDescription();
+  const xiiGALTextureCreationDescription& textureDescription = pDestinationTextureVulkan->GetDescription();
 
   vk::BufferImageCopy vkBufferImageCopy = GetBufferImageCopyInfo(uiSourceBufferOffset, uiSourceBufferRowStrideInTexels, textureDescription, destinationRegion, uiDestinationMipLevel, uiDestinationArraySlice);
 
@@ -372,7 +372,7 @@ void xiiGALCommandListVulkan::CopyTextureToBuffer(xiiGALTextureVulkan* pSourceTe
 
   TransitionOrVerifyTextureState(pSourceTextureVulkan, xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopySource, vk::ImageLayout::eTransferSrcOptimal, "Using texture as transfer source (xiiGALCommandList::CopyTexture)");
 
-  const auto& textureDescription = pSourceTextureVulkan->GetDescription();
+  const xiiGALTextureCreationDescription& textureDescription = pSourceTextureVulkan->GetDescription();
 
   vk::BufferImageCopy vkBufferImageCopy = GetBufferImageCopyInfo(uiDestinationBufferOffset, uiDestinationBufferRowStrideInTexels, textureDescription, sourceRegion, uiSourceMipLevel, uiSourceArraySlice);
 
@@ -2112,7 +2112,7 @@ void xiiGALCommandListVulkan::CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pS
     vkImageCopyRegion.srcSubresource.aspectMask     = vkAspectFlags;
     vkImageCopyRegion.srcOffset.x                   = 0;
     vkImageCopyRegion.srcOffset.y                   = 0;
-    vkImageCopyRegion.srcOffset.x                   = 0;
+    vkImageCopyRegion.srcOffset.z                   = 0;
 
     vkImageCopyRegion.dstSubresource.baseArrayLayer = 0;
     vkImageCopyRegion.dstSubresource.layerCount     = 1;
@@ -2120,7 +2120,7 @@ void xiiGALCommandListVulkan::CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pS
     vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
     vkImageCopyRegion.dstOffset.x                   = 0;
     vkImageCopyRegion.dstOffset.y                   = 0;
-    vkImageCopyRegion.dstOffset.x                   = 0;
+    vkImageCopyRegion.dstOffset.z                   = 0;
 
     CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
   }
@@ -2140,7 +2140,7 @@ void xiiGALCommandListVulkan::CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pS
     xiiBoundingBoxU32 destinationBox = xiiBoundingBoxU32::MakeZero();
     destinationBox.m_vMax.x          = sourceMipLevelProperties.m_LogicalSize.width;
     destinationBox.m_vMax.y          = sourceMipLevelProperties.m_LogicalSize.height;
-    destinationBox.m_vMax.x          = sourceMipLevelProperties.m_uiDepth;
+    destinationBox.m_vMax.z          = sourceMipLevelProperties.m_uiDepth;
 
     // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
     CopyBufferToTexture(pSourceTextureVulkan->GetVulkanStagingBuffer(), uiSourceBufferOffset, sourceMipLevelProperties.m_StorageSize.width, pDestinationTextureVulkan, destinationBox, 0, 0);
@@ -2158,7 +2158,7 @@ void xiiGALCommandListVulkan::CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pS
     xiiBoundingBoxU32 sourceBox = xiiBoundingBoxU32::MakeZero();
     sourceBox.m_vMax.x          = sourceMipLevelProperties.m_LogicalSize.width;
     sourceBox.m_vMax.y          = sourceMipLevelProperties.m_LogicalSize.height;
-    sourceBox.m_vMax.x          = sourceMipLevelProperties.m_uiDepth;
+    sourceBox.m_vMax.z          = sourceMipLevelProperties.m_uiDepth;
 
     // For storage width, GetStagingTextureLocationOffset assumes texels are tightly packed
     CopyTextureToBuffer(pSourceTextureVulkan, sourceBox, 0, 0, pDestinationTextureVulkan->GetVulkanStagingBuffer(), uiDestinationBufferOffset, destinationMipLevelProperties.m_StorageSize.width);
@@ -2209,7 +2209,7 @@ void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTextu
     vkImageCopyRegion.srcSubresource.aspectMask     = vkAspectFlags;
     vkImageCopyRegion.srcOffset.x                   = box.m_vMin.x;
     vkImageCopyRegion.srcOffset.y                   = box.m_vMin.y;
-    vkImageCopyRegion.srcOffset.x                   = box.m_vMin.z;
+    vkImageCopyRegion.srcOffset.z                   = box.m_vMin.z;
 
     vkImageCopyRegion.dstSubresource.baseArrayLayer = destinationMipLevelData.m_uiArraySlice;
     vkImageCopyRegion.dstSubresource.layerCount     = 1;
@@ -2217,7 +2217,7 @@ void xiiGALCommandListVulkan::CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTextu
     vkImageCopyRegion.dstSubresource.aspectMask     = vkAspectFlags;
     vkImageCopyRegion.dstOffset.x                   = box.m_vMax.x;
     vkImageCopyRegion.dstOffset.y                   = box.m_vMax.y;
-    vkImageCopyRegion.dstOffset.x                   = box.m_vMax.z;
+    vkImageCopyRegion.dstOffset.z                   = box.m_vMax.z;
 
     CopyTextureRegion(pSourceTextureVulkan, pDestinationTextureVulkan, vkImageCopyRegion);
   }
@@ -2327,7 +2327,7 @@ void xiiGALCommandListVulkan::GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureVie
 
   vk::ImageSubresourceRange vkImageSubresourceRange = {};
 
-  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(viewDescription.m_Format);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(viewDescription.m_Format);
 
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
   {
@@ -2538,7 +2538,9 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
 
 xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
-  xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan = pTexture.Downcast<xiiGALTextureVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*         pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan         = pTexture.Downcast<xiiGALTextureVulkan>();
 
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
@@ -2549,6 +2551,9 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiSharedPtr<
 
   if (m_MappedTextures.TryGetValue(mappedTextureKey, mappedTexture))
   {
+    VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(pTextureVulkan->GetStagingBufferAllocationDescription(), 0U, vk::WholeSize));
+    pVulkanMemoryAllocator->UnmapMemory(pTextureVulkan->GetStagingBufferAllocationDescription());
+
     if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
     {
       CopyBufferToTexture(mappedTexture->m_DynamicAllocation.m_vkBuffer, mappedTexture->m_DynamicAllocation.m_uiOffset, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);

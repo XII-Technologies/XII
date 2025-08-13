@@ -31,7 +31,10 @@ public:
   using SortingKeyFunc = xiiUInt64 (*)(const xiiRenderData*, const xiiCamera&);
 
   static Category RegisterCategory(xiiStringView sCategoryName, SortingKeyFunc sortingKeyFunc);
+  static Category RegisterDerivedCategory(xiiStringView sCategoryName, Category baseCategory);
+  static Category RegisterRedirectedCategory(xiiStringView sCategoryName, Category staticCategory, Category dynamicCategory);
   static Category FindCategory(xiiTempHashedString sCategoryName);
+  static Category ResolveCategory(Category category, bool bDynamic);
 
   static xiiHashedString GetCategoryName(Category category);
   static void            GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);
@@ -41,10 +44,29 @@ public:
 public:
   struct Caching
   {
-    enum Enum
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
     {
-      Never = 0,
+      Never = 0U,
       IfStatic
+    };
+  };
+
+  struct Flags
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      Dynamic = XII_BIT(0),
+
+      Default = 0U
+    };
+
+    struct Bits
+    {
+      StorageType Dynamic : 1;
     };
   };
 
@@ -54,6 +76,8 @@ public:
   /// \brief Returns whether this render data and the other render data can be batched together, e.g. rendered in one draw call.
   /// An implementation can assume that the other render data is of the same type as this render data.
   virtual bool CanBatch(const xiiRenderData& other) const { return false; }
+
+  xiiBitflags<Flags> m_Flags;
 
   xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();
   xiiBoundingBoxSphere m_GlobalBounds;
@@ -82,6 +106,10 @@ private:
     SortingKeyFunc  m_SortingKeyFunc;
 
     xiiHashTable<const xiiRTTI*, xiiUInt32> m_TypeToRendererIndex;
+
+    Category m_BaseCategory;
+    Category m_StaticCategory;
+    Category m_DynamicCategory;
   };
 
   static xiiHybridArray<CategoryData, 32> s_CategoryData;
@@ -102,7 +130,11 @@ struct XII_GRAPHICSCORE_DLL xiiDefaultRenderDataCategories
   static xiiRenderData::Category ReflectionProbe;
   static xiiRenderData::Category Sky;
   static xiiRenderData::Category LitOpaque;
+  static xiiRenderData::Category LitOpaqueStatic;
+  static xiiRenderData::Category LitOpaqueDynamic;
   static xiiRenderData::Category LitMasked;
+  static xiiRenderData::Category LitMaskedStatic;
+  static xiiRenderData::Category LitMaskedDynamic;
   static xiiRenderData::Category LitTransparent;
   static xiiRenderData::Category LitForeground;
   static xiiRenderData::Category LitScreenFX;
@@ -132,8 +164,8 @@ private:
 
   struct Data
   {
-    const xiiRenderData* m_pRenderData = nullptr;
-    xiiUInt16            m_uiCategory  = 0;
+    const xiiRenderData*    m_pRenderData = nullptr;
+    xiiRenderData::Category m_Category;
   };
 
   xiiHybridArray<Data, 16> m_ExtractedRenderData;

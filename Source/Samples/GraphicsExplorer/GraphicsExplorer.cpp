@@ -164,8 +164,8 @@ public:
         depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
         depthClearValue.m_DepthStencil.m_uiStencil = 0U;
 
-        float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+        float fGlobalTime             = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+        auto& colorClearValue         = beginRenderPass.m_ClearValues.ExpandAndGetRef();
         colorClearValue.m_ClearColour = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
         m_pCommandList->BeginRenderPass(beginRenderPass);

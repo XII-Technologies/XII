@@ -113,11 +113,11 @@ void xiiRenderingSetup::Reset()
 
 void xiiRenderingSetup::AddColorAttachment(const xiiSharedPtr<xiiGALTextureView>& pView, xiiEnum<xiiGALAttachmentLoadOperation> loadOp, xiiEnum<xiiGALAttachmentStoreOperation> storeOp, xiiBitflags<xiiGALResourceStateFlags> subpassState, const xiiColor& clearColor)
 {
-  Attachment& attachment               = m_Attachments.ExpandAndGetRef();
-  attachment.m_pView                   = pView;
-  attachment.m_LoadOp                  = loadOp;
-  attachment.m_StoreOp                 = storeOp;
-  attachment.m_SubpassState            = subpassState;
+  Attachment& attachment                = m_Attachments.ExpandAndGetRef();
+  attachment.m_pView                    = pView;
+  attachment.m_LoadOp                   = loadOp;
+  attachment.m_StoreOp                  = storeOp;
+  attachment.m_SubpassState             = subpassState;
   attachment.m_ClearValue.m_ClearColour = clearColor;
 }
 
