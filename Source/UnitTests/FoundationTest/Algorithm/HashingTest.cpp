@@ -319,34 +319,194 @@ struct SimpleStruct
   xiiUInt64 m_uiTestMember3;
 };
 
+struct PointerHashableStruct : public xiiHashableStruct<PointerHashableStruct>
+{
+  const void* m_pA;
+  const void* m_pB;
+};
+
+struct MixedHashableStruct : public xiiHashableStruct<MixedHashableStruct>
+{
+  xiiUInt32   m_uiID;
+  float       m_fValue;
+  const void* m_pPtr;
+};
+
 XII_CREATE_SIMPLE_TEST(Algorithm, HashableStruct)
 {
-  SimpleHashableStruct AutomaticInst;
-  XII_TEST_INT(AutomaticInst.m_uiTestMember1, 0);
-  XII_TEST_INT(AutomaticInst.m_uiTestMember2, 0);
-  XII_TEST_INT(AutomaticInst.m_uiTestMember3, 0);
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Zero-initialization and size/layout parity")
+  {
+    SimpleHashableStruct AutomaticInst;
+    XII_TEST_INT(AutomaticInst.m_uiTestMember1, 0);
+    XII_TEST_INT(AutomaticInst.m_uiTestMember2, 0);
+    XII_TEST_INT(AutomaticInst.m_uiTestMember3, 0);
 
-  SimpleStruct NonAutomaticInst;
-  xiiMemoryUtils::ZeroFill(&NonAutomaticInst, 1);
+    SimpleStruct NonAutomaticInst;
+    xiiMemoryUtils::ZeroFill(&NonAutomaticInst, 1);
 
-  static_assert(sizeof(AutomaticInst) == sizeof(NonAutomaticInst));
+    static_assert(sizeof(AutomaticInst) == sizeof(NonAutomaticInst), "Sizes must match.");
+    XII_TEST_INT(xiiMemoryUtils::Compare<xiiUInt8>((const xiiUInt8*)&AutomaticInst, (const xiiUInt8*)&NonAutomaticInst, sizeof(AutomaticInst)), 0);
+  }
 
-  XII_TEST_INT(xiiMemoryUtils::Compare<xiiUInt8>((xiiUInt8*)&AutomaticInst, (xiiUInt8*)&NonAutomaticInst, sizeof(AutomaticInst)), 0);
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Hash parity with plain struct and xxHash32")
+  {
+    SimpleHashableStruct AutomaticInst;
+    SimpleStruct         NonAutomaticInst;
+    xiiMemoryUtils::ZeroFill(&NonAutomaticInst, 1);
 
-  AutomaticInst.m_uiTestMember2 = 0x42u;
-  AutomaticInst.m_uiTestMember3 = 0x23u;
+    // Set identical fields.
+    AutomaticInst.m_uiTestMember2 = 0x42U;
+    AutomaticInst.m_uiTestMember3 = 0x23U;
 
-  xiiUInt32 uiAutomaticHash = AutomaticInst.CalculateHash();
+    NonAutomaticInst.m_uiTestMember2 = 0x42U;
+    NonAutomaticInst.m_uiTestMember3 = 0x23U;
 
-  NonAutomaticInst.m_uiTestMember2 = 0x42u;
-  NonAutomaticInst.m_uiTestMember3 = 0x23u;
+    const xiiUInt32 uiAutomaticHash    = AutomaticInst.CalculateHash();
+    const xiiUInt32 uiNonAutomaticHash = xiiHashingUtils::xxHash32(&NonAutomaticInst, sizeof(NonAutomaticInst));
 
-  xiiUInt32 uiNonAutomaticHash = xiiHashingUtils::xxHash32(&NonAutomaticInst, sizeof(NonAutomaticInst));
+    XII_TEST_INT(uiAutomaticHash, uiNonAutomaticHash);
 
-  XII_TEST_INT(uiAutomaticHash, uiNonAutomaticHash);
+    // Change a field and verify hash changes.
+    SimpleHashableStruct Changed = AutomaticInst;
+    Changed.m_uiTestMember1      = 0x5U;
 
-  AutomaticInst.m_uiTestMember1 = 0x5u;
-  uiAutomaticHash               = AutomaticInst.CalculateHash();
+    const xiiUInt32 uiChangedHash = Changed.CalculateHash();
+    XII_TEST_BOOL(uiChangedHash != uiAutomaticHash);
+  }
 
-  XII_TEST_BOOL(uiAutomaticHash != uiNonAutomaticHash);
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Equality and ordering operators")
+  {
+    SimpleHashableStruct a;
+    SimpleHashableStruct b;
+
+    XII_TEST_BOOL(a == b);
+    XII_TEST_BOOL(!(a != b));
+
+    // Modify to create ordering.
+    b.m_uiTestMember3 = 1;
+
+    XII_TEST_BOOL(a != b);
+    XII_TEST_BOOL(a < b); // member operator<
+    XII_TEST_BOOL(!(b < a));
+    XII_TEST_BOOL(b > a);
+    XII_TEST_BOOL(a <= b);
+    XII_TEST_BOOL(b >= a);
+
+    // If spaceship is available, ensure it produces consistent ordering.
+    std::strong_ordering ordering = (static_cast<const SimpleHashableStruct&>(a) <=> static_cast<const SimpleHashableStruct&>(b));
+    XII_TEST_BOOL(ordering == std::strong_ordering::less);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Clear() and IsZero()")
+  {
+    SimpleHashableStruct s;
+    XII_TEST_BOOL(s.IsZero());
+
+    s.m_uiTestMember1 = 1234;
+    XII_TEST_BOOL(!s.IsZero());
+
+    s.Clear();
+    XII_TEST_BOOL(s.IsZero());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Bitwise copy semantics")
+  {
+    SimpleHashableStruct a;
+    a.m_uiTestMember1 = 7;
+    a.m_uiTestMember2 = 9;
+    a.m_uiTestMember3 = 11;
+
+    SimpleHashableStruct b(a); // copy ctor
+    XII_TEST_BOOL(a == b);
+    XII_TEST_INT(a.CalculateHash(), b.CalculateHash());
+
+    SimpleHashableStruct c;
+    c = a; // assignment
+    XII_TEST_BOOL(a == c);
+    XII_TEST_INT(a.CalculateHash(), c.CalculateHash());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pointer identity semantics")
+  {
+    xiiInt32 x = 1, y = 1;
+
+    PointerHashableStruct p0{};
+    PointerHashableStruct p1{};
+
+    p0.m_pA = &x;
+    p0.m_pB = &y;
+    p1.m_pA = &x;
+    p1.m_pB = &y;
+
+    // Same addresses -> equal and same hash
+    XII_TEST_BOOL(p0 == p1);
+    XII_TEST_INT(p0.CalculateHash(), p1.CalculateHash());
+
+    // Different addresses with equal pointee content -> still different by design
+    xiiInt32 x2 = 1;
+    p1.m_pA     = &x2;
+    XII_TEST_BOOL(p0 != p1);
+
+    // Ordering is by address bytes
+    const bool bLT01 = p0 < p1;
+    const bool bLT10 = p1 < p0;
+    XII_TEST_BOOL(bLT01 ^ bLT10); // exactly one is true
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Mixed data and stability across copies")
+  {
+    MixedHashableStruct m0{};
+    m0.m_uiID   = 42;
+    m0.m_fValue = 3.5f;
+
+    xiiInt32 z = 0;
+    m0.m_pPtr  = &z;
+
+    MixedHashableStruct m1 = m0;
+    XII_TEST_BOOL(m0 == m1);
+    XII_TEST_INT(m0.CalculateHash(), m1.CalculateHash());
+
+    // Tweak each field and ensure hash/equality respond
+    MixedHashableStruct m2 = m0;
+    m2.m_uiID++;
+    XII_TEST_BOOL(m2 != m0);
+    XII_TEST_BOOL(m0 < m2 || m2 < m0); // strict ordering must distinguish
+
+    MixedHashableStruct m3 = m0;
+    m3.m_fValue            = xiiMath::NaN<float>(); // Exercise raw-byte semantics even with NaN
+    XII_TEST_BOOL(m3 != m0);                        // NaN bit pattern differs after ZeroFill-init path
+
+    MixedHashableStruct m4 = m0;
+    xiiInt32            zz;
+    m4.m_pPtr = &zz;
+    XII_TEST_BOOL(m4 != m0);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "swap()")
+  {
+    SimpleHashableStruct a{};
+    SimpleHashableStruct b{};
+
+    a.m_uiTestMember1 = 1;
+    b.m_uiTestMember1 = 2;
+
+    xiiMath::Swap(a, b);
+    XII_TEST_INT(a.m_uiTestMember1, 2);
+    XII_TEST_INT(b.m_uiTestMember1, 1);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Consistency with raw byte compare")
+  {
+    SimpleHashableStruct a{};
+    SimpleHashableStruct b{};
+
+    a.m_uiTestMember1 = 10;
+    b.m_uiTestMember1 = 10;
+    a.m_uiTestMember3 = 5;
+    b.m_uiTestMember3 = 6;
+
+    const xiiInt32 iMemoryCompare = xiiMemoryUtils::RawByteCompare(&a, &b, sizeof(a));
+    XII_TEST_BOOL((a == b) == (iMemoryCompare == 0));
+    XII_TEST_BOOL((a < b) == (iMemoryCompare < 0));
+  }
 }
