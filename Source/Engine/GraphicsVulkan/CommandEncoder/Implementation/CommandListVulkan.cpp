@@ -2538,6 +2538,8 @@ xiiResult xiiGALCommandListVulkan::MapTextureSubresourcePlatform(xiiSharedPtr<xi
 
 xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
+  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*         pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
   xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan = pTexture.Downcast<xiiGALTextureVulkan>();
 
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
@@ -2549,6 +2551,9 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiSharedPtr<
 
   if (m_MappedTextures.TryGetValue(mappedTextureKey, mappedTexture))
   {
+    VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(pTextureVulkan->GetStagingBufferAllocationDescription(), 0U, vk::WholeSize));
+    pVulkanMemoryAllocator->UnmapMemory(pTextureVulkan->GetStagingBufferAllocationDescription());
+
     if (textureDescription.m_Usage == xiiGALResourceUsage::Dynamic)
     {
       CopyBufferToTexture(mappedTexture->m_DynamicAllocation.m_vkBuffer, mappedTexture->m_DynamicAllocation.m_uiOffset, mappedTexture->m_CopyDescription.m_uiRowStrideInTexels, pTextureVulkan, mappedTexture->m_CopyDescription.m_Region, textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
