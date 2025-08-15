@@ -224,8 +224,8 @@ xiiComputePipelinePass::~xiiComputePipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiCopyPipelinePass::xiiCopyPipelinePass(xiiStringView sName) :
-  xiiRenderPipelinePassBase(sName, xiiRenderPipelinePassCapabilityFlags::None)
+xiiCopyPipelinePass::xiiCopyPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags /*= xiiRenderPipelinePassCapabilityFlags::StereoAware*/) :
+  xiiRenderPipelinePassBase(sName, capabilityFlags)
 {
 }
 
@@ -233,8 +233,8 @@ xiiCopyPipelinePass::~xiiCopyPipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiPresentPipelinePass::xiiPresentPipelinePass(xiiStringView sName) :
-  xiiRenderPipelinePassBase(sName, xiiRenderPipelinePassCapabilityFlags::None)
+xiiPresentPipelinePass::xiiPresentPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags /*= xiiRenderPipelinePassCapabilityFlags::StereoAware*/) :
+  xiiRenderPipelinePassBase(sName, capabilityFlags)
 {
 }
 
@@ -242,8 +242,8 @@ xiiPresentPipelinePass::~xiiPresentPipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiUtilityPipelinePass::xiiUtilityPipelinePass(xiiStringView sName) :
-  xiiRenderPipelinePassBase(sName, xiiRenderPipelinePassCapabilityFlags::None)
+xiiUtilityPipelinePass::xiiUtilityPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags /*= xiiRenderPipelinePassCapabilityFlags::StereoAware*/) :
+  xiiRenderPipelinePassBase(sName, capabilityFlags)
 {
 }
 

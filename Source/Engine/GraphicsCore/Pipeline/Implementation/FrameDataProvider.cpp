@@ -1,7 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFrameDataProviderBase, 1, xiiRTTINoAllocator)
