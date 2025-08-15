@@ -76,7 +76,6 @@ xiiSharedPtr<xiiGALDeviceObject> xiiHistorySourcePassResourceProvider::GetOrCrea
         XII_ASSERT_DEBUG(!xiiGALResourceFormat::IsDepthFormat(textureDescription.m_Format), "Invalid history source colour attachment format.");
       }
     }
-
   }
 #endif
   return pDeviceObject;

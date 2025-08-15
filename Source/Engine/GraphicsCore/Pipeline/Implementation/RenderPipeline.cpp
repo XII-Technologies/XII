@@ -632,7 +632,7 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
     static xiiUInt32 uiDefaultSamplerHash = xiiGALSamplerCreationDescription().CalculateHash();
 
     ResourceUsageData& data = m_ResourceUsage[i];
-    if (data.m_pResourceProvider)
+    if (data.m_pResourceProvider || data.m_UsedBy[0]->m_Resource.m_Type == xiiRenderPipelineNodePinResourceType::Unknown)
       continue;
 
     if (data.m_UsedBy[0]->m_Resource.IsBuffer() && data.m_UsedBy[0]->m_Resource.m_Buffer.m_Description.CalculateHash() == uiDefaultBufferHash)
