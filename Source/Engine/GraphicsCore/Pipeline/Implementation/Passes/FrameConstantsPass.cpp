@@ -106,8 +106,6 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
-    xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(pCommandList, pOutput->m_Resource.m_Buffer.m_pBuffer, xiiGALMapType::Write, xiiGALMapFlags::DoNotWait);
-
     pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants)));
   }
   pCommandList->End();
