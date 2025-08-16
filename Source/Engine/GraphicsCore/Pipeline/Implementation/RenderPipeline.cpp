@@ -1129,46 +1129,14 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   XII_ASSERT_DEV(m_uiLastRenderFrame != xiiRenderWorld::GetFrameCounter(), "Render must not be called multiple times per frame.");
   m_uiLastRenderFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiSharedPtr<xiiGALDevice> pDevice    = xiiGALDevice::GetDefaultDevice();
-  auto&                      data       = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
-  const xiiCamera*           pCamera    = &data.GetCamera();
-  const xiiCamera*           pLodCamera = &data.GetLodCamera();
-  const xiiViewData*         pViewData  = &data.GetViewData();
-
-  // Set Global Constants.
-  {
-    xiiGlobalConstants* pGlobalConstants = pRenderContext->GetGlobalConstants();
-
-    for (xiiUInt32 i = 0; i < 2; ++i)
-    {
-      pGlobalConstants->CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
-      pGlobalConstants->ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
-      pGlobalConstants->WorldToCameraMatrix[i]  = pViewData->m_ViewMatrix[i];
-      pGlobalConstants->CameraToWorldMatrix[i]  = pViewData->m_InverseViewMatrix[i];
-      pGlobalConstants->WorldToScreenMatrix[i]  = pViewData->m_ViewProjectionMatrix[i];
-      pGlobalConstants->ScreenToWorldMatrix[i]  = pViewData->m_InverseViewProjectionMatrix[i];
-    }
-
-    const xiiRectFloat& viewport   = pViewData->m_ViewPortRect;
-    pGlobalConstants->ViewportSize = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-
-    float fNear                  = pCamera->GetNearPlane();
-    float fFar                   = pCamera->GetFarPlane();
-    pGlobalConstants->ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
-
-    const bool bIsDirectionalLightShadow = pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && pCamera->IsOrthographic();
-    pGlobalConstants->MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
-
-    pGlobalConstants->Exposure   = pCamera->GetExposure();
-    pGlobalConstants->RenderPass = xiiViewRenderMode::GetRenderPassForShader(pViewData->m_ViewRenderMode);
-
-    pRenderContext->SetGlobalAndWorldTimeConstants(data.GetWorldTime());
-  }
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  auto&                      data    = m_Data[xiiRenderWorld::GetDataIndexForRendering()];
+  const xiiCamera*           pCamera = &data.GetCamera();
 
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = pCamera;
-  renderViewContext.m_pLodCamera         = pLodCamera;
-  renderViewContext.m_pViewData          = pViewData;
+  renderViewContext.m_pLodCamera         = &data.GetLodCamera();
+  renderViewContext.m_pViewData          = &data.GetViewData();
   renderViewContext.m_pRenderContext     = pRenderContext;
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
@@ -1199,7 +1167,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation variables.
-  for (auto& permutationVariable : m_PermutationVariables)
+  for (xiiGALPermutationVariable& permutationVariable : m_PermutationVariables)
   {
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable(permutationVariable.m_sName, permutationVariable.m_sValue);
   }
