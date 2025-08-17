@@ -36,7 +36,7 @@ xiiResult xiiFrameConstantsPass::GetResourceDescriptions(const xiiView& view, co
   bufferDescription.m_uiElementByteStride = 0U;
   bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
-  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
   bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
   bufferDescription.m_MiscFlags           = xiiGALMiscBufferFlags::None;
   pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, bufferDescription);
