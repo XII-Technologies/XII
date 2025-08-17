@@ -46,7 +46,10 @@ xiiResult xiiFrameConstantsPass::GetResourceDescriptions(const xiiView& view, co
 
 xiiResult xiiFrameConstantsPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
+  xiiSharedPtr<xiiGALDevice>                    pDevice                   = xiiGALDevice::GetDefaultDevice();
+  const xiiGALGraphicsDeviceAdapterDescription& graphicsAdapterProperties = pDevice->GetGraphicsDeviceAdapterProperties();
+
+  m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), graphicsAdapterProperties.m_BufferProperties.m_uiConstantBufferAlignment)), 1U);
 
   xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
 
@@ -107,7 +110,7 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
-    pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants)));
+    pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
   }
   pCommandList->End();
 
