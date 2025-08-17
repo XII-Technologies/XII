@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/HistorySourcePass.h>
+#include <GraphicsCore/Pipeline/RenderPipeline.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHistorySourcePassResourceProvider, 1, xiiRTTIDefaultAllocator<xiiHistorySourcePassResourceProvider>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

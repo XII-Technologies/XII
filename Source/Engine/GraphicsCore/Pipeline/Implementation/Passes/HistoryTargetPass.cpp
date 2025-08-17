@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/HistoryTargetPass.h>
+#include <GraphicsCore/Pipeline/RenderPipeline.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHistoryBufferTargetPass, 1, xiiRTTIDefaultAllocator<xiiHistoryBufferTargetPass>)

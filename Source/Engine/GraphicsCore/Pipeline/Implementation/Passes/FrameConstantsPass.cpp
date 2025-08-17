@@ -1,7 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Pipeline/Passes/FrameConstantsPass.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Pipeline/Passes/FrameConstantsPass.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFrameConstantsPass, 1, xiiRTTIDefaultAllocator<xiiFrameConstantsPass>)
