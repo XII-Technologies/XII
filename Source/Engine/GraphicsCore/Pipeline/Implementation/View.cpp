@@ -345,13 +345,13 @@ void xiiView::EnsureUpToDate()
       ResetAllPropertyStates(m_ExtractorProperties);
     }
 
-    ApplyPermutationVars();
+    ApplyPermutationVariables();
     ApplyRenderPassProperties();
     ApplyExtractorProperties();
   }
 }
 
-void xiiView::ApplyPermutationVars()
+void xiiView::ApplyPermutationVariables()
 {
   if (!m_bPermutationVariablesModified)
     return;
