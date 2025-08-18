@@ -105,8 +105,6 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
 xiiClusteredDataGPU::~xiiClusteredDataGPU()
 {
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
   m_pLightDataBuffer.Clear();
   m_pDecalDataBuffer.Clear();
   m_pReflectionProbeDataBuffer.Clear();

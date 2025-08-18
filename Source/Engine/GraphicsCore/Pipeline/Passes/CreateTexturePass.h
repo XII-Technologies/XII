@@ -3,11 +3,9 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// \brief Allocates a colour attachment to be consumed by compute or graphics passes.
-class xiiCreateColourAttachmentPass : public xiiUtilityPipelinePass
+class XII_GRAPHICSCORE_DLL xiiCreateColourAttachmentPass : public xiiUtilityPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCreateColourAttachmentPass, xiiUtilityPipelinePass);
-
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateColourAttachmentPass);
 
 public:
   xiiCreateColourAttachmentPass(xiiStringView sName = "CreateColourAttachmentPass");
@@ -117,7 +115,7 @@ private:
 };
 
 /// \brief Allocates a depth attachment to be consumed by compute or graphics passes.
-class xiiCreateDepthAttachmentPass : public xiiUtilityPipelinePass
+class XII_GRAPHICSCORE_DLL xiiCreateDepthAttachmentPass : public xiiUtilityPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCreateDepthAttachmentPass, xiiUtilityPipelinePass);
 

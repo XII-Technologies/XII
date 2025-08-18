@@ -375,7 +375,7 @@ class XII_GRAPHICSCORE_DLL xiiCopyPipelinePass : public xiiRenderPipelinePassBas
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCopyPipelinePass);
 
 public:
-  xiiCopyPipelinePass(xiiStringView sName);
+  xiiCopyPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags = xiiRenderPipelinePassCapabilityFlags::StereoAware);
 
   virtual ~xiiCopyPipelinePass();
 };
@@ -387,7 +387,7 @@ class XII_GRAPHICSCORE_DLL xiiPresentPipelinePass : public xiiRenderPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiPresentPipelinePass);
 
 public:
-  xiiPresentPipelinePass(xiiStringView sName);
+  xiiPresentPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags = xiiRenderPipelinePassCapabilityFlags::StereoAware);
 
   virtual ~xiiPresentPipelinePass();
 };
@@ -399,7 +399,7 @@ class XII_GRAPHICSCORE_DLL xiiUtilityPipelinePass : public xiiRenderPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiUtilityPipelinePass);
 
 public:
-  xiiUtilityPipelinePass(xiiStringView sName);
+  xiiUtilityPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags = xiiRenderPipelinePassCapabilityFlags::StereoAware);
 
   virtual ~xiiUtilityPipelinePass();
 };

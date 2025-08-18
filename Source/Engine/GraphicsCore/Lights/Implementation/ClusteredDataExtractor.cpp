@@ -398,10 +398,8 @@ void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiD
 
           if (bRasterizeSphere)
           {
-            xiiSimdBSphere pointLightSphere =
-              xiiSimdBSphere(xiiSimdConversion::ToVec3(pReflectionProbeRenderData->m_GlobalTransform.m_vPosition), fMaxRadius);
-            RasterizeSphere(
-              pointLightSphere, uiProbeIndex, viewMatrix, projectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
+            xiiSimdBSphere pointLightSphere = xiiSimdBSphere(xiiSimdConversion::ToVec3(pReflectionProbeRenderData->m_GlobalTransform.m_vPosition), fMaxRadius);
+            RasterizeSphere(pointLightSphere, uiProbeIndex, viewMatrix, projectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
           }
           else
           {

@@ -3,11 +3,9 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// \brief Allocates a sampler consumed by graphics passes.
-class xiiCreateSamplerPass : public xiiUtilityPipelinePass
+class XII_GRAPHICSCORE_DLL xiiCreateSamplerPass : public xiiUtilityPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCreateSamplerPass, xiiUtilityPipelinePass);
-
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateSamplerPass);
 
 public:
   xiiCreateSamplerPass(xiiStringView sName = "CreateSamplerPass");

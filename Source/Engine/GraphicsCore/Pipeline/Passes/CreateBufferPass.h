@@ -3,11 +3,9 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// \brief Allocates a structured or raw buffer to be consumed by compute or graphics passes.
-class xiiCreateBufferPass : public xiiUtilityPipelinePass
+class XII_GRAPHICSCORE_DLL xiiCreateBufferPass : public xiiUtilityPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCreateBufferPass, xiiUtilityPipelinePass);
-
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiCreateBufferPass);
 
 public:
   xiiCreateBufferPass(xiiStringView sName = "CreateBufferPass");

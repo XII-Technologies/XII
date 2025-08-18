@@ -309,7 +309,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
   enum Enum : StorageType
   {
     Immutable = 0, ///< A resource that can only be read by the GPU. It cannot be written to by the GPU, and cannot be accessed by the CPU.
-                   ///< This type of resource must be initialized when it is created, since it cannot be modified after creation.
+                   ///  This type of resource must be initialized when it is created, since it cannot be modified after creation.
     Mutable,       ///< A resource that requires read and write access by the GPU and can also be occasionally written to by the CPU.
     Dynamic,       ///< A resource that can be read by the GPU and written to, at least once per frame by the CPU.
     Staging,       ///< A resource that facilitates transferring data between the GPU and CPU.
