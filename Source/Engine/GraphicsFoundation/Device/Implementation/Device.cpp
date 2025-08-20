@@ -752,13 +752,13 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
   for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < description.m_Attachments.GetCount(); ++uiAttachmentIndex)
   {
-    const auto& attachment = description.m_Attachments[uiAttachmentIndex];
+    const xiiGALRenderPassAttachmentDescription& attachment = description.m_Attachments[uiAttachmentIndex];
 
     XII_GAL_DEVICE_CHECK(attachment.m_Format != xiiGALResourceFormat::Unknown, "The format of attachment {0} is unknown.", uiAttachmentIndex);
     XII_GAL_DEVICE_CHECK(attachment.m_uiSampleCount != 0U, "The sample count of attachment {0} is zero.", uiAttachmentIndex);
     XII_GAL_DEVICE_CHECK(xiiMath::IsPowerOf2(attachment.m_uiSampleCount), "The sample count ({0}) of attachment {1} is not a power of 2.", attachment.m_uiSampleCount, uiAttachmentIndex);
 
-    const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(attachment.m_Format);
+    const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(attachment.m_Format);
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
       XII_GAL_DEVICE_CHECK(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
@@ -780,11 +780,11 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
   const xiiGALShadingRateAttachmentDescription* pShadingRateAttachment = nullptr;
   for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < description.m_SubPasses.GetCount(); ++uiSubPassIndex)
   {
-    const auto& subpass = description.m_SubPasses[uiSubPassIndex];
+    const xiiGALSubPassDescription& subpass = description.m_SubPasses[uiSubPassIndex];
 
     for (xiiUInt32 uiInputAttachmentIndex = 0U; uiInputAttachmentIndex < subpass.m_InputAttachments.GetCount(); ++uiInputAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
@@ -798,7 +798,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
@@ -809,8 +809,8 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the render target attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
       XII_GAL_DEVICE_CHECK(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
 
-      const auto& format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-      const auto& rtFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+      const xiiEnum<xiiGALResourceFormat>&   format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
+      const xiiGALResourceFormatDescription& rtFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
       XII_GAL_DEVICE_CHECK(rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
     }
 
@@ -818,7 +818,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
     {
       for (xiiUInt32 uiResolveAttachmentIndex = 0U; uiResolveAttachmentIndex < subpass.m_ResolveAttachments.GetCount(); ++uiResolveAttachmentIndex)
       {
-        const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiResolveAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiResolveAttachmentIndex];
 
         if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
           continue;
@@ -832,7 +832,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_DepthStencilAttachment.PeekBack();
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment.PeekBack();
 
       if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
@@ -842,15 +842,15 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
         XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil attachment reference of sub pass {1} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
         XII_GAL_DEVICE_CHECK(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthRead || attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthWrite || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index ({0}) of the depth-stencil attachment reference of sub pass {1} must be must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite"));
 
-        const auto& format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-        const auto& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+        const xiiEnum<xiiGALResourceFormat>&   format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
+        const xiiGALResourceFormatDescription& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
         XII_GAL_DEVICE_CHECK(depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
       }
     }
 
     for (xiiUInt32 uiPreserveAttachmentIndex = 0U; uiPreserveAttachmentIndex < subpass.m_PreserveAttachments.GetCount(); ++uiPreserveAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_PreserveAttachments[uiPreserveAttachmentIndex];
+      const xiiUInt32& attachmentReference = subpass.m_PreserveAttachments[uiPreserveAttachmentIndex];
 
       XII_GAL_DEVICE_CHECK(attachmentReference != XII_GAL_ATTACHMENT_UNUSED, "The attachment index of preserve attachment reference {0} of sub pass {1} is XII_GAL_ATTACHMENT_UNUSED.");
       XII_GAL_DEVICE_CHECK(attachmentReference < description.m_Attachments.GetCount(), "The attachment index ({0}) of the preserve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference, uiPreserveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
@@ -860,8 +860,8 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
     {
       for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
       {
-        const auto& attachmentReference       = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
-        const auto& resolveAttacmentReference = subpass.m_ResolveAttachments[uiColorAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& attachmentReference       = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& resolveAttacmentReference = subpass.m_ResolveAttachments[uiColorAttachmentIndex];
 
         if (resolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         {
@@ -895,8 +895,8 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     if (!subpass.m_ShadingRateAttachment.IsEmpty())
     {
-      pShadingRateAttachment          = pShadingRateAttachment == nullptr ? subpass.m_ShadingRateAttachment.GetData() : pShadingRateAttachment;
-      const auto& attachmentReference = subpass.m_ShadingRateAttachment[0].m_AttachmentReference;
+      pShadingRateAttachment                                          = pShadingRateAttachment == nullptr ? subpass.m_ShadingRateAttachment.GetData() : pShadingRateAttachment;
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_ShadingRateAttachment[0].m_AttachmentReference;
 
       if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
@@ -904,9 +904,9 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
         XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "The sub pass at index {0} uses a shading rate attachment, but the Variable Shading Rate device feature is not enabled.", uiSubPassIndex);
         XII_GAL_DEVICE_CHECK(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::ShadingRate, "The attachment with index {0} referenced as a shading rate attachment in sub pass {1} must be in the xiiGALResourceStateFlags::ShadingRate state.");
 
-        const auto& tileSize    = subpass.m_ShadingRateAttachment[0].m_TileSize;
-        const auto& minTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize;
-        const auto& maxTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize;
+        const xiiSizeU32& tileSize    = subpass.m_ShadingRateAttachment[0].m_TileSize;
+        const xiiSizeU32& minTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize;
+        const xiiSizeU32& maxTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize;
         if (tileSize.HasNonZeroArea())
         {
           XII_GAL_DEVICE_CHECK(tileSize.width >= minTileSize.width && tileSize.width <= maxTileSize.width, "The sub pass at index {0} uses a shading rate attachment with tile width {1} that is not in te allowed range [{2},{3}]. Check MinTileSize/MaxTileSize members of the Shading Rate Properties.", uiSubPassIndex, tileSize.width, minTileSize.width, maxTileSize.height);
@@ -925,7 +925,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
   {
     for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < description.m_SubPasses.GetCount(); ++uiSubPassIndex)
     {
-      const auto& subpass = description.m_SubPasses[uiSubPassIndex];
+      const xiiGALSubPassDescription& subpass = description.m_SubPasses[uiSubPassIndex];
 
       XII_GAL_DEVICE_CHECK(!subpass.m_ShadingRateAttachment.IsEmpty(), "Render pass uses a shading rate attachment, but sub pass {0} uses no shading rate attachment. A device with the xiiGALShadingRateCapabilityFlags::SameTextureForWholeRenderPass capability requires that all sub passes of a render pass use the same shading rate attachment.", uiSubPassIndex);
       XII_GAL_DEVICE_CHECK(subpass.m_ShadingRateAttachment == xiiMakeArrayPtr(pShadingRateAttachment, 1U), "The shading rate attachment in sub pass {0} does not match the shading rate attachment used by the previous sub passes. A device with the xiiGALShadingRateCapabilityFlags::SameTextureForWholeRenderPass capability requires that all sub passes of a render pass use the same shading rate attachment.", uiSubPassIndex);
@@ -934,11 +934,10 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
   for (xiiUInt32 uiDependencyIndex = 0U; uiDependencyIndex < description.m_Dependencies.GetCount(); ++uiDependencyIndex)
   {
-    const auto& dependency = description.m_Dependencies[uiDependencyIndex];
+    const xiiGALSubPassDependencyDescription& dependency = description.m_Dependencies[uiDependencyIndex];
 
-    XII_IGNORE_UNUSED(dependency);
-
-    /// \todo GraphicsFoundation: Check render pass dependency source and destination stage mask is set to the undefined pipeline stage.
+    XII_GAL_DEVICE_CHECK(dependency.m_SourceStageFlags != xiiGALPipelineStageFlags::Undefined, "The source stage mask of subpass dependency {} is undefined.", uiDependencyIndex);
+    XII_GAL_DEVICE_CHECK(dependency.m_DestinationStageFlags != xiiGALPipelineStageFlags::Undefined, "The destination stage mask of subpass dependency {} is undefined.", uiDependencyIndex);
   }
 
   return CreateRenderPassPlatform(description);
@@ -952,22 +951,22 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
   for (xiiUInt32 i = 0U; i < description.m_Attachments.GetCount(); ++i)
   {
-    const auto& attachment = description.m_Attachments[i];
+    const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[i];
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, and attachmentCount is not 0, pAttachments must be a valid pointer to an array of attachmentCount valid VkImageView handles.
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-flags-02778
-    XII_GAL_DEVICE_CHECK(attachment != nullptr, "The framebuffer attachment at index {0} is invalid.", i);
+    XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The framebuffer attachment at index {0} is invalid.", i);
   }
 
-  const auto& renderPassDescription = description.m_pRenderPass->GetDescription();
+  const xiiGALRenderPassCreationDescription& renderPassDescription = description.m_pRenderPass->GetDescription();
 
   XII_GAL_DEVICE_CHECK(description.m_Attachments.GetCount() == renderPassDescription.m_Attachments.GetCount(), "The number of framebuffer attachments ({0}) must be equal to the number of attachments ({1}) in the render pass.", description.m_Attachments.GetCount(), renderPassDescription.m_Attachments.GetCount());
 
   for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
   {
-    const auto& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
-    const auto& viewDescription       = description.m_Attachments[uiAttachmentIndex]->GetDescription();
-    const auto& textureDescription    = description.m_Attachments[uiAttachmentIndex]->GetTexture()->GetDescription();
+    const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
+    const xiiGALTextureViewCreationDescription&  viewDescription       = description.m_Attachments[uiAttachmentIndex]->GetDescription();
+    const xiiGALTextureCreationDescription&      textureDescription    = description.m_Attachments[uiAttachmentIndex]->GetTexture()->GetDescription();
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a VkFormat value that matches the VkFormat specified by the corresponding VkAttachmentDescription in renderPass.
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00880
@@ -990,12 +989,12 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
         for (xiiUInt32 j = 0; j < renderPassDescription.m_SubPasses.GetCount(); ++j)
         {
-          const auto& subpass = renderPassDescription.m_SubPasses[j];
+          const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[j];
 
           bool bUsedInSubPass = false;
           for (xiiUInt32 k = 0; k < subpass.m_RenderTargetAttachments.GetCount(); ++k)
           {
-            const auto& attachmentReference = subpass.m_RenderTargetAttachments[k];
+            const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[k];
 
             if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
             {
@@ -1004,7 +1003,7 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
           }
           for (xiiUInt32 k = 0; k < subpass.m_InputAttachments.GetCount(); ++k)
           {
-            const auto& attachmentReference = subpass.m_InputAttachments[k];
+            const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_InputAttachments[k];
 
             if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
             {
@@ -1029,21 +1028,21 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
   for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < renderPassDescription.m_SubPasses.GetCount(); ++uiSubPassIndex)
   {
-    const auto& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
+    const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
 
     for (xiiUInt32 uiInputAttachmentIndex = 0U; uiInputAttachmentIndex < subpass.m_InputAttachments.GetCount(); ++uiInputAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
 
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The input attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiInputAttachmentIndex, description.m_Attachments.GetCount());
 
-      const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
       XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as an input attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
       // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as an input attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT.
       // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00879
@@ -1052,20 +1051,20 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
 
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The render target attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, description.m_Attachments.GetCount());
 
-      const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
       XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& viewDescription = pAttachment->GetDescription();
+      const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
       XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::RenderTarget type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
       // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a color attachment or resolve attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT.
       // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00877
@@ -1074,20 +1073,20 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     for (xiiUInt32 uiResolveAttachmentIndex = 0U; uiResolveAttachmentIndex < subpass.m_ResolveAttachments.GetCount(); ++uiResolveAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_ResolveAttachments[uiResolveAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_ResolveAttachments[uiResolveAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
 
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The resolve attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiResolveAttachmentIndex, description.m_Attachments.GetCount());
 
-      const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
       XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& viewDescription = pAttachment->GetDescription();
+      const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
       XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::RenderTarget type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
       // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a color attachment or resolve attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT.
       // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00877
@@ -1096,19 +1095,19 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_DepthStencilAttachment[0];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment[0];
 
       if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
         XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The depth-stencil attachment index ({0}) must be less than the attachment count ({1}).", attachmentReference.m_uiAttachmentIndex, description.m_Attachments.GetCount());
 
-        const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+        const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
         XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& viewDescription = pAttachment->GetDescription();
+        const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
         XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::DepthStencil type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+        const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
         // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a depth/stencil attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-02633
@@ -1120,22 +1119,22 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
   bool bIsVRSEnabled = false;
   for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < renderPassDescription.m_SubPasses.GetCount(); ++uiSubPassIndex)
   {
-    const auto& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
+    const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
 
     if (!subpass.m_ShadingRateAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_ShadingRateAttachment[0];
+      const xiiGALShadingRateAttachmentDescription& attachmentReference = subpass.m_ShadingRateAttachment[0];
       if (attachmentReference.m_AttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
         XII_GAL_DEVICE_CHECK(attachmentReference.m_AttachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The shading rate attachment index ({0}) must be less than the attachment count ({1}).", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, description.m_Attachments.GetCount());
 
-        const auto& pAttachment = description.m_Attachments[attachmentReference.m_AttachmentReference.m_uiAttachmentIndex];
+        const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_AttachmentReference.m_uiAttachmentIndex];
         XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& viewDescription = pAttachment->GetDescription();
+        const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
         XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::ShadingRate, "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::ShadingRate type.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+        const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
         // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a depth/stencil attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-02633
@@ -1152,12 +1151,12 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
     {
-      const auto& pAttachmentReference = description.m_Attachments[uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachmentReference = description.m_Attachments[uiAttachmentIndex];
 
       if (pAttachmentReference->GetDescription().m_ViewType == xiiGALTextureViewType::ShadingRate)
         continue;
 
-      const auto& textureDescription = pAttachmentReference->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachmentReference->GetTexture()->GetDescription();
 
       XII_GAL_DEVICE_CHECK(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Subsampled), "The attachment at index {0} must be created with the xiiGALMiscTextureFlags::Subsampled flag. If the xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget capability is not supported, all attachments except the shading rate texture must have been created with a xiiGALMiscTextureFlags::Subsampled flag.");
     }
@@ -1182,7 +1181,7 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 
     for (xiiUInt32 i = 0U; i < description.m_Triangles.GetCount(); ++i)
     {
-      const auto& triangle = description.m_Triangles[i];
+      const xiiGALBLASTriangleDescription& triangle = description.m_Triangles[i];
 
       XII_GAL_DEVICE_CHECK(!triangle.m_sGeometryName.IsEmpty(), "The geometry name at triangle {0} must not be empty.", i);
       XII_GAL_DEVICE_CHECK(triangle.m_VertexValueType == xiiGALValueType::Float32 || triangle.m_VertexValueType == xiiGALValueType::Float16 || triangle.m_VertexValueType == xiiGALValueType::Int32, "The Vertex Value Type specified in triangle {0} is invalid. Allowed types are xiiGALValueType::Float32, xiiGALValueType::Float16 or xiiGALValueType::Int32.", i);
@@ -1202,7 +1201,7 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 
     for (xiiUInt32 i = 0U; i < description.m_BoundingBoxes.GetCount(); ++i)
     {
-      const auto& boundingBox = description.m_BoundingBoxes[i];
+      const xiiGALBLASBoundingBoxDescription& boundingBox = description.m_BoundingBoxes[i];
 
       XII_GAL_DEVICE_CHECK(!boundingBox.m_sGeometryName.IsEmpty(), "The Geometry Name in bounding box {0} must not be empty.", i);
       XII_GAL_DEVICE_CHECK(boundingBox.m_uiMaxBoxCount > 0U, "The Max Box Count in bounding box {0} must be greater than zero.", i);
@@ -1242,7 +1241,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   xiiMap<xiiHashedString, xiiSet<xiiGALShaderType::StorageType>> usedResourceShaderStages;
   for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
   {
-    const auto& resource = description.m_Resources[i];
+    const xiiGALPipelineResourceDescription& resource = description.m_Resources[i];
 
     XII_GAL_DEVICE_CHECK(!resource.m_sName.IsEmpty(), "The pipeline resource at index '{0}' requires a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!resource.m_ShaderStages.IsNoFlagSet(), "The pipeline resource at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);
@@ -1285,7 +1284,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   xiiMap<xiiHashedString, xiiSet<xiiGALShaderType::StorageType>> usedImmutableSamplerShaderStages;
   for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
   {
-    auto& samplerDescription = description.m_ImmutableSamplers[i];
+    xiiGALImmutableSamplerDescription& samplerDescription = description.m_ImmutableSamplers[i];
 
     XII_GAL_DEVICE_CHECK(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);

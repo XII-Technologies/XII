@@ -22,14 +22,9 @@ xiiGALTextureViewVulkan::~xiiGALTextureViewVulkan()
 
 xiiResult xiiGALTextureViewVulkan::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALTextureVulkan> pTextureVulkan     = m_pTexture.Downcast<xiiGALTextureVulkan>();
-  const auto&                       textureDescription = pTextureVulkan->GetDescription();
-
-  if (m_Description.m_Format == xiiGALResourceFormat::Unknown)
-  {
-    m_Description.m_Format = textureDescription.m_Format;
-  }
+  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALTextureVulkan>       pTextureVulkan     = m_pTexture.Downcast<xiiGALTextureVulkan>();
+  const xiiGALTextureCreationDescription& textureDescription = pTextureVulkan->GetDescription();
 
   vk::ImageViewCreateInfo vkImageViewCreateInfo = {};
   vkImageViewCreateInfo.flags                   = {};
@@ -157,7 +152,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
     vkImageViewCreateInfo.subresourceRange.layerCount     = 1;
   }
 
-  const auto& textureFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(correctedViewFormat);
+  const xiiGALResourceFormatDescription& textureFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(correctedViewFormat);
 
   if (m_Description.m_ViewType == xiiGALTextureViewType::DepthStencil || m_Description.m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
   {
