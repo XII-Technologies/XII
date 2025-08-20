@@ -11,7 +11,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthOnlyPass, 3, xiiRTTIDefaultAllocator<xi
     XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_MEMBER_PROPERTY("RenderStaticObjects", m_bRenderStaticObjects)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("RenderDynamicObjects", m_bRenderDynamicObjects)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("RenderTransparentObjects", m_bRenderTransparentObjects),
+    XII_MEMBER_PROPERTY("RenderTransparentObjects", m_bRenderTransparentObjects)->AddAttributes(new xiiDefaultValueAttribute(false)),
   }
   XII_END_PROPERTIES;
 }
