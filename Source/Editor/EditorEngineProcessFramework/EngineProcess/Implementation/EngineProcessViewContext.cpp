@@ -130,7 +130,6 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
 
       xiiGALSwapChainCreationDescription swapChainDescription;
       swapChainDescription.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
-      swapChainDescription.m_Resolution            = pWindowPlugin->m_pWindow->GetClientAreaSize();
       swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
       swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
       swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;

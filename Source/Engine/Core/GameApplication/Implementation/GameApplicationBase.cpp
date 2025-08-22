@@ -254,7 +254,6 @@ xiiUniquePtr<xiiGameStateBase> xiiGameApplicationBase::CreateGameState()
       xiiUniquePtr<xiiGameStateBase> pNewState = pRtti->GetAllocator()->Allocate<xiiGameStateBase>();
 
       if (pCurState == nullptr)
-
       {
         pCurState = std::move(pNewState);
         return;

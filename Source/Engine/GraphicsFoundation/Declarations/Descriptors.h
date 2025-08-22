@@ -98,7 +98,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   XII_DECLARE_POD_TYPE();
 
   xiiWindowBase*                         m_pWindow           = nullptr;                                    ///< Pointer to the window class.
-  xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                         ///< Swap chain resolution.
   xiiEnum<xiiGALResourceFormat>          m_ColorBufferFormat = xiiGALResourceFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
   xiiBitflags<xiiGALSwapChainUsageFlags> m_UsageFlags        = xiiGALSwapChainUsageFlags::RenderTarget;    ///< Swap chain usage flags.
   xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;            ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.

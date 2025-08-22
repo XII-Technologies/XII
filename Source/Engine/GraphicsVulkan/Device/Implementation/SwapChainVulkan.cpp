@@ -296,18 +296,19 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     xiiLog::Dev("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
   }
 
-  vk::Extent2D swapchainExtent = {};
+  xiiSizeU32   windowSize        = m_Description.m_pWindow->GetClientAreaSize();
+  vk::Extent2D vkSwapchainExtent = {};
   // The width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
-  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && m_Description.m_Resolution.width != 0 && m_Description.m_Resolution.height != 0)
+  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && windowSize.width != 0 && windowSize.height != 0)
   {
     // If the surface size is undefined, the size is set to the size of the images requested.
-    swapchainExtent.width  = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
-    swapchainExtent.height = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
+    vkSwapchainExtent.width  = xiiMath::Min(xiiMath::Max(windowSize.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
+    vkSwapchainExtent.height = xiiMath::Min(xiiMath::Max(windowSize.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
   }
   else
   {
     // If the surface size is defined, the swap chain size must match.
-    swapchainExtent = surfaceCapabilities.currentExtent;
+    vkSwapchainExtent = surfaceCapabilities.currentExtent;
   }
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
@@ -327,13 +328,13 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   if (m_DesiredSurfaceTransform == xiiGALSurfaceTransform::Optimal)
   {
-    swapchainExtent = m_vkSurfaceIdentityExtent;
+    vkSwapchainExtent = m_vkSurfaceIdentityExtent;
   }
   m_vkCurrentSurfaceTransform = surfaceCapabilities.currentTransform;
 #endif
 
-  m_Description.m_Resolution.width  = swapchainExtent.width;
-  m_Description.m_Resolution.height = swapchainExtent.height;
+  m_CurrentSize.width  = vkSwapchainExtent.width;
+  m_CurrentSize.height = vkSwapchainExtent.height;
 
   // The FIFO present mode is guaranteed by the spec to always be supported.
   vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
@@ -414,8 +415,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   swapChainCreateInfo.surface                    = m_vkSurface;
   swapChainCreateInfo.minImageCount              = uiDesiredSwapChainImageCount;
   swapChainCreateInfo.imageFormat                = m_vkColorFormat;
-  swapChainCreateInfo.imageExtent.width          = swapchainExtent.width;
-  swapChainCreateInfo.imageExtent.height         = swapchainExtent.height;
+  swapChainCreateInfo.imageExtent.width          = vkSwapchainExtent.width;
+  swapChainCreateInfo.imageExtent.height         = vkSwapchainExtent.height;
   swapChainCreateInfo.preTransform               = static_cast<vk::SurfaceTransformFlagBitsKHR>(xiiVulkanTypeConversions::GetUnderlyingFlagsValue(vkPreTransform));
   swapChainCreateInfo.compositeAlpha             = compositeAlpha;
   swapChainCreateInfo.imageArrayLayers           = 1U;
@@ -594,8 +595,8 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   {
     xiiGALTextureCreationDescription textureCreationDescription;
     textureCreationDescription.m_Type                  = xiiGALResourceDimension::Texture2D;
-    textureCreationDescription.m_Size.width            = m_Description.m_Resolution.width;
-    textureCreationDescription.m_Size.height           = m_Description.m_Resolution.height;
+    textureCreationDescription.m_Size.width            = m_CurrentSize.width;
+    textureCreationDescription.m_Size.height           = m_CurrentSize.height;
     textureCreationDescription.m_Format                = m_Description.m_ColorBufferFormat;
     textureCreationDescription.m_uiArraySizeOrDepth    = 1U;
     textureCreationDescription.m_uiMipLevels           = 1U;
@@ -831,13 +832,12 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   }
 #endif
 
-  if (newSize.HasNonZeroArea() && (newSize != m_Description.m_Resolution || m_DesiredSurfaceTransform != newTransform))
+  if (newSize.HasNonZeroArea() && (newSize != m_CurrentSize || m_DesiredSurfaceTransform != newTransform))
   {
-    m_Description.m_Resolution = newSize;
     m_DesiredSurfaceTransform  = newTransform;
     bRecreateSwapChain         = true;
 
-    xiiLog::Dev("Resizing swap chain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    xiiLog::Dev("Resizing swap chain to {}x{}.", m_CurrentSize.width, m_CurrentSize.height);
   }
 
   if (bRecreateSwapChain)

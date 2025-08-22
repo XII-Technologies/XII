@@ -449,7 +449,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
 {
   VerifyMultithreadedAccess();
 
-  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
 
   // Validate texture description.
 
