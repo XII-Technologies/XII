@@ -224,7 +224,9 @@ void xiiRenderWorld::AddMainView(const xiiViewHandle& hView)
   XII_ASSERT_DEV(!s_bInExtract, "Cannot add main view during extraction");
 
   if (!s_MainViews.Contains(hView))
+  {
     s_MainViews.PushBack(hView);
+  }
 }
 
 void xiiRenderWorld::RemoveMainView(const xiiViewHandle& hView)

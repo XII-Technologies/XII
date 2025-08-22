@@ -23,6 +23,26 @@ void xiiObjectPickingResult::Reset()
   m_vPickingRayStart.SetZero();
 }
 
+/// \brief Small helper class which exposes the native surface that the renderer can render into.
+class xiiQtNativeSurfaceWidget : public QWidget
+{
+public:
+  xiiQtNativeSurfaceWidget(QWidget* pParent = nullptr) : QWidget(pParent)
+  {
+    // setAttribute(Qt::WA_OpaquePaintEvent);
+    setAutoFillBackground(false);
+    setMouseTracking(true);
+    setMinimumSize(64, 64); // prevent the window from becoming zero sized, otherwise the rendering code may crash
+
+    setAttribute(Qt::WA_PaintOnScreen, true);
+    setAttribute(Qt::WA_NativeWindow, true);
+    setAttribute(Qt::WA_NoSystemBackground);
+  }
+
+  virtual void          paintEvent(QPaintEvent* pEvent) override {}
+  virtual QPaintEngine* paintEngine() const override { return nullptr; }
+};
+
 ////////////////////////////////////////////////////////////////////////
 // xiiQtEngineViewWidget public functions
 ////////////////////////////////////////////////////////////////////////
@@ -32,6 +52,11 @@ xiiSizeU32 xiiQtEngineViewWidget::s_FixedResolution(0, 0);
 xiiQtEngineViewWidget::xiiQtEngineViewWidget(QWidget* pParent, xiiQtEngineDocumentWindow* pDocumentWindow, xiiEngineViewConfig* pViewConfig) :
   QWidget(pParent), m_pDocumentWindow(pDocumentWindow), m_pViewConfig(pViewConfig)
 {
+  setAutoFillBackground(false);
+  setMouseTracking(true);
+  setMinimumSize(64, 64);
+  setFocusPolicy(Qt::FocusPolicy::StrongFocus);
+
   m_pMainLayout = new QHBoxLayout(this);
   m_pMainLayout->setContentsMargins(0, 0, 0, 0);
   setLayout(m_pMainLayout);
@@ -50,7 +75,9 @@ xiiQtEngineViewWidget::xiiQtEngineViewWidget(QWidget* pParent, xiiQtEngineDocume
   xiiEditorEngineProcessConnection::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtEngineViewWidget::EngineViewProcessEventHandler, this));
 
   if (xiiEditorEngineProcessConnection::GetSingleton()->IsProcessCrashed())
+  {
     ShowRestartButton(true);
+  }
 }
 
 xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
@@ -104,11 +131,11 @@ void xiiQtEngineViewWidget::SyncToEngine()
   cam.m_vDirRight                   = m_pViewConfig->m_Camera.GetCenterDirRight();
   cam.m_vPosition                   = m_pViewConfig->m_Camera.GetCenterPosition();
   cam.m_ViewMatrix                  = m_pViewConfig->m_Camera.GetViewMatrix();
-  m_pViewConfig->m_Camera.GetProjectionMatrix((float)width() / (float)height(), cam.m_ProjMatrix);
+  m_pViewConfig->m_Camera.GetProjectionMatrix((float)m_pViewportWidget->width() / (float)m_pViewportWidget->height(), cam.m_ProjMatrix);
 
   cam.m_uiHWND                 = (xiiUInt64)(m_pViewportWidget->winId());
-  cam.m_uiWindowWidth          = width() * this->devicePixelRatio();
-  cam.m_uiWindowHeight         = height() * this->devicePixelRatio();
+  cam.m_uiWindowWidth          = m_pViewportWidget->width() * this->devicePixelRatio();
+  cam.m_uiWindowHeight         = m_pViewportWidget->height() * this->devicePixelRatio();
   cam.m_bUpdatePickingData     = m_bUpdatePickingData;
   cam.m_bEnablePickingSelected = IsPickingAgainstSelectionAllowed() && (!xiiEditorInputContext::IsAnyInputContextActive() || xiiEditorInputContext::GetActiveInputContext()->IsPickingSelectedAllowed());
   cam.m_bEnablePickTransparent = m_bPickTransparent;
@@ -125,7 +152,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
 void xiiQtEngineViewWidget::GetCameraMatrices(xiiMat4& out_mViewMatrix, xiiMat4& out_mProjectionMatrix) const
 {
   out_mViewMatrix = m_pViewConfig->m_Camera.GetViewMatrix();
-  m_pViewConfig->m_Camera.GetProjectionMatrix((float)width() / (float)height(), out_mProjectionMatrix);
+  m_pViewConfig->m_Camera.GetProjectionMatrix((float)m_pViewportWidget->width() / (float)m_pViewportWidget->height(), out_mProjectionMatrix);
 }
 
 void xiiQtEngineViewWidget::UpdateCameraInterpolation()
@@ -246,14 +273,14 @@ xiiResult xiiQtEngineViewWidget::PickPlane(xiiUInt16 uiScreenPosX, xiiUInt16 uiS
 
   xiiMat4 mView = cam.GetViewMatrix();
   xiiMat4 mProj;
-  cam.GetProjectionMatrix((float)width() / (float)height(), mProj);
+  cam.GetProjectionMatrix((float)m_pViewportWidget->width() / (float)m_pViewportWidget->height(), mProj);
   xiiMat4 mViewProj    = mProj * mView;
   xiiMat4 mInvViewProj = mViewProj.GetInverse();
 
   xiiVec3 vScreenPos(uiScreenPosX, uiScreenPosY, 0);
   xiiVec3 vResPos, vResRay;
 
-  if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(mInvViewProj, 0, 0, width(), height(), vScreenPos, vResPos, &vResRay).Failed())
+  if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(mInvViewProj, 0, 0, m_pViewportWidget->width(), m_pViewportWidget->height(), vScreenPos, vResPos, &vResRay).Failed())
     return XII_FAILURE;
 
   if (plane.GetRayIntersection(vResPos, vResRay, nullptr, &out_vPosition))
@@ -323,7 +350,6 @@ bool xiiQtEngineViewWidget::eventFilter(QObject* object, QEvent* event)
 
   return false;
 }
-
 
 void xiiQtEngineViewWidget::paintEvent(QPaintEvent* event)
 {
@@ -661,24 +687,25 @@ void xiiQtEngineViewWidget::RecreateEngineViewport()
 {
   if (m_pViewportWidget)
   {
+    m_pViewportWidget->removeEventFilter(this);
     m_pViewportWidget->hide();
     m_pViewportWidget->setParent(nullptr);
     m_pViewportWidget->deleteLater();
   }
 
-  m_pViewportWidget = new QWidget(this);
-  m_pMainLayout->addWidget(m_pViewportWidget);
-  m_pViewportWidget->setFocusPolicy(Qt::FocusPolicy::StrongFocus);
-  // setAttribute(Qt::WA_OpaquePaintEvent);
-  m_pViewportWidget->setAutoFillBackground(false);
-  m_pViewportWidget->setMouseTracking(true);
-  m_pViewportWidget->setMinimumSize(64, 64); // prevent the window from becoming zero sized, otherwise the rendering code may crash
-
-  m_pViewportWidget->setAttribute(Qt::WA_PaintOnScreen, true);
-  m_pViewportWidget->setAttribute(Qt::WA_NativeWindow, true);
-  m_pViewportWidget->setAttribute(Qt::WA_NoSystemBackground);
-
+  m_pViewportWidget = new xiiQtNativeSurfaceWidget(this);
   m_pViewportWidget->installEventFilter(this);
+  m_pViewportWidget->setFocusProxy(this);
+  if (s_FixedResolution.HasNonZeroArea())
+  {
+    qreal pixelRatio = devicePixelRatio();
+    // When using DPI scaling, this could actually not be possible to achieve so we use the ceiling of the logical size. This is fine, as the editor tests crop the resulting image if not of the proper size.
+    m_pViewportWidget->setFixedSize(static_cast<xiiInt32>(xiiMath::Ceil(s_FixedResolution.width / pixelRatio)), static_cast<xiiInt32>(xiiMath::Ceil(s_FixedResolution.height / pixelRatio)));
+  }
+  else
+  {
+    m_pMainLayout->addWidget(m_pViewportWidget);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -725,9 +752,11 @@ xiiQtViewWidgetContainer::xiiQtViewWidgetContainer(ads::CDockManager* pDockManag
     // Add Tool Bar
     xiiQtToolBarActionMapView* pToolBar = new xiiQtToolBarActionMapView("Toolbar", this);
     xiiActionContext           context;
+
     context.m_sMapping  = sToolBarMapping;
     context.m_pDocument = pViewWidget->GetDocumentWindow()->GetDocument();
     context.m_pWindow   = m_pViewWidget;
+
     pToolBar->SetActionContext(context);
     m_pLayout->addWidget(pToolBar, 0);
   }

@@ -315,7 +315,7 @@ xiiEditorEngineSyncObject* xiiEngineProcessDocumentContext::FindSyncObject(const
 
 void xiiEngineProcessDocumentContext::ClearViewContexts()
 {
-  for (auto* pContext : m_ViewContexts)
+  for (xiiEngineProcessViewContext* pContext : m_ViewContexts)
   {
     DestroyViewContext(pContext);
   }

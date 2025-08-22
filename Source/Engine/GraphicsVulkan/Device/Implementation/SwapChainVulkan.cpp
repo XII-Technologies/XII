@@ -254,7 +254,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     }
   }
 
-  vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
+  vk::SurfaceCapabilitiesKHR surfaceCapabilities;
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   xiiUInt32 uiPresentModeCount = 0U;
@@ -299,7 +299,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   xiiSizeU32   windowSize        = m_Description.m_pWindow->GetClientAreaSize();
   vk::Extent2D vkSwapchainExtent = {};
   // The width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
-  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && windowSize.width != 0 && windowSize.height != 0)
+  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && windowSize.HasNonZeroArea())
   {
     // If the surface size is undefined, the size is set to the size of the images requested.
     vkSwapchainExtent.width  = xiiMath::Min(xiiMath::Max(windowSize.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
@@ -834,8 +834,8 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
 
   if (newSize.HasNonZeroArea() && (newSize != m_CurrentSize || m_DesiredSurfaceTransform != newTransform))
   {
-    m_DesiredSurfaceTransform  = newTransform;
-    bRecreateSwapChain         = true;
+    m_DesiredSurfaceTransform = newTransform;
+    bRecreateSwapChain        = true;
 
     xiiLog::Dev("Resizing swap chain to {}x{}.", m_CurrentSize.width, m_CurrentSize.height);
   }
