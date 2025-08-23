@@ -65,4 +65,11 @@ xiiResult xiiDepthOnlyPass::GetResourceDescriptions(const xiiView& view, const x
 
 void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
+  if (pFrameConstants == nullptr)
+    return;
+
+  auto pDepthStencil = pInputs[m_PinDepthStencil.m_uiInputIndex];
+  if (pDepthStencil == nullptr)
+    return;
 }

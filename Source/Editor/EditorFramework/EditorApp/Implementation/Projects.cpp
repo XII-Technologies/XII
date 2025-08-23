@@ -202,7 +202,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     return XII_FAILURE;
   }
 
-
   if (m_StartupFlags.AreNoneSet(StartupFlags::SafeMode | StartupFlags::Headless))
   {
     xiiStringBuilder sAbsPath;
