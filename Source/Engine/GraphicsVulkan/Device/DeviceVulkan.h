@@ -100,7 +100,9 @@ public:
 
     [[nodiscard]] XII_ALWAYS_INLINE bool HasTimelineSemaphore() const { return m_vkTimelineSemaphore != VK_NULL_HANDLE; }
 
-    void Signal();
+    [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
+
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 ReserveSubmitValue() { return m_uiNextSubmitValue++; }
 
   private:
     struct DeletionEntry
@@ -138,7 +140,7 @@ public:
     xiiMutex                m_DeletionQueueMutex;
 
     vk::Semaphore m_vkTimelineSemaphore = VK_NULL_HANDLE;
-    xiiUInt64     m_uiTimelineValue     = 0ULL;
+    xiiUInt64     m_uiNextSubmitValue     = 1ULL;
   };
 
 public:
