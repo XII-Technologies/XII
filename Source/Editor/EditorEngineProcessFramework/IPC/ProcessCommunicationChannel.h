@@ -6,10 +6,10 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 
 class xiiIpcChannel;
 class xiiProcessMessage;
-class xiiIpcProcessMessageProtocol;
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiProcessCommunicationChannel
 {
@@ -33,11 +33,14 @@ public:
   struct Event
   {
     const xiiProcessMessage* m_pMessage;
+
+    // Set to true in a message handler to cancel the ProcessMessages function and return to the caller before all messages have been processed.
+    mutable bool m_bInterruptMessageProcessing = false;
   };
 
   xiiEvent<const Event&> m_Events;
 
-  void MessageFunc(const xiiProcessMessage* pMsg);
+  void MessageFunc(const xiiIpcProcessMessageProtocol::Event& msg);
 
 protected:
   xiiUniquePtr<xiiIpcProcessMessageProtocol> m_pProtocol;

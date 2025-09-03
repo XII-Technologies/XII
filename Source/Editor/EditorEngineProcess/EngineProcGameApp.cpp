@@ -33,7 +33,7 @@ void EditorPrintFunction(const char* szText)
 {
   xiiStringBuilder sError = szText;
   sError.Trim();
-  xiiLog::Error("{}", sError.GetData());
+  xiiLog::Error("{}", sError.GetView());
 }
 
 static xiiAssertHandler g_PreviousAssertHandler = nullptr;
@@ -183,11 +183,14 @@ xiiApplication::Execution xiiEngineProcessGameApplication::Run()
     }
   } while (!bPendingOpInProgress && m_uiRedrawCountExecuted == m_uiRedrawCountReceived);
 
-  m_uiRedrawCountExecuted = m_uiRedrawCountReceived;
-
-  // Normally rendering is done in EventHandlerIPC as a response to xiiSyncWithProcessMsgToEngine. However, when playing or when pending operations are in progress we need to render even if we didn't receive a draw request.
+  // If the editor enqueues a frame to be rendered, the loop above will break due to m_uiRedrawCountExecuted != m_uiRedrawCountReceived, and we will render a frame.
+  // Alternatively, a pending operations is active at which point we render as fast as we can, ignoring the editor lock step.
+  // Note there are two other cases in which we render a frame: when "FreeGalResources" or "FreeAllResources" messages are sent we must render a frame to clear pending deletions and free memory.
   xiiApplication::Execution res = SUPER::Run();
   xiiRenderWorld::ClearMainViews();
+
+  m_uiRedrawCountExecuted = m_uiRedrawCountReceived;
+
   return res;
 }
 
@@ -203,7 +206,7 @@ void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
   if (msg.m_Entry.m_sTag == "IPC")
     return;
 
-  // Prevent infinite recursion by disabeling logging until we are done sending the message
+  // Prevent infinite recursion by disabling logging until we are done sending the message
   XII_LOG_BLOCK_MUTE();
 
   m_IPC.SendMessage(&msg);
@@ -211,6 +214,11 @@ void xiiEngineProcessGameApplication::LogWriter(const xiiLoggingEventData& e)
 
 static bool EmptyAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
+  XII_IGNORE_UNUSED(szSourceFile);
+  XII_IGNORE_UNUSED(uiLine);
+  XII_IGNORE_UNUSED(szFunction);
+  XII_IGNORE_UNUSED(szExpression);
+  XII_IGNORE_UNUSED(szAssertMsg);
   return false;
 }
 
@@ -252,8 +260,8 @@ bool xiiEngineProcessGameApplication::ProcessIPCMessages(bool bPendingOpInProgre
       // Only suspend and wait if no more pending ops need to be done.
       m_IPC.WaitForMessages();
     }
-    return true;
   }
+  return true;
 }
 
 void xiiEngineProcessGameApplication::SendProjectReadyMessage()
@@ -298,9 +306,12 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
     msg.m_uiRedrawCount     = pMsg->m_uiRedrawCount;
     m_uiRedrawCountReceived = msg.m_uiRedrawCount;
 
-    // We must clear the main views after rendering so that if the editor runs in lock step with the engine we don't render a view twice or request update again without rendering being done.
-    RunOneFrame();
-    xiiRenderWorld::ClearMainViews();
+    // Clear the main views after rendering to prevent duplicate rendering or premature update requests when the editor runs in lockstep with the engine.
+    // If multiple xiiSyncWithProcessMsgToEngine messages are queued, exit the message processing loop to render the current frame immediately.
+    // Previously, rendering was triggered from within the message stack, but this caused stuttering.
+    // Rendering is now performed exclusively in xiiEngineProcessGameApplication::Run for smoother execution.
+
+    e.m_bInterruptMessageProcessing = true;
 
     m_IPC.SendMessage(&msg);
     return;

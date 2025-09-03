@@ -413,10 +413,12 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
   if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
   {
     // in remote mode simply redraw all all views every time a context is updated
-    for (auto pView : m_ViewContexts)
+    for (xiiEngineProcessViewContext* pViewContext : m_ViewContexts)
     {
-      if (pView)
-        pView->Redraw(false);
+      if (pViewContext)
+      {
+        pViewContext->Redraw(false);
+      }
     }
   }
 

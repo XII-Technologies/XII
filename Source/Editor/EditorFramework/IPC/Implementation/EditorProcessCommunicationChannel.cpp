@@ -35,7 +35,7 @@ xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(const char* s
   m_pProtocol = XII_DEFAULT_NEW(xiiIpcProcessMessageProtocol, m_pChannel.Borrow());
   m_pProtocol->m_MessageEvent.AddEventHandler(xiiMakeDelegate(&xiiProcessCommunicationChannel::MessageFunc, this));
   m_pChannel->Connect();
-  for (xiiUInt32 i = 0; i < 100; i++)
+  for (xiiUInt32 i = 0; i < 100; ++i)
   {
     if (m_pChannel->GetConnectionState() == xiiIpcChannel::ConnectionState::Connecting)
       break;
