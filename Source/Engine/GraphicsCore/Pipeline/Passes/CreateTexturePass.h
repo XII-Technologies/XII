@@ -18,6 +18,8 @@ public:
 
   virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) override;
 
+  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 public:
@@ -112,6 +114,9 @@ private:
 
   bool     m_bClear      = false;
   xiiColor m_ClearColour = xiiColor::Black;
+
+  xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
+  xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 2U> m_FramebufferCache;
 };
 
 /// \brief Allocates a depth attachment to be consumed by compute or graphics passes.
@@ -132,6 +137,8 @@ public:
 
   virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) override;
 
+  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 private:
@@ -150,4 +157,7 @@ private:
   bool     m_bClear              = false;
   float    m_fDepthClearValue    = 1.0f;
   xiiUInt8 m_uiStencilClearValue = 0U;
+
+  xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
+  xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 2U> m_FramebufferCache;
 };

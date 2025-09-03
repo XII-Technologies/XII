@@ -136,8 +136,8 @@ void xiiRenderingSetup::AddDepthStencilAttachment(const xiiSharedPtr<xiiGALTextu
 
 void xiiRenderingSetup::DeduceFramebufferSize(const xiiSharedPtr<xiiGALTextureView>& pView)
 {
-  const auto& textureDescription = pView->GetTexture()->GetDescription();
-  const auto& viewDescription    = pView->GetDescription();
+  const xiiGALTextureCreationDescription& textureDescription = pView->GetTexture()->GetDescription();
+  const xiiGALTextureViewCreationDescription& viewDescription    = pView->GetDescription();
 
   if (m_FramebufferDescription.m_FramebufferSize == xiiSizeU32(0, 0))
   {
