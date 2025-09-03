@@ -24,6 +24,8 @@ public:
   virtual void      AcquireImage() override;
   virtual xiiResult CaptureImage(xiiImage& out_image) override;
 
+  void CheckForSwapChainResize();
+
   OnSwapChainChanged                 m_OnSwapChainChanged;
   xiiSizeU32                         m_Size = xiiSizeU32(0, 0);
   xiiEnum<xiiGALPresentMode>         m_PresentMode;

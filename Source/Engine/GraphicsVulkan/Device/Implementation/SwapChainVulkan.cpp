@@ -20,6 +20,7 @@
 #endif
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
+#  include <X11/Xlib-xcb.h>
 #  include <xcb/xcb.h>
 #endif
 
@@ -154,7 +155,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                       = nullptr;
   vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
+  vkSurfaceCreateInfo.window                      = static_cast<Display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr));
   vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -386,8 +387,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
   }
 
-  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android
-  // may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
+  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
   //                          m_Description.m_uiBufferCount
   // CreateVulkanSwapChain()          2 -> 4
   // CreateVulkanSwapChain()          4 -> 6
@@ -434,6 +434,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eInputAttachment;
   if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::CopySource))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eTransferSrc;
+  swapChainCreateInfo.imageUsage &= surfaceCapabilities.supportedUsageFlags; // Clamp to supported usage flags.
 
   swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eExclusive;
   swapChainCreateInfo.queueFamilyIndexCount = 0U;
@@ -511,15 +512,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   if (m_vkSwapChain == VK_NULL_HANDLE)
     return;
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  // All references to the swap chain must be released before it can be destroyed.
-  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
-  {
-    m_SwapChainTextures.Clear();
-  }
-  m_pBackBufferTexture.Clear();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   // Just idling the GPU is not enough and results in validation warnings.
   // As a matter of fact, it is only required to check the fence status.
@@ -528,6 +521,8 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
     m_pFrameCompleteFence->Wait(m_uiFrameIndex - 1ULL);
   }
 
+  // All references to the swap chain must be released before it can be destroyed.
+  m_pBackBufferTexture.Clear();
   m_SwapChainTextures.Clear();
   m_SwapChainImagesInitialized.Clear();
 
@@ -551,6 +546,8 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   if (bReleaseSwapChain)
   {
+    vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
     vkLogicalDevice.destroySwapchainKHR(m_vkSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
     m_vkSwapChain = VK_NULL_HANDLE;
@@ -673,7 +670,14 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     }
   }
 
-  m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  if (m_bIsImageAcquired)
+  {
+    m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  }
+  else
+  {
+    m_pBackBufferTexture.Clear();
+  }
 
   return result;
 }
@@ -708,7 +712,7 @@ void xiiGALSwapChainVulkan::Present()
 
   if (!m_bIsMinimized)
   {
-    vk::Result result = vk::Result::eErrorOutOfDateKHR;
+    vk::Result result = vk::Result::eSuccess;
 
     // Only present if the image was acquired successfully.
     if (m_bIsImageAcquired)
@@ -735,10 +739,12 @@ void xiiGALSwapChainVulkan::Present()
 
       m_uiSemaphoreIndex = m_Description.m_uiBufferCount - 1; // To start with 0 index when acquire next image.
     }
-    else
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    else if (m_bIsImageAcquired)
     {
-      XII_ASSERT_DEV(result == vk::Result::eSuccess, "Swap Chain presentation failed.");
+      XII_ASSERT_DEBUG(result == vk::Result::eSuccess, "Swap Chain presentation failed.");
     }
+#endif
   }
 
   if (!m_bIsMinimized)
