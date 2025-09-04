@@ -306,12 +306,11 @@ bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
     uiNextOffset += range.GetCount();
   }
 
-
   m_OutputState.IsPending = true;
   return true;
 }
 
-void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfered, DWORD uiError)
+void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransferred, DWORD uiError)
 {
   XII_IGNORE_UNUSED(uiError);
 
@@ -335,12 +334,12 @@ void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfe
       if (m_InputState.IsPending)
         return;
     }
-    bRes = ProcessIncomingMessages(uiBytesTransfered);
+    bRes = ProcessIncomingMessages(uiBytesTransferred);
   }
   else
   {
     XII_ASSERT_DEBUG(pContext == &m_OutputState.Context, "");
-    bRes = ProcessOutgoingMessages(uiBytesTransfered);
+    bRes = ProcessOutgoingMessages(uiBytesTransferred);
   }
   if (!bRes && m_hPipeHandle != INVALID_HANDLE_VALUE)
   {
