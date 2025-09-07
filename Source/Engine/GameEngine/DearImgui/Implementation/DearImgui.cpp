@@ -60,7 +60,11 @@ void xiiImgui::SetCurrentContextForView(const xiiViewHandle& hView)
     // Last frame was not rendered. This can happen if a render pipeline with dear imgui renderer is used.
     if (context.m_uiFrameRenderCounter != context.m_uiFrameBeginCounter)
     {
-      ImGui::EndFrame();
+      ImGuiContext* pContext = ImGui::GetCurrentContext();
+      if (pContext && pContext->Initialized && pContext->WithinFrameScope)
+      {
+        ImGui::EndFrame();
+      }
     }
 
     BeginFrame(hView);
