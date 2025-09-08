@@ -54,6 +54,8 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
   renderViewContext.SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
 
   xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = CreatePipelineState(renderViewContext);
+  if (!pGraphicsPipelineState)
+    return;
 
   renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
   renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("xiiGlobalConstants", renderViewContext.m_CommandListData.m_pGlobalConstants->GetDefaultView(xiiGALBufferViewType::ShaderResource));
@@ -154,7 +156,10 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiSpriteRenderer::CreatePipelineState
   graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
 
   {
-    xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
+
+    if (pShaderPermutation->IsShaderValid())
+      return nullptr;
 
     graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
     graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
