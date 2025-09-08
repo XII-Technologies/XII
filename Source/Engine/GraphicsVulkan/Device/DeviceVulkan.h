@@ -140,7 +140,7 @@ public:
     xiiMutex                m_DeletionQueueMutex;
 
     vk::Semaphore m_vkTimelineSemaphore = VK_NULL_HANDLE;
-    xiiUInt64     m_uiNextSubmitValue     = 1ULL;
+    xiiUInt64     m_uiNextSubmitValue   = 1ULL;
   };
 
 public:

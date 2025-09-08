@@ -107,9 +107,9 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
     pRenderData->m_fAspectRatio    = m_fAspectRatio;
     pRenderData->m_BlendMode       = m_BlendMode;
-    pRenderData->m_Colour           = m_Color;
-    pRenderData->m_vTextureCoordScale   = xiiVec2(1.0f);
-    pRenderData->m_vTextureCoordOffset  = xiiVec2(0.0f);
+    pRenderData->m_Colour              = m_Color;
+    pRenderData->m_vTextureCoordScale  = xiiVec2(1.0f);
+    pRenderData->m_vTextureCoordOffset = xiiVec2(0.0f);
     pRenderData->m_uiUniqueID      = GetUniqueIdForRendering();
 
     pRenderData->FillSortingKey();

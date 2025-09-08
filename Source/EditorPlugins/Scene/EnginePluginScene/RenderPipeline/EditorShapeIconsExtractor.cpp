@@ -134,8 +134,8 @@ void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject
       pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
       pRenderData->m_fAspectRatio    = 1.0f;
       pRenderData->m_BlendMode       = xiiSpriteBlendMode::ShapeIcon;
-      pRenderData->m_vTextureCoordScale   = xiiVec2(1.0f);
-      pRenderData->m_vTextureCoordOffset  = xiiVec2(0.0f);
+      pRenderData->m_vTextureCoordScale  = xiiVec2(1.0f);
+      pRenderData->m_vTextureCoordOffset = xiiVec2(0.0f);
       pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(*pComponent);
 
       // prefer color gamma properties

@@ -63,7 +63,7 @@ void xiiIpcProcessMessageProtocol::ReceiveMessageData(xiiArrayPtr<const xiiUInt8
   xiiRawMemoryStreamReader reader(data.GetPtr(), data.GetCount());
   const xiiRTTI*           pRtti = nullptr;
 
-  xiiProcessMessage*             pMsg = (xiiProcessMessage*)xiiReflectionSerializer::ReadObjectFromBinary(reader, pRtti);
+  xiiProcessMessage*              pMsg = (xiiProcessMessage*)xiiReflectionSerializer::ReadObjectFromBinary(reader, pRtti);
   xiiUniquePtr<xiiProcessMessage> msg(pMsg, xiiFoundation::GetDefaultAllocator());
   if (msg != nullptr)
   {
