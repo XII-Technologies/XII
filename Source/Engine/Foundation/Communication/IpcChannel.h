@@ -13,7 +13,7 @@ struct XII_FOUNDATION_DLL xiiIpcChannelEvent
 {
   enum Type
   {
-    Disconnected, ///< Server or client are in a dorment state.
+    Disconnected, ///< Server or client are in a dormant state.
     Connecting,   ///< The server is listening for clients or the client is trying to find the server.
     Connected,    ///< Client and server are connected to each other.
     NewMessages,  ///< Sent when a new messages have been received or when disconnected to wake up any thread waiting for messages.
@@ -33,10 +33,10 @@ struct XII_FOUNDATION_DLL xiiIpcChannelEvent
 /// \brief Base class for a communication channel between processes.
 ///
 ///  The channel allows for byte blobs to be send back and forth between two processes.
-///  A client should only try to connect to a server once the server has changed to ConnectionState::Connecting as this indicates the server is ready to be conneccted to.
+///  A client should only try to connect to a server once the server has changed to ConnectionState::Connecting as this indicates the server is ready to be connected to.
 ///
 ///  Use xiiIpcChannel:::CreatePipeChannel to create an IPC pipe instance.
-///  To send more complex messages accross, you can create a xiiIpcProcessMessageProtocol on top of the channel.
+///  To send more complex messages across, you can create a xiiIpcProcessMessageProtocol on top of the channel.
 class XII_FOUNDATION_DLL xiiIpcChannel
 {
 public:

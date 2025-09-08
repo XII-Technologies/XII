@@ -641,19 +641,19 @@ void xiiCameraComponent::ActivateRenderToTexture()
   xiiStringBuilder name;
   name.SetFormat("Camera RT: {0}", GetOwner()->GetName());
 
-  xiiView* pRenderTargetView = nullptr;
-  m_hRenderTargetView        = xiiRenderWorld::CreateView(name, pRenderTargetView);
+  xiiView* pView      = nullptr;
+  m_hRenderTargetView = xiiRenderWorld::CreateView(name, pView);
 
-  pRenderTargetView->SetRenderPipelineResource(m_hCachedRenderPipeline);
+  pView->SetRenderPipelineResource(m_hCachedRenderPipeline);
 
-  pRenderTargetView->SetWorld(GetWorld());
-  pRenderTargetView->SetCamera(&m_RenderTargetCamera);
+  pView->SetWorld(GetWorld());
+  pView->SetCamera(&m_RenderTargetCamera);
 
   pRenderTarget->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiCameraComponent::ResourceChangeEventHandler, this));
 
   xiiRenderTargets renderTargets;
   renderTargets.m_pRTs[0] = pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  pRenderTargetView->SetRenderTargets(renderTargets);
+  pView->SetRenderTargets(renderTargets);
 
   const float maxSizeX = 1.0f - m_vRenderTargetRectOffset.x;
   const float maxSizeY = 1.0f - m_vRenderTargetRectOffset.y;
@@ -667,7 +667,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
   const float offsetX = m_vRenderTargetRectOffset.x * resX;
   const float offsetY = m_vRenderTargetRectOffset.y * resY;
 
-  pRenderTargetView->SetViewport(xiiRectFloat(offsetX, offsetY, width, height));
+  pView->SetViewport(xiiRectFloat(offsetX, offsetY, width, height));
 
   pRenderTarget->AddRenderView(m_hRenderTargetView);
 

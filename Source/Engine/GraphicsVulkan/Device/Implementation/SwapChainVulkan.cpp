@@ -20,6 +20,7 @@
 #endif
 
 #ifdef VK_USE_PLATFORM_XCB_KHR
+#  include <X11/Xlib-xcb.h>
 #  include <xcb/xcb.h>
 #endif
 
@@ -154,7 +155,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                       = nullptr;
   vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
+  vkSurfaceCreateInfo.window                      = static_cast<Display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr));
   vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -254,7 +255,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     }
   }
 
-  vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
+  vk::SurfaceCapabilitiesKHR surfaceCapabilities;
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   xiiUInt32 uiPresentModeCount = 0U;
@@ -296,18 +297,19 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     xiiLog::Dev("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
   }
 
-  vk::Extent2D swapchainExtent = {};
+  xiiSizeU32   windowSize        = m_Description.m_pWindow->GetClientAreaSize();
+  vk::Extent2D vkSwapchainExtent = {};
   // The width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
-  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && m_Description.m_Resolution.width != 0 && m_Description.m_Resolution.height != 0)
+  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && windowSize.HasNonZeroArea())
   {
     // If the surface size is undefined, the size is set to the size of the images requested.
-    swapchainExtent.width  = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
-    swapchainExtent.height = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
+    vkSwapchainExtent.width  = xiiMath::Min(xiiMath::Max(windowSize.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
+    vkSwapchainExtent.height = xiiMath::Min(xiiMath::Max(windowSize.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
   }
   else
   {
     // If the surface size is defined, the swap chain size must match.
-    swapchainExtent = surfaceCapabilities.currentExtent;
+    vkSwapchainExtent = surfaceCapabilities.currentExtent;
   }
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
@@ -327,13 +329,13 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   if (m_DesiredSurfaceTransform == xiiGALSurfaceTransform::Optimal)
   {
-    swapchainExtent = m_vkSurfaceIdentityExtent;
+    vkSwapchainExtent = m_vkSurfaceIdentityExtent;
   }
   m_vkCurrentSurfaceTransform = surfaceCapabilities.currentTransform;
 #endif
 
-  m_Description.m_Resolution.width  = swapchainExtent.width;
-  m_Description.m_Resolution.height = swapchainExtent.height;
+  m_CurrentSize.width  = vkSwapchainExtent.width;
+  m_CurrentSize.height = vkSwapchainExtent.height;
 
   // The FIFO present mode is guaranteed by the spec to always be supported.
   vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
@@ -385,8 +387,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
   }
 
-  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android
-  // may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
+  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
   //                          m_Description.m_uiBufferCount
   // CreateVulkanSwapChain()          2 -> 4
   // CreateVulkanSwapChain()          4 -> 6
@@ -414,8 +415,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   swapChainCreateInfo.surface                    = m_vkSurface;
   swapChainCreateInfo.minImageCount              = uiDesiredSwapChainImageCount;
   swapChainCreateInfo.imageFormat                = m_vkColorFormat;
-  swapChainCreateInfo.imageExtent.width          = swapchainExtent.width;
-  swapChainCreateInfo.imageExtent.height         = swapchainExtent.height;
+  swapChainCreateInfo.imageExtent.width          = vkSwapchainExtent.width;
+  swapChainCreateInfo.imageExtent.height         = vkSwapchainExtent.height;
   swapChainCreateInfo.preTransform               = static_cast<vk::SurfaceTransformFlagBitsKHR>(xiiVulkanTypeConversions::GetUnderlyingFlagsValue(vkPreTransform));
   swapChainCreateInfo.compositeAlpha             = compositeAlpha;
   swapChainCreateInfo.imageArrayLayers           = 1U;
@@ -433,6 +434,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eInputAttachment;
   if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::CopySource))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eTransferSrc;
+  swapChainCreateInfo.imageUsage &= surfaceCapabilities.supportedUsageFlags; // Clamp to supported usage flags.
 
   swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eExclusive;
   swapChainCreateInfo.queueFamilyIndexCount = 0U;
@@ -510,15 +512,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   if (m_vkSwapChain == VK_NULL_HANDLE)
     return;
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  // All references to the swap chain must be released before it can be destroyed.
-  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
-  {
-    m_SwapChainTextures.Clear();
-  }
-  m_pBackBufferTexture.Clear();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   // Just idling the GPU is not enough and results in validation warnings.
   // As a matter of fact, it is only required to check the fence status.
@@ -527,6 +521,8 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
     m_pFrameCompleteFence->Wait(m_uiFrameIndex - 1ULL);
   }
 
+  // All references to the swap chain must be released before it can be destroyed.
+  m_pBackBufferTexture.Clear();
   m_SwapChainTextures.Clear();
   m_SwapChainImagesInitialized.Clear();
 
@@ -550,6 +546,8 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
 
   if (bReleaseSwapChain)
   {
+    vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
     vkLogicalDevice.destroySwapchainKHR(m_vkSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
     m_vkSwapChain = VK_NULL_HANDLE;
@@ -594,8 +592,8 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   {
     xiiGALTextureCreationDescription textureCreationDescription;
     textureCreationDescription.m_Type                  = xiiGALResourceDimension::Texture2D;
-    textureCreationDescription.m_Size.width            = m_Description.m_Resolution.width;
-    textureCreationDescription.m_Size.height           = m_Description.m_Resolution.height;
+    textureCreationDescription.m_Size.width            = m_CurrentSize.width;
+    textureCreationDescription.m_Size.height           = m_CurrentSize.height;
     textureCreationDescription.m_Format                = m_Description.m_ColorBufferFormat;
     textureCreationDescription.m_uiArraySizeOrDepth    = 1U;
     textureCreationDescription.m_uiMipLevels           = 1U;
@@ -672,7 +670,14 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
     }
   }
 
-  m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  if (m_bIsImageAcquired)
+  {
+    m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  }
+  else
+  {
+    m_pBackBufferTexture.Clear();
+  }
 
   return result;
 }
@@ -707,7 +712,7 @@ void xiiGALSwapChainVulkan::Present()
 
   if (!m_bIsMinimized)
   {
-    vk::Result result = vk::Result::eErrorOutOfDateKHR;
+    vk::Result result = vk::Result::eSuccess;
 
     // Only present if the image was acquired successfully.
     if (m_bIsImageAcquired)
@@ -734,10 +739,12 @@ void xiiGALSwapChainVulkan::Present()
 
       m_uiSemaphoreIndex = m_Description.m_uiBufferCount - 1; // To start with 0 index when acquire next image.
     }
-    else
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    else if (m_bIsImageAcquired)
     {
-      XII_ASSERT_DEV(result == vk::Result::eSuccess, "Swap Chain presentation failed.");
+      XII_ASSERT_DEBUG(result == vk::Result::eSuccess, "Swap Chain presentation failed.");
     }
+#endif
   }
 
   if (!m_bIsMinimized)
@@ -831,13 +838,12 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   }
 #endif
 
-  if (newSize.HasNonZeroArea() && (newSize != m_Description.m_Resolution || m_DesiredSurfaceTransform != newTransform))
+  if (newSize.HasNonZeroArea() && (newSize != m_CurrentSize || m_DesiredSurfaceTransform != newTransform))
   {
-    m_Description.m_Resolution = newSize;
-    m_DesiredSurfaceTransform  = newTransform;
-    bRecreateSwapChain         = true;
+    m_DesiredSurfaceTransform = newTransform;
+    bRecreateSwapChain        = true;
 
-    xiiLog::Dev("Resizing swap chain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    xiiLog::Dev("Resizing swap chain to {}x{}.", m_CurrentSize.width, m_CurrentSize.height);
   }
 
   if (bRecreateSwapChain)

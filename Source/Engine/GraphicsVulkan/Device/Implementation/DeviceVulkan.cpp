@@ -2810,13 +2810,13 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
 xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan) :
   m_pDeviceVulkan(pDeviceVulkan)
 {
-  const auto& logicalDeviceFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
+  const ExtensionFeatures& logicalDeviceFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
   if (logicalDeviceFeatures.m_TimelineSemaphore.timelineSemaphore == vk::True)
   {
     vk::SemaphoreTypeCreateInfo vkTimelineCreateInfo = {};
     vkTimelineCreateInfo.semaphoreType               = vk::SemaphoreType::eTimeline;
-    vkTimelineCreateInfo.initialValue                = m_uiTimelineValue;
+    vkTimelineCreateInfo.initialValue                = 0ULL;
 
     vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
     vkSemaphoreCreateInfo.pNext                   = &vkTimelineCreateInfo;
@@ -2826,7 +2826,17 @@ xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVul
   }
 }
 
-xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue() = default;
+xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue()
+{
+  ReleaseResources(true);
+
+  if (m_vkTimelineSemaphore)
+  {
+    vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+
+    vkLogicalDevice.destroySemaphore(m_vkTimelineSemaphore, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+}
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject)
 {
@@ -2841,7 +2851,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiTimelineValue + 1;
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
   }
   else
   {
@@ -2864,7 +2874,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiTimelineValue + 1;
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
   }
   else
   {
@@ -2885,7 +2895,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphoreP
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiTimelineValue + 1;
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
   }
   else
   {
@@ -2907,7 +2917,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptor
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiTimelineValue + 1;
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
   }
   else
   {
@@ -2929,7 +2939,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolV
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiTimelineValue + 1;
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
   }
   else
   {
@@ -3024,19 +3034,6 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       }
     }
   }
-}
-
-void xiiGALDeviceVulkan::DeferredDeletionQueue::Signal()
-{
-  XII_ASSERT_DEV(HasTimelineSemaphore(), "Signal() requires the device to enable the NativeFence feature.");
-
-  vk::SemaphoreSignalInfo vkSignalInformation = {};
-  vkSignalInformation.pNext                   = nullptr;
-  vkSignalInformation.semaphore               = m_vkTimelineSemaphore;
-  vkSignalInformation.value                   = ++m_uiTimelineValue;
-
-  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
-  VK_ASSERT_DEV(vkLogicalDevice.signalSemaphoreKHR(&vkSignalInformation, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject)

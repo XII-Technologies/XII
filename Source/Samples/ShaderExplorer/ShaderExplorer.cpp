@@ -517,10 +517,8 @@ public:
     {
       xiiGALSwapChainCreationDescription swapChainDescription;
       swapChainDescription.m_pWindow               = m_pWindow.Borrow();
-      swapChainDescription.m_Resolution.width      = g_uiWindowWidth;
-      swapChainDescription.m_Resolution.height     = g_uiWindowHeight;
       swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
       swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
       swapChainDescription.m_uiBufferCount         = 2U;
       swapChainDescription.m_fDefaultDepthValue    = 1.0f;

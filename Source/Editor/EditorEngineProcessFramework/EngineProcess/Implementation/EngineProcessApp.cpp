@@ -109,9 +109,8 @@ xiiViewHandle xiiEditorEngineProcessApp::CreateRemoteWindowAndView(xiiCamera* pC
 
       xiiGALSwapChainCreationDescription swapChainDescription;
       swapChainDescription.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
-      swapChainDescription.m_Resolution            = pWindowPlugin->m_pWindow->GetClientAreaSize();
       swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
       swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
       swapChainDescription.m_uiBufferCount         = 2U;
       swapChainDescription.m_fDefaultDepthValue    = 1.0f;

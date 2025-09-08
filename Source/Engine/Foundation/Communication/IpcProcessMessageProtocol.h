@@ -8,38 +8,86 @@
 class xiiIpcChannel;
 class xiiMessageLoop;
 
-
-/// \brief A protocol around xiiIpcChannel to send reflected messages instead of byte array messages between client and server.
+/// \brief A protocol wrapper around xiiIpcChannel to send and receive reflected messages instead of raw byte arrays.
 ///
-/// This wrapper class hooks into an existing xiiIpcChannel. The xiiIpcChannel is still responsible for all connection logic. This class merely provides a high-level messaging protocol via reflected messages derived from xiiProcessMessage.
-/// Note that if this class is used, xiiIpcChannel::Send must not be called manually anymore, only use xiiIpcProcessMessageProtocol::Send.
-/// Received messages are stored in a queue and must be flushed via calling ProcessMessages or WaitForMessages.
+/// This class hooks into an existing xiiIpcChannel instance to provide a high-level messaging protocol using reflected messages derived from xiiProcessMessage.
+/// The underlying xiiIpcChannel remains responsible for all connection logic, while this protocol focuses solely on message serialization, deserialization, and dispatch.
+///
+/// \note When using this protocol, do not call xiiIpcChannel::Send directly. Instead, use xiiIpcProcessMessageProtocol::Send to ensure proper message formatting and handling.
+///
+/// Received messages are stored in an internal queue and must be processed explicitly by calling ProcessMessages() or WaitForMessages().
 class XII_FOUNDATION_DLL xiiIpcProcessMessageProtocol
 {
 public:
+  /// \brief Constructs the protocol wrapper for a given IPC channel.
+  ///
+  /// \param pChannel - Pointer to an existing xiiIpcChannel instance. The channel must remain valid for the lifetime of this protocol object.
   xiiIpcProcessMessageProtocol(xiiIpcChannel* pChannel);
+
+  /// \brief Destructor. Cleans up any queued messages and detaches from the channel.
   ~xiiIpcProcessMessageProtocol();
 
-  /// \brief Sends a message. pMsg can be destroyed after the call.
+  /// \brief Sends a reflected process message over the IPC channel.
+  ///
+  /// \param pMsg - Pointer to the message to send. Ownership is not transferred; the message can be safely destroyed after this call returns.
+  ///
+  /// \return True if the message was successfully queued for sending, false otherwise.
   bool Send(xiiProcessMessage* pMsg);
 
-
-  /// \brief Processes all pending messages by broadcasting m_MessageEvent. Not re-entrant.
+  /// \brief Processes all pending incoming messages.
+  ///
+  /// This method dequeues all received messages and broadcasts them via m_MessageEvent.
+  /// It is not re-entrant; calling it from within a message handler is not supported.
+  ///
+  /// \return True if any messages were processed, false otherwise.
   bool ProcessMessages();
-  /// \brief Block and wait for new messages and call ProcessMessages.
+
+  /// \brief Waits for new messages to arrive and processes them.
+  ///
+  /// This method blocks until either a message is received or the specified timeout elapses.
+  /// Once unblocked, it calls ProcessMessages() to handle all queued messages.
+  ///
+  /// \param timeout Maximum time to wait for a message. Defaults to zero (non-blocking).
+  ///
+  /// \return xiiResult::Success if messages were processed, xiiResult::Failure on timeout or error.
   xiiResult WaitForMessages(xiiTime timeout = xiiTime::MakeZero());
 
 public:
-  xiiEvent<const xiiProcessMessage*> m_MessageEvent; ///< Will be sent from thread calling ProcessMessages or WaitForMessages.
+  /// \brief Event data structure for message notifications.
+  struct Event
+  {
+    /// \brief Pointer to the received message.
+    const xiiProcessMessage* m_pMessage;
+
+    /// \brief Set to true within a message handler to interrupt message processing.
+    ///
+    /// If set, ProcessMessages() will return immediately without processing further messages.
+    mutable bool m_bInterruptMessageProcessing = false;
+  };
+
+  /// \brief Event fired when a new message is processed.
+  ///
+  /// This event is triggered from the thread calling ProcessMessages() or WaitForMessages().
+  xiiEvent<const Event&> m_MessageEvent;
 
 private:
+  /// \brief Adds a newly received message to the incoming queue.
+  /// \param msg Unique pointer to the message to enqueue.
   void EnqueueMessage(xiiUniquePtr<xiiProcessMessage>&& msg);
-  void SwapWorkQueue(xiiDeque<xiiUniquePtr<xiiProcessMessage>>& messages);
+
+  /// \brief Removes and returns the next message from the incoming queue.
+  /// \return Unique pointer to the next queued message, or nullptr if the queue is empty.
+  xiiUniquePtr<xiiProcessMessage> PopMessage();
+
+  /// \brief Handles raw message data received from the IPC channel.
+  /// \param data Byte array containing the serialized message.
   void ReceiveMessageData(xiiArrayPtr<const xiiUInt8> data);
 
 private:
-  xiiIpcChannel* m_pChannel = nullptr;
+  xiiIpcChannel* m_pChannel = nullptr; ///< \brief Pointer to the associated IPC channel.
 
-  xiiMutex                                  m_IncomingQueueMutex;
+  xiiMutex m_IncomingQueueMutex; ///< \brief Mutex protecting access to the incoming message queue.
+
+  /// \brief Queue of incoming messages awaiting processing.
   xiiDeque<xiiUniquePtr<xiiProcessMessage>> m_IncomingQueue;
 };

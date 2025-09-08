@@ -1115,7 +1115,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 #endif
 }
 
-void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
+void xiiRenderPipeline::Render()
 {
   XII_PROFILE_SCOPE(m_sName.GetView());
 
@@ -1137,11 +1137,11 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   renderViewContext.m_pCamera            = pCamera;
   renderViewContext.m_pLodCamera         = &data.GetLodCamera();
   renderViewContext.m_pViewData          = &data.GetViewData();
-  renderViewContext.m_pRenderContext     = pRenderContext;
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
+  renderViewContext.m_pCommandList       = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  // Set camera mode permutation variable here since it doesn't change throughout the frame
+  // Set camera mode permutation variable here since it doesn't change throughout the frame.
   static xiiHashedString sCameraMode  = xiiMakeHashedString("CAMERA_MODE");
   static xiiHashedString sOrtho       = xiiMakeHashedString("CAMERA_MODE_ORTHO");
   static xiiHashedString sPerspective = xiiMakeHashedString("CAMERA_MODE_PERSPECTIVE");
@@ -1153,23 +1153,23 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   static xiiHashedString sFalse            = xiiMakeHashedString("FALSE");
 
   if (pCamera->IsOrthographic())
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sOrtho);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sOrtho);
   else if (pCamera->IsStereoscopic())
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sStereo);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sStereo);
   else
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
+    renderViewContext.SetShaderPermutationVariable(sCameraMode, sPerspective);
 
   if (pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
+    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sTrue);
   else
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
+    renderViewContext.SetShaderPermutationVariable(sVSRTAI, sFalse);
 
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
+  renderViewContext.SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation variables.
   for (xiiGALPermutationVariable& permutationVariable : m_PermutationVariables)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(permutationVariable.m_sName, permutationVariable.m_sValue);
+    renderViewContext.SetShaderPermutationVariable(permutationVariable.m_sName, permutationVariable.m_sValue);
   }
 
   xiiRenderWorldRenderEvent renderEvent;
@@ -1215,7 +1215,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     xiiUInt32 uiCurrentLastUsageIdx  = 0;
     for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
     {
-      auto& pPass = m_Passes[i];
+      xiiUniquePtr<xiiRenderPipelinePassBase>& pPass = m_Passes[i];
 
       XII_PROFILE_SCOPE(pPass->GetName());
       xiiLogBlock passBlock("Render Pass", pPass->GetName());
@@ -1280,6 +1280,13 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         else
         {
           pPass->ExecuteInactive(renderViewContext, connectionData.m_Inputs, connectionData.m_Outputs);
+        }
+
+        if (renderViewContext.m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Reset)
+        {
+          pDevice->GetCommandQueue()->Submit(renderViewContext.m_pCommandList);
+
+          renderViewContext.m_CommandListData = {};
         }
       }
 
@@ -1739,55 +1746,6 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
 
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
-}
-
-xiiSharedPtr<xiiGALRenderPass> xiiRenderPipeline::GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description)
-{
-  RenderPassCache* pRenderPassCache;
-  if (m_RenderPassCache.TryGetValue(description, pRenderPassCache))
-    return pRenderPassCache->m_pRenderPass;
-
-  xiiSharedPtr<xiiGALDevice>     pDevice     = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALRenderPass> pRenderPass = pDevice->CreateRenderPass(description);
-
-  XII_ASSERT_DEBUG(pRenderPass != nullptr, "Failed to create render pass.");
-
-  m_RenderPassCache.Insert(description, RenderPassCache{pRenderPass});
-
-  return pRenderPass;
-}
-
-xiiSharedPtr<xiiGALFramebuffer> xiiRenderPipeline::GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount)
-{
-  RenderPassCache* pRenderPassCache;
-  if (!m_RenderPassCache.TryGetValue(pRenderPass->GetDescription(), pRenderPassCache))
-    return nullptr;
-
-  for (xiiUInt32 i = 0; i < pRenderPassCache->m_FramebufferCache.GetCount(); ++i)
-  {
-    const auto& pFrameBuffer = pRenderPassCache->m_FramebufferCache[i];
-    const auto& description  = pFrameBuffer->GetDescription();
-
-    XII_ASSERT_DEBUG(description.m_pRenderPass == pRenderPassCache->m_pRenderPass, "Render pass mismatch for the same render pass description.");
-
-    if (description.m_Attachments == pAttachments && description.m_FramebufferSize == framebufferSize && description.m_uiArraySliceCount == uiArraySliceCount)
-    {
-      return pFrameBuffer;
-    }
-  }
-
-  xiiGALFramebufferCreationDescription framebufferDescription;
-  framebufferDescription.m_pRenderPass       = pRenderPassCache->m_pRenderPass;
-  framebufferDescription.m_Attachments       = pAttachments;
-  framebufferDescription.m_FramebufferSize   = framebufferSize;
-  framebufferDescription.m_uiArraySliceCount = uiArraySliceCount;
-
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALFramebuffer> pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
-
-  pRenderPassCache->m_FramebufferCache.PushBack(pFramebuffer);
-
-  return pFramebuffer;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);

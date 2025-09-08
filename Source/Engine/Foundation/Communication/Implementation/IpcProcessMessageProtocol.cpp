@@ -1,9 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Communication/IpcProcessMessageProtocol.h>
-// #include <Foundation/Communication/Implementation/MessageLoop.h>
 #include <Foundation/Communication/IpcChannel.h>
-// #include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 
@@ -17,9 +15,9 @@ xiiIpcProcessMessageProtocol::~xiiIpcProcessMessageProtocol()
 {
   m_pChannel->SetReceiveCallback({});
 
-  xiiDeque<xiiUniquePtr<xiiProcessMessage>> messages;
-  SwapWorkQueue(messages);
-  messages.Clear();
+  while (xiiUniquePtr<xiiProcessMessage> msg = PopMessage())
+  {
+  }
 }
 
 bool xiiIpcProcessMessageProtocol::Send(xiiProcessMessage* pMsg)
@@ -32,21 +30,21 @@ bool xiiIpcProcessMessageProtocol::Send(xiiProcessMessage* pMsg)
 
 bool xiiIpcProcessMessageProtocol::ProcessMessages()
 {
-  xiiDeque<xiiUniquePtr<xiiProcessMessage>> messages;
-  SwapWorkQueue(messages);
-  if (messages.IsEmpty())
+  bool bMessagesPresent = false;
+
+  while (xiiUniquePtr<xiiProcessMessage> msg = PopMessage())
   {
-    return false;
+    bMessagesPresent = true;
+    Event e;
+    e.m_pMessage                    = msg.Borrow();
+    e.m_bInterruptMessageProcessing = false;
+    m_MessageEvent.Broadcast(e);
+
+    if (e.m_bInterruptMessageProcessing)
+      break;
   }
 
-  while (!messages.IsEmpty())
-  {
-    xiiUniquePtr<xiiProcessMessage> msg = std::move(messages.PeekFront());
-    messages.PopFront();
-    m_MessageEvent.Broadcast(msg.Borrow());
-  }
-
-  return true;
+  return bMessagesPresent;
 }
 
 xiiResult xiiIpcProcessMessageProtocol::WaitForMessages(xiiTime timeout)
@@ -84,15 +82,16 @@ void xiiIpcProcessMessageProtocol::EnqueueMessage(xiiUniquePtr<xiiProcessMessage
   m_IncomingQueue.PushBack(std::move(msg));
 }
 
-void xiiIpcProcessMessageProtocol::SwapWorkQueue(xiiDeque<xiiUniquePtr<xiiProcessMessage>>& messages)
+xiiUniquePtr<xiiProcessMessage> xiiIpcProcessMessageProtocol::PopMessage()
 {
-  XII_ASSERT_DEBUG(messages.IsEmpty(), "Swap target must be empty!");
   XII_LOCK(m_IncomingQueueMutex);
 
   if (m_IncomingQueue.IsEmpty())
-    return;
+    return {};
 
-  messages.Swap(m_IncomingQueue);
+  xiiUniquePtr<xiiProcessMessage> pFront = std::move(m_IncomingQueue.PeekFront());
+  m_IncomingQueue.PopFront();
+  return pFront;
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_IpcProcessMessageProtocol);

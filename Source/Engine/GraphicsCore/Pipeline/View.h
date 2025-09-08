@@ -201,7 +201,7 @@ private:
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
   bool                                       m_bPermutationVariablesModified = false;
 
-  void ApplyPermutationVars();
+  void ApplyPermutationVariables();
 
   struct PropertyValue
   {

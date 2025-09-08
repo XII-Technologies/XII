@@ -26,7 +26,7 @@ struct XII_GRAPHICSCORE_DLL xiiMeshInstanceData
 
   xiiTransform m_transform;
 
-  xiiColor m_color;
+  xiiColor m_Colour;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshInstanceData);

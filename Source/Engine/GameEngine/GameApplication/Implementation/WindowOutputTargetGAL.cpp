@@ -59,19 +59,19 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
 
 void xiiWindowOutputTargetGAL::AcquireImage()
 {
-  // This call is only used to recreate the swapchain at a safe location.
-  // Only re-create the swapchain if somebody is listening to changes.
-  if (m_OnSwapChainChanged.IsValid())
-  {
-    xiiEnum<xiiGALPresentMode> presentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+  if (!m_OnSwapChainChanged.IsValid())
+    return;
 
-    // The actual present call is done by setting the swapchain to a xiiView.
-    // This call is only used to recreate the swapchain at a safe location.
-    if (m_Size != m_CurrentDesc.m_pWindow->GetClientAreaSize() || m_PresentMode != presentMode)
-    {
-      CreateSwapchain(m_CurrentDesc);
-    }
+  xiiEnum<xiiGALPresentMode> presentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+
+  // Detect window size or vsync mode changes.
+  if (m_Size != m_CurrentDesc.m_pWindow->GetClientAreaSize() || m_PresentMode != presentMode)
+  {
+    CreateSwapchain(m_CurrentDesc);
   }
+
+  // Detect swapchain size changes that happen outside of window events.
+  CheckForSwapChainResize();
 }
 
 void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
@@ -81,6 +81,29 @@ void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
 
   m_pSwapChain->SetPresentMode(bEnableVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
   m_pSwapChain->Present();
+}
+
+void xiiWindowOutputTargetGAL::CheckForSwapChainResize()
+{
+  if (!m_pSwapChain)
+    return;
+
+  // Query the actual swapchain size
+  xiiSizeU32 actualSize = m_pSwapChain->GetCurrentSize();
+
+  // If the swapchain size has changed (e.g., due to OS/driver adjustments)
+  if (actualSize != m_Size)
+  {
+    m_Size = actualSize;
+
+    // Resize the swapchain to match the new size
+    m_pSwapChain->Resize(m_Size).AssertSuccess("Failed to resize swap chain!");
+
+    if (m_OnSwapChainChanged.IsValid())
+    {
+      m_OnSwapChainChanged(m_pSwapChain, m_Size);
+    }
+  }
 }
 
 xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
@@ -160,6 +183,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
     pGraphicsQueue->Submit(pCommandList);
 
     m_pImageCapture->RecycleStagingTexture(std::move(capture.m_pTexture));
+
     xiiImageHeader header;
     header.SetWidth(textureDescription.m_Size.width);
     header.SetHeight(textureDescription.m_Size.height);

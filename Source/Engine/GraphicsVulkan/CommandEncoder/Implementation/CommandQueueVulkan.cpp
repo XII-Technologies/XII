@@ -31,8 +31,18 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
 {
   xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
+  auto                                  pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
 
   bool bTimelineSemaphoreInUse = false;
+  if (pDeferredDeletionQueue->HasTimelineSemaphore())
+  {
+    xiiUInt64 uiSignalValue = pDeferredDeletionQueue->ReserveSubmitValue();
+
+    pCommandListVulkan->AddSignalSemaphore(pDeferredDeletionQueue->GetVulkanTimelineSemaphore(), uiSignalValue);
+
+    bTimelineSemaphoreInUse = true;
+  }
+
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {
     if (!fenceInfo.m_pFenceVulkan->IsTimelineSemaphore())
@@ -113,12 +123,6 @@ xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandLis
       continue;
 
     fenceInfo.m_pFenceVulkan->AddPendingSyncPoint(this, fenceInfo.m_uiWaitValue, m_uiLastSyncPointValue);
-  }
-
-  auto pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
-  if (pDeferredDeletionQueue->HasTimelineSemaphore())
-  {
-    pDeferredDeletionQueue->Signal();
   }
 
   return uiFenceValue;

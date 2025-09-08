@@ -17,7 +17,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const { return m_pBackBufferTexture; };
 
   /// \brief This retrieves the current swap chain size.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_Description.m_Resolution; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_CurrentSize; };
 
   /// \brief This sets the present mode.
   XII_ALWAYS_INLINE void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode) { m_PresentMode = presentMode; };
@@ -66,4 +66,6 @@ protected:
   xiiGALSwapChainCreationDescription m_Description;
 
   xiiEnum<xiiGALSurfaceTransform> m_DesiredSurfaceTransform = xiiGALSurfaceTransform::Optimal;
+
+  xiiSizeU32 m_CurrentSize = {};
 };

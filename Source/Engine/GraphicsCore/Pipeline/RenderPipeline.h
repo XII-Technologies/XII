@@ -93,7 +93,7 @@ private:
   void ExtractData(const xiiView& view);
   void FindVisibleObjects(const xiiView& view);
 
-  void Render(xiiRenderContext* pRenderContext);
+  void Render();
 
   xiiRasterizerView* PrepareOcclusionCulling(const xiiFrustum& frustum, const xiiView& view);
   void               PreviewOcclusionBuffer(const xiiRasterizerView& rasterizer, const xiiView& view);
@@ -153,24 +153,4 @@ private: // Member data
   xiiDynamicArray<RenderDataProcessor> m_RenderDataProcessors;
 
   xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
-
-private:
-  xiiSharedPtr<xiiGALRenderPass>  GetOrCreateRenderPass(const xiiGALRenderPassCreationDescription& description);
-  xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiArrayPtr<xiiSharedPtr<xiiGALTextureView>> pAttachments, xiiSizeU32 framebufferSize, xiiUInt32 uiArraySliceCount);
-
-private:
-  struct RenderPassCache
-  {
-    XII_ALWAYS_INLINE RenderPassCache() = default;
-
-    XII_ALWAYS_INLINE RenderPassCache(xiiSharedPtr<xiiGALRenderPass> pRenderPass) :
-      m_pRenderPass(pRenderPass)
-    {
-    }
-
-    xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
-    xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
-  };
-
-  xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash> m_RenderPassCache;
 };

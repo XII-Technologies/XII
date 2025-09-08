@@ -404,9 +404,8 @@ bool xiiProcessTask::Tick(bool bStartNewWork)
       case State::LookingForWork:
       {
         if (!bStartNewWork)
-        {
           return false; // don't call later
-        }
+
         m_LogEntries.Clear();
         m_TransitiveHull.Clear();
         m_Status = xiiStatus(XII_SUCCESS);

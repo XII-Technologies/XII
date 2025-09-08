@@ -44,10 +44,10 @@ public:
   float                       m_fAspectRatio;
   xiiEnum<xiiSpriteBlendMode> m_BlendMode;
 
-  xiiColor m_color;
+  xiiColor m_Colour;
 
-  xiiVec2 m_texCoordScale;
-  xiiVec2 m_texCoordOffset;
+  xiiVec2 m_vTextureCoordScale;
+  xiiVec2 m_vTextureCoordOffset;
 
   xiiUInt32 m_uiUniqueID;
 };

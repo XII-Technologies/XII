@@ -165,9 +165,7 @@ xiiResult xiiGPUTestingEnvironmentVulkan::CreateWindow(xiiUInt32 uiResolutionX, 
   {
     xiiGALSwapChainCreationDescription swapChainDescription;
     swapChainDescription.m_pWindow               = m_pWindow.Borrow();
-    swapChainDescription.m_Resolution.width      = uiResolutionX;
-    swapChainDescription.m_Resolution.height     = uiResolutionY;
-    swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB | xiiGALSwapChainUsageFlags::ShaderResource;
     swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
     swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
     swapChainDescription.m_uiBufferCount         = 2U;
