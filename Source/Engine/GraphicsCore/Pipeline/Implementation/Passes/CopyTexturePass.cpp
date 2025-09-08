@@ -51,19 +51,13 @@ void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderView
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
-  pCommandList->Begin();
+  renderViewContext.m_pCommandList->Begin();
   {
-    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
-    pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
+    renderViewContext.m_pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
   }
-  pCommandList->End();
-
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  renderViewContext.m_pCommandList->End();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,17 +111,11 @@ void xiiCopyDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewC
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
-  pCommandList->Begin();
+  renderViewContext.m_pCommandList->Begin();
   {
-    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
-    pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
+    renderViewContext.m_pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
   }
-  pCommandList->End();
-
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  renderViewContext.m_pCommandList->End();
 }

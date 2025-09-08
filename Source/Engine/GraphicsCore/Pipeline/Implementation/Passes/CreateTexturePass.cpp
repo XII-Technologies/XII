@@ -194,21 +194,17 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
     }
   }
 
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-
-  pCommandList->Begin();
+  renderViewContext.m_pCommandList->Begin();
   {
-    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
     xiiGALOptimizedClearValue clearValue;
     clearValue.m_ClearColour = m_ClearColour;
 
-    pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
-    pCommandList->EndRenderPass();
+    renderViewContext.m_pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
+    renderViewContext.m_pCommandList->EndRenderPass();
   }
-  pCommandList->End();
-
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  renderViewContext.m_pCommandList->End();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -398,20 +394,16 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
     }
   }
 
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-
-  pCommandList->Begin();
+  renderViewContext.m_pCommandList->Begin();
   {
-    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
     xiiGALOptimizedClearValue clearValue;
     clearValue.m_DepthStencil.m_fDepth    = m_fDepthClearValue;
     clearValue.m_DepthStencil.m_uiStencil = m_uiStencilClearValue;
 
-    pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
-    pCommandList->EndRenderPass();
+    renderViewContext.m_pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
+    renderViewContext.m_pCommandList->EndRenderPass();
   }
-  pCommandList->End();
-
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  renderViewContext.m_pCommandList->End();
 }

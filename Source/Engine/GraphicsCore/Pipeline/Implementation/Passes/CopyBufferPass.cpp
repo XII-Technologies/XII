@@ -51,17 +51,11 @@ void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, c
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
-  pCommandList->Begin();
+  renderViewContext.m_pCommandList->Begin();
   {
-    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
-    pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
+    renderViewContext.m_pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
   }
-  pCommandList->End();
-
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  renderViewContext.m_pCommandList->End();
 }
