@@ -11,6 +11,8 @@
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Textures/Texture2DResource.h>
 
+#  include <Imgui/imgui_internal.h>
+
 namespace
 {
   void* xiiImguiAllocate(size_t uiSize, void* pUserData)

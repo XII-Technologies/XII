@@ -15,7 +15,6 @@
 
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
-struct ImGuiContext;
 struct xiiGameApplicationExecutionEvent;
 
 using xiiImguiConfigFontCallback  = xiiDelegate<void(ImFontAtlas&)>;
