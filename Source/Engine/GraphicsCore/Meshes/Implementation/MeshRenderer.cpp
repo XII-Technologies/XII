@@ -55,11 +55,11 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
   if (pRenderData->m_uiFlipWinding)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
 #ifdef CORE_ENABLE
@@ -120,7 +120,7 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
 void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const
 {
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
   XII_IGNORE_UNUSED(pRenderData);
 }

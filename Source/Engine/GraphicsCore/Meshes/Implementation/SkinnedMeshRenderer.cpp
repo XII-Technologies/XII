@@ -23,12 +23,12 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
 
   if (!pSkinnedRenderData->m_pSkinningTransforms)
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+    renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
   }
   else
   {
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
-    renderViewContext.m_pRenderContext->BindBuffer("skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms);
+    renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
+    renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   }
 }
 

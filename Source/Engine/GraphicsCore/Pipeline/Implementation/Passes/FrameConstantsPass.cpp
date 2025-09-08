@@ -102,17 +102,11 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
     pGlobalConstants->WorldTime  = (float)xiiMath::Mod(GetPipeline()->GetRenderData().GetWorldTime().GetSeconds(), fWrapAround);
   }
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
-  pCommandList->Begin();
+  renderViewContext.m_pCommandList->Begin();
   {
-    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
-    pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
+    renderViewContext.m_pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
   }
-  pCommandList->End();
-
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  renderViewContext.m_pCommandList->End();
 }
