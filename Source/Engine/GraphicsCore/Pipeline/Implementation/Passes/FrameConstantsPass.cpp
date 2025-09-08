@@ -21,7 +21,10 @@ xiiFrameConstantsPass::xiiFrameConstantsPass(xiiStringView sName) :
 
 xiiFrameConstantsPass::~xiiFrameConstantsPass()
 {
-  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
+  if (!m_pGlobalConstants.IsEmpty())
+  {
+    xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
+  }
 
   m_pGlobalConstants.Clear();
 }
