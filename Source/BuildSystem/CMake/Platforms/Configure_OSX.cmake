@@ -22,7 +22,7 @@ macro(xii_platform_detect_generator)
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_PREFIX "Xcode")
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_CONFIGURATION $<CONFIGURATION>)
 
-    elseif(CMAKE_GENERATOR MATCHES "Unix Makefiles") # Unix Makefiles (for QtCreator etc.)
+  elseif(CMAKE_GENERATOR MATCHES "Unix Makefiles") # Unix Makefiles (for QtCreator etc.)
     message(STATUS "Buildsystem is Make (XII_CMAKE_GENERATOR_MAKE)")
 
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_MAKE ON)
