@@ -266,7 +266,7 @@ endfunction()
 # #####################################
 function(xii_make_windowapp TARGET_NAME)
   set_property(TARGET ${TARGET_NAME} PROPERTY WIN32_EXECUTABLE ON)
-  target_compile_definitions(${TARGET_NAME} PRIVATE EZ_WINDOWAPP=1)
+  target_compile_definitions(${TARGET_NAME} PRIVATE XII_WINDOWAPP=1)
 
   if (COMMAND xii_platformhook_make_windowapp)
     xii_platformhook_make_windowapp(${TARGET_NAME})

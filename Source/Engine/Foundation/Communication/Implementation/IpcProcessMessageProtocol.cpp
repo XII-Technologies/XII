@@ -1,7 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/Communication/IpcChannel.h>
+#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 
@@ -49,6 +49,10 @@ bool xiiIpcProcessMessageProtocol::ProcessMessages()
 
 xiiResult xiiIpcProcessMessageProtocol::WaitForMessages(xiiTime timeout)
 {
+  // Message processing can be interrupted via the m_bInterruptMessageProcessing flag. Thus, there is no guarantee that the queue is empty at this point. Only wait if the queue is empty.
+  if (ProcessMessages())
+    return XII_SUCCESS;
+
   xiiResult res = m_pChannel->WaitForMessages(timeout);
   if (res.Succeeded())
   {
