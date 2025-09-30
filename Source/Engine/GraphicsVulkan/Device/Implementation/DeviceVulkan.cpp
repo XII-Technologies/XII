@@ -2028,7 +2028,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       }
 
       // In Metal, input attachment with memoryless texture must be used as an imageblock, which is not supported in SPIRV to MSL translator.
-#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+#if XII_ENABLED(XII_PLATFORM_OSX)
       if (m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet())
       {
         m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil;
@@ -2642,7 +2642,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
-#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+#if XII_ENABLED(XII_PLATFORM_OSX)
   deviceFeatures.m_BinaryOcclusionQueries = xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_TimestampQueries       = xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_DurationQueries        = xiiGALDeviceFeatureState::Disabled;

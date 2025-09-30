@@ -12,9 +12,6 @@
 #  if TARGET_OS_MAC == 1
 #    undef XII_PLATFORM_OSX
 #    define XII_PLATFORM_OSX XII_ON
-#  elif TARGET_OS_IPHONE == 1 || TARGET_IPHONE_SIMULATOR == 1
-#    undef XII_PLATFORM_IOS
-#    define XII_PLATFORM_IOS XII_ON
 #  endif
 
 #elif defined(ANDROID)
