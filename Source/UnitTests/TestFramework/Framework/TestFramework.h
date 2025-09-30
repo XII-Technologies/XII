@@ -239,7 +239,7 @@ protected:
 #endif
 
 /// \brief Macro to define the application entry point for all test applications
-#  define XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN(szTestName, szNiceTestName)                  \
+#define XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN(szTestName, szNiceTestName)                    \
   /* Enables that on machines with multiple GPUs the NVIDIA GPU is preferred */            \
   XII_NV_OPTIMUS                                                                           \
   XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                               \
@@ -248,7 +248,7 @@ protected:
     xiiTestSetup::InitTestFramework(szTestName, szNiceTestName, argc, (const char**)argv); \
     /* Execute custom init code here by using the BEGIN/END macros directly */
 
-#  define XII_TESTFRAMEWORK_ENTRY_POINT_END()                       \
+#define XII_TESTFRAMEWORK_ENTRY_POINT_END()                         \
   while (xiiTestSetup::RunTests() == xiiTestAppRun::Continue)       \
   {                                                                 \
   }                                                                 \
