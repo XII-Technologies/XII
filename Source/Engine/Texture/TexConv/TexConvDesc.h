@@ -41,7 +41,7 @@ public:
 
   // output type / platform
   xiiEnum<xiiTexConvOutputType>     m_OutputType;
-  xiiEnum<xiiTexConvTargetPlatform> m_TargetPlatform; // TODO: implement android
+  xiiEnum<xiiTexConvTargetPlatform> m_TargetPlatform;
 
   // low resolution output
   xiiUInt32 m_uiLowResMipmaps = 0;

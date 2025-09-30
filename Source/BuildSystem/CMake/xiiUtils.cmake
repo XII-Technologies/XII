@@ -38,7 +38,6 @@ macro(xii_pull_config_vars)
   get_property(XII_CONFIG_VULKAN_SDK_OSX64_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_URL)
 
   get_property(XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION)
-  get_property(XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL)
 endmacro()
 
 # #####################################
@@ -56,12 +55,8 @@ macro(xii_pull_output_vars LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
   # PLATFORM-TODO (build output path hook? add more variables?)
   if(XII_CMAKE_PLATFORM_WINDOWS)
     set(PLATFORM_POSTFIX "_win10")
-
   elseif(XII_CMAKE_PLATFORM_EMSCRIPTEN)
     set(PLATFORM_POSTFIX "_wasm")
-
-  elseif(XII_CMAKE_PLATFORM_ANDROID)
-    set(PLATFORM_POSTFIX "_android")
   endif()
 
   string(TOLOWER ${XII_CMAKE_GENERATOR_PREFIX} LOWER_GENERATOR_PREFIX)
@@ -260,7 +255,7 @@ endfunction()
 
 # #####################################
 # ## xii_make_windowapp(<target>)
-# 
+#
 # Turns the target application from a 'console app' into a 'window app', which means it doesn't
 # show a command prompt with the log output on systems that differentiate between the these app types.
 # #####################################
@@ -270,7 +265,7 @@ function(xii_make_windowapp TARGET_NAME)
 
   if (COMMAND xii_platformhook_make_windowapp)
     xii_platformhook_make_windowapp(${TARGET_NAME})
-  endif()	
+  endif()
 endfunction()
 
 # #####################################

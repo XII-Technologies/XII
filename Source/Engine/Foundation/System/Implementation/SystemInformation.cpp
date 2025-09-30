@@ -10,7 +10,7 @@ xiiSystemInformation xiiSystemInformation::s_SystemInformation;
 #  include <Foundation/Platform/Implementation/Windows/SystemInformation_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  include <Foundation/Platform/Implementation/OSX/SystemInformation_OSX.h>
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/SystemInformation_posix.h>
 #else
 #  error "System configuration functions are not implemented on current platform"
@@ -61,7 +61,7 @@ namespace cpu_x86
 #    endif
   }
 
-#  elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#  elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 
 #    include <cpuid.h>
 

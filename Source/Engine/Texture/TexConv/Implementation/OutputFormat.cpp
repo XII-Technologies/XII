@@ -104,10 +104,6 @@ xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_F
 
   switch (m_Descriptor.m_TargetPlatform)
   {
-      // case  xiiTexConvTargetPlatform::Android:
-      //  out_Format = DetermineOutputFormatAndroid(m_Descriptor.m_TargetFormat, m_Descriptor.m_CompressionMode);
-      //  break;
-
     case xiiTexConvTargetPlatform::PC:
       out_Format = DetermineOutputFormatPC(usage, m_Descriptor.m_CompressionMode, uiNumChannels);
       break;

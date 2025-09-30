@@ -441,7 +441,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
 }
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <string.h>
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& arg)

@@ -208,7 +208,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     xiiTelemetry::SetServerName("Graphics Explorer");
 
     // Activate xiiTelemetry such that the inspector plugin can use the network connection.
@@ -344,7 +344,7 @@ public:
   {
     xiiPlugin::UnloadAllPlugins();
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     // Shut down telemetry if it was set up.
     xiiTelemetry::CloseConnection();
 #endif

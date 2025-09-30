@@ -305,11 +305,6 @@ function(xii_set_build_flags TARGET_NAME)
 
   set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 23)
 
-  # On Android, we need to specify it manually.
-  if(ANDROID)
-    add_compile_options(-std=c++23)
-  endif()
-
   if(XII_CMAKE_COMPILER_MSVC)
     xii_set_build_flags_msvc(${TARGET_NAME} ${ARGN})
   endif()

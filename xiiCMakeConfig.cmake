@@ -26,4 +26,3 @@ set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_VERSION "1.4.313.1")
 set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_URL "https://sdk.lunarg.com/sdk/download/1.4.313.1/mac/vulkansdk-macos-1.4.313.1.dmg")
 
 set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION "1.4.313.0")
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL "https://github.com/KhronosGroup/Vulkan-ValidationLayers/releases/download/vulkan-sdk-1.4.313.0/android-binaries-1.4.313.0.tar.gz")

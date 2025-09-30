@@ -83,7 +83,6 @@ struct xiiTexConvTargetPlatform
   enum Enum
   {
     PC,
-    Android,
 
     Default = PC
   };

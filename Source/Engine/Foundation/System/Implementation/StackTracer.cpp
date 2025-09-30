@@ -8,8 +8,6 @@
 #  include <Foundation/Platform/Implementation/Windows/StackTracer_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/StackTracer_posix.h>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Platform/Implementation/Android/StackTracer_android.h>
 #else
 #  error "StackTracer is not implemented on current platform"
 #endif

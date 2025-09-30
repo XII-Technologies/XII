@@ -20,7 +20,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/ThreadUtils_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/ThreadUtils_posix.h>
 #else
 #  error "ThreadUtils functions are not implemented on current platform"

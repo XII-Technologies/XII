@@ -8,8 +8,6 @@ XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiPlatformDescription);
 xiiPlatformDescription g_PlatformDescription("Windows");
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 xiiPlatformDescription g_PlatformDescription("Linux");
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-xiiPlatformDescription g_PlatformDescription("Android");
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 xiiPlatformDescription g_PlatformDescription("OSX");
 #else

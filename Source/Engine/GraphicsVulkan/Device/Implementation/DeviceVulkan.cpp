@@ -272,9 +272,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
       instanceExtensions.PushBack(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-      instanceExtensions.PushBack(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#endif
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
       instanceExtensions.PushBack(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif
@@ -283,9 +280,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #endif
 #if defined(VK_USE_PLATFORM_XCB_KHR)
       instanceExtensions.PushBack(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#endif
-#if defined(VK_USE_PLATFORM_IOS_MVK)
-      instanceExtensions.PushBack(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
       instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
@@ -322,7 +316,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       }
       else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
       {
-        // If debug utils are unavailable (e.g. on Android), use VK_EXT_debug_report.
+        // If debug utils are unavailable, use VK_EXT_debug_report.
         m_DebugMode = DebugMode::Report;
       }
 
@@ -351,7 +345,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         if (m_DebugMode != DebugMode::Utils)
         {
-          // On Android, VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
+          // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
           xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))

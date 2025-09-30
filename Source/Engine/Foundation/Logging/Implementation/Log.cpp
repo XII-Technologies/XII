@@ -10,9 +10,6 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Logging/ETWWriter.h>
 #endif
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <android/log.h>
-#endif
 
 #include <stdarg.h>
 
@@ -241,9 +238,6 @@ void xiiLog::Print(const char* szText)
 #endif
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   OutputDebugStringW(xiiStringWChar(szText).GetData());
-#endif
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  __android_log_print(ANDROID_LOG_ERROR, "XII", "%s", szText);
 #endif
 
   if (s_CustomPrintFunction)

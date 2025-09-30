@@ -21,7 +21,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 #  include <Foundation/Platform/Implementation/Windows/Time_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  include <Foundation/Platform/Implementation/OSX/Time_osx.h>
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/Time_posix.h>
 #else
 #  error "Time functions are not implemented on current platform."

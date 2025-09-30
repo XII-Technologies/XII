@@ -1,6 +1,6 @@
 #include <Core/CorePCH.h>
 
-#if XII_DISABLED(XII_SUPPORTS_SDL) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_DISABLED(XII_SUPPORTS_SDL)
 
 #  include <Core/Platform/NoImpl/InputDevice_NoImpl.h>
 

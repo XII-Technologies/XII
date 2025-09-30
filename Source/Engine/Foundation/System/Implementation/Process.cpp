@@ -4,7 +4,7 @@
 // Include inline file
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <Foundation/System/Implementation/Win/Process_win.h>
-#  elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID) || XII_ENABLED(XII_PLATFORM_OSX)
+#  elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_OSX)
 #    include <Foundation/System/Implementation/Posix/Process_posix.h>
 #  else
 #    error "Process functions are not implemented on current platform"

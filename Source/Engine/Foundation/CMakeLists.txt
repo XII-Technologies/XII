@@ -54,7 +54,6 @@ if(XII_3RDPARTY_ZSTD_SUPPORT)
 endif()
 
 if(XII_3RDPARTY_ZLIB_SUPPORT)
-  # ZLIB is required to read the apk on Android.
   target_link_libraries(${PROJECT_NAME} PUBLIC zlib)
 endif()
 

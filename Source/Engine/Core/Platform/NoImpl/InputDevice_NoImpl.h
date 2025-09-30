@@ -1,6 +1,6 @@
 #pragma once
 
-#if XII_DISABLED(XII_SUPPORTS_SDL) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_DISABLED(XII_SUPPORTS_SDL)
 
 #  include <Core/Input/DeviceTypes/MouseKeyboard.h>
 

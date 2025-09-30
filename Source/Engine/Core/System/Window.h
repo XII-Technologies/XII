@@ -14,8 +14,6 @@ class xiiOpenDdlReaderElement;
 // Include the proper Input implementation to use
 #if XII_ENABLED(XII_SUPPORTS_SDL)
 #  include <Core/Platform/SDL/WindowDeclaration_SDL.h>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Core/Platform/Android/WindowDeclaration_android.h>
 #else
 #  include <Core/Platform/NoImpl/WindowDeclaration_NoImpl.h>
 #endif
@@ -241,8 +239,6 @@ public:
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
 
 #else
 #  error "Missing code for xiiWindow on this platform!"

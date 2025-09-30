@@ -4,7 +4,7 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/GuardedAllocation_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/GuardedAllocation_posix.h>
 #else
 #  include <Foundation/Platform/Implementation/NoImpl/GuardedAllocation_NoImpl.h>
