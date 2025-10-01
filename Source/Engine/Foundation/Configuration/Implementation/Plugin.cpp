@@ -9,8 +9,6 @@
 #  include <Foundation/Platform/Implementation/Windows/Plugin_Win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/Plugin_Posix.h>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Platform/Implementation/Android/Plugin_Android.h>
 #else
 #  error "Plugins not implemented on this Platform."
 #endif

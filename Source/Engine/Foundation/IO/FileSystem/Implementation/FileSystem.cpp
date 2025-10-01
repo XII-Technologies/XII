@@ -856,22 +856,14 @@ xiiResult xiiFileSystem::DetectSdkRootDirectory(xiiStringView sExpectedSubFolder
   if (!s_sSdkRootDir.IsEmpty())
     return XII_SUCCESS;
 
-  xiiStringBuilder sdkRoot;
-
-  // Probably this is what needs to be done on all mobile platforms as well
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  XII_IGNORE_UNUSED(sExpectedSubFolder);
-
-  sdkRoot = xiiOSFile::GetApplicationDirectory();
-#else
-  if (xiiFileSystem::FindFolderWithSubPath(sdkRoot, xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder, "xiiSdkRoot.txt").Failed())
+  xiiStringBuilder sSDKRoot;
+  if (xiiFileSystem::FindFolderWithSubPath(sSDKRoot, xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder, "xiiSdkRoot.txt").Failed())
   {
     xiiLog::Error("Could not find SDK root. Application dir is '{0}'. Searched for parent with '{1}' sub-folder.", xiiOSFile::GetApplicationDirectory(), sExpectedSubFolder);
     return XII_FAILURE;
   }
-#endif
 
-  xiiFileSystem::SetSdkRootDirectory(sdkRoot);
+  xiiFileSystem::SetSdkRootDirectory(sSDKRoot);
   return XII_SUCCESS;
 }
 

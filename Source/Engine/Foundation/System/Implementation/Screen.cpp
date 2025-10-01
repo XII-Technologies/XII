@@ -4,8 +4,6 @@
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
 #  include <Foundation/Platform/Implementation/SDL/Screen_SDL.inl>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Platform/Implementation/Android/Screen_android.inl>
 #else
 
 xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Screens)

@@ -272,9 +272,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
       instanceExtensions.PushBack(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-      instanceExtensions.PushBack(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#endif
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
       instanceExtensions.PushBack(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif
@@ -283,9 +280,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #endif
 #if defined(VK_USE_PLATFORM_XCB_KHR)
       instanceExtensions.PushBack(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#endif
-#if defined(VK_USE_PLATFORM_IOS_MVK)
-      instanceExtensions.PushBack(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
       instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
@@ -322,7 +316,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       }
       else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
       {
-        // If debug utils are unavailable (e.g. on Android), use VK_EXT_debug_report.
+        // If debug utils are unavailable, use VK_EXT_debug_report.
         m_DebugMode = DebugMode::Report;
       }
 
@@ -351,7 +345,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         if (m_DebugMode != DebugMode::Utils)
         {
-          // On Android, VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
+          // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
           xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
@@ -2028,7 +2022,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       }
 
       // In Metal, input attachment with memoryless texture must be used as an imageblock, which is not supported in SPIRV to MSL translator.
-#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+#if XII_ENABLED(XII_PLATFORM_OSX)
       if (m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet())
       {
         m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil;
@@ -2642,7 +2636,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
-#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+#if XII_ENABLED(XII_PLATFORM_OSX)
   deviceFeatures.m_BinaryOcclusionQueries = xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_TimestampQueries       = xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_DurationQueries        = xiiGALDeviceFeatureState::Disabled;

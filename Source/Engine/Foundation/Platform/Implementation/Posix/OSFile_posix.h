@@ -27,12 +27,6 @@ XII_FOUNDATION_INTERNAL_HEADER
 #  include <CoreFoundation/CoreFoundation.h>
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Basics/Platform/Android/AndroidJni.h>
-#  include <Foundation/Basics/Platform/Android/AndroidUtils.h>
-#  include <android_native_app_glue.h>
-#endif
-
 #ifndef PATH_MAX
 #  define PATH_MAX 1024
 #endif
@@ -379,17 +373,6 @@ xiiStringView xiiOSFile::GetApplicationPath()
     CFRelease(bundlePath);
     CFRelease(bundleURL);
     CFRelease(appBundle);
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-    {
-      xiiJniAttachment attachment;
-
-      xiiJniString packagePath = attachment.GetActivity().Call<xiiJniString>("getPackageCodePath");
-      // By convention, android requires assets to be placed in the 'Assets' folder
-      // inside the apk thus we use that as our SDK root.
-      xiiStringBuilder sTemp = packagePath.GetData();
-      sTemp.AppendPath("Assets/xiiTempBin");
-      s_sApplicationPath = sTemp;
-    }
 #else
     char    result[PATH_MAX];
     ssize_t length     = readlink("/proc/self/exe", result, PATH_MAX);
@@ -404,15 +387,12 @@ xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDataPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-    android_app* pAndroidApp = xiiAndroidUtils::GetNativeAndroidApp();
-    s_sUserDataPath          = pAndroidApp->activity->internalDataPath;
-#else
     s_sUserDataPath = getenv("HOME");
 
     if (s_sUserDataPath.IsEmpty())
+    {
       s_sUserDataPath = getpwuid(getuid())->pw_dir;
-#endif
+    }
   }
 
   xiiStringBuilder s = s_sUserDataPath;
@@ -425,15 +405,7 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder)
 {
   if (s_sTempDataPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-    xiiJniAttachment attachment;
-
-    xiiJniObject cacheDir = attachment.GetActivity().Call<xiiJniObject>("getCacheDir");
-    xiiJniString path     = cacheDir.Call<xiiJniString>("getPath");
-    s_sTempDataPath       = path.GetData();
-#else
     s_sTempDataPath = GetUserDataFolder(".cache").GetData();
-#endif
   }
 
   xiiStringBuilder s = s_sTempDataPath;
@@ -446,14 +418,12 @@ xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDocumentsPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-    XII_ASSERT_NOT_IMPLEMENTED;
-#else
     s_sUserDataPath = getenv("HOME");
 
     if (s_sUserDataPath.IsEmpty())
+    {
       s_sUserDataPath = getpwuid(getuid())->pw_dir;
-#endif
+    }
   }
 
   xiiStringBuilder s = s_sUserDocumentsPath;

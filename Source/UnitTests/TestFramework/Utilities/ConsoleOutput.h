@@ -4,9 +4,6 @@
 
 #include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <android/log.h>
-#endif
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Logging/ETWWriter.h>
 inline void SetConsoleColorInl(WORD ui)
@@ -79,9 +76,6 @@ inline void OutputToConsole(xiiTestOutput::Enum type, const char* szMsg)
   char sz[4096];
   xiiStringUtils::snprintf(sz, 4096, "%*s%s\n", iIndentation, "", szMsg);
   OutputDebugStringW(xiiStringWChar(sz).GetData());
-#endif
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  __android_log_print(ANDROID_LOG_DEBUG, "xiiEngine", "%*s%s\n", iIndentation, "", szMsg);
 #endif
 
   if (type >= xiiTestOutput::Error)

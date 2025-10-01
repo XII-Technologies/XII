@@ -934,7 +934,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
       const char* szAbsPath             = "C:\\folder";
       const char* szAbsPathAppendResult = "C:\\folder/File.ext";
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
       const char* szAbsPath             = "/folder";
       const char* szAbsPathAppendResult = "/folder/File.ext";
 #else
@@ -1235,7 +1235,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(!p.IsRelativePath());
     XII_TEST_BOOL(p.IsRootedPath());
 
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 
     p = "C:\\temp.stuff";
     XII_TEST_BOOL(!p.IsAbsolutePath());

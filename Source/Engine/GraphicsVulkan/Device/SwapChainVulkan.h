@@ -61,16 +61,6 @@ private:
   vk::Format       m_vkColorFormat        = vk::Format::eUndefined;
   xiiUInt32        m_uiDesiredBufferCount = 0U;
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  // Surface extent corresponding to identity transform. We have to store this value,
-  // because on Android vkGetPhysicalDeviceSurfaceCapabilitiesKHR is not reliable and
-  // starts reporting incorrect dimensions after few rotations.
-  vk::Extent2D m_vkSurfaceIdentityExtent;
-
-  // Keep track of current surface transform to detect orientation changes.
-  vk::SurfaceTransformFlagsKHR m_vkCurrentSurfaceTransform = {};
-#endif
-
   xiiDynamicArray<vk::Semaphore> m_ImageAcquiredSemaphores;
   xiiDynamicArray<vk::Semaphore> m_DrawCompleteSemaphores;
 

@@ -21,7 +21,7 @@ namespace xiiMemoryPolicies
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/AlignedHeapAllocation_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/AlignedHeapAllocation_posix.h>
 #else
 #  error "xiiAlignedHeapAllocation is not implemented on current platform"

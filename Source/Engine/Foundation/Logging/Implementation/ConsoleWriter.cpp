@@ -3,11 +3,6 @@
 #include <Foundation/Logging/ConsoleWriter.h>
 #include <Foundation/Time/Timestamp.h>
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <android/log.h>
-#  define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "XII", __VA_ARGS__)
-#endif
-
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 
@@ -15,7 +10,7 @@ static void SetConsoleColor(WORD ui)
 {
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), ui);
 }
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 static void SetConsoleColor(xiiUInt8 ui) {}
 #else
 #  error "Unknown Platform."
@@ -112,8 +107,5 @@ void xiiLogWriter::Console::SetTimestampMode(xiiLog::TimestampMode mode)
 {
   s_TimestampMode = mode;
 }
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  undef printf
-#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_ConsoleWriter);

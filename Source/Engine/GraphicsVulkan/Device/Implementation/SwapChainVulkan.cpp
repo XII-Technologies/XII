@@ -121,20 +121,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.hwnd                          = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-  vk::AndroidSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                           = nullptr;
-  vkSurfaceCreateInfo.flags                           = {};
-  vkSurfaceCreateInfo.window                          = m_Description.m_pWindow->GetNativeWindowHandle();
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createAndroidSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_IOS_MVK)
-  vk::IOSSurfaceCreateInfoMVK vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                       = nullptr;
-  vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.pView                       = m_Description.m_pWindow->GetNativeWindowHandle();
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createIOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
   vk::MacOSSurfaceCreateInfoMVK vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
@@ -288,7 +274,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   {
     // Use current surface transform to avoid extra cost of presenting the image.
     // If preTransform does not match the currentTransform value returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation.
-    // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
     // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/appropriate-use-of-surface-rotation
 
     vkPreTransform               = surfaceCapabilities.currentTransform;
@@ -311,28 +296,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     // If the surface size is defined, the swap chain size must match.
     vkSwapchainExtent = surfaceCapabilities.currentExtent;
   }
-
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  // On Android, vkGetPhysicalDeviceSurfaceCapabilitiesKHR is not reliable and starts reporting incorrect dimensions after few rotations.
-  // To alleviate the problem, we store the surface extent corresponding to identity rotation.
-  // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
-  if (m_vkSurfaceIdentityExtent.width == 0 || m_vkSurfaceIdentityExtent.height == 0)
-  {
-    m_vkSurfaceIdentityExtent = surfaceCapabilities.currentExtent;
-
-    constexpr vk::SurfaceTransformFlagsKHR rotate90TransformFlags = vk::SurfaceTransformFlagBitsKHR::eRotate90 | vk::SurfaceTransformFlagBitsKHR::eRotate270 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
-    if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
-    {
-      xiiMath::Swap(m_vkSurfaceIdentityExtent.width, m_vkSurfaceIdentityExtent.height);
-    }
-  }
-
-  if (m_DesiredSurfaceTransform == xiiGALSurfaceTransform::Optimal)
-  {
-    vkSwapchainExtent = m_vkSurfaceIdentityExtent;
-  }
-  m_vkCurrentSurfaceTransform = surfaceCapabilities.currentTransform;
-#endif
 
   m_CurrentSize.width  = vkSwapchainExtent.width;
   m_CurrentSize.height = vkSwapchainExtent.height;
@@ -387,7 +350,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
   }
 
-  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
+  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
   //                          m_Description.m_uiBufferCount
   // CreateVulkanSwapChain()          2 -> 4
   // CreateVulkanSwapChain()          4 -> 6
@@ -788,55 +751,6 @@ void xiiGALSwapChainVulkan::Present()
 xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
   bool bRecreateSwapChain = false;
-
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  if (m_vkSurface != VK_NULL_HANDLE)
-  {
-    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-    vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
-
-    // Check orientation.
-    vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
-    VK_ASSERT_DEV(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-    if (m_vkCurrentSurfaceTransform != surfaceCapabilities.currentTransform)
-    {
-      // Surface orientation - we need to recreate the swap chain.
-      bRecreateSwapChain = true;
-    }
-
-    constexpr vk::SurfaceTransformFlagsKHR rotate90TransformFlags = vk::SurfaceTransformFlagBitsKHR::eRotate90 | vk::SurfaceTransformFlagBitsKHR::eRotate270 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
-
-    if (!newSize.HasNonZeroArea())
-    {
-      newSize.width  = m_vkSurfaceIdentityExtent.width;
-      newSize.height = m_vkSurfaceIdentityExtent.height;
-
-      if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
-      {
-        // Swap to get the logical dimensions as input new width and new height are expected to be logical sizes.
-        xiiMath::Swap(newSize.width, newSize.height);
-      }
-    }
-
-    if (newTransform == xiiGALSurfaceTransform::Optimal)
-    {
-      if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
-      {
-        // Swap to get physical dimensions.
-        xiiMath::Swap(newSize.width, newSize.height);
-      }
-    }
-    else
-    {
-      // Swap if necessary to get the desired sizes after pre-transform.
-      if (newTransform == xiiGALSurfaceTransform::Rotate90 || newTransform == xiiGALSurfaceTransform::Rotate270 || newTransform == xiiGALSurfaceTransform::HorizontalMirrorRotate90 || newTransform == xiiGALSurfaceTransform::HorizontalMirrorRotate270)
-      {
-        xiiMath::Swap(newSize.width, newSize.height);
-      }
-    }
-  }
-#endif
 
   if (newSize.HasNonZeroArea() && (newSize != m_CurrentSize || m_DesiredSurfaceTransform != newTransform))
   {

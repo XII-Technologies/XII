@@ -11,10 +11,6 @@
 #  define VK_USE_PLATFORM_WAYLAND_KHR
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  define VK_USE_PLATFORM_MACOS_MVK
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  define VK_USE_PLATFORM_ANDROID_KHR
-#elif XII_ENABLED(XII_PLATFORM_IOS)
-#  define VK_USE_PLATFORM_IOS_MVK
 #endif
 
 // Enable dynamic Vulkan functions.
@@ -51,8 +47,6 @@
 #    include <vulkan/vulkan_xlib.h>
 #    include <vulkan/vulkan_xlib_xrandr.h>
 #  endif
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <vulkan/vulkan_android.h>
 #endif
 
 namespace VulkanUtilities

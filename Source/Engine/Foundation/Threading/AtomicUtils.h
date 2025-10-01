@@ -155,7 +155,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Threading/Implementation/Win/AtomicUtils_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Threading/Implementation/Posix/AtomicUtils_posix.h>
 #else
 #  error "Atomics are not implemented on current platform"

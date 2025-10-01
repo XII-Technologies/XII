@@ -198,7 +198,6 @@ function(xii_detect_compiler_and_architecture)
   set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_64BIT OFF)
   set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_X86 OFF)
   set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_ARM OFF)
-  set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_EMSCRIPTEN OFF)
 
   if(XII_DETECTED_ARCH STREQUAL "x86")
     message(STATUS "Architecture is X86 (XII_CMAKE_ARCHITECTURE_X86)")
@@ -227,18 +226,6 @@ function(xii_detect_compiler_and_architecture)
 
     message(STATUS "Architecture is 64-Bit (XII_CMAKE_ARCHITECTURE_64BIT)")
     set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_64BIT ON)
-
-  elseif(XII_DETECTED_ARCH STREQUAL "emscripten")
-    message(STATUS "Architecture is WEBASSEMBLY (XII_CMAKE_ARCHITECTURE_WEBASSEMBLY)")
-    set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_WEBASSEMBLY ON)
-
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-      message(STATUS "Architecture is 64-Bit (XII_CMAKE_ARCHITECTURE_64BIT)")
-      set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_64BIT ON)
-    else()
-      message(STATUS "Architecture is 32-Bit (XII_CMAKE_ARCHITECTURE_32BIT)")
-      set_property(GLOBAL PROPERTY XII_CMAKE_ARCHITECTURE_32BIT ON)
-    endif()
 
   else()
     message(FATAL_ERROR "Unhandled target architecture ${XII_DETECTED_ARCH}")

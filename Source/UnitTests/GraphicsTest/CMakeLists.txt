@@ -7,9 +7,6 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(APPLICATION ${PROJECT_NAME})
 
-#TODO: Add actual packaging code. This is done in PRE_BUILD so that it happens before the
-#apk gen steps that happen in POST_BUILD and which are already done via xii_create_target.
-
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   TestFramework

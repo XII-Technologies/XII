@@ -9,8 +9,6 @@
 #  include <Foundation/Platform/Implementation/Posix/UuidGenerator_posix.h>
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/UuidGenerator_posix.h>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Platform/Implementation/Android/UuidGenerator_android.h>
 #else
 #  error "Uuid generation functions are not implemented on current platform"
 #endif

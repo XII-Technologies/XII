@@ -109,12 +109,7 @@
   </qresource>
   <qresource prefix="Platforms">
     <file>Icons/PlatformWindows.svg</file>
-    <file>Icons/PlatformAndroid.svg</file>
     <file>Icons/PlatformOSX.svg</file>
-    <file>Icons/PlatformSwitch.svg</file>
-    <file>Icons/PlatformXbox.svg</file>
     <file>Icons/PlatformLinux.svg</file>
-    <file>Icons/PlatformUWP.svg</file>
-    <file>Icons/PlatformPlayStation.svg</file>
   </qresource>
 </RCC>

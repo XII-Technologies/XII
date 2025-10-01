@@ -4,7 +4,7 @@
 #  include <Foundation/Platform/Implementation/Windows/MiniDumpUtils_win.h>
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 #  include <Foundation/Platform/Implementation/OSX/MiniDumpUtils_OSX.h>
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/MiniDumpUtils_posix.h>
 #else
 #  error "Mini-dump functions are not implemented on current platform"
