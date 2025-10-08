@@ -13,7 +13,6 @@
         "architecture": "x64",
         "binaryDir": "${sourceDir}/Workspace/${presetName}",
         "cacheVariables": {
-          "XII_BUILD_D3D11": "ON",
           "XII_BUILD_VULKAN": "ON",
           "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
           "XII_COMPILE_ENGINE_AS_DLL" : "ON"
