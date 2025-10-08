@@ -36,7 +36,7 @@ jobs:
 
       - name: Run CMake
         run: |
-          cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_VERSION:STRING="10.0.18362.0" -DXII_ENABLE_QT_SUPPORT:BOOL=ON -DXII_BUILD_SAMPLES:BOOL=ON -DXII_BUILD_UNITTESTS:BOOL=OFF -DXII_BUILD_D3D11:BOOL=ON -DXII_BUILD_VULKAN:BOOL=OFF -DXII_SOLUTION_NAME:string="solution"
+          cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_VERSION:STRING="10.0.18362.0" -DXII_ENABLE_QT_SUPPORT:BOOL=ON -DXII_BUILD_SAMPLES:BOOL=ON -DXII_BUILD_UNITTESTS:BOOL=OFF -DXII_BUILD_VULKAN:BOOL=OFF -DXII_SOLUTION_NAME:string="solution"
 
       - name: Build Full Solution
         run:  msbuild build/solution.sln /p:Configuration=Dev
@@ -54,7 +54,6 @@ jobs:
           Get-ChildItem * -Include *.pdb -Recurse | Remove-Item
           Get-ChildItem repo\Data\Samples\* -Include Build -Recurse | Remove-Item -Recurse -Force
 
-          rm -r -fo repo\Data\Platform
           rm -r -fo repo\Data\UnitTests
 
       - name: Compile Shaders
