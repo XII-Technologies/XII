@@ -649,8 +649,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   // https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#extended-functionality-device-layer-deprecation
   vk::DeviceCreateInfo deviceCreationDescription = {};
   deviceCreationDescription.flags                = {};
-  deviceCreationDescription.enabledLayerCount    = 0U;      // Deprecated and ignored.
-  deviceCreationDescription.ppEnabledLayerNames  = nullptr; // Deprecated and ignored.
   deviceCreationDescription.queueCreateInfoCount = queueDescriptions.GetCount();
   deviceCreationDescription.pQueueCreateInfos    = queueDescriptions.GetData();
 
