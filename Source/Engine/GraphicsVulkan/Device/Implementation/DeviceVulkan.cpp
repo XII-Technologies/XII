@@ -1660,7 +1660,6 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
     m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16; // From the specification.
     m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;  // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
     m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
     m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
 
