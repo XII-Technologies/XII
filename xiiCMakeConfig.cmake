@@ -16,13 +16,13 @@ set_property(GLOBAL PROPERTY XII_CONFIG_PATH_7ZA "Data/Tools/Precompiled/7z.exe"
 set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_VERSION "Qt6-6.4.0-vs143-x64")
 set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL "https://github.com/ezEngine/thirdparty/releases/download/Qt6-6.4.0-vs143-x64/Qt6-6.4.0-vs143-x64.7z")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION "1.4.313.2")
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_URL "https://sdk.lunarg.com/sdk/download/1.4.313.2/windows/vulkansdk-windows-X64-1.4.313.2.exe")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_VERSION "1.4.328.1")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_WINDOWSX64_URL "https://sdk.lunarg.com/sdk/download/1.4.328.1/windows/vulkansdk-windows-X64-1.4.328.1.exe")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION "1.4.313.0")
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL "https://sdk.lunarg.com/sdk/download/1.4.313.0/linux/vulkansdk-linux-x86_64-1.4.313.0.tar.xz")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION "1.4.328.1")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL "https://sdk.lunarg.com/sdk/download/1.4.328.1/linux/vulkansdk-linux-x86_64-1.4.328.1.tar.xz")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_VERSION "1.4.313.1")
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_URL "https://sdk.lunarg.com/sdk/download/1.4.313.1/mac/vulkansdk-macos-1.4.313.1.dmg")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_VERSION "1.4.328.1")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_OSX64_URL "https://sdk.lunarg.com/sdk/download/1.4.328.1/mac/vulkansdk-macos-1.4.328.1.zip")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION "1.4.313.0")
+set_property(GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION "1.4.328.1")
