@@ -1746,17 +1746,58 @@ xiiQtVariantPropertyWidget::~xiiQtVariantPropertyWidget() = default;
 
 void xiiQtVariantPropertyWidget::OnInit()
 {
+  xiiVariantType::Enum order[] = {
+    xiiVariantType::Invalid,
+    xiiVariantType::Bool,
+    xiiVariantType::Int8,
+    xiiVariantType::UInt8,
+    xiiVariantType::Int16,
+    xiiVariantType::UInt16,
+    xiiVariantType::Int32,
+    xiiVariantType::UInt32,
+    xiiVariantType::Int64,
+    xiiVariantType::UInt64,
+    xiiVariantType::Float,
+    xiiVariantType::Double,
+    xiiVariantType::Angle,
+    xiiVariantType::Time,
+    xiiVariantType::Color,
+    xiiVariantType::ColorGamma,
+    xiiVariantType::String,
+    xiiVariantType::StringView,
+    xiiVariantType::HashedString,
+    xiiVariantType::TempHashedString,
+    xiiVariantType::Vector2,
+    xiiVariantType::Vector3,
+    xiiVariantType::Vector4,
+    xiiVariantType::Vector2I,
+    xiiVariantType::Vector3I,
+    xiiVariantType::Vector4I,
+    xiiVariantType::Vector2U,
+    xiiVariantType::Vector3U,
+    xiiVariantType::Vector4U,
+    xiiVariantType::Quaternion,
+    xiiVariantType::Transform,
+    xiiVariantType::Matrix3,
+    xiiVariantType::Matrix4,
+    xiiVariantType::Uuid,
+    xiiVariantType::DataBuffer,
+    xiiVariantType::VariantArray,
+    xiiVariantType::VariantDictionary,
+    xiiVariantType::TypedPointer,
+    xiiVariantType::TypedObject,
+  };
+
   xiiStringBuilder sName;
-  for (int i = xiiVariantType::Invalid; i < xiiVariantType::LastExtendedType; ++i)
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(order); ++i)
   {
-    auto type = static_cast<xiiVariantType::Enum>(i);
-    if (GetVariantTypeDisplayName(type, sName).Succeeded())
+    if (GetVariantTypeDisplayName(order[i], sName).Succeeded())
     {
-      m_pTypeList->addItem(xiiMakeQString(xiiTranslate(sName)), i);
+      m_pTypeList->addItem(xiiMakeQString(xiiTranslate(sName)), order[i]);
     }
   }
 
-  connect(m_pTypeList, &QComboBox::currentIndexChanged, [this](int iIndex) {
+  connect(m_pTypeList, &QComboBox::currentIndexChanged, [this](xiiInt32 iIndex) {
     ChangeVariantType(static_cast<xiiVariantType::Enum>(m_pTypeList->itemData(iIndex).toInt()));
   });
 }
@@ -1817,9 +1858,18 @@ void xiiQtVariantPropertyWidget::UpdateTypeListSelection(xiiVariantType::Enum ty
     if (m_pTypeList->itemData(i).toInt() == type)
     {
       m_pTypeList->setCurrentIndex(i);
-      break;
+      return;
     }
   }
+
+  const xiiRTTI*   pVariantEnum = xiiGetStaticRTTI<xiiVariantType>();
+  xiiStringBuilder sName;
+  if (xiiReflectionUtils::EnumerationToString(pVariantEnum, type, sName))
+  {
+    m_pTypeList->setPlaceholderText(xiiMakeQString(xiiTranslate(sName)));
+  }
+
+  m_pTypeList->setCurrentIndex(-1);
 }
 
 void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
@@ -1845,8 +1895,41 @@ void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
 
 xiiResult xiiQtVariantPropertyWidget::GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const
 {
-  if (type == xiiVariantType::FirstStandardType || type >= xiiVariantType::LastStandardType || type == xiiVariantType::StringView || type == xiiVariantType::DataBuffer || type == xiiVariantType::TempHashedString)
-    return XII_FAILURE;
+  switch (type)
+  {
+    case xiiVariantType::FirstStandardType:
+    case xiiVariantType::StringView:
+    case xiiVariantType::DataBuffer:
+    case xiiVariantType::TempHashedString:
+    case xiiVariantType::Matrix3:
+    case xiiVariantType::Matrix4:
+    case xiiVariantType::Int8:
+    case xiiVariantType::UInt8:
+    case xiiVariantType::Int16:
+    case xiiVariantType::UInt16:
+    case xiiVariantType::UInt32:
+    case xiiVariantType::Int64:
+    case xiiVariantType::UInt64:
+    case xiiVariantType::Double:
+    case xiiVariantType::HashedString:
+    case xiiVariantType::Vector2U:
+    case xiiVariantType::Vector3U:
+    case xiiVariantType::Vector4U:
+    case xiiVariantType::Uuid:
+    case xiiVariantType::ColorGamma:
+      return XII_FAILURE;
+
+    case xiiVariantType::VariantArray:
+    case xiiVariantType::VariantDictionary:
+      break;
+
+    default:
+    {
+      if (type >= xiiVariantType::LastStandardType)
+        return XII_FAILURE;
+    }
+    break;
+  }
 
   const xiiRTTI* pVariantEnum = xiiGetStaticRTTI<xiiVariantType>();
   if (xiiReflectionUtils::EnumerationToString(pVariantEnum, type, out_sName) == false)
