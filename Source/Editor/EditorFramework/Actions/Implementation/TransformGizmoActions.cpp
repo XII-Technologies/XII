@@ -302,6 +302,12 @@ public:
       e.m_sDisplay   = "Gizmo.Rotation.Snap.45_Degree";
       e.m_UserValue  = 45.0f;
     }
+    {
+      auto& e        = out_entries.ExpandAndGetRef();
+      e.m_CheckState = xiiMath::IsEqual(fValue, 90.0f, 0.1f) ? xiiDynamicMenuAction::Item::CheckMark::Checked : xiiDynamicMenuAction::Item::CheckMark::Unchecked;
+      e.m_sDisplay   = xiiTranslate("Gizmo.Rotation.Snap.90_Degree");
+      e.m_UserValue  = 90.0f;
+    }
   }
 
   virtual void Execute(const xiiVariant& value) override
@@ -329,6 +335,8 @@ public:
       SetIconPath(":EditorFramework/Icons/Snap30deg.svg");
     else if (xiiMath::IsEqual(fValue, 45.0f, 0.1f))
       SetIconPath(":EditorFramework/Icons/Snap45deg.svg");
+    else if (xiiMath::IsEqual(fValue, 90.0f, 0.1f))
+      SetIconPath(":EditorFramework/Icons/Snap90deg.svg");
 
     TriggerUpdate();
   }

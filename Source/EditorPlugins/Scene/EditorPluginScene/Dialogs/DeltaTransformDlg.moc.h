@@ -48,6 +48,7 @@ private Q_SLOTS:
   void on_Value1_valueChanged(double value);
   void on_Value2_valueChanged(double value);
   void on_Value3_valueChanged(double value);
+  void on_CheckBoxSnapping_stateChanged(int state);
 
 private:
   void QueryUI();
@@ -65,6 +66,7 @@ private:
   static xiiVec3 s_vRotateRandom;
   static xiiVec3 s_vRotateDeviation;
   static float   s_fNaturalDeviationZ;
+  static bool    s_bUseCurrentSnapSettings;
 
   xiiUInt32         m_uiActionsApplied = 0;
   xiiSceneDocument* m_pSceneDocument   = nullptr;
