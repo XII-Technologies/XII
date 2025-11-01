@@ -649,8 +649,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   // https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#extended-functionality-device-layer-deprecation
   vk::DeviceCreateInfo deviceCreationDescription = {};
   deviceCreationDescription.flags                = {};
-  deviceCreationDescription.enabledLayerCount    = 0U;      // Deprecated and ignored.
-  deviceCreationDescription.ppEnabledLayerNames  = nullptr; // Deprecated and ignored.
   deviceCreationDescription.queueCreateInfoCount = queueDescriptions.GetCount();
   deviceCreationDescription.pQueueCreateInfos    = queueDescriptions.GetData();
 
@@ -1662,7 +1660,6 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
     m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16; // From the specification.
     m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;  // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
     m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
     m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
 

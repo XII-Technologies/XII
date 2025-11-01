@@ -88,7 +88,7 @@ void xiiGALDescriptorSetPoolVulkan::ReclaimDescriptorPool(vk::DescriptorPool&& v
 {
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 
-  vkLogicalDevice.resetDescriptorPool(vkDescriptorPool, vk::DescriptorPoolResetFlagBits{}, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(vkLogicalDevice.resetDescriptorPool(vkDescriptorPool, vk::DescriptorPoolResetFlagBits{}, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_QueuedDescriptorPools.PushBack(vkDescriptorPool);
 }
