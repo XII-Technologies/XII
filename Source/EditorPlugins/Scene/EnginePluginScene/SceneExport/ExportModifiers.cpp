@@ -3,6 +3,7 @@
 #include <EnginePluginScene/Components/ShapeIconComponent.h>
 #include <EnginePluginScene/SceneExport/ExportModifiers.h>
 #include <GameEngine/Animation/PathComponent.h>
+#include <GameEngine/Messages/ExportMessage.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -19,7 +20,7 @@ void xiiSceneExportModifier_RemoveShapeIconComponents::ModifyWorld(xiiWorld& ref
   {
     for (auto it = pSiMan->GetComponents(); it.IsValid(); it.Next())
     {
-      pSiMan->DeleteComponent(it->GetHandle());
+      pSiMan->DeleteComponent(it);
     }
   }
 }
@@ -57,9 +58,35 @@ void xiiSceneExportModifier_RemovePathNodeComponents::ModifyWorld(xiiWorld& ref_
         it->GetOwner()->SetName(xiiStringView());
       }
 
-      pSiMan->DeleteComponent(it->GetHandle());
+      pSiMan->DeleteComponent(it);
     }
   }
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_GenericExport, 1, xiiRTTIDefaultAllocator<xiiSceneExportModifier_GenericExport>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+void xiiSceneExportModifier_GenericExport::ModifyWorld(xiiWorld& ref_world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
+{
+  if (!bForExport)
+    return;
+
+  xiiStringBuilder sb;
+  xiiConversionUtils::ToString(documentGuid, sb);
+
+  XII_LOCK(ref_world.GetWriteMarker());
+
+  xiiMsgExport msg;
+  msg.m_sDocumentType = sDocumentType;
+  msg.m_sDocumentGuid = sb;
+
+  for (auto it = ref_world.GetObjects(); it.IsValid(); ++it)
+  {
+    if (!it->IsStatic())
+      continue;
+
+    it->SendMessage(msg);
+  }
+}

@@ -49,7 +49,7 @@ void xiiSceneExportModifier_RemoveCommentComponents::ModifyWorld(xiiWorld& ref_w
   {
     for (auto it = pMan->GetComponents(); it.IsValid(); it.Next())
     {
-      pMan->DeleteComponent(it->GetHandle());
+      pMan->DeleteComponent(it);
     }
   }
 }
