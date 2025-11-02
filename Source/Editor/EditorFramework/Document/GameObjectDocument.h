@@ -18,10 +18,10 @@ struct XII_EDITORFRAMEWORK_DLL TransformationChanges
 {
   enum Enum
   {
-    Translation  = XII_BIT(0),
-    Rotation     = XII_BIT(1),
-    Scale        = XII_BIT(2),
-    All          = 0xFF
+    Translation = XII_BIT(0),
+    Rotation    = XII_BIT(1),
+    Scale       = XII_BIT(2),
+    All         = 0xFF
   };
 };
 

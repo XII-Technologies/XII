@@ -100,17 +100,17 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
 
   xiiSpriteRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiSpriteRenderData>(GetOwner());
   {
-    pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
-    pRenderData->m_GlobalBounds    = GetOwner()->GetGlobalBounds();
-    pRenderData->m_hTexture        = m_hTexture;
-    pRenderData->m_fSize           = m_fSize;
-    pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
-    pRenderData->m_fAspectRatio    = m_fAspectRatio;
-    pRenderData->m_BlendMode       = m_BlendMode;
+    pRenderData->m_GlobalTransform     = GetOwner()->GetGlobalTransform();
+    pRenderData->m_GlobalBounds        = GetOwner()->GetGlobalBounds();
+    pRenderData->m_hTexture            = m_hTexture;
+    pRenderData->m_fSize               = m_fSize;
+    pRenderData->m_fMaxScreenSize      = m_fMaxScreenSize;
+    pRenderData->m_fAspectRatio        = m_fAspectRatio;
+    pRenderData->m_BlendMode           = m_BlendMode;
     pRenderData->m_Colour              = m_Color;
     pRenderData->m_vTextureCoordScale  = xiiVec2(1.0f);
     pRenderData->m_vTextureCoordOffset = xiiVec2(0.0f);
-    pRenderData->m_uiUniqueID      = GetUniqueIdForRendering();
+    pRenderData->m_uiUniqueID          = GetUniqueIdForRendering();
 
     pRenderData->FillSortingKey();
   }

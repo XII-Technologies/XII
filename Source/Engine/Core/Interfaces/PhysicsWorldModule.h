@@ -9,6 +9,11 @@
 struct xiiGameObjectHandle;
 struct xiiSkeletonResourceDescriptor;
 
+/// Interface for physics world modules that provide physics simulation and queries.
+///
+/// Physics world modules implement physics functionality for a world, including
+/// collision detection, raycasting, and shape queries. Different physics engines
+/// can provide their own implementations of this interface.
 class XII_CORE_DLL xiiPhysicsWorldModuleInterface : public xiiWorldModule
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPhysicsWorldModuleInterface, xiiWorldModule);
@@ -24,6 +29,16 @@ public:
   ///
   /// Returns xiiInvalidIndex if no such collision layer exists.
   virtual xiiUInt32 GetCollisionLayerByName(xiiStringView sName) const = 0;
+
+  /// \brief Searches for a weight category with the given name and returns its key.
+  ///
+  /// Returns xiiWeightCategoryConfig::InvalidKey if no such category exists.
+  virtual xiiUInt8 GetWeightCategoryByName(xiiStringView sName) const = 0;
+
+  /// \brief Searches for an impulse type with the given name and returns its key.
+  ///
+  /// Returns xiiImpulseTypeConfig::InvalidKey if no such category exists.
+  virtual xiiUInt8 GetImpulseTypeByName(xiiStringView sName) const = 0;
 
   virtual bool Raycast(xiiPhysicsCastResult& out_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
@@ -106,20 +121,8 @@ struct XII_CORE_DLL xiiMsgPhysicsAddImpulse : public xiiMessage
 
   xiiVec3   m_vGlobalPosition;
   xiiVec3   m_vImpulse;
+  xiiUInt8  m_uiImpulseType    = 0;
   xiiUInt32 m_uiObjectFilterID = xiiInvalidIndex;
-
-  // Physics-engine specific information, may be available or not.
-  void* m_pInternalPhysicsShape = nullptr;
-  void* m_pInternalPhysicsActor = nullptr;
-};
-
-/// \brief Used to apply a physical force on the object
-struct XII_CORE_DLL xiiMsgPhysicsAddForce : public xiiMessage
-{
-  XII_DECLARE_MESSAGE_TYPE(xiiMsgPhysicsAddForce, xiiMessage);
-
-  xiiVec3 m_vGlobalPosition;
-  xiiVec3 m_vForce;
 
   // Physics-engine specific information, may be available or not.
   void* m_pInternalPhysicsShape = nullptr;
@@ -149,6 +152,36 @@ struct XII_CORE_DLL xiiMsgReleaseObjectGrab : public xiiMessage
 
   xiiGameObjectHandle m_hGrabbedObjectToRelease;
 };
+
+/// \brief Can be sent by character controllers to inform objects when a CC pushes into them.
+///
+/// Whether this message is sent, depends on the character controller implementation.
+/// This is mainly meant for less important interactions, like breaking decorative things.
+struct XII_CORE_DLL xiiMsgPhysicCharacterContact : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgPhysicCharacterContact, xiiMessage);
+
+  xiiComponentHandle m_hCharacter;
+  xiiVec3            m_vGlobalPosition;
+  xiiVec3            m_vNormal;
+  xiiVec3            m_vCharacterVelocity;
+  float              m_fImpact;
+};
+
+/// \brief Sent to physics components that have contact reporting enabled (see xiiOnJoltContact::SendContactMsg).
+///
+/// Only sent for certain physics object combinations, e.g. debris doesn't trigger this.
+/// The reported contact position and normal is an average of the contact manifold.
+/// This is mainly meant for less important interactions, like breaking decorative things.
+struct XII_CORE_DLL xiiMsgPhysicContact : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgPhysicContact, xiiMessage);
+
+  xiiVec3 m_vGlobalPosition;
+  xiiVec3 m_vNormal;
+  float   m_fImpactSqr;
+};
+
 
 //////////////////////////////////////////////////////////////////////////
 

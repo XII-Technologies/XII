@@ -29,8 +29,8 @@ xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  xiiGALDeviceVulkan*                   pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan = pCommandList.Downcast<xiiGALCommandListVulkan>();
+  xiiGALDeviceVulkan*                   pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan     = pCommandList.Downcast<xiiGALCommandListVulkan>();
   auto                                  pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
 
   bool bTimelineSemaphoreInUse = false;

@@ -135,6 +135,9 @@ public:
   /// \brief Checks whether the xiiObjectFlags::CreatedByPrefab flag is set on this component.
   bool WasCreatedByPrefab() const { return m_ComponentFlags.IsSet(xiiObjectFlags::CreatedByPrefab); }
 
+  /// \brief Deletes this component. Note that the component will be invalidated first and the actual deletion is postponed.
+  void DeleteComponent();
+
 protected:
   friend class xiiWorld;
   friend class xiiGameObject;

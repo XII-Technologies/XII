@@ -265,3 +265,5 @@ void xiiScriptExtensionClass_CVar::SetStringValue(xiiStringView sName, const xii
   xiiCVarString* pVar = static_cast<xiiCVarString*>(pCVar);
   *pVar               = sValue;
 }
+
+XII_STATICLINK_FILE(Core, Core_Scripting_ScriptClasses_Implementation_ScriptExtensionClass_CVar);

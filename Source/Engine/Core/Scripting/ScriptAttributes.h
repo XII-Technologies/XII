@@ -22,7 +22,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 /// \brief Add this attribute to a script function to mark it as a base class function.
-/// These are functions that can be entry points to visual scripts or over-writable functions in script languages like e.g. typescript.
+/// These are functions that can be entry points to visual scripts or over-writable functions in script languages.
 class XII_CORE_DLL xiiScriptBaseClassFunctionAttribute : public xiiPropertyAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiScriptBaseClassFunctionAttribute, xiiPropertyAttribute);

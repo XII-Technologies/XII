@@ -82,6 +82,7 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
       Builtin_Array_IndexOf,
       Builtin_Array_Insert,
       Builtin_Array_PushBack,
+      Builtin_Array_PushBackRange,
       Builtin_Array_Remove,
       Builtin_Array_RemoveAt,
 

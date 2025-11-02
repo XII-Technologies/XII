@@ -4,9 +4,14 @@
 #include <Core/World/Declarations.h>
 #include <Foundation/Math/Easing.h>
 
+/// Script coroutine that animates a component property value over time.
+///
+/// Provides smooth interpolation between the current and target property values using configurable easing curves.
+/// Supports any property type that can be represented as a variant and interpolated.
 class XII_CORE_DLL xiiScriptCoroutine_TweenProperty : public xiiTypedScriptCoroutine<xiiScriptCoroutine_TweenProperty, xiiComponentHandle, xiiStringView, xiiVariant, xiiTime, xiiEnum<xiiEasingFunction>>
 {
 public:
+  /// Initiates the property animation to the specified target value.
   void           Start(xiiComponentHandle hComponent, xiiStringView sPropertyName, xiiVariant targetValue, xiiTime duration, xiiEnum<xiiEasingFunction> easing);
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 

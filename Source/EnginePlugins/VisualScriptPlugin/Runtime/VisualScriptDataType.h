@@ -42,6 +42,7 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataType
 
     EnumValue,
     BitflagValue,
+    Resource,
 
     ExtendedCount,
 
@@ -51,7 +52,8 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataType
     Default = Invalid,
   };
 
-  XII_ALWAYS_INLINE static bool IsNumber(Enum dataType) { return dataType >= Bool && dataType <= Double; }
+  XII_ALWAYS_INLINE static bool IsNumber(Enum dataType) { return dataType >= Byte && dataType <= Double; }
+  XII_ALWAYS_INLINE static bool IsNumberOrBool(Enum dataType) { return dataType == Bool || IsNumber(dataType); }
   XII_ALWAYS_INLINE static bool IsPointer(Enum dataType) { return (dataType >= GameObject && dataType <= TypedPointer) || dataType == Coroutine; }
 
   static xiiVariantType::Enum GetVariantType(Enum dataType);

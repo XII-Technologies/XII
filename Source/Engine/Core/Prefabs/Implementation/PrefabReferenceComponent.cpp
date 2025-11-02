@@ -9,6 +9,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiPrefabReferenceComponent, 4, xiiComponentMode::Stati
   XII_BEGIN_PROPERTIES
   {
     XII_RESOURCE_ACCESSOR_PROPERTY("Prefab", GetPrefab, SetPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab")),
+    XII_ACCESSOR_PROPERTY("ShowShapeIcons", GetShowShapeIcons, SetShowShapeIcons),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Prefab")),
   }
   XII_END_PROPERTIES;
@@ -23,7 +24,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 enum PrefabComponentFlags
 {
-  SelfDeletion = 1, ///< the prefab component is currently deleting itself but does not want to remove the instantiated objects
+  SelfDeletion   = 1, ///< The prefab component is currently deleting itself but does not want to remove the instantiated objects.
+  ShowShapeIcons = 2, ///< The prefab component should show shape icons for the instantiated objects.
+  InUpdateList   = 3, ///< The prefab component is currently in the update list of the prefab manager.
 };
 
 xiiPrefabReferenceComponent::xiiPrefabReferenceComponent()  = default;
@@ -227,6 +230,24 @@ void xiiPrefabReferenceComponent::SetPrefab(const xiiPrefabResourceHandle& hPref
   }
 }
 
+void xiiPrefabReferenceComponent::SetShowShapeIcons(bool bShow)
+{
+  SetUserFlag((xiiUInt8)PrefabComponentFlags::ShowShapeIcons, bShow);
+
+  if (IsActiveAndInitialized())
+  {
+    // only add to update list, if not yet activated,
+    // since OnActivate will do the instantiation anyway
+
+    GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
+  }
+}
+
+bool xiiPrefabReferenceComponent::GetShowShapeIcons() const
+{
+  return GetUserFlag((xiiUInt8)PrefabComponentFlags::ShowShapeIcons);
+}
+
 void xiiPrefabReferenceComponent::InstantiatePrefab()
 {
   // now instantiate the prefab
@@ -256,12 +277,17 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
 
       pResource->InstantiatePrefab(*GetWorld(), id, options, &m_Parameters);
 
-      auto FixComponent = [](xiiGameObject* pChild, xiiUInt32 uiUniqueID) {
+      auto FixComponent = [](xiiGameObject* pChild, xiiUInt32 uiUniqueID, bool bShowShapeIcons) {
         // while exporting a scene all game objects with this flag are ignored and not exported
         // set this flag on all game objects that were created by instantiating this prefab
         // instead it should be instantiated at runtime again
         // only do this at editor time though, at regular runtime we do want to fully serialize the entire sub tree
         pChild->SetCreatedByPrefab();
+
+        if (!bShowShapeIcons)
+        {
+          pChild->SetHideShapeIcon();
+        }
 
         for (auto pComponent : pChild->GetComponents())
         {
@@ -270,19 +296,20 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
         }
       };
 
-      const xiiUInt32 uiUniqueID = GetUniqueID();
+      const xiiUInt32 uiUniqueID      = GetUniqueID();
+      const bool      bShowShapeIcons = GetShowShapeIcons();
 
       for (xiiGameObject* pChild : createdRootObjects)
       {
         if (pChild == GetOwner())
           continue;
 
-        FixComponent(pChild, uiUniqueID);
+        FixComponent(pChild, uiUniqueID, bShowShapeIcons);
       }
 
       for (xiiGameObject* pChild : createdChildObjects)
       {
-        FixComponent(pChild, uiUniqueID);
+        FixComponent(pChild, uiUniqueID, bShowShapeIcons);
       }
 
       for (; uiPrevCompCount < GetOwner()->GetComponents().GetCount(); ++uiPrevCompCount)
@@ -333,7 +360,7 @@ void xiiPrefabReferenceComponent::ClearPreviousInstances()
       if (comps[i] != this && // don't try to delete yourself
           comps[i]->WasCreatedByPrefab())
       {
-        comps[i]->GetOwningManager()->DeleteComponent(comps[i]);
+        comps[i]->DeleteComponent();
       }
     }
 
@@ -473,7 +500,7 @@ void xiiPrefabReferenceComponentManager::Update(const xiiWorldModule::UpdateCont
     if (!TryGetComponent(hComp, pComponent))
       continue;
 
-    pComponent->m_bInUpdateList = false;
+    pComponent->SetUserFlag((xiiUInt8)PrefabComponentFlags::InUpdateList, false);
     if (!pComponent->IsActive())
       continue;
 
@@ -486,10 +513,10 @@ void xiiPrefabReferenceComponentManager::Update(const xiiWorldModule::UpdateCont
 
 void xiiPrefabReferenceComponentManager::AddToUpdateList(xiiPrefabReferenceComponent* pComponent)
 {
-  if (!pComponent->m_bInUpdateList)
+  if (!pComponent->GetUserFlag((xiiUInt8)PrefabComponentFlags::InUpdateList))
   {
     m_ComponentsToUpdate.PushBack(pComponent->GetHandle());
-    pComponent->m_bInUpdateList = true;
+    pComponent->SetUserFlag((xiiUInt8)PrefabComponentFlags::InUpdateList, true);
   }
 }
 

@@ -91,15 +91,16 @@ void xiiQtVisualScriptWindow::SelectionEventHandler(const xiiSelectionManagerEve
   if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
   {
     // delayed execution
-    QTimer::singleShot(1, [this]() {
-      auto pDocument         = GetDocument();
-      auto pSelectionManager = pDocument->GetSelectionManager();
+    QTimer::singleShot(1,
+                       [this]() {
+                         auto pDocument         = GetDocument();
+                         auto pSelectionManager = pDocument->GetSelectionManager();
 
-      // Check again if the selection is empty. This could have changed due to the delayed execution.
-      if (pSelectionManager->IsSelectionEmpty())
-      {
-        pSelectionManager->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
-      }
-    });
+                         // Check again if the selection is empty. This could have changed due to the delayed execution.
+                         if (pSelectionManager->IsSelectionEmpty())
+                         {
+                           pSelectionManager->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
+                         }
+                       });
   }
 }

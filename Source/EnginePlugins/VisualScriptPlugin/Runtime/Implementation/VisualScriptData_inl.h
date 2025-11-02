@@ -117,7 +117,8 @@ void xiiVisualScriptDataStorage::SetPointerData(DataOffset dataOffset, T ptr, co
     }
     else
     {
-      XII_ASSERT_DEBUG(!pType || pType->IsDerivedFrom<xiiComponent>() == false, "Component type '{}' is stored as typed pointer, cast to xiiComponent first to ensure correct storage", pType->GetTypeName());
+      const bool bIsAllowedType = !pType || (pType->IsDerivedFrom<xiiComponent>() == false && pType->IsDerivedFrom<xiiGameObject>() == false);
+      XII_ASSERT_DEBUG(bIsAllowedType, "GameObject or Component type '{}' is stored as typed pointer, cast to xiiGameObject or xiiComponent first to ensure correct storage", pType->GetTypeName());
 
       m_pDesc->CheckOffset(dataOffset, pType);
 
@@ -133,13 +134,35 @@ void xiiVisualScriptDataStorage::SetPointerData(DataOffset dataOffset, T ptr, co
 inline xiiResult xiiVisualScriptInstanceData::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(m_DataOffset.Serialize(inout_stream));
-  inout_stream << m_DefaultValue;
+
+  if (m_DataOffset.GetType() != xiiVisualScriptDataType::GameObject && m_DataOffset.GetType() != xiiVisualScriptDataType::Component && m_DataOffset.GetType() != xiiVisualScriptDataType::TypedPointer)
+  {
+    inout_stream << m_DefaultValue;
+  }
+
   return XII_SUCCESS;
 }
 
 inline xiiResult xiiVisualScriptInstanceData::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(m_DataOffset.Deserialize(inout_stream));
-  inout_stream >> m_DefaultValue;
+
+  if (m_DataOffset.GetType() == xiiVisualScriptDataType::GameObject)
+  {
+    m_DefaultValue = xiiGameObjectHandle();
+  }
+  else if (m_DataOffset.GetType() == xiiVisualScriptDataType::Component)
+  {
+    m_DefaultValue = xiiComponentHandle();
+  }
+  else if (m_DataOffset.GetType() == xiiVisualScriptDataType::TypedPointer)
+  {
+    m_DefaultValue = xiiTypedPointer();
+  }
+  else
+  {
+    inout_stream >> m_DefaultValue;
+  }
+
   return XII_SUCCESS;
 }
