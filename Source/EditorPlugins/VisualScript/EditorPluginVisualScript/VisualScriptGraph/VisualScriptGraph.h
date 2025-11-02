@@ -3,6 +3,8 @@
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptNodeRegistry.h>
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 
+struct xiiVisualScriptVariable;
+
 class xiiVisualScriptPin : public xiiPin
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiVisualScriptPin, xiiPin);
@@ -47,7 +49,8 @@ public:
   bool            IsFilteredByBaseClass(const xiiRTTI* pNodeType, const xiiVisualScriptNodeRegistry::NodeDesc& nodeDesc, const xiiHashedString& sBaseClass, bool bLogWarning = false) const;
 
   xiiVisualScriptDataType::Enum GetVariableType(xiiTempHashedString sName) const;
-  xiiResult                     GetVariableDefaultValue(xiiTempHashedString sName, xiiVariant& out_value) const;
+  xiiResult                     GetVariable(xiiTempHashedString sName, xiiVisualScriptVariable& out_variable) const;
+  void                          GetAllVariables(xiiDynamicArray<xiiVisualScriptVariable>& out_variables) const;
 
   void GetInputExecutionPins(const xiiDocumentObject* pObject, xiiDynamicArray<const xiiVisualScriptPin*>& out_pins) const;
   void GetOutputExecutionPins(const xiiDocumentObject* pObject, xiiDynamicArray<const xiiVisualScriptPin*>& out_pins) const;
