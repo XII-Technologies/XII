@@ -220,7 +220,7 @@ void xiiQtShortcutEditorDlg::on_Search_textChanged(const QString& sText)
 
     for (xiiInt32 iChild = 0; iChild < pTopItem->childCount(); ++iChild)
     {
-      auto           pChild      = pTopItem->child(iChild);
+      auto            pChild      = pTopItem->child(iChild);
       const xiiString sActionName = pChild->data(0, Qt::DisplayRole).toString().toUtf8().data();
       const xiiString sShortcut   = pChild->data(2, Qt::DisplayRole).toString().toUtf8().data();
 
