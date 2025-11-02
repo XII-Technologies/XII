@@ -391,7 +391,7 @@ XII_CREATE_SIMPLE_TEST(World, Components)
       XII_TEST_INT(TestComponent::s_iActivateCounter, 1);
       XII_TEST_INT(TestComponent::s_iSimulationStartedCounter, 2);
 
-      TestComponent::DeleteComponent(pComponent);
+      pComponent->DeleteComponent();
     }
 
     // Simulation stopped, component inactive
@@ -442,7 +442,7 @@ XII_CREATE_SIMPLE_TEST(World, Components)
       XII_TEST_INT(TestComponent::s_iActivateCounter, 1);
       XII_TEST_INT(TestComponent::s_iSimulationStartedCounter, 1);
 
-      TestComponent::DeleteComponent(pComponent);
+      pComponent->DeleteComponent();
     }
 
     // Simulation started, component active
@@ -465,7 +465,7 @@ XII_CREATE_SIMPLE_TEST(World, Components)
       XII_TEST_INT(TestComponent::s_iActivateCounter, 1);
       XII_TEST_INT(TestComponent::s_iSimulationStartedCounter, 1);
 
-      TestComponent::DeleteComponent(pComponent);
+      pComponent->DeleteComponent();
     }
 
     // Simulation started, component inactive
@@ -496,7 +496,7 @@ XII_CREATE_SIMPLE_TEST(World, Components)
       XII_TEST_INT(TestComponent::s_iActivateCounter, 1);
       XII_TEST_INT(TestComponent::s_iSimulationStartedCounter, 1);
 
-      TestComponent::DeleteComponent(pComponent);
+      pComponent->DeleteComponent();
     }
   }
 
