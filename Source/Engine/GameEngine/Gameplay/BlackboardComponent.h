@@ -132,14 +132,15 @@ public:
   xiiStringView GetBlackboardName() const;              // [ property ]
 
 private:
-  xiiUInt32                 Entries_GetCount() const;
-  const xiiBlackboardEntry& Entries_GetValue(xiiUInt32 uiIndex) const;
-  void                      Entries_SetValue(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry);
-  void                      Entries_Insert(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry);
-  void                      Entries_Remove(xiiUInt32 uiIndex);
+  xiiUInt32          Entries_GetCount() const;
+  xiiBlackboardEntry Entries_GetValue(xiiUInt32 uiIndex) const;
+  void               Entries_SetValue(xiiUInt32 uiIndex, xiiBlackboardEntry entry);
+  void               Entries_Insert(xiiUInt32 uiIndex, xiiBlackboardEntry entry);
+  void               Entries_Remove(xiiUInt32 uiIndex);
 
   void OnEntryChanged(const xiiBlackboard::EntryEvent& e);
   void InitializeFromTemplate();
+  bool IsEditor() const;
 
   // this array is not held during runtime, it is only needed during editor time until the component is serialized out
   xiiDynamicArray<xiiBlackboardEntry> m_InitialEntries;
