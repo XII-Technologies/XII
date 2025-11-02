@@ -6,6 +6,7 @@
 #include <QKeySequenceEdit>
 #include <QTableWidget>
 #include <QTreeWidget>
+#include <ToolsFoundation/Utilities/SearchPatternFilter.h>
 
 xiiQtShortcutEditorDlg::xiiQtShortcutEditorDlg(QWidget* pParent) :
   QDialog(pParent)
@@ -203,4 +204,35 @@ void xiiQtShortcutEditorDlg::on_ButtonReset_clicked()
   m_ActionDescs[m_iSelectedAction]->UpdateExistingActions();
 
   UpdateTable();
+}
+
+void xiiQtShortcutEditorDlg::on_Search_textChanged(const QString& sText)
+{
+  xiiSearchPatternFilter filter;
+  filter.SetSearchText(sText.toUtf8().data());
+
+  xiiQtScopedUpdatesDisabled ud(Shortcuts);
+
+  for (xiiInt32 iTop = 0; iTop < Shortcuts->topLevelItemCount(); ++iTop)
+  {
+    auto pTopItem                 = Shortcuts->topLevelItem(iTop);
+    bool bAnyCategoryChildVisible = false;
+
+    for (xiiInt32 iChild = 0; iChild < pTopItem->childCount(); ++iChild)
+    {
+      auto           pChild      = pTopItem->child(iChild);
+      const xiiString sActionName = pChild->data(0, Qt::DisplayRole).toString().toUtf8().data();
+      const xiiString sShortcut   = pChild->data(2, Qt::DisplayRole).toString().toUtf8().data();
+
+      const bool bVisible = filter.PassesFilters(sActionName) || filter.PassesFilters(sShortcut);
+      pChild->setHidden(!bVisible);
+
+      if (bVisible)
+      {
+        bAnyCategoryChildVisible = true;
+      }
+    }
+
+    pTopItem->setHidden(!bAnyCategoryChildVisible);
+  }
 }

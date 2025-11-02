@@ -319,10 +319,9 @@ xiiEditorInput xiiOrbitCameraContext::DoWheelEvent(QWheelEvent* e)
   return xiiEditorInput::WasExclusivelyHandled;
 }
 
-
 xiiEditorInput xiiOrbitCameraContext::DoKeyPressEvent(QKeyEvent* e)
 {
-  if (e->key() == Qt::Key_F)
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_F))
   {
     MoveCameraToDefaultPosition();
     return xiiEditorInput::WasExclusivelyHandled;
@@ -333,26 +332,40 @@ xiiEditorInput xiiOrbitCameraContext::DoKeyPressEvent(QKeyEvent* e)
 
   m_bRun = (e->modifiers() & Qt::KeyboardModifier::ShiftModifier) != 0;
 
-  switch (e->key())
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_W))
   {
-    case Qt::Key_W:
-      m_bMoveForwards = true;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_S:
-      m_bMoveBackwards = true;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_A:
-      m_bMoveLeft = true;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_D:
-      m_bMoveRight = true;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_Q:
-      m_bMoveDown = true;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_E:
-      m_bMoveUp = true;
-      return xiiEditorInput::WasExclusivelyHandled;
+    m_bMoveForwards = true;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_S))
+  {
+    m_bMoveBackwards = true;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_A))
+  {
+    m_bMoveLeft = true;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_D))
+  {
+    m_bMoveRight = true;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_Q))
+  {
+    m_bMoveDown = true;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_E))
+  {
+    m_bMoveUp = true;
+    return xiiEditorInput::WasExclusivelyHandled;
   }
 
   return xiiEditorInput::MayBeHandledByOthers;
@@ -368,26 +381,40 @@ xiiEditorInput xiiOrbitCameraContext::DoKeyReleaseEvent(QKeyEvent* e)
 
   m_bRun = (e->modifiers() & Qt::KeyboardModifier::ShiftModifier) != 0;
 
-  switch (e->key())
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_W))
   {
-    case Qt::Key_W:
-      m_bMoveForwards = false;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_S:
-      m_bMoveBackwards = false;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_A:
-      m_bMoveLeft = false;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_D:
-      m_bMoveRight = false;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_Q:
-      m_bMoveDown = false;
-      return xiiEditorInput::WasExclusivelyHandled;
-    case Qt::Key_E:
-      m_bMoveUp = false;
-      return xiiEditorInput::WasExclusivelyHandled;
+    m_bMoveForwards = false;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_S))
+  {
+    m_bMoveBackwards = false;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_A))
+  {
+    m_bMoveLeft = false;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_D))
+  {
+    m_bMoveRight = false;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_Q))
+  {
+    m_bMoveDown = false;
+    return xiiEditorInput::WasExclusivelyHandled;
+  }
+
+  if (xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_E))
+  {
+    m_bMoveUp = false;
+    return xiiEditorInput::WasExclusivelyHandled;
   }
 
   return xiiEditorInput::MayBeHandledByOthers;
