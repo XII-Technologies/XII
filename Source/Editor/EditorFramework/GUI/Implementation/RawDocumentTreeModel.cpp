@@ -574,6 +574,11 @@ bool xiiQtDocumentTreeModel::MoveObjects(const xiiDragDropInfo& info)
   return false;
 }
 
+const xiiDocumentObject* xiiQtDocumentTreeModel::GetObject(const QModelIndex index) const
+{
+  return (const xiiDocumentObject*)index.internalPointer();
+}
+
 QStringList xiiQtDocumentTreeModel::mimeTypes() const
 {
   QStringList types;

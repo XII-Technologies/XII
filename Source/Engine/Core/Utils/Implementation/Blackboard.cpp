@@ -212,6 +212,26 @@ xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& sName, const 
   return pEntry != nullptr ? pEntry->m_Value : fallback;
 }
 
+xiiResult xiiBlackboard::SetEditorIndex(const xiiTempHashedString& sName, xiiUInt8 uiEditorIndex)
+{
+  auto itEntry = m_Entries.Find(sName);
+  if (!itEntry.IsValid())
+    return XII_FAILURE;
+
+  itEntry.Value().m_uiEditorIndex = uiEditorIndex;
+  return XII_SUCCESS;
+}
+
+xiiHashedString xiiBlackboard::FindNameForEditorIndex(xiiUInt8 uiEditorIndex) const
+{
+  for (auto& e : m_Entries)
+  {
+    if (e.Value().m_uiEditorIndex == uiEditorIndex)
+      return e.Key();
+  }
+  return {};
+}
+
 xiiVariant xiiBlackboard::IncrementEntryValue(const xiiTempHashedString& sName)
 {
   auto pEntry = m_Entries.GetValue(sName);

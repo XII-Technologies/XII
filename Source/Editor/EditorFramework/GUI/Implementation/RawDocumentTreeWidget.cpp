@@ -3,6 +3,7 @@
 #include <EditorFramework/GUI/RawDocumentTreeWidget.moc.h>
 #include <GuiFoundation/ActionViews/QtProxy.moc.h>
 #include <GuiFoundation/Models/TreeSearchFilterModel.moc.h>
+#include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
 xiiQtDocumentTreeView::xiiQtDocumentTreeView(QWidget* pParent) :
   xiiQtItemView<QTreeView>(pParent)
@@ -18,6 +19,29 @@ xiiQtDocumentTreeView::xiiQtDocumentTreeView(QWidget* pParent, xiiDocument* pDoc
   Initialize(pDocument, std::move(pModel), pSelection);
 }
 
+static bool GameObjectFilterFunc(QModelIndex index, const xiiSearchPatternFilter& filter)
+{
+  if (const xiiQtDocumentTreeModel* pModel = qobject_cast<const xiiQtDocumentTreeModel*>(index.model()))
+  {
+    auto pObj = pModel->GetObject(index);
+    auto pAcc = pModel->GetDocumentTree()->GetDocument()->GetObjectAccessor();
+
+    xiiVariant comp;
+
+    const xiiInt32 iNum = pAcc->GetCountByName(pObj, "Components");
+    for (xiiInt32 i = 0; i < iNum; ++i)
+    {
+      if (pAcc->GetValueByName(pObj, "Components", comp, i).Succeeded())
+      {
+        if (filter.PassesFilters(pAcc->GetObject(comp.Get<xiiUuid>())->GetType()->GetTypeName()))
+          return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 void xiiQtDocumentTreeView::Initialize(xiiDocument* pDocument, std::unique_ptr<xiiQtDocumentTreeModel> pModel, xiiSelectionManager* pSelection)
 {
   m_pDocument         = pDocument;
@@ -31,6 +55,7 @@ void xiiQtDocumentTreeView::Initialize(xiiDocument* pDocument, std::unique_ptr<x
 
   m_pFilterModel.reset(new xiiQtTreeSearchFilterModel(this));
   m_pFilterModel->setSourceModel(m_pModel.get());
+  m_pFilterModel->SetCustomFilterFunc(GameObjectFilterFunc);
 
   setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
   setSelectionMode(QAbstractItemView::SelectionMode::ExtendedSelection);

@@ -13,7 +13,8 @@ namespace
   enum CustomRoles
   {
     InternalPathRole = Qt::UserRole + 1,
-    VariantRole      = Qt::UserRole + 2
+    VariantRole      = Qt::UserRole + 2,
+    SortRole         = Qt::UserRole + 3,
   };
 }
 
@@ -167,6 +168,7 @@ void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInt
   pThisItem->setData(sInternalPath.GetData(tmp), InternalPathRole);
   pThisItem->setData(variant, VariantRole);
   pThisItem->setIcon(icon);
+  pThisItem->setData(xiiMakeQString(sDisplayName).toLower(), SortRole);
 
   pParent->appendRow(pThisItem);
 }
@@ -178,6 +180,7 @@ QString xiiQtSearchableMenu::GetSearchText() const
 
 void xiiQtSearchableMenu::Finalize(const QString& sSearchText)
 {
+  m_pItemModel->setSortRole(SortRole);
   m_pItemModel->sort(0);
 
   m_pSearch->setText(sSearchText);

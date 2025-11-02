@@ -107,6 +107,7 @@ public:
   {
     xiiVariant                           m_Value;
     xiiBitflags<xiiBlackboardEntryFlags> m_Flags;
+    xiiUInt8                             m_uiEditorIndex = 0xFFU;
 
     /// The change counter is increased every time the entry's value changes.
     /// Read this and compare it to a previous known value, to detect whether the value was changed since the last check.
@@ -159,6 +160,12 @@ public:
 
   /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
   xiiVariant GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback = xiiVariant()) const;
+
+  /// \brief For the editor to know what index an element had, so that it can pass through exposed properties (which are given by index).
+  xiiResult SetEditorIndex(const xiiTempHashedString& sName, xiiUInt8 uiEditorIndex);
+
+  /// \brief Searches for the first item that has the previously set index. Returns an empty string, if none was found.
+  xiiHashedString FindNameForEditorIndex(xiiUInt8 uiEditorIndex) const;
 
   /// \brief Increments the value of the named entry. Returns the incremented value or an invalid variant if the entry does not exist or is not a number type.
   xiiVariant IncrementEntryValue(const xiiTempHashedString& sName);

@@ -68,7 +68,8 @@ bool xiiDynamicStringEnum::IsValueValid(xiiStringView sValue) const
 
 void xiiDynamicStringEnum::SortValues()
 {
-  m_ValidValues.Sort();
+  xiiCompareString_NoCase comp;
+  m_ValidValues.Sort(comp);
 }
 
 void xiiDynamicStringEnum::SetEditCommand(xiiStringView sCmd, const xiiVariant& value)

@@ -18,7 +18,8 @@ struct BCFlags
   {
     ShowDebugInfo = 0,
     SendEntryChangedMessage,
-    InitializedFromTemplate
+    InitializedFromTemplate,
+    IsRuntimeSerialized,
   };
 };
 
@@ -345,6 +346,8 @@ void xiiLocalBlackboardComponent::SerializeComponent(xiiWorldWriter& inout_strea
 
 void xiiLocalBlackboardComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
+  SetUserFlag(BCFlags::IsRuntimeSerialized, true);
+
   const xiiUInt32 uiBaseVersion = inout_stream.GetComponentTypeVersion(xiiBlackboardComponent::GetStaticRTTI());
   if (uiBaseVersion < 3)
     return;
@@ -363,10 +366,13 @@ void xiiLocalBlackboardComponent::DeserializeComponent(xiiWorldReader& inout_str
   xiiDynamicArray<xiiBlackboardEntry> initialEntries;
   if (s.ReadArray(initialEntries).Succeeded())
   {
-    for (auto& entry : initialEntries)
+    for (xiiUInt32 i = 0; i < initialEntries.GetCount(); ++i)
     {
+      xiiBlackboardEntry& entry = initialEntries[i];
+
       m_pBoard->SetEntryValue(entry.m_sName, entry.m_InitialValue);
       m_pBoard->SetEntryFlags(entry.m_sName, entry.m_Flags).AssertSuccess();
+      m_pBoard->SetEditorIndex(entry.m_sName, static_cast<xiiUInt8>(i)).AssertSuccess(); // Allows us to map exposed parameters to the correct entries.
     }
   }
 }
@@ -403,49 +409,75 @@ xiiStringView xiiLocalBlackboardComponent::GetBlackboardName() const
   return m_pBoard->GetName();
 }
 
-
 xiiUInt32 xiiLocalBlackboardComponent::Entries_GetCount() const
 {
-  return m_InitialEntries.GetCount();
-}
-
-const xiiBlackboardEntry& xiiLocalBlackboardComponent::Entries_GetValue(xiiUInt32 uiIndex) const
-{
-  return m_InitialEntries[uiIndex];
-}
-
-void xiiLocalBlackboardComponent::Entries_SetValue(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry)
-{
-  m_InitialEntries.EnsureCount(uiIndex + 1);
-
-  if (const xiiBlackboard::Entry* pEntry = m_pBoard->GetEntry(m_InitialEntries[uiIndex].m_sName))
+  if (IsEditor())
   {
-    if (m_InitialEntries[uiIndex].m_sName != entry.m_sName)
+    return m_InitialEntries.GetCount();
+  }
+  return m_pBoard->GetAllEntries().GetCount();
+}
+
+xiiBlackboardEntry xiiLocalBlackboardComponent::Entries_GetValue(xiiUInt32 uiIndex) const
+{
+  if (IsEditor())
+  {
+    return m_InitialEntries[uiIndex];
+  }
+
+  xiiHashedString    sName = m_pBoard->FindNameForEditorIndex(static_cast<xiiUInt8>(uiIndex));
+  xiiBlackboardEntry tempEntry;
+  if (!sName.IsEmpty())
+  {
+    tempEntry.m_sName        = sName;
+    tempEntry.m_InitialValue = m_pBoard->GetEntryValue(sName);
+    tempEntry.m_Flags        = m_pBoard->GetEntryFlags(sName);
+  }
+  return tempEntry;
+}
+
+void xiiLocalBlackboardComponent::Entries_SetValue(xiiUInt32 uiIndex, xiiBlackboardEntry entry)
+{
+  if (IsEditor())
+  {
+    m_InitialEntries.EnsureCount(uiIndex + 1);
+
+    // Remove old name under this index
+    if (const xiiBlackboard::Entry* pEntry = m_pBoard->GetEntry(m_InitialEntries[uiIndex].m_sName))
     {
-      m_pBoard->RemoveEntry(m_InitialEntries[uiIndex].m_sName);
+      if (m_InitialEntries[uiIndex].m_sName != entry.m_sName)
+      {
+        m_pBoard->RemoveEntry(m_InitialEntries[uiIndex].m_sName);
+      }
     }
+    m_InitialEntries[uiIndex] = entry;
   }
 
   m_pBoard->SetEntryValue(entry.m_sName, entry.m_InitialValue);
   m_pBoard->SetEntryFlags(entry.m_sName, entry.m_Flags).AssertSuccess();
-
-  m_InitialEntries[uiIndex] = entry;
 }
 
-void xiiLocalBlackboardComponent::Entries_Insert(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry)
+void xiiLocalBlackboardComponent::Entries_Insert(xiiUInt32 uiIndex, xiiBlackboardEntry entry)
 {
-  m_InitialEntries.InsertAt(uiIndex, entry);
+  if (IsEditor())
+  {
+    m_InitialEntries.InsertAt(uiIndex, entry);
+  }
 
   m_pBoard->SetEntryValue(entry.m_sName, entry.m_InitialValue);
   m_pBoard->SetEntryFlags(entry.m_sName, entry.m_Flags).AssertSuccess();
+  m_pBoard->SetEditorIndex(entry.m_sName, static_cast<xiiUInt8>(uiIndex)).AssertSuccess();
 }
 
 void xiiLocalBlackboardComponent::Entries_Remove(xiiUInt32 uiIndex)
 {
-  auto& entry = m_InitialEntries[uiIndex];
-  m_pBoard->RemoveEntry(entry.m_sName);
+  if (IsEditor())
+  {
+    auto& entry = m_InitialEntries[uiIndex];
+    m_pBoard->RemoveEntry(entry.m_sName);
 
-  m_InitialEntries.RemoveAtAndCopy(uiIndex);
+    m_InitialEntries.RemoveAtAndCopy(uiIndex);
+  }
 }
 
 void xiiLocalBlackboardComponent::OnEntryChanged(const xiiBlackboard::EntryEvent& e)
@@ -476,6 +508,11 @@ void xiiLocalBlackboardComponent::InitializeFromTemplate()
     m_pBoard->SetEntryValue(entry.m_sName, entry.m_InitialValue);
     m_pBoard->SetEntryFlags(entry.m_sName, entry.m_Flags).AssertSuccess();
   }
+}
+
+bool xiiLocalBlackboardComponent::IsEditor() const
+{
+  return !GetUserFlag(BCFlags::IsRuntimeSerialized);
 }
 
 //////////////////////////////////////////////////////////////////////////

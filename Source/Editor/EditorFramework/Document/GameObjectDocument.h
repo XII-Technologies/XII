@@ -21,7 +21,6 @@ struct XII_EDITORFRAMEWORK_DLL TransformationChanges
     Translation  = XII_BIT(0),
     Rotation     = XII_BIT(1),
     Scale        = XII_BIT(2),
-    UniformScale = XII_BIT(3),
     All          = 0xFF
   };
 };

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>582</width>
-    <height>596</height>
+    <width>588</width>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,9 +15,13 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../QtResources/resources.qrc">
-    <normaloff>:/GuiFoundation/Icons/Shortcuts.svg</normaloff>:/GuiFoundation/Icons/Shortcuts.svg</iconset>
+    <normaloff>:/GuiFoundation/Icons/Shortcuts.svg</normaloff>:/GuiFoundation/Icons/Shortcuts.svg
+   </iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="xiiQtSearchWidget" name="Search" native="true"/>
+   </item>
    <item>
     <widget class="QTreeWidget" name="Shortcuts">
      <property name="uniformRowHeights">
@@ -78,9 +82,16 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>xiiQtSearchWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">GuiFoundation/Widgets/SearchWidget.moc.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../QtResources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>
-
