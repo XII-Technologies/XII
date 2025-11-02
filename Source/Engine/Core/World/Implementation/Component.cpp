@@ -19,6 +19,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiComponent, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetOwner),
     XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetWorld),
     XII_SCRIPT_FUNCTION_PROPERTY(GetUniqueID),
+    XII_SCRIPT_FUNCTION_PROPERTY(DeleteComponent),
     XII_SCRIPT_FUNCTION_PROPERTY(Initialize)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::Initialize)),
     XII_SCRIPT_FUNCTION_PROPERTY(Deinitialize)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::Deinitialize)),
     XII_SCRIPT_FUNCTION_PROPERTY(OnActivated)->AddAttributes(new xiiScriptBaseClassFunctionAttribute(xiiComponent_ScriptBaseClassFunctions::OnActivated)),
@@ -128,6 +129,11 @@ bool xiiComponent::GetUserFlag(xiiUInt8 uiFlagIndex) const
   XII_ASSERT_DEBUG(uiFlagIndex < 8, "Flag index {0} is out of the valid range [0 - 7]", uiFlagIndex);
 
   return m_ComponentFlags.IsSet(static_cast<xiiObjectFlags::Enum>(xiiObjectFlags::UserFlag0 << uiFlagIndex));
+}
+
+void xiiComponent::DeleteComponent()
+{
+  GetOwningManager()->DeleteComponent(this);
 }
 
 void xiiComponent::Initialize() {}

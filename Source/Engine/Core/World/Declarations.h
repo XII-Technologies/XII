@@ -217,6 +217,7 @@ struct xiiObjectFlags
     ParentChangesNotifications          = XII_BIT(12), ///< The object should send a notification message when the parent is changes.
 
     CreatedByPrefab = XII_BIT(13), ///< Such flagged objects and components are ignored during scene export (see xiiWorldWriter) and will be removed when a prefab needs to be re-instantiated.
+    HideShapeIcon   = XII_BIT(14), ///< Hide the shape icon of the object in the editor.
 
     UserFlag0 = XII_BIT(24),
     UserFlag1 = XII_BIT(25),
@@ -247,8 +248,9 @@ struct xiiObjectFlags
     StorageType ParentChangesNotifications : 1;          //< 12
 
     StorageType CreatedByPrefab : 1; //< 13
+    StorageType HideShapeIcon : 1;   //< 14
 
-    StorageType Padding : 10; // 14 - 23
+    StorageType Padding : 9; // 15 - 23
 
     StorageType UserFlag0 : 1; //< 24
     StorageType UserFlag1 : 1; //< 25

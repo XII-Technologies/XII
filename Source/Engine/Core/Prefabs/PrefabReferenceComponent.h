@@ -62,6 +62,9 @@ public:
   void                                             SetPrefab(const xiiPrefabResourceHandle& hPrefab); // [ property ]
   XII_ALWAYS_INLINE const xiiPrefabResourceHandle& GetPrefab() const { return m_hPrefab; }            // [ property ]
 
+  void SetShowShapeIcons(bool bShow); // [ property ]
+  bool GetShowShapeIcons() const;     // [ property ]
+
   const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
   void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
   void                                         RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
@@ -76,5 +79,4 @@ private:
 
   xiiPrefabResourceHandle                  m_hPrefab;
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
-  bool                                     m_bInUpdateList = false;
 };

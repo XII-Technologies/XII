@@ -16,5 +16,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgDamage, 1, xiiRTTIDefaultAllocator<xiiMsg
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Messages_Implementation_DamageMessage);
