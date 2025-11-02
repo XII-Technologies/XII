@@ -2,6 +2,7 @@
 
 #include <Core/Scripting/ScriptComponent.h>
 #include <Core/Scripting/ScriptWorldModule.h>
+#include <Foundation/Containers/IterateBits.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptNodeUserData.h>
 
@@ -59,19 +60,23 @@ xiiStringView GetTypeName()
 
 namespace
 {
-  static XII_FORCE_INLINE xiiResult FillFunctionArgs(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node, const xiiAbstractFunctionProperty* pFunction, xiiUInt32 uiStartSlot, xiiDynamicArray<xiiVariant>& out_args)
+  static XII_FORCE_INLINE xiiResult FillFunctionArgs(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node, const xiiAbstractFunctionProperty* pFunction, xiiUInt32 uiInputArgsMask, xiiUInt32 uiStartSlot, xiiDynamicArray<xiiVariant>& out_args)
   {
     const xiiUInt32 uiArgCount = pFunction->GetArgumentCount();
-    if (uiArgCount != node.m_NumInputDataOffsets - uiStartSlot)
-    {
-      xiiLog::Error("Visual script {} '{}': Argument count mismatch. Script needs re-transform.", xiiVisualScriptNodeDescription::Type::GetName(node.m_Type), pFunction->GetPropertyName());
-      return XII_FAILURE;
-    }
 
+    xiiUInt32 uiInputSlot = uiStartSlot;
     for (xiiUInt32 i = 0; i < uiArgCount; ++i)
     {
       const xiiRTTI* pArgType = pFunction->GetArgumentType(i);
-      out_args.PushBack(inout_context.GetDataAsVariant(node.GetInputDataOffset(uiStartSlot + i), pArgType));
+      if ((uiInputArgsMask & XII_BIT(i)) != 0)
+      {
+        out_args.PushBack(inout_context.GetDataAsVariant(node.GetInputDataOffset(uiInputSlot), pArgType));
+        ++uiInputSlot;
+      }
+      else
+      {
+        out_args.PushBack(xiiReflectionUtils::GetDefaultVariantFromType(pArgType));
+      }
     }
 
     return XII_SUCCESS;
@@ -91,12 +96,12 @@ namespace
 
   static ExecResult NodeFunction_ReflectedFunction(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    auto& userData = node.GetUserData<NodeUserData_TypeAndProperty>();
+    auto& userData = node.GetUserData<NodeUserData_TypeAndFunction>();
     XII_ASSERT_DEBUG(userData.m_pProperty->GetCategory() == xiiPropertyCategory::Function, "Property '{}' is not a function", userData.m_pProperty->GetPropertyName());
     auto pFunction = static_cast<const xiiAbstractFunctionProperty*>(userData.m_pProperty);
 
     xiiTypedPointer pInstance;
-    xiiUInt32       uiSlot = 0;
+    xiiUInt32       uiInputSlot = 0;
 
     if (pFunction->GetFunctionType() == xiiFunctionType::Member)
     {
@@ -113,11 +118,11 @@ namespace
         return ExecResult::Error();
       }
 
-      ++uiSlot;
+      ++uiInputSlot;
     }
 
     xiiHybridArray<xiiVariant, 8> args;
-    if (FillFunctionArgs(inout_context, node, pFunction, uiSlot, args).Failed())
+    if (FillFunctionArgs(inout_context, node, pFunction, userData.m_uiInputArgsMask, uiInputSlot, args).Failed())
     {
       return ExecResult::Error();
     }
@@ -125,10 +130,17 @@ namespace
     xiiVariant returnValue;
     pFunction->Execute(pInstance.m_pObject, args, returnValue);
 
-    auto dataOffsetR = node.GetOutputDataOffset(0);
-    if (dataOffsetR.IsValid())
+    xiiUInt32 uiOutputSlot = 0;
+    if (pFunction->GetReturnType() != nullptr)
     {
-      inout_context.SetDataFromVariant(dataOffsetR, returnValue);
+      inout_context.SetDataFromVariant(node.GetOutputDataOffset(0), returnValue);
+      ++uiOutputSlot;
+    }
+
+    for (xiiUInt32 uiArgIndex : xiiIterateBitIndices(userData.m_uiOutputArgsMask))
+    {
+      inout_context.SetDataFromVariant(node.GetOutputDataOffset(uiOutputSlot), args[uiArgIndex]);
+      ++uiOutputSlot;
     }
 
     return ExecResult::RunNext(0);
@@ -254,14 +266,14 @@ namespace
       if (pModule == nullptr)
         return ExecResult::Error();
 
-      auto& userData = node.GetUserData<NodeUserData_TypeAndProperty>();
+      auto& userData = node.GetUserData<NodeUserData_TypeAndFunction>();
       pModule->CreateCoroutine(userData.m_pType, userData.m_pType->GetTypeName(), inout_context.GetInstance(), xiiScriptCoroutineCreationMode::AllowOverlap, pCoroutine);
 
       XII_ASSERT_DEBUG(userData.m_pProperty->GetCategory() == xiiPropertyCategory::Function, "Property '{}' is not a function", userData.m_pProperty->GetPropertyName());
       auto pFunction = static_cast<const xiiAbstractFunctionProperty*>(userData.m_pProperty);
 
       xiiHybridArray<xiiVariant, 8> args;
-      if (FillFunctionArgs(inout_context, node, pFunction, 0, args).Failed())
+      if (FillFunctionArgs(inout_context, node, pFunction, userData.m_uiInputArgsMask, 0, args).Failed())
       {
         return ExecResult::Error();
       }
@@ -412,9 +424,17 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_SetVariable(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
-                  std::is_same_v<T, xiiComponentHandle> ||
-                  std::is_same_v<T, xiiTypedPointer>)
+    if constexpr (std::is_same_v<T, xiiGameObjectHandle>)
+    {
+      xiiTypedPointer ptr = inout_context.GetPointerData(node.GetInputDataOffset(0));
+      inout_context.SetPointerData(node.GetOutputDataOffset(0), static_cast<xiiGameObject*>(ptr.m_pObject), xiiGetStaticRTTI<xiiGameObject>());
+    }
+    else if constexpr (std::is_same_v<T, xiiComponentHandle>)
+    {
+      xiiTypedPointer ptr = inout_context.GetPointerData(node.GetInputDataOffset(0));
+      inout_context.SetPointerData(node.GetOutputDataOffset(0), static_cast<xiiComponent*>(ptr.m_pObject), xiiGetStaticRTTI<xiiComponent>());
+    }
+    else if constexpr (std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer ptr = inout_context.GetPointerData(node.GetInputDataOffset(0));
       inout_context.SetPointerData(node.GetOutputDataOffset(0), ptr.m_pObject, ptr.m_pType);
@@ -898,19 +918,29 @@ namespace
       inputStreams.PushBack(xiiProcessingStream(sStream, xiiMakeArrayPtr(static_cast<xiiUInt8*>(ptr.m_pObject), uiDataSize), streamDataType));
     }
 
+    auto& userData = node.GetUserData<NodeUserData_Expression>();
+
+    xiiUInt8                               dummyOutput[sizeof(xiiVec4)];
     xiiHybridArray<xiiProcessingStream, 8> outputStreams;
     for (xiiUInt32 i = 0; i < node.m_NumOutputDataOffsets; ++i)
     {
-      auto            dataOffset = node.GetOutputDataOffset(i);
-      xiiTypedPointer ptr        = inout_context.GetPointerData(dataOffset);
+      auto dataOffset = node.GetOutputDataOffset(i);
+      if (dataOffset.IsValid())
+      {
+        xiiTypedPointer ptr = inout_context.GetPointerData(dataOffset);
 
-      const xiiUInt32 uiDataSize     = xiiVisualScriptDataType::GetStorageSize(dataOffset.GetType());
-      auto            streamDataType = xiiVisualScriptDataType::GetStreamDataType(dataOffset.GetType());
+        const xiiUInt32 uiDataSize     = xiiVisualScriptDataType::GetStorageSize(dataOffset.GetType());
+        auto            streamDataType = xiiVisualScriptDataType::GetStreamDataType(dataOffset.GetType());
 
-      outputStreams.PushBack(xiiProcessingStream(sStream, xiiMakeArrayPtr(static_cast<xiiUInt8*>(ptr.m_pObject), uiDataSize), streamDataType));
+        outputStreams.PushBack(xiiProcessingStream(sStream, xiiMakeArrayPtr(static_cast<xiiUInt8*>(ptr.m_pObject), uiDataSize), streamDataType));
+      }
+      else
+      {
+        auto& outputStreamDesc = userData.m_ByteCode.GetOutputs()[i];
+        outputStreams.PushBack(xiiProcessingStream(sStream, xiiMakeArrayPtr(dummyOutput), outputStreamDesc.m_DataType));
+      }
     }
 
-    auto& userData = node.GetUserData<NodeUserData_Expression>();
     if (pModule->GetSharedExpressionVM().Execute(userData.m_ByteCode, inputStreams, outputStreams, 1, xiiExpression::GlobalData(), xiiExpressionVM::Flags::ScalarizeStreams).Failed())
     {
       xiiLog::Error("Visual script expression execution failed");
@@ -1014,23 +1044,36 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_Builtin_ToString(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
+    auto dataOffset = node.GetInputDataOffset(0);
+
     xiiStringBuilder sb;
     xiiStringView    s;
     if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
                   std::is_same_v<T, xiiComponentHandle> ||
                   std::is_same_v<T, xiiTypedPointer>)
     {
-      xiiTypedPointer p = inout_context.GetPointerData(node.GetInputDataOffset(0));
+      xiiTypedPointer p = inout_context.GetPointerData(dataOffset);
       sb.SetFormat("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
       s = sb;
     }
     else if constexpr (std::is_same_v<T, xiiString>)
     {
-      s = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
+      inout_context.SetData(node.GetOutputDataOffset(0), inout_context.GetData<xiiString>(dataOffset));
+      return ExecResult::RunNext(0);
+    }
+    else if constexpr (std::is_same_v<T, xiiHashedString>)
+    {
+      inout_context.SetData(node.GetOutputDataOffset(0), inout_context.GetData<xiiHashedString>(dataOffset).GetString());
+      return ExecResult::RunNext(0);
+    }
+    else if constexpr (std::is_same_v<T, xiiVariant>)
+    {
+      inout_context.SetData(node.GetOutputDataOffset(0), inout_context.GetData<xiiVariant>(dataOffset).ConvertTo<xiiString>());
+      return ExecResult::RunNext(0);
     }
     else
     {
-      s = xiiConversionUtils::ToString(inout_context.GetData<T>(node.GetInputDataOffset(0)), sb);
+      s = xiiConversionUtils::ToString(inout_context.GetData<T>(dataOffset), sb);
     }
 
     inout_context.SetData(node.GetOutputDataOffset(0), s);
@@ -1281,6 +1324,15 @@ namespace
     return ExecResult::RunNext(0);
   }
 
+  static ExecResult NodeFunction_Builtin_Array_PushBackRange(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
+  {
+    xiiVariantArray&       a = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
+    const xiiVariantArray& b = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(1));
+    a.PushBackRange(b);
+
+    return ExecResult::RunNext(0);
+  }
+
   static ExecResult NodeFunction_Builtin_Array_Remove(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
     xiiVariantArray&  a       = inout_context.GetWritableData<xiiVariantArray>(node.GetInputDataOffset(0));
@@ -1324,10 +1376,8 @@ namespace
     }
 
     xiiComponent* pComponent = nullptr;
-    if (static_cast<xiiGameObject*>(p.m_pObject)->TryGetComponentOfBaseType(userData.m_pType, pComponent))
-    {
-      inout_context.SetPointerData(node.GetOutputDataOffset(0), pComponent);
-    }
+    bool          _          = static_cast<xiiGameObject*>(p.m_pObject)->TryGetComponentOfBaseType(userData.m_pType, pComponent);
+    inout_context.SetPointerData(node.GetOutputDataOffset(0), pComponent);
 
     return ExecResult::RunNext(0);
   }
@@ -1502,18 +1552,19 @@ namespace
     {nullptr, &NodeFunction_Builtin_ToVariant_Getter},         // Builtin_ToVariant,
     {nullptr, &NodeFunction_Builtin_Variant_ConvertTo_Getter}, // Builtin_Variant_ConvertTo,
 
-    {&NodeFunction_Builtin_MakeArray},        // Builtin_MakeArray
-    {&NodeFunction_Builtin_Array_GetElement}, // Builtin_Array_GetElement,
-    {&NodeFunction_Builtin_Array_SetElement}, // Builtin_Array_SetElement,
-    {&NodeFunction_Builtin_Array_GetCount},   // Builtin_Array_GetCount,
-    {&NodeFunction_Builtin_Array_IsEmpty},    // Builtin_Array_IsEmpty,
-    {&NodeFunction_Builtin_Array_Clear},      // Builtin_Array_Clear,
-    {&NodeFunction_Builtin_Array_Contains},   // Builtin_Array_Contains,
-    {&NodeFunction_Builtin_Array_IndexOf},    // Builtin_Array_IndexOf,
-    {&NodeFunction_Builtin_Array_Insert},     // Builtin_Array_Insert,
-    {&NodeFunction_Builtin_Array_PushBack},   // Builtin_Array_PushBack,
-    {&NodeFunction_Builtin_Array_Remove},     // Builtin_Array_Remove,
-    {&NodeFunction_Builtin_Array_RemoveAt},   // Builtin_Array_RemoveAt,
+    {&NodeFunction_Builtin_MakeArray},           // Builtin_MakeArray
+    {&NodeFunction_Builtin_Array_GetElement},    // Builtin_Array_GetElement,
+    {&NodeFunction_Builtin_Array_SetElement},    // Builtin_Array_SetElement,
+    {&NodeFunction_Builtin_Array_GetCount},      // Builtin_Array_GetCount,
+    {&NodeFunction_Builtin_Array_IsEmpty},       // Builtin_Array_IsEmpty,
+    {&NodeFunction_Builtin_Array_Clear},         // Builtin_Array_Clear,
+    {&NodeFunction_Builtin_Array_Contains},      // Builtin_Array_Contains,
+    {&NodeFunction_Builtin_Array_IndexOf},       // Builtin_Array_IndexOf,
+    {&NodeFunction_Builtin_Array_Insert},        // Builtin_Array_Insert,
+    {&NodeFunction_Builtin_Array_PushBack},      // Builtin_Array_PushBack,
+    {&NodeFunction_Builtin_Array_PushBackRange}, // Builtin_Array_PushBackRange,
+    {&NodeFunction_Builtin_Array_Remove},        // Builtin_Array_Remove,
+    {&NodeFunction_Builtin_Array_RemoveAt},      // Builtin_Array_RemoveAt,
 
     {&NodeFunction_Builtin_TryGetComponentOfBaseType}, // Builtin_TryGetComponentOfBaseType
 

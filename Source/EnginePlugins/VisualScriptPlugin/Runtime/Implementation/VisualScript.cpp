@@ -77,6 +77,7 @@ namespace
     "Builtin_Array_IndexOf",
     "Builtin_Array_Insert",
     "Builtin_Array_PushBack",
+    "Builtin_Array_PushBackRange",
     "Builtin_Array_Remove",
     "Builtin_Array_RemoveAt",
 
@@ -114,7 +115,7 @@ xiiVisualScriptNodeDescription::Type::Enum xiiVisualScriptNodeDescription::Type:
   static_assert(Builtin_ToBool + (xiiVisualScriptDataType::Float - xiiVisualScriptDataType::Bool) == Builtin_ToFloat);
   static_assert(Builtin_ToBool + (xiiVisualScriptDataType::Double - xiiVisualScriptDataType::Bool) == Builtin_ToDouble);
 
-  if (xiiVisualScriptDataType::IsNumber(targetDataType))
+  if (xiiVisualScriptDataType::IsNumberOrBool(targetDataType))
     return static_cast<Enum>(Builtin_ToBool + (targetDataType - xiiVisualScriptDataType::Bool));
 
   if (targetDataType == xiiVisualScriptDataType::String)
@@ -156,7 +157,7 @@ xiiVisualScriptGraphDescription::xiiVisualScriptGraphDescription()
 
 xiiVisualScriptGraphDescription::~xiiVisualScriptGraphDescription() = default;
 
-static const xiiTypeVersion s_uiVisualScriptGraphDescriptionVersion = 5;
+static const xiiTypeVersion s_uiVisualScriptGraphDescriptionVersion = 7;
 
 // static
 xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisualScriptNodeDescription> nodes, const xiiVisualScriptDataDescription& localDataDesc, xiiStreamWriter& inout_stream)
@@ -353,6 +354,14 @@ xiiVisualScriptExecutionContext::ExecResult xiiVisualScriptExecutionContext::Exe
   auto pNode = m_pDesc->GetNode(m_uiCurrentNode);
   while (pNode != nullptr)
   {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    if (pNode->m_Function == nullptr)
+    {
+      xiiLog::Error("Node '{}' is not supported by runtime and should have been removed by the compiler.", xiiVisualScriptNodeDescription::Type::GetName(pNode->m_Type));
+      return ExecResult::Error();
+    }
+#endif
+
     ExecResult result = pNode->m_Function(*this, *pNode);
     if (result.m_NextExecAndState < ExecResult::State::Completed)
     {
