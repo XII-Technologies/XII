@@ -199,9 +199,9 @@ void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
 const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters() const
 {
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
+                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
+                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
 void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
