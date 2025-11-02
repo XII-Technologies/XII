@@ -39,7 +39,7 @@ namespace
         category = GetOwner()->IsDynamic() ? xiiDefaultSpatialDataCategories::RenderDynamic : xiiDefaultSpatialDataCategories::RenderStatic;
       }
 
-      ref_msg.AddBounds(bounds, category);
+      ref_msg.AddBounds(xiiBoundingBoxSphere::MakeFromBox(bounds), category);
     }
 
     xiiSpatialData::Category m_SpecialCategory = xiiInvalidSpatialDataCategory;
@@ -56,6 +56,28 @@ namespace
   }
   XII_END_COMPONENT_TYPE;
   // clang-format on
+
+  static xiiGameObject* CreateObjectAndTestComponent(xiiWorld& inout_world, bool bDynamic)
+  {
+    auto&                  rng   = inout_world.GetRandomNumberGenerator();
+    constexpr const double range = 10000.0;
+
+    float x = (float)rng.DoubleMinMax(-range, range);
+    float y = (float)rng.DoubleMinMax(-range, range);
+    float z = (float)rng.DoubleMinMax(-range, range);
+
+    xiiGameObjectDesc desc;
+    desc.m_bDynamic      = bDynamic;
+    desc.m_LocalPosition = xiiVec3(x, y, z);
+
+    xiiGameObject* pObject = nullptr;
+    inout_world.CreateObject(desc, pObject);
+
+    TestBoundsComponent* pComponent = nullptr;
+    TestBoundsComponent::CreateComponent(pObject, pComponent);
+
+    return pObject;
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
@@ -66,30 +88,9 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
   xiiWorld world(worldDesc);
   XII_LOCK(world.GetWriteMarker());
 
-  auto& rng = world.GetRandomNumberGenerator();
-
-  xiiDynamicArray<xiiGameObject*> objects;
-  objects.Reserve(1000);
-
   for (xiiUInt32 i = 0; i < 1000; ++i)
   {
-    constexpr const double range = 10000.0;
-
-    float x = (float)rng.DoubleMinMax(-range, range);
-    float y = (float)rng.DoubleMinMax(-range, range);
-    float z = (float)rng.DoubleMinMax(-range, range);
-
-    xiiGameObjectDesc desc;
-    desc.m_bDynamic      = (i >= 500);
-    desc.m_LocalPosition = xiiVec3(x, y, z);
-
-    xiiGameObject* pObject = nullptr;
-    world.CreateObject(desc, pObject);
-
-    objects.PushBack(pObject);
-
-    TestBoundsComponent* pComponent = nullptr;
-    TestBoundsComponent::CreateComponent(pObject, pComponent);
+    CreateObjectAndTestComponent(world, i >= 500);
   }
 
   world.Update();
@@ -131,8 +132,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
       objectsInSphere.PushBack(pObject);
       XII_TEST_BOOL(!uniqueObjects.Insert(pObject));
 
-      return xiiVisitorExecution::Continue;
-    });
+      return xiiVisitorExecution::Continue; });
 
     for (auto pObject : objectsInSphere)
     {
@@ -187,8 +187,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
       objectsInBox.PushBack(pObject);
       XII_TEST_BOOL(!uniqueObjects.Insert(pObject));
 
-      return xiiVisitorExecution::Continue;
-    });
+      return xiiVisitorExecution::Continue; });
 
     for (auto pObject : objectsInBox)
     {
@@ -214,6 +213,22 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
     constexpr uint32_t numUpdates = 13;
 
     // update a few times to increase internal frame counter
+    for (uint32_t i = 0; i < numUpdates; ++i)
+    {
+      world.Update();
+    }
+
+    // newly created objects should be considered visible in the first frame after creation
+    {
+      xiiGameObject* pNewObject = CreateObjectAndTestComponent(world, false);
+
+      world.Update();
+
+      auto visState = pNewObject->GetVisibilityState();
+      XII_TEST_BOOL(visState == xiiVisibilityState::Direct);
+    }
+
+    // update a few more times to increase internal frame counter
     for (uint32_t i = 0; i < numUpdates; ++i)
     {
       world.Update();
@@ -263,6 +278,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
       {
         xiiVec3 pos = it->GetLocalPosition();
 
+        auto& rng = world.GetRandomNumberGenerator();
         pos.x += (float)rng.DoubleMinMax(-range, range);
         pos.y += (float)rng.DoubleMinMax(-range, range);
         pos.z += (float)rng.DoubleMinMax(-range, range);
@@ -292,9 +308,9 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
   // Test multiple categories for spatial data
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "MultipleCategories")
   {
-    for (xiiUInt32 i = 0; i < objects.GetCount(); ++i)
+    for (auto it = world.GetObjects(); it.IsValid(); ++it)
     {
-      xiiGameObject* pObject = objects[i];
+      xiiGameObject* pObject = it;
 
       TestBoundsComponent* pComponent = nullptr;
       TestBoundsComponent::CreateComponent(pObject, pComponent);
