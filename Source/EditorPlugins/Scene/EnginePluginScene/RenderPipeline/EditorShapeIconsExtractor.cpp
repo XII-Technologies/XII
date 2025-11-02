@@ -127,16 +127,16 @@ void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject
   {
     xiiSpriteRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiSpriteRenderData>(pObject);
     {
-      pRenderData->m_GlobalTransform = pObject->GetGlobalTransform();
-      pRenderData->m_GlobalBounds    = pObject->GetGlobalBounds();
-      pRenderData->m_hTexture        = pShapeIconInfo->m_hTexture;
-      pRenderData->m_fSize           = m_fSize;
-      pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
-      pRenderData->m_fAspectRatio    = 1.0f;
-      pRenderData->m_BlendMode       = xiiSpriteBlendMode::ShapeIcon;
+      pRenderData->m_GlobalTransform     = pObject->GetGlobalTransform();
+      pRenderData->m_GlobalBounds        = pObject->GetGlobalBounds();
+      pRenderData->m_hTexture            = pShapeIconInfo->m_hTexture;
+      pRenderData->m_fSize               = m_fSize;
+      pRenderData->m_fMaxScreenSize      = m_fMaxScreenSize;
+      pRenderData->m_fAspectRatio        = 1.0f;
+      pRenderData->m_BlendMode           = xiiSpriteBlendMode::ShapeIcon;
       pRenderData->m_vTextureCoordScale  = xiiVec2(1.0f);
       pRenderData->m_vTextureCoordOffset = xiiVec2(0.0f);
-      pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(*pComponent);
+      pRenderData->m_uiUniqueID          = xiiRenderComponent::GetUniqueIdForRendering(*pComponent);
 
       // prefer color gamma properties
       if (pShapeIconInfo->m_pColorGammaProperty != nullptr)
