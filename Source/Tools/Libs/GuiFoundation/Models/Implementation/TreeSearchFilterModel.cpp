@@ -26,7 +26,6 @@ void xiiQtTreeSearchFilterModel::SetFilterText(const QString& sText)
   invalidateFilter();
 }
 
-
 void xiiQtTreeSearchFilterModel::SetIncludeChildren(bool bInclude)
 {
   m_bIncludeChildren = true;
@@ -36,6 +35,11 @@ void xiiQtTreeSearchFilterModel::SetIncludeChildren(bool bInclude)
     RecomputeVisibleItems();
     invalidateFilter();
   }
+}
+
+void xiiQtTreeSearchFilterModel::SetCustomFilterFunc(CustomFilterFunc func)
+{
+  m_CustomFilterFunc = func;
 }
 
 void xiiQtTreeSearchFilterModel::RecomputeVisibleItems()
@@ -66,7 +70,7 @@ bool xiiQtTreeSearchFilterModel::UpdateVisibility(const QModelIndex& idx, bool b
 
   bool bSubTreeAnyVisible = false;
 
-  if (m_Filter.PassesFilters(displayName.toUtf8().data()) || (internalNameVar.canConvert<QString>() && m_Filter.PassesFilters(internalNameVar.toString().toUtf8().data())))
+  if (m_Filter.PassesFilters(displayName.toUtf8().data()) || (internalNameVar.canConvert<QString>() && m_Filter.PassesFilters(internalNameVar.toString().toUtf8().data())) || (m_CustomFilterFunc.IsValid() && m_CustomFilterFunc(idx, m_Filter)))
   {
     bParentIsVisible   = true;
     bSubTreeAnyVisible = true;
