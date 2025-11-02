@@ -14,6 +14,8 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiPhysicsShapeType, 1)
   XII_BITFLAGS_CONSTANT(xiiPhysicsShapeType::Character),
   XII_BITFLAGS_CONSTANT(xiiPhysicsShapeType::Ragdoll),
   XII_BITFLAGS_CONSTANT(xiiPhysicsShapeType::Rope),
+  XII_BITFLAGS_CONSTANT(xiiPhysicsShapeType::Cloth),
+  XII_BITFLAGS_CONSTANT(xiiPhysicsShapeType::Debris),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicsAddImpulse);
@@ -29,13 +31,29 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicsAddImpulse, 1, xiiRTTIDefaultAlloc
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicsAddForce);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicsAddForce, 1, xiiRTTIDefaultAllocator<xiiMsgPhysicsAddForce>)
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicCharacterContact);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicCharacterContact, 1, xiiRTTIDefaultAllocator<xiiMsgPhysicCharacterContact>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Character", m_hCharacter),
+    XII_MEMBER_PROPERTY("GlobalPosition", m_vGlobalPosition),
+    XII_MEMBER_PROPERTY("Normal", m_vNormal),
+    XII_MEMBER_PROPERTY("CharacterVelocity", m_vCharacterVelocity),
+    XII_MEMBER_PROPERTY("Impact", m_fImpact),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicContact);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicContact, 1, xiiRTTIDefaultAllocator<xiiMsgPhysicContact>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("GlobalPosition", m_vGlobalPosition),
-    XII_MEMBER_PROPERTY("Force", m_vForce),
+    XII_MEMBER_PROPERTY("Normal", m_vNormal),
+    XII_MEMBER_PROPERTY("ImpactSqr", m_fImpactSqr),
   }
   XII_END_PROPERTIES;
 }

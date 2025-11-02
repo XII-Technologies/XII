@@ -13,7 +13,7 @@ enum class xiiPhysicsHitType : xiiInt8
   TriangleBackFace  = 1,  ///< The raycast hit the back face of a triangle
 };
 
-/// \brief Used for raycast and seep tests
+/// \brief Used for raycast and sweep tests
 struct xiiPhysicsCastResult
 {
   xiiVec3 m_vPosition;
@@ -69,7 +69,8 @@ XII_DECLARE_FLAGS_WITH_DEFAULT(xiiUInt32, xiiPhysicsShapeType, 0xFFFFFFFF,
                                Character, ///< Shapes associated with character controllers.
                                Ragdoll,   ///< All shapes belonging to ragdolls.
                                Rope,      ///< All shapes belonging to ropes.
-                               Cloth      ///< Soft-body shapes. Mainly for decorative purposes.
+                               Cloth,     ///< Soft-body shapes. Mainly for decorative purposes.
+                               Debris     ///< Small stuff for visuals, but shouldn't affect the game. This will only have one-way interactions, ie get pushed, but won't push others.
 );
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiPhysicsShapeType);
