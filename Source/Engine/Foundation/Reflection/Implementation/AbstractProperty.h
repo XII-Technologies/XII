@@ -89,6 +89,11 @@ struct xiiPropertyFlags
     StorageType ReadOnly : 1;
     StorageType Hidden : 1;
     StorageType Phantom : 1;
+
+    StorageType VarOut : 1;
+    StorageType VarInOut : 1;
+
+    StorageType PureFunction : 1;
   };
 
   template <class Type>

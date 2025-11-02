@@ -4,6 +4,9 @@
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNodeCommandAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiNodeCommandAccessor::xiiNodeCommandAccessor(xiiCommandHistory* pHistory) :
   xiiObjectCommandAccessor(pHistory)
 {

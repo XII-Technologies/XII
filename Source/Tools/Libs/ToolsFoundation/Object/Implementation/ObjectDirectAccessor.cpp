@@ -3,6 +3,9 @@
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 #include <ToolsFoundation/Object/ObjectDirectAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectDirectAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiObjectDirectAccessor::xiiObjectDirectAccessor(xiiDocumentObjectManager* pManager) :
   xiiObjectAccessorBase(pManager), m_pManager(pManager)
 {
