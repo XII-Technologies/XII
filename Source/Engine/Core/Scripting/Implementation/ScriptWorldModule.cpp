@@ -3,11 +3,9 @@
 #include <Core/Scripting/ScriptClassResource.h>
 #include <Core/Scripting/ScriptWorldModule.h>
 
-// clang-format off
 XII_IMPLEMENT_WORLD_MODULE(xiiScriptWorldModule);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScriptWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiScriptWorldModule::xiiScriptWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)

@@ -91,6 +91,18 @@ void xiiScriptMessageHandler::FillMessagePropertyValues(const xiiMessage& msg, x
     {
       out_propertyValues.PushBack(xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), &msg));
     }
+    else if (pProp->GetCategory() == xiiPropertyCategory::Array)
+    {
+      auto pArrayProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
+
+      xiiVariantArray a;
+      for (xiiUInt32 i = 0; i < pArrayProp->GetCount(&msg); ++i)
+      {
+        a.PushBack(xiiReflectionUtils::GetArrayPropertyValue(pArrayProp, &msg, i));
+      }
+
+      out_propertyValues.PushBack(a);
+    }
     else
     {
       XII_ASSERT_NOT_IMPLEMENTED;

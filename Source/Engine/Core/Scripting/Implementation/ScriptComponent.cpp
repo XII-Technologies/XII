@@ -11,6 +11,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiScriptComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("UpdateInterval", GetUpdateInterval, SetUpdateInterval)->AddAttributes(new xiiClampValueAttribute(xiiTime::MakeZero(), xiiVariant())),
+    XII_ACCESSOR_PROPERTY("UpdateOnlyWhenSimulating", GetUpdateOnlyWhenSimulating, SetUpdateOnlyWhenSimulating)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_RESOURCE_ACCESSOR_PROPERTY("ScriptClass", GetScriptClass, SetScriptClass)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_ScriptClass", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("ScriptClass")),
   }
@@ -19,7 +20,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiScriptComponent, 1, xiiComponentMode::Static)
   {
     XII_SCRIPT_FUNCTION_PROPERTY(SetScriptVariable, In, "Name", In, "Value"),
     XII_SCRIPT_FUNCTION_PROPERTY(GetScriptVariable, In, "Name"),
-    XII_SCRIPT_FUNCTION_PROPERTY(SetUpdateInterval, In, "interval"),
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES
@@ -41,6 +41,7 @@ void xiiScriptComponent::SerializeComponent(xiiWorldWriter& stream) const
 
   s << m_hScriptClass;
   s << m_UpdateInterval;
+  s << m_bUpdateOnlyWhenSimulating;
 
   xiiUInt16 uiNumParams = static_cast<xiiUInt16>(m_Parameters.GetCount());
   s << uiNumParams;
@@ -60,6 +61,7 @@ void xiiScriptComponent::DeserializeComponent(xiiWorldReader& stream)
 
   s >> m_hScriptClass;
   s >> m_UpdateInterval;
+  s >> m_bUpdateOnlyWhenSimulating;
 
   xiiUInt16 uiNumParams = 0;
   s >> uiNumParams;
@@ -156,14 +158,24 @@ void xiiScriptComponent::SetScriptClass(const xiiScriptClassResourceHandle& hScr
 
 void xiiScriptComponent::SetUpdateInterval(xiiTime interval)
 {
+  if (m_UpdateInterval == interval)
+    return;
+
   m_UpdateInterval = interval;
 
+  RemoveUpdateFunctionToSchedule();
   AddUpdateFunctionToSchedule();
 }
 
-xiiTime xiiScriptComponent::GetUpdateInterval() const
+void xiiScriptComponent::SetUpdateOnlyWhenSimulating(bool bUpdate)
 {
-  return m_UpdateInterval;
+  if (m_bUpdateOnlyWhenSimulating == bUpdate)
+    return;
+
+  m_bUpdateOnlyWhenSimulating = bUpdate;
+
+  RemoveUpdateFunctionToSchedule();
+  AddUpdateFunctionToSchedule();
 }
 
 void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
@@ -187,9 +199,9 @@ void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& ref_msg)
 const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters() const
 {
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
+                                              [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
+                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
 void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
@@ -306,8 +318,7 @@ void xiiScriptComponent::AddUpdateFunctionToSchedule()
   auto pModule = GetWorld()->GetOrCreateModule<xiiScriptWorldModule>();
   if (auto pUpdateFunction = GetScriptFunction(xiiComponent_ScriptBaseClassFunctions::Update))
   {
-    const bool bOnlyWhenSimulating = true;
-    pModule->AddUpdateFunctionToSchedule(pUpdateFunction, m_pInstance.Borrow(), m_UpdateInterval, bOnlyWhenSimulating);
+    pModule->AddUpdateFunctionToSchedule(pUpdateFunction, m_pInstance.Borrow(), m_UpdateInterval, m_bUpdateOnlyWhenSimulating);
   }
 }
 
