@@ -104,7 +104,7 @@ public:
   };
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
-  static_assert(sizeof(AstNode) == 256);
+  static_assert(sizeof(AstNode) == 272);
 #endif
 
 private:

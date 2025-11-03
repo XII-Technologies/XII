@@ -295,10 +295,10 @@ protected:
   xiiQtAddSubElementButton* m_pAddButton = nullptr;
   QPalette                  m_Pal;
 
-  xiiHybridArray<xiiVariant, 16> m_Keys;
-  xiiDynamicArray<Element>       m_Elements;
-  xiiInt32                       m_iDropSource = -1;
-  xiiInt32                       m_iDropTarget = -1;
+  mutable xiiHybridArray<xiiVariant, 16> m_Keys;
+  xiiDynamicArray<Element>               m_Elements;
+  xiiInt32                               m_iDropSource = -1;
+  xiiInt32                               m_iDropTarget = -1;
 };
 
 
@@ -371,8 +371,8 @@ public:
   virtual ~xiiQtVariantContainerWidget() = default;
 
 protected:
-  virtual void                     OnInit() override;
-  virtual void                     SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  virtual void                      OnInit() override;
+  virtual void                      SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
   virtual xiiPropertyCategory::Enum GetContainerCategory() const override;
 
 private:
