@@ -5,6 +5,9 @@
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectCommandAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiObjectCommandAccessor::xiiObjectCommandAccessor(xiiCommandHistory* pHistory) :
   xiiObjectDirectAccessor(const_cast<xiiDocumentObjectManager*>(pHistory->GetDocument()->GetObjectManager())), m_pHistory(pHistory)
 {

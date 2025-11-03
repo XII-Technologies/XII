@@ -254,7 +254,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
       if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags) || bIsValueType)
       {
         const xiiVariantType::Enum memberType = xiiToolsReflectionUtils::GetStorageType(pProp);
-        if (bIsValueType && op.m_Value.GetType() != memberType)
+        if (memberType != xiiVariantType::Invalid && bIsValueType && op.m_Value.GetType() != memberType)
         {
           op.m_Value = op.m_Value.ConvertTo(memberType);
         }

@@ -6,6 +6,8 @@ class xiiDocumentObjectManager;
 
 class XII_TOOLSFOUNDATION_DLL xiiObjectDirectAccessor : public xiiObjectAccessorBase
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiObjectDirectAccessor, xiiObjectAccessorBase);
+
 public:
   xiiObjectDirectAccessor(xiiDocumentObjectManager* pManager);
 

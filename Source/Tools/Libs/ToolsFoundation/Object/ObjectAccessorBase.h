@@ -4,8 +4,10 @@
 
 class xiiDocumentObject;
 
-class XII_TOOLSFOUNDATION_DLL xiiObjectAccessorBase
+class XII_TOOLSFOUNDATION_DLL xiiObjectAccessorBase : public xiiReflectedClass
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiObjectAccessorBase, xiiReflectedClass);
+
 public:
   virtual ~xiiObjectAccessorBase();
   const xiiDocumentObjectManager* GetObjectManager() const;

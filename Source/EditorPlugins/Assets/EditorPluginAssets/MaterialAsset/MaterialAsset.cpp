@@ -949,7 +949,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
       xiiHybridArray<xiiPropertySelection, 1> selection;
       selection.PushBack({pObject, xiiVariant()});
-      xiiDefaultObjectState defaultState(GetObjectAccessor(), selection.GetArrayPtr());
+      xiiDefaultObjectState defaultState(pType, GetObjectAccessor(), selection.GetArrayPtr());
 
       for (auto pProp : properties)
       {

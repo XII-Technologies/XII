@@ -2,6 +2,9 @@
 
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectAccessorBase, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 void xiiObjectAccessorBase::StartTransaction(xiiStringView sDisplayString) {}
 
 

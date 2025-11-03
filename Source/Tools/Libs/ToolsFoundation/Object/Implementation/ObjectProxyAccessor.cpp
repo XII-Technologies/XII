@@ -2,6 +2,9 @@
 
 #include <ToolsFoundation/Object/ObjectProxyAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectProxyAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiObjectProxyAccessor::xiiObjectProxyAccessor(xiiObjectAccessorBase* pSource) :
   xiiObjectAccessorBase(pSource->GetObjectManager()), m_pSource(pSource)
 {

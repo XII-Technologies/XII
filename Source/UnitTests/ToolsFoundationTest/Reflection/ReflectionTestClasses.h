@@ -4,6 +4,15 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/VarianceTypes.h>
 
+struct xiiVariantTestStruct
+{
+public:
+  xiiVariant           m_Variant;
+  xiiVariantArray      m_VariantArray;
+  xiiVariantDictionary m_VariantDictionary;
+};
+XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiVariantTestStruct);
+
 struct xiiIntegerStruct
 {
 public:

@@ -613,7 +613,7 @@ bool xiiReflectionUtils::IsBasicType(const xiiRTTI* pRtti)
 {
   XII_ASSERT_DEBUG(pRtti != nullptr, "IsBasicType: missing data!");
   xiiVariant::Type::Enum type = pRtti->GetVariantType();
-  return type >= xiiVariant::Type::FirstStandardType && type <= xiiVariant::Type::LastStandardType;
+  return (type >= xiiVariant::Type::FirstStandardType && type <= xiiVariant::Type::LastStandardType) || pRtti == xiiGetStaticRTTI<xiiVariant>();
 }
 
 bool xiiReflectionUtils::IsValueType(const xiiAbstractProperty* pProp)

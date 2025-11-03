@@ -247,7 +247,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
             {
               xiiHybridArray<xiiPropertySelection, 1> selection;
               selection.PushBack({pObject, xiiVariant()});
-              xiiDefaultObjectState defaultState(GetObjectAccessor(), selection.GetArrayPtr());
+              xiiDefaultObjectState defaultState(pType, GetObjectAccessor(), selection.GetArrayPtr());
               if (defaultState.GetStateProviderName() == "Prefab" && defaultState.IsDefaultValue(pProp))
                 continue;
             }
@@ -291,7 +291,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
             {
               xiiHybridArray<xiiPropertySelection, 1> selection;
               selection.PushBack({pObject, xiiVariant()});
-              xiiDefaultContainerState defaultState(GetObjectAccessor(), selection.GetArrayPtr(), pProp->GetPropertyName());
+              xiiDefaultContainerState defaultState(pType, GetObjectAccessor(), selection.GetArrayPtr(), pProp->GetPropertyName());
               for (xiiInt32 i = 0; i < iCount; ++i)
               {
                 xiiVariant value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), i);
@@ -368,7 +368,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
             {
               xiiHybridArray<xiiPropertySelection, 1> selection;
               selection.PushBack({pObject, xiiVariant()});
-              xiiDefaultContainerState defaultState(GetObjectAccessor(), selection.GetArrayPtr(), pProp->GetPropertyName());
+              xiiDefaultContainerState defaultState(pType, GetObjectAccessor(), selection.GetArrayPtr(), pProp->GetPropertyName());
               for (auto it : varDict)
               {
                 if (defaultState.GetStateProviderName() == "Prefab" && defaultState.IsDefaultElement(it.Key()))
