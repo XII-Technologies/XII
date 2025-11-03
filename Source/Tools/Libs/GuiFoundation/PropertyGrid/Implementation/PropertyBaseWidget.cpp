@@ -1907,6 +1907,11 @@ void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
   m_pObjectAccessor->FinishTransaction();
 }
 
+void xiiQtVariantPropertyWidget::EnableTypeSelection(bool bEnable)
+{
+  m_pTypeList->setVisible(bEnable);
+}
+
 xiiResult xiiQtVariantPropertyWidget::GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const
 {
   switch (type)

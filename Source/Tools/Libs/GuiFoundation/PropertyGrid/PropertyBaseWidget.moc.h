@@ -351,6 +351,7 @@ protected:
   virtual void DoPrepareToDie() override;
   void         UpdateTypeListSelection(xiiVariantType::Enum type);
   void         ChangeVariantType(xiiVariantType::Enum type);
+  void         EnableTypeSelection(bool bEnable);
 
   virtual xiiResult GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const;
 

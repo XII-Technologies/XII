@@ -1,6 +1,6 @@
 # Asset Types
 
-VisualScriptClass;Visual Script Class
+VisualScriptClass;Visual Script Class;;https://docs.xiitechnologies.org/pages/docs/custom-code/visual-script/visual-script-class-asset.html
 
 # UI
 
@@ -19,9 +19,30 @@ xiiVisualScriptDataType::Transform;Transform
 xiiVisualScriptDataType::Time;Time
 xiiVisualScriptDataType::Angle;Angle
 xiiVisualScriptDataType::String;String
+xiiVisualScriptDataType::HashedString;HashedString
 xiiVisualScriptDataType::GameObject;GameObject
 xiiVisualScriptDataType::Component;Component
 xiiVisualScriptDataType::TypedPointer;TypedPointer
 xiiVisualScriptDataType::Variant;Variant
 xiiVisualScriptDataType::Array;Array
 xiiVisualScriptDataType::Map;Map
+
+xiiVisualScriptVariableType::Bool;Bool
+xiiVisualScriptVariableType::Byte;Byte
+xiiVisualScriptVariableType::Int;Int
+xiiVisualScriptVariableType::Int64;Int64
+xiiVisualScriptVariableType::Float;Float
+xiiVisualScriptVariableType::Double;Double
+xiiVisualScriptVariableType::Color;Color
+xiiVisualScriptVariableType::Vector3;Vector3
+xiiVisualScriptVariableType::Quaternion;Quaternion
+xiiVisualScriptVariableType::Transform;Transform
+xiiVisualScriptVariableType::Time;Time
+xiiVisualScriptVariableType::Angle;Angle
+xiiVisualScriptVariableType::String;String
+xiiVisualScriptVariableType::HashedString;HashedString
+xiiVisualScriptVariableType::GameObject;GameObject
+xiiVisualScriptVariableType::Component;Component
+xiiVisualScriptVariableType::TypedPointer;TypedPointer
+xiiVisualScriptVariableType::Variant;Variant
+xiiVisualScriptVariableType::Resource;Resource
