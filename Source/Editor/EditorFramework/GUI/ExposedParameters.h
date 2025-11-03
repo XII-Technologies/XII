@@ -11,6 +11,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiExposedParameter
   xiiString                                m_sName;
   xiiString                                m_sType;
   xiiVariant                               m_DefaultValue;
+  xiiEnum<xiiPropertyCategory>             m_Category;
   xiiHybridArray<xiiPropertyAttribute*, 2> m_Attributes;
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_EDITORFRAMEWORK_DLL, xiiExposedParameter)

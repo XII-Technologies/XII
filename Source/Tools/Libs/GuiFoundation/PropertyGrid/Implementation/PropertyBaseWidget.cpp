@@ -97,7 +97,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
           if (!m_Items[0].m_Index.IsValid())
           {
             // Revert container
-            xiiDefaultContainerState defaultState(m_pObjectAccessor, m_Items, m_pProp->GetPropertyName());
+            xiiDefaultContainerState defaultState(m_pType, m_pObjectAccessor, m_Items, m_pProp->GetPropertyName());
             res = defaultState.RevertContainer();
           }
           else
@@ -106,7 +106,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
             if (bIsValueType)
             {
               // Revert container value type element
-              xiiDefaultContainerState defaultState(m_pObjectAccessor, m_Items, m_pProp->GetPropertyName());
+              xiiDefaultContainerState defaultState(m_pType, m_pObjectAccessor, m_Items, m_pProp->GetPropertyName());
               res = defaultState.RevertElement({});
             }
             else
@@ -121,7 +121,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
                   ResolvedObjects.PushBack({m_pObjectAccessor->GetObject(ObjectGuid), xiiVariant()});
                 }
               }
-              xiiDefaultObjectState defaultState(m_pObjectAccessor, ResolvedObjects);
+              xiiDefaultObjectState defaultState(m_pType, m_pObjectAccessor, ResolvedObjects);
               res = defaultState.RevertObject();
             }
           }
@@ -135,8 +135,8 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
         break;
         default:
         {
-          // Revert object member property
-          xiiDefaultObjectState defaultState(m_pObjectAccessor, m_Items);
+          // Revert object member property.
+          xiiDefaultObjectState defaultState(m_pType, m_pObjectAccessor, m_Items);
           xiiStatus             res = defaultState.RevertProperty(m_pProp);
           if (res.Failed())
           {
@@ -973,6 +973,7 @@ xiiQtPropertyContainerWidget::xiiQtPropertyContainerWidget() :
 
   m_pLayout = new QHBoxLayout(this);
   m_pLayout->setContentsMargins(0, 0, 0, 0);
+  m_pLayout->setSpacing(0);
   setLayout(m_pLayout);
 
   m_pGroup       = new xiiQtCollapsibleGroupBox(this);
@@ -1278,18 +1279,19 @@ void xiiQtPropertyContainerWidget::UpdateElements()
 {
   xiiQtScopedUpdatesDisabled _(this);
 
-  xiiUInt32 iElements = GetRequiredElementCount();
+  GetRequiredElements(m_Keys);
+  const xiiUInt32 uiElements = m_Keys.GetCount();
 
-  while (m_Elements.GetCount() > iElements)
+  while (m_Elements.GetCount() > uiElements)
   {
     RemoveElement(m_Elements.GetCount() - 1);
   }
-  while (m_Elements.GetCount() < iElements)
+  while (m_Elements.GetCount() < uiElements)
   {
     AddElement(m_Elements.GetCount());
   }
 
-  for (xiiUInt32 i = 0; i < iElements; ++i)
+  for (xiiUInt32 i = 0; i < uiElements; ++i)
   {
     UpdateElement(i);
   }
@@ -1305,12 +1307,12 @@ void xiiQtPropertyContainerWidget::UpdateElements()
   }
 }
 
-xiiUInt32 xiiQtPropertyContainerWidget::GetRequiredElementCount() const
+void xiiQtPropertyContainerWidget::GetRequiredElements(xiiDynamicArray<xiiVariant>& out_keys) const
 {
+  out_keys.Clear();
   if (GetContainerCategory() == xiiPropertyCategory::Map)
   {
-    m_Keys.Clear();
-    XII_VERIFY(m_pObjectAccessor->GetKeys(m_Items[0].m_pObject, m_pProp, m_Keys).Succeeded(), "GetKeys should always succeed.");
+    XII_VERIFY(m_pObjectAccessor->GetKeys(m_Items[0].m_pObject, m_pProp, out_keys).Succeeded(), "GetKeys should always succeed.");
     xiiHybridArray<xiiVariant, 16> keys;
     for (xiiUInt32 i = 1; i < m_Items.GetCount(); i++)
     {
@@ -1320,12 +1322,12 @@ xiiUInt32 xiiQtPropertyContainerWidget::GetRequiredElementCount() const
       {
         if (!keys.Contains(m_Keys[k]))
         {
-          m_Keys.RemoveAtAndSwap(k);
+          out_keys.RemoveAtAndSwap(k);
         }
       }
     }
-    m_Keys.Sort([](const xiiVariant& a, const xiiVariant& b) { return a.Get<xiiString>().Compare(b.Get<xiiString>()) < 0; });
-    return m_Keys.GetCount();
+    out_keys.Sort([](const xiiVariant& a, const xiiVariant& b) { return a.Get<xiiString>().Compare(b.Get<xiiString>()) < 0; });
+    return;
   }
   else
   {
@@ -1337,13 +1339,12 @@ xiiUInt32 xiiQtPropertyContainerWidget::GetRequiredElementCount() const
       iElements = xiiMath::Min(iElements, iCount);
     }
     XII_ASSERT_DEV(iElements >= 0, "Mismatch between storage and RTTI ({0})", iElements);
-    m_Keys.Clear();
     for (xiiUInt32 i = 0; i < (xiiUInt32)iElements; i++)
     {
-      m_Keys.PushBack(i);
+      out_keys.PushBack(i);
     }
 
-    return xiiUInt32(iElements);
+    return;
   }
 }
 
@@ -1353,7 +1354,7 @@ void xiiQtPropertyContainerWidget::UpdatePropertyMetaState()
   xiiHashTable<xiiVariant, xiiPropertyUiState> ElementStates;
   pMeta->GetContainerElementsState(m_Items, m_pProp->GetPropertyName(), ElementStates);
 
-  xiiDefaultContainerState defaultState(m_pObjectAccessor, m_Items, m_pProp->GetPropertyName());
+  xiiDefaultContainerState defaultState(m_pType, m_pObjectAccessor, m_Items, m_pProp->GetPropertyName());
   m_bIsDefault = defaultState.IsDefaultContainer();
   m_pGroup->SetBoldTitle(!m_bIsDefault);
 

@@ -44,9 +44,10 @@ class XII_GUIFOUNDATION_DLL xiiDefaultObjectState
 
 public:
   /// \brief Constructor. Will collect the appropriate xiiDefaultStateProviders to query the states.
+  /// \param pType The common base type of the selection.
   /// \param pAccessor Used to revert properties and query their current value.
   /// \param selection For which objects the default state should be queried. The xiiPropertySelection::m_Index should be invalid.
-  xiiDefaultObjectState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection);
+  xiiDefaultObjectState(const xiiRTTI* pType, xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection);
 
   /// \brief Returns the color of the top-most xiiDefaultStateProvider of the first element of the selection.
   xiiColorGammaUB GetBackgroundColor() const;
@@ -61,8 +62,8 @@ public:
   xiiVariant GetDefaultValue(xiiStringView sProperty, xiiUInt32 uiSelectionIndex = 0) const;
   xiiVariant GetDefaultValue(const xiiAbstractProperty* pProp, xiiUInt32 uiSelectionIndex = 0) const;
 
-
 private:
+  const xiiRTTI*                                                              m_pType     = nullptr;
   xiiObjectAccessorBase*                                                      m_pAccessor = nullptr;
   xiiArrayPtr<xiiPropertySelection>                                           m_Selection;
   xiiHybridArray<xiiHybridArray<xiiSharedPtr<xiiDefaultStateProvider>, 4>, 1> m_Providers;
@@ -77,10 +78,11 @@ class XII_GUIFOUNDATION_DLL xiiDefaultContainerState
 
 public:
   /// \brief Constructor. Will collect the appropriate xiiDefaultStateProviders to query the states.
+  /// \param pType The common base type of the selection.
   /// \param pAccessor Used to revert properties and query their current value.
   /// \param selection For which objects the default state should be queried. If xiiPropertySelection::m_Index is set, IsDefaultElement and RevertElement will query the value under that index if the passed in index is invalid.
   /// \param sProperty The name of the container for which default states should be queried.
-  xiiDefaultContainerState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, xiiStringView sProperty);
+  xiiDefaultContainerState(const xiiRTTI* pType, xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, xiiStringView sProperty);
 
   /// \brief Returns the color of the top-most xiiDefaultStateProvider of the first element of the selection.
   /// \sa xiiDefaultStateProvider::GetBackgroundColor
@@ -97,6 +99,7 @@ public:
   xiiVariant GetDefaultContainer(xiiUInt32 uiSelectionIndex = 0) const;
 
 private:
+  const xiiRTTI*                                                              m_pType     = nullptr;
   xiiObjectAccessorBase*                                                      m_pAccessor = nullptr;
   const xiiAbstractProperty*                                                  m_pProp     = nullptr;
   xiiArrayPtr<xiiPropertySelection>                                           m_Selection;

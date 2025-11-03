@@ -3,13 +3,14 @@
 #include <EditorFramework/GUI/ExposedParameters.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiExposedParameter, xiiNoBase, 2, xiiRTTIDefaultAllocator<xiiExposedParameter>)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiExposedParameter, xiiNoBase, 3, xiiRTTIDefaultAllocator<xiiExposedParameter>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Name", m_sName),
     XII_MEMBER_PROPERTY("Type", m_sType),
     XII_MEMBER_PROPERTY("DefaultValue", m_DefaultValue),
+    XII_ENUM_MEMBER_PROPERTY("Category", xiiPropertyCategory, m_Category)->AddAttributes(new xiiDefaultValueAttribute(xiiPropertyCategory::Member)),
     XII_ARRAY_MEMBER_PROPERTY("Attributes", m_Attributes)->AddFlags(xiiPropertyFlags::PointerOwner),
   }
   XII_END_PROPERTIES;

@@ -169,6 +169,7 @@ void xiiQtAddSubElementButton::OnTypeSelected(QString sTypeName)
 void xiiQtAddSubElementButton::OnAction(const xiiRTTI* pRtti)
 {
   XII_ASSERT_DEV(pRtti != nullptr, "user data retrieval failed");
+
   xiiVariant index = (xiiInt32)-1;
 
   if (m_ContainerCategory == xiiPropertyCategory::Map)
@@ -238,7 +239,7 @@ void xiiQtAddSubElementButton::OnAction(const xiiRTTI* pRtti)
 
         xiiHybridArray<xiiPropertySelection, 1> selection;
         selection.PushBack({m_pObjectAccessor->GetObject(guid), xiiVariant()});
-        xiiDefaultObjectState defaultState(m_pObjectAccessor, selection);
+        xiiDefaultObjectState defaultState(m_pType, m_pObjectAccessor, selection);
         defaultState.RevertObject().AssertSuccess();
       }
     }

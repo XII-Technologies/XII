@@ -87,6 +87,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
 
   ON_CORESYSTEMS_STARTUP
   {
+    xiiDefaultState::RegisterDefaultStateProvider(xiiExposedParametersAsTypeDefaultStateProvider::CreateProvider);
     xiiDefaultState::RegisterDefaultStateProvider(xiiExposedParametersDefaultStateProvider::CreateProvider);
     xiiDefaultState::RegisterDefaultStateProvider(xiiDynamicDefaultStateProvider::CreateProvider);
     xiiProjectActions::RegisterActions();
@@ -178,6 +179,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
+    xiiDefaultState::UnregisterDefaultStateProvider(xiiExposedParametersAsTypeDefaultStateProvider::CreateProvider);
     xiiDefaultState::UnregisterDefaultStateProvider(xiiExposedParametersDefaultStateProvider::CreateProvider);
     xiiDefaultState::UnregisterDefaultStateProvider(xiiDynamicDefaultStateProvider::CreateProvider);
     xiiProjectActions::UnregisterActions();

@@ -267,7 +267,7 @@ protected:
   virtual void                 RemoveElement(xiiUInt32 index);
   virtual void                 UpdateElement(xiiUInt32 index) = 0;
   void                         UpdateElements();
-  virtual xiiUInt32            GetRequiredElementCount() const;
+  virtual void                 GetRequiredElements(xiiDynamicArray<xiiVariant>& out_keys) const;
   virtual void                 UpdatePropertyMetaState();
   /// \brief Some containers like xiiVariant can be both a map or an array so we can't reply on the property type alone. For these containers, this method can be overwritten to retrieve the category from something other than `m_pProp->GetCategory()`.
   virtual xiiPropertyCategory::Enum GetContainerCategory() const;
@@ -295,10 +295,10 @@ protected:
   xiiQtAddSubElementButton* m_pAddButton = nullptr;
   QPalette                  m_Pal;
 
-  mutable xiiHybridArray<xiiVariant, 16> m_Keys;
-  xiiDynamicArray<Element>               m_Elements;
-  xiiInt32                               m_iDropSource = -1;
-  xiiInt32                               m_iDropTarget = -1;
+  xiiHybridArray<xiiVariant, 16> m_Keys;
+  xiiDynamicArray<Element>       m_Elements;
+  xiiInt32                       m_iDropSource = -1;
+  xiiInt32                       m_iDropTarget = -1;
 };
 
 

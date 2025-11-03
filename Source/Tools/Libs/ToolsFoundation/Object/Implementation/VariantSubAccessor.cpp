@@ -102,7 +102,6 @@ xiiStatus xiiVariantSubAccessor::GetValues(const xiiDocumentObject* pObject, con
 
 xiiStatus xiiVariantSubAccessor::GetSubValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value)
 {
-  // XII_ASSERT_DEBUG(m_pProp == pProp, "xiiVariantSubAccessor should only be used to access a single variant property");
   xiiStatus result = xiiObjectProxyAccessor::GetValue(pObject, pProp, out_value);
   if (result.Failed())
     return result;

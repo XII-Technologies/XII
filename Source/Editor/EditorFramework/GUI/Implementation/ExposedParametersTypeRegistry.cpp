@@ -111,7 +111,10 @@ void xiiExposedParametersTypeRegistry::UpdateExposedParametersType(ParamData& da
         pType = pType2;
     }
     if (pType == nullptr)
+    {
+      xiiLog::Warning("The exposed parameter '{}' on type '{}' does not have a type defined as is skipped.", parameter->m_sName, name);
       continue;
+    }
 
     xiiBitflags<xiiPropertyFlags> flags = xiiPropertyFlags::Phantom;
     if (pType->IsDerivedFrom<xiiEnumBase>())
@@ -123,10 +126,14 @@ void xiiExposedParametersTypeRegistry::UpdateExposedParametersType(ParamData& da
     else
       flags |= xiiPropertyFlags::Class;
 
-    xiiReflectedPropertyDescriptor propDesc(xiiPropertyCategory::Member, parameter->m_sName, pType->GetTypeName(), flags);
+    xiiReflectedPropertyDescriptor propDesc(parameter->m_Category, parameter->m_sName, pType->GetTypeName(), flags);
     for (auto attrib : parameter->m_Attributes)
     {
       propDesc.m_Attributes.PushBack(xiiReflectionSerializer::Clone(attrib));
+    }
+    if (parameter->m_DefaultValue.IsValid())
+    {
+      propDesc.m_Attributes.PushBack(XII_DEFAULT_NEW(xiiDefaultValueAttribute, parameter->m_DefaultValue));
     }
     desc.m_Properties.PushBack(propDesc);
   }
