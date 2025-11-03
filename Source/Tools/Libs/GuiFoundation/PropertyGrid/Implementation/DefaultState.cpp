@@ -5,9 +5,9 @@
 #include <GuiFoundation/PropertyGrid/AttributeDefaultStateProvider.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 #include <GuiFoundation/PropertyGrid/PrefabDefaultStateProvider.h>
+#include <GuiFoundation/PropertyGrid/VariantSubDefaultStateProvider.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
-#include <GuiFoundation/PropertyGrid/VariantSubDefaultStateProvider.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, DefaultState)

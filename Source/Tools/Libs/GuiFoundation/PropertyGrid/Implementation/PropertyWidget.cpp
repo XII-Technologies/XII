@@ -2187,7 +2187,7 @@ void xiiQtPropertyEditorColorWidget::InternalSetValue(const xiiVariant& value)
   m_OriginalValue = GetOldValue();
   m_pWidget->SetColor(value);
 
-    m_bIsHDR = value.GetType() == xiiVariantType::Color;
+  m_bIsHDR = value.GetType() == xiiVariantType::Color;
 }
 
 void xiiQtPropertyEditorColorWidget::on_Button_triggered()
