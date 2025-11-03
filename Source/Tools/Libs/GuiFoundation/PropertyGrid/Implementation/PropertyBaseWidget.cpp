@@ -603,7 +603,7 @@ xiiQtPropertyPointerWidget::xiiQtPropertyPointerWidget() :
 
   m_pLayout->addWidget(m_pGroup);
 
-  m_pAddButton = new xiiQtAddSubElementButton();
+  m_pAddButton = new xiiQtAddSubElementButton(xiiPropertyCategory::Member);
   m_pGroup->GetHeader()->layout()->addWidget(m_pAddButton);
 
   m_pDeleteButton = new xiiQtElementGroupButton(m_pGroup->GetHeader(), xiiQtElementGroupButton::ElementAction::DeleteElement, this);
@@ -1244,7 +1244,7 @@ xiiQtPropertyContainerWidget::Element& xiiQtPropertyContainerWidget::AddElement(
 
   // Add Buttons
   auto pAttr = m_pProp->GetAttributeByType<xiiContainerAttribute>();
-  if ((!pAttr || pAttr->CanMove()) && m_pProp->GetCategory() != xiiPropertyCategory::Map)
+  if ((!pAttr || pAttr->CanMove()) && GetContainerCategory() != xiiPropertyCategory::Map)
   {
     pSubGroup->SetDraggable(true);
     connect(pSubGroup, &xiiQtGroupBoxBase::DragStarted, this, &xiiQtPropertyContainerWidget::OnDragStarted);
@@ -1256,8 +1256,7 @@ xiiQtPropertyContainerWidget::Element& xiiQtPropertyContainerWidget::AddElement(
 
   if (!pAttr || pAttr->CanDelete())
   {
-    xiiQtElementGroupButton* pDeleteButton =
-      new xiiQtElementGroupButton(pSubGroup->GetHeader(), xiiQtElementGroupButton::ElementAction::DeleteElement, pNewWidget);
+    xiiQtElementGroupButton* pDeleteButton = new xiiQtElementGroupButton(pSubGroup->GetHeader(), xiiQtElementGroupButton::ElementAction::DeleteElement, pNewWidget);
     pSubGroup->GetHeader()->layout()->addWidget(pDeleteButton);
     connect(pDeleteButton, &QToolButton::clicked, this, &xiiQtPropertyContainerWidget::OnElementButtonClicked);
   }
@@ -1308,7 +1307,7 @@ void xiiQtPropertyContainerWidget::UpdateElements()
 
 xiiUInt32 xiiQtPropertyContainerWidget::GetRequiredElementCount() const
 {
-  if (m_pProp->GetCategory() == xiiPropertyCategory::Map)
+  if (GetContainerCategory() == xiiPropertyCategory::Map)
   {
     m_Keys.Clear();
     XII_VERIFY(m_pObjectAccessor->GetKeys(m_Items[0].m_pObject, m_pProp, m_Keys).Succeeded(), "GetKeys should always succeed.");
@@ -1396,6 +1395,11 @@ void xiiQtPropertyContainerWidget::UpdatePropertyMetaState()
   }
 }
 
+xiiPropertyCategory::Enum xiiQtPropertyContainerWidget::GetContainerCategory() const
+{
+  return m_pProp->GetCategory();
+}
+
 void xiiQtPropertyContainerWidget::Clear()
 {
   while (m_Elements.GetCount() > 0)
@@ -1415,7 +1419,7 @@ void xiiQtPropertyContainerWidget::OnInit()
   const xiiContainerAttribute* pArrayAttr = m_pProp->GetAttributeByType<xiiContainerAttribute>();
   if (!pArrayAttr || pArrayAttr->CanAdd())
   {
-    m_pAddButton = new xiiQtAddSubElementButton();
+    m_pAddButton = new xiiQtAddSubElementButton(GetContainerCategory());
     m_pAddButton->Init(m_pGrid, m_pObjectAccessor, m_pType, m_pProp);
     m_pGroup->GetHeader()->layout()->addWidget(m_pAddButton);
   }
@@ -1464,7 +1468,7 @@ void xiiQtPropertyContainerWidget::DeleteItems(xiiHybridArray<xiiPropertySelecti
 
 void xiiQtPropertyContainerWidget::MoveItems(xiiHybridArray<xiiPropertySelection, 8>& items, xiiInt32 iMove)
 {
-  XII_ASSERT_DEV(m_pProp->GetCategory() != xiiPropertyCategory::Map, "Map entries can't be moved.");
+  XII_ASSERT_DEV(GetContainerCategory() != xiiPropertyCategory::Map, "Map entries can't be moved.");
 
   m_pObjectAccessor->StartTransaction("Reparent Object");
 
@@ -1560,7 +1564,7 @@ void xiiQtPropertyStandardTypeContainerWidget::UpdateElement(xiiUInt32 index)
   }
 
   xiiStringBuilder sTitle;
-  if (m_pProp->GetCategory() == xiiPropertyCategory::Map)
+  if (GetContainerCategory() == xiiPropertyCategory::Map)
     sTitle.SetFormat("{0}", m_Keys[index].ConvertTo<xiiString>());
   else
     sTitle.SetFormat("[{0}]", m_Keys[index].ConvertTo<xiiString>());
@@ -1818,7 +1822,14 @@ void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
     m_pCurrentSubType = pNewtSubType;
     if (pNewtSubType)
     {
-      m_pWidget = xiiQtPropertyGridWidget::GetFactory().CreateObject(pNewtSubType);
+      if (commonType == xiiVariantType::VariantArray || commonType == xiiVariantType::VariantDictionary)
+      {
+        m_pWidget = new xiiQtVariantContainerWidget(commonType);
+      }
+      else
+      {
+        m_pWidget = xiiQtPropertyGridWidget::GetFactory().CreateObject(pNewtSubType);
+      }
 
       if (!m_pWidget)
       {
@@ -1847,7 +1858,9 @@ void xiiQtVariantPropertyWidget::InternalSetValue(const xiiVariant& value)
 void xiiQtVariantPropertyWidget::DoPrepareToDie()
 {
   if (m_pWidget)
+  {
     m_pWidget->PrepareToDie();
+  }
 }
 
 void xiiQtVariantPropertyWidget::UpdateTypeListSelection(xiiVariantType::Enum type)
@@ -1936,4 +1949,46 @@ xiiResult xiiQtVariantPropertyWidget::GetVariantTypeDisplayName(xiiVariantType::
     return XII_FAILURE;
 
   return XII_SUCCESS;
+}
+
+/// *** xiiQtVariantContainerWidget ***
+
+xiiQtVariantContainerWidget::xiiQtVariantContainerWidget(xiiVariantType::Enum variantType)
+{
+  switch (variantType)
+  {
+    case xiiVariantType::VariantArray:
+      m_ContainerCategory = xiiPropertyCategory::Array;
+      break;
+    case xiiVariantType::VariantDictionary:
+      m_ContainerCategory = xiiPropertyCategory::Map;
+      break;
+    default:
+      XII_REPORT_FAILURE("Only VariantArray and VariantDictionary are supported by xiiQtVariantContainerWidget.");
+  }
+}
+
+void xiiQtVariantContainerWidget::OnInit()
+{
+  // Init is only called once at creation time so it is safe to replace the object accessor here.
+  // As each xiiVariantSubAccessor manages only one depth level into the xiiVariant we need to wrap the object accessor for each level again which requires creating a unique accessor for each container and maintaining ownership to it.
+  m_pVariantSubAccessor = XII_DEFAULT_NEW(xiiVariantSubAccessor, m_pObjectAccessor, m_pProp);
+  m_pObjectAccessor     = m_pVariantSubAccessor.Borrow();
+  xiiQtPropertyContainerWidget::OnInit();
+}
+
+void xiiQtVariantContainerWidget::SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items)
+{
+  xiiMap<const xiiDocumentObject*, xiiVariant> subItems;
+  for (auto it : items)
+  {
+    subItems.Insert(it.m_pObject, it.m_Index);
+  }
+  m_pVariantSubAccessor->SetSubItems(subItems);
+  xiiQtPropertyContainerWidget::SetSelection(items);
+}
+
+xiiPropertyCategory::Enum xiiQtVariantContainerWidget::GetContainerCategory() const
+{
+  return m_ContainerCategory;
 }

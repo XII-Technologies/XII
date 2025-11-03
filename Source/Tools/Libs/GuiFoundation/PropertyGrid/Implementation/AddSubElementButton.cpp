@@ -14,8 +14,8 @@
 #include <QPushButton>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
-xiiQtAddSubElementButton::xiiQtAddSubElementButton() :
-  xiiQtPropertyWidget()
+xiiQtAddSubElementButton::xiiQtAddSubElementButton(xiiEnum<xiiPropertyCategory> containerCategory) :
+  xiiQtPropertyWidget(), m_ContainerCategory(containerCategory)
 {
   // Reset base class size policy as we are put in a layout that would cause us to vanish instead.
   setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
@@ -171,7 +171,7 @@ void xiiQtAddSubElementButton::OnAction(const xiiRTTI* pRtti)
   XII_ASSERT_DEV(pRtti != nullptr, "user data retrieval failed");
   xiiVariant index = (xiiInt32)-1;
 
-  if (m_pProp->GetCategory() == xiiPropertyCategory::Map)
+  if (m_ContainerCategory == xiiPropertyCategory::Map)
   {
     QString text;
     bool    bOk = false;

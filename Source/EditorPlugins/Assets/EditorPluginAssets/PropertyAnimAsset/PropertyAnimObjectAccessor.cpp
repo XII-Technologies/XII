@@ -4,6 +4,9 @@
 #include <EditorPluginAssets/PropertyAnimAsset/PropertyAnimObjectAccessor.h>
 #include <EditorPluginAssets/PropertyAnimAsset/PropertyAnimObjectManager.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPropertyAnimObjectAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiPropertyAnimObjectAccessor::xiiPropertyAnimObjectAccessor(xiiPropertyAnimAssetDocument* pDoc, xiiCommandHistory* pHistory) :
   xiiObjectCommandAccessor(pHistory), m_pDocument(pDoc), m_pObjectManager(static_cast<xiiPropertyAnimObjectManager*>(pDoc->GetObjectManager()))
 {

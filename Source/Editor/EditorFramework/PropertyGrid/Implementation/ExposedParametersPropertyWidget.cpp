@@ -7,6 +7,9 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <GuiFoundation/Widgets/GroupBoxBase.moc.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExposedParameterCommandAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiExposedParameterCommandAccessor::xiiExposedParameterCommandAccessor(xiiObjectAccessorBase* pSource, const xiiAbstractProperty* pParameterProp, const xiiAbstractProperty* pParameterSourceProp) :
   xiiObjectProxyAccessor(pSource), m_pParameterProp(pParameterProp), m_pParameterSourceProp(pParameterSourceProp)
 {

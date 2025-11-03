@@ -12,6 +12,8 @@ class QAction;
 
 class XII_EDITORFRAMEWORK_DLL xiiExposedParameterCommandAccessor : public xiiObjectProxyAccessor
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiExposedParameterCommandAccessor, xiiObjectProxyAccessor);
+
 public:
   xiiExposedParameterCommandAccessor(xiiObjectAccessorBase* pSource, const xiiAbstractProperty* pParameterProp, const xiiAbstractProperty* pM_pParameterSourceProp);
 

@@ -7,6 +7,7 @@
 #include <GuiFoundation/PropertyGrid/PrefabDefaultStateProvider.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
+#include <GuiFoundation/PropertyGrid/VariantSubDefaultStateProvider.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, DefaultState)
@@ -14,12 +15,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, DefaultState)
   {
     xiiDefaultState::RegisterDefaultStateProvider(xiiAttributeDefaultStateProvider::CreateProvider);
     xiiDefaultState::RegisterDefaultStateProvider(xiiPrefabDefaultStateProvider::CreateProvider);
+    xiiDefaultState::RegisterDefaultStateProvider(xiiVariantSubDefaultStateProvider::CreateProvider);
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiDefaultState::UnregisterDefaultStateProvider(xiiAttributeDefaultStateProvider::CreateProvider);
     xiiDefaultState::UnregisterDefaultStateProvider(xiiPrefabDefaultStateProvider::CreateProvider);
+    xiiDefaultState::UnregisterDefaultStateProvider(xiiVariantSubDefaultStateProvider::CreateProvider);
   }
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
