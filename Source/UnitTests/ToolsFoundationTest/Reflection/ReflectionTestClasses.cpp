@@ -4,6 +4,18 @@
 #include <ToolsFoundationTest/Reflection/ReflectionTestClasses.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariantTestStruct, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiVariantTestStruct>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("Variant", m_Variant),
+    XII_ARRAY_MEMBER_PROPERTY("VariantArray", m_VariantArray),
+    XII_MAP_MEMBER_PROPERTY("VariantDictionary", m_VariantDictionary)
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiIntegerStruct, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiIntegerStruct>)
 {
   XII_BEGIN_PROPERTIES

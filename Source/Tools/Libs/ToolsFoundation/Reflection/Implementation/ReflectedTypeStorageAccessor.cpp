@@ -4,7 +4,7 @@
 #include <Foundation/Types/VariantTypeRegistry.h>
 #include <ToolsFoundation/Reflection/ReflectedTypeStorageAccessor.h>
 #include <ToolsFoundation/Reflection/ToolsReflectionUtils.h>
-
+#include <ToolsFoundation/Reflection/VariantStorageAccessor.h>
 
 ////////////////////////////////////////////////////////////////////////
 // xiiReflectedTypeStorageAccessor public functions
@@ -14,7 +14,7 @@ xiiReflectedTypeStorageAccessor::xiiReflectedTypeStorageAccessor(const xiiRTTI* 
   xiiIReflectedTypeAccessor(pRtti, pOwner)
 {
   const xiiRTTI* pType = pRtti;
-  XII_ASSERT_DEV(pType != nullptr, "Trying to construct a xiiReflectedTypeStorageAccessor for an invalid type!");
+  XII_ASSERT_DEV(pType != nullptr, "Trying to construct an xiiReflectedTypeStorageAccessor for an invalid type!");
   m_pMapping = xiiReflectedTypeStorageManager::AddStorageAccessor(this);
   XII_ASSERT_DEV(m_pMapping != nullptr, "The type for this xiiReflectedTypeStorageAccessor is unknown to the xiiReflectedTypeStorageManager!");
 
@@ -27,7 +27,7 @@ xiiReflectedTypeStorageAccessor::xiiReflectedTypeStorageAccessor(const xiiRTTI* 
   // Fill data storage with default values for the given types.
   for (auto it = indexTable.GetIterator(); it.IsValid(); ++it)
   {
-    const auto storageInfo        = it.Value();
+    const auto& storageInfo       = it.Value();
     m_Data[storageInfo.m_uiIndex] = storageInfo.m_DefaultValue;
   }
 }
@@ -55,46 +55,20 @@ const xiiVariant xiiReflectedTypeStorageAccessor::GetValue(xiiStringView sProper
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:
+        if (index.IsValid())
+        {
+          if (pRes)
+          {
+            *pRes = xiiStatus(xiiFmt("Property '{0}' is a member property but an index of '{1}' is given", sProperty, index));
+          }
+          return xiiVariant();
+        }
         return m_Data[storageInfo->m_uiIndex];
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
-      {
-        if (!index.IsValid())
-        {
-          return m_Data[storageInfo->m_uiIndex];
-        }
-
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        if (index.CanConvertTo<xiiUInt32>())
-        {
-          xiiUInt32 uiIndex = index.ConvertTo<xiiUInt32>();
-          if (uiIndex < values.GetCount())
-          {
-            return values[uiIndex];
-          }
-        }
-        if (pRes)
-          *pRes = xiiStatus(xiiFmt("Index '{0}' for property '{1}' is invalid or out of bounds.", index, sProperty));
-      }
-      break;
       case xiiPropertyCategory::Map:
       {
-        if (!index.IsValid())
-        {
-          return m_Data[storageInfo->m_uiIndex];
-        }
-
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if (index.IsA<xiiString>() || index.IsA<xiiStringView>())
-        {
-          const xiiString& sIndex = index.Get<xiiString>();
-          if (const xiiVariant* pValue = values.GetValue(sIndex))
-          {
-            return *pValue;
-          }
-        }
-        if (pRes)
-          *pRes = xiiStatus(xiiFmt("Index '{0}' for property '{1}' is invalid or out of bounds.", index, sProperty));
+        return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).GetValue(index, pRes);
       }
       break;
       default:
@@ -127,17 +101,13 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
     {
       case xiiPropertyCategory::Member:
       {
+        if (index.IsValid())
+          return false;
+
         if (value.IsA<xiiString>() && pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
         {
           xiiInt64 iValue;
           xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiString>(), iValue);
-          m_Data[storageInfo->m_uiIndex] = xiiVariant(iValue).ConvertTo(storageInfo->m_Type);
-          return true;
-        }
-        else if (value.IsA<xiiStringView>() && pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
-        {
-          xiiInt64 iValue;
-          xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiStringView>(), iValue);
           m_Data[storageInfo->m_uiIndex] = xiiVariant(iValue).ConvertTo(storageInfo->m_Type);
           return true;
         }
@@ -150,7 +120,7 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
         {
           // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
           // that may have a different type now as someone reloaded the type information and replaced a type.
-          m_Data[storageInfo->m_uiIndex] = value.ConvertTo(storageInfo->m_Type != xiiVariantType::StringView ? (xiiVariantType::Enum)storageInfo->m_Type : value.GetType());
+          m_Data[storageInfo->m_uiIndex] = value.ConvertTo(storageInfo->m_Type);
           return true;
         }
       }
@@ -158,63 +128,27 @@ bool xiiReflectedTypeStorageAccessor::SetValue(xiiStringView sProperty, const xi
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
       {
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        if (index.CanConvertTo<xiiUInt32>())
+        if (index.IsNumber())
         {
-          xiiUInt32 uiIndex = index.ConvertTo<xiiUInt32>();
-          if (uiIndex < values.GetCount())
-          {
-            xiiVariantArray changedValues = values;
-            if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
-            {
-              changedValues[uiIndex]         = value;
-              m_Data[storageInfo->m_uiIndex] = changedValues;
-              return true;
-            }
-            else
-            {
-              if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
-              {
-                m_Data[storageInfo->m_uiIndex] = value;
-                return true;
-              }
-              else if (value.CanConvertTo(SpecVarType))
-              {
-                // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
-                // that may have a different type now as someone reloaded the type information and replaced a type.
-                changedValues[uiIndex]         = value.ConvertTo(SpecVarType != xiiVariantType::StringView ? SpecVarType : value.GetType());
-                m_Data[storageInfo->m_uiIndex] = changedValues;
-                return true;
-              }
-            }
-          }
+          if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).SetValue(value, index).Succeeded();
+          else if (value.CanConvertTo(SpecVarType))
+            // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
+            // that may have a different type now as someone reloaded the type information and replaced a type.
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).SetValue(value.ConvertTo(SpecVarType), index).Succeeded();
         }
       }
       break;
       case xiiPropertyCategory::Map:
       {
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if ((index.IsA<xiiString>() || index.IsA<xiiStringView>()) && values.Contains(index.Get<xiiString>()))
+        if (index.IsA<xiiString>())
         {
-          const xiiString&     sIndex        = index.Get<xiiString>();
-          xiiVariantDictionary changedValues = values;
           if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
-          {
-            changedValues[sIndex]          = value;
-            m_Data[storageInfo->m_uiIndex] = changedValues;
-            return true;
-          }
-          else
-          {
-            if (value.CanConvertTo(SpecVarType))
-            {
-              // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
-              // that may have a different type now as someone reloaded the type information and replaced a type.
-              changedValues[sIndex]          = value.ConvertTo(SpecVarType != xiiVariantType::StringView ? SpecVarType : value.GetType());
-              m_Data[storageInfo->m_uiIndex] = changedValues;
-              return true;
-            }
-          }
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).SetValue(value, index).Succeeded();
+          else if (value.CanConvertTo(SpecVarType))
+            // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
+            // that may have a different type now as someone reloaded the type information and replaced a type.
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).SetValue(value.ConvertTo(SpecVarType), index).Succeeded();
         }
       }
       break;
@@ -231,7 +165,7 @@ xiiInt32 xiiReflectedTypeStorageAccessor::GetCount(xiiStringView sProperty) cons
   if (m_pMapping->m_PathToStorageInfoTable.TryGetValue(sProperty, storageInfo))
   {
     if (storageInfo->m_Type == xiiVariant::Type::Invalid)
-      return -1;
+      return false;
 
     const xiiAbstractProperty* pProp = GetType()->FindPropertyByName(sProperty);
     if (pProp == nullptr)
@@ -241,15 +175,8 @@ xiiInt32 xiiReflectedTypeStorageAccessor::GetCount(xiiStringView sProperty) cons
     {
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
-      {
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        return values.GetCount();
-      }
       case xiiPropertyCategory::Map:
-      {
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        return values.GetCount();
-      }
+        return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).GetCount();
       default:
         break;
     }
@@ -275,28 +202,11 @@ bool xiiReflectedTypeStorageAccessor::GetKeys(xiiStringView sProperty, xiiDynami
     {
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
-      {
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        out_keys.Reserve(values.GetCount());
-        for (xiiUInt32 i = 0; i < values.GetCount(); ++i)
-        {
-          out_keys.PushBack(i);
-        }
-        return true;
-      }
-      break;
       case xiiPropertyCategory::Map:
       {
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        out_keys.Reserve(values.GetCount());
-        for (auto it = values.GetIterator(); it.IsValid(); ++it)
-        {
-          out_keys.PushBack(xiiVariant(it.Key()));
-        }
-        return true;
+        return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).GetKeys(out_keys).Succeeded();
       }
       break;
-
       default:
         break;
     }
@@ -329,52 +239,27 @@ bool xiiReflectedTypeStorageAccessor::InsertValue(xiiStringView sProperty, xiiVa
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
       {
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        if (index.CanConvertTo<xiiUInt32>())
+        if (index.IsNumber())
         {
-          xiiUInt32 uiIndex = index.ConvertTo<xiiUInt32>();
-          if (uiIndex <= values.GetCount())
-          {
-            xiiVariantArray changedValues = values;
-            if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
-            {
-              changedValues.InsertAt(uiIndex, value);
-              m_Data[storageInfo->m_uiIndex] = changedValues;
-              return true;
-            }
-            else if (value.CanConvertTo(SpecVarType))
-            {
-              // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
-              // that may have a different type now as someone reloaded the type information and replaced a type.
-              changedValues.InsertAt(uiIndex, value.ConvertTo(SpecVarType));
-              m_Data[storageInfo->m_uiIndex] = changedValues;
-              return true;
-            }
-          }
+          if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).InsertValue(index, value).Succeeded();
+          else if (value.CanConvertTo(SpecVarType))
+            // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
+            // that may have a different type now as someone reloaded the type information and replaced a type.
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).InsertValue(index, value.ConvertTo(SpecVarType)).Succeeded();
         }
       }
       break;
       case xiiPropertyCategory::Map:
       {
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if ((index.IsA<xiiString>() || index.IsA<xiiStringView>()) && !values.Contains(index.Get<xiiString>()))
+        if (index.IsA<xiiString>())
         {
-          const xiiString&     sIndex        = index.Get<xiiString>();
-          xiiVariantDictionary changedValues = values;
           if (pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>())
-          {
-            changedValues.Insert(sIndex, value);
-            m_Data[storageInfo->m_uiIndex] = changedValues;
-            return true;
-          }
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).InsertValue(index, value).Succeeded();
           else if (value.CanConvertTo(SpecVarType))
-          {
             // We are lenient here regarding the type, as we may have stored values in the undo-redo stack
             // that may have a different type now as someone reloaded the type information and replaced a type.
-            changedValues.Insert(sIndex, value.ConvertTo(SpecVarType));
-            m_Data[storageInfo->m_uiIndex] = changedValues;
-            return true;
-          }
+            return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).InsertValue(index, value.ConvertTo(SpecVarType)).Succeeded();
         }
       }
       break;
@@ -401,32 +286,9 @@ bool xiiReflectedTypeStorageAccessor::RemoveValue(xiiStringView sProperty, xiiVa
     {
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
-      {
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        if (index.CanConvertTo<xiiUInt32>())
-        {
-          xiiUInt32 uiIndex = index.ConvertTo<xiiUInt32>();
-          if (uiIndex < values.GetCount())
-          {
-            xiiVariantArray changedValues = values;
-            changedValues.RemoveAtAndCopy(uiIndex);
-            m_Data[storageInfo->m_uiIndex] = changedValues;
-            return true;
-          }
-        }
-      }
-      break;
       case xiiPropertyCategory::Map:
       {
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if ((index.IsA<xiiString>() || index.IsA<xiiStringView>()) && values.Contains(index.Get<xiiString>()))
-        {
-          const xiiString&     sIndex        = index.Get<xiiString>();
-          xiiVariantDictionary changedValues = values;
-          changedValues.Remove(sIndex);
-          m_Data[storageInfo->m_uiIndex] = changedValues;
-          return true;
-        }
+        return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).RemoveValue(index).Succeeded();
       }
       break;
       default:
@@ -452,41 +314,9 @@ bool xiiReflectedTypeStorageAccessor::MoveValue(xiiStringView sProperty, xiiVari
     {
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
-      {
-        const xiiVariantArray& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantArray>();
-        if (oldIndex.CanConvertTo<xiiUInt32>() && newIndex.CanConvertTo<xiiUInt32>())
-        {
-          xiiUInt32 uiOldIndex = oldIndex.ConvertTo<xiiUInt32>();
-          xiiUInt32 uiNewIndex = newIndex.ConvertTo<xiiUInt32>();
-          if (uiOldIndex < values.GetCount() && uiNewIndex <= values.GetCount())
-          {
-            xiiVariantArray changedValues = values;
-            xiiVariant      value         = changedValues[uiOldIndex];
-            changedValues.RemoveAtAndCopy(uiOldIndex);
-            if (uiNewIndex > uiOldIndex)
-            {
-              uiNewIndex -= 1;
-            }
-            changedValues.InsertAt(uiNewIndex, value);
-
-            m_Data[storageInfo->m_uiIndex] = changedValues;
-            return true;
-          }
-        }
-      }
-      break;
       case xiiPropertyCategory::Map:
       {
-        const xiiVariantDictionary& values = m_Data[storageInfo->m_uiIndex].Get<xiiVariantDictionary>();
-        if ((oldIndex.IsA<xiiString>() || oldIndex.IsA<xiiStringView>()) && values.Contains(oldIndex.Get<xiiString>()) && (newIndex.IsA<xiiString>() || newIndex.IsA<xiiStringView>()))
-        {
-          const xiiString&     sIndex        = oldIndex.Get<xiiString>();
-          xiiVariantDictionary changedValues = values;
-          changedValues.Insert(newIndex.Get<xiiString>(), changedValues[sIndex]);
-          changedValues.Remove(sIndex);
-          m_Data[storageInfo->m_uiIndex] = changedValues;
-          return true;
-        }
+        return xiiVariantStorageAccessor(sProperty, m_Data[storageInfo->m_uiIndex]).MoveValue(oldIndex, newIndex).Succeeded();
       }
       break;
       default:
@@ -501,8 +331,8 @@ xiiVariant xiiReflectedTypeStorageAccessor::GetPropertyChildIndex(xiiStringView 
   const xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping::StorageInfo* storageInfo = nullptr;
   if (m_pMapping->m_PathToStorageInfoTable.TryGetValue(sProperty, storageInfo))
   {
-    if (storageInfo->m_Type == xiiVariant::Type::Invalid)
-      return xiiVariant();
+    // if (storageInfo->m_Type == xiiVariant::Type::Invalid)
+    //   return xiiVariant();
 
     const xiiAbstractProperty* pProp = GetType()->FindPropertyByName(sProperty);
     if (pProp == nullptr)
