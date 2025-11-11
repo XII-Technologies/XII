@@ -8,12 +8,7 @@
 
 namespace
 {
-  // for some reason MSVC does not accept the template keyword here
-#if XII_ENABLED(XII_COMPILER_MSVC_PURE)
-#  define CALL_FUNCTOR(functor, type) functor.operator()<type>(std::forward<Args>(args)...)
-#else
-#  define CALL_FUNCTOR(functor, type) functor.template operator()<type>(std::forward<Args>(args)...)
-#endif
+#define CALL_FUNCTOR(functor, type) functor.template operator()<type>(std::forward<Args>(args)...)
 
   template <typename Functor, class... Args>
   void DispatchTo(Functor& ref_functor, const xiiAbstractProperty* pProp, Args&&... args)

@@ -128,9 +128,10 @@ XII_ALWAYS_INLINE void xiiStringView::Trim(const char* szTrimCharsStart, const c
   }
 }
 
-constexpr XII_ALWAYS_INLINE xiiStringView operator"" _xiisv(const char* pString, size_t uiLen)
+
+constexpr XII_ALWAYS_INLINE xiiStringView operator""_xiisv(const char* pString, std::size_t uiLength)
 {
-  return xiiStringView(pString, static_cast<xiiUInt32>(uiLen));
+  return xiiStringView(pString, static_cast<xiiUInt32>(uiLength));
 }
 
 template <typename Container>

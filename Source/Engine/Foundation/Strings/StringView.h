@@ -311,7 +311,7 @@ private:
 ///
 /// Example:
 /// "Hello World"
-constexpr xiiStringView operator"" _xiisv(const char* pString, size_t uiLen);
+constexpr xiiStringView operator""_xiisv(const char* pString, std::size_t uiLength);
 
 XII_ALWAYS_INLINE typename xiiStringView::iterator begin(xiiStringView sContainer)
 {

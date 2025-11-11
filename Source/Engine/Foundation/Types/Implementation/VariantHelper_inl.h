@@ -1,10 +1,5 @@
 
-// for some reason MSVC does not accept the template keyword here
-#if XII_ENABLED(XII_COMPILER_MSVC_PURE)
-#  define CALL_FUNCTOR(functor, type) return functor.operator()<type>(std::forward<Args>(args)...)
-#else
-#  define CALL_FUNCTOR(functor, type) return functor.template operator()<type>(std::forward<Args>(args)...)
-#endif
+#define CALL_FUNCTOR(functor, type) return functor.template operator()<type>(std::forward<Args>(args)...)
 
 template <typename Functor, class... Args>
 auto xiiVariant::DispatchTo(Functor& ref_functor, Type::Enum type, Args&&... args)
