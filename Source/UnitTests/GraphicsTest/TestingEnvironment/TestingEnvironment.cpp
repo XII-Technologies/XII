@@ -1,6 +1,11 @@
 #include <GraphicsTest/GraphicsTestPCH.h>
 
+#include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
+#include <Foundation/IO/FileSystem/FileSystem.h>
+#include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <TestFramework/Framework/TestFramework.h>
 
 class xiiGraphicsTestWindow : public xiiWindow
 {
@@ -60,70 +65,18 @@ xiiResult xiiGPUTestingEnvironmentVulkan::Initialize()
   // Create device.
   if (m_pDevice == nullptr)
   {
+    xiiStringView                   sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
     xiiGALDeviceCreationDescription deviceCreationDescription;
-    deviceCreationDescription.m_DeviceFeatures.m_WireframeFill                      = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ComputeShaders                     = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_GeometryShaders                    = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_Tessellation                       = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_MeshShaders                        = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_RayTracing                         = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_BindlessResources                  = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_OcclusionQueries                   = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_BinaryOcclusionQueries             = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_TimestampQueries                   = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_PipelineStatisticsQueries          = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_DurationQueries                    = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_DepthBiasClamp                     = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_DepthClamp                         = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_IndependentBlend                   = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_DualSourceBlend                    = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_MultiViewport                      = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_PixelUAVWritesAndAtomics           = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats          = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ShaderFloat16                      = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer16BitAccess          = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer16BitAccess           = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ShaderInputOutput16                = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ShaderInt8                         = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess           = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess            = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_SparseResources                    = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
-    deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-    deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::All;
-#elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
-#else
-    deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
-#endif
-
-    constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-    xiiStringView         sGraphicsAPIName     = szDefaultGraphicsAPI;
-    xiiStringView         sShaderModel         = {};
-    xiiStringView         sShaderCompiler      = {};
-    xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
-
-    xiiGALShaderManager::Configure(sShaderModel, true);
-    XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found.", sShaderCompiler);
+    deviceCreationDescription.m_DeviceFeatures.m_WireframeFill = xiiGALDeviceFeatureState::Optional;
+    // Set other feature flags optional to be permissive for test environment.
 
     m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
-    XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
-    XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
-
-    m_pDevice->SetDebugName("Master Graphics Device (Vulkan)");
+    if (!m_pDevice || m_pDevice->Initialize().Failed())
+    {
+      xiiLog::Error("Failed to create/initialize device for testing.");
+      m_pDevice.Clear();
+      return XII_FAILURE;
+    }
   }
 
   return XII_SUCCESS;
@@ -131,51 +84,32 @@ xiiResult xiiGPUTestingEnvironmentVulkan::Initialize()
 
 void xiiGPUTestingEnvironmentVulkan::Shutdown()
 {
+  // Destroy swapchain and window before device shutdown.
+  DestroySwapChain();
   DestroyWindow();
 
-  m_pDevice.Clear();
+  if (m_pDevice)
+  {
+    m_pDevice.Clear();
+  }
 }
 
 xiiResult xiiGPUTestingEnvironmentVulkan::CreateWindow(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY)
 {
-  XII_ASSERT_DEV(m_pDevice != nullptr, "Device has not yet been initialized. Ensure to call Initialize().");
+  if (m_pWindow)
+    return XII_SUCCESS;
 
-  if (m_pWindow != nullptr && m_pWindow->GetClientAreaSize() != xiiSizeU32(uiResolutionX, uiResolutionY))
+  m_pWindow = XII_DEFAULT_NEW(xiiGraphicsTestWindow);
+
+  xiiWindowCreationDescription windowDescription;
+  windowDescription.m_Resolution.width  = uiResolutionX;
+  windowDescription.m_Resolution.height = uiResolutionY;
+  windowDescription.m_Title             = "GraphicsTestWindow";
+
+  if (m_pWindow->Initialize(windowDescription).Failed())
   {
-    DestroyWindow();
-  }
-
-  if (m_pWindow == nullptr)
-  {
-    xiiWindowCreationDescription WindowCreationDesc;
-    WindowCreationDesc.m_Resolution.width  = uiResolutionX;
-    WindowCreationDesc.m_Resolution.height = uiResolutionY;
-    WindowCreationDesc.m_Title             = "XII - Test";
-    WindowCreationDesc.m_bShowMouseCursor  = true;
-    WindowCreationDesc.m_bClipMouseCursor  = false;
-    WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;
-    m_pWindow                              = XII_DEFAULT_NEW(xiiWindow);
-
-    if (m_pWindow->Initialize(WindowCreationDesc).Failed())
-      return XII_FAILURE;
-  }
-
-  // Create a window for the swapchain.
-  if (!m_pSwapChain)
-  {
-    xiiGALSwapChainCreationDescription swapChainDescription;
-    swapChainDescription.m_pWindow               = m_pWindow.Borrow();
-    swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-    swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
-    swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-    swapChainDescription.m_uiBufferCount         = 2U;
-    swapChainDescription.m_fDefaultDepthValue    = 1.0f;
-    swapChainDescription.m_uiDefaultStencilValue = 0U;
-
-    m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
-
-    if (!m_pSwapChain)
-      return XII_FAILURE;
+    m_pWindow.Clear();
+    return XII_FAILURE;
   }
 
   return XII_SUCCESS;
@@ -183,13 +117,83 @@ xiiResult xiiGPUTestingEnvironmentVulkan::CreateWindow(xiiUInt32 uiResolutionX, 
 
 void xiiGPUTestingEnvironmentVulkan::DestroyWindow()
 {
-  if (m_pDevice)
+  if (m_pWindow)
   {
-    m_pSwapChain.Clear();
-    m_pDepthStencilTexture.Clear();
+    m_pWindow->Destroy().IgnoreResult();
+    m_pWindow.Clear();
+  }
+}
 
-    m_pDevice->WaitIdle();
+xiiResult xiiGPUTestingEnvironmentVulkan::CreateSwapChainForWindow(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY)
+{
+  if (!m_pDevice)
+    return XII_FAILURE;
+
+  if (!m_pWindow)
+  {
+    XII_SUCCEED_OR_RETURN(CreateWindow(uiResolutionX, uiResolutionY));
   }
 
-  m_pWindow.Clear();
+  if (m_pSwapChain)
+    return XII_SUCCESS;
+
+  xiiGALSwapChainCreationDescription swapChainDescription;
+  swapChainDescription.m_pWindow           = m_pWindow.Borrow();
+  swapChainDescription.m_ColorBufferFormat = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+
+  m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
+  if (!m_pSwapChain)
+    return XII_FAILURE;
+
+  // Create a depth texture matching the swapchain.
+  xiiGALTextureCreationDescription textureDescription = xiiGALTextureCreationDescription();
+  textureDescription.m_Type                           = xiiGALResourceDimension::Texture2D;
+  textureDescription.m_Size.width                     = uiResolutionX;
+  textureDescription.m_Size.height                    = uiResolutionY;
+  textureDescription.m_Format                         = xiiGALResourceFormat::D24UNormalizedS8UInt;
+
+  m_pDepthStencilTexture = m_pDevice->CreateTexture(textureDescription);
+
+  return XII_SUCCESS;
+}
+
+void xiiGPUTestingEnvironmentVulkan::DestroySwapChain()
+{
+  if (m_pSwapChain)
+  {
+    m_pSwapChain.Clear();
+  }
+  m_pDepthStencilTexture.Clear();
+}
+
+void xiiGPUTestingEnvironmentVulkan::BeginFrame()
+{
+  if (m_pDevice)
+  {
+    m_pDevice->BeginFrame();
+  }
+}
+
+void xiiGPUTestingEnvironmentVulkan::EndFrame()
+{
+  if (m_pDevice)
+  {
+    m_pDevice->EndFrame();
+  }
+}
+
+void xiiGPUTestingEnvironmentVulkan::Present()
+{
+  if (m_pSwapChain)
+  {
+    m_pSwapChain->Present();
+  }
+}
+
+void xiiGPUTestingEnvironmentVulkan::ProcessWindowMessages()
+{
+  if (m_pWindow)
+  {
+    m_pWindow->ProcessWindowMessages();
+  }
 }
