@@ -1526,3 +1526,19 @@ XII_ALWAYS_INLINE vk::IndexType xiiVulkanTypeConversions::GetIndexType(xiiGALVal
   }
   return vk::IndexType::eUint32;
 }
+
+XII_ALWAYS_INLINE vk::ResolveModeFlagBits xiiVulkanTypeConversions::GetDepthResolveMode(xiiEnum<xiiGALDepthResolveMode> mode)
+{
+  switch (mode)
+  {
+    case xiiGALDepthResolveMode::Min:
+      return vk::ResolveModeFlagBits::eMin;
+    case xiiGALDepthResolveMode::Max:
+      return vk::ResolveModeFlagBits::eMax;
+    case xiiGALDepthResolveMode::Average:
+      return vk::ResolveModeFlagBits::eAverage;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ResolveModeFlagBits::eNone;
+}

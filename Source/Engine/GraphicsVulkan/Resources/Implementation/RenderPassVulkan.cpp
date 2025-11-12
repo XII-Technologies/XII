@@ -140,6 +140,9 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
   xiiDynamicArray<xiiUInt32> vkPreserveAttachments(pDeviceVulkan->GetAllocator());
   vkPreserveAttachments.SetCount(uiTotalPreserveAttachmentsCount);
 
+  xiiDynamicArray<vk::SubpassDescriptionDepthStencilResolve> vkDepthStencilResolve(pDeviceVulkan->GetAllocator());
+  vkDepthStencilResolve.SetCount(m_Description.m_SubPasses.GetCount());
+
   xiiDynamicArray<vk::FragmentShadingRateAttachmentInfoKHR> vkShadingRate(pDeviceVulkan->GetAllocator());
   vkShadingRate.SetCount(uiTotalShadingRateAttachmentsCount);
 
@@ -259,6 +262,26 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
       for (xiiUInt32 uiPreserveAttachmentIndex = 0; uiPreserveAttachmentIndex < xiiSubPass.m_PreserveAttachments.GetCount(); ++uiPreserveAttachmentIndex, ++uiCurrentPreserveAttachmentIndex)
       {
         vkPreserveAttachments[uiCurrentPreserveAttachmentIndex] = xiiSubPass.m_PreserveAttachments[uiPreserveAttachmentIndex];
+      }
+    }
+
+    if constexpr (std::is_same_v<SubpassDescriptionType, vk::SubpassDescription2>)
+    {
+      if (!xiiSubPass.m_DepthResolveAttachment.IsEmpty())
+      {
+        const auto& xiiDepthResolve = xiiSubPass.m_DepthResolveAttachment[0];
+
+        if (!xiiSubPass.m_DepthStencilAttachment.IsEmpty())
+        {
+          auto& vkResolve = vkDepthStencilResolve[i];
+
+          vkResolve.pNext                          = nullptr;
+          vkResolve.depthResolveMode               = xiiVulkanTypeConversions::GetDepthResolveMode(xiiDepthResolve.m_DepthMode);
+          vkResolve.stencilResolveMode             = xiiVulkanTypeConversions::GetDepthResolveMode(xiiDepthResolve.m_StencilMode);
+          vkResolve.pDepthStencilResolveAttachment = reinterpret_cast<const vk::AttachmentReference2*>(ConvertAttachmentReferences(xiiMakeArrayPtr(&xiiDepthResolve.m_Attachment, 1U), vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil));
+          vkResolve.pNext                          = vkSubPass.pNext; // Chain existing pNext.
+          vkSubPass.pNext                          = &vkResolve;      // Set new pNext.
+        }
       }
     }
 

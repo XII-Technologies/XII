@@ -108,6 +108,8 @@ public:
   static vk::DescriptorType GetDescriptorType(xiiGALDescriporTypeVulkan e);
 
   static vk::IndexType GetIndexType(xiiGALValueType::Enum indexType);
+
+  static vk::ResolveModeFlagBits GetDepthResolveMode(xiiEnum<xiiGALDepthResolveMode> mode);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>
