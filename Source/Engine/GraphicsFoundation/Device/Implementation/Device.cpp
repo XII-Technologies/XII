@@ -865,12 +865,6 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
         XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil resolve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiDepthResolveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
         XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_DepthStencilResolve == xiiGALDeviceFeatureState::Enabled, "Depth resolve attachment in sub pass {0} requires the DepthStencilResolve device feature.", uiSubPassIndex);
-
-        const xiiEnum<xiiGALDepthResolveMode>& depthResolveMode = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_DepthMode;
-        XII_GAL_DEVICE_CHECK(depthResolveMode == xiiGALDepthResolveMode::Average || depthResolveMode == xiiGALDepthResolveMode::Min || depthResolveMode == xiiGALDepthResolveMode::Max || depthResolveMode == xiiGALDepthResolveMode::SampleZero, "The depth resolve mode of depth-stencil resolve attachment reference {0} of sub pass {1} is set to None.", uiDepthResolveAttachmentIndex, uiSubPassIndex);
-
-        const xiiEnum<xiiGALDepthResolveMode>& stencilResolveMode = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_StencilMode;
-        XII_GAL_DEVICE_CHECK(stencilResolveMode == xiiGALDepthResolveMode::Average || stencilResolveMode == xiiGALDepthResolveMode::Min || stencilResolveMode == xiiGALDepthResolveMode::Max || stencilResolveMode == xiiGALDepthResolveMode::SampleZero, "The stencil resolve mode of depth-stencil resolve attachment reference {0} of sub pass {1} is set to None.", uiDepthResolveAttachmentIndex, uiSubPassIndex);
       }
     }
 
