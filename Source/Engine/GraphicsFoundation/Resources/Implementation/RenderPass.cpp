@@ -14,6 +14,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALAttachmentStoreOperation, 1)
   XII_ENUM_CONSTANT(xiiGALAttachmentStoreOperation::Discard),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDepthResolveMode, 1)
+  XII_ENUM_CONSTANT(xiiGALDepthResolveMode::None),
+  XII_ENUM_CONSTANT(xiiGALDepthResolveMode::Average),
+  XII_ENUM_CONSTANT(xiiGALDepthResolveMode::Min),
+  XII_ENUM_CONSTANT(xiiGALDepthResolveMode::Max),
+  XII_ENUM_CONSTANT(xiiGALDepthResolveMode::SampleZero),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPass, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

@@ -832,10 +832,13 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment.PeekBack();
-
-      if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+      for (xiiUInt32 uiDepthResolveAttachmentIndex = 0U; uiDepthResolveAttachmentIndex < subpass.m_DepthStencilAttachment.GetCount(); ++uiDepthResolveAttachmentIndex)
       {
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment[uiDepthResolveAttachmentIndex];
+
+        if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          continue;
+
         // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
         // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
@@ -850,15 +853,25 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     if (!subpass.m_DepthResolveAttachment.IsEmpty())
     {
-      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthResolveAttachment.PeekBack();
+      for (xiiUInt32 uiDepthResolveAttachmentIndex = 0U; uiDepthResolveAttachmentIndex < subpass.m_DepthResolveAttachment.GetCount(); ++uiDepthResolveAttachmentIndex)
+      {
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_Attachment;
 
-      if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
-        continue;
+        if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          continue;
 
-      // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
-      // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
-      // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
-      XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil resolve attachment reference of sub pass {1} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+        // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
+        // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
+        // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
+        XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil resolve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiDepthResolveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+        XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_DepthStencilResolve == xiiGALDeviceFeatureState::Enabled, "Depth resolve attachment in sub pass {0} requires the DepthStencilResolve device feature.", uiSubPassIndex);
+
+        const xiiEnum<xiiGALDepthResolveMode>& depthResolveMode = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_DepthMode;
+        XII_GAL_DEVICE_CHECK(depthResolveMode == xiiGALDepthResolveMode::Average || depthResolveMode == xiiGALDepthResolveMode::Min || depthResolveMode == xiiGALDepthResolveMode::Max || depthResolveMode == xiiGALDepthResolveMode::SampleZero, "The depth resolve mode of depth-stencil resolve attachment reference {0} of sub pass {1} is set to None.", uiDepthResolveAttachmentIndex, uiSubPassIndex);
+
+        const xiiEnum<xiiGALDepthResolveMode>& stencilResolveMode = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_StencilMode;
+        XII_GAL_DEVICE_CHECK(stencilResolveMode == xiiGALDepthResolveMode::Average || stencilResolveMode == xiiGALDepthResolveMode::Min || stencilResolveMode == xiiGALDepthResolveMode::Max || stencilResolveMode == xiiGALDepthResolveMode::SampleZero, "The stencil resolve mode of depth-stencil resolve attachment reference {0} of sub pass {1} is set to None.", uiDepthResolveAttachmentIndex, uiSubPassIndex);
+      }
     }
 
     for (xiiUInt32 uiPreserveAttachmentIndex = 0U; uiPreserveAttachmentIndex < subpass.m_PreserveAttachments.GetCount(); ++uiPreserveAttachmentIndex)
@@ -911,7 +924,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
       for (xiiUInt32 uiDepthStencilAttachmentIndex = 0U; uiDepthStencilAttachmentIndex < subpass.m_DepthStencilAttachment.GetCount(); ++uiDepthStencilAttachmentIndex)
       {
         const xiiGALAttachmentReferenceDescription& depthStencilAttachmentReference = subpass.m_DepthStencilAttachment[uiDepthStencilAttachmentIndex];
-        const xiiGALAttachmentReferenceDescription& depthResolveAttacmentReference  = subpass.m_DepthResolveAttachment[uiDepthStencilAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& depthResolveAttacmentReference  = subpass.m_DepthResolveAttachment[uiDepthStencilAttachmentIndex].m_Attachment;
 
         if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && depthStencilAttachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         {
