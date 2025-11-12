@@ -79,6 +79,7 @@ public:
     vk::PhysicalDeviceFragmentDensityMap2PropertiesEXT    m_FragmentDensityMap2;
     vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
     vk::PhysicalDeviceCustomBorderColorPropertiesEXT      m_CustomBorderColor;
+    vk::PhysicalDeviceDepthStencilResolveProperties       m_DepthStencilResolve;
   };
 
   class DeferredDeletionQueue

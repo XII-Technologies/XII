@@ -1068,7 +1068,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
   }
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 42, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
@@ -2406,6 +2406,12 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_CustomBorderColor.pNext;
   }
 
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME))
+  {
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve.pNext;
+  }
+
   // Ensure that last pNext is null
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
@@ -2453,6 +2459,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2.pNext    = nullptr;
     m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext              = nullptr;
     m_PhysicalDeviceExtensionProperties.m_CustomBorderColor.pNext      = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve.pNext    = nullptr;
   }
 
   // Check shading rate texture formats.
@@ -2630,6 +2637,8 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   INITIALIZE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, extensionFeatures.m_bShaderViewportIndexLayer);
 
+  INITIALIZE_DEVICE_FEATURE(DepthStencilResolve, extensionProperties.m_DepthStencilResolve.supportedDepthResolveModes != vk::ResolveModeFlagBits::eNone || extensionProperties.m_DepthStencilResolve.supportedStencilResolveModes != vk::ResolveModeFlagBits::eNone);
+
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
@@ -2641,7 +2650,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   deviceFeatures.m_AsynchronousShaderCompilation = xiiGALDeviceFeatureState::Enabled;
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 42, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2727,11 +2736,12 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   ENABLE_DEVICE_FEATURE(NativeMultiDraw,                    "Native multi-draw commands are");
   ENABLE_DEVICE_FEATURE(AsynchronousShaderCompilation,      "Asynchronous shader compilation is");
   ENABLE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, "Vertex shader render target array index is");
+  ENABLE_DEVICE_FEATURE(DepthStencilResolve,                "Depth/stencil resolve is");
   // clang-format on
 
 #undef ENABLE_DEVICE_FEATURE
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 42, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
