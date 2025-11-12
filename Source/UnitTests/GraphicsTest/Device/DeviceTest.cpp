@@ -1,14 +1,14 @@
 #include <GraphicsTest/GraphicsTestPCH.h>
 
-#include <GraphicsTest/TestingEnvironment/TestingEnvironment.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsTest/TestingEnvironment/TestingEnvironment.h>
 #include <TestFramework/Framework/TestFramework.h>
 
 // Include resource and state descriptions used in tests
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
@@ -81,12 +81,12 @@ XII_CREATE_SIMPLE_TEST(Device, ResourceCreation)
     // 1) Create a structured shader resource buffer (valid)
     {
       xiiGALBufferCreationDescription desc;
-      desc.m_uiSize = 256;
-      desc.m_BindFlags = xiiGALBindFlags::ShaderResource;
-      desc.m_Mode = xiiGALBufferMode::Structured;
+      desc.m_uiSize              = 256;
+      desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+      desc.m_Mode                = xiiGALBufferMode::Structured;
       desc.m_uiElementByteStride = 16;
-      desc.m_Usage = xiiGALResourceUsage::Mutable;
-      desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
+      desc.m_Usage               = xiiGALResourceUsage::Mutable;
+      desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
 
       xiiSharedPtr<xiiGALBuffer> pBuffer = pDevice->CreateBuffer(desc);
       XII_TEST_BOOL(pBuffer != nullptr);
@@ -94,15 +94,15 @@ XII_CREATE_SIMPLE_TEST(Device, ResourceCreation)
 
     // 2) Create a formatted buffer (valid) using a known format element size
     {
-      const xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::RGBA8UNormalized;
+      const xiiEnum<xiiGALResourceFormat>    format  = xiiGALResourceFormat::RGBA8UNormalized;
       const xiiGALResourceFormatDescription& fmtDesc = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
       xiiGALBufferCreationDescription desc;
-      desc.m_uiSize = 1024;
-      desc.m_BindFlags = xiiGALBindFlags::ShaderResource;
-      desc.m_Mode = xiiGALBufferMode::Formatted;
+      desc.m_uiSize              = 1024;
+      desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+      desc.m_Mode                = xiiGALBufferMode::Formatted;
       desc.m_uiElementByteStride = fmtDesc.GetElementSize();
-      desc.m_Usage = xiiGALResourceUsage::Mutable;
+      desc.m_Usage               = xiiGALResourceUsage::Mutable;
 
       xiiSharedPtr<xiiGALBuffer> pBuffer = pDevice->CreateBuffer(desc);
       XII_TEST_BOOL(pBuffer != nullptr);
@@ -111,12 +111,12 @@ XII_CREATE_SIMPLE_TEST(Device, ResourceCreation)
     // 3) Create a simple 2D texture (valid)
     {
       xiiGALTextureCreationDescription texDesc;
-      texDesc.m_Type = xiiGALResourceDimension::Texture2D;
-      texDesc.m_Size = xiiSizeU32(32, 32);
-      texDesc.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
+      texDesc.m_Size        = xiiSizeU32(32, 32);
+      texDesc.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
       texDesc.m_uiMipLevels = 1;
-      texDesc.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
-      texDesc.m_Usage = xiiGALResourceUsage::Mutable;
+      texDesc.m_BindFlags   = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
+      texDesc.m_Usage       = xiiGALResourceUsage::Mutable;
 
       xiiSharedPtr<xiiGALTexture> pTex = pDevice->CreateTexture(texDesc);
       XII_TEST_BOOL(pTex != nullptr);
@@ -136,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(Device, ResourceCreation)
     // 5) Create default blend state (no blending enabled): should succeed
     {
       xiiGALBlendStateCreationDescription blendDesc;
-      xiiSharedPtr<xiiGALBlendState> pBlend = pDevice->CreateBlendState(blendDesc);
+      xiiSharedPtr<xiiGALBlendState>      pBlend = pDevice->CreateBlendState(blendDesc);
       XII_TEST_BOOL(pBlend != nullptr);
     }
 
@@ -179,12 +179,12 @@ XII_CREATE_SIMPLE_TEST(Device, ViewsAndDefaultViews)
 
     // Create a texture with shader resource and render target bind flags and ensure default views exist
     xiiGALTextureCreationDescription texDesc;
-    texDesc.m_Type = xiiGALResourceDimension::Texture2D;
-    texDesc.m_Size = xiiSizeU32(16, 16);
-    texDesc.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
+    texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
+    texDesc.m_Size        = xiiSizeU32(16, 16);
+    texDesc.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
     texDesc.m_uiMipLevels = 1;
-    texDesc.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
-    texDesc.m_Usage = xiiGALResourceUsage::Mutable;
+    texDesc.m_BindFlags   = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
+    texDesc.m_Usage       = xiiGALResourceUsage::Mutable;
 
     xiiSharedPtr<xiiGALTexture> pTex = pDevice->CreateTexture(texDesc);
     XII_TEST_BOOL(pTex != nullptr);

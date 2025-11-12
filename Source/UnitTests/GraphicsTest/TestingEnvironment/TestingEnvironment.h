@@ -24,13 +24,13 @@ public:
 
   // Convenience helpers for tests
   virtual xiiResult CreateSwapChainForWindow(xiiUInt32 uiResolutionX = 960, xiiUInt32 uiResolutionY = 540) = 0;
-  virtual void      DestroySwapChain()                                                                    = 0;
+  virtual void      DestroySwapChain()                                                                     = 0;
 
-  virtual xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const = 0;
+  virtual xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const   = 0;
   virtual xiiSharedPtr<xiiGALTexture> GetDepthStencilTexture() const = 0;
 
   virtual void BeginFrame() = 0;
-  virtual void EndFrame() = 0;
+  virtual void EndFrame()   = 0;
 
   virtual void Present() = 0;
 
