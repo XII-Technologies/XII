@@ -832,10 +832,13 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment.PeekBack();
-
-      if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+      for (xiiUInt32 uiDepthResolveAttachmentIndex = 0U; uiDepthResolveAttachmentIndex < subpass.m_DepthStencilAttachment.GetCount(); ++uiDepthResolveAttachmentIndex)
       {
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment[uiDepthResolveAttachmentIndex];
+
+        if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          continue;
+
         // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
         // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
@@ -845,6 +848,23 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
         const xiiEnum<xiiGALResourceFormat>&   format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
         const xiiGALResourceFormatDescription& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
         XII_GAL_DEVICE_CHECK(depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+      }
+    }
+
+    if (!subpass.m_DepthResolveAttachment.IsEmpty())
+    {
+      for (xiiUInt32 uiDepthResolveAttachmentIndex = 0U; uiDepthResolveAttachmentIndex < subpass.m_DepthResolveAttachment.GetCount(); ++uiDepthResolveAttachmentIndex)
+      {
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_Attachment;
+
+        if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          continue;
+
+        // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
+        // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
+        // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
+        XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil resolve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiDepthResolveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+        XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_DepthStencilResolve == xiiGALDeviceFeatureState::Enabled, "Depth resolve attachment in sub pass {0} requires the DepthStencilResolve device feature.", uiSubPassIndex);
       }
     }
 
@@ -889,6 +909,35 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
           // If pResolveAttachments is not NULL, each resolve attachment that is not VK_ATTACHMENT_UNUSED must have the same VkFormat as its corresponding color attachment.
           // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkSubpassDescription-pResolveAttachments-00850
           XII_GAL_DEVICE_CHECK(false, "The format ({0}) of render target attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding resolve attachment at index {5}.", description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format.GetValue(), attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, description.m_Attachments[resolveAttacmentReference.m_uiAttachmentIndex].m_Format.GetValue(), resolveAttacmentReference.m_uiAttachmentIndex);
+        }
+      }
+    }
+
+    if (!subpass.m_DepthResolveAttachment.IsEmpty())
+    {
+      for (xiiUInt32 uiDepthStencilAttachmentIndex = 0U; uiDepthStencilAttachmentIndex < subpass.m_DepthStencilAttachment.GetCount(); ++uiDepthStencilAttachmentIndex)
+      {
+        const xiiGALAttachmentReferenceDescription& depthStencilAttachmentReference = subpass.m_DepthStencilAttachment[uiDepthStencilAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& depthResolveAttacmentReference  = subpass.m_DepthResolveAttachment[uiDepthStencilAttachmentIndex].m_Attachment;
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && depthStencilAttachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The depth-stencil resolve attachment of sub pass {0} is not unused but the depth-stencil attachment reference {1} is unused.", uiSubPassIndex, uiDepthStencilAttachmentIndex);
+        }
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_uiSampleCount == 1U)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The depth-stencil attachment at index {0} referenced by attachment reference {1} of sub pass {2} is used as the source of a resolve operation, but its sample count is 1.", depthStencilAttachmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex);
+        }
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_uiSampleCount != 1U)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The depth-stencil resolve attachment at index {0} referenced by attachment reference {1} of sub pass {2} must have a sample count of 1.", depthResolveAttacmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex);
+        }
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && depthStencilAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format != description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The format ({0}) of depth-stencil attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding depth-stencil resolve attachment at index {5}.", description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format.GetValue(), depthStencilAttachmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex, description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format.GetValue(), depthResolveAttacmentReference.m_uiAttachmentIndex);
         }
       }
     }

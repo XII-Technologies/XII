@@ -58,6 +58,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_NativeMultiDraw                    = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports a dedicated command that can be used to issue multiple draw calls with a single command (e.g. vkCmdDrawMultiExt).
   xiiEnum<xiiGALDeviceFeatureState> m_AsynchronousShaderCompilation      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports asynchronous shader compilation.
   xiiEnum<xiiGALDeviceFeatureState> m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports SV_RenderTargetArrayIndex semantic in the vertex shader.
+  xiiEnum<xiiGALDeviceFeatureState> m_DepthStencilResolve                = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports depth/stencil resolve operations.
 };
 
 /// \brief This describes the optimized depth-stencil clear value.
