@@ -95,7 +95,7 @@ static void print_apple_arm_features(void)
 }
 #endif
 
-/* Generic ARM detection for Linux and Windows. */
+/// \brief Generic ARM detection for Linux and Windows.
 static void print_generic_arm_features(void)
 {
 #if defined(__linux__)
@@ -161,7 +161,7 @@ static void print_generic_arm_features(void)
 #endif
 }
 #if defined(HAVE_X86_CPUID)
-/* Extract x86/x64 feature detection and printing into its own function. */
+/// \brief Extract x86/x64 feature detection and printing into its own function.
 static void print_x86_features(void)
 {
   int cpuInfo[4];
@@ -222,7 +222,7 @@ int main(void)
 #elif defined(__aarch64__) || defined(__arm64__)
   print_generic_arm_features();
 #else
-  /* No CPU feature detection available on this platform. */
+  /// \brief No CPU feature detection available on this platform.
 #endif
   return 0;
 }
