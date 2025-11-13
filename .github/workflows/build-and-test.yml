@@ -37,6 +37,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Install dependencies (Linux/macOS)
+        shell: bash
         if: runner.os != 'Windows'
         run: |
           if [ "${{ runner.os }}" = "Linux" ]; then
@@ -48,6 +49,7 @@ jobs:
           fi
 
       - name: Configure CMake
+        shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             cmake.exe -S . -B build -G "Visual Studio 17 2022" -A x64 \
@@ -58,6 +60,7 @@ jobs:
           fi
 
       - name: Build Solution
+        shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             msbuild build/solution.sln /p:Configuration=Dev
@@ -67,14 +70,17 @@ jobs:
 
       # Windows-specific unit test executables
       - name: Run FoundationTest (Windows)
+        shell: bash
         if: runner.os == 'Windows'
         run: build/Output/Bin/WinVs2022Dev64/FoundationTest.exe -nosave -nogui -all -outputDir Test/FoundationTest
 
       - name: Run CoreTest (Windows)
+        shell: bash
         if: runner.os == 'Windows'
         run: build/Output/Bin/WinVs2022Dev64/CoreTest.exe -nosave -nogui -all -outputDir Test/CoreTest
 
       - name: Run ToolsFoundationTest (Windows)
+        shell: bash
         if: runner.os == 'Windows'
         run: build/Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
 
@@ -94,14 +100,17 @@ jobs:
 
       # macOS/Linux equivalents (no .exe suffix)
       - name: Run FoundationTest (Unix)
+        shell: bash
         if: runner.os != 'Windows'
         run: build/Output/Bin/FoundationTest -nosave -nogui -all -outputDir Test/FoundationTest
 
       - name: Run CoreTest (Unix)
+        shell: bash
         if: runner.os != 'Windows'
         run: build/Output/Bin/CoreTest -nosave -nogui -all -outputDir Test/CoreTest
 
       - name: Run ToolsFoundationTest (Unix)
+        shell: bash
         if: runner.os != 'Windows'
         run: build/Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
 
