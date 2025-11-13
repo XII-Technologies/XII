@@ -22,6 +22,14 @@ jobs:
           lfs: true
           clean: false
 
+      - name: Print working directory
+        run: |
+          echo "Current working directory:"
+          pwd
+          echo "Listing contents:"
+          ls -al
+
+
       - name: Read SDK Version
         id: sdk-version
         uses: juliangruber/read-file-action@v1
