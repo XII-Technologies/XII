@@ -22,19 +22,11 @@ jobs:
           lfs: true
           clean: false
 
-      - name: Print working directory
-        run: |
-          echo "Current working directory:"
-          pwd
-          echo "Listing contents:"
-          ls -al
-
-
       - name: Read SDK Version
         id: sdk-version
         uses: juliangruber/read-file-action@v1
         with:
-          path: repo/version.txt
+          path: ./version.txt
 
       - name: Echo SDK Version
         run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
@@ -58,10 +50,10 @@ jobs:
       - name: Configure CMake
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 \
+            cmake.exe -S . -B build -G "Visual Studio 17 2022" -A x64 \
               -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=ON -DXII_BUILD_UNITTESTS=ON
           else
-            cmake -S repo -B build -G Ninja \
+            cmake -S . -B build -G Ninja \
               -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=ON -DXII_BUILD_UNITTESTS=ON
           fi
 
