@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
 #  include <intrin.h>
-// Wrapper functions for MSVC.
+// Wrapper functions for MSVC on x86/x64.
 void cpuid(int pCpuInfo[4], int iFunctionID)
 {
   __cpuid(pCpuInfo, iFunctionID);
@@ -12,9 +12,9 @@ void cpuidex(int pCpuInfo[4], int iFunctionID, int iSubFunctionID)
 {
   __cpuidex(pCpuInfo, iFunctionID, iSubFunctionID);
 }
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
 #  include <cpuid.h>
-// Wrapper functions for GCC/Clang.
+// Wrapper functions for GCC/Clang on x86/x64.
 void cpuid(int pCpuInfo[4], int iFunctionID)
 {
   __cpuid(iFunctionID, pCpuInfo[0], pCpuInfo[1], pCpuInfo[2], pCpuInfo[3]);
@@ -24,7 +24,24 @@ void cpuidex(int pCpuInfo[4], int iFunctionID, int iSubFunctionID)
   __cpuid_count(iFunctionID, iSubFunctionID, pCpuInfo[0], pCpuInfo[1], pCpuInfo[2], pCpuInfo[3]);
 }
 #else
-#  error "Compiler not supported"
+// Non-x86 platforms: provide safe stubs so the probe compiles and runs (will report no x86 features).
+void cpuid(int pCpuInfo[4], int iFunctionID)
+{
+  (void)iFunctionID;
+  pCpuInfo[0] = 0;
+  pCpuInfo[1] = 0;
+  pCpuInfo[2] = 0;
+  pCpuInfo[3] = 0;
+}
+void cpuidex(int pCpuInfo[4], int iFunctionID, int iSubFunctionID)
+{
+  (void)iFunctionID;
+  (void)iSubFunctionID;
+  pCpuInfo[0] = 0;
+  pCpuInfo[1] = 0;
+  pCpuInfo[2] = 0;
+  pCpuInfo[3] = 0;
+}
 #endif
 
 int main(void)
