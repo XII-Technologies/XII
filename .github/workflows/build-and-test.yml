@@ -2,10 +2,10 @@ name: XII Build + Unit Tests
 
 on:
   push:
-    branches: [ dev, main ]
+    branches: [dev, main]
   pull_request:
   schedule:
-    - cron: '0 6 * * *' # nightly run
+    - cron: "0 6 * * *" # nightly run
 
 jobs:
   build-and-test:
@@ -36,31 +36,31 @@ jobs:
         if: runner.os == 'Windows'
         uses: microsoft/setup-msbuild@v2
 
-      - name: Install dependencies (Linux/macOS)
-        shell: bash
-        if: runner.os != 'Windows'
+      - name: Install dependencies (Linux only)
+        if: runner.os == 'Linux'
         run: |
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y cmake ninja-build
-          fi
-          if [ "${{ runner.os }}" = "macOS" ]; then
-            brew install cmake ninja
-          fi
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+
+      - name: Install dependencies (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake
 
       - name: Configure CMake
-        shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             cmake.exe -S . -B build -G "Visual Studio 17 2022" -A x64 \
-              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=ON -DXII_BUILD_UNITTESTS=ON
-          else
+              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON
+          elif [ "${{ runner.os }}" = "Linux" ]; then
             cmake -S . -B build -G Ninja \
-              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=ON -DXII_BUILD_UNITTESTS=ON
+              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON
+          else
+            cmake -S . -B build -G Xcode \
+              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON
           fi
 
       - name: Build Solution
-        shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
             msbuild build/solution.sln /p:Configuration=Dev
@@ -68,65 +68,30 @@ jobs:
             cmake --build build --config Debug
           fi
 
-      # Windows-specific unit test executables
-      - name: Run FoundationTest (Windows)
-        shell: bash
+      # Unit tests
+      - name: Run FoundationTest
         if: runner.os == 'Windows'
         run: build/Output/Bin/WinVs2022Dev64/FoundationTest.exe -nosave -nogui -all -outputDir Test/FoundationTest
 
-      - name: Run CoreTest (Windows)
-        shell: bash
+      - name: Run CoreTest
         if: runner.os == 'Windows'
         run: build/Output/Bin/WinVs2022Dev64/CoreTest.exe -nosave -nogui -all -outputDir Test/CoreTest
 
-      - name: Run ToolsFoundationTest (Windows)
-        shell: bash
+      - name: Run ToolsFoundationTest
         if: runner.os == 'Windows'
         run: build/Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
 
-      # - name: Run GraphicsTest (Windows)
-      #   if: runner.os == 'Windows'
-      #   run: build/Output/Bin/WinVs2022Dev64/GraphicsTest.exe -nosave -nogui -all -outputDir Test/GraphicsTest
-
-      # - name: Run EditorTest (Windows)
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     set QT_PLUGIN_PATH=build/Output/Bin/WinVs2022Dev64
-      #     build/Output/Bin/WinVs2022Dev64/EditorTest.exe -nosave -nogui -all -outputDir Test/EditorTest
-
-      # - name: Run GameEngineTest (Windows)
-      #   if: runner.os == 'Windows'
-      #   run: build/Output/Bin/WinVs2022Dev64/GameEngineTest.exe -nosave -nogui -all -outputDir Test/GameEngineTest
-
-      # macOS/Linux equivalents (no .exe suffix)
       - name: Run FoundationTest (Unix)
-        shell: bash
         if: runner.os != 'Windows'
         run: build/Output/Bin/FoundationTest -nosave -nogui -all -outputDir Test/FoundationTest
 
       - name: Run CoreTest (Unix)
-        shell: bash
         if: runner.os != 'Windows'
         run: build/Output/Bin/CoreTest -nosave -nogui -all -outputDir Test/CoreTest
 
       - name: Run ToolsFoundationTest (Unix)
-        shell: bash
         if: runner.os != 'Windows'
         run: build/Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
-
-      # - name: Run GraphicsTest (Unix)
-      #   if: runner.os != 'Windows'
-      #   run: build/Output/Bin/GraphicsTest -nosave -nogui -all -outputDir Test/GraphicsTest
-
-      # - name: Run EditorTest (Unix)
-      #   if: runner.os != 'Windows'
-      #   run: |
-      #     export QT_PLUGIN_PATH=build/Output/Bin
-      #     build/Output/Bin/EditorTest -nosave -nogui -all -outputDir Test/EditorTest
-
-      # - name: Run GameEngineTest (Unix)
-      #   if: runner.os != 'Windows'
-      #   run: build/Output/Bin/GameEngineTest -nosave -nogui -all -outputDir Test/GameEngineTest
 
       # Upload test results artifacts
       - name: Upload Test Results
