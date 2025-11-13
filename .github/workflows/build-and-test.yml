@@ -42,13 +42,15 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build
+          sudo apt-get install -y cmake ninja-build uuid-dev mold libfreetype-dev libtinfo5 \
+                                  libwayland-dev libxkbcommon-dev \
+                                  qt6-base-dev libqt6svg6-dev qt6-base-private-dev
 
       - name: Install dependencies (macOS only)
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          brew install cmake
+          brew install cmake qt6
 
       - name: Configure CMake
         shell: bash
@@ -70,7 +72,7 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             msbuild build/solution.sln /p:Configuration=Dev
           else
-            cmake --build build --config Debug
+            cmake --build build --config Dev
           fi
 
       # Unit tests
