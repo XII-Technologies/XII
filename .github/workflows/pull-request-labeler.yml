@@ -7,7 +7,7 @@ on:
 jobs:
   auto-label:
     name: Label PRs Based on File Paths
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pull-requests: write

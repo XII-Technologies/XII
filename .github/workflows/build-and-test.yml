@@ -1,0 +1,129 @@
+name: XII Build + Unit Tests
+
+on:
+  push:
+    branches: [ dev, main ]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * *' # nightly run
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [windows-2025, ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout XII repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+          clean: false
+
+      - name: Read SDK Version
+        id: sdk-version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: repo/version.txt
+
+      - name: Echo SDK Version
+        run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
+
+      # Platform-specific setup
+      - name: Setup MSBuild (Windows only)
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y cmake ninja-build
+          fi
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            brew install cmake ninja
+          fi
+
+      - name: Configure CMake
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake.exe -S repo -B build -G "Visual Studio 17 2022" -A x64 \
+              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=ON -DXII_BUILD_UNITTESTS=ON
+          else
+            cmake -S repo -B build -G Ninja \
+              -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=ON -DXII_BUILD_UNITTESTS=ON
+          fi
+
+      - name: Build Solution
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            msbuild build/solution.sln /p:Configuration=Dev
+          else
+            cmake --build build --config Debug
+          fi
+
+      # Windows-specific unit test executables
+      - name: Run FoundationTest (Windows)
+        if: runner.os == 'Windows'
+        run: build/Output/Bin/WinVs2022Dev64/FoundationTest.exe -nosave -nogui -all -outputDir Test/FoundationTest
+
+      - name: Run CoreTest (Windows)
+        if: runner.os == 'Windows'
+        run: build/Output/Bin/WinVs2022Dev64/CoreTest.exe -nosave -nogui -all -outputDir Test/CoreTest
+
+      - name: Run ToolsFoundationTest (Windows)
+        if: runner.os == 'Windows'
+        run: build/Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
+
+      # - name: Run GraphicsTest (Windows)
+      #   if: runner.os == 'Windows'
+      #   run: build/Output/Bin/WinVs2022Dev64/GraphicsTest.exe -nosave -nogui -all -outputDir Test/GraphicsTest
+
+      # - name: Run EditorTest (Windows)
+      #   if: runner.os == 'Windows'
+      #   run: |
+      #     set QT_PLUGIN_PATH=build/Output/Bin/WinVs2022Dev64
+      #     build/Output/Bin/WinVs2022Dev64/EditorTest.exe -nosave -nogui -all -outputDir Test/EditorTest
+
+      # - name: Run GameEngineTest (Windows)
+      #   if: runner.os == 'Windows'
+      #   run: build/Output/Bin/WinVs2022Dev64/GameEngineTest.exe -nosave -nogui -all -outputDir Test/GameEngineTest
+
+      # macOS/Linux equivalents (no .exe suffix)
+      - name: Run FoundationTest (Unix)
+        if: runner.os != 'Windows'
+        run: build/Output/Bin/FoundationTest -nosave -nogui -all -outputDir Test/FoundationTest
+
+      - name: Run CoreTest (Unix)
+        if: runner.os != 'Windows'
+        run: build/Output/Bin/CoreTest -nosave -nogui -all -outputDir Test/CoreTest
+
+      - name: Run ToolsFoundationTest (Unix)
+        if: runner.os != 'Windows'
+        run: build/Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
+
+      # - name: Run GraphicsTest (Unix)
+      #   if: runner.os != 'Windows'
+      #   run: build/Output/Bin/GraphicsTest -nosave -nogui -all -outputDir Test/GraphicsTest
+
+      # - name: Run EditorTest (Unix)
+      #   if: runner.os != 'Windows'
+      #   run: |
+      #     export QT_PLUGIN_PATH=build/Output/Bin
+      #     build/Output/Bin/EditorTest -nosave -nogui -all -outputDir Test/EditorTest
+
+      # - name: Run GameEngineTest (Unix)
+      #   if: runner.os != 'Windows'
+      #   run: build/Output/Bin/GameEngineTest -nosave -nogui -all -outputDir Test/GameEngineTest
+
+      # Upload test results artifacts
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: XII.TestResults.${{ matrix.os }}.${{ steps.sdk-version.outputs.content }}
+          path: Test
+          retention-days: 7
