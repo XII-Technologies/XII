@@ -10,6 +10,7 @@ on:
 jobs:
   build-and-test:
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2025, ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
