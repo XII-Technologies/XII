@@ -66,14 +66,15 @@ jobs:
               -DCMAKE_BUILD_TYPE=Dev -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_ENABLE_FOLDER_UNITY_FILES=ON -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON
           fi
 
-      - name: Build Solution
+      - name: Build Solution (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: msbuild build/solution.sln /p:Configuration=Dev
+
+      - name: Build Solution (Linux/macOS)
+        if: runner.os != 'Windows'
         shell: bash
-        run: |
-          if [ "${{ runner.os }}" = "Windows" ]; then
-            msbuild build/solution.sln /p:Configuration=Dev
-          else
-            cmake --build build --config Dev
-          fi
+        run: cmake --build build --config Dev
 
       # Unit tests
       - name: Run FoundationTest
