@@ -43,7 +43,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build uuid-dev mold libfreetype-dev libtinfo6 \
-                                  libwayland-dev wayland-protocols libxkbcommon-dev pkg-config \
+                                  libwayland-dev wayland-protocols libxkbcommon-dev pkg-config libdrm-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev libpipewire-0.3-dev libdecor-0-dev \
                                   qt6-base-dev libqt6svg6-dev qt6-base-private-dev
 
       - name: Install dependencies (macOS only)
