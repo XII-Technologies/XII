@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2025] # TODO: ubuntu-24.04, macos-15
+        os: [windows-2025, macos-15] # TODO: ubuntu-24.04, macos-15
     runs-on: ${{ matrix.os }}
 
     steps:

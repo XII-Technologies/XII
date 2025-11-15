@@ -293,15 +293,22 @@ function(xii_set_simd_build_flags TARGET_NAME)
       get_property(cpuSimdFlags GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS)
 
       if(cpuSimdFlags)
-        # If the probe detected NEON support, request the compiler option when supported.
         if("NEON" IN_LIST cpuSimdFlags)
-          target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+          if(NOT XII_CMAKE_PLATFORM_OSX)
+            # On non-OSX ARM targets, request NEON explicitly.
+            target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+          else()
+            # On macOS ARM (Apple Silicon), use appropriate flags instead.
+            target_compile_options(${TARGET_NAME} PRIVATE -march=armv8-a)
+          endif()
         endif()
       else()
         # No detected flags available; fall back to compiler capability check for NEON.
         check_cxx_compiler_flag(-mfpu=neon HAS_NEON)
-        if(HAS_NEON)
+        if(HAS_NEON AND NOT XII_CMAKE_PLATFORM_OSX)
           target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+        elseif(XII_CMAKE_PLATFORM_OSX)
+          target_compile_options(${TARGET_NAME} PRIVATE -march=armv8-a)
         endif()
       endif()
     endif()
