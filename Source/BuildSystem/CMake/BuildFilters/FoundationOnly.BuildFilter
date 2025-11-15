@@ -1,5 +1,5 @@
 set_property(GLOBAL PROPERTY XII_BUILD_FILTER_FoundationOnly
-    Foundation
-    enet
-    zstd
+  Foundation
+  enet
+  zstd
 )
