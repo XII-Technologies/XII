@@ -81,32 +81,32 @@ jobs:
       - name: Run FoundationTest
         if: runner.os == 'Windows'
         shell: bash
-        run: build/Output/Bin/WinVs2022Dev64/FoundationTest.exe -nosave -nogui -all -outputDir Test/FoundationTest
+        run: Output/Bin/WinVs2022Dev64/FoundationTest.exe -nosave -nogui -all -outputDir Test/FoundationTest
 
       - name: Run CoreTest
         if: runner.os == 'Windows'
         shell: bash
-        run: build/Output/Bin/WinVs2022Dev64/CoreTest.exe -nosave -nogui -all -outputDir Test/CoreTest
+        run: Output/Bin/WinVs2022Dev64/CoreTest.exe -nosave -nogui -all -outputDir Test/CoreTest
 
       - name: Run ToolsFoundationTest
         if: runner.os == 'Windows'
         shell: bash
-        run: build/Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
+        run: Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
 
       - name: Run FoundationTest (Unix)
         if: runner.os != 'Windows'
         shell: bash
-        run: build/Output/Bin/FoundationTest -nosave -nogui -all -outputDir Test/FoundationTest
+        run: Output/Bin/FoundationTest -nosave -nogui -all -outputDir Test/FoundationTest
 
       - name: Run CoreTest (Unix)
         if: runner.os != 'Windows'
         shell: bash
-        run: build/Output/Bin/CoreTest -nosave -nogui -all -outputDir Test/CoreTest
+        run: Output/Bin/CoreTest -nosave -nogui -all -outputDir Test/CoreTest
 
       - name: Run ToolsFoundationTest (Unix)
         if: runner.os != 'Windows'
         shell: bash
-        run: build/Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
+        run: Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
 
       # Upload test results artifacts
       - name: Upload Test Results
