@@ -1,3 +1,4 @@
+
 #include <Foundation/Containers/HybridArray.h>
 
 template <typename T, xiiUInt32 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>

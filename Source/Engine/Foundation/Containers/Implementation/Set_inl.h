@@ -1,4 +1,3 @@
-#pragma once
 
 #include <Foundation/Math/Math.h>
 
@@ -21,7 +20,9 @@ void xiiSetBase<KeyType, Comparer>::IteratorBase<REVERSE>::Advance(xiiInt32 dir0
     m_pElement = m_pElement->m_pLink[dir1];
 
     while (m_pElement->m_pLink[dir0] != m_pElement->m_pLink[dir0]->m_pLink[dir0])
+    {
       m_pElement = m_pElement->m_pLink[dir0];
+    }
 
     return;
   }
@@ -37,7 +38,9 @@ void xiiSetBase<KeyType, Comparer>::IteratorBase<REVERSE>::Advance(xiiInt32 dir0
   if ((m_pElement->m_pParent != m_pElement->m_pParent->m_pParent) && (m_pElement->m_pParent->m_pLink[dir1] == m_pElement))
   {
     while (m_pElement->m_pParent->m_pLink[dir1] == m_pElement)
+    {
       m_pElement = m_pElement->m_pParent;
+    }
 
     // if we are at the root node..
     if ((m_pElement->m_pParent == nullptr) || (m_pElement->m_pParent == m_pElement->m_pParent->m_pParent))
@@ -125,14 +128,18 @@ void xiiSetBase<KeyType, Comparer>::operator=(const xiiSetBase<KeyType, Comparer
   Clear();
 
   for (Iterator it = rhs.GetIterator(); it.IsValid(); ++it)
+  {
     Insert(it.Key());
+  }
 }
 
 template <typename KeyType, typename Comparer>
 void xiiSetBase<KeyType, Comparer>::Clear()
 {
   for (Iterator it = GetIterator(); it.IsValid(); ++it)
+  {
     xiiMemoryUtils::Destruct<Node>(it.m_pElement, 1);
+  }
 
   m_pFreeElementStack = nullptr;
   m_Elements.Clear();
@@ -159,7 +166,6 @@ XII_ALWAYS_INLINE xiiUInt32 xiiSetBase<KeyType, Comparer>::GetCount() const
   return m_uiCount;
 }
 
-
 template <typename KeyType, typename Comparer>
 XII_ALWAYS_INLINE typename xiiSetBase<KeyType, Comparer>::Iterator xiiSetBase<KeyType, Comparer>::GetIterator() const
 {
@@ -181,7 +187,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Get
   Node* pNode = m_pRoot;
 
   while (pNode->m_pLink[0] != &m_NilNode)
+  {
     pNode = pNode->m_pLink[0];
+  }
 
   return pNode;
 }
@@ -195,7 +203,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Get
   Node* pNode = m_pRoot;
 
   while (pNode->m_pLink[1] != &m_NilNode)
+  {
     pNode = pNode->m_pLink[1];
+  }
 
   return pNode;
 }
@@ -265,7 +275,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Int
       return pNode;
 
     if (dir == 0)
+    {
       pNodeSmaller = pNode;
+    }
 
     pNode = pNode->m_pLink[dir];
   }
@@ -300,7 +312,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Int
     }
 
     if (dir == 0)
+    {
       pNodeSmaller = pNode;
+    }
 
     pNode = pNode->m_pLink[dir];
   }
@@ -339,9 +353,13 @@ void xiiSetBase<KeyType, Comparer>::Intersection(const xiiSetBase<KeyType, Compa
   for (auto it = GetIterator(); it.IsValid();)
   {
     if (!operand.Contains(it.Key()))
+    {
       it = Remove(it);
+    }
     else
+    {
       ++it;
+    }
   }
 }
 
@@ -500,7 +518,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Ins
     while (--top >= 0)
     {
       if (top != 0)
+      {
         dir = up[top - 1]->m_pLink[1] == up[top];
+      }
 
       up[top] = SkewNode(up[top]);
       up[top] = SplitNode(up[top]);
@@ -511,7 +531,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Ins
         up[top - 1]->m_pLink[dir]->m_pParent = up[top - 1];
       }
       else
+      {
         root = up[top];
+      }
     }
   }
 
@@ -565,7 +587,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Rem
         up[top - 1]->m_pLink[dir]->m_pParent = up[top - 1];
       }
       else
+      {
         root = it->m_pLink[1];
+      }
     }
     else
     {
@@ -600,7 +624,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Rem
       if ((up[top]->m_pLink[0]->m_uiLevel < up[top]->m_uiLevel - 1) || (up[top]->m_pLink[1]->m_uiLevel < up[top]->m_uiLevel - 1))
       {
         if (up[top]->m_pLink[1]->m_uiLevel > --up[top]->m_uiLevel)
+        {
           up[top]->m_pLink[1]->m_uiLevel = up[top]->m_uiLevel;
+        }
 
         up[top]                        = SkewNode(up[top]);
         up[top]->m_pLink[1]            = SkewNode(up[top]->m_pLink[1]);
@@ -649,7 +675,9 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Rem
       }
     }
     else
+    {
       root = ToErase;
+    }
 
     ToErase->m_uiLevel             = ToOverride->m_uiLevel;
     ToErase->m_pLink[0]            = ToOverride->m_pLink[0];

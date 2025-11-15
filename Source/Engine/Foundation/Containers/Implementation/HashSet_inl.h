@@ -234,7 +234,9 @@ void xiiHashSetBase<K, H>::Compact()
   {
     const xiiUInt32 uiNewCapacity = (m_uiCount + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
     if (m_uiCapacity != uiNewCapacity)
+    {
       SetCapacity(uiNewCapacity);
+    }
   }
 }
 
@@ -280,15 +282,20 @@ bool xiiHashSetBase<K, H>::Insert(CompatibleKeyType&& key)
     if (IsDeletedEntry(uiIndex))
     {
       if (uiDeletedIndex == xiiInvalidIndex)
+      {
         uiDeletedIndex = uiIndex;
+      }
     }
     else if (H::Equal(m_pEntries[uiIndex], key))
     {
       return true;
     }
+
     ++uiIndex;
     if (uiIndex == m_uiCapacity)
+    {
       uiIndex = 0;
+    }
 
     ++uiCounter;
   }
@@ -326,7 +333,9 @@ typename xiiHashSetBase<K, H>::ConstIterator xiiHashSetBase<K, H>::Remove(const 
   xiiUInt32     uiIndex = pos.m_uiCurrentIndex;
   ++it;
   --it.m_uiCurrentCount;
+
   RemoveInternal(uiIndex);
+
   return it;
 }
 
@@ -337,7 +346,9 @@ void xiiHashSetBase<K, H>::RemoveInternal(xiiUInt32 uiIndex)
 
   xiiUInt32 uiNextIndex = uiIndex + 1;
   if (uiNextIndex == m_uiCapacity)
+  {
     uiNextIndex = 0;
+  }
 
   // if the next entry is free we are at the end of a chain and
   // can immediately mark this entry as free as well
@@ -354,7 +365,9 @@ void xiiHashSetBase<K, H>::RemoveInternal(xiiUInt32 uiIndex)
       MarkEntryAsFree(uiPrevIndex);
 
       if (uiPrevIndex == 0)
+      {
         uiPrevIndex = m_uiCapacity;
+      }
       --uiPrevIndex;
     }
   }
@@ -427,9 +440,13 @@ void xiiHashSetBase<K, H>::Intersection(const xiiHashSetBase<K, H>& operand)
   for (auto it = GetIterator(); it.IsValid();)
   {
     if (!operand.Contains(it.Key()))
+    {
       it = Remove(it);
+    }
     else
+    {
       ++it;
+    }
   }
 }
 
@@ -513,7 +530,9 @@ inline xiiUInt32 xiiHashSetBase<K, H>::FindEntry(xiiUInt32 uiHash, const Compati
 
       ++uiIndex;
       if (uiIndex == m_uiCapacity)
+      {
         uiIndex = 0;
+      }
 
       ++uiCounter;
     }

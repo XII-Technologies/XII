@@ -79,7 +79,9 @@ void xiiDequeBase<T, Construct>::operator=(const xiiDequeBase<T, Construct>& rhs
 
   // copy construct all the elements
   for (xiiUInt32 i = 0; i < rhs.m_uiCount; ++i)
+  {
     xiiMemoryUtils::CopyConstruct(&ElementAt(i), rhs[i], 1);
+  }
 }
 
 template <typename T, bool Construct>
@@ -88,7 +90,9 @@ void xiiDequeBase<T, Construct>::operator=(xiiDequeBase<T, Construct>&& rhs)
   static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
   if (m_pAllocator != rhs.m_pAllocator)
+  {
     operator=(static_cast<xiiDequeBase<T, Construct>&>(rhs));
+  }
   else
   {
     DeallocateAll();
@@ -131,7 +135,9 @@ void xiiDequeBase<T, Construct>::Clear()
   if (Construct)
   {
     for (xiiUInt32 i = 0; i < m_uiCount; ++i)
+    {
       xiiMemoryUtils::Destruct<T>(&operator[](i), 1);
+    }
   }
 
   m_uiCount = 0;
@@ -195,9 +201,13 @@ void xiiDequeBase<T, Construct>::Reserve(xiiUInt32 uiCount)
 
     // if the new first active chunk is to the left
     if (uiSpareChunksStart < uiCurFirstChunk)
+    {
       MoveIndexChunksLeft(uiCurFirstChunk - uiSpareChunksStart);
+    }
     else
+    {
       MoveIndexChunksRight(uiSpareChunksStart - uiCurFirstChunk);
+    }
 
     XII_ASSERT_DEBUG(m_uiFirstElement > 0, "Did not achieve the desired effect.");
     XII_ASSERT_DEBUG(GetCurMaxCount() >= uiCount, "Did not achieve the desired effect ({0} >= {1}).", GetCurMaxCount(), uiCount);
@@ -233,7 +243,6 @@ void xiiDequeBase<T, Construct>::Reserve(xiiUInt32 uiCount)
     m_uiFirstElement += 16 * CHUNK_SIZE(T);
 
     XII_ASSERT_DEBUG(m_uiFirstElement == (16 * CHUNK_SIZE(T)) + (m_uiFirstElement % CHUNK_SIZE(T)), "");
-
 
     XII_DELETE_RAW_BUFFER(m_pAllocator, m_pChunks);
     m_pChunks  = pNewChunksArray;
@@ -315,7 +324,9 @@ void xiiDequeBase<T, Construct>::CompactIndexArray(xiiUInt32 uiMinChunksToKeep)
         ++iPos;
 
         if (iPos == 16)
+        {
           iPos += uiRequiredChunks;
+        }
       }
     }
 
@@ -330,7 +341,9 @@ void xiiDequeBase<T, Construct>::CompactIndexArray(xiiUInt32 uiMinChunksToKeep)
         ++iPos;
 
         if (iPos == 16)
+        {
           iPos += uiRequiredChunks;
+        }
       }
     }
   }
@@ -538,7 +551,9 @@ inline void xiiDequeBase<T, Construct>::PopBack(xiiUInt32 uiElements)
   for (xiiUInt32 i = 0; i < uiElements; ++i)
   {
     if (Construct)
+    {
       xiiMemoryUtils::Destruct(&operator[](m_uiCount - 1), 1);
+    }
 
     --m_uiCount;
   }
@@ -679,7 +694,9 @@ void xiiDequeBase<T, Construct>::RemoveAtAndSwap(xiiUInt32 uiIndex)
   XII_ASSERT_DEV(uiIndex < m_uiCount, "Cannot remove element {0}, the deque only contains {1} elements.", uiIndex, m_uiCount);
 
   if (uiIndex + 1 < m_uiCount) // do not copy over the same element, if uiIndex is actually the last element
+  {
     operator[](uiIndex) = PeekBack();
+  }
 
   PopBack();
 }
@@ -693,7 +710,9 @@ XII_FORCE_INLINE void xiiDequeBase<T, Construct>::MoveIndexChunksLeft(xiiUInt32 
 
   // ripple the chunks from the back to the front (in place)
   for (xiiUInt32 front = 0; front < uiRemainingChunks; ++front)
+  {
     xiiMath::Swap(m_pChunks[uiNewFirstChunk + front], m_pChunks[front + uiCurFirstChunk]);
+  }
 
   // just ensures that the following subtraction is possible
   XII_ASSERT_DEBUG(m_uiFirstElement > uiChunkDiff * CHUNK_SIZE(T), "");
@@ -711,7 +730,9 @@ XII_FORCE_INLINE void xiiDequeBase<T, Construct>::MoveIndexChunksRight(xiiUInt32
 
   // ripple the chunks from the front to the back (in place)
   for (xiiUInt32 i = 0; i < uiCopyChunks; ++i)
+  {
     xiiMath::Swap(m_pChunks[uiLastChunk - i], m_pChunks[uiLastChunk + uiChunkDiff - i]);
+  }
 
   // adjust which element is the first by how much the index array has been moved
   m_uiFirstElement += uiChunkDiff * CHUNK_SIZE(T);

@@ -1,4 +1,3 @@
-#pragma once
 
 #include <Foundation/Math/Math.h>
 
@@ -21,7 +20,9 @@ void xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Advance
     m_pElement = m_pElement->m_pLink[dir1];
 
     while (m_pElement->m_pLink[dir0] != m_pElement->m_pLink[dir0]->m_pLink[dir0])
+    {
       m_pElement = m_pElement->m_pLink[dir0];
+    }
 
     return;
   }
@@ -37,7 +38,9 @@ void xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Advance
   if ((m_pElement->m_pParent != m_pElement->m_pParent->m_pParent) && (m_pElement->m_pParent->m_pLink[dir1] == m_pElement))
   {
     while (m_pElement->m_pParent->m_pLink[dir1] == m_pElement)
+    {
       m_pElement = m_pElement->m_pParent;
+    }
 
     // if we are at the root node..
     if ((m_pElement->m_pParent == nullptr) || (m_pElement->m_pParent == m_pElement->m_pParent->m_pParent))
@@ -164,14 +167,18 @@ void xiiMapBase<KeyType, ValueType, Comparer>::operator=(const xiiMapBase<KeyTyp
   Clear();
 
   for (ConstIterator it = rhs.GetIterator(); it.IsValid(); ++it)
+  {
     Insert(it.Key(), it.Value());
+  }
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
 void xiiMapBase<KeyType, ValueType, Comparer>::Clear()
 {
   for (Iterator it = GetIterator(); it.IsValid(); ++it)
+  {
     xiiMemoryUtils::Destruct<Node>(it.m_pElement, 1);
+  }
 
   m_pFreeElementStack = nullptr;
   m_Elements.Clear();
@@ -197,7 +204,6 @@ XII_ALWAYS_INLINE xiiUInt32 xiiMapBase<KeyType, ValueType, Comparer>::GetCount()
 {
   return m_uiCount;
 }
-
 
 template <typename KeyType, typename ValueType, typename Comparer>
 XII_ALWAYS_INLINE typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::GetIterator()
@@ -232,7 +238,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
   Node* pNode = m_pRoot;
 
   while ((const void*)pNode->m_pLink[0] != (const void*)&m_NilNode)
+  {
     pNode = pNode->m_pLink[0];
+  }
 
   return pNode;
 }
@@ -246,7 +254,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
   Node* pNode = m_pRoot;
 
   while ((const void*)pNode->m_pLink[1] != (const void*)&m_NilNode)
+  {
     pNode = pNode->m_pLink[1];
+  }
 
   return pNode;
 }
@@ -377,7 +387,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
       return pNode;
 
     if (dir == 0)
+    {
       pNodeSmaller = pNode;
+    }
 
     pNode = pNode->m_pLink[dir];
   }
@@ -419,7 +431,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
     }
 
     if (dir == 0)
+    {
       pNodeSmaller = pNode;
+    }
 
     pNode = pNode->m_pLink[dir];
   }
@@ -471,7 +485,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
         if (m_Comparer.Equal(it->m_Key, key))
         {
           if (out_pExisted)
+          {
             *out_pExisted = true;
+          }
 
           return Iterator(it);
         }
@@ -504,7 +520,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
           up[top - 1]->m_pLink[dir]->m_pParent = up[top - 1];
         }
         else
+        {
           root = up[top];
+        }
       }
     }
     else
@@ -521,7 +539,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
   XII_ASSERT_DEBUG(pInsertedNode != nullptr, "Implementation Error.");
 
   if (out_pExisted)
+  {
     *out_pExisted = false;
+  }
 
   return Iterator(pInsertedNode);
 }
@@ -682,7 +702,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
         up[top - 1]->m_pLink[dir]->m_pParent = up[top - 1];
       }
       else
+      {
         root = it->m_pLink[1];
+      }
     }
     else
     {
@@ -717,7 +739,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
       if ((up[top]->m_pLink[0]->m_uiLevel < up[top]->m_uiLevel - 1) || (up[top]->m_pLink[1]->m_uiLevel < up[top]->m_uiLevel - 1))
       {
         if (up[top]->m_pLink[1]->m_uiLevel > --up[top]->m_uiLevel)
+        {
           up[top]->m_pLink[1]->m_uiLevel = up[top]->m_uiLevel;
+        }
 
         up[top]                        = SkewNode(up[top]);
         up[top]->m_pLink[1]            = SkewNode(up[top]->m_pLink[1]);
@@ -746,7 +770,6 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
 
   root->m_pParent = reinterpret_cast<Node*>(&m_NilNode);
 
-
   // if necessary, swap nodes
   if (ToErase != &m_NilNode)
   {
@@ -766,7 +789,9 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
       }
     }
     else
+    {
       root = ToErase;
+    }
 
     ToErase->m_uiLevel             = ToOverride->m_uiLevel;
     ToErase->m_pLink[0]            = ToOverride->m_pLink[0];

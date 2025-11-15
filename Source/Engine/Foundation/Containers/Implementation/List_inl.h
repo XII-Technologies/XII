@@ -1,4 +1,3 @@
-#pragma once
 
 #include <Foundation/Math/Math.h>
 
@@ -132,7 +131,9 @@ template <typename T>
 void xiiListBase<T>::Clear()
 {
   if (!IsEmpty())
+  {
     Remove(GetIterator(), GetEndIterator());
+  }
 
   m_pFreeElementStack = nullptr;
   m_Elements.Clear();
@@ -291,7 +292,9 @@ typename xiiListBase<T>::Iterator xiiListBase<T>::Remove(Iterator first, const I
   XII_ASSERT_DEV(last.m_pElement != nullptr, "The iterator (last) is invalid.");
 
   while (first != last)
+  {
     first = Remove(first);
+  }
 
   return last;
 }
@@ -303,10 +306,14 @@ template <typename T>
 void xiiListBase<T>::SetCount(xiiUInt32 uiNewSize)
 {
   while (m_uiCount > uiNewSize)
+  {
     PopBack();
+  }
 
   while (m_uiCount < uiNewSize)
+  {
     PushBack();
+  }
 }
 
 template <typename T>

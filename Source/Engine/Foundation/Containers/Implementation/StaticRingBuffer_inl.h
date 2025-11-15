@@ -1,4 +1,3 @@
-#pragma once
 
 template <typename T, xiiUInt32 C>
 xiiStaticRingBuffer<T, C>::xiiStaticRingBuffer()
@@ -30,7 +29,9 @@ void xiiStaticRingBuffer<T, C>::operator=(const xiiStaticRingBuffer<T, C>& rhs)
   Clear();
 
   for (xiiUInt32 i = 0; i < rhs.GetCount(); ++i)
+  {
     PushBack(rhs[i]);
+  }
 }
 
 template <typename T, xiiUInt32 C>

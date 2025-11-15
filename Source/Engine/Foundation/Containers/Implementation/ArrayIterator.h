@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <algorithm>
@@ -60,9 +59,13 @@ public:
   inline const T& operator*() const
   {
     if (reverse)
+    {
       return (*m_pArray)[m_pArray->GetCount() - (xiiUInt32)m_uiIndex - 1];
+    }
     else
+    {
       return (*m_pArray)[(xiiUInt32)m_uiIndex];
+    }
   }
   XII_ALWAYS_INLINE const T* operator->() const { return &(**this); }
 
@@ -71,9 +74,13 @@ public:
   XII_ALWAYS_INLINE const T& operator[](size_t uiIndex) const
   {
     if (reverse)
+    {
       return (*m_pArray)[m_pArray->GetCount() - static_cast<xiiUInt32>(m_uiIndex + uiIndex) - 1];
+    }
     else
+    {
       return (*m_pArray)[static_cast<xiiUInt32>(m_uiIndex + uiIndex)];
+    }
   }
 
 protected:
@@ -126,9 +133,13 @@ public:
   inline T& operator*() const
   {
     if (reverse)
+    {
       return (*this->m_pArray)[this->m_pArray->GetCount() - (xiiUInt32)this->m_uiIndex - 1];
+    }
     else
+    {
       return (*this->m_pArray)[(xiiUInt32)this->m_uiIndex];
+    }
   }
 
   XII_ALWAYS_INLINE T* operator->() const { return &(**this); }
@@ -136,9 +147,13 @@ public:
   XII_ALWAYS_INLINE T& operator[](size_t uiIndex) const
   {
     if (reverse)
+    {
       return (*this->m_pArray)[this->m_pArray->GetCount() - static_cast<xiiUInt32>(this->m_uiIndex + uiIndex) - 1];
+    }
     else
+    {
       return (*this->m_pArray)[static_cast<xiiUInt32>(this->m_uiIndex + uiIndex)];
+    }
   }
 };
 

@@ -110,8 +110,7 @@ void xiiDynamicArrayBase<T>::Swap(xiiDynamicArrayBase<T>& other)
     const xiiUInt32 localSize      = this->m_uiCount;
     const xiiUInt32 otherLocalSize = other.m_uiCount;
 
-    if (localSize <= InplaceStorageSize && otherLocalSize <= InplaceStorageSize && localSize <= other.m_uiCapacity &&
-        otherLocalSize <= this->m_uiCapacity)
+    if (localSize <= InplaceStorageSize && otherLocalSize <= InplaceStorageSize && localSize <= other.m_uiCapacity && otherLocalSize <= this->m_uiCapacity)
     {
 
       Tmp tmp;
@@ -213,7 +212,9 @@ void xiiDynamicArrayBase<T>::Compact()
   {
     const xiiUInt32 uiNewCapacity = (this->m_uiCount + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
     if (this->m_uiCapacity != uiNewCapacity)
+    {
       SetCapacity(uiNewCapacity);
+    }
   }
 }
 

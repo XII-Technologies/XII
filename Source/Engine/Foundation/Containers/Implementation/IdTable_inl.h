@@ -235,7 +235,9 @@ bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_p
     return false;
 
   if (out_pOldValue != nullptr)
+  {
     *out_pOldValue = std::move(m_pEntries[uiIndex].value);
+  }
 
   xiiMemoryUtils::Destruct(&entry.value, 1);
 
@@ -244,7 +246,9 @@ bool xiiIdTableBase<IdType, ValueType>::Remove(const IdType id, ValueType* out_p
 
   // at wrap around, prevent generation from becoming 0, to ensure that a zero initialized array could ever contain a valid ID
   if (entry.id.m_Generation == 0)
+  {
     entry.id.m_Generation = 1;
+  }
 
   m_pEntries[m_FreelistEnqueue].id.m_InstanceIndex = static_cast<decltype(entry.id.m_InstanceIndex)>(uiIndex);
   m_FreelistEnqueue                                = uiIndex;

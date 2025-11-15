@@ -1,4 +1,3 @@
-#pragma once
 
 template <typename KEY, typename VALUE>
 inline xiiArrayMapBase<KEY, VALUE>::xiiArrayMapBase(xiiAllocatorBase* pAllocator) :
@@ -196,7 +195,9 @@ VALUE& xiiArrayMapBase<KEY, VALUE>::FindOrAdd(const CompatibleKeyType& key, bool
   xiiUInt32 uiIndex = Find<CompatibleKeyType>(key);
 
   if (out_pExisted)
+  {
     *out_pExisted = uiIndex != xiiInvalidIndex;
+  }
 
   if (uiIndex == xiiInvalidIndex)
   {
