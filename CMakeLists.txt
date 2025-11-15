@@ -25,7 +25,7 @@ endif()
 
 set_property(GLOBAL PROPERTY XII_SUBMODULE_MODE ${XII_SUBMODULE_MODE})
 
-# Set a global variable pointing to the root of the XII source tree
+# Set a global variable pointing to the root of the XII source tree.
 set(XII_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(GLOBAL PROPERTY XII_ROOT ${XII_ROOT})
 
@@ -78,23 +78,18 @@ if(NOT XII_SUBMODULE_MODE)
     # sets the Editor project as the default startup project in Visual Studio
     set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Editor)
 
-  get_property(EXTERNAL_PROJECTS GLOBAL PROPERTY "EXTERNAL_PROJECTS")
-  if(EXTERNAL_PROJECTS)
-    message(STATUS "External Projects (xiiEditor): ${EXTERNAL_PROJECTS}")
-    add_dependencies(Editor ${EXTERNAL_PROJECTS})
+    get_property(EXTERNAL_PROJECTS GLOBAL PROPERTY "EXTERNAL_PROJECTS")
+    if(EXTERNAL_PROJECTS)
+      message(STATUS "External Projects (xiiEditor): ${EXTERNAL_PROJECTS}")
+      add_dependencies(Editor ${EXTERNAL_PROJECTS})
 
-    message(STATUS "External Projects (xiiPlayer): ${EXTERNAL_PROJECTS}")
-    add_dependencies(Player ${EXTERNAL_PROJECTS})
-  endif()
+      message(STATUS "External Projects (xiiPlayer): ${EXTERNAL_PROJECTS}")
+      add_dependencies(Player ${EXTERNAL_PROJECTS})
+    endif()
   endif()
 endif()
 
-# finalizers may run into problems in split solutions
-# however, they aren't needed there, since CI will always build all projects
-# and finalizers are typically only needed to set up build dependencies
-if (${SELECTED_FILTER_NAME} MATCHES "Everything")
-  xii_finalize_projects()
-endif()
+xii_finalize_projects()
 
 get_property(EXPORT_PROJECTS GLOBAL PROPERTY "EXPORT_PROJECTS")
 xii_get_export_location(XII_EXPORT_LOCATION)

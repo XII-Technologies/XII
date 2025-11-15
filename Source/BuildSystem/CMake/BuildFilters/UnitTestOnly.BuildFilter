@@ -1,0 +1,26 @@
+set_property(GLOBAL PROPERTY XII_BUILD_FILTER_UnitTestOnly
+  enet
+  zstd
+  SDL3-shared
+  zlib
+  Foundation
+
+  tinyexr
+  stb
+  Lua
+  mikktspace
+  Texture
+  Core
+
+  ArchiveTool
+  FoundationTest_Plugin1
+  FoundationTest_Plugin2
+  TestFramework
+  FoundationTest
+
+  TexConv
+  CoreTest
+
+  ToolsFoundation
+  ToolsFoundationTest
+)
