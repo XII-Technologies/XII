@@ -6,10 +6,8 @@
 #include <Foundation/SimdMath/SimdRandom.h>
 #include <Foundation/Utilities/DGMLWriter.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptPin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiVisualScriptPin::xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiDataPinIndex, xiiUInt32 uiElementIndex) :
   xiiPin(type, sName, pinDesc.GetColor(), pObject), m_pDesc(&pinDesc), m_uiDataPinIndex(uiDataPinIndex), m_uiElementIndex(uiElementIndex)
@@ -97,6 +95,10 @@ xiiHashedString xiiVisualScriptNodeManager::GetScriptBaseClass() const
     if (baseClass.IsA<xiiString>())
     {
       sBaseClass.Assign(baseClass.Get<xiiString>());
+    }
+    else if (baseClass.IsA<xiiStringView>())
+    {
+      sBaseClass.Assign(baseClass.Get<xiiStringView>());
     }
   }
   return sBaseClass;

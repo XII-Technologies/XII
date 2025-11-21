@@ -81,6 +81,11 @@ xiiVisualScriptDataType::Enum xiiVisualScriptTypeDeduction::DeductFromVariableNa
     auto pManager = static_cast<const xiiVisualScriptNodeManager*>(pObject->GetDocumentObjectManager());
     return pManager->GetVariableType(xiiTempHashedString(nameVar.Get<xiiString>()));
   }
+  else if (nameVar.IsA<xiiStringView>())
+  {
+    auto pManager = static_cast<const xiiVisualScriptNodeManager*>(pObject->GetDocumentObjectManager());
+    return pManager->GetVariableType(xiiTempHashedString(nameVar.Get<xiiStringView>()));
+  }
 
   return xiiVisualScriptDataType::Invalid;
 }
