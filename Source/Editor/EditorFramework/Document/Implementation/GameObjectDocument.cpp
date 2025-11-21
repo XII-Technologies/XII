@@ -416,7 +416,9 @@ void xiiGameObjectDocument::QueryCachedNodeName(const xiiDocumentObject* pObject
     m_GameObjectMetaData->EndModifyMetaData(0); // no need to broadcast this change
 
     if (out_pIcon != nullptr)
+    {
       *out_pIcon = icon;
+    }
   }
 }
 
