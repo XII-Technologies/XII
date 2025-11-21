@@ -1398,9 +1398,10 @@ public:
   {
     auto* pBaseMatProp    = pNode->FindProperty("BaseMaterial");
     auto* pShaderModeProp = pNode->FindProperty("ShaderMode");
-    if (pBaseMatProp && pBaseMatProp->m_Value.IsA<xiiString>())
+
+    if (pBaseMatProp && (pBaseMatProp->m_Value.IsA<xiiString>() || pBaseMatProp->m_Value.IsA<xiiStringView>()))
     {
-      if (!pBaseMatProp->m_Value.Get<xiiString>().IsEmpty())
+      if (!pBaseMatProp->m_Value.ConvertTo<xiiString>().IsEmpty())
       {
         // BaseMaterial is set
         pNode->ChangeProperty("ShaderMode", (xiiInt32)xiiMaterialShaderMode::BaseMaterial);
