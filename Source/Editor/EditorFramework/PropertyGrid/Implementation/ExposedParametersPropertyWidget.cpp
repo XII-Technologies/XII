@@ -599,7 +599,9 @@ bool xiiQtExposedParametersPropertyWidget::RemoveUnusedKeys(bool bTestOnly)
 {
   bool bStuffDone = false;
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->StartTransaction("Remove unused keys");
+  }
   for (const auto& item : m_Items)
   {
     if (const xiiExposedParameters* pParams = m_pProxy->GetExposedParams(item.m_pObject))
@@ -624,7 +626,9 @@ bool xiiQtExposedParametersPropertyWidget::RemoveUnusedKeys(bool bTestOnly)
     }
   }
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->FinishTransaction();
+  }
   return bStuffDone;
 }
 
@@ -632,7 +636,9 @@ bool xiiQtExposedParametersPropertyWidget::FixKeyTypes(bool bTestOnly)
 {
   bool bStuffDone = false;
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->StartTransaction("Remove unused keys");
+  }
   for (const auto& item : m_Items)
   {
     if (const xiiExposedParameters* pParams = m_pProxy->GetExposedParams(item.m_pObject))
@@ -671,7 +677,9 @@ bool xiiQtExposedParametersPropertyWidget::FixKeyTypes(bool bTestOnly)
     }
   }
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->FinishTransaction();
+  }
   return bStuffDone;
 }
 
