@@ -57,10 +57,10 @@ void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& worl
       {
         // if this is a string parameter
         xiiVariant& var = parameters.GetValue(i);
-        if (var.IsA<xiiString>())
+        if (var.IsA<xiiString>() || var.IsA<xiiStringView>())
         {
           // and the resolver CAN map this string to a game object handle
-          xiiGameObjectHandle hObject = resolver(var.Get<xiiString>().GetData(), xiiComponentHandle(), nullptr);
+          xiiGameObjectHandle hObject = resolver(var.ConvertTo<xiiString>(), xiiComponentHandle(), nullptr);
           if (!hObject.IsInvalidated())
           {
             // write the handle properly to file (this enables correct remapping during deserialization)
