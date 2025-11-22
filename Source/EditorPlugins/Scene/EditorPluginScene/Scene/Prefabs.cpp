@@ -52,11 +52,11 @@ bool xiiSceneDocument::IsObjectEnginePrefab(const xiiUuid& object, xiiUuid* out_
     {
       xiiVariant varPrefab = pChild->GetTypeAccessor().GetValue("Prefab");
 
-      if (varPrefab.IsA<xiiString>())
+      if (varPrefab.IsA<xiiString>() || varPrefab.IsA<xiiStringView>())
       {
         if (out_pPrefabAssetGuid)
         {
-          const xiiString sAsset = varPrefab.Get<xiiString>();
+          const xiiString sAsset = varPrefab.ConvertTo<xiiString>();
 
           const auto info = xiiAssetCurator::GetSingleton()->FindSubAsset(sAsset);
 

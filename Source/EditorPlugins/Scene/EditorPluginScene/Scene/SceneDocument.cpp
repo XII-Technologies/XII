@@ -1688,9 +1688,9 @@ void xiiSceneDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) cons
 
         xiiExposedParameterCommandAccessor proxy(context.m_pAccessor, key.m_pProperty, pParameterSourceProp);
         res = proxy.GetValue(pLeafObject, key.m_pProperty, value, key.m_Index);
-        if (key.m_Index.IsA<xiiString>())
+        if (key.m_Index.IsA<xiiString>() || key.m_Index.IsA<xiiStringView>())
         {
-          pSourceParameter = proxy.GetExposedParam(pLeafObject, key.m_Index.Get<xiiString>());
+          pSourceParameter = proxy.GetExposedParam(pLeafObject, key.m_Index.ConvertTo<xiiString>());
         }
       }
       else

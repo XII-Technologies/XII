@@ -155,7 +155,7 @@ void xiiQtVisualScriptNode::UpdateState()
         xiiReflectionUtils::EnumerationToString(prop->GetSpecificType(), val.ConvertTo<xiiInt64>(), sVal);
         sVal = xiiTranslate(sVal);
       }
-      else if (val.IsA<xiiString>() || val.IsA<xiiHashedString>())
+      else if (val.IsA<xiiString>() || val.IsA<xiiStringView>() || val.IsA<xiiHashedString>())
       {
         sVal = val.ConvertTo<xiiString>();
 
@@ -168,9 +168,13 @@ void xiiQtVisualScriptNode::UpdateState()
             auto pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(AssetGuid);
 
             if (pAsset)
+            {
               sVal = pAsset->m_pAssetInfo->m_Path.GetDataDirRelativePath().GetFileName();
+            }
             else
+            {
               sVal = "<unknown>";
+            }
           }
         }
 

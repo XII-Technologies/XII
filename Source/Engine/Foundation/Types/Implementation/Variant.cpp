@@ -55,9 +55,13 @@ xiiVariant::xiiVariant(const xiiString& value)
 xiiVariant::xiiVariant(const xiiStringView& value, bool bCopyString)
 {
   if (bCopyString)
+  {
     InitShared(xiiString(value));
+  }
   else
+  {
     InitInplace(value);
+  }
 }
 
 xiiVariant::xiiVariant(const xiiUntrackedString& value)

@@ -178,7 +178,7 @@ void xiiQtNode::UpdateState()
   xiiVariant name = typeAccessor.GetValue("Name");
   if (name.IsA<xiiString>() && name.Get<xiiString>().IsEmpty() == false)
   {
-    m_pTitleLabel->setPlainText(name.Get<xiiString>().GetData());
+    m_pTitleLabel->setPlainText(xiiMakeQString(name.Get<xiiString>()));
   }
   else
   {

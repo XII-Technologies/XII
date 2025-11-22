@@ -49,7 +49,7 @@ void xiiQtGameObjectReferencePropertyWidget::InternalSetValue(const xiiVariant& 
   }
   else
   {
-    SetValue(value.ConvertTo<xiiString>().GetData());
+    SetValue(xiiMakeQString(value.ConvertTo<xiiString>()));
   }
 }
 
@@ -86,7 +86,7 @@ void xiiQtGameObjectReferencePropertyWidget::PickObjectOverride(const xiiDocumen
     xiiStringBuilder sGuid;
     xiiConversionUtils::ToString(pObject->GetGuid(), sGuid);
 
-    SetValue(sGuid.GetData());
+    SetValue(xiiMakeQString(sGuid));
   }
 
   ClearPicking();

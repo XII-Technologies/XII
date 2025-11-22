@@ -97,17 +97,17 @@ struct xiiVariantAssignmentAdapter
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   xiiVariantAssignmentAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  void operator=(RealType* rhs) { m_value = rhs; }
+  void operator=(RealType* rhs) { m_Value = rhs; }
   void operator=(RealType&& rhs)
   {
-    if (m_value.IsValid())
-      *m_value.Get<RealType*>() = rhs;
+    if (m_Value.IsValid())
+      *m_Value.Get<RealType*>() = rhs;
   }
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T, class S>
@@ -115,13 +115,13 @@ struct xiiVariantAssignmentAdapter<T, xiiEnum<S>, 0>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   xiiVariantAssignmentAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  void operator=(xiiEnum<S>&& rhs) { m_value = static_cast<xiiInt64>(rhs.GetValue()); }
+  void operator=(xiiEnum<S>&& rhs) { m_Value = static_cast<xiiInt64>(rhs.GetValue()); }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T, class S>
@@ -129,13 +129,13 @@ struct xiiVariantAssignmentAdapter<T, xiiBitflags<S>, 0>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   xiiVariantAssignmentAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  void operator=(xiiBitflags<S>&& rhs) { m_value = static_cast<xiiInt64>(rhs.GetValue()); }
+  void operator=(xiiBitflags<S>&& rhs) { m_Value = static_cast<xiiInt64>(rhs.GetValue()); }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T, class C>
@@ -143,39 +143,39 @@ struct xiiVariantAssignmentAdapter<T, C, 1>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   xiiVariantAssignmentAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  void operator=(T&& rhs) { m_value = rhs; }
+  void operator=(T&& rhs) { m_Value = rhs; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAssignmentAdapter<T, xiiVariantArray, 0>
 {
   xiiVariantAssignmentAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  void operator=(T&& rhs) { m_value = rhs; }
+  void operator=(T&& rhs) { m_Value = rhs; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAssignmentAdapter<T, xiiVariantDictionary, 0>
 {
   xiiVariantAssignmentAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  void operator=(T&& rhs) { m_value = rhs; }
+  void operator=(T&& rhs) { m_Value = rhs; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -191,15 +191,15 @@ struct xiiVariantAdapter
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
 
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator RealType&() { return *m_value.Get<RealType*>(); }
+  operator RealType&() { return *m_Value.Get<RealType*>(); }
 
-  operator RealType*() { return m_value.IsValid() ? m_value.Get<RealType*>() : nullptr; }
+  operator RealType*() { return m_Value.IsValid() ? m_Value.Get<RealType*>() : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T, class S>
@@ -207,16 +207,16 @@ struct xiiVariantAdapter<T, xiiEnum<S>, 0, 0>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
-    if (m_value.IsValid())
-      m_realValue = static_cast<typename S::Enum>(m_value.ConvertTo<xiiInt64>());
+    if (m_Value.IsValid())
+      m_realValue = static_cast<typename S::Enum>(m_Value.ConvertTo<xiiInt64>());
   }
 
   operator const xiiEnum<S>&() { return m_realValue; }
-  operator const xiiEnum<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator const xiiEnum<S>*() { return m_Value.IsValid() ? &m_realValue : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
   xiiEnum<S>  m_realValue;
 };
 
@@ -226,21 +226,21 @@ struct xiiVariantAdapter<T, xiiEnum<S>, 0, 1>
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
 
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
-    if (m_value.IsValid())
-      m_realValue = static_cast<typename S::Enum>(m_value.ConvertTo<xiiInt64>());
+    if (m_Value.IsValid())
+      m_realValue = static_cast<typename S::Enum>(m_Value.ConvertTo<xiiInt64>());
   }
   ~xiiVariantAdapter()
   {
-    if (m_value.IsValid())
-      m_value = static_cast<xiiInt64>(m_realValue.GetValue());
+    if (m_Value.IsValid())
+      m_Value = static_cast<xiiInt64>(m_realValue.GetValue());
   }
 
   operator xiiEnum<S>&() { return m_realValue; }
-  operator xiiEnum<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator xiiEnum<S>*() { return m_Value.IsValid() ? &m_realValue : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
   xiiEnum<S>  m_realValue;
 };
 
@@ -250,16 +250,16 @@ struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 0>
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
 
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
-    if (m_value.IsValid())
-      m_realValue.SetValue(static_cast<typename S::StorageType>(m_value.ConvertTo<xiiInt64>()));
+    if (m_Value.IsValid())
+      m_realValue.SetValue(static_cast<typename S::StorageType>(m_Value.ConvertTo<xiiInt64>()));
   }
 
   operator const xiiBitflags<S>&() { return m_realValue; }
-  operator const xiiBitflags<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator const xiiBitflags<S>*() { return m_Value.IsValid() ? &m_realValue : nullptr; }
 
-  xiiVariant&    m_value;
+  xiiVariant&    m_Value;
   xiiBitflags<S> m_realValue;
 };
 
@@ -269,21 +269,21 @@ struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 1>
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
 
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
-    if (m_value.IsValid())
-      m_realValue.SetValue(static_cast<typename S::StorageType>(m_value.ConvertTo<xiiInt64>()));
+    if (m_Value.IsValid())
+      m_realValue.SetValue(static_cast<typename S::StorageType>(m_Value.ConvertTo<xiiInt64>()));
   }
   ~xiiVariantAdapter()
   {
-    if (m_value.IsValid())
-      m_value = static_cast<xiiInt64>(m_realValue.GetValue());
+    if (m_Value.IsValid())
+      m_Value = static_cast<xiiInt64>(m_realValue.GetValue());
   }
 
   operator xiiBitflags<S>&() { return m_realValue; }
-  operator xiiBitflags<S>*() { return m_value.IsValid() ? &m_realValue : nullptr; }
+  operator xiiBitflags<S>*() { return m_Value.IsValid() ? &m_realValue : nullptr; }
 
-  xiiVariant&    m_value;
+  xiiVariant&    m_Value;
   xiiBitflags<S> m_realValue;
 };
 
@@ -293,7 +293,7 @@ struct xiiVariantAdapter<T, C, 1, 0>
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
 
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
@@ -301,23 +301,23 @@ struct xiiVariantAdapter<T, C, 1, 0>
   {
     if constexpr (xiiVariantTypeDeduction<C>::classification == xiiVariantClass::CustomTypeCast)
     {
-      if (m_value.GetType() == xiiVariantType::TypedPointer)
-        return *m_value.Get<RealType*>();
+      if (m_Value.GetType() == xiiVariantType::TypedPointer)
+        return *m_Value.Get<RealType*>();
     }
-    return m_value.Get<RealType>();
+    return m_Value.Get<RealType>();
   }
 
   operator const C*()
   {
     if constexpr (xiiVariantTypeDeduction<C>::classification == xiiVariantClass::CustomTypeCast)
     {
-      if (m_value.GetType() == xiiVariantType::TypedPointer)
-        return m_value.IsValid() ? m_value.Get<RealType*>() : nullptr;
+      if (m_Value.GetType() == xiiVariantType::TypedPointer)
+        return m_Value.IsValid() ? m_Value.Get<RealType*>() : nullptr;
     }
-    return m_value.IsValid() ? &m_value.Get<RealType>() : nullptr;
+    return m_Value.IsValid() ? &m_Value.Get<RealType>() : nullptr;
   }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T, class C>
@@ -326,136 +326,136 @@ struct xiiVariantAdapter<T, C, 1, 1>
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
 
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
     // We ignore the return value here instead const_cast the Get<> result to profit from the Get methods runtime type checks.
-    m_value.GetWriteAccess();
+    m_Value.GetWriteAccess();
   }
 
   operator C&()
   {
-    if (m_value.GetType() == xiiVariantType::TypedPointer)
-      return *m_value.Get<RealType*>();
+    if (m_Value.GetType() == xiiVariantType::TypedPointer)
+      return *m_Value.Get<RealType*>();
     else
-      return const_cast<RealType&>(m_value.Get<RealType>());
+      return const_cast<RealType&>(m_Value.Get<RealType>());
   }
   operator C*()
   {
-    if (m_value.GetType() == xiiVariantType::TypedPointer)
-      return m_value.IsValid() ? m_value.Get<RealType*>() : nullptr;
+    if (m_Value.GetType() == xiiVariantType::TypedPointer)
+      return m_Value.IsValid() ? m_Value.Get<RealType*>() : nullptr;
     else
-      return m_value.IsValid() ? &const_cast<RealType&>(m_value.Get<RealType>()) : nullptr;
+      return m_Value.IsValid() ? &const_cast<RealType&>(m_Value.Get<RealType>()) : nullptr;
   }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiVariant, 1, 0>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator const xiiVariant&() { return m_value; }
-  operator const xiiVariant*() { return &m_value; }
+  operator const xiiVariant&() { return m_Value; }
+  operator const xiiVariant*() { return &m_Value; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiVariant, 1, 1>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator xiiVariant&() { return m_value; }
-  operator xiiVariant*() { return &m_value; }
+  operator xiiVariant&() { return m_Value; }
+  operator xiiVariant*() { return &m_Value; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiVariantArray, 0, 0>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator const xiiVariantArray&() { return m_value.Get<xiiVariantArray>(); }
-  operator const xiiVariantArray*() { return m_value.IsValid() ? &m_value.Get<xiiVariantArray>() : nullptr; }
+  operator const xiiVariantArray&() { return m_Value.Get<xiiVariantArray>(); }
+  operator const xiiVariantArray*() { return m_Value.IsValid() ? &m_Value.Get<xiiVariantArray>() : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiVariantArray, 0, 1>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator xiiVariantArray&() { return m_value.GetWritable<xiiVariantArray>(); }
-  operator xiiVariantArray*() { return m_value.IsValid() ? &m_value.GetWritable<xiiVariantArray>() : nullptr; }
+  operator xiiVariantArray&() { return m_Value.GetWritable<xiiVariantArray>(); }
+  operator xiiVariantArray*() { return m_Value.IsValid() ? &m_Value.GetWritable<xiiVariantArray>() : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiVariantDictionary, 0, 0>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator const xiiVariantDictionary&() { return m_value.Get<xiiVariantDictionary>(); }
-  operator const xiiVariantDictionary*() { return m_value.IsValid() ? &m_value.Get<xiiVariantDictionary>() : nullptr; }
+  operator const xiiVariantDictionary&() { return m_Value.Get<xiiVariantDictionary>(); }
+  operator const xiiVariantDictionary*() { return m_Value.IsValid() ? &m_Value.Get<xiiVariantDictionary>() : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiVariantDictionary, 0, 1>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator xiiVariantDictionary&() { return m_value.GetWritable<xiiVariantDictionary>(); }
-  operator xiiVariantDictionary*() { return m_value.IsValid() ? &m_value.GetWritable<xiiVariantDictionary>() : nullptr; }
+  operator xiiVariantDictionary&() { return m_Value.GetWritable<xiiVariantDictionary>(); }
+  operator xiiVariantDictionary*() { return m_Value.IsValid() ? &m_Value.GetWritable<xiiVariantDictionary>() : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <>
 struct xiiVariantAdapter<const char*, const char*, 1, 0>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator const char*() { return m_value.IsValid() ? m_value.Get<xiiString>().GetData() : nullptr; }
+  operator const char*() { return m_Value.IsValid() ? m_Value.Get<xiiString>().GetData() : nullptr; }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };
 
 template <class T>
 struct xiiVariantAdapter<T, xiiStringView, 1, 0>
 {
   xiiVariantAdapter(xiiVariant& value) :
-    m_value(value)
+    m_Value(value)
   {
   }
 
-  operator const xiiStringView() { return m_value.IsA<xiiStringView>() ? m_value.Get<xiiStringView>() : m_value.Get<xiiString>().GetView(); }
+  operator const xiiStringView() { return m_Value.IsA<xiiStringView>() ? m_Value.Get<xiiStringView>() : m_Value.Get<xiiString>().GetView(); }
 
-  xiiVariant& m_value;
+  xiiVariant& m_Value;
 };

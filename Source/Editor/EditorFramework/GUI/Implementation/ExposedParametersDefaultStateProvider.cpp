@@ -47,9 +47,9 @@ xiiVariant xiiExposedParametersDefaultStateProvider::GetDefaultValue(SuperArray 
   xiiExposedParameterCommandAccessor accessor(pAccessor, pProp, m_pParameterSourceProp);
   if (index.IsValid())
   {
-    if (index.IsA<xiiString>())
+    if (index.IsA<xiiString>() || index.IsA<xiiStringView>())
     {
-      const xiiExposedParameter* pParam = accessor.GetExposedParam(pObject, index.Get<xiiString>());
+      const xiiExposedParameter* pParam = accessor.GetExposedParam(pObject, index.ConvertTo<xiiString>());
       if (pParam)
       {
         return pParam->m_DefaultValue;

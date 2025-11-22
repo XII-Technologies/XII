@@ -53,7 +53,7 @@ void xiiQtDynamicStringEnumPropertyWidget::OnInit()
 
 void xiiQtDynamicStringEnumPropertyWidget::InternalSetValue(const xiiVariant& value)
 {
-  m_pButton->setText(value.ConvertTo<xiiString>().GetData());
+  m_pButton->setText(xiiMakeQString(value.ConvertTo<xiiString>()));
 }
 
 void xiiQtDynamicStringEnumPropertyWidget::SetNewValue(xiiStringView sNewValue)

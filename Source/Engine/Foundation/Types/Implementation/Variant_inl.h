@@ -588,9 +588,9 @@ XII_ALWAYS_INLINE void xiiVariant::MoveFrom(xiiVariant&& other)
 template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32>>
 const T& xiiVariant::Cast() const
 {
-  const bool validType = xiiConversionTest<T, typename TypeDeduction<T>::StorageType>::sameType;
+  const bool bIsValidType = xiiConversionTest<T, typename TypeDeduction<T>::StorageType>::sameType;
 
-  static_assert(validType, "Invalid Cast, can only cast to storage type");
+  static_assert(bIsValidType, "Invalid Cast, can only cast to storage type");
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
 }

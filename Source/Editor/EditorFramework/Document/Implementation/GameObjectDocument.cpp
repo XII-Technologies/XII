@@ -355,16 +355,22 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
           auto pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(AssetGuid);
 
           if (pAsset)
+          {
             sValue = pAsset->m_pAssetInfo->m_Path.GetDataDirParentRelativePath();
+          }
           else
+          {
             sValue = "<unknown>";
+          }
         }
 
         // only use the file name for our display
         sValue = sValue.GetFileName();
 
         if (!sValue.IsEmpty())
+        {
           out_sResult.Append(": ", sValue);
+        }
 
         return;
       }
@@ -375,9 +381,13 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     return;
 
   if (bHasChildren)
+  {
     out_sResult = "Group";
+  }
   else
+  {
     out_sResult = "Object";
+  }
 }
 
 
@@ -416,7 +426,9 @@ void xiiGameObjectDocument::QueryCachedNodeName(const xiiDocumentObject* pObject
     m_GameObjectMetaData->EndModifyMetaData(0); // no need to broadcast this change
 
     if (out_pIcon != nullptr)
+    {
       *out_pIcon = icon;
+    }
   }
 }
 

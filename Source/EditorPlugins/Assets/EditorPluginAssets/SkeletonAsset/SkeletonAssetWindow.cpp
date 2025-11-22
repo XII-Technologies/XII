@@ -202,7 +202,7 @@ void xiiQtSkeletonAssetDocumentWindow::SelectionEventHandler(const xiiSelectionM
         xiiVariant name = pObj->GetTypeAccessor().GetValue("Name");
         if (name.IsValid() && name.CanConvertTo<xiiString>())
         {
-          filter.Append(name.ConvertTo<xiiString>().GetData(), ";");
+          filter.Append(name.ConvertTo<xiiString>(), ";");
         }
       }
 

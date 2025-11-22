@@ -44,10 +44,10 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValue(const xiiDocumentObject* 
     }
     out_value = defaultDict;
   }
-  else if (res.Failed() && m_pParameterProp == pProp && index.IsA<xiiString>())
+  else if (res.Failed() && m_pParameterProp == pProp && (index.IsA<xiiString>() || index.IsA<xiiStringView>()))
   {
     // If the actual GetValue fails but the key is an exposed param, return its default value instead.
-    if (const xiiExposedParameter* pParam = GetExposedParam(pObject, index.Get<xiiString>()))
+    if (const xiiExposedParameter* pParam = GetExposedParam(pObject, index.ConvertTo<xiiString>()))
     {
       out_value = pParam->m_DefaultValue;
       return xiiStatus(XII_SUCCESS);
@@ -62,11 +62,10 @@ xiiStatus xiiExposedParameterCommandAccessor::SetValue(const xiiDocumentObject* 
     pProp = m_pParameterProp;
 
   xiiStatus res = xiiObjectProxyAccessor::SetValue(pObject, pProp, newValue, index);
-  // As we pretend the exposed params always exist the actual SetValue will fail if this is not actually true,
-  // so we redirect to insert to make it true.
-  if (res.Failed() && m_pParameterProp == pProp && index.IsA<xiiString>())
+  // As we pretend the exposed params always exist the actual SetValue will fail if this is not actually true, so we redirect to insert to make it true.
+  if (res.Failed() && m_pParameterProp == pProp && (index.IsA<xiiString>() || index.IsA<xiiStringView>()))
   {
-    return xiiExposedParameterCommandAccessor::InsertValue(pObject, pProp, newValue, index);
+    return xiiExposedParameterCommandAccessor::InsertValue(pObject, pProp, newValue, index.ConvertTo(xiiVariantType::String));
   }
   return res;
 }
@@ -74,10 +73,10 @@ xiiStatus xiiExposedParameterCommandAccessor::SetValue(const xiiDocumentObject* 
 xiiStatus xiiExposedParameterCommandAccessor::RemoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index /*= xiiVariant()*/)
 {
   xiiStatus res = xiiObjectProxyAccessor::RemoveValue(pObject, pProp, index);
-  if (res.Failed() && m_pParameterProp == pProp && index.IsA<xiiString>())
+  if (res.Failed() && m_pParameterProp == pProp && (index.IsA<xiiString>() || index.IsA<xiiStringView>()))
   {
     // It this is one of the exposed params, pretend we removed it successfully to suppress error messages.
-    if (const xiiExposedParameter* pParam = GetExposedParam(pObject, index.Get<xiiString>()))
+    if (const xiiExposedParameter* pParam = GetExposedParam(pObject, index.ConvertTo<xiiString>()))
     {
       return xiiStatus(XII_SUCCESS);
     }
@@ -129,9 +128,9 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValues(const xiiDocumentObject*
   {
     xiiHybridArray<xiiVariant, 16> keys;
     GetKeys(pObject, pProp, keys).AssertSuccess();
-    for (const auto& key : keys)
+    for (const xiiVariant& key : keys)
     {
-      auto& var = out_values.ExpandAndGetRef();
+      xiiVariant& var = out_values.ExpandAndGetRef();
       XII_VERIFY(GetValue(pObject, pProp, var, key).Succeeded(), "GetValue to valid a key should be not fail.");
     }
     return xiiStatus(XII_SUCCESS);
@@ -145,10 +144,10 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
   xiiVariant value;
   if (xiiObjectProxyAccessor::GetValue(pObject, m_pParameterSourceProp, value).Succeeded())
   {
-    if (value.IsA<xiiString>())
+    if (value.IsA<xiiString>() || value.IsA<xiiStringView>())
     {
-      const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      const xiiString& sValue = value.ConvertTo<xiiString>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
       }
@@ -171,10 +170,10 @@ const xiiRTTI* xiiExposedParameterCommandAccessor::GetExposedParamsType(const xi
   xiiVariant value;
   if (xiiObjectProxyAccessor::GetValue(pObject, m_pParameterSourceProp, value).Succeeded())
   {
-    if (value.IsA<xiiString>())
+    if (value.IsA<xiiString>() || value.IsA<xiiStringView>())
     {
-      const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      const xiiString& sValue = value.ConvertTo<xiiString>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return xiiExposedParametersTypeRegistry::GetSingleton()->GetExposedParametersType(sValue);
       }
@@ -600,7 +599,9 @@ bool xiiQtExposedParametersPropertyWidget::RemoveUnusedKeys(bool bTestOnly)
 {
   bool bStuffDone = false;
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->StartTransaction("Remove unused keys");
+  }
   for (const auto& item : m_Items)
   {
     if (const xiiExposedParameters* pParams = m_pProxy->GetExposedParams(item.m_pObject))
@@ -625,7 +626,9 @@ bool xiiQtExposedParametersPropertyWidget::RemoveUnusedKeys(bool bTestOnly)
     }
   }
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->FinishTransaction();
+  }
   return bStuffDone;
 }
 
@@ -633,7 +636,9 @@ bool xiiQtExposedParametersPropertyWidget::FixKeyTypes(bool bTestOnly)
 {
   bool bStuffDone = false;
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->StartTransaction("Remove unused keys");
+  }
   for (const auto& item : m_Items)
   {
     if (const xiiExposedParameters* pParams = m_pProxy->GetExposedParams(item.m_pObject))
@@ -672,7 +677,9 @@ bool xiiQtExposedParametersPropertyWidget::FixKeyTypes(bool bTestOnly)
     }
   }
   if (!bTestOnly)
+  {
     m_pSourceObjectAccessor->FinishTransaction();
+  }
   return bStuffDone;
 }
 

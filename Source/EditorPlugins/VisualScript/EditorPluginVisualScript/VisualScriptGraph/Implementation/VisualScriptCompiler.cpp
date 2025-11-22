@@ -125,6 +125,11 @@ namespace
           inout_astNode.m_DeductedDataType = xiiVisualScriptDataType::HashedString;
           caseVar                          = xiiTempHashedString(caseVar.Get<xiiString>()).GetHash();
         }
+        else if (caseVar.IsA<xiiStringView>())
+        {
+          inout_astNode.m_DeductedDataType = xiiVisualScriptDataType::HashedString;
+          caseVar                          = xiiTempHashedString(caseVar.Get<xiiStringView>()).GetHash();
+        }
         else if (caseVar.IsA<xiiHashedString>())
         {
           inout_astNode.m_DeductedDataType = xiiVisualScriptDataType::HashedString;

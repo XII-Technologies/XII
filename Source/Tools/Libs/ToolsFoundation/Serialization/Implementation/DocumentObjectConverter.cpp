@@ -295,7 +295,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
         }
         else
         {
-          // Noting to do here, value cannot change
+          // Nothing to do here, value cannot change
         }
       }
       break;

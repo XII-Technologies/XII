@@ -71,7 +71,7 @@ QVariant xiiQtGameObjectAdapter::data(const xiiDocumentObject* pObject, int iRow
         m_pGameObjectMetaData->EndReadMetaData();
       }
 
-      return QString::fromUtf8(sName.GetData());
+      return xiiMakeQString(sName);
     }
     break;
 
