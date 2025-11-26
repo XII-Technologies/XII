@@ -96,7 +96,9 @@ void xiiAbstractGraphBinarySerializer::Read(xiiStreamReader& ref_stream, xiiAbst
   if (bApplyPatches)
   {
     if (pTypesGraph)
+    {
       xiiGraphVersioning::GetSingleton()->PatchGraph(pTypesGraph);
+    }
     xiiGraphVersioning::GetSingleton()->PatchGraph(pGraph, pTypesGraph);
   }
 }

@@ -75,12 +75,16 @@ static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGrap
       xiiOpenDdlUtils::StoreUInt32(ref_writer, node.GetTypeVersion(), "v");
 
       if (!node.GetNodeName().IsEmpty())
+      {
         xiiOpenDdlUtils::StoreString(ref_writer, node.GetNodeName(), "n");
+      }
 
       ref_writer.BeginObject("p");
       {
         for (const auto& prop : node.GetProperties())
+        {
           SortedProperties[prop.m_sPropertyName] = &prop.m_Value;
+        }
 
         for (auto it = SortedProperties.GetIterator(); it.IsValid(); ++it)
         {
@@ -106,7 +110,9 @@ void xiiAbstractGraphDdlSerializer::Write(xiiStreamWriter& ref_stream, const xii
   writer.SetPrimitiveTypeStringMode(typeMode);
 
   if (typeMode != xiiOpenDdlWriter::TypeStringMode::Compliant)
+  {
     writer.SetIndentation(-1);
+  }
 
   Write(writer, pGraph, pTypesGraph);
 }
@@ -149,9 +155,13 @@ static void ReadGraph(xiiAbstractObjectGraph* pGraph, const xiiOpenDdlReaderElem
     tmp = pType->GetPrimitivesString()[0];
 
     if (pName)
+    {
       tmp2 = pName->GetPrimitivesString()[0];
+    }
     else
+    {
       tmp2.Clear();
+    }
 
     xiiUInt32 uiTypeVersion = 0;
     if (pTypeVersion)
@@ -213,7 +223,9 @@ xiiResult xiiAbstractGraphDdlSerializer::Read(const xiiOpenDdlReaderElement* pRo
   if (bApplyPatches)
   {
     if (pTempTypesGraph)
+    {
       xiiGraphVersioning::GetSingleton()->PatchGraph(pTempTypesGraph);
+    }
     xiiGraphVersioning::GetSingleton()->PatchGraph(pGraph, pTempTypesGraph);
   }
 
@@ -252,7 +264,9 @@ void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& ref_stream, c
   writer.SetPrimitiveTypeStringMode(typeMode);
 
   if (typeMode != xiiOpenDdlWriter::TypeStringMode::Compliant)
+  {
     writer.SetIndentation(-1);
+  }
 
   xiiStringBuilder sHeaderVersion;
   sHeaderVersion.SetFormat("HeaderV{0}", (xiiInt32)XII_DOCUMENT_VERSION);
