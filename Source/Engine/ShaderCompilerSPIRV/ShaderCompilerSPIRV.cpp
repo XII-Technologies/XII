@@ -5,7 +5,7 @@
 #include <Foundation/Strings/StringConversion.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
-#include <spirv_reflect.h>
+#include <SPIRV-Reflect/spirv_reflect.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <d3dcompiler.h>
