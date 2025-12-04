@@ -437,11 +437,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceDimension
 /// \brief This describes the texture view type used by the texture view description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewType
 {
-  using StorageType = xiiUInt8;
+  using StorageType = xiiInt8;
 
   enum Enum : StorageType
   {
-    Undefined = 0U,       ///< Undefined texture view type.
+    Undefined = -1,       ///< Undefined texture view type.
     ShaderResource,       ///< A texture view will define the shader resource view that will be used as the source for the shader read operations.
     RenderTarget,         ///< A texture view will define a render target view that will be used as the render target for rendering operations.
     DepthStencil,         ///< A texture view will define a depth stencil view that will be used as the target for rendering operations.
@@ -460,11 +460,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureViewType);
 /// \brief This describes the buffer view type used by the buffer view description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewType
 {
-  using StorageType = xiiUInt8;
+  using StorageType = xiiInt8;
 
   enum Enum : StorageType
   {
-    Undefined = 0U,  ///< Undefined buffer view type.
+    Undefined = -1,  ///< Undefined buffer view type.
     ShaderResource,  ///< A buffer view will define a shader resource view that will be used as the source for the shader read operations.
     UnorderedAccess, ///< A buffer view will define an unordered access view that will be used for unordered read or write operations from the shaders.
 
