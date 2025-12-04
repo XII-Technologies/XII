@@ -16,7 +16,7 @@ XII_WARNING_DISABLE_CLANG("-Wunused-private-field")
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #define VMA_STATS_STRING_ENABLED     1
 
-#include <VulkanMemoryAllocator/vk_mem_alloc.h>
+#include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
 XII_WARNING_POP()
 

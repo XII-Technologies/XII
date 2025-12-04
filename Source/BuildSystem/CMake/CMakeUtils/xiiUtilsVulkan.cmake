@@ -13,24 +13,6 @@ macro(xii_requires_vulkan)
 endmacro()
 
 # #####################################
-# ## xii_link_target_vulkan(<target>)
-# #####################################
-function(xii_link_target_vulkan TARGET_NAME)
-  xii_requires_vulkan()
-
-  find_package(XIIVulkan REQUIRED)
-
-  if(XIIVULKAN_FOUND)
-    target_link_libraries(${TARGET_NAME} PRIVATE XIIVulkan::Loader)
-
-    if (COMMAND xii_platformhook_link_target_vulkan)
-      # Call platform-specific hook for linking with Vulkan
-      xii_platformhook_link_target_vulkan()
-    endif()
-  endif()
-endfunction()
-
-# #####################################
 # ## xii_link_target_dxc(<target>)
 # #####################################
 function(xii_link_target_dxc TARGET_NAME)

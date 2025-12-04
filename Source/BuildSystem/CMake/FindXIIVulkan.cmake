@@ -1,13 +1,12 @@
 # Find the folder into which the Vulkan SDK has been installed
 
 # Early out, if this target has been created before
-if((TARGET XIIVulkan::Loader) AND(TARGET XIIVulkan::DXC))
+if(XIIVulkan_Found OR TARGET XIIVulkan::DXC)
   return()
 endif()
 
-set(XII_VULKAN_DIR $ENV{VULKAN_SDK} CACHE PATH "Directory of the Vulkan SDK")
-
 xii_pull_compiler_and_architecture_vars()
+
 xii_pull_config_vars()
 
 get_property(XII_SUBMODULE_PREFIX_PATH GLOBAL PROPERTY XII_SUBMODULE_PREFIX_PATH)
