@@ -9,17 +9,12 @@ xii_create_target(LIBRARY ${PROJECT_NAME})
 
 xii_enable_strict_warnings(${PROJECT_NAME})
 
-xii_link_target_vulkan(${PROJECT_NAME})
-
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Foundation
   GraphicsFoundation
-)
-
-target_include_directories(${PROJECT_NAME}
-  PRIVATE
-  "${CMAKE_SOURCE_DIR}/Source/ThirdParty/VulkanMemoryAllocator"
+  Vulkan-Headers
+  VulkanMemoryAllocator
 )
 
 if (XII_3RDPARTY_SDL_SUPPORT)
