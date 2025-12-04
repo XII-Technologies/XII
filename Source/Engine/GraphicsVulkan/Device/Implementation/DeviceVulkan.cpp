@@ -208,7 +208,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::InitializePlatform");
 
-  m_InstanceDispatchLoader.init(vkGetInstanceProcAddr);
+  m_InstanceDispatchLoader.init();
 
   // Enumerate available layers.
   {
