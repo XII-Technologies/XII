@@ -29,10 +29,8 @@ namespace
   static constexpr xiiUInt32 s_uiMaxResourcesInSignature = XII_BIT(16) - 1U;
 } // namespace
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 #define XII_GAL_DEVICE_CHECK(expression, ...)  \
   do                                           \
@@ -146,13 +144,6 @@ void xiiGALDevice::EndFrame()
     s_Events.Broadcast(e);
   }
 }
-
-#define XII_GAL_DEVICE_CHECK(expression, ...)  \
-  do                                           \
-  {                                            \
-    XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return {}; }          \
-  } while (false)
 
 xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreationDescription& description)
 {
