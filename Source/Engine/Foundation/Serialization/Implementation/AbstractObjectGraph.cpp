@@ -153,7 +153,9 @@ void xiiAbstractObjectGraph::RemoveNode(const xiiUuid& guid)
   {
     xiiAbstractObjectNode* pNode = it.Value();
     if (!pNode->m_sNodeName.IsEmpty())
+    {
       m_NodesByName.Remove(pNode->m_sNodeName);
+    }
 
     m_Nodes.Remove(guid);
     XII_DEFAULT_DELETE(pNode);
@@ -299,9 +301,13 @@ void xiiAbstractObjectGraph::ReMapNodeGuids(const xiiUuid& seedGuid, bool bRemap
     xiiUuid newGuid = it.Key();
 
     if (bRemapInverse)
+    {
       newGuid.RevertCombinationWithSeed(seedGuid);
+    }
     else
+    {
       newGuid.CombineWithSeed(seedGuid);
+    }
 
     guidMap[it.Key()] = newGuid;
 

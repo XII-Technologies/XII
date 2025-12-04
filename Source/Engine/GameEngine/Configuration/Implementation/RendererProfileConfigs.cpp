@@ -12,11 +12,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 1, xiiRTTIDefau
   XII_BEGIN_PROPERTIES
   {
     // MainRenderPipeline.xiiRenderPipelineAsset
-    XII_MEMBER_PROPERTY("MainRenderPipeline", m_sMainRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ b9f7ca83-90ba-43b2-8eec-b0efddb3f264 }"))),
+    XII_MEMBER_PROPERTY("MainRenderPipeline", m_sMainRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ 648e92e1-8632-484c-ae37-5071359df451 }"))),
     // EditorRenderPipeline.xiiRenderPipelineAsset
     XII_MEMBER_PROPERTY("EditorRenderPipeline", m_sEditorRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ ec0ce8c4-0a42-4346-88af-8b3b23916770 }"))),
     // DebugRenderPipeline.xiiRenderPipelineAsset
-    XII_MEMBER_PROPERTY("DebugRenderPipeline", m_sDebugRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ fb641000-728c-436b-90b9-3144155d8eda }"))),
+    XII_MEMBER_PROPERTY("DebugRenderPipeline", m_sDebugRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ ed0b59ac-9c15-4fbf-a382-a8854f970cd8 }"))),
 
     XII_MAP_MEMBER_PROPERTY("CameraPipelines", m_CameraPipelines)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
   }

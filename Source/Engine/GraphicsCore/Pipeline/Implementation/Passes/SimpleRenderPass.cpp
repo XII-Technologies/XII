@@ -1,55 +1,48 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Pipeline/Passes/ForwardPass.h>
+#include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiForwardRenderShadingQuality, 1)
-  XII_ENUM_CONSTANT(xiiForwardRenderShadingQuality::Low),
-  XII_ENUM_CONSTANT(xiiForwardRenderShadingQuality::Medium),
-  XII_ENUM_CONSTANT(xiiForwardRenderShadingQuality::High),
-  XII_ENUM_CONSTANT(xiiForwardRenderShadingQuality::Ultra)
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 3, xiiRTTIDefaultAllocator<xiiForwardRenderPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator<xiiSimpleRenderPass>)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Colour", m_PinColour),
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
     XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
-    XII_ENUM_MEMBER_PROPERTY("ShadingQuality", xiiForwardRenderShadingQuality, m_ShadingQuality),
+    XII_MEMBER_PROPERTY("Message", m_sMessage),
   }
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiForwardRenderPass::xiiForwardRenderPass(xiiStringView sName) :
+xiiSimpleRenderPass::xiiSimpleRenderPass(xiiStringView sName) :
   xiiGraphicsPipelinePass(sName, xiiRenderPipelinePassCapabilityFlags::StereoAware)
 {
 }
 
-xiiForwardRenderPass::~xiiForwardRenderPass() = default;
+xiiSimpleRenderPass::~xiiSimpleRenderPass() = default;
 
-xiiResult xiiForwardRenderPass::Serialize(xiiStreamWriter& inout_stream) const
+xiiResult xiiSimpleRenderPass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
 
-  inout_stream << m_ShadingQuality;
+  inout_stream << m_sMessage;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiForwardRenderPass::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiSimpleRenderPass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
 
-  inout_stream >> m_ShadingQuality;
+  inout_stream >> m_sMessage;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiForwardRenderPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
+xiiResult xiiSimpleRenderPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
   XII_IGNORE_UNUSED(view);
 
@@ -71,13 +64,13 @@ xiiResult xiiForwardRenderPass::GetResourceDescriptions(const xiiView& view, con
   }
   else
   {
-    xiiLog::Error("No depth stencil input connected to pass '{0}'!", GetName());
+    xiiLog::Error("No depth stencil attachment input connected to pass '{0}'!", GetName());
     return XII_FAILURE;
   }
   return XII_SUCCESS;
 }
 
-xiiResult xiiForwardRenderPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+xiiResult xiiSimpleRenderPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(view);
   XII_IGNORE_UNUSED(pOutputs);
@@ -134,7 +127,7 @@ xiiResult xiiForwardRenderPass::InitializeRenderPipelinePass(const xiiView& view
   return XII_SUCCESS;
 }
 
-void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
+void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(pOutputs);
 
@@ -192,28 +185,11 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   {
     xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
 
-    // Opaque
+    // Simple Opaque
     {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Opaque Static Objects");
+      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Opaque Static Objects");
 
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaqueStatic);
-    }
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Opaque Dynamic Objects");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaqueDynamic);
-    }
-
-    // Masked
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Masked Static Objects");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMaskedStatic);
-    }
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Masked Dynamic Objects");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMaskedDynamic);
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
     }
   }
   renderViewContext.m_pCommandList->End();

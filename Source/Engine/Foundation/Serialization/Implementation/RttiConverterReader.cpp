@@ -35,7 +35,9 @@ void xiiRttiConverterReader::ApplyPropertiesToObject(const xiiAbstractObjectNode
   XII_ASSERT_DEBUG(pNode != nullptr, "Invalid node");
 
   if (pRtti->GetParentType() != nullptr)
+  {
     ApplyPropertiesToObject(pNode, pRtti->GetParentType(), pObject);
+  }
 
   for (auto* prop : pRtti->GetProperties())
   {
@@ -93,7 +95,9 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
         pSpecific->GetValuePtr(pObject, &pOldObject);
         pSpecific->SetValuePtr(pObject, &pRefrencedObject);
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
+        {
           xiiReflectionUtils::DeleteObject(pOldObject, pProp);
+        }
       }
       else
       {
@@ -146,7 +150,9 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
           pSpecific->GetValue(pObject, i, &pOldObject);
           pSpecific->Remove(pObject, i);
           if (pOldObject)
+          {
             xiiReflectionUtils::DeleteObject(pOldObject, pProp);
+          }
         }
       }
 
@@ -231,7 +237,9 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
         {
           void* pOldObject = value.ConvertTo<void*>();
           if (pOldObject)
+          {
             xiiReflectionUtils::DeleteObject(pOldObject, pProp);
+          }
         }
       }
 
@@ -316,7 +324,9 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
           void*      pOldClone = value.ConvertTo<void*>();
           pSpecific->Remove(pObject, sKey);
           if (pOldClone)
+          {
             xiiReflectionUtils::DeleteObject(pOldClone, pProp);
+          }
         }
       }
 

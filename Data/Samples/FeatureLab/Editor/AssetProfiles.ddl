@@ -12,9 +12,9 @@ AssetProfiles
 				p
 				{
 					VarDict %CameraPipelines{}
-					string %DebugRenderPipeline{"{ fb641000-728c-436b-90b9-3144155d8eda }"}
+					string %DebugRenderPipeline{"{ ed0b59ac-9c15-4fbf-a382-a8854f970cd8 }"}
 					string %EditorRenderPipeline{"{ ec0ce8c4-0a42-4346-88af-8b3b23916770 }"}
-					string %MainRenderPipeline{"{ b9f7ca83-90ba-43b2-8eec-b0efddb3f264 }"}
+					string %MainRenderPipeline{"{ 648e92e1-8632-484c-ae37-5071359df451 }"}
 				}
 			}
 			o

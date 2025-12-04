@@ -77,6 +77,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
     xiiUInt32       uiPrimitiveCount    = m_SpriteData.GetCount() * 2U * uiVertsPerPrimitive;
     xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
 
+    renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
     renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
     renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
     renderViewContext.m_pCommandList->EndRenderPass();
@@ -148,7 +149,7 @@ void xiiSpriteRenderer::FillSpriteData(const xiiRenderDataBatch& batch) const
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiSpriteRenderer::CreatePipelineState(const xiiRenderViewContext& renderViewContext) const
 {
   xiiSharedPtr<xiiGALDevice>         pDevice            = xiiGALDevice::GetDefaultDevice();
-  xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hShader, renderViewContext.GetPermutationVariables(), true);
+  xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hShader, renderViewContext.GetPermutationVariables(), false);
 
   xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
   graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
@@ -158,7 +159,7 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiSpriteRenderer::CreatePipelineState
   {
     xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
 
-    if (pShaderPermutation->IsShaderValid())
+    if (!pShaderPermutation->IsShaderValid())
       return nullptr;
 
     graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
