@@ -25,17 +25,6 @@ macro(xii_platform_pull_properties)
   get_property(XII_CMAKE_PLATFORM_LINUX GLOBAL PROPERTY XII_CMAKE_PLATFORM_LINUX)
 endmacro()
 
-macro(xii_platformhook_link_target_vulkan)
-  # On linux is the loader a dll
-  get_target_property(_dll_location XIIVulkan::Loader IMPORTED_LOCATION)
-
-  if(NOT _dll_location STREQUAL "")
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:XIIVulkan::Loader> $<TARGET_FILE_DIR:${TARGET_NAME}>)
-  endif()
-
-  unset(_dll_location)
-endmacro()
-
 macro(xii_platformhook_set_build_flags_clang TARGET_NAME)
   target_compile_options(${TARGET_NAME} PRIVATE -fPIC)
 
