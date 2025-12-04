@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "repositoryUrl": "https://github.com/KhronosGroup/SPIRV-Reflect",
+          "commitHash": "ef913b3ab3da1becca3cf46b15a10667c67bebe5"
+        }
+      }
+    }
+  ],
+  "$schema": "https://json.schemastore.org/component-detection-manifest.json"
+}
