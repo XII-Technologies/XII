@@ -17,11 +17,11 @@ struct XII_GRAPHICSCORE_DLL xiiRenderPipelineNodePinFlags
 
   enum Enum : StorageType
   {
-    Unknown          = 0U,         ///< \brief Pin role is not specified. Treated as invalid in most contexts.
-    Input            = XII_BIT(0), ///< \brief Marks this pin as an input to a node. Typically receives a texture, buffer, or resource from an upstream node. Input pins are eligible for connections from Output or PassThrough pins.
-    Output           = XII_BIT(1), ///< \brief Marks this pin as an output from a node. Produces a new resource to be consumed downstream (e.g., a rendered image or computed buffer).
-    PassThrough      = XII_BIT(2), ///< \brief Declares that this pin forwards data unmodified. Used to route a resource through a node without consuming or writing it (e.g. forwarding a shadow map).
-    ResourceProvider = XII_BIT(3), ///< \brief Indicates that the node dynamically provides or overrides a resource at runtime. Typically used for nodes that bind external inputs such as camera buffers, reflection probes, or user-defined resources.
+    Unknown          = 0U,         ///< Pin role is not specified. Treated as invalid in most contexts.
+    Input            = XII_BIT(0), ///< Marks this pin as an input to a node. Typically receives a texture, buffer, or resource from an upstream node. Input pins are eligible for connections from Output or PassThrough pins.
+    Output           = XII_BIT(1), ///< Marks this pin as an output from a node. Produces a new resource to be consumed downstream (e.g., a rendered image or computed buffer).
+    PassThrough      = XII_BIT(2), ///< Declares that this pin forwards data unmodified. Used to route a resource through a node without consuming or writing it (e.g. forwarding a shadow map).
+    ResourceProvider = XII_BIT(3), ///< Indicates that the node dynamically provides or overrides a resource at runtime. Typically used for nodes that bind external inputs such as camera buffers, reflection probes, or user-defined resources.
 
     Default = Unknown
   };

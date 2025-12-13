@@ -127,11 +127,11 @@ struct PS_OUT
   #endif
 };
 
-DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(SpriteTexture, Texture2D);
+DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(spriteTexture, Texture2D);
 
 float GetOpacity()
 {
-  float opacity = SpriteTexture.Sample(SpriteTexture_AutoSampler, G.Input.TexCoord0.xy).a * G.Input.Color0.a;
+  float opacity = spriteTexture.Sample(spriteTexture_AutoSampler, G.Input.TexCoord0.xy).a * G.Input.Color0.a;
 
   #if BLEND_MODE == BLEND_MODE_MASKED
     return opacity - 0.5;
@@ -154,7 +154,7 @@ PS_OUT main(PS_IN Input)
     discard;
   }
 
-  float4 color = SpriteTexture.Sample(SpriteTexture_AutoSampler, Input.TexCoord0.xy);
+  float4 color = spriteTexture.Sample(spriteTexture_AutoSampler, Input.TexCoord0.xy);
 
 #if SHAPE_ICON
   float3 tintedColor = saturate(color.rgb * Input.Color0.rgb * 2.0);

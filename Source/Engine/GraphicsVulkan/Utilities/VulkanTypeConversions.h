@@ -110,6 +110,8 @@ public:
   static vk::IndexType GetIndexType(xiiGALValueType::Enum indexType);
 
   static vk::ResolveModeFlagBits GetDepthResolveMode(xiiEnum<xiiGALDepthResolveMode> mode);
+
+  static xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

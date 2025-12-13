@@ -161,6 +161,8 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, m_vkBuffer, m_BufferMemoryAllocation));
 
+    SetResourceState(xiiVulkanTypeConversions::GetResourceStateFromBindFlags(m_Description.m_BindFlags));
+
     if (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0)
     {
       auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> xiiResult {
