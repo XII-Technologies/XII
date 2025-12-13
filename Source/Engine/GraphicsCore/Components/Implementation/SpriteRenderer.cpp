@@ -58,8 +58,10 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
     return;
 
   renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
-  renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("xiiGlobalConstants", renderViewContext.m_CommandListData.m_pGlobalConstants->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+  renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
   renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("spriteData", pSpriteData->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+
   {
     xiiResourceLock<xiiTexture2DResource> pTexture(pRenderData->m_hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
 
@@ -82,26 +84,6 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
     renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
     renderViewContext.m_pCommandList->EndRenderPass();
   }
-
-#ifdef CORE_ENABLE
-  pContext->BindShader(m_hShader);
-
-  xiiGALCommandListUtilities::BindBuffer(pCommandList, "spriteData", pSpriteData);
-  xiiGALCommandListUtilities::BindTexture2D(pCommandList, "SpriteTexture", pRenderData->m_hTexture);
-
-  renderViewContext.SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
-  renderViewContext.SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
-
-  FillSpriteData(batch);
-
-  if (m_SpriteData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
-  {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pContext->GetCommandList(), pSpriteData, 0, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
-
-    pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
-    pContext->DrawMeshBuffer().IgnoreResult();
-  }
-#endif
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const

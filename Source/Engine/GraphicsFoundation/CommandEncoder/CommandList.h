@@ -144,8 +144,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
 
   XII_ALWAYS_INLINE xiiGALViewport() = default;
 
-  XII_ALWAYS_INLINE xiiGALViewport(float fX, float fY, float fWidth, float fHeight, float fMinDepth, float fMaxDepth) :
+  XII_ALWAYS_INLINE xiiGALViewport(float fX, float fY, float fWidth, float fHeight, float fMinDepth = 0.0f, float fMaxDepth = 1.0f) :
     m_fTopLeftX(fX), m_fTopLeftY(fY), m_fWidth(fWidth), m_fHeight(fHeight), m_fMinDepth(fMinDepth), m_fMaxDepth(fMaxDepth)
+  {
+  }
+
+  XII_ALWAYS_INLINE xiiGALViewport(xiiRectFloat viewport, float fMinDepth = 0.0f, float fMaxDepth = 1.0f) :
+    m_fTopLeftX(viewport.x), m_fTopLeftY(viewport.y), m_fWidth(viewport.width), m_fHeight(viewport.height), m_fMinDepth(fMinDepth), m_fMaxDepth(fMaxDepth)
   {
   }
 
