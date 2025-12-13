@@ -1542,3 +1542,54 @@ XII_ALWAYS_INLINE vk::ResolveModeFlagBits xiiVulkanTypeConversions::GetDepthReso
   }
   return vk::ResolveModeFlagBits::eNone;
 }
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
+{
+  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;
+
+  for (auto v : bindFlags)
+  {
+    switch (v)
+    {
+      case xiiGALBindFlags::VertexBuffer:
+        resourceStates |= xiiGALResourceStateFlags::VertexBuffer;
+        break;
+      case xiiGALBindFlags::IndexBuffer:
+        resourceStates |= xiiGALResourceStateFlags::IndexBuffer;
+        break;
+      case xiiGALBindFlags::UniformBuffer:
+        resourceStates |= xiiGALResourceStateFlags::ConstantBuffer;
+        break;
+      case xiiGALBindFlags::ShaderResource:
+        resourceStates |= xiiGALResourceStateFlags::ShaderResource;
+        break;
+      case xiiGALBindFlags::RenderTarget:
+        resourceStates |= xiiGALResourceStateFlags::RenderTarget;
+        break;
+      case xiiGALBindFlags::DepthStencil:
+        resourceStates |= xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::DepthWrite;
+        break;
+      case xiiGALBindFlags::UnorderedAccess:
+        resourceStates |= xiiGALResourceStateFlags::UnorderedAccess;
+        break;
+      case xiiGALBindFlags::IndirectDrawArguments:
+        resourceStates |= xiiGALResourceStateFlags::IndirectArgument;
+        break;
+      case xiiGALBindFlags::InputAttachment:
+        resourceStates |= xiiGALResourceStateFlags::InputAttachment;
+        break;
+      case xiiGALBindFlags::RayTracing:
+        resourceStates |= xiiGALResourceStateFlags::RayTracing;
+        break;
+      case xiiGALBindFlags::ShadingRate:
+        resourceStates |= xiiGALResourceStateFlags::ShadingRate;
+        break;
+      case xiiGALBindFlags::None:
+      case xiiGALBindFlags::StreamOutput:
+      default:
+        XII_REPORT_FAILURE("Unexpected bind flag.");
+        break;
+    }
+  }
+  return resourceStates;
+}
