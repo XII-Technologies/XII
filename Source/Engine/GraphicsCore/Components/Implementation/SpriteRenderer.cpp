@@ -54,6 +54,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 
   renderViewContext.SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
   renderViewContext.SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
+  renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_LINE_LIST");
 
   xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = CreatePipelineState(renderViewContext);
   if (!pGraphicsPipelineState)
@@ -78,7 +79,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
     xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), pSpriteData, 0U, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
 
     const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
-    xiiUInt32       uiPrimitiveCount    = m_SpriteData.GetCount() * 2U * uiVertsPerPrimitive;
+    xiiUInt32       uiPrimitiveCount    = (m_SpriteData.GetCount() * 2U) * uiVertsPerPrimitive;
     xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
 
     renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();

@@ -91,11 +91,11 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 
 #include <Shaders/Materials/MaterialInterpolator.h>
 
-DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(FontTexture, Texture2D);
+DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(fontTexture, Texture2D);
 
 float4 main(PS_IN Input) : SV_Target
 {
-  float glyph = FontTexture.Sample(FontTexture_AutoSampler, Input.TexCoord0.xy).r;
+  float glyph = fontTexture.Sample(fontTexture_AutoSampler, Input.TexCoord0.xy).r;
   float c = saturate(glyph * 2.0 - 1.0); // 0.5 - 1 is color content
   float a = saturate(glyph * 2.0); // 0 - 0.5 is alpha content
 

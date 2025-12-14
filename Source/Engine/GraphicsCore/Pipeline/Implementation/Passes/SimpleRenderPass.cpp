@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator<xiiSimpleRenderPass>)
@@ -192,5 +193,8 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
       RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
     }
   }
+
+  xiiDebugRenderer::RenderScreenSpace(renderViewContext);
+
   renderViewContext.m_pCommandList->End();
 }

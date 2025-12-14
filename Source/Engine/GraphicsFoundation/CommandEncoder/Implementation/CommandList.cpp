@@ -386,7 +386,7 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
   SetIndexBufferPlatform(pIndexBuffer, m_uiIndexDataOffset, transitionMode);
 }
 
-void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
+void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets /*= {}*/, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiGALDeviceLimits& deviceLimits = m_pDevice->GetLimits();

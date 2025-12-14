@@ -846,7 +846,7 @@ public:
   /// \param pByteOffsets   - The array of offset values; one offset value for each buffer in the vertex-buffer array. Each offset is the number of bytes between the first element of a vertex buffer and the first element that will be used. If this parameter is an empty array, zero offsets for all buffers will be used.
   /// \param flags          - Additional flags for setting vertex buffers. See xiiGALSetVertexBufferFlags for more information.
   /// \param transitionMode - Resource state transition mode. Specifies whether the buffer state should be transitioned to the required state automatically.
-  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None, xiiEnum<xiiGALStateTransitionMode> transitionMode = xiiGALStateTransitionMode::Transition);
+  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets = {}, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None, xiiEnum<xiiGALStateTransitionMode> transitionMode = xiiGALStateTransitionMode::Transition);
 
   /// \brief This is used to set the constant (uniform) buffer for a shader resource.
   ///
