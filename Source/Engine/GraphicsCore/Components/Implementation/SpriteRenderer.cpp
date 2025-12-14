@@ -6,6 +6,7 @@
 #include <GraphicsCore/Components/SpriteComponent.h>
 #include <GraphicsCore/Components/SpriteRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
+#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
@@ -131,7 +132,6 @@ void xiiSpriteRenderer::FillSpriteData(const xiiRenderDataBatch& batch) const
 
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiSpriteRenderer::CreatePipelineState(const xiiRenderViewContext& renderViewContext) const
 {
-  xiiSharedPtr<xiiGALDevice>         pDevice            = xiiGALDevice::GetDefaultDevice();
   xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hShader, renderViewContext.GetPermutationVariables(), false);
 
   xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
@@ -155,7 +155,7 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiSpriteRenderer::CreatePipelineState
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
   }
 
-  return pDevice->CreateGraphicsPipelineState(graphicsPipelineStateDescription);
+  return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_SpriteRenderer);
