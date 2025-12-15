@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator<xiiSimpleRenderPass>)
@@ -182,19 +182,55 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
   renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
 
+  // Setup Permutation Variables.
+  xiiRenderViewContext passRenderViewContext = renderViewContext;
+  xiiTempHashedString  sRenderPass("RENDER_PASS_FORWARD");
+  if (renderViewContext.m_pViewData->m_ViewRenderMode != xiiViewRenderMode::None)
+  {
+    sRenderPass = xiiViewRenderMode::GetPermutationValue(renderViewContext.m_pViewData->m_ViewRenderMode);
+  }
+  renderViewContext.SetShaderPermutationVariable("RENDER_PASS", sRenderPass);
+
   renderViewContext.m_pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
-
-    // Simple Opaque
     {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Opaque Static Objects");
+      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Opaque Objects");
 
       RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
     }
+    {
+      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Transparent Objects");
+
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent);
+    }
+
+    if (!m_sMessage.IsEmpty())
+    {
+      xiiDebugRenderer::Draw2DText(*renderViewContext.m_pViewDebugContext, m_sMessage.GetData(), xiiVec2I32(20, 20), xiiColor::OrangeRed);
+    }
+
+    xiiDebugRenderer::RenderWorldSpace(renderViewContext);
+    {
+      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Foreground Objects (Prepare-Depth)");
+
+      renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+    }
+    {
+      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Foreground Objects");
+
+      renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+    }
+    {
+      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render GUI Objects");
+
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
+    }
+    xiiDebugRenderer::RenderScreenSpace(renderViewContext);
   }
-
-  xiiDebugRenderer::RenderScreenSpace(renderViewContext);
-
   renderViewContext.m_pCommandList->End();
 }
