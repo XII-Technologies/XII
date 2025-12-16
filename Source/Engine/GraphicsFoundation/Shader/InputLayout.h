@@ -92,8 +92,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiGALLayoutElement() = default;
+
+  xiiGALLayoutElement(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiUInt32 uiBufferSlot, xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiRelativeOffset, xiiUInt32 uiStride, xiiEnum<xiiGALInputElementFrequency> frequency, xiiUInt32 uiInstanceDataStepRate) :
+    m_Semantic(semantic), m_uiBufferSlot(uiBufferSlot), m_Format(format), m_uiRelativeOffset(uiRelativeOffset), m_uiStride(uiStride), m_Frequency(frequency), m_uiInstanceDataStepRate(uiInstanceDataStepRate)
+  {
+  }
+
   xiiEnum<xiiGALInputLayoutSemantic>   m_Semantic               = xiiGALInputLayoutSemantic::Undefined;   ///< The element semantic. The default is Undefined.
-  xiiUInt32                            m_uiInputIndex           = 0U;                                     ///< The input index of the element specified in the vertex shader. The default is 0.
   xiiUInt32                            m_uiBufferSlot           = 0U;                                     ///< The buffer slot index that this element is read from. The default is 0.
   xiiEnum<xiiGALResourceFormat>        m_Format                 = xiiGALResourceFormat::Unknown;          ///< The element format. The default is xiiGALResourceFormat::Unknown.
   xiiUInt32                            m_uiRelativeOffset       = XII_GAL_LAYOUT_ELEMENT_AUTO_OFFSET;     ///< The relative offset to the element in bytes. If this value is set to XII_GAL_LAYOUT_ELEMENT_AUTO_OFFSET (default value), the offset will be computed automatically by placing the element right after the previous one.

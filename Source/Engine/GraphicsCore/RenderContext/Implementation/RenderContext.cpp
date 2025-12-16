@@ -582,7 +582,7 @@ void xiiRenderContext::BindMeshBuffer(xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pV
   m_StateFlags.Add(xiiRenderContextFlags::MeshBufferBindingChanged);
 }
 
-xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiInstanceCount)
+xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount /*= 0xFFFFFFFFU*/, xiiUInt32 uiFirstPrimitive /*= 0*/, xiiUInt32 uiInstanceCount /*= 1*/)
 {
   BeginClearThenLoadInternalRenderPass();
 

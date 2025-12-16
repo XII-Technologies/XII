@@ -6,10 +6,12 @@
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
+#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
@@ -208,8 +210,6 @@ namespace
 
   static xiiMeshBufferResourceHandle s_hLineBoxMeshBuffer;
   static xiiMeshBufferResourceHandle s_hSolidBoxMeshBuffer;
-  static xiiInputLayoutInfo          s_InputLayoutInfo;
-  static xiiInputLayoutInfo          s_TexInputLayoutInfo;
   static xiiTexture2DResourceHandle  s_hDebugFontTexture;
 
   static xiiShaderResourceHandle s_hDebugGeometryShader;
@@ -261,6 +261,142 @@ namespace
   static void DestroyBuffer(BufferType::Enum bufferType)
   {
     s_pDataBuffer[bufferType].Clear();
+  }
+
+  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetDebugGeometryPipelineState(const xiiRenderViewContext& renderViewContext)
+  {
+    xiiSharedPtr<xiiGALDevice>         pDevice            = xiiGALDevice::GetDefaultDevice();
+    xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(s_hDebugGeometryShader, renderViewContext.GetPermutationVariables(), false);
+
+    xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::LineList;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
+
+    {
+      xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
+
+      if (!pShaderPermutation->IsShaderValid())
+        return nullptr;
+
+      graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
+      graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+      graphicsPipelineStateDescription.m_pGeometryShader            = pShaderPermutation->GetGALShader(xiiGALShaderType::Geometry);
+      graphicsPipelineStateDescription.m_pPixelShader               = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+
+      xiiGALInputLayoutCreationDescription inputLayoutDescription;
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Position, 0, xiiGALResourceFormat::RGB32Float, 0, 12, xiiGALInputElementFrequency::PerVertex, 0});
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Color0, 0, xiiGALResourceFormat::RGBA8UNormalized, 12, 4, xiiGALInputElementFrequency::PerVertex, 0});
+
+      xiiSharedPtr<xiiGALInputLayout> pInputLayout = graphicsPipelineStateDescription.m_pVertexShader->CreateInputLayout(inputLayoutDescription);
+
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pInputLayout       = pInputLayout;
+    }
+
+    return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+  }
+
+  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetDebugPrimitivesPipelineState(const xiiRenderViewContext& renderViewContext, xiiEnum<xiiGALPrimitiveTopology> topology)
+  {
+    xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(s_hDebugPrimitiveShader, renderViewContext.GetPermutationVariables(), false);
+
+    xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology = topology;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
+
+    {
+      xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
+
+      if (!pShaderPermutation->IsShaderValid())
+        return nullptr;
+
+      graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
+      graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+      graphicsPipelineStateDescription.m_pGeometryShader            = pShaderPermutation->GetGALShader(xiiGALShaderType::Geometry);
+      graphicsPipelineStateDescription.m_pPixelShader               = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+
+      xiiGALInputLayoutCreationDescription inputLayoutDescription;
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Position, 0, xiiGALResourceFormat::RGB32Float, 0, 12, xiiGALInputElementFrequency::PerVertex, 0});
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Color0, 0, xiiGALResourceFormat::RGBA8UNormalized, 12, 4, xiiGALInputElementFrequency::PerVertex, 0});
+
+      xiiSharedPtr<xiiGALInputLayout> pInputLayout = graphicsPipelineStateDescription.m_pVertexShader->CreateInputLayout(inputLayoutDescription);
+
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pInputLayout       = pInputLayout;
+    }
+
+    return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+  }
+
+  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetDebugTexturedPrimitivesPipelineState(const xiiRenderViewContext& renderViewContext)
+  {
+    xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(s_hDebugTexturedPrimitiveShader, renderViewContext.GetPermutationVariables(), false);
+
+    xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
+
+    {
+      xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
+
+      if (!pShaderPermutation->IsShaderValid())
+        return nullptr;
+
+      graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
+      graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+      graphicsPipelineStateDescription.m_pGeometryShader            = pShaderPermutation->GetGALShader(xiiGALShaderType::Geometry);
+      graphicsPipelineStateDescription.m_pPixelShader               = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+    }
+
+    return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+  }
+
+  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetDebugTextPipelineState(const xiiRenderViewContext& renderViewContext)
+  {
+    xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(s_hDebugTextShader, renderViewContext.GetPermutationVariables(), false);
+
+    xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
+
+    {
+      xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
+
+      if (!pShaderPermutation->IsShaderValid())
+        return nullptr;
+
+      graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
+      graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+      graphicsPipelineStateDescription.m_pGeometryShader            = pShaderPermutation->GetGALShader(xiiGALShaderType::Geometry);
+      graphicsPipelineStateDescription.m_pPixelShader               = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+
+      xiiGALInputLayoutCreationDescription inputLayoutDescription;
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Position, 0, xiiGALResourceFormat::RGB32Float, 0, 12, xiiGALInputElementFrequency::PerVertex, 0});
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::Color0, 0, xiiGALResourceFormat::RGBA8UNormalized, 12, 4, xiiGALInputElementFrequency::PerVertex, 0});
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::TexCoord0, 0, xiiGALResourceFormat::RG32Float, 16, 8, xiiGALInputElementFrequency::PerVertex, 0});
+      inputLayoutDescription.m_LayoutElements.PushBack({xiiGALInputLayoutSemantic::TexCoord1, 0, xiiGALResourceFormat::RG32Float, 24, 8, xiiGALInputElementFrequency::PerVertex, 0});
+
+      xiiSharedPtr<xiiGALInputLayout> pInputLayout = graphicsPipelineStateDescription.m_pVertexShader->CreateInputLayout(inputLayoutDescription);
+
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pInputLayout       = pInputLayout;
+    }
+
+    return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
   }
 
   template <typename AddFunc>
@@ -1411,23 +1547,22 @@ void xiiDebugRenderer::SetTextScale(float fScale)
 }
 
 // static
-void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewContext)
 {
   if (renderViewContext.m_pWorldDebugContext != nullptr)
   {
-    RenderInternalWorldSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext, pCommandList);
+    RenderInternalWorldSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext);
   }
 
   if (renderViewContext.m_pViewDebugContext != nullptr)
   {
-    RenderInternalWorldSpace(*renderViewContext.m_pViewDebugContext, renderViewContext, pCommandList);
+    RenderInternalWorldSpace(*renderViewContext.m_pViewDebugContext, renderViewContext);
   }
 }
 
 // static
-void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
 {
-#ifdef CORE_ENABLE
   {
     XII_LOCK(s_Mutex);
 
@@ -1534,27 +1669,46 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
     {
       CreateDataBuffer(BufferType::SolidBoxes, sizeof(BoxData));
 
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_LINE_LIST");
 
-      xiiGALCommandListUtilities::BindBuffer(pCommandList, "boxData", s_pDataBuffer[BufferType::SolidBoxes]);
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugGeometryPipelineState(renderViewContext);
 
-      renderViewContext.m_pRenderContext->BindMeshBuffer(s_hSolidBoxMeshBuffer);
-
-      const BoxData* pSolidBoxData = pData->m_SolidBoxes.GetData();
-      while (uiNumSolidBoxes > 0)
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumSolidBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumSolidBoxes, BOXES_PER_BATCH);
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+        renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("boxData", s_pDataBuffer[BufferType::SolidBoxes]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
+        const BoxData* pSolidBoxData = pData->m_SolidBoxes.GetData();
+        while (uiNumSolidBoxes > 0)
+        {
+          const xiiUInt32 uiNumSolidBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumSolidBoxes, BOXES_PER_BATCH);
 
-        unsigned int uiRenderedInstances = uiNumSolidBoxesInBatch;
-        if (renderViewContext.m_pCamera->IsStereoscopic())
-          uiRenderedInstances *= 2;
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray()).AssertSuccess();
+          {
+            xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(s_hSolidBoxMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiRenderedInstances).IgnoreResult();
+            renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&pMeshBuffer->GetVertexBuffer(), 1U));
+            renderViewContext.m_pCommandList->SetIndexBuffer(pMeshBuffer->GetIndexBuffer());
+          }
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-        uiNumSolidBoxes -= uiNumSolidBoxesInBatch;
-        pSolidBoxData += BOXES_PER_BATCH;
+          xiiUInt32 uiRenderedInstances = uiNumSolidBoxesInBatch;
+          if (renderViewContext.m_pCamera->IsStereoscopic())
+            uiRenderedInstances *= 2U;
+
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = uiRenderedInstances * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->DrawIndexed({uiPrimitiveCount, xiiGALValueType::UInt32, uiInstanceCount, 0U});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumSolidBoxes -= uiNumSolidBoxesInBatch;
+          pSolidBoxData += BOXES_PER_BATCH;
+        }
       }
     }
   }
@@ -1567,22 +1721,38 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       CreateVertexBuffer(BufferType::Triangles3D, sizeof(Vertex));
 
       renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_TRIANGLE_LIST");
 
-      const Vertex* pTriangleData = pData->m_TriangleVertices.GetData();
-      while (uiNumTriangleVertices > 0)
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugPrimitivesPipelineState(renderViewContext, xiiGALPrimitiveTopology::TriangleList);
+
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumTriangleVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumTriangleVertices, TRIANGLE_VERTICES_PER_BATCH);
-        XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
+        const Vertex* pTriangleData = pData->m_TriangleVertices.GetData();
+        while (uiNumTriangleVertices > 0)
+        {
+          const xiiUInt32 uiNumTriangleVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumTriangleVertices, TRIANGLE_VERTICES_PER_BATCH);
+          XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Triangles3D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+          renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&s_pDataBuffer[BufferType::Triangles3D], 1U));
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-        uiNumTriangleVertices -= uiNumTriangleVerticesInBatch;
-        pTriangleData += TRIANGLE_VERTICES_PER_BATCH;
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = (uiNumTriangleVerticesInBatch / 3) * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumTriangleVertices -= uiNumTriangleVerticesInBatch;
+          pTriangleData += TRIANGLE_VERTICES_PER_BATCH;
+        }
       }
     }
   }
@@ -1591,32 +1761,47 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
   {
     for (auto itTex = pData->m_TexturedTriangle3DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
-      renderViewContext.m_pRenderContext->BindTexture2D("BaseTexture", itTex.Key());
+      const auto& vertices      = itTex.Value();
+      xiiUInt32   uiNumVertices = vertices.GetCount();
 
-      const auto& verts = itTex.Value();
-
-      xiiUInt32 uiNumVertices = verts.GetCount();
       if (uiNumVertices != 0)
       {
         CreateVertexBuffer(BufferType::TexTriangles3D, sizeof(TexVertex));
 
         renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
-        renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
+        renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_TRIANGLE_LIST");
 
-        const TexVertex* pTriangleData = verts.GetData();
-        while (uiNumVertices > 0)
+        xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugTexturedPrimitivesPipelineState(renderViewContext);
+
+        if (pGraphicsPipelineState)
         {
-          const xiiUInt32 uiNumVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
-          XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
+          renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+          renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+          renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+          renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("baseTexture", itTex.Key());
 
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
+          const TexVertex* pTriangleData = vertices.GetData();
+          while (uiNumVertices > 0)
+          {
+            const xiiUInt32 uiNumVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
+            XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::TexTriangles3D], {}, &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
+            xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray()).AssertSuccess();
 
-          renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+            renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&s_pDataBuffer[BufferType::TexTriangles3D], 1U));
+            renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-          uiNumVertices -= uiNumVerticesInBatch;
-          pTriangleData += TEX_TRIANGLE_VERTICES_PER_BATCH;
+            const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+            xiiUInt32       uiPrimitiveCount    = (uiNumVerticesInBatch / 3) * uiVertsPerPrimitive;
+            xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+            renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+            renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+            renderViewContext.m_pCommandList->EndRenderPass();
+
+            uiNumVertices -= uiNumVerticesInBatch;
+            pTriangleData += TEX_TRIANGLE_VERTICES_PER_BATCH;
+          }
         }
       }
     }
@@ -1630,22 +1815,38 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       CreateVertexBuffer(BufferType::Lines, sizeof(Vertex));
 
       renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_LINE_LIST");
 
-      const Vertex* pLineData = pData->m_LineVertices.GetData();
-      while (uiNumLineVertices > 0)
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugPrimitivesPipelineState(renderViewContext, xiiGALPrimitiveTopology::LineList);
+
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
-        XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+        const Vertex* pLineData = pData->m_LineVertices.GetData();
+        while (uiNumLineVertices > 0)
+        {
+          const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
+          XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Lines], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+          renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&s_pDataBuffer[BufferType::Lines], 1U));
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-        uiNumLineVertices -= uiNumLineVerticesInBatch;
-        pLineData += LINE_VERTICES_PER_BATCH;
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = (uiNumLineVerticesInBatch / 2) * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumLineVertices -= uiNumLineVerticesInBatch;
+          pLineData += LINE_VERTICES_PER_BATCH;
+        }
       }
     }
   }
@@ -1657,23 +1858,42 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
     {
       CreateDataBuffer(BufferType::LineBoxes, sizeof(BoxData));
 
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_LINE_LIST");
 
-      xiiGALCommandListUtilities::BindBuffer(pCommandList, "boxData", s_pDataBuffer[BufferType::LineBoxes]);
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugGeometryPipelineState(renderViewContext);
 
-      renderViewContext.m_pRenderContext->BindMeshBuffer(s_hLineBoxMeshBuffer);
-
-      const BoxData* pLineBoxData = pData->m_LineBoxes.GetData();
-      while (uiNumLineBoxes > 0)
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+        renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("boxData", s_pDataBuffer[BufferType::LineBoxes]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
+        const BoxData* pLineBoxData = pData->m_LineBoxes.GetData();
+        while (uiNumLineBoxes > 0)
+        {
+          const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray()).AssertSuccess();
+          {
+            xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(s_hLineBoxMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
 
-        uiNumLineBoxes -= uiNumLineBoxesInBatch;
-        pLineBoxData += BOXES_PER_BATCH;
+            renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&pMeshBuffer->GetVertexBuffer(), 1U));
+            renderViewContext.m_pCommandList->SetIndexBuffer(pMeshBuffer->GetIndexBuffer());
+          }
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
+
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = uiNumLineBoxesInBatch * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->DrawIndexed({uiPrimitiveCount, xiiGALValueType::UInt32, uiInstanceCount, 0U});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumLineBoxes -= uiNumLineBoxesInBatch;
+          pLineBoxData += BOXES_PER_BATCH;
+        }
       }
     }
   }
@@ -1701,48 +1921,65 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
     {
       CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
 
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
-      renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_TRIANGLE_LIST");
 
-      xiiGALCommandListUtilities::BindTexture2D(pCommandList, "FontTexture", s_hDebugFontTexture);
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugTextPipelineState(renderViewContext);
 
-      const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
-      while (uiNumGlyphs > 0)
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+        renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+        {
+          xiiResourceLock<xiiTexture2DResource> pTexture(s_hDebugFontTexture, xiiResourceAcquireMode::AllowLoadingFallback);
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer({}, {}, nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
+          renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("fontTexture", pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+          renderViewContext.m_pCommandList->ResolveAndSetSampler("fontTexture", pTexture->GetGALSampler());
+        }
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+        const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
+        while (uiNumGlyphs > 0)
+        {
+          const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        uiNumGlyphs -= uiNumGlyphsInBatch;
-        pGlyphData += GLYPHS_PER_BATCH;
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = (uiNumGlyphsInBatch * 2) * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumGlyphs -= uiNumGlyphsInBatch;
+          pGlyphData += GLYPHS_PER_BATCH;
+        }
       }
     }
   }
-#endif
 }
 
 // static
-void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewContext)
 {
   if (renderViewContext.m_pWorldDebugContext != nullptr)
   {
-    RenderInternalScreenSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext, pCommandList);
+    RenderInternalScreenSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext);
   }
 
   if (renderViewContext.m_pViewDebugContext != nullptr)
   {
-    RenderInternalScreenSpace(*renderViewContext.m_pViewDebugContext, renderViewContext, pCommandList);
+    RenderInternalScreenSpace(*renderViewContext.m_pViewDebugContext, renderViewContext);
   }
 }
 
 // static
-void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
 {
-#ifdef CORE_ENABLE
   {
     XII_LOCK(s_Mutex);
 
@@ -1844,22 +2081,38 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       CreateVertexBuffer(BufferType::Lines2D, sizeof(Vertex));
 
       renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_LINE_LIST");
 
-      const Vertex* pLineData = pData->m_Line2DVertices.GetData();
-      while (uiNumLineVertices > 0)
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugGeometryPipelineState(renderViewContext);
+
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
-        XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+        const Vertex* pLineData = pData->m_Line2DVertices.GetData();
+        while (uiNumLineVertices > 0)
+        {
+          const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
+          XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Lines2D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+          renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&s_pDataBuffer[BufferType::Lines2D], 1U));
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-        uiNumLineVertices -= uiNumLineVerticesInBatch;
-        pLineData += LINE_VERTICES_PER_BATCH;
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = (uiNumLineVerticesInBatch / 2) * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumLineVertices -= uiNumLineVerticesInBatch;
+          pLineData += LINE_VERTICES_PER_BATCH;
+        }
       }
     }
   }
@@ -1872,22 +2125,38 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       CreateVertexBuffer(BufferType::Triangles2D, sizeof(Vertex));
 
       renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugPrimitiveShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_TRIANGLE_LIST");
 
-      const Vertex* pTriangleData = pData->m_Triangle2DVertices.GetData();
-      while (uiNum2DVertices > 0)
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugPrimitivesPipelineState(renderViewContext, xiiGALPrimitiveTopology::TriangleList);
+
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TRIANGLE_VERTICES_PER_BATCH);
-        XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
+        const Vertex* pTriangleData = pData->m_Triangle2DVertices.GetData();
+        while (uiNum2DVertices > 0)
+        {
+          const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TRIANGLE_VERTICES_PER_BATCH);
+          XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::Triangles2D], {}, &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+          renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&s_pDataBuffer[BufferType::Triangles2D], 1U));
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-        uiNum2DVertices -= uiNum2DVerticesInBatch;
-        pTriangleData += TRIANGLE_VERTICES_PER_BATCH;
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = (uiNum2DVerticesInBatch / 3) * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNum2DVertices -= uiNum2DVerticesInBatch;
+          pTriangleData += TRIANGLE_VERTICES_PER_BATCH;
+        }
       }
     }
   }
@@ -1896,32 +2165,47 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
   {
     for (auto itTex = pData->m_TexturedTriangle2DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
-      xiiGALCommandListUtilities::BindTextureView(pCommandList, "BaseTexture", itTex.Key());
+      const auto& vertices = itTex.Value();
 
-      const auto& verts = itTex.Value();
-
-      xiiUInt32 uiNum2DVertices = verts.GetCount();
+      xiiUInt32 uiNum2DVertices = vertices.GetCount();
       if (uiNum2DVertices != 0)
       {
         CreateVertexBuffer(BufferType::TexTriangles2D, sizeof(TexVertex));
 
         renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
-        renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
+        renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_TRIANGLE_LIST");
 
-        const TexVertex* pTriangleData = verts.GetData();
-        while (uiNum2DVertices > 0)
+        xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugTexturedPrimitivesPipelineState(renderViewContext);
+
+        if (pGraphicsPipelineState)
         {
-          const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
-          XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
+          renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+          renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+          renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+          renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("baseTexture", itTex.Key());
 
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
+          const TexVertex* pTriangleData = vertices.GetData();
+          while (uiNum2DVertices > 0)
+          {
+            const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
+            XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_pDataBuffer[BufferType::TexTriangles2D], {}, &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
+            xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray()).AssertSuccess();
 
-          renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+            renderViewContext.m_pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&s_pDataBuffer[BufferType::TexTriangles2D], 1U));
+            renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
 
-          uiNum2DVertices -= uiNum2DVerticesInBatch;
-          pTriangleData += TEX_TRIANGLE_VERTICES_PER_BATCH;
+            const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+            xiiUInt32       uiPrimitiveCount    = (uiNum2DVerticesInBatch / 3) * uiVertsPerPrimitive;
+            xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+            renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+            renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+            renderViewContext.m_pCommandList->EndRenderPass();
+
+            uiNum2DVertices -= uiNum2DVerticesInBatch;
+            pTriangleData += TEX_TRIANGLE_VERTICES_PER_BATCH;
+          }
         }
       }
     }
@@ -1941,28 +2225,46 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
     {
       CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
 
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
+      renderViewContext.SetShaderPermutationVariable("TOPOLOGY", "TOPOLOGY_TRIANGLE_LIST");
 
-      xiiGALCommandListUtilities::BindBuffer(pCommandList, "glyphData", s_pDataBuffer[BufferType::Glyphs]);
-      xiiGALCommandListUtilities::BindTexture2D(pCommandList, "FontTexture", s_hDebugFontTexture);
+      xiiSharedPtr<xiiGALGraphicsPipelineState> pGraphicsPipelineState = GetDebugTextPipelineState(renderViewContext);
 
-      const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
-      while (uiNumGlyphs > 0)
+      if (pGraphicsPipelineState)
       {
-        const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
+        renderViewContext.m_pCommandList->SetPipelineState(pGraphicsPipelineState);
+        renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+        renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+        renderViewContext.m_pCommandList->ResolveAndSetShaderResourceBufferView("glyphData", s_pDataBuffer[BufferType::Glyphs]->GetDefaultView(xiiGALBufferViewType::ShaderResource));
 
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+        {
+          xiiResourceLock<xiiTexture2DResource> pTexture(s_hDebugFontTexture, xiiResourceAcquireMode::AllowLoadingFallback);
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer({}, {}, nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
+          renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("fontTexture", pTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+          renderViewContext.m_pCommandList->ResolveAndSetSampler("fontTexture", pTexture->GetGALSampler());
+        }
 
-        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+        const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
+        while (uiNumGlyphs > 0)
+        {
+          const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
 
-        uiNumGlyphs -= uiNumGlyphsInBatch;
-        pGlyphData += GLYPHS_PER_BATCH;
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pCommandList.Borrow(), s_pDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray()).AssertSuccess();
+
+          const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pGraphicsPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+          xiiUInt32       uiPrimitiveCount    = (uiNumGlyphsInBatch * 2U) * uiVertsPerPrimitive;
+          xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+
+          renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
+          renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+          renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+          renderViewContext.m_pCommandList->EndRenderPass();
+
+          uiNumGlyphs -= uiNumGlyphsInBatch;
+          pGlyphData += GLYPHS_PER_BATCH;
+        }
       }
     }
   }
-#endif
 }
 
 void xiiDebugRenderer::OnEngineStartup()
@@ -1987,64 +2289,6 @@ void xiiDebugRenderer::OnEngineStartup()
     desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
     s_hSolidBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugSolidBox", std::move(desc), "Mesh for Rendering Debug Solid Boxes");
-  }
-
-  {
-    // reset, if already used before
-    s_InputLayoutInfo.m_VertexStreams.Clear();
-
-    {
-      xiiVertexStreamInfo& si = s_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
-      si.m_Format             = xiiGALResourceFormat::RGB32Float;
-      si.m_uiOffset           = 0;
-      si.m_uiElementSize      = 12;
-    }
-
-    {
-      xiiVertexStreamInfo& si = s_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
-      si.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
-      si.m_uiOffset           = 12;
-      si.m_uiElementSize      = 4;
-    }
-  }
-
-  {
-    // reset, if already used before
-    s_TexInputLayoutInfo.m_VertexStreams.Clear();
-
-    {
-      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
-      si.m_Format             = xiiGALResourceFormat::RGB32Float;
-      si.m_uiOffset           = 0;
-      si.m_uiElementSize      = 12;
-    }
-
-    {
-      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
-      si.m_Format             = xiiGALResourceFormat::RGBA8UNormalized;
-      si.m_uiOffset           = 12;
-      si.m_uiElementSize      = 4;
-    }
-
-    {
-      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALInputLayoutSemantic::TexCoord0;
-      si.m_Format             = xiiGALResourceFormat::RG32Float;
-      si.m_uiOffset           = 16;
-      si.m_uiElementSize      = 8;
-    }
-
-    {
-      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALInputLayoutSemantic::TexCoord1; // padding
-      si.m_Format             = xiiGALResourceFormat::RG32Float;
-      si.m_uiOffset           = 24;
-      si.m_uiElementSize      = 8;
-    }
   }
 
   {

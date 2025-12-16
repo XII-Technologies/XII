@@ -267,11 +267,11 @@ public:
 private:
   friend class xiiSimpleRenderPass;
 
-  static void RenderScreenSpace(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList);
-  static void RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList);
+  static void RenderScreenSpace(const xiiRenderViewContext& renderViewContext);
+  static void RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
 
-  static void RenderWorldSpace(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList);
-  static void RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList);
+  static void RenderWorldSpace(const xiiRenderViewContext& renderViewContext);
+  static void RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
 
   static void OnEngineStartup();
   static void OnEngineShutdown();

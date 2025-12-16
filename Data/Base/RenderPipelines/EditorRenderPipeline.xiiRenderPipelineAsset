@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{8099602035358019464,4847573331455305924}}
-		u4 %Hash{17871815817519827689}
+		u4 %Hash{339758190554818849}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -253,7 +253,7 @@ o
 		Uuid %DepthStencil{u4{15922014222681021749,5705614867133715282}}
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
 		Uuid %FrameConstants{u4{6049820046118688151,6108103424858220406}}
-		s %Message{""}
+		s %Message{"Hello from render graph!"}
 		s %Name{""}
 		Vec2 %Node::Pos{f{0x079DED44,0x617E3244}}
 	}
