@@ -10,7 +10,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiForwardRenderShadingQuality, 1)
   XII_ENUM_CONSTANT(xiiForwardRenderShadingQuality::Ultra)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 3, xiiRTTIDefaultAllocator<xiiForwardRenderPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 3, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {

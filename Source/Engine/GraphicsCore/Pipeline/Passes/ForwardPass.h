@@ -40,6 +40,9 @@ public:
 
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
+protected:
+  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) = 0;
+
 private:
   xiiRenderPipelineNodePassThroughColourAttachmentPin m_PinColour;
   xiiRenderPipelineNodePassThroughDepthAttachmentPin  m_PinDepthStencil;
