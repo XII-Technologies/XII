@@ -78,11 +78,8 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 namespace
 {
-  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessengerCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessengerCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
   {
-    XII_IGNORE_UNUSED(messageType);
-    XII_IGNORE_UNUSED(pUserData);
-
     switch (messageSeverity)
     {
       case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
@@ -112,15 +109,8 @@ namespace
     return vk::False;
   }
 
-  VKAPI_ATTR xiiUInt32 VKAPI_CALL xiiVulkanDebugReportCallback(vk::DebugReportFlagsEXT reportFlags, vk::DebugReportObjectTypeEXT objectType, xiiUInt64 uiObject, size_t uiLocation, xiiInt32 iMessageCode, const char* szLayerPrefix, const char* szMessage, void* pUserData)
+  VKAPI_ATTR xiiUInt32 VKAPI_CALL xiiVulkanDebugReportCallback(vk::DebugReportFlagsEXT reportFlags, vk::DebugReportObjectTypeEXT, xiiUInt64, size_t, xiiInt32, const char*, const char* szMessage, void*)
   {
-    XII_IGNORE_UNUSED(objectType);
-    XII_IGNORE_UNUSED(uiObject);
-    XII_IGNORE_UNUSED(uiLocation);
-    XII_IGNORE_UNUSED(iMessageCode);
-    XII_IGNORE_UNUSED(szLayerPrefix);
-    XII_IGNORE_UNUSED(pUserData);
-
     if (reportFlags & vk::DebugReportFlagBitsEXT::eError)
     {
       xiiLog::Error("Vulkan: {}", szMessage);
