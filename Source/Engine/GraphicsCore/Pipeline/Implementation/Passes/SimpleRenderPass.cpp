@@ -87,6 +87,9 @@ xiiResult xiiSimpleRenderPass::InitializeRenderPipelinePass(const xiiView& view,
   if (pDepthInput == nullptr)
     return XII_FAILURE;
 
+  if (!pInputs[m_PinFrameConstants.m_uiInputIndex])
+    return XII_FAILURE;
+
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderPassCreationDescription renderPassDescription;
@@ -234,3 +237,5 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   }
   renderViewContext.m_pCommandList->End();
 }
+
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SimpleRenderPass);

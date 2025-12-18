@@ -26,7 +26,7 @@ CullMode = CullMode_None
 #include <Shaders/Common/Common.h>
 #include <Shaders/Common/GlobalConstants.h>
 
-Texture2DArray ColorTexture;
+Texture2DArray colorTexture;
 
 float4 main(PS_IN Input) : SV_Target
 {
@@ -34,6 +34,6 @@ float4 main(PS_IN Input) : SV_Target
   s_ActiveCameraEyeIndex = Input.RenderTargetArrayIndex;
 #endif
   int3 coords = int3(Input.Position.xy, s_ActiveCameraEyeIndex);
-  return ColorTexture.Load(int4(coords, 0));
+  return colorTexture.Load(int4(coords, 0));
 }
 
