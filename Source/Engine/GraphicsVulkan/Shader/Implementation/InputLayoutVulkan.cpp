@@ -20,15 +20,12 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALShader* pShader)
   xiiGALShaderVulkan*              pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pShader);
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());
-  auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
+  auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum) -> xiiUInt32 {
     for (xiiUInt32 i = 0U; i < vertexInputAttributes.GetCount(); ++i)
     {
       if (vertexInputAttributes[i].m_Semantic == semantic)
       {
-        if (vertexInputAttributes[i].m_Format != format)
-        {
-          xiiLog::Info("Found matching semantic {}, but with differing formats. {} : {}", semantic, format, vertexInputAttributes[i].m_Format);
-        }
+        // XII_ASSERT_DEBUG(vertexInputAttributes[i].m_Format == format, "Found matching semantic {}, but with differing formats. {} : {}", semantic, format, vertexInputAttributes[i].m_Format);
 
         xiiUInt32 uiLocation = vertexInputAttributes[i].m_uiSemanticIndex;
         vertexInputAttributes.RemoveAtAndSwap(i);
@@ -48,7 +45,7 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALShader* pShader)
     const xiiUInt32 uiLocation = FindLocation(layoutElement.m_Semantic, layoutElement.m_Format);
     if (uiLocation == xiiInvalidIndex)
     {
-      xiiLog::Warning("Vertex buffer semantic {} is not used by the shader.", layoutElement.m_Semantic);
+      // xiiLog::Warning("Vertex buffer semantic {} is not used by the shader.", layoutElement.m_Semantic);
       continue;
     }
 

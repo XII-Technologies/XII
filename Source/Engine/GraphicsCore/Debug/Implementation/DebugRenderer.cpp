@@ -2417,7 +2417,7 @@ void xiiScriptExtensionClass_Debug::DrawSolidBox(const xiiWorld* pWorld, const x
 // static
 void xiiScriptExtensionClass_Debug::Draw2DText(const xiiWorld* pWorld, xiiStringView sText, const xiiVec3& vPosition, const xiiColor& color, xiiUInt32 uiSizeInPixel, xiiEnum<xiiDebugTextHAlign> horizontalAlignment)
 {
-  xiiVec2I32 vPositionInPixel = xiiVec2I32(static_cast<int>(xiiMath::Round(vPosition.x)), static_cast<int>(xiiMath::Round(vPosition.y)));
+  xiiVec2I32 vPositionInPixel = xiiVec2I32(static_cast<xiiInt32>(xiiMath::Round(vPosition.x)), static_cast<xiiInt32>(xiiMath::Round(vPosition.y)));
   xiiDebugRenderer::Draw2DText(pWorld, sText, vPositionInPixel, color, uiSizeInPixel, horizontalAlignment);
 }
 
