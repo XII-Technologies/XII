@@ -168,6 +168,8 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
   renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
 
+  renderViewContext.SetShaderPermutationVariable("MSAA", "TRUE");
+
   xiiSharedPtr<xiiGALGraphicsPipelineState> pPipelineState = CreatePipelineState(renderViewContext);
   if (!pPipelineState)
     return;

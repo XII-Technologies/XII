@@ -93,6 +93,9 @@ xiiResult xiiForwardRenderPass::InitializeRenderPipelinePass(const xiiView& view
   if (pDepthInput == nullptr)
     return XII_FAILURE;
 
+  if (!pInputs[m_PinFrameConstants.m_uiInputIndex])
+    return XII_FAILURE;
+
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderPassCreationDescription renderPassDescription;
@@ -187,6 +190,15 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   renderViewContext.m_CommandListData.m_pRenderPass      = m_pRenderPass;
   renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
   renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
+
+  if (textureDescription.m_uiSampleCount > 1U)
+  {
+    renderViewContext.SetShaderPermutationVariable("MSAA", "TRUE");
+  }
+  else
+  {
+    renderViewContext.SetShaderPermutationVariable("MSAA", "FALSE");
+  }
 
   renderViewContext.m_pCommandList->Begin();
   {

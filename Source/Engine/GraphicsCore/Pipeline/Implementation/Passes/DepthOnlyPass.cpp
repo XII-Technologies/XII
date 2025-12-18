@@ -153,6 +153,18 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
   renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
   renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
 
+  renderViewContext.SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_DEPTH_ONLY");
+  renderViewContext.SetShaderPermutationVariable("SHADING_QUALITY", "SHADING_QUALITY_MEDIUM");
+
+  if (textureDescription.m_uiSampleCount > 1U)
+  {
+    renderViewContext.SetShaderPermutationVariable("MSAA", "TRUE");
+  }
+  else
+  {
+    renderViewContext.SetShaderPermutationVariable("MSAA", "FALSE");
+  }
+
   renderViewContext.m_pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
