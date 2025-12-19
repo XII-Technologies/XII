@@ -106,7 +106,11 @@ xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& 
 
   if (textureDescription.m_uiArraySizeOrDepth == 0U)
   {
-    textureDescription.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2U : 1U;
+    textureDescription.m_uiArraySizeOrDepth = 1U;
+  }
+  if (view.GetCamera()->IsStereoscopic())
+  {
+    textureDescription.m_uiArraySizeOrDepth = textureDescription.m_uiArraySizeOrDepth * 2U;
   }
 
   pOutputs[m_PinOutput.m_uiOutputIndex] = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, textureDescription);
