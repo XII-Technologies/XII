@@ -10,7 +10,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiForwardRenderShadingQuality, 1)
   XII_ENUM_CONSTANT(xiiForwardRenderShadingQuality::Ultra)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 3, xiiRTTIDefaultAllocator<xiiForwardRenderPass>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 3, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -91,6 +91,9 @@ xiiResult xiiForwardRenderPass::InitializeRenderPipelinePass(const xiiView& view
 
   auto pDepthInput = pInputs[m_PinDepthStencil.m_uiInputIndex];
   if (pDepthInput == nullptr)
+    return XII_FAILURE;
+
+  if (!pInputs[m_PinFrameConstants.m_uiInputIndex])
     return XII_FAILURE;
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -187,6 +190,15 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   renderViewContext.m_CommandListData.m_pRenderPass      = m_pRenderPass;
   renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
   renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
+
+  if (textureDescription.m_uiSampleCount > 1U)
+  {
+    renderViewContext.SetShaderPermutationVariable("MSAA", "TRUE");
+  }
+  else
+  {
+    renderViewContext.SetShaderPermutationVariable("MSAA", "FALSE");
+  }
 
   renderViewContext.m_pCommandList->Begin();
   {

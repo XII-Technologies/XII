@@ -1,34 +1,16 @@
 #pragma once
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Shader/ShaderResource.h>
 
-struct xiiForwardRenderShadingQuality
+class XII_GRAPHICSCORE_DLL xiiMSAAUpscalePass : public xiiGraphicsPipelinePass
 {
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Low = 0U,
-    Medium,
-    High,
-    Ultra,
-
-    ENUM_OUNT,
-
-    Default = Medium,
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiForwardRenderShadingQuality);
-
-class XII_GRAPHICSCORE_DLL xiiForwardRenderPass : public xiiGraphicsPipelinePass
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiForwardRenderPass, xiiGraphicsPipelinePass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiMSAAUpscalePass, xiiGraphicsPipelinePass);
 
 public:
-  xiiForwardRenderPass(xiiStringView sName = "ForwardRenderPass");
+  xiiMSAAUpscalePass(xiiStringView sName = "MSAAUpscalePass");
 
-  virtual ~xiiForwardRenderPass();
+  virtual ~xiiMSAAUpscalePass();
 
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
 
@@ -41,15 +23,16 @@ public:
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 protected:
-  virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) = 0;
+  xiiSharedPtr<xiiGALGraphicsPipelineState> CreatePipelineState(const xiiRenderViewContext& renderViewContext) const;
 
-private:
-  xiiRenderPipelineNodePassThroughColourAttachmentPin m_PinColour;
-  xiiRenderPipelineNodePassThroughDepthAttachmentPin  m_PinDepthStencil;
-  xiiRenderPipelineNodeInputBufferPin                 m_PinFrameConstants;
-
-  xiiEnum<xiiForwardRenderShadingQuality> m_ShadingQuality;
+protected:
+  xiiRenderPipelineNodeInputColourAttachmentPin  m_PinInput;
+  xiiRenderPipelineNodeOutputColourAttachmentPin m_PinOutput;
+  xiiRenderPipelineNodeInputBufferPin            m_PinFrameConstants;
 
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 2U> m_FramebufferCache;
+
+  xiiEnum<xiiGALMSAASampleCount> m_SampleCount = xiiGALMSAASampleCount::OneSample;
+  xiiShaderResourceHandle        m_hShader;
 };

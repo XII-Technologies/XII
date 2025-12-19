@@ -27,7 +27,7 @@ CullMode = CullMode_None
 #include <Shaders/Common/Common.h>
 #include <Shaders/Common/GlobalConstants.h>
 
-Texture2DMSArray<float> DepthTexture;
+Texture2DMSArray<float> depthTexture;
 
 float main(PS_IN Input) : SV_Depth
 {
@@ -40,7 +40,7 @@ float main(PS_IN Input) : SV_Depth
 
   for (uint i = 0; i < NumMsaaSamples; ++i)
   {
-    depth = max(depth, DepthTexture.Load(coords, i).r);
+    depth = max(depth, depthTexture.Load(coords, i).r);
   }
 
   return depth;
