@@ -12,7 +12,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAUpscalePass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
-    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALMSAASampleCount, m_MsaaMode),
+    XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount),
   }
   XII_END_PROPERTIES;
 }
@@ -35,7 +35,7 @@ xiiResult xiiMSAAUpscalePass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
 
-  inout_stream << m_MsaaMode;
+  inout_stream << m_SampleCount;
 
   return XII_SUCCESS;
 }
@@ -44,7 +44,7 @@ xiiResult xiiMSAAUpscalePass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
 
-  inout_stream >> m_MsaaMode;
+  inout_stream >> m_SampleCount;
 
   return XII_SUCCESS;
 }
@@ -56,14 +56,14 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
   // Colour attachment.
   if (pInputs[m_PinInput.m_uiInputIndex])
   {
-    if (pInputs[m_PinInput.m_uiInputIndex]->m_Texture.m_Description.m_uiSampleCount != static_cast<xiiUInt32>(xiiGALMSAASampleCount::OneSample))
+    if (pInputs[m_PinInput.m_uiInputIndex]->m_Texture.m_Description.m_uiSampleCount == static_cast<xiiUInt32>(xiiGALMSAASampleCount::OneSample))
     {
       xiiLog::Error("Input texture must be a MSAA source in pass '{0}'!", GetName());
       return XII_FAILURE;
     }
 
     xiiRenderPipelinePassResource request           = *pInputs[m_PinInput.m_uiInputIndex];
-    request.m_Texture.m_Description.m_uiSampleCount = m_MsaaMode.GetValue();
+    request.m_Texture.m_Description.m_uiSampleCount = m_SampleCount.GetValue();
     pOutputs[m_PinInput.m_uiOutputIndex]            = request;
   }
   else
