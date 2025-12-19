@@ -67,7 +67,7 @@ xiiResult xiiMSAAResolvePass::GetResourceDescriptions(const xiiView& view, const
 
     xiiRenderPipelinePassResource request           = *pInputs[m_PinInput.m_uiInputIndex];
     request.m_Texture.m_Description.m_uiSampleCount = xiiGALMSAASampleCount::OneSample;
-    pOutputs[m_PinInput.m_uiOutputIndex]            = request;
+    pOutputs[m_PinOutput.m_uiOutputIndex]           = request;
   }
   else
   {
@@ -85,36 +85,39 @@ xiiResult xiiMSAAResolvePass::InitializeRenderPipelinePass(const xiiView& view, 
   m_pRenderPass.Clear();
   m_FramebufferCache.Clear();
 
-  auto pColourOutput = pInputs[m_PinOutput.m_uiInputIndex];
+  auto pColourOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pColourOutput == nullptr)
     return XII_FAILURE;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (m_bIsDepthResolve)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALRenderPassCreationDescription renderPassDescription;
+    xiiGALRenderPassCreationDescription renderPassDescription;
 
-  xiiGALRenderPassAttachmentDescription& colourAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-  colourAttachment.m_Format                               = pColourOutput->m_Resource.m_Texture.m_Description.m_Format;
-  colourAttachment.m_uiSampleCount                        = pColourOutput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
-  colourAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
-  colourAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
+    xiiGALRenderPassAttachmentDescription& colourAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
+    colourAttachment.m_Format                               = pColourOutput->m_Resource.m_Texture.m_Description.m_Format;
+    colourAttachment.m_uiSampleCount                        = pColourOutput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
+    colourAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
+    colourAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
+    colourAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
+    colourAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
+    colourAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::DepthWrite;
+    colourAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::DepthWrite;
 
-  xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
-  subpass.m_RenderTargetAttachments.PushBack(xiiGALAttachmentReferenceDescription{.m_uiAttachmentIndex = 0U, .m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget});
+    xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+    subpass.m_DepthStencilAttachment.PushBack(xiiGALAttachmentReferenceDescription{.m_uiAttachmentIndex = 0U, .m_ResourceStateFlags = xiiGALResourceStateFlags::DepthWrite});
 
-  xiiGALSubPassDependencyDescription& dependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-  dependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
-  dependency.m_uiDestinationSubPass              = 0U;
-  dependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_SourceAccessFlags                 = xiiGALAccessFlags::RenderTargetWrite;
-  dependency.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
+    xiiGALSubPassDependencyDescription& dependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+    dependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+    dependency.m_uiDestinationSubPass              = 0U;
+    dependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
+    dependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
+    dependency.m_SourceAccessFlags                 = xiiGALAccessFlags::DepthStencilWrite;
+    dependency.m_DestinationAccessFlags            = xiiGALAccessFlags::DepthStencilWrite;
 
-  m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+  }
 
   return XII_SUCCESS;
 }

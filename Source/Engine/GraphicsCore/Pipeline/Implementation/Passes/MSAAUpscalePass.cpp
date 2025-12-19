@@ -64,7 +64,7 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
 
     xiiRenderPipelinePassResource request           = *pInputs[m_PinInput.m_uiInputIndex];
     request.m_Texture.m_Description.m_uiSampleCount = m_SampleCount.GetValue();
-    pOutputs[m_PinInput.m_uiOutputIndex]            = request;
+    pOutputs[m_PinOutput.m_uiOutputIndex]           = request;
   }
   else
   {
@@ -82,7 +82,7 @@ xiiResult xiiMSAAUpscalePass::InitializeRenderPipelinePass(const xiiView& view, 
   m_pRenderPass.Clear();
   m_FramebufferCache.Clear();
 
-  auto pColourOutput = pInputs[m_PinOutput.m_uiInputIndex];
+  auto pColourOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pColourOutput == nullptr)
     return XII_FAILURE;
 
