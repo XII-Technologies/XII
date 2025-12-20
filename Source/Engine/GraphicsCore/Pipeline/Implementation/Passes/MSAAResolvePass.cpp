@@ -12,7 +12,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAResolvePass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
-    XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount),
   }
   XII_END_PROPERTIES;
 }
@@ -35,16 +34,12 @@ xiiResult xiiMSAAResolvePass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
 
-  inout_stream << m_SampleCount;
-
   return XII_SUCCESS;
 }
 
 xiiResult xiiMSAAResolvePass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
-
-  inout_stream >> m_SampleCount;
 
   return XII_SUCCESS;
 }
