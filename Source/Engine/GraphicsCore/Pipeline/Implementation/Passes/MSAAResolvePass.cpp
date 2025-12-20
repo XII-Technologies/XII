@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/MSAAResolvePass.h>
+#include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 // clang-format off
