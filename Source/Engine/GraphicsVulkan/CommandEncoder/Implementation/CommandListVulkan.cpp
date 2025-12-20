@@ -239,8 +239,8 @@ namespace
 void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::ImageLayout vkOldLayout, vk::ImageLayout vkNewLayout, const vk::ImageSubresourceRange& vkImageSubresourceRange, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
-  XII_ASSERT_DEV((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
+  XII_ASSERT_DEV((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
+  XII_ASSERT_DEV((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
 
   if (vkOldLayout == vkNewLayout)
   {
@@ -303,8 +303,8 @@ void xiiGALCommandListVulkan::TransitionImageLayout(vk::Image vkImage, vk::Image
 void xiiGALCommandListVulkan::MemoryBarrier(vk::AccessFlags vkSourceAccessFlags, vk::AccessFlags vkDestinationAccessFlags, vk::PipelineStageFlags vkPipelineSourceStageFlags, vk::PipelineStageFlags vkPipelineDestinationStageFlags)
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
-  XII_ASSERT_DEV((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
-  XII_ASSERT_DEV((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags), "");
+  XII_ASSERT_DEV((vkPipelineSourceStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
+  XII_ASSERT_DEV((vkPipelineDestinationStageFlags & m_PipelineBarrier.m_vkSupportedStageFlags) != vk::PipelineStageFlagBits::eNone, "");
 
   m_PipelineBarrier.m_vkMemorySourceStages |= vkPipelineSourceStageFlags;
   m_PipelineBarrier.m_vkMemoryDestinationStages |= vkPipelineDestinationStageFlags;

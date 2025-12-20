@@ -12,7 +12,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAResolvePass, 1, xiiRTTIDefaultAllocator<
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
-    XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount),
   }
   XII_END_PROPERTIES;
 }
@@ -35,16 +34,12 @@ xiiResult xiiMSAAResolvePass::Serialize(xiiStreamWriter& inout_stream) const
 {
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
 
-  inout_stream << m_SampleCount;
-
   return XII_SUCCESS;
 }
 
 xiiResult xiiMSAAResolvePass::Deserialize(xiiStreamReader& inout_stream)
 {
   XII_SUCCEED_OR_RETURN(SUPER::Deserialize(inout_stream));
-
-  inout_stream >> m_SampleCount;
 
   return XII_SUCCESS;
 }
@@ -130,7 +125,7 @@ void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pInputColourAttachment == nullptr)
     return;
 
-  auto pOutputColourAttachment = pOutputs[m_PinInput.m_uiOutputIndex];
+  auto pOutputColourAttachment = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pOutputColourAttachment == nullptr)
     return;
 
@@ -142,8 +137,8 @@ void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   {
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-    xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-    const xiiGALTextureCreationDescription&     textureDescription    = pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
+    xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+    const xiiGALTextureCreationDescription&     textureDescription    = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
     const xiiGALTextureViewCreationDescription& viewDescription       = pColourAttachmentView->GetDescription();
 
     // Create or retrieve a corresponding framebuffer from the cache if present.
@@ -181,19 +176,23 @@ void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     if (!pPipelineState)
       return;
 
-    renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
-    renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
-    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
-    renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("depthTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    renderViewContext.m_pCommandList->Begin();
+    {
+      renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
+      renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+      renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+      renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("depthTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
-    const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
-    xiiUInt32       uiPrimitiveCount    = uiVertsPerPrimitive;
-    xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+      const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+      xiiUInt32       uiPrimitiveCount    = uiVertsPerPrimitive;
+      xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
 
-    renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
-    renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
-    renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
-    renderViewContext.m_pCommandList->EndRenderPass();
+      renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
+      renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+      renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+      renderViewContext.m_pCommandList->EndRenderPass();
+    }
+    renderViewContext.m_pCommandList->End();
   }
   else
   {
@@ -205,15 +204,19 @@ void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     resolveDescription.m_uiDestinationSlice               = 0;
     resolveDescription.m_DestinationTextureTransitionMode = xiiGALStateTransitionMode::Transition;
 
-    renderViewContext.m_pCommandList->ResolveTextureSubResource(pInputColourAttachment->m_Resource.m_Texture.m_pTexture, pOutputColourAttachment->m_Resource.m_Texture.m_pTexture, resolveDescription);
-
-    if (renderViewContext.m_pCamera->IsStereoscopic())
+    renderViewContext.m_pCommandList->Begin();
     {
-      resolveDescription.m_uiSourceSlice      = 1;
-      resolveDescription.m_uiDestinationSlice = 1;
-
       renderViewContext.m_pCommandList->ResolveTextureSubResource(pInputColourAttachment->m_Resource.m_Texture.m_pTexture, pOutputColourAttachment->m_Resource.m_Texture.m_pTexture, resolveDescription);
+
+      if (renderViewContext.m_pCamera->IsStereoscopic())
+      {
+        resolveDescription.m_uiSourceSlice      = 1;
+        resolveDescription.m_uiDestinationSlice = 1;
+
+        renderViewContext.m_pCommandList->ResolveTextureSubResource(pInputColourAttachment->m_Resource.m_Texture.m_pTexture, pOutputColourAttachment->m_Resource.m_Texture.m_pTexture, resolveDescription);
+      }
     }
+    renderViewContext.m_pCommandList->End();
   }
 }
 

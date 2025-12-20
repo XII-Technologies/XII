@@ -9,7 +9,8 @@
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
+struct xiiGlobalConstants;
+struct xiiPassConstants;
 
 //////////////////////////////////////////////////////////////////////////
 // xiiShaderBindFlags
@@ -272,6 +273,9 @@ public:
   /// \brief Returns the global constant buffer that is used to store this render context global state.
   [[nodiscard]] XII_ALWAYS_INLINE xiiGlobalConstants* GetGlobalConstants() const { return m_pGlobalConstants.GetPtr(); }
 
+  /// \brief Returns the pass constant buffer that is used to store per-pass state.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiPassConstants* GetPassConstants() const { return m_pPassConstants.GetPtr(); }
+
   /// \brief Returns async shader loading. During runtime all shaders should be preloaded so this is off by default.
   [[nodiscard]] XII_ALWAYS_INLINE bool GetAllowAsyncShaderLoading() const { return m_bAllowAsyncShaderLoading; }
 
@@ -429,6 +433,9 @@ private:
 
   xiiBlobPtr<xiiGlobalConstants> m_pGlobalConstants;
   xiiSharedPtr<xiiGALBuffer>     m_pGlobalConstantsBuffer;
+
+  xiiBlobPtr<xiiPassConstants> m_pPassConstants;
+  xiiSharedPtr<xiiGALBuffer>   m_pPassConstantsBuffer;
 
   xiiGALGraphicsPipelineStateCreationDescription m_GraphicsPipelineDescription;
   xiiSharedPtr<xiiGALGraphicsPipelineState>      m_pGraphicsPipelineState;

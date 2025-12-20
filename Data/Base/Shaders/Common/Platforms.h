@@ -60,27 +60,28 @@ static const float2 offsets[] =
 
 // Workaround for error: EvaluateAttributeAtSample intrinsic function unimplemented
 // See https://github.com/microsoft/DirectXShaderCompiler/issues/3649
-float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
+float xiiEvaluateAttributeAtSample(float fAttribute, uint uiSampleIndex, uint uiMSAASampleCount)
 {
-  float2 sampleOffset = offsets[NumMsaaSamples + SampleIndex - 1] * 0.125f;
-  return Attribute + ddx(Attribute) * sampleOffset.x + ddy(Attribute) * sampleOffset.y;
+  float2 sampleOffset = offsets[uiMSAASampleCount + uiSampleIndex - 1] * 0.125f;
+  return fAttribute + ddx(fAttribute) * sampleOffset.x + ddy(fAttribute) * sampleOffset.y;
 }
 
-float2 xiiEvaluateAttributeAtSample(float2 Attribute, uint SampleIndex, uint NumMsaaSamples)
+float2 xiiEvaluateAttributeAtSample(float2 fAttribute, uint uiSampleIndex, uint uiMSAASampleCount)
 {
-  float2 sampleOffset = offsets[NumMsaaSamples + SampleIndex - 1] * 0.125f;
-  return Attribute + ddx(Attribute) * sampleOffset.x + ddy(Attribute) * sampleOffset.y;
+  float2 sampleOffset = offsets[uiMSAASampleCount + uiSampleIndex - 1] * 0.125f;
+  return fAttribute + ddx(fAttribute) * sampleOffset.x + ddy(fAttribute) * sampleOffset.y;
 }
 
-float3 xiiEvaluateAttributeAtSample(float3 Attribute, uint SampleIndex, uint NumMsaaSamples)
+float3 xiiEvaluateAttributeAtSample(float3 fAttribute, uint uiSampleIndex, uint uiMSAASampleCount)
 {
-  float2 sampleOffset = offsets[NumMsaaSamples + SampleIndex - 1] * 0.125f;
-  return Attribute + ddx(Attribute) * sampleOffset.x + ddy(Attribute) * sampleOffset.y;
+  float2 sampleOffset = offsets[uiMSAASampleCount + uiSampleIndex - 1] * 0.125f;
+  return fAttribute + ddx(fAttribute) * sampleOffset.x + ddy(fAttribute) * sampleOffset.y;
 }
-float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint NumMsaaSamples)
+
+float4 xiiEvaluateAttributeAtSample(float4 fAttribute, uint uiSampleIndex, uint uiMSAASampleCount)
 {
-  float2 sampleOffset = offsets[NumMsaaSamples + SampleIndex - 1] * 0.125f;
-  return Attribute + ddx(Attribute) * sampleOffset.x + ddy(Attribute) * sampleOffset.y;
+  float2 sampleOffset = offsets[uiMSAASampleCount + uiSampleIndex - 1] * 0.125f;
+  return fAttribute + ddx(fAttribute) * sampleOffset.x + ddy(fAttribute) * sampleOffset.y;
 }
 
 #endif

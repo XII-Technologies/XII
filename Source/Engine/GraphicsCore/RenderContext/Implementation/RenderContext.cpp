@@ -74,10 +74,14 @@ xiiRenderContext::xiiRenderContext()
 
   m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants), "xiiGlobalConstants");
   m_pGlobalConstants       = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
+  m_pPassConstantsBuffer   = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiPassConstants), "xiiPassConstants");
+  m_pPassConstants         = xiiMakeBlobPtr(reinterpret_cast<xiiPassConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiPassConstants), 16U)), 1U);
 
   xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
+  xiiMemoryUtils::ZeroFill(m_pPassConstants.GetPtr(), 1U);
 
   XII_ASSERT_DEBUG(!m_pGlobalConstants.IsEmpty(), "Invalid global constants buffer.");
+  XII_ASSERT_DEBUG(!m_pPassConstants.IsEmpty(), "Invalid pass constants buffer.");
 
   ResetContextState();
 }
@@ -85,6 +89,7 @@ xiiRenderContext::xiiRenderContext()
 xiiRenderContext::~xiiRenderContext()
 {
   xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
+  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pPassConstants.GetPtr());
 
   m_GraphicsPipelineDescription = {};
   m_pGraphicsPipelineState.Clear();
@@ -95,6 +100,8 @@ xiiRenderContext::~xiiRenderContext()
   m_pCommandList.Clear();
   m_pGlobalConstants.Clear();
   m_pGlobalConstantsBuffer.Clear();
+  m_pPassConstants.Clear();
+  m_pPassConstantsBuffer.Clear();
 }
 
 xiiRenderContext* xiiRenderContext::GetDefaultInstance()
@@ -156,7 +163,9 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
   {
     xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
     pGlobalConstants->ViewportSize       = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-    pGlobalConstants->NumMsaaSamples     = uiSampleCount;
+
+    xiiPassConstants* pPassConstants = GetPassConstants();
+    pPassConstants->MSAASampleCount  = uiSampleCount;
   }
 
   m_pCommandList->Begin();
@@ -790,11 +799,17 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
   }
 
   BindConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), m_pGlobalConstantsBuffer);
+  BindConstantBuffer(XII_PP_STRINGIFY(xiiPassConstants), m_pPassConstantsBuffer);
 
   {
     xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(m_pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
     memcpy(pGlobalConstants.GetMappedData(), m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants));
+  }
+  {
+    xiiGALMapHelper<xiiPassConstants> pPassConstants(m_pCommandList, m_pPassConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+    memcpy(pPassConstants.GetMappedData(), m_pPassConstants.GetPtr(), sizeof(xiiPassConstants));
   }
 
   if (bIsAnyBindingModified || bIsPipelineModified || bIsPipelineInvalidated)

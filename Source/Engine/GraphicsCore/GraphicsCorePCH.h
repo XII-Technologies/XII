@@ -18,3 +18,4 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/PassConstants.h>

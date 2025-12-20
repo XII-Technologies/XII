@@ -26,6 +26,7 @@ CullMode = CullMode_None
 #include <Shaders/Pipeline/FullscreenTriangleInterpolator.h>
 #include <Shaders/Common/Common.h>
 #include <Shaders/Common/GlobalConstants.h>
+#include <Shaders/Common/PassConstants.h>
 
 Texture2DMSArray<float> depthTexture;
 
