@@ -34,6 +34,7 @@
 #include <GraphicsCore/Textures/TextureLoader.h>
 
 // Constant buffer definition is shared between shader code and C++
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/ShaderResourceMacros.h>
 #include <GraphicsCore/../../../Data/Samples/TextureSample/Shaders/SampleConstantBuffer.h>
 
 #if !defined(USE_FILESERVE)
