@@ -83,7 +83,7 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
   bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
   bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   bufferDescription.m_MiscFlags           = xiiGALMiscBufferFlags::None;
-  m_pPassConstantBuffer   = pDevice->CreateBuffer(bufferDescription);
+  m_pPassConstantBuffer                   = pDevice->CreateBuffer(bufferDescription);
 
   return XII_SUCCESS;
 }
