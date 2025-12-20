@@ -1,8 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/MSAAUpscalePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
-#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAUpscalePass, 1, xiiRTTIDefaultAllocator<xiiMSAAUpscalePass>)
@@ -124,7 +124,7 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pInputColourAttachment == nullptr)
     return;
 
-  auto pOutputColourAttachment = pOutputs[m_PinInput.m_uiOutputIndex];
+  auto pOutputColourAttachment = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pOutputColourAttachment == nullptr)
     return;
 
@@ -134,8 +134,8 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  const xiiGALTextureCreationDescription& textureDescription    = pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
+  xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  const xiiGALTextureCreationDescription&     textureDescription    = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
   const xiiGALTextureViewCreationDescription& viewDescription       = pColourAttachmentView->GetDescription();
 
   // Create or retrieve a corresponding framebuffer from the cache if present.
