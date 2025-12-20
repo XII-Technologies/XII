@@ -32,6 +32,7 @@ protected:
 
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 2U> m_FramebufferCache;
+  xiiSharedPtr<xiiGALBuffer>                          m_pPassConstantBuffer;
 
   xiiEnum<xiiGALMSAASampleCount> m_SampleCount = xiiGALMSAASampleCount::OneSample;
   xiiShaderResourceHandle        m_hShader;

@@ -3,6 +3,7 @@
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/MSAAUpscalePass.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAUpscalePass, 1, xiiRTTIDefaultAllocator<xiiMSAAUpscalePass>)
@@ -71,6 +72,19 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
     xiiLog::Error("No input colour attachment connected to pass '{0}'!", GetName());
     return XII_FAILURE;
   }
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_uiElementByteStride = sizeof(xiiGlobalConstants);
+  bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  bufferDescription.m_MiscFlags           = xiiGALMiscBufferFlags::None;
+  m_pPassConstantBuffer   = pDevice->CreateBuffer(bufferDescription);
+
   return XII_SUCCESS;
 }
 
@@ -176,9 +190,16 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
 
   renderViewContext.m_pCommandList->Begin();
   {
+    {
+      xiiGALMapHelper<xiiPassConstants> pPassConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pPassConstants->RenderPass      = -1;
+      pPassConstants->MSAASampleCount = static_cast<xiiInt32>(m_SampleCount.GetValue());
+    }
+
     renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
     renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
     renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiPassConstants), m_pPassConstantBuffer);
     renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
     const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
