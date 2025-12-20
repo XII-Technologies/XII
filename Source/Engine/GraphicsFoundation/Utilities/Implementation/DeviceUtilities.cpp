@@ -70,7 +70,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice
   XII_ASSERT_DEV(uiIndexCount != 0U, "Implementation Error: Unexpected index size.");
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource;
   bufferDescription.m_uiElementByteStride = uiIndexSize;
   bufferDescription.m_uiSize              = uiIndexSize * xiiMath::Max(1U, uiIndexCount);
   bufferDescription.m_Usage               = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
@@ -88,7 +88,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDev
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
   bufferDescription.m_uiElementByteStride = 0U;
   bufferDescription.m_uiSize              = uiBufferSize;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
@@ -110,7 +110,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateStagingBuffer(xiiGALDevi
   XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
   bufferDescription.m_uiElementByteStride = 0U;
   bufferDescription.m_uiSize              = uiBufferSize;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Staging;
