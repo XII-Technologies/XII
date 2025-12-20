@@ -174,19 +174,23 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (!pPipelineState)
     return;
 
-  renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
-  renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
-  renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
-  renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+  renderViewContext.m_pCommandList->Begin();
+  {
+    renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
+    renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
+    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
+    renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
-  const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
-  xiiUInt32       uiPrimitiveCount    = uiVertsPerPrimitive;
-  xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
+    const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+    xiiUInt32       uiPrimitiveCount    = uiVertsPerPrimitive;
+    xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
 
-  renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
-  renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
-  renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
-  renderViewContext.m_pCommandList->EndRenderPass();
+    renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
+    renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
+    renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
+    renderViewContext.m_pCommandList->EndRenderPass();
+  }
+  renderViewContext.m_pCommandList->End();
 }
 
 xiiSharedPtr<xiiGALGraphicsPipelineState> xiiMSAAUpscalePass::CreatePipelineState(const xiiRenderViewContext& renderViewContext) const
