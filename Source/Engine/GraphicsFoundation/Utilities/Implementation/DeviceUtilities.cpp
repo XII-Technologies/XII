@@ -70,7 +70,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDeviceUtilities::CreateIndexBuffer(xiiGALDevice
   XII_ASSERT_DEV(uiIndexCount != 0U, "Implementation Error: Unexpected index size.");
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
   bufferDescription.m_uiElementByteStride = uiIndexSize;
   bufferDescription.m_uiSize              = uiIndexSize * xiiMath::Max(1U, uiIndexCount);
   bufferDescription.m_Usage               = bIsImmutable ? xiiGALResourceUsage::Immutable : xiiGALResourceUsage::Dynamic;
