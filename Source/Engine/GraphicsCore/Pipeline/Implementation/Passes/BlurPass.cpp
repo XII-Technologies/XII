@@ -307,7 +307,9 @@ void xiiBlurPass::PrepareKernel(xiiStaticArray<float, 32U>& out_weights, xiiStat
       raw.Reserve(uiRadius + 1);
       for (xiiUInt32 i = 0; i <= uiRadius; ++i)
       {
-        raw.PushBack(xiiMath::Exp(-(i * i) / (2.0f * m_BlurSettings.m_fSigma * m_BlurSettings.m_fSigma)));
+        const float fSampleOffset = static_cast<float>(i);
+
+        raw.PushBack(xiiMath::Exp(-(fSampleOffset * fSampleOffset) / (2.0f * m_BlurSettings.m_fSigma * m_BlurSettings.m_fSigma)));
       }
 
       // Normalize
