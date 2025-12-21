@@ -404,18 +404,12 @@ private:
 
   static xiiSharedPtr<xiiGALFramebuffer> GetOrCreateFramebuffer(const xiiGALRenderPassCreationDescription& description, const xiiRenderingSetup& renderingSetup);
 
-  static xiiSharedPtr<xiiGALGraphicsPipelineState> GetOrCreatePipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description);
-
-  static xiiSharedPtr<xiiGALComputePipelineState> GetOrCreatePipelineState(const xiiGALComputePipelineStateCreationDescription& description);
-
   static xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, xiiArrayPtr<xiiUInt32> pVertexBufferStrides, xiiArrayPtr<xiiEnum<xiiGALInputElementFrequency>> pInputElementFrequencies, const xiiInputLayoutInfo& declaration, const xiiInputLayoutInfo& customDeclaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
 
 private:
   static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>                                      s_RenderPassCache;
   static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash>                                     s_FramebufferCache;
   static xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                                                              s_InputLayouts;
-  static xiiHashTable<xiiGALGraphicsPipelineStateCreationDescription, xiiSharedPtr<xiiGALGraphicsPipelineState>, xiiGALDescriptorHash> s_GraphicsPipelineCreationCache;
-  static xiiHashTable<xiiGALComputePipelineStateCreationDescription, xiiSharedPtr<xiiGALComputePipelineState>, xiiGALDescriptorHash>   s_ComputePipelineCreationCache;
 
 private:
   xiiSharedPtr<xiiGALCommandList> m_pCommandList;

@@ -3,6 +3,7 @@
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Containers/Blob.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
@@ -55,13 +56,11 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererContext)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiRenderContext*                                                                                                             xiiRenderContext::s_pDefaultInstance = nullptr;
-xiiHybridArray<xiiRenderContext*, 2U>                                                                                         xiiRenderContext::s_Instances;
-xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>                    xiiRenderContext::s_RenderPassCache;
-xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash>                   xiiRenderContext::s_FramebufferCache;
-xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                                            xiiRenderContext::s_InputLayouts;
-xiiHashTable<xiiGALGraphicsPipelineStateCreationDescription, xiiSharedPtr<xiiGALGraphicsPipelineState>, xiiGALDescriptorHash> xiiRenderContext::s_GraphicsPipelineCreationCache;
-xiiHashTable<xiiGALComputePipelineStateCreationDescription, xiiSharedPtr<xiiGALComputePipelineState>, xiiGALDescriptorHash>   xiiRenderContext::s_ComputePipelineCreationCache;
+xiiRenderContext*                                                                                           xiiRenderContext::s_pDefaultInstance = nullptr;
+xiiHybridArray<xiiRenderContext*, 2U>                                                                       xiiRenderContext::s_Instances;
+xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>  xiiRenderContext::s_RenderPassCache;
+xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash> xiiRenderContext::s_FramebufferCache;
+xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          xiiRenderContext::s_InputLayouts;
 
 xiiRenderContext::xiiRenderContext()
 {
@@ -164,8 +163,9 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
     xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
     pGlobalConstants->ViewportSize       = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
 
-    xiiPassConstants* pPassConstants = GetPassConstants();
-    pPassConstants->MSAASampleCount  = uiSampleCount;
+    xiiPassConstants* pPassConstants                                               = GetPassConstants();
+    pPassConstants->MSAASampleCount                                                = uiSampleCount;
+    m_GraphicsPipelineDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount = uiSampleCount;
   }
 
   m_pCommandList->Begin();
@@ -735,7 +735,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       {
         PrepareGraphicsPipelineDescriptor(pShaderPermutation);
 
-        m_pGraphicsPipelineState = GetOrCreatePipelineState(m_GraphicsPipelineDescription);
+        m_pGraphicsPipelineState = xiiGALPipelineCache::GetPipeline(m_GraphicsPipelineDescription);
 
         m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
       }
@@ -743,7 +743,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       {
         PrepareComputePipelineDescriptor(pShaderPermutation);
 
-        m_pComputePipelineState = GetOrCreatePipelineState(m_ComputePipelineDescription);
+        m_pComputePipelineState = xiiGALPipelineCache::GetPipeline(m_ComputePipelineDescription);
 
         m_pCommandList->SetPipelineState(m_pComputePipelineState);
       }
@@ -1353,36 +1353,6 @@ xiiSharedPtr<xiiGALFramebuffer> xiiRenderContext::GetOrCreateFramebuffer(const x
 }
 
 // static
-xiiSharedPtr<xiiGALGraphicsPipelineState> xiiRenderContext::GetOrCreatePipelineState(const xiiGALGraphicsPipelineStateCreationDescription& description)
-{
-  xiiSharedPtr<xiiGALGraphicsPipelineState>& pGraphicsPipelineState = s_GraphicsPipelineCreationCache.FindOrAdd(description);
-
-  if (!pGraphicsPipelineState)
-  {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-    pGraphicsPipelineState = pDevice->CreateGraphicsPipelineState(description);
-  }
-
-  return pGraphicsPipelineState;
-}
-
-// static
-xiiSharedPtr<xiiGALComputePipelineState> xiiRenderContext::GetOrCreatePipelineState(const xiiGALComputePipelineStateCreationDescription& description)
-{
-  xiiSharedPtr<xiiGALComputePipelineState>& pComputePipelineState = s_ComputePipelineCreationCache.FindOrAdd(description);
-
-  if (!pComputePipelineState)
-  {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-    pComputePipelineState = pDevice->CreateComputePipelineState(description);
-  }
-
-  return pComputePipelineState;
-}
-
-// static
 xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, xiiArrayPtr<xiiUInt32> pVertexBufferStrides, xiiArrayPtr<xiiEnum<xiiGALInputElementFrequency>> pInputElementFrequencies, const xiiInputLayoutInfo& declaration, const xiiInputLayoutInfo& customDeclaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration)
 {
   xiiInt32 iHighestUsedBinding = -1;
@@ -1533,8 +1503,6 @@ void xiiRenderContext::OnEngineShutdown()
   s_FramebufferCache.Clear();
   s_RenderPassCache.Clear();
   s_InputLayouts.Clear();
-  s_GraphicsPipelineCreationCache.Clear();
-  s_ComputePipelineCreationCache.Clear();
 
   for (xiiRenderContext* pRenderContext : s_Instances)
   {

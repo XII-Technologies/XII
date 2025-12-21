@@ -121,8 +121,6 @@ xiiResult xiiMSAAResolvePass::InitializeRenderPipelinePass(const xiiView& view, 
 
 void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  XII_IGNORE_UNUSED(pOutputs);
-
   auto pInputColourAttachment = pInputs[m_PinInput.m_uiInputIndex];
   if (pInputColourAttachment == nullptr)
     return;

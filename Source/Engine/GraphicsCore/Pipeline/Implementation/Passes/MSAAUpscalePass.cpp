@@ -231,6 +231,9 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiMSAAUpscalePass::CreatePipelineStat
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount   = static_cast<xiiUInt8>(m_SampleCount.GetValue());
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_SampleDescription.m_uiQuality = 0U;
   }
 
   return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
