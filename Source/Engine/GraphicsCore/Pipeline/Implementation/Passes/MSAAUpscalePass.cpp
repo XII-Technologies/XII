@@ -194,7 +194,6 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   {
     {
       xiiGALMapHelper<xiiPassConstants> pPassConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pPassConstants->RenderPass      = -1;
       pPassConstants->MSAASampleCount = static_cast<xiiInt32>(m_SampleCount.GetValue());
     }
 

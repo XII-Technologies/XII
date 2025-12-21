@@ -95,7 +95,8 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
     const bool bIsDirectionalLightShadow = renderViewContext.m_pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && renderViewContext.m_pCamera->IsOrthographic();
     pGlobalConstants->MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
 
-    pGlobalConstants->Exposure = renderViewContext.m_pCamera->GetExposure();
+    pGlobalConstants->Exposure   = renderViewContext.m_pCamera->GetExposure();
+    pGlobalConstants->RenderPass = xiiViewRenderMode::GetRenderPassForShader(renderViewContext.m_pViewData->m_ViewRenderMode);
 
     // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
     const double fWrapAround     = 1000.0;

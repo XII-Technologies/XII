@@ -225,7 +225,6 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   {
     {
       xiiGALMapHelper<xiiPassConstants> pPassConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pPassConstants->RenderPass      = -1;
       pPassConstants->MSAASampleCount = 1U;
     }
     {
