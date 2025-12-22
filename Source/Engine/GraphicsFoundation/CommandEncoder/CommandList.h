@@ -1218,7 +1218,7 @@ public:
   ///
   /// \param sName - The name of the debug group.
   /// \param color - The color associated with the debug group.
-  void BeginDebugGroup(xiiStringView sName, const xiiColor& color = xiiColor::Black);
+  void BeginDebugGroup(xiiStringView sName, const xiiColor& color = xiiColor::White);
 
   /// \brief Ends the current debug group.
   void EndDebugGroup();
@@ -1227,7 +1227,7 @@ public:
   ///
   /// \param sName - The name of the debug label.
   /// \param color - The color associated with the debug label.
-  void InsertDebugLabel(xiiStringView sName, const xiiColor& color = xiiColor::Black);
+  void InsertDebugLabel(xiiStringView sName, const xiiColor& color = xiiColor::White);
 
   /// \brief Invalidates the current state of the command list. It is typically called when the command list is reset or when the pipeline state is changed.
   void InvalidateState();
