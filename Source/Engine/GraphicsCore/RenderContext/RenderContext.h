@@ -161,6 +161,8 @@ public:
       m_Context.EndRendering();
     }
 
+    XII_ALWAYS_INLINE xiiRenderContext* operator->() { return &m_Context; }
+
   private:
     friend class xiiRenderContext;
 
@@ -182,6 +184,8 @@ public:
     {
       m_Context.EndCompute();
     }
+
+    XII_ALWAYS_INLINE xiiRenderContext* operator->() { return &m_Context; }
 
   private:
     friend class xiiRenderContext;
