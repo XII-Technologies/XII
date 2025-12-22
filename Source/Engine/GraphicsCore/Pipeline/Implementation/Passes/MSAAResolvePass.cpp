@@ -78,9 +78,9 @@ void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (m_bIsDepthResolve)
   {
     xiiRenderingSetup renderingSetup;
-    renderingSetup.SetDepthStencilAttachment({pOutputColourAttachment->m_Resource.m_Texture.m_pTexture});
+    renderingSetup.SetDepthStencilAttachment({pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
 
-    auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName(), renderViewContext.m_pCamera->IsStereoscopic());
+    auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     xiiPassConstants* pPassConstants = pRenderContext->GetPassConstants();
     pPassConstants->MSAASampleCount  = m_SampleCount;
