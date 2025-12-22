@@ -158,37 +158,14 @@ struct XII_GRAPHICSCORE_DLL xiiShadingQualityLevel
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadingQualityLevel);
 
-struct XII_GRAPHICSCORE_DLL xiiCommandListData
-{
-  xiiSharedPtr<xiiGALRenderPass>  m_pRenderPass;
-  xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
-  xiiSharedPtr<xiiGALBuffer>      m_pGlobalConstants;
-};
-
 struct XII_GRAPHICSCORE_DLL xiiRenderViewContext
 {
-public:
-  XII_ALWAYS_INLINE const xiiHashTable<xiiHashedString, xiiHashedString>& GetPermutationVariables() const { return m_PermutationVariables; }
-
-  void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue) const;
-  void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue) const;
-  void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue) const;
-
-public:
-  const xiiCamera*   m_pCamera    = nullptr;
-  const xiiCamera*   m_pLodCamera = nullptr;
-  const xiiViewData* m_pViewData  = nullptr;
+  const xiiCamera*   m_pCamera        = nullptr;
+  const xiiViewData* m_pViewData      = nullptr;
+  xiiRenderContext*  m_pRenderContext = nullptr;
 
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
-
-  xiiSharedPtr<xiiGALCommandList> m_pCommandList;
-  mutable xiiCommandListData      m_CommandListData = {};
-
-private:
-  void SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue) const;
-
-  mutable xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
 };
 
 using xiiViewId = xiiGenericId<24, 8>;
