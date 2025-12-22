@@ -280,7 +280,7 @@ public:
   }
 
   template <CommandListType Type>
-  XII_ALWAYS_INLINE static ComputeScope BeginCommandListScope(xiiStringView sName = {})
+  XII_ALWAYS_INLINE static CommandListScope<Type> BeginCommandListScope(xiiStringView sName = {})
   {
     return CommandListScope<Type>(sName);
   }
