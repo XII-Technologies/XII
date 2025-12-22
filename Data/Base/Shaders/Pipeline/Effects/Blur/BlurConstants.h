@@ -11,9 +11,11 @@ DECLARE_CONSTANT_BUFFER_AUTO(xiiBlurConstants)
   FLOAT1(Sigma);
   FLOAT1(RadialStrength);
   UINT1(Iterations);
-  UINT1(KernelCount);        // number of taps used
-  FLOAT1(KernelWeights)[32]; // separable weights (Gaussian/Box)
-  FLOAT1(KernelOffsets)[32]; // pixel offsets (paired tap optimization)
+  UINT1(KernelCount); // number of taps used
+  FLOAT1(KernelWeights)
+  [32]; // separable weights (Gaussian/Box)
+  FLOAT1(KernelOffsets)
+  [32]; // pixel offsets (paired tap optimization)
   FLOAT1(DepthSigma);
   FLOAT1(NormalSigma);
 };
