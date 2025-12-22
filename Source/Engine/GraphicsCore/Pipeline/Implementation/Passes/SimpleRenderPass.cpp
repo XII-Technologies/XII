@@ -109,8 +109,6 @@ xiiResult xiiSimpleRenderPass::InitializeRenderPipelinePass(const xiiView& view,
   colourAttachment.m_uiSampleCount                        = pColourInput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
   colourAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
   colourAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
   colourAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
   colourAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
 

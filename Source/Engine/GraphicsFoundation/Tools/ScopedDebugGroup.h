@@ -38,7 +38,7 @@ public:
   /// \param pCommandList - Pointer to the command list where the debug group is applied.
   /// \param sName        - Name of the debug group for debugging and profiling purposes.
   /// \param color        - Color used for visual representation (defaults to black).
-  xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color = xiiColor::Black);
+  xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color = xiiColor::White);
 
   /// \brief Destructor, automatically ends the debug group.
   ~xiiGALScopedDebugGroup();

@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/MSAAResolvePass.h>
+#include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 // clang-format off
@@ -119,8 +121,6 @@ xiiResult xiiMSAAResolvePass::InitializeRenderPipelinePass(const xiiView& view, 
 
 void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  XII_IGNORE_UNUSED(pOutputs);
-
   auto pInputColourAttachment = pInputs[m_PinInput.m_uiInputIndex];
   if (pInputColourAttachment == nullptr)
     return;

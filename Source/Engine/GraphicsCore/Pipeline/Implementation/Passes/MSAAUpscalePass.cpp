@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/MSAAUpscalePass.h>
+#include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
@@ -10,7 +12,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAUpscalePass, 1, xiiRTTIDefaultAllocator<
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Input", m_PinInput),
+    XII_MEMBER_PROPERTY("Colour", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount),
@@ -27,6 +29,11 @@ xiiMSAAUpscalePass::xiiMSAAUpscalePass(xiiStringView sName) :
     // Load shader.
     m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/MsaaUpscale.xiiShader");
     XII_ASSERT_DEV(m_hShader.IsValid(), "Failed to load MSAA upscale shader!");
+  }
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    m_pPassConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiPassConstants), "xiiPassConstants");
   }
 }
 
@@ -72,18 +79,6 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
     xiiLog::Error("No input colour attachment connected to pass '{0}'!", GetName());
     return XII_FAILURE;
   }
-
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_uiElementByteStride = sizeof(xiiGlobalConstants);
-  bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
-  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
-  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
-  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-  bufferDescription.m_MiscFlags           = xiiGALMiscBufferFlags::None;
-  m_pPassConstantBuffer                   = pDevice->CreateBuffer(bufferDescription);
 
   return XII_SUCCESS;
 }
@@ -192,7 +187,6 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   {
     {
       xiiGALMapHelper<xiiPassConstants> pPassConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pPassConstants->RenderPass      = -1;
       pPassConstants->MSAASampleCount = static_cast<xiiInt32>(m_SampleCount.GetValue());
     }
 
@@ -237,6 +231,9 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiMSAAUpscalePass::CreatePipelineStat
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
     graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount   = static_cast<xiiUInt8>(m_SampleCount.GetValue());
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_SampleDescription.m_uiQuality = 0U;
   }
 
   return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);

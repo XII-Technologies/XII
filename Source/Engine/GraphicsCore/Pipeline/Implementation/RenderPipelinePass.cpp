@@ -359,9 +359,6 @@ xiiRenderPipelinePassResource& xiiRenderPipelinePassResource::operator=(const xi
 {
   if (this != &other)
   {
-    // Clean up current resource.
-    this->~xiiRenderPipelinePassResource();
-
     // Copy construct into this object.
     new (this) xiiRenderPipelinePassResource(other);
   }

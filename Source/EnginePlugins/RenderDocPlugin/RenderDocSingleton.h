@@ -34,6 +34,16 @@ public:
   virtual xiiResult     GetLastAbsCaptureFileName(xiiStringBuilder& out_sFileName) const override;
 
 private:
-  RENDERDOC_API_1_6_0*   m_pRenderDocAPI = nullptr;
-  xiiMinWindows::HMODULE m_pHandleToFree = nullptr;
+  bool    TryInitializeInternal();
+  HMODULE TryFindOrLoadRenderDocDll();
+  HMODULE TryUseExistingModule();
+  HMODULE TryLoadFromEnvVar();
+  HMODULE TryLoadFromRegistry();
+  HMODULE TryLoadFromFallbackPath();
+  bool    AcquireApiFromDll(HMODULE hHandle);
+
+private:
+  RENDERDOC_API_1_6_0*   m_pRenderDocAPI  = nullptr;
+  xiiMinWindows::HMODULE m_pHandleToFree  = nullptr;
+  bool                   m_bInitAttempted = false;
 };

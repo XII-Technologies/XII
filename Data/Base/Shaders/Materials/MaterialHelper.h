@@ -4,6 +4,7 @@
 #include <Shaders/Common/Common.h>
 #include <Shaders/Common/GlobalConstants.h>
 #include <Shaders/Common/ObjectConstants.h>
+#include <Shaders/Common/PassConstants.h>
 #include <Shaders/Materials/MaterialData.h>
 #include <Shaders/Materials/MaterialInterpolator.h>
 

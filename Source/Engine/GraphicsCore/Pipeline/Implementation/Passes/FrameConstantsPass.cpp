@@ -17,14 +17,17 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiFrameConstantsPass::xiiFrameConstantsPass(xiiStringView sName) :
   xiiUtilityPipelinePass(sName)
 {
+  xiiSharedPtr<xiiGALDevice>                    pDevice                   = xiiGALDevice::GetDefaultDevice();
+  const xiiGALGraphicsDeviceAdapterDescription& graphicsAdapterProperties = pDevice->GetGraphicsDeviceAdapterProperties();
+
+  m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), graphicsAdapterProperties.m_BufferProperties.m_uiConstantBufferAlignment)), 1U);
+
+  xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
 }
 
 xiiFrameConstantsPass::~xiiFrameConstantsPass()
 {
-  if (!m_pGlobalConstants.IsEmpty())
-  {
-    xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
-  }
+  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
 
   m_pGlobalConstants.Clear();
 }
@@ -35,12 +38,11 @@ xiiResult xiiFrameConstantsPass::GetResourceDescriptions(const xiiView& view, co
   XII_IGNORE_UNUSED(pInputs);
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_uiElementByteStride = sizeof(xiiGlobalConstants);
-  bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
+  bufferDescription.m_uiSize              = sizeof(xiiGlobalConstants);
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
   bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
   bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
-  bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
   bufferDescription.m_MiscFlags           = xiiGALMiscBufferFlags::None;
   pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, bufferDescription);
 
@@ -49,18 +51,10 @@ xiiResult xiiFrameConstantsPass::GetResourceDescriptions(const xiiView& view, co
 
 xiiResult xiiFrameConstantsPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  xiiSharedPtr<xiiGALDevice>                    pDevice                   = xiiGALDevice::GetDefaultDevice();
-  const xiiGALGraphicsDeviceAdapterDescription& graphicsAdapterProperties = pDevice->GetGraphicsDeviceAdapterProperties();
+  XII_IGNORE_UNUSED(view);
+  XII_IGNORE_UNUSED(pInputs);
+  XII_IGNORE_UNUSED(pOutputs);
 
-  m_pGlobalConstants = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), graphicsAdapterProperties.m_BufferProperties.m_uiConstantBufferAlignment)), 1U);
-
-  xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
-
-  if (m_pGlobalConstants.IsEmpty())
-  {
-    xiiLog::Error("Failed to create frame constants storage in pass {}.", GetName());
-    return XII_FAILURE;
-  }
   return XII_SUCCESS;
 }
 
@@ -95,7 +89,8 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
     const bool bIsDirectionalLightShadow = renderViewContext.m_pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && renderViewContext.m_pCamera->IsOrthographic();
     pGlobalConstants->MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
 
-    pGlobalConstants->Exposure = renderViewContext.m_pCamera->GetExposure();
+    pGlobalConstants->Exposure   = renderViewContext.m_pCamera->GetExposure();
+    pGlobalConstants->RenderPass = xiiViewRenderMode::GetRenderPassForShader(renderViewContext.m_pViewData->m_ViewRenderMode);
 
     // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
     const double fWrapAround     = 1000.0;
