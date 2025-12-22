@@ -2,6 +2,8 @@
 
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
+#include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator<xiiSimpleRenderPass>)
@@ -45,17 +47,21 @@ xiiResult xiiSimpleRenderPass::Deserialize(xiiStreamReader& inout_stream)
 
 xiiResult xiiSimpleRenderPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
-  XII_IGNORE_UNUSED(view);
+  const xiiRenderTargets& renderTargets = view.GetActiveRenderTargets();
 
   // Colour attachment.
   if (pInputs[m_PinColour.m_uiInputIndex])
   {
     pOutputs[m_PinColour.m_uiOutputIndex] = *pInputs[m_PinColour.m_uiInputIndex];
   }
-  else
+  else if (renderTargets.m_pRTs[0])
   {
-    xiiLog::Error("No colour attachment input connected to pass '{0}'!", GetName());
-    return XII_FAILURE;
+    // If no input is available, we use the render target setup instead.
+
+    xiiGALTextureCreationDescription description = renderTargets.m_pRTs[0]->GetTexture()->GetDescription();
+    description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+
+    pOutputs[m_PinColour.m_uiOutputIndex] = {xiiRenderPipelineNodePinResourceType::ColourAttachment, description};
   }
 
   // Depth stencil attachment.
@@ -63,68 +69,15 @@ xiiResult xiiSimpleRenderPass::GetResourceDescriptions(const xiiView& view, cons
   {
     pOutputs[m_PinDepthStencil.m_uiOutputIndex] = *pInputs[m_PinDepthStencil.m_uiInputIndex];
   }
-  else
+  else if (renderTargets.m_pDSTarget)
   {
-    xiiLog::Error("No depth stencil attachment input connected to pass '{0}'!", GetName());
-    return XII_FAILURE;
+    // If no input is available, we use the render target setup instead.
+
+    xiiGALTextureCreationDescription description = renderTargets.m_pDSTarget->GetTexture()->GetDescription();
+    description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil);
+
+    pOutputs[m_PinColour.m_uiOutputIndex] = {xiiRenderPipelineNodePinResourceType::DepthAttachment, description};
   }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiSimpleRenderPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
-{
-  XII_IGNORE_UNUSED(view);
-  XII_IGNORE_UNUSED(pOutputs);
-
-  m_pRenderPass.Clear();
-  m_FramebufferCache.Clear();
-
-  auto pColourInput = pInputs[m_PinColour.m_uiInputIndex];
-  if (pColourInput == nullptr)
-    return XII_FAILURE;
-
-  auto pDepthInput = pInputs[m_PinDepthStencil.m_uiInputIndex];
-  if (pDepthInput == nullptr)
-    return XII_FAILURE;
-
-  if (!pInputs[m_PinFrameConstants.m_uiInputIndex])
-    return XII_FAILURE;
-
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiGALRenderPassCreationDescription renderPassDescription;
-
-  xiiGALRenderPassAttachmentDescription& depthAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-  depthAttachment.m_Format                               = pDepthInput->m_Resource.m_Texture.m_Description.m_Format;
-  depthAttachment.m_uiSampleCount                        = pDepthInput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
-  depthAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-  depthAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-  depthAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
-  depthAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
-  depthAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::DepthWrite;
-  depthAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::DepthWrite;
-
-  xiiGALRenderPassAttachmentDescription& colourAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-  colourAttachment.m_Format                               = pColourInput->m_Resource.m_Texture.m_Description.m_Format;
-  colourAttachment.m_uiSampleCount                        = pColourInput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
-  colourAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
-  colourAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
-
-  xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
-  subpass.m_DepthStencilAttachment.PushBack(xiiGALAttachmentReferenceDescription{.m_uiAttachmentIndex = 0U, .m_ResourceStateFlags = xiiGALResourceStateFlags::DepthWrite});
-  subpass.m_RenderTargetAttachments.PushBack(xiiGALAttachmentReferenceDescription{.m_uiAttachmentIndex = 1U, .m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget});
-
-  xiiGALSubPassDependencyDescription& dependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-  dependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
-  dependency.m_uiDestinationSubPass              = 0U;
-  dependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_SourceAccessFlags                 = xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::RenderTargetWrite;
-  dependency.m_DestinationAccessFlags            = xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::RenderTargetWrite;
-
-  m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
 
   return XII_SUCCESS;
 }
@@ -133,107 +86,44 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
 {
   XII_IGNORE_UNUSED(pOutputs);
 
-  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
-  if (pFrameConstants == nullptr)
-    return;
-
   auto pColourAttachment = pInputs[m_PinColour.m_uiInputIndex];
-  if (pColourAttachment == nullptr)
+  auto pDepthStencil     = pInputs[m_PinDepthStencil.m_uiInputIndex];
+  if (pColourAttachment == nullptr && pDepthStencil == nullptr)
     return;
 
-  auto pDepthStencil = pInputs[m_PinDepthStencil.m_uiInputIndex];
-  if (pDepthStencil == nullptr)
-    return;
+  xiiRenderingSetup renderingSetup;
+  renderingSetup.AddColorAttachment({pColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
+  renderingSetup.SetDepthStencilAttachment({pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiSharedPtr<xiiGALTextureView>             pDepthStencilView     = pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil);
-  xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  const xiiGALTextureCreationDescription&     textureDescription    = pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDescription();
-  const xiiGALTextureViewCreationDescription& viewDescription       = pDepthStencilView->GetDescription();
-
-  // Create or retrieve a corresponding framebuffer from the cache if present.
-  xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
-  {
-    xiiGALFramebufferCreationDescription frameBufferDescription;
-    frameBufferDescription.m_pRenderPass       = m_pRenderPass;
-    frameBufferDescription.m_FramebufferSize   = textureDescription.m_Size;
-    frameBufferDescription.m_uiArraySliceCount = viewDescription.m_uiArrayOrDepthSlicesCount;
-    frameBufferDescription.m_Attachments.PushBack(pDepthStencilView);
-    frameBufferDescription.m_Attachments.PushBack(pColourAttachmentView);
-
-    for (xiiSharedPtr<xiiGALFramebuffer>& pCachedFramebuffer : m_FramebufferCache)
-    {
-      if (pCachedFramebuffer->GetDescription() == frameBufferDescription)
-      {
-        pFramebuffer = pCachedFramebuffer;
-        break;
-      }
-    }
-
-    if (!pFramebuffer)
-    {
-      pFramebuffer = pDevice->CreateFramebuffer(frameBufferDescription);
-
-      m_FramebufferCache.PushBack(pFramebuffer);
-    }
-  }
-
-  renderViewContext.m_CommandListData.m_pRenderPass      = m_pRenderPass;
-  renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
-  renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
+  auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
   // Setup Permutation Variables.
-  xiiRenderViewContext passRenderViewContext = renderViewContext;
-  xiiTempHashedString  sRenderPass("RENDER_PASS_FORWARD");
+  xiiTempHashedString sRenderPass("RENDER_PASS_FORWARD");
   if (renderViewContext.m_pViewData->m_ViewRenderMode != xiiViewRenderMode::None)
   {
     sRenderPass = xiiViewRenderMode::GetPermutationValue(renderViewContext.m_pViewData->m_ViewRenderMode);
   }
-  renderViewContext.SetShaderPermutationVariable("RENDER_PASS", sRenderPass);
+  pRenderContext->SetShaderPermutationVariable("RENDER_PASS", sRenderPass);
 
-  renderViewContext.m_pCommandList->Begin();
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent);
+
+  if (!m_sMessage.IsEmpty())
   {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Opaque Objects");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
-    }
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Transparent Objects");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent);
-    }
-
-    if (!m_sMessage.IsEmpty())
-    {
-      xiiDebugRenderer::Draw2DText(*renderViewContext.m_pViewDebugContext, m_sMessage.GetData(), xiiVec2I32(20, 20), xiiColor::OrangeRed);
-    }
-
-    xiiDebugRenderer::RenderWorldSpace(renderViewContext);
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Foreground Objects (Prepare-Depth)");
-
-      renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
-    }
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render Simple Foreground Objects");
-
-      renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
-    }
-    {
-      xiiGALScopedDebugGroup group(renderViewContext.m_pCommandList, "Render GUI Objects");
-
-      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
-    }
-    xiiDebugRenderer::RenderScreenSpace(renderViewContext);
+    xiiDebugRenderer::Draw2DText(*renderViewContext.m_pViewDebugContext, m_sMessage.GetData(), xiiVec2I32(20, 20), xiiColor::OrangeRed);
   }
-  renderViewContext.m_pCommandList->End();
+
+  xiiDebugRenderer::RenderWorldSpace(renderViewContext);
+
+  pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+
+  pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
+
+  xiiDebugRenderer::RenderScreenSpace(renderViewContext);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SimpleRenderPass);
