@@ -9,13 +9,13 @@
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Shaders/Materials/SpriteData.h>
 static_assert(sizeof(xiiPerSpriteData) == 48);

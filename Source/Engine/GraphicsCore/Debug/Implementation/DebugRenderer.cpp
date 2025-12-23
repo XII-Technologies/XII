@@ -9,10 +9,10 @@
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -1860,8 +1860,8 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       /// \todo Monochrome textured 2D triangles.
       renderViewContext.m_pRenderContext->BindTextureView("baseTexture", itTex.Key());
 
-      const auto& verts = itTex.Value();
-      xiiUInt32 uiNum2DVertices = verts.GetCount();
+      const auto& verts           = itTex.Value();
+      xiiUInt32   uiNum2DVertices = verts.GetCount();
 
       if (uiNum2DVertices != 0)
       {
