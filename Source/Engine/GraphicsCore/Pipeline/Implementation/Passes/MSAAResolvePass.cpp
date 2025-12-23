@@ -71,10 +71,6 @@ void xiiMSAAResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pOutputColourAttachment == nullptr)
     return;
 
-  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
-  if (pFrameConstants == nullptr)
-    return;
-
   if (m_bIsDepthResolve)
   {
     xiiRenderingSetup renderingSetup;

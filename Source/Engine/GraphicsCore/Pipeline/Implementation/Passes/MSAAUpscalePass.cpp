@@ -81,8 +81,6 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
 
 void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  XII_IGNORE_UNUSED(pOutputs);
-
   auto pInputColourAttachment = pInputs[m_PinInput.m_uiInputIndex];
   if (pInputColourAttachment == nullptr)
     return;
@@ -90,16 +88,6 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   auto pOutputColourAttachment = pOutputs[m_PinOutput.m_uiOutputIndex];
   if (pOutputColourAttachment == nullptr)
     return;
-
-  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
-  if (pFrameConstants == nullptr)
-    return;
-
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  const xiiGALTextureCreationDescription&     textureDescription    = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
-  const xiiGALTextureViewCreationDescription& viewDescription       = pColourAttachmentView->GetDescription();
 
   xiiRenderingSetup renderingSetup;
   renderingSetup.AddColorAttachment({pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
