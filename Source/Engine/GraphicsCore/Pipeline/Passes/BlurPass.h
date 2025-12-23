@@ -60,13 +60,9 @@ public:
 
   virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) override;
 
-  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
-
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 protected:
-  xiiSharedPtr<xiiGALGraphicsPipelineState> CreatePipelineState(const xiiRenderViewContext& renderViewContext) const;
-
   void PrepareKernel(xiiStaticArray<float, 32U>& out_weights, xiiStaticArray<float, 32U>& out_offsets);
 
 protected:
@@ -82,12 +78,8 @@ protected:
   xiiRenderPipelineNodeInputColourAttachmentPin m_PinCoCBuffer;     // Circle-of-confusion for DoF
   xiiRenderPipelineNodeInputColourAttachmentPin m_PinMaskTexture;   // Selective blur mask
 
-  xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
-  xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 2U> m_FramebufferCache;
-
   xiiBlurSettings m_BlurSettings;
 
-  xiiSharedPtr<xiiGALBuffer> m_pPassConstantBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pBlurConstantBuffer;
 
   xiiShaderResourceHandle m_hShader;
