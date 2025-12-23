@@ -3,6 +3,7 @@
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/Passes/FrameConstantsPass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFrameConstantsPass, 1, xiiRTTIDefaultAllocator<xiiFrameConstantsPass>)
@@ -38,13 +39,13 @@ xiiResult xiiFrameConstantsPass::GetResourceDescriptions(const xiiView& view, co
   XII_IGNORE_UNUSED(pInputs);
 
   xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_uiSize              = sizeof(xiiGlobalConstants);
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
-  bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
-  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
-  bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
-  bufferDescription.m_MiscFlags           = xiiGALMiscBufferFlags::None;
-  pOutputs[m_PinOutput.m_uiOutputIndex]   = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, bufferDescription);
+  bufferDescription.m_uiSize            = sizeof(xiiGlobalConstants);
+  bufferDescription.m_BindFlags         = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_Usage             = xiiGALResourceUsage::Mutable;
+  bufferDescription.m_CPUAccessFlags    = xiiGALCPUAccessFlag::None;
+  bufferDescription.m_Mode              = xiiGALBufferMode::Undefined;
+  bufferDescription.m_MiscFlags         = xiiGALMiscBufferFlags::None;
+  pOutputs[m_PinOutput.m_uiOutputIndex] = xiiRenderPipelinePassResource(m_PinOutput.m_ResourceType, bufferDescription);
 
   return XII_SUCCESS;
 }
@@ -99,11 +100,7 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
     pGlobalConstants->WorldTime  = (float)xiiMath::Mod(GetPipeline()->GetRenderData().GetWorldTime().GetSeconds(), fWrapAround);
   }
 
-  renderViewContext.m_pCommandList->Begin();
-  {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
 
-    renderViewContext.m_pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
-  }
-  renderViewContext.m_pCommandList->End();
+  pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
 }

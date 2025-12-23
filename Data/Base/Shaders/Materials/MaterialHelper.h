@@ -63,9 +63,9 @@ uint CalculateCoverage()
 
   float2 texCoords = G.Input.TexCoord0;
 
-  for (uint i = 0; i < NumMsaaSamples; ++i)
+  for (uint i = 0; i < MSAASampleCount; ++i)
   {
-    G.Input.TexCoord0 = xiiEvaluateAttributeAtSample(texCoords, i, NumMsaaSamples);
+    G.Input.TexCoord0 = xiiEvaluateAttributeAtSample(texCoords, i, MSAASampleCount);
 
     float opacity = GetOpacity();
     coverage |= (opacity > 0.0) ? (1U << i) : 0;

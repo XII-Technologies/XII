@@ -29,8 +29,6 @@ protected:
   void                       DeleteSpriteDataBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer) const;
   virtual void               FillSpriteData(const xiiRenderDataBatch& batch) const;
 
-  xiiSharedPtr<xiiGALGraphicsPipelineState> CreatePipelineState(const xiiRenderViewContext& renderViewContext) const;
-
   xiiShaderResourceHandle                                               m_hShader;
   mutable xiiDynamicArray<xiiPerSpriteData, xiiAlignedAllocatorWrapper> m_SpriteData;
 };

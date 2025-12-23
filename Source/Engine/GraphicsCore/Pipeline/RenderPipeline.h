@@ -93,7 +93,7 @@ private:
   void ExtractData(const xiiView& view);
   void FindVisibleObjects(const xiiView& view);
 
-  void Render();
+  void Render(xiiRenderContext* pRenderContext);
 
   xiiRasterizerView* PrepareOcclusionCulling(const xiiFrustum& frustum, const xiiView& view);
   void               PreviewOcclusionBuffer(const xiiRasterizerView& rasterizer, const xiiView& view);

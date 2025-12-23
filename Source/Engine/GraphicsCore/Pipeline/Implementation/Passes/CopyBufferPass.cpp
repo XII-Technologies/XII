@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/CopyBufferPass.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyBufferPass, 1, xiiRTTIDefaultAllocator<xiiCopyBufferPass>)
@@ -51,11 +52,7 @@ void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, c
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  renderViewContext.m_pCommandList->Begin();
-  {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
 
-    renderViewContext.m_pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
-  }
-  renderViewContext.m_pCommandList->End();
+  pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
 }

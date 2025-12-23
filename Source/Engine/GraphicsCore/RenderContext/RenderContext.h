@@ -4,6 +4,7 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/States/PipelineState.h>
@@ -148,6 +149,145 @@ public:
   static xiiRenderContext* GetDefaultInstance();
   static xiiRenderContext* CreateInstance();
   static void              DestroyInstance(xiiRenderContext* pRenderContext);
+
+public:
+  class GraphicsScope
+  {
+    XII_DISALLOW_COPY_AND_ASSIGN(GraphicsScope);
+
+  public:
+    XII_ALWAYS_INLINE ~GraphicsScope()
+    {
+      m_Context.EndRendering();
+    }
+
+    XII_ALWAYS_INLINE xiiRenderContext* operator->() { return &m_Context; }
+
+  private:
+    friend class xiiRenderContext;
+
+    XII_ALWAYS_INLINE GraphicsScope(xiiRenderContext& context, const xiiRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereo) :
+      m_Context(context)
+    {
+      m_Context.BeginRendering(renderingSetup, viewport, sName, bStereo);
+    }
+
+    xiiRenderContext& m_Context;
+  };
+
+  class ComputeScope
+  {
+    XII_DISALLOW_COPY_AND_ASSIGN(ComputeScope);
+
+  public:
+    XII_ALWAYS_INLINE ~ComputeScope()
+    {
+      m_Context.EndCompute();
+    }
+
+    XII_ALWAYS_INLINE xiiRenderContext* operator->() { return &m_Context; }
+
+  private:
+    friend class xiiRenderContext;
+
+    XII_ALWAYS_INLINE ComputeScope(xiiRenderContext& context, xiiStringView sName) :
+      m_Context(context)
+    {
+      m_Context.BeginCompute(sName);
+    }
+
+    xiiRenderContext& m_Context;
+  };
+
+public:
+  enum class CommandListType
+  {
+    Graphics,
+    Compute,
+    Transfer,
+    Unknown
+  };
+
+  template <CommandListType Type>
+  class CommandListScope
+  {
+    XII_DISALLOW_COPY_AND_ASSIGN(CommandListScope);
+
+  public:
+    XII_ALWAYS_INLINE ~CommandListScope()
+    {
+      if (m_bHasDebugScope)
+      {
+        m_pCommandList->EndDebugGroup();
+      }
+      m_pCommandList->End();
+
+      xiiGALCommandQueue* pCommandQueue = m_pDevice->GetCommandQueue(m_QueueFlags);
+      XII_ASSERT_DEBUG(pCommandQueue != nullptr, "Failed to get command queue for the specified flags!");
+
+      pCommandQueue->Submit(m_pCommandList);
+    }
+
+    XII_ALWAYS_INLINE xiiGALCommandList* operator->() { return m_pCommandList.Borrow(); }
+    XII_ALWAYS_INLINE xiiSharedPtr<xiiGALCommandList>  GetCommandList() const { m_pCommandList; }
+    XII_ALWAYS_INLINE static constexpr CommandListType GetType() { return Type; }
+
+  private:
+    friend class xiiRenderContext;
+
+    XII_ALWAYS_INLINE CommandListScope(xiiStringView sName = {}) :
+      m_bHasDebugScope(!sName.IsEmpty())
+    {
+      if constexpr (Type == CommandListType::Graphics)
+      {
+        m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+      }
+      else if constexpr (Type == CommandListType::Compute)
+      {
+        m_QueueFlags = xiiGALCommandQueueFlags::Compute;
+      }
+      else if constexpr (Type == CommandListType::Transfer)
+      {
+        m_QueueFlags = xiiGALCommandQueueFlags::Transfer;
+      }
+      else
+      {
+        m_QueueFlags = xiiGALCommandQueueFlags::None;
+      }
+
+      m_pDevice      = xiiGALDevice::GetDefaultDevice();
+      m_pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+      XII_ASSERT_DEBUG(m_pCommandList != nullptr, "Failed to create command list!");
+
+      m_pCommandList->Begin();
+
+      if (m_bHasDebugScope)
+      {
+        m_pCommandList->BeginDebugGroup(sName, xiiColor::White);
+      }
+    }
+
+    xiiSharedPtr<xiiGALDevice>           m_pDevice;
+    xiiSharedPtr<xiiGALCommandList>      m_pCommandList;
+    xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
+    bool                                 m_bHasDebugScope = false;
+  };
+
+  XII_ALWAYS_INLINE static GraphicsScope BeginRenderingScope(const xiiRenderViewContext& viewContext, const xiiRenderingSetup& renderingSetup, xiiStringView sName = {}, bool bStereoRendering = false)
+  {
+    return GraphicsScope(*viewContext.m_pRenderContext, renderingSetup, viewContext.m_pViewData->m_ViewPortRect, sName, bStereoRendering);
+  }
+
+  XII_ALWAYS_INLINE static ComputeScope BeginComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName = {})
+  {
+    return ComputeScope(*viewContext.m_pRenderContext, sName);
+  }
+
+  template <CommandListType Type>
+  XII_ALWAYS_INLINE static CommandListScope<Type> BeginCommandListScope(xiiStringView sName = {})
+  {
+    return CommandListScope<Type>(sName);
+  }
 
 public:
   /// \brief Begins a graphics render pass with the given setup and viewport.
@@ -407,9 +547,9 @@ private:
   static xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, xiiArrayPtr<xiiUInt32> pVertexBufferStrides, xiiArrayPtr<xiiEnum<xiiGALInputElementFrequency>> pInputElementFrequencies, const xiiInputLayoutInfo& declaration, const xiiInputLayoutInfo& customDeclaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
 
 private:
-  static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>                                      s_RenderPassCache;
-  static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash>                                     s_FramebufferCache;
-  static xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                                                              s_InputLayouts;
+  static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>  s_RenderPassCache;
+  static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash> s_FramebufferCache;
+  static xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          s_InputLayouts;
 
 private:
   xiiSharedPtr<xiiGALCommandList> m_pCommandList;

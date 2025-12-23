@@ -4,6 +4,7 @@
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/BlurPass.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
@@ -71,7 +72,6 @@ xiiBlurPass::xiiBlurPass(xiiStringView sName) :
   {
     xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-    m_pPassConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiPassConstants), "xiiPassConstants");
     m_pBlurConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiBlurConstants), "xiiBlurConstants");
   }
 }
@@ -112,54 +112,6 @@ xiiResult xiiBlurPass::GetResourceDescriptions(const xiiView& view, const xiiArr
     return XII_FAILURE;
   }
 
-  if (!pInputs[m_PinFrameConstants.m_uiInputIndex])
-  {
-    xiiLog::Error("No input frame constants connected to pass '{0}'!", GetName());
-    return XII_FAILURE;
-  }
-
-  return XII_SUCCESS;
-}
-
-xiiResult xiiBlurPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
-{
-  XII_IGNORE_UNUSED(view);
-  XII_IGNORE_UNUSED(pOutputs);
-
-  m_pRenderPass.Clear();
-  m_FramebufferCache.Clear();
-
-  auto pColourOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
-  if (pColourOutput == nullptr)
-    return XII_FAILURE;
-
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiGALRenderPassCreationDescription renderPassDescription;
-
-  xiiGALRenderPassAttachmentDescription& colourAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-  colourAttachment.m_Format                               = pColourOutput->m_Resource.m_Texture.m_Description.m_Format;
-  colourAttachment.m_uiSampleCount                        = pColourOutput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
-  colourAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
-  colourAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
-
-  xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
-  subpass.m_RenderTargetAttachments.PushBack(xiiGALAttachmentReferenceDescription{.m_uiAttachmentIndex = 0U, .m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget});
-
-  xiiGALSubPassDependencyDescription& dependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-  dependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
-  dependency.m_uiDestinationSubPass              = 0U;
-  dependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_SourceAccessFlags                 = xiiGALAccessFlags::RenderTargetWrite;
-  dependency.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
-
-  m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
-
   return XII_SUCCESS;
 }
 
@@ -175,119 +127,37 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   if (pOutputColourAttachment == nullptr)
     return;
 
-  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
-  if (pFrameConstants == nullptr)
-    return;
+  xiiRenderingSetup renderingSetup;
+  renderingSetup.AddColorAttachment({pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)}).Build();
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  const xiiGALTextureCreationDescription&     textureDescription    = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
-  const xiiGALTextureViewCreationDescription& viewDescription       = pColourAttachmentView->GetDescription();
-
-  // Create or retrieve a corresponding framebuffer from the cache if present.
-  xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
-  {
-    xiiGALFramebufferCreationDescription frameBufferDescription;
-    frameBufferDescription.m_pRenderPass       = m_pRenderPass;
-    frameBufferDescription.m_FramebufferSize   = textureDescription.m_Size;
-    frameBufferDescription.m_uiArraySliceCount = viewDescription.m_uiArrayOrDepthSlicesCount;
-    frameBufferDescription.m_Attachments.PushBack(pColourAttachmentView);
-
-    for (xiiSharedPtr<xiiGALFramebuffer>& pCachedFramebuffer : m_FramebufferCache)
-    {
-      if (pCachedFramebuffer->GetDescription() == frameBufferDescription)
-      {
-        pFramebuffer = pCachedFramebuffer;
-        break;
-      }
-    }
-
-    if (!pFramebuffer)
-    {
-      pFramebuffer = pDevice->CreateFramebuffer(frameBufferDescription);
-
-      m_FramebufferCache.PushBack(pFramebuffer);
-    }
-  }
-
-  renderViewContext.m_CommandListData.m_pRenderPass      = m_pRenderPass;
-  renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
-  renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
-
-  renderViewContext.SetShaderPermutationVariable("MSAA", "FALSE");
-
-  xiiSharedPtr<xiiGALGraphicsPipelineState> pPipelineState = CreatePipelineState(renderViewContext);
-  if (!pPipelineState)
-    return;
-
-  renderViewContext.m_pCommandList->Begin();
-  {
-    {
-      xiiGALMapHelper<xiiPassConstants> pPassConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pPassConstants->MSAASampleCount = 1U;
-    }
-    {
-      const xiiGALTextureCreationDescription& sourceTextureDescription = pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
-
-      xiiGALMapHelper<xiiBlurConstants> pBlurConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pBlurConstants->SourceTexelSize = {1.0f / sourceTextureDescription.GetWidth(), 1.0f / sourceTextureDescription.GetHeight()};
-      pBlurConstants->Direction       = m_BlurSettings.m_vDirection;
-      pBlurConstants->RadialCenter    = m_BlurSettings.m_vRadialCenter;
-      pBlurConstants->RadiusPixels    = m_BlurSettings.m_fRadiusPixels;
-      pBlurConstants->Sigma           = m_BlurSettings.m_fSigma;
-      pBlurConstants->RadialStrength  = m_BlurSettings.m_fRadialStrength;
-      pBlurConstants->Iterations      = m_BlurSettings.m_uiIterationCount;
-      pBlurConstants->DepthSigma      = m_BlurSettings.m_fDepthSigma;
-      pBlurConstants->NormalSigma     = m_BlurSettings.m_fNormalSigma;
-
-      xiiStaticArray<float, 32U> weights, offsets;
-      PrepareKernel(weights, offsets);
-
-      xiiMemoryUtils::Copy(pBlurConstants->KernelWeights, weights.GetData(), weights.GetCount() * sizeof(float));
-      xiiMemoryUtils::Copy(pBlurConstants->KernelOffsets, offsets.GetData(), offsets.GetCount() * sizeof(float));
-    }
-
-    renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
-    renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
-    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
-    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiPassConstants), m_pPassConstantBuffer);
-    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiBlurConstants), m_pBlurConstantBuffer);
-    renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-    renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
-    renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
-    renderViewContext.m_pCommandList->Draw({1U, renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U});
-    renderViewContext.m_pCommandList->EndRenderPass();
-  }
-  renderViewContext.m_pCommandList->End();
-}
-
-xiiSharedPtr<xiiGALGraphicsPipelineState> xiiBlurPass::CreatePipelineState(const xiiRenderViewContext& renderViewContext) const
-{
-  xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hShader, renderViewContext.GetPermutationVariables(), false);
-
-  xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
-  graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
-  graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
-  graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
+  auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
   {
-    xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
+    const xiiGALTextureCreationDescription& sourceTextureDescription = pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
 
-    if (!pShaderPermutation->IsShaderValid())
-      return nullptr;
+    xiiGALMapHelper<xiiBlurConstants> pBlurConstants(pRenderContext->GetCommandList(), m_pBlurConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+    pBlurConstants->SourceTexelSize = {1.0f / sourceTextureDescription.GetWidth(), 1.0f / sourceTextureDescription.GetHeight()};
+    pBlurConstants->Direction       = m_BlurSettings.m_vDirection;
+    pBlurConstants->RadialCenter    = m_BlurSettings.m_vRadialCenter;
+    pBlurConstants->RadiusPixels    = m_BlurSettings.m_fRadiusPixels;
+    pBlurConstants->Sigma           = m_BlurSettings.m_fSigma;
+    pBlurConstants->RadialStrength  = m_BlurSettings.m_fRadialStrength;
+    pBlurConstants->Iterations      = m_BlurSettings.m_uiIterationCount;
+    pBlurConstants->DepthSigma      = m_BlurSettings.m_fDepthSigma;
+    pBlurConstants->NormalSigma     = m_BlurSettings.m_fNormalSigma;
 
-    graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
-    graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
-    graphicsPipelineStateDescription.m_pGeometryShader            = pShaderPermutation->GetGALShader(xiiGALShaderType::Geometry);
-    graphicsPipelineStateDescription.m_pPixelShader               = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+    xiiStaticArray<float, 32U> weights, offsets;
+    PrepareKernel(weights, offsets);
 
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+    xiiMemoryUtils::Copy(pBlurConstants->KernelWeights, weights.GetData(), weights.GetCount() * sizeof(float));
+    xiiMemoryUtils::Copy(pBlurConstants->KernelOffsets, offsets.GetData(), offsets.GetCount() * sizeof(float));
   }
 
-  return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+  pRenderContext->BindShader(m_hShader);
+  pRenderContext->BindConstantBuffer(XII_PP_STRINGIFY(xiiBlurConstants), m_pBlurConstantBuffer);
+  pRenderContext->BindTexture("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture);
+  pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1U);
+  pRenderContext->DrawMeshBuffer().IgnoreResult();
 }
 
 void xiiBlurPass::PrepareKernel(xiiStaticArray<float, 32U>& out_weights, xiiStaticArray<float, 32U>& out_offsets)

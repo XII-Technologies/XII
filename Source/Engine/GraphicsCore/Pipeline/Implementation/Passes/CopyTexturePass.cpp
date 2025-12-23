@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/CopyTexturePass.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyColourAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCopyColourAttachmentPass>)
@@ -51,13 +52,9 @@ void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderView
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  renderViewContext.m_pCommandList->Begin();
-  {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
 
-    renderViewContext.m_pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
-  }
-  renderViewContext.m_pCommandList->End();
+  pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,11 +108,7 @@ void xiiCopyDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewC
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  renderViewContext.m_pCommandList->Begin();
-  {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
 
-    renderViewContext.m_pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
-  }
-  renderViewContext.m_pCommandList->End();
+  pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
 }

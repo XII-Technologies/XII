@@ -36,8 +36,6 @@ public:
 
   virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) override;
 
-  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
-
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 protected:
@@ -49,7 +47,4 @@ private:
   xiiRenderPipelineNodeInputBufferPin                 m_PinFrameConstants;
 
   xiiEnum<xiiForwardRenderShadingQuality> m_ShadingQuality;
-
-  xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
-  xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 2U> m_FramebufferCache;
 };

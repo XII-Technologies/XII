@@ -4,6 +4,7 @@
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/MSAAUpscalePass.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
@@ -29,11 +30,6 @@ xiiMSAAUpscalePass::xiiMSAAUpscalePass(xiiStringView sName) :
     // Load shader.
     m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/MsaaUpscale.xiiShader");
     XII_ASSERT_DEV(m_hShader.IsValid(), "Failed to load MSAA upscale shader!");
-  }
-  {
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-    m_pPassConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiPassConstants), "xiiPassConstants");
   }
 }
 
@@ -64,9 +60,9 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
   // Colour attachment.
   if (pInputs[m_PinInput.m_uiInputIndex])
   {
-    if (pInputs[m_PinInput.m_uiInputIndex]->m_Texture.m_Description.m_uiSampleCount == static_cast<xiiUInt32>(xiiGALMSAASampleCount::OneSample))
+    if (pInputs[m_PinInput.m_uiInputIndex]->m_Texture.m_Description.m_uiSampleCount != static_cast<xiiUInt32>(xiiGALMSAASampleCount::OneSample))
     {
-      xiiLog::Error("Input texture must be a MSAA source in pass '{0}'!", GetName());
+      xiiLog::Error("Input texture must be a non-MSAA source in pass '{0}'!", GetName());
       return XII_FAILURE;
     }
 
@@ -83,52 +79,8 @@ xiiResult xiiMSAAUpscalePass::GetResourceDescriptions(const xiiView& view, const
   return XII_SUCCESS;
 }
 
-xiiResult xiiMSAAUpscalePass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
-{
-  XII_IGNORE_UNUSED(view);
-  XII_IGNORE_UNUSED(pOutputs);
-
-  m_pRenderPass.Clear();
-  m_FramebufferCache.Clear();
-
-  auto pColourOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
-  if (pColourOutput == nullptr)
-    return XII_FAILURE;
-
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  xiiGALRenderPassCreationDescription renderPassDescription;
-
-  xiiGALRenderPassAttachmentDescription& colourAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-  colourAttachment.m_Format                               = pColourOutput->m_Resource.m_Texture.m_Description.m_Format;
-  colourAttachment.m_uiSampleCount                        = pColourOutput->m_Resource.m_Texture.m_Description.m_uiSampleCount;
-  colourAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
-  colourAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
-  colourAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
-  colourAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
-
-  xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
-  subpass.m_RenderTargetAttachments.PushBack(xiiGALAttachmentReferenceDescription{.m_uiAttachmentIndex = 0U, .m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget});
-
-  xiiGALSubPassDependencyDescription& dependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-  dependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
-  dependency.m_uiDestinationSubPass              = 0U;
-  dependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::EarlyFragmentTests | xiiGALPipelineStageFlags::RenderTarget;
-  dependency.m_SourceAccessFlags                 = xiiGALAccessFlags::RenderTargetWrite;
-  dependency.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
-
-  m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
-
-  return XII_SUCCESS;
-}
-
 void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  XII_IGNORE_UNUSED(pOutputs);
-
   auto pInputColourAttachment = pInputs[m_PinInput.m_uiInputIndex];
   if (pInputColourAttachment == nullptr)
     return;
@@ -137,104 +89,13 @@ void xiiMSAAUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   if (pOutputColourAttachment == nullptr)
     return;
 
-  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
-  if (pFrameConstants == nullptr)
-    return;
+  xiiRenderingSetup renderingSetup;
+  renderingSetup.AddColorAttachment({pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)}).Build();
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
-  xiiSharedPtr<xiiGALTextureView>             pColourAttachmentView = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  const xiiGALTextureCreationDescription&     textureDescription    = pOutputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDescription();
-  const xiiGALTextureViewCreationDescription& viewDescription       = pColourAttachmentView->GetDescription();
-
-  // Create or retrieve a corresponding framebuffer from the cache if present.
-  xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
-  {
-    xiiGALFramebufferCreationDescription frameBufferDescription;
-    frameBufferDescription.m_pRenderPass       = m_pRenderPass;
-    frameBufferDescription.m_FramebufferSize   = textureDescription.m_Size;
-    frameBufferDescription.m_uiArraySliceCount = viewDescription.m_uiArrayOrDepthSlicesCount;
-    frameBufferDescription.m_Attachments.PushBack(pColourAttachmentView);
-
-    for (xiiSharedPtr<xiiGALFramebuffer>& pCachedFramebuffer : m_FramebufferCache)
-    {
-      if (pCachedFramebuffer->GetDescription() == frameBufferDescription)
-      {
-        pFramebuffer = pCachedFramebuffer;
-        break;
-      }
-    }
-
-    if (!pFramebuffer)
-    {
-      pFramebuffer = pDevice->CreateFramebuffer(frameBufferDescription);
-
-      m_FramebufferCache.PushBack(pFramebuffer);
-    }
-  }
-
-  renderViewContext.m_CommandListData.m_pRenderPass      = m_pRenderPass;
-  renderViewContext.m_CommandListData.m_pFramebuffer     = pFramebuffer;
-  renderViewContext.m_CommandListData.m_pGlobalConstants = pFrameConstants->m_Resource.m_Buffer.m_pBuffer;
-
-  renderViewContext.SetShaderPermutationVariable("MSAA", "TRUE");
-
-  xiiSharedPtr<xiiGALGraphicsPipelineState> pPipelineState = CreatePipelineState(renderViewContext);
-  if (!pPipelineState)
-    return;
-
-  renderViewContext.m_pCommandList->Begin();
-  {
-    {
-      xiiGALMapHelper<xiiPassConstants> pPassConstants(renderViewContext.m_pCommandList, m_pPassConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-      pPassConstants->MSAASampleCount = static_cast<xiiInt32>(m_SampleCount.GetValue());
-    }
-
-    renderViewContext.m_pCommandList->SetPipelineState(pPipelineState);
-    renderViewContext.m_pCommandList->SetViewport({renderViewContext.m_pViewData->m_ViewPortRect});
-    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), renderViewContext.m_CommandListData.m_pGlobalConstants);
-    renderViewContext.m_pCommandList->ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiPassConstants), m_pPassConstantBuffer);
-    renderViewContext.m_pCommandList->ResolveAndSetShaderResourceTextureView("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-
-    const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
-    xiiUInt32       uiPrimitiveCount    = uiVertsPerPrimitive;
-    xiiUInt32       uiInstanceCount     = renderViewContext.m_pCamera->IsStereoscopic() ? 2U : 1U;
-
-    renderViewContext.m_pCommandList->CommitShaderResources().IgnoreResult();
-    renderViewContext.m_pCommandList->BeginRenderPass({renderViewContext.m_CommandListData.m_pRenderPass, renderViewContext.m_CommandListData.m_pFramebuffer});
-    renderViewContext.m_pCommandList->Draw({uiPrimitiveCount, uiInstanceCount});
-    renderViewContext.m_pCommandList->EndRenderPass();
-  }
-  renderViewContext.m_pCommandList->End();
-}
-
-xiiSharedPtr<xiiGALGraphicsPipelineState> xiiMSAAUpscalePass::CreatePipelineState(const xiiRenderViewContext& renderViewContext) const
-{
-  xiiShaderPermutationResourceHandle hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hShader, renderViewContext.GetPermutationVariables(), false);
-
-  xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
-  graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass       = renderViewContext.m_CommandListData.m_pRenderPass;
-  graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList;
-  graphicsPipelineStateDescription.m_GraphicsPipeline.m_uiSampleMask      = 0xFFFFFFFFU;
-
-  {
-    xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(hShaderPermutation, xiiResourceAcquireMode::AllowLoadingFallback);
-
-    if (!pShaderPermutation->IsShaderValid())
-      return nullptr;
-
-    graphicsPipelineStateDescription.m_pPipelineResourceSignature = pShaderPermutation->GetPipelineResourceSignature();
-    graphicsPipelineStateDescription.m_pVertexShader              = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
-    graphicsPipelineStateDescription.m_pGeometryShader            = pShaderPermutation->GetGALShader(xiiGALShaderType::Geometry);
-    graphicsPipelineStateDescription.m_pPixelShader               = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
-
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
-
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount   = static_cast<xiiUInt8>(m_SampleCount.GetValue());
-    graphicsPipelineStateDescription.m_GraphicsPipeline.m_SampleDescription.m_uiQuality = 0U;
-  }
-
-  return xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+  pRenderContext->BindShader(m_hShader);
+  pRenderContext->BindTexture("colorTexture", pInputColourAttachment->m_Resource.m_Texture.m_pTexture);
+  pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
+  pRenderContext->DrawMeshBuffer().IgnoreResult();
 }

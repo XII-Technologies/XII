@@ -198,17 +198,13 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
     }
   }
 
-  renderViewContext.m_pCommandList->Begin();
-  {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
 
-    xiiGALOptimizedClearValue clearValue;
-    clearValue.m_ClearColour = m_ClearColour;
+  xiiGALOptimizedClearValue clearValue;
+  clearValue.m_ClearColour = m_ClearColour;
 
-    renderViewContext.m_pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
-    renderViewContext.m_pCommandList->EndRenderPass();
-  }
-  renderViewContext.m_pCommandList->End();
+  pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
+  pCommandList->EndRenderPass();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -398,16 +394,12 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
     }
   }
 
-  renderViewContext.m_pCommandList->Begin();
-  {
-    xiiGALScopedDebugGroup scope(renderViewContext.m_pCommandList, GetName());
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
 
-    xiiGALOptimizedClearValue clearValue;
-    clearValue.m_DepthStencil.m_fDepth    = m_fDepthClearValue;
-    clearValue.m_DepthStencil.m_uiStencil = m_uiStencilClearValue;
+  xiiGALOptimizedClearValue clearValue;
+  clearValue.m_DepthStencil.m_fDepth    = m_fDepthClearValue;
+  clearValue.m_DepthStencil.m_uiStencil = m_uiStencilClearValue;
 
-    renderViewContext.m_pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
-    renderViewContext.m_pCommandList->EndRenderPass();
-  }
-  renderViewContext.m_pCommandList->End();
+  pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
+  pCommandList->EndRenderPass();
 }
