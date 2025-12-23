@@ -236,7 +236,7 @@ public:
     friend class xiiRenderContext;
 
     XII_ALWAYS_INLINE CommandListScope(xiiStringView sName = {}) :
-      m_bHasDebugGroup(!sName.IsEmpty())
+      m_bHasDebugScope(!sName.IsEmpty())
     {
       if constexpr (Type == CommandListType::Graphics)
       {
