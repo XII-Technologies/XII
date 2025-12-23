@@ -89,5 +89,4 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   auto pDepthStencil = pInputs[m_PinDepthStencil.m_uiInputIndex];
   if (pDepthStencil == nullptr)
     return;
-
 }

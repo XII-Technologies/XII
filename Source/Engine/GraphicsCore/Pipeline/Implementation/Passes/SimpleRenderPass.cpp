@@ -92,8 +92,9 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
     return;
 
   xiiRenderingSetup renderingSetup;
-  renderingSetup.AddColorAttachment({pColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
-  renderingSetup.SetDepthStencilAttachment({pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
+  renderingSetup.AddColorAttachment({pColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)})
+    .SetDepthStencilAttachment({pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)})
+    .Build();
 
   auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 

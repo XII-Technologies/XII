@@ -78,7 +78,7 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
     return;
 
   xiiRenderingSetup renderingSetup;
-  renderingSetup.SetDepthStencilAttachment({pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
+  renderingSetup.SetDepthStencilAttachment({pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)}).Build();
 
   auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
