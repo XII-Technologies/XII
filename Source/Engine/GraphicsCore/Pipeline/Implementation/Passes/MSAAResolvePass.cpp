@@ -7,6 +7,8 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/PassConstants.h>
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAResolvePass, 1, xiiRTTIDefaultAllocator<xiiMSAAResolvePass>)
 {
@@ -14,7 +16,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAResolvePass, 1, xiiRTTIDefaultAllocator<
   {
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
   }
   XII_END_PROPERTIES;
 }

@@ -16,6 +16,3 @@
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
-
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/PassConstants.h>

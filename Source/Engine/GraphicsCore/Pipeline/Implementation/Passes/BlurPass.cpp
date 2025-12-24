@@ -48,7 +48,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBlurPass, 1, xiiRTTIDefaultAllocator<xiiBlur
   {
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_MEMBER_PROPERTY("DepthTexture", m_PinDepthTexture),
     XII_MEMBER_PROPERTY("NormalTexture", m_PinNormalTexture),
     XII_MEMBER_PROPERTY("MotionVectors", m_PinMotionVectors),

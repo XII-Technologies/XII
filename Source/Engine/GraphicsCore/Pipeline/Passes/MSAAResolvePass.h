@@ -19,7 +19,6 @@ public:
 protected:
   xiiRenderPipelineNodeInputColourAttachmentPin  m_PinInput;
   xiiRenderPipelineNodeOutputColourAttachmentPin m_PinOutput;
-  xiiRenderPipelineNodeInputBufferPin            m_PinFrameConstants;
 
   xiiEnum<xiiGALMSAASampleCount> m_SampleCount     = xiiGALMSAASampleCount::OneSample;
   bool                           m_bIsDepthResolve = false;

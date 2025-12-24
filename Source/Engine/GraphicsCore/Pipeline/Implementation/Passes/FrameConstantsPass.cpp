@@ -5,6 +5,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFrameConstantsPass, 1, xiiRTTIDefaultAllocator<xiiFrameConstantsPass>)
   XII_BEGIN_PROPERTIES

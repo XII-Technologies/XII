@@ -23,6 +23,8 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 xiiCVarBool xiiRenderPipeline::cvar_SpatialCullingVis("Spatial.Culling.Vis", false, xiiCVarFlags::Default, "Enables debug visualization of visibility culling");
 xiiCVarBool cvar_SpatialCullingShowStats("Spatial.Culling.ShowStats", false, xiiCVarFlags::Default, "Display some stats of the visibility culling");

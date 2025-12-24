@@ -15,7 +15,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMSAAUpscalePass, 1, xiiRTTIDefaultAllocator<
   {
     XII_MEMBER_PROPERTY("Colour", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount),
   }
   XII_END_PROPERTIES;
