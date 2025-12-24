@@ -229,7 +229,7 @@ public:
     }
 
     XII_ALWAYS_INLINE xiiGALCommandList* operator->() { return m_pCommandList.Borrow(); }
-    XII_ALWAYS_INLINE xiiSharedPtr<xiiGALCommandList>  GetCommandList() const { m_pCommandList; }
+    XII_ALWAYS_INLINE xiiSharedPtr<xiiGALCommandList>  GetCommandList() const { return m_pCommandList; }
     XII_ALWAYS_INLINE static constexpr CommandListType GetType() { return Type; }
 
   private:

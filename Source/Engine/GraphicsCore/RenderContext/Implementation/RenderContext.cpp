@@ -15,6 +15,9 @@
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/PassConstants.h>
+
 namespace
 {
   template <typename Condition, typename Function>
