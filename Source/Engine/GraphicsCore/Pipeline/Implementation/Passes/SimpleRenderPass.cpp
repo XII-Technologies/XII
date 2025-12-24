@@ -12,7 +12,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator
   {
     XII_MEMBER_PROPERTY("Colour", m_PinColour),
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
-    XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_MEMBER_PROPERTY("Message", m_sMessage),
   }
   XII_END_PROPERTIES;

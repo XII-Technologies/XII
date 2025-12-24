@@ -69,7 +69,6 @@ protected:
   // Required pins
   xiiRenderPipelineNodeInputColourAttachmentPin  m_PinInput;          // Main color input
   xiiRenderPipelineNodeOutputColourAttachmentPin m_PinOutput;         // Blurred color output
-  xiiRenderPipelineNodeInputBufferPin            m_PinFrameConstants; // Per-frame constants
 
   // Optional pins
   xiiRenderPipelineNodeInputColourAttachmentPin m_PinDepthTexture;  // Depth SRV for bilateral / DoF

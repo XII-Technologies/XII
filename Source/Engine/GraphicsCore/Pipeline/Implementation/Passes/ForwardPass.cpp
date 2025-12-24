@@ -17,7 +17,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiForwardRenderPass, 3, xiiRTTINoAllocator)
   {
     XII_MEMBER_PROPERTY("Colour", m_PinColour),
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
-    XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_ENUM_MEMBER_PROPERTY("ShadingQuality", xiiForwardRenderShadingQuality, m_ShadingQuality),
   }
   XII_END_PROPERTIES;

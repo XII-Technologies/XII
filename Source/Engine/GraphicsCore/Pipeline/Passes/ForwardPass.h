@@ -44,7 +44,6 @@ protected:
 private:
   xiiRenderPipelineNodePassThroughColourAttachmentPin m_PinColour;
   xiiRenderPipelineNodePassThroughDepthAttachmentPin  m_PinDepthStencil;
-  xiiRenderPipelineNodeInputBufferPin                 m_PinFrameConstants;
 
   xiiEnum<xiiForwardRenderShadingQuality> m_ShadingQuality;
 };

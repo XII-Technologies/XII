@@ -22,7 +22,6 @@ public:
 private:
   xiiRenderPipelineNodePassThroughColourAttachmentPin m_PinColour;
   xiiRenderPipelineNodePassThroughDepthAttachmentPin  m_PinDepthStencil;
-  xiiRenderPipelineNodeInputBufferPin                 m_PinFrameConstants;
 
   xiiString m_sMessage;
 };

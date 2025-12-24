@@ -9,7 +9,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthOnlyPass, 3, xiiRTTIDefaultAllocator<xi
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
-    XII_MEMBER_PROPERTY("FrameConstants", m_PinFrameConstants),
     XII_MEMBER_PROPERTY("RenderStaticObjects", m_bRenderStaticObjects)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("RenderDynamicObjects", m_bRenderDynamicObjects)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("RenderTransparentObjects", m_bRenderTransparentObjects)->AddAttributes(new xiiDefaultValueAttribute(false)),
@@ -68,10 +67,6 @@ xiiResult xiiDepthOnlyPass::GetResourceDescriptions(const xiiView& view, const x
 void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(pOutputs);
-
-  auto pFrameConstants = pInputs[m_PinFrameConstants.m_uiInputIndex];
-  if (pFrameConstants == nullptr)
-    return;
 
   auto pDepthStencil = pInputs[m_PinDepthStencil.m_uiInputIndex];
   if (pDepthStencil == nullptr)

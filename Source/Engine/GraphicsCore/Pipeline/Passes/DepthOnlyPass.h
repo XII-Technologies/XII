@@ -21,7 +21,6 @@ public:
 
 private:
   xiiRenderPipelineNodePassThroughDepthAttachmentPin m_PinDepthStencil;
-  xiiRenderPipelineNodeInputBufferPin                m_PinFrameConstants;
 
   bool m_bRenderStaticObjects      = true;
   bool m_bRenderDynamicObjects     = true;
