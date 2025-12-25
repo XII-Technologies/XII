@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Shaders/Common/ObjectConstants.h>
 
@@ -20,12 +21,10 @@ xiiInstanceData::~xiiInstanceData()
   m_pObjectConstantsBuffer.Clear();
 }
 
-void xiiInstanceData::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiInstanceData::BindResources(xiiRenderContext* pRenderContext)
 {
-#ifdef CORE_ENABLE
-  pRenderContext->BindBuffer("perInstanceData", m_pInstanceDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindConstantBuffer("xiiObjectConstants", m_hConstantBuffer);
-#endif
+  pRenderContext->BindBuffer("perInstanceData", m_pInstanceDataBuffer);
+  pRenderContext->BindConstantBuffer("xiiObjectConstants", m_pObjectConstantsBuffer);
 }
 
 xiiArrayPtr<xiiPerInstanceData> xiiInstanceData::GetInstanceData(xiiUInt32 uiCount, xiiUInt32& out_uiOffset)
