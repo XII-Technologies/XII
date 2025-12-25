@@ -41,22 +41,19 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
   xiiSharedPtr<xiiGALBuffer> pLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(pLensFlareData));
 
-#ifdef CORE_ENABLE
-  pContext->BindShader(m_hShader);
-
-  xiiGALCommandListUtilities::BindBuffer(pCommandList, "lensFlareData", pLensFlareData);
-  xiiGALCommandListUtilities::BindTexture2D(pCommandList, "LensFlareTexture", pRenderData->m_hTexture);
+  renderViewContext.m_pRenderContext->BindShader(m_hShader);
+  renderViewContext.m_pRenderContext->BindBuffer("lensFlareData", pLensFlareData);
+  renderViewContext.m_pRenderContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
 
   FillLensFlareData(batch);
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
 
-    pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
-    pContext->DrawMeshBuffer().IgnoreResult();
+    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
+    renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
-#endif
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiLensFlareRenderer::CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const
