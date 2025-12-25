@@ -196,7 +196,8 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-      renderViewContext.m_pRenderContext->BindMeshBuffer(xiiMakeArrayPtr(&m_pVertexBuffer, 1U), {}, &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+      xiiSharedPtr<xiiGALBuffer> pVertexBuffer = m_pVertexBuffer;
+      renderViewContext.m_pRenderContext->BindMeshBuffer(xiiMakeArrayPtr(&pVertexBuffer, 1U), {}, &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       uiNumLineVertices -= uiNumLineVerticesInBatch;

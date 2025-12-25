@@ -14,7 +14,7 @@ public:
   ~xiiClusteredDataGPU();
 
   xiiUInt32                   m_uiSkyIrradianceIndex = 0;
-  xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
+  xiiEnum<xiiCameraUsageHint> m_CameraUsageHint      = xiiCameraUsageHint::Default;
 
   xiiSharedPtr<xiiGALBuffer> m_pLightDataBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pDecalDataBuffer;
@@ -28,7 +28,7 @@ public:
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
   xiiSharedPtr<xiiGALSampler> m_pDecalAtlasSampler;
 
-  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
+  void BindResources(xiiRenderContext* pRenderContext);
 };
 
 class XII_GRAPHICSCORE_DLL xiiClusteredDataProvider : public xiiFrameDataProvider<xiiClusteredDataGPU>

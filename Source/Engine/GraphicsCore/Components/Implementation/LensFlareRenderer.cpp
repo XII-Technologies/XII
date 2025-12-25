@@ -6,6 +6,7 @@
 #include <GraphicsCore/Components/LensFlareRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
