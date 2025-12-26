@@ -231,38 +231,38 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
   if (m_pSceneContext == nullptr || m_pSceneContext->GetGridDensity() == 0.0f)
     return;
 
-  const xiiCamera* cam      = view.GetCamera();
+  const xiiCamera* pCamera  = view.GetCamera();
   float            fDensity = m_pSceneContext->GetGridDensity();
 
   xiiGridRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiGridRenderData>(nullptr);
   pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
-  pRenderData->m_bOrthoMode      = cam->IsOrthographic();
+  pRenderData->m_bOrthoMode      = pCamera->IsOrthographic();
   pRenderData->m_bGlobal         = m_pSceneContext->IsGridInGlobalSpace();
 
-  if (cam->IsOrthographic())
+  if (pCamera->IsOrthographic())
   {
     const float fAspectRatio = view.GetViewport().width / view.GetViewport().height;
-    const float fDimX        = cam->GetDimensionX(fAspectRatio) * 0.5f;
-    const float fDimY        = cam->GetDimensionY(fAspectRatio) * 0.5f;
+    const float fDimX        = pCamera->GetDimensionX(fAspectRatio) * 0.5f;
+    const float fDimY        = pCamera->GetDimensionY(fAspectRatio) * 0.5f;
 
     fDensity                = AdjustGridDensity(fDensity, (xiiUInt32)view.GetViewport().width, fDimX, 10);
     pRenderData->m_fDensity = fDensity;
 
     pRenderData->m_GlobalTransform.SetIdentity();
-    pRenderData->m_GlobalTransform.m_vPosition = cam->GetCenterDirForwards() * cam->GetFarPlane() * 0.9f;
+    pRenderData->m_GlobalTransform.m_vPosition = pCamera->GetCenterDirForwards() * pCamera->GetFarPlane() * 0.9f;
 
     xiiMat3 mRot;
-    mRot.SetColumn(0, cam->GetCenterDirRight());
-    mRot.SetColumn(1, cam->GetCenterDirUp());
-    mRot.SetColumn(2, cam->GetCenterDirForwards());
+    mRot.SetColumn(0, pCamera->GetCenterDirRight());
+    mRot.SetColumn(1, pCamera->GetCenterDirUp());
+    mRot.SetColumn(2, pCamera->GetCenterDirForwards());
     pRenderData->m_GlobalTransform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
 
-    const xiiVec3 vBottomLeft = cam->GetCenterPosition() - cam->GetCenterDirRight() * fDimX - cam->GetCenterDirUp() * fDimY;
-    const xiiVec3 vTopRight   = cam->GetCenterPosition() + cam->GetCenterDirRight() * fDimX + cam->GetCenterDirUp() * fDimY;
+    const xiiVec3 vBottomLeft = pCamera->GetCenterPosition() - pCamera->GetCenterDirRight() * fDimX - pCamera->GetCenterDirUp() * fDimY;
+    const xiiVec3 vTopRight   = pCamera->GetCenterPosition() + pCamera->GetCenterDirRight() * fDimX + pCamera->GetCenterDirUp() * fDimY;
 
     xiiPlane plane1, plane2;
-    plane1 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirRight(), xiiVec3(0));
-    plane2 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirUp(), xiiVec3(0));
+    plane1 = xiiPlane::MakeFromNormalAndPoint(pCamera->GetCenterDirRight(), xiiVec3(0));
+    plane2 = xiiPlane::MakeFromNormalAndPoint(pCamera->GetCenterDirUp(), xiiVec3(0));
 
     const float fFirstDist1 = plane1.GetDistanceTo(vBottomLeft) - fDensity;
     const float fLastDist1  = plane1.GetDistanceTo(vTopRight) + fDensity;

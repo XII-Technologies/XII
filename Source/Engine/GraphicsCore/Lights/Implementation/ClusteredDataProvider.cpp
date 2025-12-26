@@ -28,6 +28,11 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
       bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_LIGHT_DATA;
 
       m_pLightDataBuffer = pDevice->CreateBuffer(bufferDescription);
+
+      if (m_pLightDataBuffer)
+      {
+        m_pLightDataBuffer->SetDebugName("ClusteredDataProvider::LightDataBuffer");
+      }
     }
 
     {
@@ -35,6 +40,11 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
       bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_DECAL_DATA;
 
       m_pDecalDataBuffer = pDevice->CreateBuffer(bufferDescription);
+
+      if (m_pDecalDataBuffer)
+      {
+        m_pDecalDataBuffer->SetDebugName("ClusteredDataProvider::DecalDataBuffer");
+      }
     }
 
     {
@@ -42,6 +52,11 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
       bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
 
       m_pReflectionProbeDataBuffer = pDevice->CreateBuffer(bufferDescription);
+
+      if (m_pReflectionProbeDataBuffer)
+      {
+        m_pReflectionProbeDataBuffer->SetDebugName("ClusteredDataProvider::ReflectionProbeDataBuffer");
+      }
     }
 
     {
@@ -49,6 +64,11 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
       bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * NUM_CLUSTERS;
 
       m_pClusterDataBuffer = pDevice->CreateBuffer(bufferDescription);
+
+      if (m_pClusterDataBuffer)
+      {
+        m_pClusterDataBuffer->SetDebugName("ClusteredDataProvider::ClusterDataBuffer");
+      }
     }
 
     {
@@ -56,10 +76,15 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
       bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
 
       m_pClusterItemBuffer = pDevice->CreateBuffer(bufferDescription);
+
+      if (m_pClusterItemBuffer)
+      {
+        m_pClusterItemBuffer->SetDebugName("ClusteredDataProvider::ClusterItemBuffer");
+      }
     }
   }
 
-  m_pClusterDataConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiClusteredDataConstants));
+  m_pClusterDataConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiClusteredDataConstants), "xiiClusteredDataConstants");
 
   {
     xiiGALSamplerCreationDescription samplerDescription;
@@ -77,6 +102,11 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     samplerDescription.m_uiMaxAnisotropy    = 4U;
 
     m_pShadowSampler = pDevice->CreateSampler(samplerDescription);
+
+    if (m_pShadowSampler)
+    {
+      m_pShadowSampler->SetDebugName("ClusteredDataProvider::ShadowSampler");
+    }
   }
 
   m_hDecalAtlas = xiiDecalAtlasResource::GetDecalAtlasResource();
@@ -100,6 +130,11 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     samplerDescription.m_uiMaxAnisotropy = xiiMath::Min(samplerDescription.m_uiMaxAnisotropy, 4u);
 
     m_pDecalAtlasSampler = pDevice->CreateSampler(samplerDescription);
+
+    if (m_pDecalAtlasSampler)
+    {
+      m_pDecalAtlasSampler->SetDebugName("ClusteredDataProvider::DecalAtlasSampler");
+    }
   }
 }
 
