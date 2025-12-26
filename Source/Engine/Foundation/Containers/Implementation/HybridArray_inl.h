@@ -1,6 +1,4 @@
 
-#include <Foundation/Containers/HybridArray.h>
-
 template <typename T, xiiUInt32 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
 xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray() :
   xiiDynamicArray<T, AllocatorWrapper>(GetStaticArray(), Size, AllocatorWrapper::GetAllocator())

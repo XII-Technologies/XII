@@ -209,10 +209,7 @@ public:
   XII_ALWAYS_INLINE const T& operator*() const { return *m_pPtr; }
   XII_ALWAYS_INLINE const T* operator->() const { return m_pPtr; }
 
-  XII_ALWAYS_INLINE bool operator<(const const_reverse_pointer_iterator& rhs) const { return m_pPtr > rhs.m_pPtr; }
-  XII_ALWAYS_INLINE bool operator>(const const_reverse_pointer_iterator& rhs) const { return m_pPtr < rhs.m_pPtr; }
-  XII_ALWAYS_INLINE bool operator<=(const const_reverse_pointer_iterator& rhs) const { return m_pPtr >= rhs.m_pPtr; }
-  XII_ALWAYS_INLINE bool operator>=(const const_reverse_pointer_iterator& rhs) const { return m_pPtr <= rhs.m_pPtr; }
+  XII_ALWAYS_INLINE std::strong_ordering operator<=>(const const_reverse_pointer_iterator& rhs) const { return rhs.m_pPtr <=> m_pPtr; }
 
   XII_ALWAYS_INLINE const T& operator[](std::ptrdiff_t iIndex) const { return *(m_pPtr - iIndex); }
 
