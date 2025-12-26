@@ -1,5 +1,3 @@
-#pragma once
-
 #include <Foundation/Math/Math.h>
 
 #define REDUCE_SIZE(iReduction)     \
