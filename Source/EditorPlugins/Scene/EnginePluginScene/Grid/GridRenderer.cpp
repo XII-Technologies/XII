@@ -3,6 +3,7 @@
 #include <EnginePluginScene/Grid/GridRenderer.h>
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
@@ -182,11 +183,8 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
     if (m_Vertices.IsEmpty())
       return;
 
-#ifdef CORE_ENABLE
-    xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
-
-    renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
-    pRenderContext->BindShader(m_hShader);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+    renderViewContext.m_pRenderContext->BindShader(m_hShader);
 
     xiiUInt32         uiNumLineVertices = m_Vertices.GetCount();
     const GridVertex* pLineData         = m_Vertices.GetData();
@@ -196,15 +194,15 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
       const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, s_uiLineVerticesPerBatch);
       XII_ASSERT_DEBUG(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-      xiiGALDeviceUtilities::MapAndUpdateBuffer(pRenderContext->GetCommandList(), m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
-      pRenderContext->DrawMeshBuffer().IgnoreResult();
+      xiiSharedPtr<xiiGALBuffer> pVertexBuffer = m_pVertexBuffer;
+      renderViewContext.m_pRenderContext->BindMeshBuffer(xiiMakeArrayPtr(&pVertexBuffer, 1U), {}, &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+      renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       uiNumLineVertices -= uiNumLineVerticesInBatch;
       pLineData += s_uiLineVerticesPerBatch;
     }
-#endif
   }
 }
 

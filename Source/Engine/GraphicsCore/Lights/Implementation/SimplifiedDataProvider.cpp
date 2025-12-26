@@ -21,17 +21,12 @@ xiiSimplifiedDataGPU::~xiiSimplifiedDataGPU()
   m_pSimplifiedDataConstantBuffer.Clear();
 }
 
-void xiiSimplifiedDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
-#ifdef CORE_ENABLE
-  xiiSharedPtr<xiiGALTextureView> hReflectionSpecularTextureView = xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-  xiiSharedPtr<xiiGALTextureView> hSkyIrradianceTextureView      = xiiReflectionPool::GetSkyIrradianceTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  pRenderContext->BindTexture("ReflectionSpecularTexture", xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint));
+  pRenderContext->BindTexture("SkyIrradianceTexture", xiiReflectionPool::GetSkyIrradianceTexture());
 
-  pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
-  pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
-
-  pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_hConstantBuffer);
-#endif
+  pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_pSimplifiedDataConstantBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -45,21 +40,18 @@ xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
 void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
-#ifdef CORE_ENABLE
   if (auto pData = extractedData.GetFrameData<xiiSimplifiedDataCPU>())
   {
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
     m_Data.m_cameraUsageHint      = pData->m_cameraUsageHint;
 
     // Update Constants
-    const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
+    {
+      xiiGALMapHelper<xiiSimplifiedDataConstants> pConstants(renderViewContext.m_pRenderContext->GetCommandList(), m_Data.m_pSimplifiedDataConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-    xiiSimplifiedDataConstants* pConstants = xiiRenderContext::GetConstantBufferData<xiiSimplifiedDataConstants>(m_Data.m_hConstantBuffer);
-
-    pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
+      pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
+    }
   }
-#endif
-
   return &m_Data;
 }
 

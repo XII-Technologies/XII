@@ -7,6 +7,7 @@
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Lights/SphereReflectionProbeComponent.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionPool::Data
@@ -396,9 +397,11 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     textureDescription.m_Size.width  = 6;
     textureDescription.m_Size.height = 64;
     textureDescription.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    textureDescription.m_Usage       = xiiGALResourceUsage::Mutable;
+    textureDescription.m_Usage       = xiiGALResourceUsage::Immutable;
 
-    m_pSkyIrradianceTexture = pDevice->CreateTexture(textureDescription);
+    xiiGALTextureData textureData;
+
+    m_pSkyIrradianceTexture = pDevice->CreateTexture(textureDescription, &textureData);
 
     if (m_pSkyIrradianceTexture != nullptr)
     {

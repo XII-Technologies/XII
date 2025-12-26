@@ -18,7 +18,7 @@ public:
 
   xiiSharedPtr<xiiGALBuffer> m_pSimplifiedDataConstantBuffer;
 
-  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
+  void BindResources(xiiRenderContext* pRenderContext);
 };
 
 class XII_GRAPHICSCORE_DLL xiiSimplifiedDataProvider : public xiiFrameDataProvider<xiiSimplifiedDataGPU>

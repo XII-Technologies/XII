@@ -3,14 +3,16 @@
 #include <EditorEngineProcessFramework/Gizmos/GizmoComponent.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
 #include <EditorEngineProcessFramework/PickingRenderPass/PickingRenderPass.h>
-
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
+#endif
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Editor/GizmoConstants.h>
-
-#include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
-
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGizmoRenderer, 1, xiiRTTIDefaultAllocator<xiiGizmoRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -71,15 +73,13 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
 
   const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiSubMeshIndex];
 
-#ifdef CORE_ENABLE
   renderViewContext.m_pRenderContext->BindMeshBuffer(pMesh->GetMeshBuffer());
   renderViewContext.m_pRenderContext->BindMaterial(hMaterial);
 
-  xiiConstantBufferStorage<xiiGizmoConstants>* pGizmoConstantBuffer;
-  xiiConstantBufferStorageHandle               hGizmoConstantBuffer = xiiRenderContext::CreateConstantBufferStorage(pGizmoConstantBuffer);
-  XII_SCOPE_EXIT(xiiRenderContext::DeleteConstantBufferStorage(hGizmoConstantBuffer));
+  xiiSharedPtr<xiiGALBuffer> pGizmoConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGizmoConstants), "xiiGizmoConstants");
+  XII_SCOPE_EXIT(pGizmoConstantBuffer.Clear());
 
-  renderViewContext.m_pRenderContext->BindConstantBuffer("xiiGizmoConstants", hGizmoConstantBuffer);
+  renderViewContext.m_pRenderContext->BindConstantBuffer("xiiGizmoConstants", pGizmoConstantBuffer);
 
   // since typically the fov is tied to the height, we orient the gizmo size on that
   const float fGizmoScale = s_fGizmoScale * (128.0f / (float)renderViewContext.m_pViewData->m_ViewPortRect.height);
@@ -95,14 +95,18 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
     XII_ASSERT_DEV(pRenderData->m_hMaterial == hMaterial, "Invalid batching (material)");
     XII_ASSERT_DEV(pRenderData->m_uiSubMeshIndex == uiSubMeshIndex, "Invalid batching (part)");
 
-    xiiGizmoConstants& cb  = pGizmoConstantBuffer->GetDataForWriting();
-    xiiMat4            m   = pRenderData->m_GlobalTransform.GetAsMat4();
-    cb.ObjectToWorldMatrix = m;
-    m.Invert(0.001f).IgnoreResult(); // this can fail, if scale is 0 (which happens), doesn't matter in those cases
-    cb.WorldToObjectMatrix = m;
-    cb.GizmoColor          = pRenderData->m_GizmoColor;
-    cb.GizmoScale          = fGizmoScale;
-    cb.GameObjectID        = pRenderData->m_uiUniqueID;
+    {
+      xiiGALMapHelper<xiiGizmoConstants> pGizmoConstants(renderViewContext.m_pRenderContext->GetCommandList(), pGizmoConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      xiiMat4 m = pRenderData->m_GlobalTransform.GetAsMat4();
+      m.Invert(0.001f).IgnoreResult(); // this can fail, if scale is 0 (which happens), doesn't matter in those cases.
+
+      pGizmoConstants->ObjectToWorldMatrix = m;
+      pGizmoConstants->WorldToObjectMatrix = m;
+      pGizmoConstants->GizmoColor          = pRenderData->m_GizmoColor;
+      pGizmoConstants->GizmoScale          = fGizmoScale;
+      pGizmoConstants->GameObjectID        = pRenderData->m_uiUniqueID;
+    }
 
     if (renderViewContext.m_pRenderContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive).Failed())
     {
@@ -113,5 +117,4 @@ void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext
       }
     }
   }
-#endif
 }

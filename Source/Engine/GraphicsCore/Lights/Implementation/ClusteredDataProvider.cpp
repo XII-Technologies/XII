@@ -115,34 +115,16 @@ xiiClusteredDataGPU::~xiiClusteredDataGPU()
   m_pClusterDataConstantBuffer.Borrow();
 }
 
-void xiiClusteredDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
-#ifdef CORE_ENABLE
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  pRenderContext->BindBuffer("perLightDataBuffer", m_pLightDataBuffer);
+  pRenderContext->BindBuffer("perDecalDataBuffer", m_pDecalDataBuffer);
+  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", m_pReflectionProbeDataBuffer);
+  pRenderContext->BindBuffer("perClusterDataBuffer", m_pClusterDataBuffer);
+  pRenderContext->BindBuffer("clusterItemBuffer", m_pClusterItemBuffer);
 
-  xiiSharedPtr<xiiGALBufferView> pShadowDataBufferView;
-  if (xiiSharedPtr<xiiGALBuffer> pBuffer = xiiShadowPool::GetShadowDataBuffer())
-  {
-    pShadowDataBufferView = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
-  }
-
-  xiiSharedPtr<xiiGALTextureView> pShadowAtlasTextureView;
-  if (xiiSharedPtr<xiiGALTexture> pTexture = xiiShadowPool::GetShadowAtlasTexture())
-  {
-    pShadowAtlasTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-  }
-
-  xiiSharedPtr<xiiGALTextureView> pReflectionSpecularTextureView = xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-  xiiSharedPtr<xiiGALTextureView> pSkyIrradianceTextureView      = xiiReflectionPool::GetSkyIrradianceTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-
-  pRenderContext->BindBuffer("perLightDataBuffer", m_pLightDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("perDecalDataBuffer", m_pDecalDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", m_pReflectionProbeDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("perClusterDataBuffer", m_pClusterDataBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-  pRenderContext->BindBuffer("clusterItemBuffer", m_pClusterItemBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-
-  pRenderContext->BindBuffer("shadowDataBuffer", pShadowDataBufferView);
-  pRenderContext->BindTexture2D("ShadowAtlasTexture", pShadowAtlasTextureView);
+  pRenderContext->BindBuffer("shadowDataBuffer", xiiShadowPool::GetShadowDataBuffer());
+  pRenderContext->BindTexture("ShadowAtlasTexture", xiiShadowPool::GetShadowAtlasTexture());
   pRenderContext->BindSampler("ShadowSampler", m_pShadowSampler);
 
   xiiResourceLock<xiiDecalAtlasResource> pDecalAtlas(m_hDecalAtlas, xiiResourceAcquireMode::AllowLoadingFallback);
@@ -151,11 +133,10 @@ void xiiClusteredDataGPU::BindResources(xiiSharedPtr<xiiGALCommandList> pCommand
   pRenderContext->BindTexture2D("DecalAtlasORMTexture", pDecalAtlas->GetORMTexture());
   pRenderContext->BindSampler("DecalAtlasSampler", m_pDecalAtlasSampler);
 
-  pRenderContext->BindTextureCube("ReflectionSpecularTexture", pReflectionSpecularTextureView);
-  pRenderContext->BindTexture2D("SkyIrradianceTexture", pSkyIrradianceTextureView);
+  pRenderContext->BindTexture("ReflectionSpecularTexture", xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_CameraUsageHint));
+  pRenderContext->BindTexture("SkyIrradianceTexture", xiiReflectionPool::GetSkyIrradianceTexture());
 
-  pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_hConstantBuffer);
-#endif
+  pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_pClusterDataConstantBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -174,8 +155,7 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
   if (auto pData = extractedData.GetFrameData<xiiClusteredDataCPU>())
   {
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
-    m_Data.m_cameraUsageHint      = pData->m_cameraUsageHint;
-
+    m_Data.m_CameraUsageHint      = pData->m_cameraUsageHint;
 
     auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("xiiClusteredDataProvider::UpdateData");
 

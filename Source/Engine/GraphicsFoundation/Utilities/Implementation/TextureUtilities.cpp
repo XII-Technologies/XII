@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/Containers/Blob.h>
 #include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
@@ -632,6 +633,51 @@ xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTextureCubeDe
     .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
     .m_MiscFlags          = xiiGALMiscTextureFlags::None,
   };
+}
+
+xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALTextureCreationDescription description, xiiHybridArray<xiiGALTextureSubResourceData, 2U>& out_subresourceData, xiiDynamicArray<xiiUInt8>& out_Data)
+{
+  out_subresourceData.Clear();
+  out_Data.Clear();
+
+  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.GetArraySize();
+  out_subresourceData.Reserve(uiTotalSubResources);
+
+  // First compute total size needed.
+  xiiUInt64 uiTotalSize = 0;
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  {
+    for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
+    {
+      const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(description, uiMipLevel);
+
+      uiTotalSize += mipLevelProperties.m_uiMipSize;
+    }
+  }
+
+  // Allocate once.
+  out_Data.SetCountUninitialized(static_cast<xiiUInt32>(uiTotalSize));
+  memset(out_Data.GetData(), 0, static_cast<size_t>(uiTotalSize));
+
+  // Now assign subresource pointers into the already allocated buffer.
+  xiiUInt64 uiCurrentOffset = 0;
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  {
+    for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
+    {
+      const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(description, uiMipLevel);
+      const xiiUInt64                uiSubResourceSize  = mipLevelProperties.m_uiMipSize;
+
+      xiiGALTextureSubResourceData& subResourceData = out_subresourceData.ExpandAndGetRef();
+      subResourceData.m_pData                       = xiiMakeByteArrayPtr(out_Data.GetData() + uiCurrentOffset, static_cast<xiiUInt32>(uiSubResourceSize));
+      subResourceData.m_uiStride                    = mipLevelProperties.m_uiRowSize;
+      subResourceData.m_uiDepthStride               = mipLevelProperties.m_uiDepthSliceSize;
+
+      uiCurrentOffset += uiSubResourceSize;
+    }
+  }
+
+  return xiiGALTextureData{out_subresourceData};
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_TextureUtilities);

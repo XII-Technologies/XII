@@ -7,6 +7,7 @@
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
 #  include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #  include <GraphicsCore/Pipeline/View.h>
+#  include <GraphicsCore/RenderContext/RenderContext.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Shader/ShaderResource.h>
 #  include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -154,13 +155,13 @@ void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   if (xiiImgui::GetSingleton() == nullptr)
     return;
 
-#  ifdef CORE_ENABLE
-  pRenderContext->BindShader(m_hShader);
+  renderViewContext.m_pRenderContext->BindShader(m_hShader);
+
   const auto&     textures       = xiiImgui::GetSingleton()->m_Textures;
   const xiiUInt32 uiTextureCount = textures.GetCount();
 
@@ -171,10 +172,11 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
     XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one draw call");
     XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one draw call");
 
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray()).AssertSuccess();
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray()).AssertSuccess();
 
-    pRenderContext->BindMeshBuffer(m_hVertexBuffer, m_hIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
+    xiiSharedPtr<xiiGALBuffer> pVertexBuffer = m_pVertexBuffer;
+    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiMakeArrayPtr(&pVertexBuffer, 1U), m_pIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
 
     xiiUInt32       uiFirstIndex = 0;
     const xiiUInt32 numBatches   = pRenderData->m_Batches.GetCount();
@@ -184,19 +186,16 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
 
       if (imGuiBatch.m_uiVertexCount > 0 && imGuiBatch.m_uiTextureID < uiTextureCount)
       {
-        auto rect = imGuiBatch.m_ScissorRect;
+        xiiRectU32 rect = imGuiBatch.m_ScissorRect;
 
-        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U));
-
-        xiiGALCommandListUtilities::BindTexture2D(pCommandList, "BaseTexture", textures[imGuiBatch.m_uiTextureID]);
-
-        pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
+        renderViewContext.m_pRenderContext->GetCommandList()->SetScissorRects(xiiMakeArrayPtr(&rect, 1U));
+        renderViewContext.m_pRenderContext->BindTexture2D("BaseTexture", textures[imGuiBatch.m_uiTextureID]);
+        renderViewContext.m_pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
       }
 
       uiFirstIndex += imGuiBatch.m_uiVertexCount;
     }
   }
-#  endif
 }
 
 void xiiImguiRenderer::SetupRenderer()
