@@ -629,9 +629,39 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::SparseAlias), "The miscellaneous flags must not have xiiGALMiscTextureFlags::SparseAlias if the usage is not xiiGALResourceUsage::Sparse.");
   }
 
-  if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
+  xiiHybridArray<xiiGALTextureSubResourceData, 2U> subresourceData;
+  xiiDynamicArray<xiiUInt8>                        zeroData;
+  xiiGALTextureData                                textureData;
+
+  if (pInitialData != nullptr)
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the texture with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    if (pInitialData->m_pCommandList != nullptr)
+    {
+      XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the texture with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    }
+
+    if (pInitialData->m_pSubResources.IsEmpty())
+    {
+      textureData  = xiiGALTextureUtilities::GetZeroMemoryInitialData(description, subresourceData, zeroData);
+      pInitialData = &textureData;
+    }
+
+    const xiiUInt32 uiExpectedSubResourceCount = xiiGALTextureUtilities::GetSubResourceCount(description);
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pSubResources.GetCount() == uiExpectedSubResourceCount, "The number of provided initial data sub-resources ({0}) does not match the expected number of sub-resources ({1}).", pInitialData->m_pSubResources.GetCount(), uiExpectedSubResourceCount);
+
+    xiiUInt32 uiMipLevel = 0U;
+    for (const xiiGALTextureSubResourceData& subResource : pInitialData->m_pSubResources)
+    {
+      XII_GAL_DEVICE_CHECK(!subResource.m_pData.IsEmpty(), "A sub-resource initial data pointer is empty.");
+
+      const xiiUInt32 uiRequiredRowPitch = xiiGALTextureUtilities::GetRequiredRowPitch(description, uiMipLevel);
+      XII_GAL_DEVICE_CHECK(subResource.m_uiStride >= uiRequiredRowPitch, "The sub-resource row pitch ({0}) is smaller than the required row pitch ({1}).", subResource.m_uiStride, uiRequiredRowPitch);
+
+      const xiiUInt32 uiRequiredSlicePitch = xiiGALTextureUtilities::GetRequiredSlicePitch(description, uiMipLevel);
+      XII_GAL_DEVICE_CHECK(subResource.m_uiDepthStride >= uiRequiredSlicePitch, "The sub-resource slice pitch ({0}) is smaller than the required slice pitch ({1}).", subResource.m_uiDepthStride, uiRequiredSlicePitch);
+
+      ++uiMipLevel;
+    }
   }
 
   xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);
