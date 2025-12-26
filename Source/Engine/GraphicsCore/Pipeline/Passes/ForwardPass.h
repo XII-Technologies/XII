@@ -44,7 +44,7 @@ protected:
   virtual void SetupLighting(const xiiRenderViewContext& renderViewContext);
   virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) = 0;
 
-private:
+protected:
   xiiRenderPipelineNodePassThroughColourAttachmentPin m_PinColour;
   xiiRenderPipelineNodePassThroughDepthAttachmentPin  m_PinDepthStencil;
 
