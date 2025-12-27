@@ -85,15 +85,18 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
 {
   XII_IGNORE_UNUSED(pOutputs);
 
-  auto pColourAttachment = pInputs[m_PinColour.m_uiInputIndex];
-  auto pDepthStencil     = pInputs[m_PinDepthStencil.m_uiInputIndex];
-  if (pColourAttachment == nullptr && pDepthStencil == nullptr)
-    return;
-
   xiiRenderingSetup renderingSetup;
-  renderingSetup.AddColorAttachment({pColourAttachment->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)})
-    .SetDepthStencilAttachment({pDepthStencil->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)})
-    .Build();
+  {
+    if (pInputs[m_PinColour.m_uiInputIndex])
+    {
+      renderingSetup.AddColorAttachment({pInputs[m_PinColour.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
+    }
+    if (pInputs[m_PinDepthStencil.m_uiInputIndex])
+    {
+      renderingSetup.SetDepthStencilAttachment({pInputs[m_PinDepthStencil.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
+    }
+  }
+  renderingSetup.Build();
 
   auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
