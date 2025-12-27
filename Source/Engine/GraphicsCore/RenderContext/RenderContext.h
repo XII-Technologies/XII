@@ -433,7 +433,13 @@ public:
   ///
   /// \param sSlotName - The name of the shader slot.
   /// \param pBuffer   - The buffer to bind.
-  XII_ALWAYS_INLINE void BindBuffer(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> pBuffer) { BindBufferView(sSlotName, pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource)); }
+  XII_ALWAYS_INLINE void BindBuffer(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> pBuffer)
+  {
+    if (pBuffer != nullptr)
+    {
+      BindBufferView(sSlotName, pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+    }
+  }
 
   /// \brief Binds a texture to the specified shader slot as a shader resource view (SRV).
   ///
@@ -441,7 +447,13 @@ public:
   ///
   /// \param sSlotName - The name of the shader slot.
   /// \param pTexture  - The texture to bind.
-  XII_ALWAYS_INLINE void BindTexture(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTexture> pTexture) { BindTextureView(sSlotName, pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource)); }
+  XII_ALWAYS_INLINE void BindTexture(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTexture> pTexture)
+  {
+    if (pTexture != nullptr)
+    {
+      BindTextureView(sSlotName, pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    }
+  }
 
   /// \brief Binds a buffer to the specified shader slot as an unordered access view (UAV).
   ///
@@ -449,7 +461,13 @@ public:
   ///
   /// \param sSlotName - The name of the shader slot.
   /// \param pBuffer   - The buffer to bind as UAV.
-  XII_ALWAYS_INLINE void BindBufferUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> pBuffer) { BindBufferViewUAV(sSlotName, pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess)); }
+  XII_ALWAYS_INLINE void BindBufferUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALBuffer> pBuffer)
+  {
+    if (pBuffer != nullptr)
+    {
+      BindBufferViewUAV(sSlotName, pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess));
+    }
+  }
 
   /// \brief Binds a texture to the specified shader slot as an unordered access view (UAV).
   ///
@@ -457,7 +475,13 @@ public:
   ///
   /// \param sSlotName - The name of the shader slot.
   /// \param pTexture  - The texture to bind as UAV.
-  XII_ALWAYS_INLINE void BindTextureUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTexture> pTexture) { BindTextureViewUAV(sSlotName, pTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess)); }
+  XII_ALWAYS_INLINE void BindTextureUAV(const xiiTempHashedString& sSlotName, xiiSharedPtr<xiiGALTexture> pTexture)
+  {
+    if (pTexture != nullptr)
+    {
+      BindTextureViewUAV(sSlotName, pTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess));
+    }
+  }
 
   /// \brief Binds a null mesh buffer to the pipeline for procedural or indirect drawing.
   ///
