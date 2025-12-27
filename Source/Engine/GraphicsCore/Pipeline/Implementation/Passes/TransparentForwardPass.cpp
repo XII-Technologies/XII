@@ -52,7 +52,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiSharedPtr<xiiGALTexture> pSceneColorTexture = xiiGPUResourcePool::GetDefaultInstance()->GetTexture(sceneColourDescription);
   {
-    UpdateSceneColorTexture(renderViewContext, pSceneColorTexture, pColourInput->m_Resource.m_Texture.m_pTexture);
+    UpdateSceneColorTexture(pSceneColorTexture, pColourInput->m_Resource.m_Texture.m_pTexture);
 
     SetupResources(renderViewContext, pInputs, pOutputs);
     SetupPermutationVariables(renderViewContext);
