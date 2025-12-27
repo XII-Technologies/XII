@@ -3,6 +3,7 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/Implementation/RenderPipelineResourceLoader.h>
 #include <GraphicsCore/Pipeline/Passes/CreateTexturePass.h>
+#include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/TargetPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -38,10 +39,18 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
 {
   xiiUniquePtr<xiiRenderPipeline> pRenderPipeline = XII_DEFAULT_NEW(xiiRenderPipeline);
 
-  xiiCreateColourAttachmentPass* pColorSourcePass = nullptr;
+  xiiCreateColourAttachmentPass* pColourSourcePass = nullptr;
   {
     xiiUniquePtr<xiiCreateColourAttachmentPass> pPass = XII_DEFAULT_NEW(xiiCreateColourAttachmentPass, "ColourSource");
-    pColorSourcePass                                  = pPass.Borrow();
+    pColourSourcePass                                 = pPass.Borrow();
+    pRenderPipeline->AddPass(std::move(pPass));
+  }
+
+  xiiSimpleRenderPass* pSimplePass = nullptr;
+  {
+    xiiUniquePtr<xiiSimpleRenderPass> pPass = XII_DEFAULT_NEW(xiiSimpleRenderPass, "SimplePass");
+    pSimplePass                             = pPass.Borrow();
+    pSimplePass->SetMessage("Render pipeline resource is missing. Ensure that the corresponding asset has been transformed.");
     pRenderPipeline->AddPass(std::move(pPass));
   }
 
@@ -52,7 +61,8 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
     pRenderPipeline->AddPass(std::move(pPass));
   }
 
-  XII_VERIFY(pRenderPipeline->Connect(pColorSourcePass, "Output", pTargetPass, "Colour0"), "Connect failed!");
+  XII_VERIFY(pRenderPipeline->Connect(pColourSourcePass, "Output", pSimplePass, "Colour"), "Connect failed!");
+  XII_VERIFY(pRenderPipeline->Connect(pSimplePass, "Colour", pTargetPass, "Colour0"), "Connect failed!");
 
   xiiRenderPipelineResourceDescriptor desc;
   xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(pRenderPipeline.Borrow(), desc);
