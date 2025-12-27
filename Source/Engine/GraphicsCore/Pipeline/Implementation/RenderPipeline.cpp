@@ -611,14 +611,20 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
           if (pUsedByConnection->m_Resource.IsBuffer())
           {
             pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Buffer.m_Description == pUsedByConnection->m_Resource.m_Buffer.m_pBuffer->GetDescription(), "Invalid buffer provided.");
           }
           else if (pUsedByConnection->m_Resource.IsTexture())
           {
             pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Texture.m_Description == pUsedByConnection->m_Resource.m_Texture.m_pTexture->GetDescription(), "Invalid texture provided.");
           }
           else if (pUsedByConnection->m_Resource.IsSampler())
           {
             pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Sampler.m_Description == pUsedByConnection->m_Resource.m_Sampler.m_pSampler->GetDescription(), "Invalid sampler provided.");
           }
         }
       }
@@ -1227,14 +1233,20 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
           if (pUsedByConnection->m_Resource.IsBuffer())
           {
             pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Buffer.m_Description == pUsedByConnection->m_Resource.m_Buffer.m_pBuffer->GetDescription(), "Buffer mismatch or invalid.");
           }
           else if (pUsedByConnection->m_Resource.IsTexture())
           {
             pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Texture.m_Description == pUsedByConnection->m_Resource.m_Texture.m_pTexture->GetDescription(), "Texture mismatch or invalid.");
           }
           else if (pUsedByConnection->m_Resource.IsSampler())
           {
             pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Sampler.m_Description == pUsedByConnection->m_Resource.m_Sampler.m_pSampler->GetDescription(), "Sampler mismatch or invalid.");
           }
         }
       }
@@ -1262,14 +1274,20 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
           if (usageData.m_UsedBy[0]->m_Resource.IsBuffer())
           {
             pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_Description);
+
+            XII_ASSERT_DEBUG(pDeviceObject.Downcast<xiiGALBuffer>()->GetDescription() == usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_Description, "GPU pool returned a buffer with invalid description!");
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsTexture())
           {
             pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetTexture(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_Description);
+
+            XII_ASSERT_DEBUG(pDeviceObject.Downcast<xiiGALTexture>()->GetDescription() == usageData.m_UsedBy[0]->m_Resource.m_Texture.m_Description, "GPU pool returned a texture with invalid description!");
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsSampler())
           {
             pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetSampler(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_Description);
+
+            XII_ASSERT_DEBUG(pDeviceObject.Downcast<xiiGALSampler>()->GetDescription() == usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_Description, "GPU pool returned a sampler with invalid description!");
           }
 
           XII_ASSERT_DEV(pDeviceObject != nullptr, "GPU pool returned an invalidated resource!");
@@ -1321,15 +1339,15 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         {
           if (usageData.m_UsedBy[0]->m_Resource.IsBuffer())
           {
-            xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_pBuffer);
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(std::move(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_pBuffer));
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsTexture())
           {
-            xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_pTexture);
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(std::move(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_pTexture));
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsSampler())
           {
-            xiiGPUResourcePool::GetDefaultInstance()->ReturnSampler(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_pSampler);
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnSampler(std::move(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_pSampler));
           }
 
           for (xiiRenderPipelinePassConnection* pUsedByConnection : usageData.m_UsedBy)
