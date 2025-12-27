@@ -23,7 +23,7 @@ public:
   static xiiSharedPtr<xiiGALComputePipelineState> GetPipeline(const xiiGALComputePipelineStateCreationDescription& description);
 
 private:
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(RendererFoundation, PipelineCache);
+  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, PipelineCache);
 
   friend class xiiMemoryUtils;
 
@@ -51,8 +51,6 @@ private:
 private:
   xiiGALPipelineCache();
   ~xiiGALPipelineCache();
-
-  void GALDeviceEventHandler(const xiiGALDeviceEvent& e);
 
   void Clear();
 
