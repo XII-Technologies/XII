@@ -75,7 +75,7 @@ xiiResult xiiSimpleRenderPass::GetResourceDescriptions(const xiiView& view, cons
     xiiGALTextureCreationDescription description = renderTargets.m_pDSTarget->GetTexture()->GetDescription();
     description.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil);
 
-    pOutputs[m_PinColour.m_uiOutputIndex] = {xiiRenderPipelineNodePinResourceType::DepthAttachment, description};
+    pOutputs[m_PinDepthStencil.m_uiOutputIndex] = {xiiRenderPipelineNodePinResourceType::DepthAttachment, description};
   }
 
   return XII_SUCCESS;
