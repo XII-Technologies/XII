@@ -39,7 +39,7 @@ float main(PS_IN Input) : SV_Depth
   int3 coords = int3(Input.Position.xy, s_ActiveCameraEyeIndex);
   float depth = 0.0f;
 
-  for (uint i = 0; i < NumMsaaSamples; ++i)
+  for (uint i = 0; i < MSAASampleCount; ++i)
   {
     depth = max(depth, depthTexture.Load(coords, i).r);
   }
