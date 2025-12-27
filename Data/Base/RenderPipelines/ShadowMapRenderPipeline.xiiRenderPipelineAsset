@@ -1,0 +1,824 @@
+HeaderV2
+{
+o
+{
+	Uuid %id{u4{18364454300628380606,5580974198777950276}}
+	s %t{"xiiAssetDocumentInfo"}
+	u3 %v{2}
+	s %n{"Header"}
+	p
+	{
+		s %AssetType{"RenderPipeline"}
+		VarArray %Dependencies{}
+		Uuid %DocumentID{u4{18364454300628380606,5580974198777950276}}
+		u4 %Hash{1141789368990545159}
+		VarArray %MetaInfo{}
+		VarArray %Outputs{}
+		VarArray %PackageDeps{}
+		VarArray %References{}
+		s %Tags{""}
+	}
+}
+}
+Objects
+{
+o
+{
+	Uuid %id{u4{16940602142144260226,861009361662370418}}
+	s %t{"xiiRenderPipelineNodePassThroughDepthAttachmentPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{10282582630026935214,1821863750103649344}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{2573992475785453051,2516975213049453610}}
+	s %t{"xiiRenderPipelineNodeOutputDepthAttachmentPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{4191081814966378630,4736350509424179747}}
+	s %t{"xiiTargetPass"}
+	u3 %v{1}
+	p
+	{
+		b %Active{1}
+		Uuid %Colour0{u4{10282582630026935214,1821863750103649344}}
+		Uuid %Colour1{u4{6249589286451687039,10477655174866099858}}
+		Uuid %Colour2{u4{15845985670380314079,6874672337957879536}}
+		Uuid %Colour3{u4{12826630063285055397,10079537216152278571}}
+		Uuid %Colour4{u4{12624118298777835576,15747705063065538811}}
+		Uuid %Colour5{u4{17469554447058286524,15687935464892350935}}
+		Uuid %Colour6{u4{1585700333207650165,16807172025388136556}}
+		Uuid %Colour7{u4{14811643447662090694,8706458137292801391}}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
+		Uuid %DepthStencil{u4{14880931017534918990,18379219632784586207}}
+		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
+		s %Name{""}
+		Vec2 %Node::Pos{f{0x03F2E443,0x1C72A642}}
+	}
+}
+o
+{
+	Uuid %id{u4{5067314189595214775,4982214037838710827}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9726231973310709912,5312851302805754930}}
+		s %SourcePin{"Output"}
+		Uuid %Target{u4{8363984245990906510,5329901403363982716}}
+		s %TargetPin{"DepthStencil"}
+	}
+}
+o
+{
+	Uuid %id{u4{439622476459456911,5180126672849771226}}
+	s %t{"xiiVisibleObjectsExtractor"}
+	u3 %v{1}
+	p
+	{
+		b %Active{1}
+		s %Name{""}
+		Vec2 %Node::Pos{f{0,0}}
+	}
+}
+o
+{
+	Uuid %id{u4{9726231973310709912,5312851302805754930}}
+	s %t{"xiiCreateDepthAttachmentPass"}
+	u3 %v{1}
+	p
+	{
+		s %AccessFlags{""}
+		b %Active{1}
+		u3 %ArraySizeOrDepth{1}
+		s %BindFlags{"xiiGALBindFlags::ShaderResource|xiiGALBindFlags::DepthStencil"}
+		b %Clear{0}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
+		f %DepthClearValue{0x0000803F}
+		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
+		s %Format{"xiiSourceFormat::Depth16Bit"}
+		u3 %MipLevels{1}
+		s %MiscFlags{""}
+		s %Name{""}
+		Vec2 %Node::Pos{f{0xB4DB20C3,0x8FAF3E43}}
+		Uuid %Output{u4{2573992475785453051,2516975213049453610}}
+		u3 %SampleCount{1}
+		u1 %StencilClearValue{0}
+		s %Type{"xiiGALResourceDimension::Texture2DArray"}
+	}
+}
+o
+{
+	Uuid %id{u4{8363984245990906510,5329901403363982716}}
+	s %t{"xiiDepthOnlyPass"}
+	u3 %v{3}
+	p
+	{
+		b %Active{1}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
+		Uuid %DepthStencil{u4{16940602142144260226,861009361662370418}}
+		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
+		s %Name{""}
+		Vec2 %Node::Pos{f{0x3E4E1443,0xB4770543}}
+		b %RenderDynamicObjects{1}
+		b %RenderStaticObjects{1}
+		b %RenderTransparentObjects{1}
+	}
+}
+o
+{
+	Uuid %id{u4{6021175453700113576,5420569772301181483}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{8363984245990906510,5329901403363982716}}
+		s %SourcePin{"DepthStencil"}
+		Uuid %Target{u4{4191081814966378630,4736350509424179747}}
+		s %TargetPin{"DepthStencil"}
+	}
+}
+o
+{
+	Uuid %id{u4{18096612296587978288,6449934965513159559}}
+	s %t{"xiiDocumentRoot"}
+	u3 %v{1}
+	s %n{"ObjectTree"}
+	p
+	{
+		VarArray %Children
+		{
+			Uuid{u4{439622476459456911,5180126672849771226}}
+			Uuid{u4{8363984245990906510,5329901403363982716}}
+			Uuid{u4{9726231973310709912,5312851302805754930}}
+			Uuid{u4{5067314189595214775,4982214037838710827}}
+			Uuid{u4{4191081814966378630,4736350509424179747}}
+			Uuid{u4{6021175453700113576,5420569772301181483}}
+		}
+	}
+}
+o
+{
+	Uuid %id{u4{15845985670380314079,6874672337957879536}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{14811643447662090694,8706458137292801391}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{12826630063285055397,10079537216152278571}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{6249589286451687039,10477655174866099858}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{17469554447058286524,15687935464892350935}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{12624118298777835576,15747705063065538811}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{1585700333207650165,16807172025388136556}}
+	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{14880931017534918990,18379219632784586207}}
+	s %t{"xiiRenderPipelineNodeInputDepthAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+}
+Types
+{
+o
+{
+	Uuid %id{u4{9643304753545738552,28556204443203811}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePassBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPresentPipelinePass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{4526551115561206158,1107234740163694325}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeInputProviderPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{1806006595755264957,1330264583885842403}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiEnumBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{8224268647907297484,2300230217040154700}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentRoot"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16531145568626605552,4457094835024808881}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCategoryAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{9458844672690985845,4779112216626949986}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodePin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{7490786305980824281,5100414263203150987}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiBitflagsBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALCPUAccessFlag"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{3130792316795360488,5223626652638972023}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNode"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelinePassBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{9598887650986912449,5695282021229488513}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePassBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGraphicsPipelinePass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{17474407330144976873,5753112702795605815}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodePin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodePassThroughPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{17219346900517159015,6190440585904016554}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelinePassConcurrencyHint"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{14212397541982075057,6548985883735981742}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDocumentObject_ConnectionBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{7807377364782092762,6788077344464291733}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiExtractor"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{1746277641904941804,7053555332098976278}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiBitflagsBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALMiscTextureFlags"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{9877749865113483414,7320763042931880216}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiBitflagsBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALBindFlags"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{17581347059612463460,8107622960634571062}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{3390702895646779470,8768863535765012370}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNode"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{1565470976993369393,8780643841697316981}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiHiddenAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{5831823031350089913,9281053940656755343}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALResourceDimension"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{6094840146848678267,9301570338717469716}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiBitflagsBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{3215140450596973656,9495433554560154788}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodePin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeOutputPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{12709944582252683961,9547274907827817884}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeOutputPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeOutputDepthAttachmentPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16995823927036104411,9987210547672971610}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiExtractor"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiVisibleObjectsExtractor"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{18440072350638287212,10674473119681965591}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelinePassBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiUtilityPipelinePass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{15769413761137455830,11807145087669433916}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodePin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{11063651282735213098,11855732013261459715}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeInputProviderPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputDepthAttachmentProviderPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16479430116335932890,12296207084152995939}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeInputPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputProviderPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{11590634311097522989,12964931324028781955}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiBitflagsBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelinePassFlags"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{2568915866695257542,12981649620162215502}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiGraphicsPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiDepthOnlyPass"}
+		u3 %TypeVersion{3}
+	}
+}
+o
+{
+	Uuid %id{u4{8425327503915406266,13353872395401440826}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPropertyAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16381161615566832181,15455233881100491236}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPresentPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiTargetPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{11757360558073105519,15956676577570765383}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{""}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiReflectedClass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{16826320755408733833,17432426477730753864}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodePassThroughPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodePassThroughDepthAttachmentPin"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{10050131109030979238,17794139639032815194}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiUtilityPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCreateDepthAttachmentPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{540451108538628264,17999846802219042351}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiSourceFormat"}
+		u3 %TypeVersion{1}
+	}
+}
+}

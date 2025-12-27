@@ -296,7 +296,7 @@ void xiiReflectionProbeUpdater::ScheduleUpdateSteps()
   }
 }
 
-void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, const char* szNameSuffix, const char* szRenderPipelineResource)
+void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, xiiStringView sNameSuffix, xiiStringView sRenderPipelineResource)
 {
   uiMaxRenderViews = xiiMath::Max<xiiUInt32>(uiMaxRenderViews, 1);
 
@@ -309,7 +309,7 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
     {
       auto& renderView = views.ExpandAndGetRef();
 
-      sName.SetFormat("Reflection Probe {} {}", szNameSuffix, i);
+      sName.SetFormat("Reflection Probe {} {}", sNameSuffix, i);
 
       xiiView* pView     = nullptr;
       renderView.m_hView = xiiRenderWorld::CreateView(sName, pView);
@@ -317,7 +317,7 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
       pView->SetCameraUsageHint(xiiCameraUsageHint::Reflection);
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(s_uiReflectionCubeMapSize), static_cast<float>(s_uiReflectionCubeMapSize)));
 
-      pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>(szRenderPipelineResource));
+      pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>(sRenderPipelineResource));
 
       renderView.m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 90.0f, 0.1f, 100.0f);
       pView->SetCamera(&renderView.m_Camera);
@@ -332,10 +332,10 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
 void xiiReflectionProbeUpdater::CreateReflectionViewsAndResources()
 {
   // ReflectionRenderPipeline.xiiRenderPipelineAsset
-  CreateViews(m_RenderViews, cvar_RenderingReflectionPoolMaxRenderViews, "Render", "{ 734898e8-b1a2-0da2-c4ae-701912983c2f }");
+  CreateViews(m_RenderViews, cvar_RenderingReflectionPoolMaxRenderViews, "Render", "{ 1e90946c-2bfe-4c4c-8123-62e033c11af5 }");
 
   // ReflectionFilterPipeline.xiiRenderPipelineAsset
-  CreateViews(m_FilterViews, cvar_RenderingReflectionPoolMaxFilterViews, "Filter", "{ 3437db17-ddf1-4b67-b80f-9999d6b0c352 }");
+  CreateViews(m_FilterViews, cvar_RenderingReflectionPoolMaxFilterViews, "Filter", "{ 11f1f17b-cc4d-42e4-ac49-481a35c8cae5 }");
 
   if (m_DynamicUpdates.IsEmpty())
   {

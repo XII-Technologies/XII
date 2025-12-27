@@ -116,7 +116,7 @@ private:
   };
 
 private:
-  static void CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, const char* szNameSuffix, const char* szRenderPipelineResource);
+  static void CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, xiiStringView sNameSuffix, xiiStringView sRenderPipelineResource);
   void        CreateReflectionViewsAndResources();
 
   void ResetProbeUpdateInfo(xiiUInt32 uiInfo);

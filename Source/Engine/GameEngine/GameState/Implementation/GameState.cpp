@@ -295,8 +295,8 @@ void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSi
   {
     const xiiXRConfig* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
 
-    auto renderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sXRRenderPipeline);
-    pView->SetRenderPipelineResource(renderPipeline);
+    auto hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sXRRenderPipeline);
+    pView->SetRenderPipelineResource(hRenderPipeline);
     // Render target setup is done by xiiXRInterface::CreateActor
   }
   else
@@ -304,8 +304,8 @@ void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSi
     // Render target setup
     {
       const auto* pConfig        = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
-      auto        renderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sMainRenderPipeline);
-      pView->SetRenderPipelineResource(renderPipeline);
+      auto        hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sMainRenderPipeline);
+      pView->SetRenderPipelineResource(hRenderPipeline);
       pView->SetSwapChain(pSwapChain);
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)viewportSize.width, (float)viewportSize.height));
       pView->ForceUpdate();
