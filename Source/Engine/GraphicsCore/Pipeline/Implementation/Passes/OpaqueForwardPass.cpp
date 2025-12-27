@@ -60,14 +60,14 @@ xiiResult xiiOpaqueForwardRenderPass::GetResourceDescriptions(const xiiView& vie
   return XII_SUCCESS;
 }
 
-void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
-  SUPER::SetupResources(renderViewContext, inputs, outputs);
+  SUPER::SetupResources(renderViewContext, pInputs, pOutputs);
 
   // SSAO input texture.
-  if (inputs[m_PinSSAO.m_uiInputIndex] && m_ShadingQuality >= xiiForwardRenderShadingQuality::Medium)
+  if (pInputs[m_PinSSAO.m_uiInputIndex] && m_ShadingQuality >= xiiForwardRenderShadingQuality::Medium)
   {
-    renderViewContext.m_pRenderContext->BindTexture("SSAOTexture", inputs[m_PinSSAO.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture);
+    renderViewContext.m_pRenderContext->BindTexture("SSAOTexture", pInputs[m_PinSSAO.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture);
   }
   else
   {

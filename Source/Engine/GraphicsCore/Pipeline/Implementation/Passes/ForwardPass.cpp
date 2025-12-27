@@ -91,18 +91,20 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   renderViewContext.m_pRenderContext->EndRendering();
 }
 
-void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
+  XII_IGNORE_UNUSED(pOutputs);
+
   xiiRenderingSetup renderingSetup;
 
-  if (inputs[m_PinColour.m_uiInputIndex])
+  if (pInputs[m_PinColour.m_uiInputIndex])
   {
-    renderingSetup.AddColorAttachment({inputs[m_PinColour.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
+    renderingSetup.AddColorAttachment({pInputs[m_PinColour.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
   }
 
-  if (inputs[m_PinDepthStencil.m_uiInputIndex])
+  if (pInputs[m_PinDepthStencil.m_uiInputIndex])
   {
-    renderingSetup.SetDepthStencilAttachment({inputs[m_PinDepthStencil.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
+    renderingSetup.SetDepthStencilAttachment({pInputs[m_PinDepthStencil.m_uiInputIndex]->m_Resource.m_Texture.m_pTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil)});
   }
 
   renderingSetup.Build();
