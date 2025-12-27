@@ -4,19 +4,19 @@
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(RendererFoundation, PipelineCache)
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, PipelineCache)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation",
     "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
-  ON_CORESYSTEMS_STARTUP
+  ON_HIGHLEVELSYSTEMS_STARTUP
   {
     XII_DEFAULT_NEW(xiiGALPipelineCache);
   }
 
-  ON_CORESYSTEMS_SHUTDOWN
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
     xiiGALPipelineCache* pSingleton = xiiGALPipelineCache::GetSingleton();
 
@@ -29,28 +29,13 @@ XII_END_SUBSYSTEM_DECLARATION;
 XII_IMPLEMENT_SINGLETON(xiiGALPipelineCache);
 
 xiiGALPipelineCache::xiiGALPipelineCache() :
-  m_SingletonRegistrar(this)
+  m_SingletonRegistrar(this), m_pDevice(xiiGALDevice::GetDefaultDevice())
 {
-  xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGALPipelineCache::GALDeviceEventHandler, this));
 }
 
 xiiGALPipelineCache::~xiiGALPipelineCache()
 {
   Clear();
-
-  xiiGALDevice::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiGALPipelineCache::GALDeviceEventHandler, this));
-}
-
-void xiiGALPipelineCache::GALDeviceEventHandler(const xiiGALDeviceEvent& e)
-{
-  switch (e.m_Type)
-  {
-    case xiiGALDeviceEventType::AfterInitialization:
-      m_pDevice = e.m_pDevice;
-      break;
-    default:
-      break;
-  }
 }
 
 void xiiGALPipelineCache::Clear()
