@@ -23,10 +23,6 @@ public:
     xiiUInt32 m_uiRegionW = 0U;
     xiiUInt32 m_uiRegionH = 0U;
 
-    // Optional CPU repack settings (applied after map)
-    bool m_bRepackTightRows   = false; // Copies rows to width*Bpp
-    bool m_bConvertBGRAtoRGBA = false; // Simple swizzle for common 4-channel formats
-
     XII_ALWAYS_INLINE explicit operator bool() const { return m_pTexture != nullptr; }
   };
 
@@ -50,10 +46,6 @@ public:
     xiiUInt32 m_uiRegionY = 0U;
     xiiUInt32 m_uiRegionW = 0U;
     xiiUInt32 m_uiRegionH = 0U;
-
-    // Repack hints (consumer may call RepackTightRows / BGRAtoRGBA on mapped data)
-    bool m_bRepackTightRows   = false;
-    bool m_bConvertBGRAtoRGBA = false;
 
     XII_ALWAYS_INLINE explicit operator bool() const { return m_pStagingTexture != nullptr; }
   };

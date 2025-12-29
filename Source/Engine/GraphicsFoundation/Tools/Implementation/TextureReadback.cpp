@@ -113,16 +113,14 @@ void xiiGALTextureReadback::Enqueue(xiiSharedPtr<xiiGALCommandList> pCommandList
     pendingCapture.m_uiFenceValue    = uiFenceValue;
 
     // Fill capture metadata
-    pendingCapture.m_CaptureMeta.m_pStagingTexture    = pendingCapture.m_pStagingTexture;
-    pendingCapture.m_CaptureMeta.m_uiTextureID        = request.m_uiTextureID;
-    pendingCapture.m_CaptureMeta.m_uiMipLevel         = request.m_uiMipLevel;
-    pendingCapture.m_CaptureMeta.m_uiArraySlice       = request.m_uiArraySlice;
-    pendingCapture.m_CaptureMeta.m_uiRegionX          = box.m_vMin.x;
-    pendingCapture.m_CaptureMeta.m_uiRegionY          = box.m_vMin.y;
-    pendingCapture.m_CaptureMeta.m_uiRegionW          = box.m_vMax.x - box.m_vMin.x;
-    pendingCapture.m_CaptureMeta.m_uiRegionH          = box.m_vMax.y - box.m_vMin.y;
-    pendingCapture.m_CaptureMeta.m_bRepackTightRows   = request.m_bRepackTightRows;
-    pendingCapture.m_CaptureMeta.m_bConvertBGRAtoRGBA = request.m_bConvertBGRAtoRGBA;
+    pendingCapture.m_CaptureMeta.m_pStagingTexture = pendingCapture.m_pStagingTexture;
+    pendingCapture.m_CaptureMeta.m_uiTextureID     = request.m_uiTextureID;
+    pendingCapture.m_CaptureMeta.m_uiMipLevel      = request.m_uiMipLevel;
+    pendingCapture.m_CaptureMeta.m_uiArraySlice    = request.m_uiArraySlice;
+    pendingCapture.m_CaptureMeta.m_uiRegionX       = box.m_vMin.x;
+    pendingCapture.m_CaptureMeta.m_uiRegionY       = box.m_vMin.y;
+    pendingCapture.m_CaptureMeta.m_uiRegionW       = box.m_vMax.x - box.m_vMin.x;
+    pendingCapture.m_CaptureMeta.m_uiRegionH       = box.m_vMax.y - box.m_vMin.y;
 
     const xiiGALTextureCreationDescription& destinationDescription = pendingCapture.m_pStagingTexture->GetDescription();
     xiiGALResourceFormatDescription         formatProperties       = xiiGALTextureUtilities::GetResourceFormatProperties(destinationDescription.m_Format);

@@ -23,6 +23,7 @@ public:
 
   virtual void ReadBackProperties(xiiView* pView) override;
 
+public:
   bool m_bPickSelected    = true;
   bool m_bPickTransparent = true;
 
@@ -42,17 +43,31 @@ private:
   void ReadBackPropertiesSinglePick(xiiView* pView);
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
+  void ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
+
 private:
   xiiRectFloat   m_TargetRect;
   const xiiRTTI* m_pGridRenderDataType = nullptr;
 
   xiiSharedPtr<xiiGALTexture> m_pPickingIdRT;
-  xiiSharedPtr<xiiGALTexture> m_pPickingIdRTStaging;
   xiiSharedPtr<xiiGALTexture> m_pPickingDepthRT;
-  xiiSharedPtr<xiiGALTexture> m_pPickingDepthRTStaging;
-  // xiiGALRenderTargetSetup m_RenderTargetSetup;
 
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
+
+  struct PickingReadback
+  {
+    xiiUniquePtr<xiiGALTextureReadback> m_PickingReadback;
+    xiiUniquePtr<xiiGALTextureReadback> m_PickingDepthReadback;
+
+    bool      m_bReadbackInProgress = false;
+    xiiUInt32 m_uiWindowWidth       = 0U;
+    xiiUInt32 m_uiWindowHeight      = 0U;
+
+    /// we need this matrix to compute the world space position of picked pixels
+    xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
+  };
+
+  PickingReadback m_PendingReadback;
 
   /// we need this matrix to compute the world space position of picked pixels
   xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
@@ -62,4 +77,6 @@ private:
 
   /// Stores the 32 Bit picking ID values of each pixel. This can lead back to the xiiComponent, etc. that rendered to that pixel
   xiiDynamicArray<xiiUInt32> m_PickingResultsID;
+
+  xiiUInt32 m_uiProcessorId = xiiInvalidIndex;
 };
