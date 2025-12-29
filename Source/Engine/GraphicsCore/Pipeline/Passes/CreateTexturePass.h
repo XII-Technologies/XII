@@ -102,15 +102,15 @@ public:
 private:
   xiiRenderPipelineNodeOutputColourAttachmentPin m_PinOutput;
 
-  xiiEnum<xiiGALResourceDimension>    m_Type = xiiGALResourceDimension::Texture2D;
-  xiiEnum<xiiSourceFormat>            m_Format;
+  xiiEnum<xiiGALResourceDimension>    m_Type               = xiiGALResourceDimension::Texture2D;
+  xiiEnum<xiiSourceFormat>            m_Format             = xiiSourceFormat::Color4Channel8BitNormalized_sRGB;
   xiiUInt32                           m_uiArraySizeOrDepth = 1U;
   xiiUInt32                           m_uiMipLevels        = 1U;
   xiiUInt32                           m_uiSampleCount      = 1U;
-  xiiBitflags<xiiGALBindFlags>        m_BindFlags;
-  xiiEnum<xiiGALResourceUsage>        m_Usage;
-  xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags;
-  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags;
+  xiiBitflags<xiiGALBindFlags>        m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
+  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Mutable;
+  xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags        = xiiGALCPUAccessFlag::None;
+  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;
 
   bool     m_bClear      = false;
   xiiColor m_ClearColour = xiiColor::Black;
@@ -144,15 +144,15 @@ public:
 private:
   xiiRenderPipelineNodeOutputDepthAttachmentPin m_PinOutput;
 
-  xiiEnum<xiiGALResourceDimension>    m_Type = xiiGALResourceDimension::Buffer;
-  xiiEnum<xiiSourceFormat>            m_Format;
-  xiiUInt32                           m_uiArraySizeOrDepth = 0U;
+  xiiEnum<xiiGALResourceDimension>    m_Type               = xiiGALResourceDimension::Texture2D;
+  xiiEnum<xiiSourceFormat>            m_Format             = xiiSourceFormat::Depth24BitStencil8Bit;
+  xiiUInt32                           m_uiArraySizeOrDepth = 1U;
   xiiUInt32                           m_uiMipLevels        = 1U;
   xiiUInt32                           m_uiSampleCount      = 1U;
-  xiiBitflags<xiiGALBindFlags>        m_BindFlags;
-  xiiEnum<xiiGALResourceUsage>        m_Usage;
-  xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags;
-  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags;
+  xiiBitflags<xiiGALBindFlags>        m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
+  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Mutable;
+  xiiBitflags<xiiGALCPUAccessFlag>    m_AccessFlags        = xiiGALCPUAccessFlag::None;
+  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;
 
   bool     m_bClear              = false;
   float    m_fDepthClearValue    = 1.0f;

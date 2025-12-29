@@ -278,8 +278,6 @@ struct xiiShadowPool::Data
     CreateShadowAtlasTexture();
     CreateShadowDataBuffer();
 
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
     xiiView*      pView = nullptr;
     xiiViewHandle hView = xiiRenderWorld::CreateView("Unknown", pView);
 
@@ -293,7 +291,7 @@ struct xiiShadowPool::Data
     m_ShadowViewsMutex.Unlock(); // if the resource gets loaded in the call below, his could lead to a deadlock
 
     // ShadowMapRenderPipeline.xiiRenderPipelineAsset
-    pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ 4f4d9f16-3d47-4c67-b821-a778f11dcaf5 }"));
+    pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ eac7b044-9a76-4d73-be6b-d92ae3a5dbfe }"));
 
     m_ShadowViewsMutex.Lock();
 

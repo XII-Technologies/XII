@@ -611,29 +611,36 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
           if (pUsedByConnection->m_Resource.IsBuffer())
           {
             pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Buffer.m_Description == pUsedByConnection->m_Resource.m_Buffer.m_pBuffer->GetDescription(), "Invalid buffer provided.");
           }
           else if (pUsedByConnection->m_Resource.IsTexture())
           {
             pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+
+            // XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Texture.m_Description == pUsedByConnection->m_Resource.m_Texture.m_pTexture->GetDescription(), "Invalid texture provided.");
           }
           else if (pUsedByConnection->m_Resource.IsSampler())
           {
             pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Sampler.m_Description == pUsedByConnection->m_Resource.m_Sampler.m_pSampler->GetDescription(), "Invalid sampler provided.");
           }
         }
       }
     }
   }
 
+  // If a resource descriptor has this hash, it is uninitialized and no resource will be created at runtime.
+  static xiiUInt32 uiDefaultTextureHash = xiiGALTextureCreationDescription().CalculateHash();
+  static xiiUInt32 uiDefaultBufferHash  = xiiGALBufferCreationDescription().CalculateHash();
+  static xiiUInt32 uiDefaultSamplerHash = xiiGALSamplerCreationDescription().CalculateHash();
+
   // Inconvenient loop to gather all ResourceUsageData indices that are not provider resources and valid.
   for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
   {
-    // If a resource descriptor has this hash, it is uninitialized and no resource will be created at runtime.
-    static xiiUInt32 uiDefaultTextureHash = xiiGALTextureCreationDescription().CalculateHash();
-    static xiiUInt32 uiDefaultBufferHash  = xiiGALBufferCreationDescription().CalculateHash();
-    static xiiUInt32 uiDefaultSamplerHash = xiiGALSamplerCreationDescription().CalculateHash();
-
     ResourceUsageData& data = m_ResourceUsage[i];
+
     if (data.m_pResourceProvider || data.m_UsedBy[0]->m_Resource.m_Type == xiiRenderPipelineNodePinResourceType::Unknown)
       continue;
 
@@ -1227,14 +1234,20 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
           if (pUsedByConnection->m_Resource.IsBuffer())
           {
             pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Buffer.m_Description == pUsedByConnection->m_Resource.m_Buffer.m_pBuffer->GetDescription(), "Buffer mismatch or invalid.");
           }
           else if (pUsedByConnection->m_Resource.IsTexture())
           {
             pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+
+            // XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Texture.m_Description == pUsedByConnection->m_Resource.m_Texture.m_pTexture->GetDescription(), "Texture mismatch or invalid.");
           }
           else if (pUsedByConnection->m_Resource.IsSampler())
           {
             pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Sampler.m_Description == pUsedByConnection->m_Resource.m_Sampler.m_pSampler->GetDescription(), "Sampler mismatch or invalid.");
           }
         }
       }
@@ -1262,14 +1275,20 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
           if (usageData.m_UsedBy[0]->m_Resource.IsBuffer())
           {
             pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_Description);
+
+            XII_ASSERT_DEBUG(pDeviceObject.Downcast<xiiGALBuffer>()->GetDescription() == usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_Description, "GPU pool returned a buffer with invalid description!");
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsTexture())
           {
             pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetTexture(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_Description);
+
+            XII_ASSERT_DEBUG(pDeviceObject.Downcast<xiiGALTexture>()->GetDescription() == usageData.m_UsedBy[0]->m_Resource.m_Texture.m_Description, "GPU pool returned a texture with invalid description!");
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsSampler())
           {
             pDeviceObject = xiiGPUResourcePool::GetDefaultInstance()->GetSampler(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_Description);
+
+            XII_ASSERT_DEBUG(pDeviceObject.Downcast<xiiGALSampler>()->GetDescription() == usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_Description, "GPU pool returned a sampler with invalid description!");
           }
 
           XII_ASSERT_DEV(pDeviceObject != nullptr, "GPU pool returned an invalidated resource!");
@@ -1321,15 +1340,15 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         {
           if (usageData.m_UsedBy[0]->m_Resource.IsBuffer())
           {
-            xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_pBuffer);
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnBuffer(std::move(usageData.m_UsedBy[0]->m_Resource.m_Buffer.m_pBuffer));
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsTexture())
           {
-            xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_pTexture);
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(std::move(usageData.m_UsedBy[0]->m_Resource.m_Texture.m_pTexture));
           }
           else if (usageData.m_UsedBy[0]->m_Resource.IsSampler())
           {
-            xiiGPUResourcePool::GetDefaultInstance()->ReturnSampler(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_pSampler);
+            xiiGPUResourcePool::GetDefaultInstance()->ReturnSampler(std::move(usageData.m_UsedBy[0]->m_Resource.m_Sampler.m_pSampler));
           }
 
           for (xiiRenderPipelinePassConnection* pUsedByConnection : usageData.m_UsedBy)
@@ -1397,6 +1416,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
   xiiHashTable<const xiiRenderPipelineNode*, xiiUInt32> nodeMap;
   nodeMap.Reserve(m_Passes.GetCount() + m_ResourceUsage.GetCount() * 3);
 
+  xiiStringBuilder sTmp;
   for (xiiUInt32 p = 0; p < m_Passes.GetCount(); ++p)
   {
     const auto& pPass = m_Passes[p];
@@ -1420,56 +1440,59 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       nd.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
       xiiStringBuilder sFormat;
+
       if (pConnection->m_Resource.IsBuffer())
       {
         sFormat.AppendFormat("[{} bytes", pConnection->m_Resource.m_Buffer.m_Description.m_uiSize);
 
         if (pConnection->m_Resource.m_Buffer.m_Description.m_uiElementByteStride > 0)
+        {
           sFormat.AppendFormat(", Stride: {}", pConnection->m_Resource.m_Buffer.m_Description.m_uiElementByteStride);
-
-        // Mode (enum)
-        {
-          xiiStringBuilder sTmp;
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALBufferMode>(), pConnection->m_Resource.m_Buffer.m_Description.m_Mode.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", Mode: {}", sTmp);
-          else
-            sFormat.AppendFormat(", Mode: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Mode.GetValue());
         }
 
-        // Bind flags (bitflags)
+        if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALBufferMode>(), pConnection->m_Resource.m_Buffer.m_Description.m_Mode.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags != xiiGALBindFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", Bind: {}", sTmp);
-          else if (pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags != xiiGALBindFlags::None)
-            sFormat.AppendFormat(", Bind: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags.GetValue());
+          sFormat.AppendFormat(", Mode: {}", sTmp);
+        }
+        else
+        {
+          sFormat.AppendFormat(", Mode: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Mode.GetValue());
         }
 
-        // Usage (enum)
+        if (pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags != xiiGALBindFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Mutable && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", Usage: {}", sTmp);
-          else if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Mutable)
-            sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue());
+          sFormat.AppendFormat(", Bind: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags != xiiGALBindFlags::None)
+        {
+          sFormat.AppendFormat(", Bind: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_BindFlags.GetValue());
         }
 
-        // CPU access flags
+        if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Mutable && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", CPU Access: {}", sTmp);
-          else if (pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None)
-            sFormat.AppendFormat(", CPU Access: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags.GetValue());
+          sFormat.AppendFormat(", Usage: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Buffer.m_Description.m_Usage != xiiGALResourceUsage::Mutable)
+        {
+          sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Buffer.m_Description.m_Usage.GetValue());
         }
 
-        // Misc flags
+        if (pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags != xiiGALMiscBufferFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", Misc: {}", sTmp);
-          else if (pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags != xiiGALMiscBufferFlags::None)
-            sFormat.AppendFormat(", Misc: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags.GetValue());
+          sFormat.AppendFormat(", CPU Access: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None)
+        {
+          sFormat.AppendFormat(", CPU Access: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_CPUAccessFlags.GetValue());
+        }
+
+        if (pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags != xiiGALMiscBufferFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+        {
+          sFormat.AppendFormat(", Misc: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags != xiiGALMiscBufferFlags::None)
+        {
+          sFormat.AppendFormat(", Misc: 0x{:X}", pConnection->m_Resource.m_Buffer.m_Description.m_MiscFlags.GetValue());
         }
 
         sFormat.Append("]");
@@ -1480,98 +1503,74 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       {
         sFormat.AppendFormat("[{}x{}", pConnection->m_Resource.m_Texture.m_Description.m_Size.width, pConnection->m_Resource.m_Texture.m_Description.GetHeight());
 
-        xiiUInt32 uiArraySize = pConnection->m_Resource.m_Texture.m_Description.GetArraySize();
-        if (uiArraySize > 1)
-          sFormat.AppendFormat(":{}", uiArraySize);
-
-        // Format (enum)
+        const xiiUInt32 uiArrayOrDepthSize = pConnection->m_Resource.m_Texture.m_Description.GetArraySize();
+        if (uiArrayOrDepthSize > 1)
         {
-          xiiStringBuilder sTmp;
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), pConnection->m_Resource.m_Texture.m_Description.m_Format.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Format: {}", sTmp);
-          }
-          else
-          {
-            sFormat.AppendFormat(", Format: {}", pConnection->m_Resource.m_Texture.m_Description.m_Format.GetValue());
-          }
+          sFormat.AppendFormat(":{}", uiArrayOrDepthSize);
         }
 
-        // Mip levels
+        if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), pConnection->m_Resource.m_Texture.m_Description.m_Format.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+        {
+          sFormat.AppendFormat(", Format: {}", sTmp);
+        }
+        else
+        {
+          sFormat.AppendFormat(", Format: {}", pConnection->m_Resource.m_Texture.m_Description.m_Format.GetValue());
+        }
+
         if (pConnection->m_Resource.m_Texture.m_Description.m_uiMipLevels > 1)
         {
           sFormat.AppendFormat(", Mips: {}", pConnection->m_Resource.m_Texture.m_Description.m_uiMipLevels);
         }
 
-        // Sample count
         if (pConnection->m_Resource.m_Texture.m_Description.m_uiSampleCount > 1)
         {
           sFormat.AppendFormat(", MSAAx{}", pConnection->m_Resource.m_Texture.m_Description.m_uiSampleCount);
         }
 
-        // Resource type (dimension)
+        if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceDimension>(), pConnection->m_Resource.m_Texture.m_Description.m_Type.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceDimension>(), pConnection->m_Resource.m_Texture.m_Description.m_Type.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Type: {}", sTmp);
-          }
-          else
-          {
-            sFormat.AppendFormat(", Type: {}", pConnection->m_Resource.m_Texture.m_Description.m_Type.GetValue());
-          }
+          sFormat.AppendFormat(", Type: {}", sTmp);
+        }
+        else
+        {
+          sFormat.AppendFormat(", Type: {}", pConnection->m_Resource.m_Texture.m_Description.m_Type.GetValue());
         }
 
-        // Bind flags
+        if (pConnection->m_Resource.m_Texture.m_Description.m_BindFlags != xiiGALBindFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_BindFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Texture.m_Description.m_BindFlags != xiiGALBindFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_BindFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Bind: {}", sTmp);
-          }
-          else if (pConnection->m_Resource.m_Texture.m_Description.m_BindFlags != xiiGALBindFlags::None)
-          {
-            sFormat.AppendFormat(", Bind: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_BindFlags.GetValue());
-          }
+          sFormat.AppendFormat(", Bind: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Texture.m_Description.m_BindFlags != xiiGALBindFlags::None)
+        {
+          sFormat.AppendFormat(", Bind: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_BindFlags.GetValue());
         }
 
-        // Usage
+        if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Mutable && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Mutable && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceUsage>(), pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Usage: {}", sTmp);
-          }
-          else if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Mutable)
-          {
-            sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue());
-          }
+          sFormat.AppendFormat(", Usage: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Texture.m_Description.m_Usage != xiiGALResourceUsage::Mutable)
+        {
+          sFormat.AppendFormat(", Usage: {}", pConnection->m_Resource.m_Texture.m_Description.m_Usage.GetValue());
         }
 
-        // CPU Access
+        if (pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", CPU Access: {}", sTmp);
-          }
-          else if (pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None)
-          {
-            sFormat.AppendFormat(", CPU Access: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags.GetValue());
-          }
+          sFormat.AppendFormat(", CPU Access: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags != xiiGALCPUAccessFlag::None)
+        {
+          sFormat.AppendFormat(", CPU Access: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_CPUAccessFlags.GetValue());
         }
 
-        // Misc flags
+        if (pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags != xiiGALMiscTextureFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sTmp;
-          if (pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags != xiiGALMiscTextureFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Misc: {}", sTmp);
-          }
-          else if (pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags != xiiGALMiscTextureFlags::None)
-          {
-            sFormat.AppendFormat(", Misc: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags.GetValue());
-          }
+          sFormat.AppendFormat(", Misc: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags != xiiGALMiscTextureFlags::None)
+        {
+          sFormat.AppendFormat(", Misc: 0x{:X}", pConnection->m_Resource.m_Texture.m_Description.m_MiscFlags.GetValue());
         }
 
         sFormat.Append("]");
@@ -1582,74 +1581,60 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       {
         sFormat.Append("[");
 
-        // Filter configuration
+        xiiStringBuilder sMin, sMag, sMip;
+        if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MinFilter.GetValue(), sMin, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MagFilter.GetValue(), sMag, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MipFilter.GetValue(), sMip, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sMin, sMag, sMip;
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MinFilter.GetValue(), sMin, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MagFilter.GetValue(), sMag, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALFilterType>(), pConnection->m_Resource.m_Sampler.m_Description.m_MipFilter.GetValue(), sMip, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat("Filter: {}/{}/{}", sMin, sMag, sMip);
-          }
+          sFormat.AppendFormat("Filter: {}/{}/{}", sMin, sMag, sMip);
         }
 
-        // Addressing modes
+        xiiStringBuilder sU, sV, sW;
+        if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressU.GetValue(), sU, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressV.GetValue(), sV, xiiReflectionUtils::EnumConversionMode::ValueNameOnly) && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressW.GetValue(), sW, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sU, sV, sW;
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressU.GetValue(), sU, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", AddrU: {}", sU);
-
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressV.GetValue(), sV, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", V: {}", sV);
-
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureAddressMode>(), pConnection->m_Resource.m_Sampler.m_Description.m_AddressW.GetValue(), sW, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-            sFormat.AppendFormat(", W: {}", sW);
+          sFormat.AppendFormat(", Address: {}/{}/{}", sU, sV, sW);
         }
 
-        // Anisotropy
         if (pConnection->m_Resource.m_Sampler.m_Description.m_uiMaxAnisotropy > 0)
         {
           sFormat.AppendFormat(", Aniso: {}", pConnection->m_Resource.m_Sampler.m_Description.m_uiMaxAnisotropy);
         }
 
-        // Comparison function
-        if (pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction != xiiGALComparisonFunction::Never)
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction != xiiGALComparisonFunction::Never && xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALComparisonFunction>(), pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction.GetValue(), sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sCmp;
-          if (xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALComparisonFunction>(), pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction.GetValue(), sCmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Compare: {}", sCmp);
-          }
-          else
-          {
-            sFormat.AppendFormat(", Compare: {}", pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction.GetValue());
-          }
+          sFormat.AppendFormat(", Compare: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction != xiiGALComparisonFunction::Never)
+        {
+          sFormat.AppendFormat(", Compare: {}", pConnection->m_Resource.m_Sampler.m_Description.m_ComparisonFunction.GetValue());
         }
 
-        // Flags
+        if (pConnection->m_Resource.m_Sampler.m_Description.m_Flags != xiiGALSamplerFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Sampler.m_Description.m_Flags, sTmp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
         {
-          xiiStringBuilder sFlags;
-          if (pConnection->m_Resource.m_Sampler.m_Description.m_Flags != xiiGALSamplerFlags::None && xiiReflectionUtils::BitflagsToString(pConnection->m_Resource.m_Sampler.m_Description.m_Flags, sFlags, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
-          {
-            sFormat.AppendFormat(", Flags: {}", sFlags);
-          }
-          else if (pConnection->m_Resource.m_Sampler.m_Description.m_Flags != xiiGALSamplerFlags::None)
-          {
-            sFormat.AppendFormat(", Flags: 0x{:X}", pConnection->m_Resource.m_Sampler.m_Description.m_Flags.GetValue());
-          }
+          sFormat.AppendFormat(", Flags: {}", sTmp);
+        }
+        else if (pConnection->m_Resource.m_Sampler.m_Description.m_Flags != xiiGALSamplerFlags::None)
+        {
+          sFormat.AppendFormat(", Flags: 0x{:X}", pConnection->m_Resource.m_Sampler.m_Description.m_Flags.GetValue());
         }
 
-        // LOD Bias, Min/Max LOD
         if (pConnection->m_Resource.m_Sampler.m_Description.m_fMipLODBias != 0.0f)
+        {
           sFormat.AppendFormat(", LOD Bias: {:.2f}", pConnection->m_Resource.m_Sampler.m_Description.m_fMipLODBias);
+        }
 
         if (pConnection->m_Resource.m_Sampler.m_Description.m_fMinLOD != 0.0f)
+        {
           sFormat.AppendFormat(", Min LOD: {:.2f}", pConnection->m_Resource.m_Sampler.m_Description.m_fMinLOD);
+        }
 
         if (pConnection->m_Resource.m_Sampler.m_Description.m_fMaxLOD != xiiMath::MaxValue<float>())
+        {
           sFormat.AppendFormat(", Max LOD: {:.2f}", pConnection->m_Resource.m_Sampler.m_Description.m_fMaxLOD);
+        }
 
-        // Coordinate normalization
         if (pConnection->m_Resource.m_Sampler.m_Description.m_bUnormalizedCoords)
+        {
           sFormat.Append(", UnnormalizedCoords");
+        }
 
         sFormat.Append("]");
 

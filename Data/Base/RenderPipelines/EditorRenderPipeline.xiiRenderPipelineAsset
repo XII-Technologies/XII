@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{8099602035358019464,4847573331455305924}}
-		u4 %Hash{8420810284886858754}
+		u4 %Hash{6335050321327638051}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -167,7 +167,7 @@ o
 		s %MipFilter{"xiiGALFilterType::Linear"}
 		f %MipLodBias{0}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xFB620A45,0xA19F6244}}
+		Vec2 %Node::Pos{f{0x73C30A45,0xA19F6244}}
 		Uuid %Output{u4{710253598597993554,912690749962656224}}
 		s %SamplerFlags{""}
 		b %UnormalizedCoords{0}
@@ -349,6 +349,7 @@ o
 		Uuid %Output{u4{18432013569552900297,7413064732819847839}}
 		u3 %SampleCount{4}
 		s %Type{"xiiGALResourceDimension::Texture2DArray"}
+		s %Usage{"xiiGALResourceUsage::Mutable"}
 	}
 }
 o
@@ -430,6 +431,7 @@ o
 		u3 %SampleCount{4}
 		u1 %StencilClearValue{0}
 		s %Type{"xiiGALResourceDimension::Texture2DArray"}
+		s %Usage{"xiiGALResourceUsage::Mutable"}
 	}
 }
 o
@@ -1298,6 +1300,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiExtractor"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{14167102933164945187,6992203395602005114}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALResourceUsage"}
 		u3 %TypeVersion{1}
 	}
 }
