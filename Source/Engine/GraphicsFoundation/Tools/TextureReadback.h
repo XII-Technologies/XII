@@ -80,10 +80,6 @@ public:
   /// \brief Recycle a staging texture back into the internal pool for reuse.
   void RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture);
 
-  /// \brief Optional CPU helpers to repack tight rows or swizzle BGRA->RGBA on mapped data.
-  static void RepackTightRows(const void* pSource, void* pDestination, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiBytesPerPixel, xiiUInt32 uiSourceRowStride);
-  static void ConvertBGRAtoRGBA(const void* pSource, void* pDestination, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiSourceRowStride);
-
 private:
   struct Pending
   {
