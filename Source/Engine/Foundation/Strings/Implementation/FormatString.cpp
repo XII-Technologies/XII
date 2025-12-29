@@ -1,6 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Math/Rational.h>
+#include <Foundation/Math/Size.h>
 #include <Foundation/Strings/FormatString.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Strings/String.h>
@@ -77,18 +78,18 @@ xiiStringView xiiFormatString::BuildFormattedText(xiiStringBuilder& ref_sStorage
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgI& arg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase);
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, uiWritePosition, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase);
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt64 iArg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, iArg, 1, false, 10);
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, uiWritePosition, iArg, 1, false, 10);
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt32 iArg)
@@ -98,18 +99,18 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt32 iArg)
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgU& arg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedUInt(szTmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase, arg.m_bUpperCase);
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedUInt(szTmp, uiLength, uiWritePosition, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_uiBase, arg.m_bUpperCase);
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt64 uiArg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedUInt(szTmp, uiLength, writepos, uiArg, 1, false, 10, false);
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedUInt(szTmp, uiLength, uiWritePosition, uiArg, 1, false, 10, false);
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt32 uiArg)
@@ -119,18 +120,18 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, xiiUInt32 uiArg)
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgF& arg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, writepos, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_iPrecision, arg.m_bScientific);
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, uiWritePosition, arg.m_Value, arg.m_uiWidth, arg.m_bPadWithZeros, arg.m_iPrecision, arg.m_bScientific);
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, double fArg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, writepos, fArg, 1, false, -1, false);
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, uiWritePosition, fArg, 1, false, -1, false);
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, bool bArg)
@@ -242,39 +243,39 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiVariant& arg
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplate<float>& arg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, uiWritePosition, arg.GetDegree(), 1, false, 1, false);
 
   // Utf-8 representation of the degree sign
-  szTmp[writepos + 0] = /*(char)0xC2;*/ -62;
-  szTmp[writepos + 1] = /*(char)0xB0;*/ -80;
-  szTmp[writepos + 2] = '\0';
+  szTmp[uiWritePosition + 0] = /*(char)0xC2;*/ -62;
+  szTmp[uiWritePosition + 1] = /*(char)0xB0;*/ -80;
+  szTmp[uiWritePosition + 2] = '\0';
 
-  return xiiStringView(szTmp, szTmp + writepos + 2);
+  return xiiStringView(szTmp, szTmp + uiWritePosition + 2);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplate<double>& arg)
 {
-  xiiUInt32 writepos = 0;
-  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, uiWritePosition, arg.GetDegree(), 1, false, 1, false);
 
   // Utf-8 representation of the degree sign
-  szTmp[writepos + 0] = /*(char)0xC2;*/ -62;
-  szTmp[writepos + 1] = /*(char)0xB0;*/ -80;
-  szTmp[writepos + 2] = '\0';
+  szTmp[uiWritePosition + 0] = /*(char)0xC2;*/ -62;
+  szTmp[uiWritePosition + 1] = /*(char)0xB0;*/ -80;
+  szTmp[uiWritePosition + 2] = '\0';
 
-  return xiiStringView(szTmp, szTmp + writepos + 2);
+  return xiiStringView(szTmp, szTmp + uiWritePosition + 2);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiRational& arg)
 {
-  xiiUInt32 writepos = 0;
+  xiiUInt32 uiWritePosition = 0;
 
   if (arg.IsIntegral())
   {
-    xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, arg.GetIntegralResult(), 1, false, 10);
+    xiiStringUtils::OutputFormattedInt(szTmp, uiLength, uiWritePosition, arg.GetIntegralResult(), 1, false, 10);
 
-    return xiiStringView(szTmp, szTmp + writepos);
+    return xiiStringView(szTmp, szTmp + uiWritePosition);
   }
   else
   {
@@ -286,43 +287,43 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiRational& ar
 
 xiiStringView BuildString(char* pTmp, xiiUInt32 uiLength, const xiiTime& arg)
 {
-  xiiUInt32 writepos = 0;
+  xiiUInt32 uiWritePosition = 0;
 
   const double fAbsSec = xiiMath::Abs(arg.GetSeconds());
 
   if (fAbsSec < 0.000001)
   {
-    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetNanoseconds(), 1, false, 1, false, true);
-    // szTmp[writepos++] = ' ';
-    pTmp[writepos++] = 'n';
-    pTmp[writepos++] = 's';
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, uiWritePosition, arg.GetNanoseconds(), 1, false, 1, false, true);
+    // szTmp[uiWritePosition++] = ' ';
+    pTmp[uiWritePosition++] = 'n';
+    pTmp[uiWritePosition++] = 's';
   }
   else if (fAbsSec < 0.001)
   {
-    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetMicroseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, uiWritePosition, arg.GetMicroseconds(), 1, false, 1, false, true);
 
-    // szTmp[writepos++] = ' ';
+    // szTmp[uiWritePosition++] = ' ';
     // Utf-8 representation of the microsecond (us) sign
-    pTmp[writepos++] = /*(char)0xC2;*/ -62;
-    pTmp[writepos++] = /*(char)0xB5;*/ -75;
-    pTmp[writepos++] = 's';
+    pTmp[uiWritePosition++] = /*(char)0xC2;*/ -62;
+    pTmp[uiWritePosition++] = /*(char)0xB5;*/ -75;
+    pTmp[uiWritePosition++] = 's';
   }
   else if (fAbsSec < 1.0)
   {
-    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetMilliseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, uiWritePosition, arg.GetMilliseconds(), 1, false, 1, false, true);
 
-    // tmp[writepos++] = ' ';
-    pTmp[writepos++] = 'm';
-    pTmp[writepos++] = 's';
+    // tmp[uiWritePosition++] = ' ';
+    pTmp[uiWritePosition++] = 'm';
+    pTmp[uiWritePosition++] = 's';
   }
   else if (fAbsSec < 60.0)
   {
-    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetSeconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, uiWritePosition, arg.GetSeconds(), 1, false, 1, false, true);
 
-    // szTmp[writepos++] = ' ';
-    pTmp[writepos++] = 's';
-    pTmp[writepos++] = 'e';
-    pTmp[writepos++] = 'c';
+    // szTmp[uiWritePosition++] = ' ';
+    pTmp[uiWritePosition++] = 's';
+    pTmp[uiWritePosition++] = 'e';
+    pTmp[uiWritePosition++] = 'c';
   }
   else if (fAbsSec < 60.0 * 60.0)
   {
@@ -334,7 +335,7 @@ xiiStringView BuildString(char* pTmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(pTmp, uiLength, "%imin %isec", iMin, iSec);
+    uiWritePosition = xiiStringUtils::snprintf(pTmp, uiLength, "%imin %isec", iMin, iSec);
   }
   else
   {
@@ -349,34 +350,34 @@ xiiStringView BuildString(char* pTmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(pTmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
+    uiWritePosition = xiiStringUtils::snprintf(pTmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
   }
 
-  pTmp[writepos] = '\0';
-  return xiiStringView(pTmp, pTmp + writepos);
+  pTmp[uiWritePosition] = '\0';
+  return xiiStringView(pTmp, pTmp + uiWritePosition);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg)
 {
-  xiiUInt32 suffixIndex = 0;
-  xiiUInt64 divider     = 1;
-  double    absValue    = xiiMath::Abs(arg.m_Value);
-  while (absValue / divider >= arg.m_Base && suffixIndex < arg.m_SuffixCount - 1)
+  xiiUInt32 uiSuffixIndex = 0;
+  xiiUInt64 uiDivider     = 1;
+  double    fAbsValue     = xiiMath::Abs(arg.m_Value);
+  while (fAbsValue / uiDivider >= arg.m_Base && uiSuffixIndex < arg.m_SuffixCount - 1)
   {
-    divider *= arg.m_Base;
-    ++suffixIndex;
+    uiDivider *= arg.m_Base;
+    ++uiSuffixIndex;
   }
 
-  xiiUInt32 writepos = 0;
-  if (divider == 1 && xiiMath::Fraction(arg.m_Value) == 0.0)
+  xiiUInt32 uiWritePosition = 0;
+  if (uiDivider == 1 && xiiMath::Fraction(arg.m_Value) == 0.0)
   {
-    xiiStringUtils::OutputFormattedInt(szTmp, uiLength, writepos, static_cast<xiiInt64>(arg.m_Value), 1, false, 10);
+    xiiStringUtils::OutputFormattedInt(szTmp, uiLength, uiWritePosition, static_cast<xiiInt64>(arg.m_Value), 1, false, 10);
   }
   else
   {
-    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, writepos, arg.m_Value / divider, 1, false, 2, false);
+    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength, uiWritePosition, arg.m_Value / uiDivider, 1, false, 2, false);
   }
-  xiiStringUtils::Copy(szTmp + writepos, uiLength - writepos, arg.m_Suffixes[suffixIndex]);
+  xiiStringUtils::Copy(szTmp + uiWritePosition, uiLength - uiWritePosition, arg.m_Suffixes[uiSuffixIndex]);
 
   return xiiStringView(szTmp);
 }
@@ -391,6 +392,18 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive
   }
 
   return arg.m_sSensitiveInfo;
+}
+
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiSizeU32& arg)
+{
+  xiiUInt32 uiWritePosition = 0;
+  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, uiWritePosition, arg.width, 1, false, 10);
+
+  szTmp[uiWritePosition++] = 'x';
+  xiiStringUtils::OutputFormattedInt(szTmp, uiLength, uiWritePosition, arg.height, 1, false, 10);
+
+  szTmp[uiWritePosition] = '\0';
+  return xiiStringView(szTmp, szTmp + uiWritePosition);
 }
 
 xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg)

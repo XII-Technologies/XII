@@ -42,3 +42,5 @@ using xiiSizeU64    = xiiSizeTemplate<xiiUInt64>;
 using xiiSizeFloat  = xiiSizeTemplate<float>;
 using xiiSizeDouble = xiiSizeTemplate<double>;
 using xiiSizeReal   = xiiSizeTemplate<xiiReal>;
+
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiSizeU32& arg);
