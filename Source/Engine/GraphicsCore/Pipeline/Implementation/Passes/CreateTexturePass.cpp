@@ -15,7 +15,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTIDefaul
     XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget)),
-    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAccessFlags::None)),
+    XII_ENUM_MEMBER_PROPERTY("Usage", xiiGALResourceUsage, m_Usage)->AddAttributes(new xiiDefaultValueAttribute(xiiGALResourceUsage::Default)),
+    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALCPUAccessFlag::None)),
     XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMiscTextureFlags::None)),
 
     XII_MEMBER_PROPERTY("Clear", m_bClear)->AddAttributes(new xiiDefaultValueAttribute(false)),
@@ -220,7 +221,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateDepthAttachmentPass, 1, xiiRTTIDefault
     XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_MEMBER_PROPERTY("SampleCount", m_uiSampleCount)->AddAttributes(new xiiDefaultValueAttribute(1U)),
     XII_BITFLAGS_MEMBER_PROPERTY("BindFlags",xiiGALBindFlags , m_BindFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil)),
-    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALAccessFlags::None)),
+    XII_ENUM_MEMBER_PROPERTY("Usage", xiiGALResourceUsage, m_Usage)->AddAttributes(new xiiDefaultValueAttribute(xiiGALResourceUsage::Default)),
+    XII_BITFLAGS_MEMBER_PROPERTY("AccessFlags",xiiGALCPUAccessFlag , m_AccessFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALCPUAccessFlag::None)),
     XII_BITFLAGS_MEMBER_PROPERTY("MiscFlags",xiiGALMiscTextureFlags , m_MiscFlags)->AddAttributes(new xiiDefaultValueAttribute(xiiGALMiscTextureFlags::None)),
 
     XII_MEMBER_PROPERTY("Clear", m_bClear)->AddAttributes(new xiiDefaultValueAttribute(false)),
