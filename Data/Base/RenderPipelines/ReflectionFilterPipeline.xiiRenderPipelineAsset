@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{16558267110380816812,4820202132578890107}}
-		u4 %Hash{6748706259509168434}
+		u4 %Hash{7192273673823691662}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -22,13 +22,6 @@ o
 }
 Objects
 {
-o
-{
-	Uuid %id{u4{13149179118719714070,883343576166178016}}
-	s %t{"xiiRenderPipelineNodeOutputColourAttachmentPin"}
-	u3 %v{1}
-	p{}
-}
 o
 {
 	Uuid %id{u4{8551304978855092010,3160406940825584253}}
@@ -59,57 +52,6 @@ o
 }
 o
 {
-	Uuid %id{u4{3601365192838530735,4647349486087299014}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{154977914118078908,4767099389508668379}}
-		s %SourcePin{"Output"}
-		Uuid %Target{u4{16259141170325621687,4897345376346135929}}
-		s %TargetPin{"Colour1"}
-	}
-}
-o
-{
-	Uuid %id{u4{15797475125166205081,4685254662232220971}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{154977914118078908,4767099389508668379}}
-		s %SourcePin{"Output"}
-		Uuid %Target{u4{16259141170325621687,4897345376346135929}}
-		s %TargetPin{"Colour2"}
-	}
-}
-o
-{
-	Uuid %id{u4{154977914118078908,4767099389508668379}}
-	s %t{"xiiCreateColourAttachmentPass"}
-	u3 %v{1}
-	p
-	{
-		s %AccessFlags{""}
-		b %Active{1}
-		u3 %ArraySizeOrDepth{6}
-		s %BindFlags{"xiiGALBindFlags::ShaderResource|xiiGALBindFlags::RenderTarget"}
-		b %Clear{0}
-		Color %ClearColour{f{0,0,0,0x0000803F}}
-		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
-		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
-		s %Format{"xiiSourceFormat::Color4Channel8BitNormalized_sRGB"}
-		u3 %MipLevels{1}
-		s %MiscFlags{""}
-		s %Name{""}
-		Vec2 %Node::Pos{f{0x7F0D2944,0x751F9143}}
-		Uuid %Output{u4{13149179118719714070,883343576166178016}}
-		u3 %SampleCount{1}
-		s %Type{"xiiGALResourceDimension::TextureCube"}
-	}
-}
-o
-{
 	Uuid %id{u4{16259141170325621687,4897345376346135929}}
 	s %t{"xiiTargetPass"}
 	u3 %v{1}
@@ -133,19 +75,6 @@ o
 }
 o
 {
-	Uuid %id{u4{2078743604370647685,5100099701503891522}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Source{u4{154977914118078908,4767099389508668379}}
-		s %SourcePin{"Output"}
-		Uuid %Target{u4{16259141170325621687,4897345376346135929}}
-		s %TargetPin{"Colour0"}
-	}
-}
-o
-{
 	Uuid %id{u4{11991197406961607293,5976990674144355680}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
@@ -162,10 +91,6 @@ o
 		VarArray %Children
 		{
 			Uuid{u4{16259141170325621687,4897345376346135929}}
-			Uuid{u4{154977914118078908,4767099389508668379}}
-			Uuid{u4{2078743604370647685,5100099701503891522}}
-			Uuid{u4{3601365192838530735,4647349486087299014}}
-			Uuid{u4{15797475125166205081,4685254662232220971}}
 		}
 	}
 }
@@ -287,23 +212,6 @@ o
 }
 o
 {
-	Uuid %id{u4{5154116600692936309,4636186128447814780}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelineNodeOutputPin"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiRenderPipelineNodeOutputColourAttachmentPin"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
 	Uuid %id{u4{9458844672690985845,4779112216626949986}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -316,23 +224,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNodePin"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{7490786305980824281,5100414263203150987}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiBitflagsBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALCPUAccessFlag"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -367,74 +258,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelinePassConcurrencyHint"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{14212397541982075057,6548985883735981742}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiReflectedClass"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiDocumentObject_ConnectionBase"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{1746277641904941804,7053555332098976278}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiBitflagsBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALMiscTextureFlags"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{1920325464395525321,7270355931324269832}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiUtilityPipelinePass"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiCreateColourAttachmentPass"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{9877749865113483414,7320763042931880216}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Bitflags|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiBitflagsBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALBindFlags"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -491,23 +314,6 @@ o
 }
 o
 {
-	Uuid %id{u4{5831823031350089913,9281053940656755343}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALResourceDimension"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
 	Uuid %id{u4{6094840146848678267,9301570338717469716}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -520,40 +326,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiBitflagsBase"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{3215140450596973656,9495433554560154788}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelineNodePin"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiRenderPipelineNodeOutputPin"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{18440072350638287212,10674473119681965591}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Abstract|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiRenderPipelinePassBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiUtilityPipelinePass"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -673,23 +445,6 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiReflectedClass"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{540451108538628264,17999846802219042351}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiSourceFormat"}
 		u3 %TypeVersion{1}
 	}
 }

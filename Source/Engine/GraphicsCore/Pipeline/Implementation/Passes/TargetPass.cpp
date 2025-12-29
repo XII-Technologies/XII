@@ -61,7 +61,10 @@ xiiSharedPtr<xiiGALDeviceObject> xiiTargetPass::QueryResourceProvider(const xiiR
     }
     else
     {
-      return m_RenderTargets.m_pRTs[pPin->m_uiInputIndex];
+      if (m_RenderTargets.m_pRTs[pPin->m_uiInputIndex])
+      {
+        return m_RenderTargets.m_pRTs[pPin->m_uiInputIndex]->GetTexture();
+      }
     }
   }
   return xiiSharedPtr<xiiGALDeviceObject>();

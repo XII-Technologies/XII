@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{18364454300628380606,5580974198777950276}}
-		u4 %Hash{1141789368990545159}
+		u4 %Hash{2332766259394098587}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -110,11 +110,12 @@ o
 		u3 %MipLevels{1}
 		s %MiscFlags{""}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xB4DB20C3,0x8FAF3E43}}
+		Vec2 %Node::Pos{f{0x3662FDC2,0xE642B543}}
 		Uuid %Output{u4{2573992475785453051,2516975213049453610}}
 		u3 %SampleCount{1}
 		u1 %StencilClearValue{0}
 		s %Type{"xiiGALResourceDimension::Texture2DArray"}
+		s %Usage{"xiiGALResourceUsage::Mutable"}
 	}
 }
 o
@@ -129,7 +130,7 @@ o
 		Uuid %DepthStencil{u4{16940602142144260226,861009361662370418}}
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x3E4E1443,0xB4770543}}
+		Vec2 %Node::Pos{f{0xC55A1E43,0xBBAA9B43}}
 		b %RenderDynamicObjects{1}
 		b %RenderStaticObjects{1}
 		b %RenderTransparentObjects{1}
@@ -444,6 +445,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiExtractor"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{14167102933164945187,6992203395602005114}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALResourceUsage"}
 		u3 %TypeVersion{1}
 	}
 }

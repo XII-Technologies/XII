@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{15567984379713585827,5746483267533232556}}
-		u4 %Hash{15796918107954044754}
+		u4 %Hash{2995545662320379259}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -99,10 +99,11 @@ o
 		u3 %MipLevels{1}
 		s %MiscFlags{""}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x1994F144,0xDF0A2E44}}
+		Vec2 %Node::Pos{f{0xF173F144,0x3F8A2D44}}
 		Uuid %Output{u4{10373021424078511701,2409841655043382455}}
 		u3 %SampleCount{1}
 		s %Type{"xiiGALResourceDimension::Texture2D"}
+		s %Usage{"xiiGALResourceUsage::Mutable"}
 	}
 }
 o
@@ -356,6 +357,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiDocumentObject_ConnectionBase"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{14167102933164945187,6992203395602005114}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALResourceUsage"}
 		u3 %TypeVersion{1}
 	}
 }
