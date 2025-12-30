@@ -88,8 +88,8 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   XII_ASSERT_DEV(m_uiWindowHeight == m_pPickingDepthRT->GetDescription().GetHeight(), "");
 
   xiiRenderingSetup renderingSetup;
-  renderingSetup.AddColorAttachment({m_pPickingIdRT, xiiColor::Black, xiiGALAttachmentLoadOperation::Clear})
-    .SetDepthStencilAttachment({m_pPickingDepthRT, 1.0f, 0U, xiiGALAttachmentLoadOperation::Clear})
+  renderingSetup.AddColorAttachment({m_pPickingIdRT->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black, xiiGALAttachmentLoadOperation::Clear})
+    .SetDepthStencilAttachment({m_pPickingDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil), 1.0f, 0U, xiiGALAttachmentLoadOperation::Clear})
     .Build();
 
   auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName());
@@ -168,7 +168,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
         xiiGALTextureUtilities::CopySubresourceToMemory(readback.m_pStagingTexture->GetDescription(), mappedSubResource, mipLevelData, m_PickingResultsID.GetByteArrayPtr(), m_uiWindowWidth * sizeof(xiiUInt32));
 
-        pCommandList->UnmapTextureSubresource(readback.m_pStagingTexture, mipLevelData);
+        pCommandList->UnmapTextureSubresource(readback.m_pStagingTexture, mipLevelData).IgnoreResult();
 
         m_PendingReadback.m_PickingReadback->RecycleStagingTexture(std::move(readback.m_pStagingTexture));
       }
@@ -180,7 +180,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
         xiiGALTextureUtilities::CopySubresourceToMemory(readback.m_pStagingTexture->GetDescription(), mappedSubResource, mipLevelData, m_PickingResultsDepth.GetByteArrayPtr(), m_uiWindowWidth * sizeof(float));
 
-        pCommandList->UnmapTextureSubresource(readback.m_pStagingTexture, mipLevelData);
+        pCommandList->UnmapTextureSubresource(readback.m_pStagingTexture, mipLevelData).IgnoreResult();
 
         m_PendingReadback.m_PickingDepthReadback->RecycleStagingTexture(std::move(readback.m_pStagingTexture));
       }
