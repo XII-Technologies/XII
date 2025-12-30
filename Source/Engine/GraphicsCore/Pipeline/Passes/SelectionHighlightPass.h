@@ -27,6 +27,6 @@ protected:
   xiiShaderResourceHandle    m_hShader;
   xiiSharedPtr<xiiGALBuffer> m_pConstantBuffer;
 
-  xiiColor m_HighlightColour  = xiiColorScheme::LightUI(xiiColorScheme::Yellow);
+  xiiColor m_HighlightColour = xiiColorScheme::LightUI(xiiColorScheme::Yellow);
   float    m_fOverlayOpacity = 0.1f;
 };
