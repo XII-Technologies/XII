@@ -502,6 +502,8 @@ public:
   /// \return A sampler creation description that matches the requested features.
   static xiiGALSamplerCreationDescription GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags);
 
+  static xiiSharedPtr<xiiGALSampler> GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags);
+
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RendererContext);
 
@@ -571,6 +573,7 @@ private:
   static xiiResult BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexShader, xiiArrayPtr<xiiUInt32> pVertexBufferStrides, xiiArrayPtr<xiiEnum<xiiGALInputElementFrequency>> pInputElementFrequencies, const xiiInputLayoutInfo& declaration, const xiiInputLayoutInfo& customDeclaration, xiiSharedPtr<xiiGALInputLayout>& out_Declaration);
 
 private:
+  static xiiSharedPtr<xiiGALSampler>                                                               s_hDefaultSamplers[4];
   static xiiHashTable<xiiGALRenderPassCreationDescription, RenderPassCache, xiiGALDescriptorHash>  s_RenderPassCache;
   static xiiHashTable<xiiGALRenderPassCreationDescription, FramebufferCache, xiiGALDescriptorHash> s_FramebufferCache;
   static xiiMap<ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          s_InputLayouts;
