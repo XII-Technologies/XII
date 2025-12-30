@@ -123,7 +123,7 @@ void xiiGALTextureReadback::Enqueue(xiiSharedPtr<xiiGALCommandList> pCommandList
     pendingCapture.m_CaptureMeta.m_uiRegionH       = box.m_vMax.y - box.m_vMin.y;
 
     const xiiGALTextureCreationDescription& destinationDescription = pendingCapture.m_pStagingTexture->GetDescription();
-    xiiGALResourceFormatDescription         formatProperties       = xiiGALTextureUtilities::GetResourceFormatProperties(destinationDescription.m_Format);
+    const xiiGALResourceFormatDescription&  formatProperties       = xiiGALTextureUtilities::GetResourceFormatProperties(destinationDescription.m_Format);
 
     pendingCapture.m_CaptureMeta.m_uiWidth          = destinationDescription.m_Size.width;
     pendingCapture.m_CaptureMeta.m_uiHeight         = destinationDescription.m_Size.height;

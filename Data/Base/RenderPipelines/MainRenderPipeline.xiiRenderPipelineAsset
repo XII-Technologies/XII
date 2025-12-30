@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5905517864249472942,5209686419954373345}}
-		u4 %Hash{12214509986367168151}
+		u4 %Hash{7390109779526185089}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -647,7 +647,7 @@ o
 		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
 		Uuid %DepthStencil{u4{7004934320752174792,9151871952766423941}}
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
-		s %Message{"Hello from render graph!"}
+		s %Message{"Main render pipeline."}
 		s %Name{"SimplePass"}
 		Vec2 %Node::Pos{f{0xD2461545,0x205A3E44}}
 	}

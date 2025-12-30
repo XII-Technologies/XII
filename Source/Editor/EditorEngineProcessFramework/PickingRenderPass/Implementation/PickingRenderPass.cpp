@@ -89,7 +89,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
   xiiRenderingSetup renderingSetup;
   renderingSetup.AddColorAttachment({m_pPickingIdRT->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black, xiiGALAttachmentLoadOperation::Clear})
-    .SetDepthStencilAttachment({m_pPickingDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil), 1.0f, 0U, xiiGALAttachmentLoadOperation::Clear})
+    .SetDepthStencilAttachment({m_pPickingDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil), 1.0f, 0U, xiiGALAttachmentLoadOperation::Clear, xiiGALAttachmentStoreOperation::Store, xiiGALAttachmentLoadOperation::Clear, xiiGALAttachmentStoreOperation::Store})
     .Build();
 
   auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName());
@@ -189,7 +189,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   }
 
   // Begin transferring the picking information from the GPU to the CPU.
-  if (m_uiWindowHeight != 0 && m_uiWindowHeight != 0)
+  if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
   {
     {
       xiiGALTextureReadback::ReadbackRequest request = {};
