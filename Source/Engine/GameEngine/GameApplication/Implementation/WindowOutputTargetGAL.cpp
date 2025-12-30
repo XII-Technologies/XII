@@ -137,46 +137,26 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
     xiiDynamicArray<xiiUInt8> backbufferData;
     backbufferData.SetCountUninitialized(textureDescription.m_Size.width * textureDescription.m_Size.height * 4);
 
-    const xiiUInt32 uiStride      = 4 * textureDescription.m_Size.width;
-    const xiiUInt32 uiDepthStride = 4 * textureDescription.m_Size.width * textureDescription.m_Size.height;
-
     pCommandList->Begin();
     {
-      xiiGALTextureMipLevelData      sourceSubResource;
+      xiiGALTextureMipLevelData      mipLevelData;
       xiiGALMappedTextureSubresource mappedSubResource;
-      pCommandList->MapTextureSubresource(capture.m_pTexture, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).IgnoreResult();
+      pCommandList->MapTextureSubresource(capture.m_pTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).IgnoreResult();
 
       const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
       if (mappedSubResource.m_pData)
       {
-        /// \todo Support depth pitch.
-        if (mappedSubResource.m_uiStride == uiStride)
-        {
-          const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+        const xiiUInt32 uiStride = 4 * textureDescription.m_Size.width;
 
-          memcpy(backbufferData.GetData(), mappedSubResource.m_pData, uiMemorySize);
-        }
-        else
-        {
-          // Copy row by row.
-          const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-          for (xiiUInt32 y = 0; y < uiHeight; ++y)
-          {
-            const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-            void*       pDestination = xiiMemoryUtils::AddByteOffset(backbufferData.GetData(), y * uiStride);
-
-            memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
-          }
-        }
+        xiiGALTextureUtilities::CopySubresourceToMemory(textureDescription, mappedSubResource, mipLevelData, backbufferData, uiStride);
       }
       else
       {
         xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
       }
 
-      pCommandList->UnmapTextureSubresource(capture.m_pTexture, sourceSubResource).IgnoreResult();
+      pCommandList->UnmapTextureSubresource(capture.m_pTexture, mipLevelData).IgnoreResult();
     }
     pCommandList->End();
 

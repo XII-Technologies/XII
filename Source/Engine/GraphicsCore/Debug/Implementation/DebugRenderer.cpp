@@ -14,6 +14,7 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Shader/Types.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -1589,8 +1590,6 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
   {
     for (auto itTex = pData->m_TexturedTriangle3DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
-      renderViewContext.m_pRenderContext->BindTextureView("BaseTexture", itTex.Key());
-
       const auto& verts = itTex.Value();
 
       xiiUInt32 uiNumVertices = verts.GetCount();
@@ -1598,9 +1597,16 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       {
         CreateVertexBuffer(BufferType::TexTriangles3D, sizeof(TexVertex));
 
-        /// \todo Monochrome textured 3D triangles.
+        xiiSharedPtr<xiiGALTextureView>         pBaseTexture       = itTex.Key();
+        const xiiGALTextureCreationDescription& textureDescription = pBaseTexture->GetTexture()->GetDescription();
+
+        const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+        const bool                             bMonochrome      = formatProperties.m_uiComponentCount == 1U;
+
         renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+        renderViewContext.m_pRenderContext->SetShaderPermutationVariable("MONOCHROME", bMonochrome ? xiiTempHashedString("TRUE") : xiiTempHashedString("FALSE"));
         renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
+        renderViewContext.m_pRenderContext->BindTextureView("BaseTexture", pBaseTexture);
 
         const TexVertex* pTriangleData = verts.GetData();
         while (uiNumVertices > 0)
@@ -1858,9 +1864,6 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
   {
     for (auto itTex = pData->m_TexturedTriangle2DVertices.GetIterator(); itTex.IsValid(); ++itTex)
     {
-      /// \todo Monochrome textured 2D triangles.
-      renderViewContext.m_pRenderContext->BindTextureView("baseTexture", itTex.Key());
-
       const auto& verts           = itTex.Value();
       xiiUInt32   uiNum2DVertices = verts.GetCount();
 
@@ -1868,8 +1871,16 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       {
         CreateVertexBuffer(BufferType::TexTriangles2D, sizeof(TexVertex));
 
+        xiiSharedPtr<xiiGALTextureView>         pBaseTexture       = itTex.Key();
+        const xiiGALTextureCreationDescription& textureDescription = pBaseTexture->GetTexture()->GetDescription();
+
+        const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+        const bool                             bMonochrome      = formatProperties.m_uiComponentCount == 1U;
+
         renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
+        renderViewContext.m_pRenderContext->SetShaderPermutationVariable("MONOCHROME", bMonochrome ? xiiTempHashedString("TRUE") : xiiTempHashedString("FALSE"));
         renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
+        renderViewContext.m_pRenderContext->BindTextureView("baseTexture", itTex.Key());
 
         const TexVertex* pTriangleData = verts.GetData();
         while (uiNum2DVertices > 0)

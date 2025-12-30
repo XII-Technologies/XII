@@ -61,6 +61,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 xiiRenderContext*                                                                                           xiiRenderContext::s_pDefaultInstance = nullptr;
 xiiHybridArray<xiiRenderContext*, 2U>                                                                       xiiRenderContext::s_Instances;
+xiiSharedPtr<xiiGALSampler>                                                                                 xiiRenderContext::s_hDefaultSamplers[4];
 xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>  xiiRenderContext::s_RenderPassCache;
 xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash> xiiRenderContext::s_FramebufferCache;
 xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          xiiRenderContext::s_InputLayouts;
@@ -1038,9 +1039,10 @@ void xiiRenderContext::ApplyBufferSRVBindings()
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
 
     xiiSharedPtr<xiiGALBufferView> pBufferSRV;
-    m_BoundBufferSRVs.TryGetValue(uiResourceHash, pBufferSRV);
-
-    m_pCommandList->SetShaderResourceBufferView(binding, pBufferSRV);
+    if (m_BoundBufferSRVs.TryGetValue(uiResourceHash, pBufferSRV))
+    {
+      m_pCommandList->SetShaderResourceBufferView(binding, pBufferSRV);
+    }
   }
 }
 
@@ -1066,9 +1068,10 @@ void xiiRenderContext::ApplyTextureSRVBindings()
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
 
     xiiSharedPtr<xiiGALTextureView> pTextureSRV;
-    m_BoundTextureSRVs.TryGetValue(uiResourceHash, pTextureSRV);
-
-    m_pCommandList->SetShaderResourceTextureView(binding, pTextureSRV);
+    if (m_BoundTextureSRVs.TryGetValue(uiResourceHash, pTextureSRV))
+    {
+      m_pCommandList->SetShaderResourceTextureView(binding, pTextureSRV);
+    }
   }
 }
 
@@ -1094,9 +1097,10 @@ void xiiRenderContext::ApplyBufferUAVBindings()
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
 
     xiiSharedPtr<xiiGALBufferView> pBufferUAV;
-    m_BoundBufferUAVs.TryGetValue(uiResourceHash, pBufferUAV);
-
-    m_pCommandList->SetShaderResourceBufferView(binding, pBufferUAV);
+    if (m_BoundBufferUAVs.TryGetValue(uiResourceHash, pBufferUAV))
+    {
+      m_pCommandList->SetShaderResourceBufferView(binding, pBufferUAV);
+    }
   }
 }
 
@@ -1116,15 +1120,16 @@ void xiiRenderContext::ApplyTextureUAVBindings()
 
   for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
   {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureUAV)
+    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureUAV && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
 
     xiiSharedPtr<xiiGALTextureView> pTextureUAV;
-    m_BoundTextureUAVs.TryGetValue(uiResourceHash, pTextureUAV);
-
-    m_pCommandList->SetShaderResourceTextureView(binding, pTextureUAV);
+    if (m_BoundTextureUAVs.TryGetValue(uiResourceHash, pTextureUAV))
+    {
+      m_pCommandList->SetShaderResourceTextureView(binding, pTextureUAV);
+    }
   }
 }
 
@@ -1150,9 +1155,14 @@ void xiiRenderContext::ApplySamplerBindings()
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
 
     xiiSharedPtr<xiiGALSampler> pSampler;
-    m_BoundSamplers.TryGetValue(uiResourceHash, pSampler);
-
-    m_pCommandList->SetSampler(binding, pSampler);
+    if (m_BoundSamplers.TryGetValue(uiResourceHash, pSampler))
+    {
+      m_pCommandList->SetSampler(binding, pSampler);
+    }
+    else
+    {
+      m_pCommandList->SetSampler(binding, GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering)); // Bind a default sampler state.
+    }
   }
 }
 
@@ -1494,6 +1504,22 @@ xiiGALSamplerCreationDescription xiiRenderContext::GetDefaultSamplerDescription(
   return samplerDescription;
 }
 
+xiiSharedPtr<xiiGALSampler> xiiRenderContext::GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags)
+{
+  xiiUInt32 uiSamplerIndex = flags.GetValue();
+  XII_ASSERT_DEV(uiSamplerIndex < XII_ARRAY_SIZE(s_hDefaultSamplers), "");
+
+  if (!s_hDefaultSamplers[uiSamplerIndex])
+  {
+    xiiSharedPtr<xiiGALDevice>       pDevice            = xiiGALDevice::GetDefaultDevice();
+    xiiGALSamplerCreationDescription samplerDescription = GetDefaultSamplerDescription(flags);
+
+    s_hDefaultSamplers[uiSamplerIndex] = pDevice->CreateSampler(samplerDescription);
+  }
+
+  return s_hDefaultSamplers[uiSamplerIndex];
+}
+
 // static
 void xiiRenderContext::OnEngineStartup()
 {
@@ -1503,6 +1529,12 @@ void xiiRenderContext::OnEngineStartup()
 // static
 void xiiRenderContext::OnEngineShutdown()
 {
+  // Cleanup sampler states.
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(s_hDefaultSamplers); ++i)
+  {
+    s_hDefaultSamplers[i].Clear();
+  }
+
   s_FramebufferCache.Clear();
   s_RenderPassCache.Clear();
   s_InputLayouts.Clear();

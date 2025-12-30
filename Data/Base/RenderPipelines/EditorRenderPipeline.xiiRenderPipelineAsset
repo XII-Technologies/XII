@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{8099602035358019464,4847573331455305924}}
-		u4 %Hash{6335050321327638051}
+		u4 %Hash{13154341716664865092}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -81,7 +81,7 @@ o
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
 		Uuid %Input{u4{6318894856676525046,11010085154579981662}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xDF905945,0x72D64344}}
+		Vec2 %Node::Pos{f{0xDB656A45,0xBBE65044}}
 		Uuid %Output{u4{6248977020167814849,17771824708807604599}}
 	}
 }
@@ -227,6 +227,19 @@ o
 }
 o
 {
+	Uuid %id{u4{417878465434663102,4964894720183642407}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{9833158962488075443,5443487295532253569}}
+		s %SourcePin{"Colour"}
+		Uuid %Target{u4{2909966409984091278,4628519679364353663}}
+		s %TargetPin{"Input"}
+	}
+}
+o
+{
 	Uuid %id{u4{8929629712756332945,4978233211454101152}}
 	s %t{"xiiDepthOnlyPass"}
 	u3 %v{3}
@@ -267,6 +280,19 @@ o
 		s %SourcePin{"Output"}
 		Uuid %Target{u4{10171677502518047630,5361604373977019260}}
 		s %TargetPin{"Colour"}
+	}
+}
+o
+{
+	Uuid %id{u4{10223473198335449728,5076675797052785670}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1592672319866568109,5472445418924447932}}
+		s %SourcePin{"DepthStencil"}
+		Uuid %Target{u4{9833158962488075443,5443487295532253569}}
+		s %TargetPin{"DepthStencil"}
 	}
 }
 o
@@ -454,20 +480,25 @@ o
 		Uuid %DepthStencil{u4{7859293855216585799,2952509284037844566}}
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xA7CE6A45,0x6B4A2A44}}
+		Vec2 %Node::Pos{f{0xC8BE7745,0xD0D33144}}
 	}
 }
 o
 {
-	Uuid %id{u4{6396751459102840730,5461630702527819115}}
-	s %t{"xiiDocumentObject_ConnectionBase"}
+	Uuid %id{u4{9833158962488075443,5443487295532253569}}
+	s %t{"xiiSelectionHighlightPass"}
 	u3 %v{1}
 	p
 	{
-		Uuid %Source{u4{1592672319866568109,5472445418924447932}}
-		s %SourcePin{"Colour"}
-		Uuid %Target{u4{2909966409984091278,4628519679364353663}}
-		s %TargetPin{"Input"}
+		b %Active{1}
+		Uuid %Colour{u4{5015450990515725908,5632821837978374167}}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
+		Uuid %DepthStencil{u4{12707285272129948966,17154763184734356994}}
+		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
+		Color %HighlightColour{f{0xB933793F,0xA2500D3F,0xC0451F3C,0x0000803F}}
+		s %Name{"EditorSelectionPass"}
+		Vec2 %Node::Pos{f{0xA7B05A45,0xBEB24244}}
+		f %OverlayOpacity{0}
 	}
 }
 o
@@ -482,7 +513,7 @@ o
 		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
 		Uuid %DepthStencil{u4{15922014222681021749,5705614867133715282}}
 		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
-		s %Message{"Hello from render graph!"}
+		s %Message{"Editor Render Pipeline"}
 		s %Name{"SimplePass"}
 		Vec2 %Node::Pos{f{0x8E994745,0xDFC54A44}}
 	}
@@ -585,6 +616,26 @@ o
 }
 o
 {
+	Uuid %id{u4{5015450990515725908,5632821837978374167}}
+	s %t{"xiiRenderPipelineNodePassThroughColourAttachmentPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{5912892502911572354,5645636331183171745}}
+	s %t{"xiiDocumentObject_ConnectionBase"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Source{u4{1592672319866568109,5472445418924447932}}
+		s %SourcePin{"Colour"}
+		Uuid %Target{u4{9833158962488075443,5443487295532253569}}
+		s %TargetPin{"Colour"}
+	}
+}
+o
+{
 	Uuid %id{u4{15922014222681021749,5705614867133715282}}
 	s %t{"xiiRenderPipelineNodePassThroughDepthAttachmentPin"}
 	u3 %v{1}
@@ -660,7 +711,11 @@ o
 			Uuid{u4{7755631858355885719,5616877364998517363}}
 			Uuid{u4{12213164729503939740,5721124079530203423}}
 			Uuid{u4{5891180390610894268,5082058115671096705}}
-			Uuid{u4{6396751459102840730,5461630702527819115}}
+			Uuid{u4{9833158962488075443,5443487295532253569}}
+			Uuid{u4{5912892502911572354,5645636331183171745}}
+			Uuid{u4{10223473198335449728,5076675797052785670}}
+			Uuid{u4{417878465434663102,4964894720183642407}}
+			Uuid{u4{7596430412617251862,10229745944388452018}}
 		}
 	}
 }
@@ -712,6 +767,26 @@ o
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
 	u3 %v{1}
 	p{}
+}
+o
+{
+	Uuid %id{u4{7596430412617251862,10229745944388452018}}
+	s %t{"xiiPickingRenderPass"}
+	u3 %v{1}
+	p
+	{
+		b %Active{1}
+		s %ConcurrencyHint{"xiiRenderPipelinePassConcurrencyHint::Sequential"}
+		s %Flags{"xiiRenderPipelinePassFlags::DynamicResolution"}
+		u3 %MarqueeActionID{0}
+		Vec2 %MarqueePickPos0{f{0,0}}
+		Vec2 %MarqueePickPos1{f{0,0}}
+		s %Name{"EditorPickingPass"}
+		Vec2 %Node::Pos{f{0x834E3F45,0x20A48344}}
+		b %PickSelected{0}
+		b %PickTransparent{0}
+		Vec2 %PickingPosition{f{0,0}}
+	}
 }
 o
 {
@@ -822,6 +897,13 @@ o
 {
 	Uuid %id{u4{3439500905633079668,17056608338655340525}}
 	s %t{"xiiRenderPipelineNodeInputColourAttachmentProviderPin"}
+	u3 %v{1}
+	p{}
+}
+o
+{
+	Uuid %id{u4{12707285272129948966,17154763184734356994}}
+	s %t{"xiiRenderPipelineNodeInputDepthAttachmentPin"}
 	u3 %v{1}
 	p{}
 }
@@ -1560,6 +1642,23 @@ o
 }
 o
 {
+	Uuid %id{u4{9601200433626913687,9394596801159823291}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiGraphicsPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPickingRenderPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{3215140450596973656,9495433554560154788}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1772,6 +1871,23 @@ o
 }
 o
 {
+	Uuid %id{u4{16460571239808818796,12943424991498688394}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiGraphicsPipelinePass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiSelectionHighlightPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{11590634311097522989,12964931324028781955}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1880,6 +1996,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiForwardRenderShadingQuality"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{13471885654605970606,14966487761553009191}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiRenderPipelineNodeInputPin"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiRenderPipelineNodeInputDepthAttachmentPin"}
 		u3 %TypeVersion{1}
 	}
 }

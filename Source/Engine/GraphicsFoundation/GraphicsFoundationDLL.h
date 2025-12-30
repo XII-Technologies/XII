@@ -107,3 +107,4 @@ class xiiGALRasterizerState;
 struct xiiGALPipelineResourceDescription;
 
 class xiiGALImageCapture;
+class xiiGALTextureReadback;

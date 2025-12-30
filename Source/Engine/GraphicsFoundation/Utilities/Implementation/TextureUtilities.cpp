@@ -680,4 +680,34 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
   return xiiGALTextureData{out_subresourceData};
 }
 
+void xiiGALTextureUtilities::CopySubresourceToMemory(const xiiGALTextureCreationDescription& description, const xiiGALMappedTextureSubresource& subresourceData, const xiiGALTextureMipLevelData& mipLevelData, xiiArrayPtr<xiiUInt8> pTargetData, xiiUInt32 uiTargetRowStride)
+{
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
+
+  if (subresourceData.m_uiStride == uiTargetRowStride)
+  {
+    const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(description.m_Size.width, mipLevelData.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(description.m_Size.height, mipLevelData.m_uiMipLevel);
+
+    XII_ASSERT_DEBUG(uiMemorySize <= pTargetData.GetCount(), "");
+
+    memcpy(pTargetData.GetPtr(), subresourceData.m_pData, uiMemorySize);
+  }
+  else
+  {
+    // Copy row by row.
+    const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(description.m_Size.height, mipLevelData.m_uiMipLevel);
+
+    for (xiiUInt32 y = 0; y < uiHeight; ++y)
+    {
+      const xiiUInt8* pSource      = xiiMemoryUtils::AddByteOffset(static_cast<xiiUInt8*>(subresourceData.m_pData), y * subresourceData.m_uiStride);
+      xiiUInt8*       pDestination = xiiMemoryUtils::AddByteOffset(pTargetData.GetPtr(), y * uiTargetRowStride);
+      const xiiUInt32 uiCopySize   = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(description.m_Size.width, mipLevelData.m_uiMipLevel);
+
+      XII_ASSERT_DEBUG(pDestination + uiCopySize <= pTargetData.GetEndPtr(), "");
+
+      memcpy(pDestination, pSource, uiCopySize);
+    }
+  }
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_TextureUtilities);
