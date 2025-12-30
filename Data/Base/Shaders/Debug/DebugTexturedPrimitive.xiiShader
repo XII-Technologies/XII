@@ -3,6 +3,7 @@ ALL
 
 [PERMUTATIONS]
 
+MONOCHROME
 PRE_TRANSFORMED_VERTICES
 CAMERA_MODE
 VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
@@ -73,5 +74,9 @@ DECLARE_COMBINED_IMAGE_SAMPLER_AUTO(baseTexture, Texture2D);
 
 float4 main(PS_IN Input) : SV_Target
 {
+#if MONOCHROME
+  return float4(baseTexture.Sample(baseTexture_AutoSampler, Input.TexCoord0.xy).rrr, 1) * Input.Color0;
+#else
   return baseTexture.Sample(baseTexture_AutoSampler, Input.TexCoord0.xy) * Input.Color0;
+#endif
 }
