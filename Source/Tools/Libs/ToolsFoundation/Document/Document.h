@@ -4,13 +4,13 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Threading/Implementation/TaskSystemDeclarations.h>
+#include <Foundation/Time/Time.h>
 #include <Foundation/Types/Status.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <ToolsFoundation/CommandHistory/CommandHistory.h>
 #include <ToolsFoundation/Document/Implementation/Declarations.h>
 #include <ToolsFoundation/Object/ObjectMetaData.h>
 #include <ToolsFoundation/Selection/SelectionManager.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 class xiiObjectAccessorBase;
 class xiiObjectCommandAccessor;
@@ -65,8 +65,12 @@ public:
   /// \name Document State Functions
   ///@{
 
-  bool          IsModified() const { return m_bModified; }
-  bool          IsReadOnly() const { return m_bReadOnly; }
+  bool IsModified() const { return m_bModified; }
+  bool IsReadOnly() const { return m_bReadOnly; }
+
+  /// Returns when the document was last marked as modified. Invalid if the document is not modified.
+  xiiTime GetModifiedTime() const { return m_ModifiedTime; }
+
   const xiiUuid GetGuid() const { return m_pDocumentInfo ? m_pDocumentInfo->m_DocumentID : xiiUuid(); }
 
   const xiiDocumentObjectManager* GetObjectManager() const { return m_pObjectManager.Borrow(); }
@@ -323,6 +327,7 @@ private:
   bool      m_bReadOnly             = false;
   bool      m_bWindowRequested      = false;
   bool      m_bAddToRecentFilesList = true;
+  xiiTime   m_ModifiedTime;
 
   /// \brief Set of unknown object types encountered during loading.
   xiiSet<xiiString> m_UnknownObjectTypes;

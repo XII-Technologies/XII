@@ -1,12 +1,13 @@
 #pragma once
 
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <Foundation/Types/RefCounted.h>
 #include <Foundation/Types/SharedPtr.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 /// \brief Stores meta data for document objects that is not part of the object itself. E.g. editor-only states like hidden or prefab information.
 /// \tparam KEY The key under which data is stored. Usually xiiUuid to reference document objects.
