@@ -1183,7 +1183,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   static xiiHashedString sPerspective = xiiMakeHashedString("CAMERA_MODE_PERSPECTIVE");
   static xiiHashedString sStereo      = xiiMakeHashedString("CAMERA_MODE_STEREO");
 
-  static xiiHashedString sVSRTAI           = xiiMakeHashedString("VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX");
   static xiiHashedString sClipSpaceFlipped = xiiMakeHashedString("CLIP_SPACE_FLIPPED");
   static xiiHashedString sTrue             = xiiMakeHashedString("TRUE");
   static xiiHashedString sFalse            = xiiMakeHashedString("FALSE");
@@ -1195,11 +1194,8 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   else
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
-  if (pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled)
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
-  else
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
-
+  XII_ASSERT_DEV(pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled, "Vertex shader render target index must be supported for stereo rendering.");
+  
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation variables.

@@ -67,14 +67,6 @@ VS_OUT main(VS_IN Input)
   return Output;
 }
 
-[GEOMETRYSHADER]
-
-#define CUSTOM_INTERPOLATOR float3 ViewDirection : TEXCOORD0;
-
-#define CopyCustomInterpolators(output, input) output.ViewDirection = input.ViewDirection;
-
-#include <Shaders/Materials/MaterialStereoGeometryShader.h>
-
 [PIXELSHADER]
 
 #define CUSTOM_INTERPOLATOR float3 ViewDirection : TEXCOORD0;
@@ -83,7 +75,6 @@ VS_OUT main(VS_IN Input)
 
 TextureCube CubeMap;
 SamplerState CubeMap_AutoSampler;
-
 
 float3 GetNormal()
 {

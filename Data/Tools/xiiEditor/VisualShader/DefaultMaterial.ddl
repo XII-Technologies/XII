@@ -13,8 +13,7 @@ FORWARD_PASS_WRITE_DEPTH
 MSAA
 SHADING_QUALITY
 CAMERA_MODE
-VERTEX_SKINNING
-VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX" }
+VERTEX_SKINNING" }
 
   string %CheckPermutations
   {"
@@ -27,7 +26,6 @@ FORWARD_PASS_WRITE_DEPTH=TRUE
 MSAA=FALSE
 SHADING_QUALITY=SHADING_QUALITY_MEDIUM
 CAMERA_MODE=CAMERA_MODE_PERSPECTIVE
-VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX=TRUE
 VERTEX_SKINNING=FALSE
 "}
 
@@ -89,15 +87,6 @@ float3 GetWorldPositionOffset(xiiPerInstanceData data, float3 worldPosition)
   return ToFloat3($in11);
 }
 #endif
-
-" }
-
-  string %CodeGeometryShader { "
-#if VERTEX_SKINNING
-  #define USE_SKINNING
-#endif
-
-#include <Shaders/Materials/MaterialStereoGeometryShader.h>
 
 " }
 

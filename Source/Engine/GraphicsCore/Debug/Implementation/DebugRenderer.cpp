@@ -1704,7 +1704,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
       renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]);
-      renderViewContext.m_pRenderContext->BindTexture2D("fontTexture", s_hDebugFontTexture);
+      renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
       while (uiNumGlyphs > 0)
@@ -1880,7 +1880,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
         renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "TRUE");
         renderViewContext.m_pRenderContext->SetShaderPermutationVariable("MONOCHROME", bMonochrome ? xiiTempHashedString("TRUE") : xiiTempHashedString("FALSE"));
         renderViewContext.m_pRenderContext->BindShader(s_hDebugTexturedPrimitiveShader);
-        renderViewContext.m_pRenderContext->BindTextureView("baseTexture", itTex.Key());
+        renderViewContext.m_pRenderContext->BindTextureView("BaseTexture", itTex.Key());
 
         const TexVertex* pTriangleData = verts.GetData();
         while (uiNum2DVertices > 0)
@@ -1943,7 +1943,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
       renderViewContext.m_pRenderContext->BindBuffer("glyphData", s_pDataBuffer[BufferType::Glyphs]);
-      renderViewContext.m_pRenderContext->BindTexture2D("fontTexture", s_hDebugFontTexture);
+      renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_Glyphs.GetData();
       while (uiNumGlyphs > 0)
