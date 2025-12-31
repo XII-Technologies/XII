@@ -160,6 +160,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     // If the resolution has changed, discard the readback result.
     if (m_uiWindowHeight == m_PendingReadback.m_uiWindowHeight && m_uiWindowWidth == m_PendingReadback.m_uiWindowWidth)
     {
+      if (m_PendingReadback.m_PickingReadback->HasCompleted())
       {
         m_PickingResultsID.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
 
@@ -172,6 +173,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
         m_PendingReadback.m_PickingReadback->RecycleStagingTexture(std::move(readback.m_pStagingTexture));
       }
+      if (m_PendingReadback.m_PickingDepthReadback->HasCompleted())
       {
         m_PickingResultsDepth.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
 

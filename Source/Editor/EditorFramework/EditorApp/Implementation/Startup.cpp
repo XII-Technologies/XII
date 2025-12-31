@@ -449,6 +449,10 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   connect(m_pTimer, SIGNAL(timeout()), this, SLOT(SlotTimedUpdate()), Qt::QueuedConnection);
   m_pTimer->start(1);
 
+  // Setup auto-save timer - polls every 20 seconds and checks document modification age.
+  connect(m_pAutoSaveTimer, SIGNAL(timeout()), this, SLOT(SlotAutoSave()), Qt::QueuedConnection);
+  m_pAutoSaveTimer->start(20 * 1000);
+
   if (m_bWroteCrashIndicatorFile)
   {
     QTimer::singleShot(1000, [this]() -> void {

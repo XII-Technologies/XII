@@ -45,11 +45,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocumentInfo, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiDocumentInfo::xiiDocumentInfo()
+xiiDocumentInfo::xiiDocumentInfo() :
+  m_DocumentID(xiiUuid::MakeUuid())
 {
-  m_DocumentID = xiiUuid::MakeUuid();
 }
-
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDocument, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -100,7 +99,8 @@ void xiiDocument::SetModified(bool b)
   if (m_bModified == b)
     return;
 
-  m_bModified = b;
+  m_bModified    = b;
+  m_ModifiedTime = b ? xiiTime::Now() : xiiTime::MakeZero();
 
   xiiDocumentEvent e;
   e.m_pDocument = this;

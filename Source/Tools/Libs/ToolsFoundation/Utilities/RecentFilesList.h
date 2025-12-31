@@ -1,12 +1,18 @@
+#pragma once
+
+#include <ToolsFoundation/ToolsFoundationDLL.h>
+
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Strings/String.h>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 /// \brief Maintains a list of recently used files and the container window ID they previously resided in.
 class XII_TOOLSFOUNDATION_DLL xiiRecentFilesList
 {
 public:
-  xiiRecentFilesList(xiiUInt32 uiMaxElements) { m_uiMaxElements = uiMaxElements; }
+  xiiRecentFilesList(xiiUInt32 uiMaxElements) :
+    m_uiMaxElements(uiMaxElements)
+  {
+  }
 
   /// \brief Struct that defines the file and container window of the recent file list.
   struct RecentFile
@@ -23,6 +29,7 @@ public:
     xiiString m_File;
     xiiInt32  m_iContainerWindow;
   };
+
   /// \brief Moves the inserted file to the front with the given container ID.
   void Insert(xiiStringView sFile, xiiInt32 iContainerWindow);
 

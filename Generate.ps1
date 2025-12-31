@@ -1,6 +1,6 @@
 param
 (
-  [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2022', 'Win64vs2026')][string] $Target,
+  [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2026', 'Win64vs2022')][string] $Target,
   [switch]$NoUnityBuild,
   [switch]$NoSubmoduleUpdate,
   [string]$SolutionName
@@ -57,17 +57,7 @@ $CMAKE_ARGS += "-G"
 
 Write-Host ""
 
-if ($Target -eq "Win64vs2022") {
-
-  Write-Host "=== Generating Solution for Visual Studio 2022 x64 ==="
-
-  $CMAKE_ARGS += "Visual Studio 17 2022"
-  $CMAKE_ARGS += "-A"
-  $CMAKE_ARGS += "x64"
-  $CMAKE_ARGS += "-B"
-  $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64"
-}
-elseif ($Target -eq "Win64vs2026") {
+if ($Target -eq "Win64vs2026") {
 
   Write-Host "=== Generating Solution for Visual Studio 2026 x64 ==="
 
@@ -76,6 +66,16 @@ elseif ($Target -eq "Win64vs2026") {
   $CMAKE_ARGS += "x64"
   $CMAKE_ARGS += "-B"
   $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2026x64"
+}
+elseif ($Target -eq "Win64vs2022") {
+
+  Write-Host "=== Generating Solution for Visual Studio 2022 x64 ==="
+
+  $CMAKE_ARGS += "Visual Studio 17 2022"
+  $CMAKE_ARGS += "-A"
+  $CMAKE_ARGS += "x64"
+  $CMAKE_ARGS += "-B"
+  $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64"
 }
 else {
   throw "Unknown target '$Target'."

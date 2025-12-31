@@ -5,7 +5,6 @@ ALL
 
 MSAA
 CAMERA_MODE
-VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 [RENDERSTATE]
 
@@ -23,10 +22,6 @@ DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
 #include <Shaders/Pipeline/FullscreenTriangleVertexShader.h>
 
-[GEOMETRYSHADER]
-
-#include <Shaders/Pipeline/FullscreenTriangleStereoGeometryShader.h>
-
 [PIXELSHADER]
 
 #include <Shaders/Common/Common.h>
@@ -39,11 +34,7 @@ struct PS_IN
   float2 TexCoord0 : TEXCOORD0;
 
   #if CAMERA_MODE == CAMERA_MODE_STEREO
-  #  if VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX == TRUE
     uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
-  #  else
-    uint RenderTargetArrayIndex : RENDERTARGETARRAYINDEX;
-  #  endif
   #endif
   #if MSAA
     uint SampleIndex : SV_SampleIndex;

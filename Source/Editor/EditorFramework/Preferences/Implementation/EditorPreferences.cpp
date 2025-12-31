@@ -32,6 +32,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("CombinedEditorAndEngineLogs", m_bCombinedEditorAndEngineLogs)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("HighlightUntranslatedUI", GetHighlightUntranslatedUI, SetHighlightUntranslatedUI),
     XII_MEMBER_PROPERTY("AssetBrowserShowItemsInSubFolders", m_bAssetBrowserShowItemsInSubFolders)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("AutoSaveMinutes", m_uiAutoSaveMinutes)->AddAttributes(new xiiDefaultValueAttribute(5), new xiiClampValueAttribute(0, 24 * 60)),
 
     // START GROUP Engine View Light Settings
     XII_MEMBER_PROPERTY("SkyBox", m_bSkyBox)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("Engine View Light Settings")),

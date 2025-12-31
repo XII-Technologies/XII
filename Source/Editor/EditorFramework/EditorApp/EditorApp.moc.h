@@ -238,6 +238,7 @@ private:
 
 private Q_SLOTS:
   void SlotTimedUpdate();
+  void SlotAutoSave();
   void SlotQueuedCloseProject();
   void SlotQueuedOpenProject(QString sProject);
   void SlotQueuedOpenDocument(QString sProject, void* pOpenContext);
@@ -304,6 +305,7 @@ private:
   QTimer*                           m_pTimer = nullptr;
 
   QSplashScreen* m_pSplashScreen = nullptr;
+  QTimer*        m_pAutoSaveTimer;
 
   xiiLogWriter::HTML m_LogHTML;
 

@@ -70,16 +70,16 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(xiiStringView sFile, co
     nodes.PushBack(e.m_pObject);
   }
 
-  xiiUuid PrefabGuid, SeedGuid;
-  SeedGuid      = xiiUuid::MakeUuid();
-  xiiStatus res = CreatePrefabDocument(sFile, nodes, SeedGuid, PrefabGuid, adjustGraphNodeCB, true, finalizeGraphCB);
+  xiiUuid prefabGuid, seedGuid;
+  seedGuid      = xiiUuid::MakeUuid();
+  xiiStatus res = CreatePrefabDocument(sFile, nodes, seedGuid, prefabGuid, adjustGraphNodeCB, true, finalizeGraphCB);
 
   if (res.Succeeded())
   {
     GetCommandHistory()->StartTransaction("Replace all by Prefab");
 
     // this replaces ONE object by the new prefab (we pick the last one in the selection)
-    xiiUuid newObj = ReplaceByPrefab(nodes.PeekBack(), sFile, PrefabGuid, SeedGuid, true);
+    xiiUuid newObj = ReplaceByPrefab(nodes.PeekBack(), sFile, prefabGuid, seedGuid, true);
 
     // if we had more than one selected objects, remove the others as well
     if (nodes.GetCount() > 1)
@@ -118,8 +118,8 @@ xiiStatus xiiDocument::CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<con
   pTypeDesc->m_pManager->EnsureDocumentIsClosed(sFile);
 
   // prepare the current state as a graph
-  xiiAbstractObjectGraph           PrefabGraph;
-  xiiDocumentObjectConverterWriter writer(&PrefabGraph, GetObjectManager());
+  xiiAbstractObjectGraph           prefabGraph;
+  xiiDocumentObjectConverterWriter writer(&prefabGraph, GetObjectManager());
 
   xiiHybridArray<xiiAbstractObjectNode*, 32> graphRootNodes;
   graphRootNodes.Reserve(rootObjects.GetCount() + 1);
@@ -142,10 +142,10 @@ xiiStatus xiiDocument::CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<con
 
   if (finalizeGraphCB.IsValid())
   {
-    finalizeGraphCB(PrefabGraph, graphRootNodes);
+    finalizeGraphCB(prefabGraph, graphRootNodes);
   }
 
-  PrefabGraph.ReMapNodeGuids(invPrefabSeed, true);
+  prefabGraph.ReMapNodeGuids(invPrefabSeed, true);
 
   xiiDocument* pSceneDocument = nullptr;
 
@@ -154,7 +154,7 @@ xiiStatus xiiDocument::CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<con
   out_newDocumentGuid   = pSceneDocument->GetGuid();
   auto pPrefabSceneRoot = pSceneDocument->GetObjectManager()->GetRootObject();
 
-  xiiDocumentObjectConverterReader reader(&PrefabGraph, pSceneDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
+  xiiDocumentObjectConverterReader reader(&prefabGraph, pSceneDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
 
   for (xiiUInt32 i = 0; i < graphRootNodes.GetCount(); ++i)
   {
@@ -179,7 +179,6 @@ xiiStatus xiiDocument::CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<con
 
   return res;
 }
-
 
 xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab)
 {
