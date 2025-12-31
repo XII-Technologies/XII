@@ -146,7 +146,7 @@ void xiiCompilerPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEv
   }
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   auto compiler = typeAccessor.GetValue("Compiler").Get<xiiInt64>();
-  if (compiler == xiiCompiler::Vs2022)
+  if (compiler == xiiCompiler::Vs2026 || compiler == xiiCompiler::Vs2022)
   {
     compilerFieldsVisibility = xiiPropertyUiState::Invisible;
   }
@@ -159,6 +159,6 @@ void xiiCompilerPreferences_PropertyMetaStateEventHandler(xiiPropertyMetaStateEv
 #if XII_ENABLED(XII_PLATFORM_LINUX)
   props["RcCompiler"].m_Visibility = xiiPropertyUiState::Invisible;
 #else
-  props["RcCompiler"].m_Visibility = (compiler == xiiCompiler::Vs2022) ? xiiPropertyUiState::Invisible : xiiPropertyUiState::Default;
+  props["RcCompiler"].m_Visibility = (compiler == xiiCompiler::Vs2026 || compiler == xiiCompiler::Vs2022) ? xiiPropertyUiState::Invisible : xiiPropertyUiState::Default;
 #endif
 }

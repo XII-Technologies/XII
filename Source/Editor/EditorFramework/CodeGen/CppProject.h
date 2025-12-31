@@ -13,7 +13,7 @@ struct XII_EDITORFRAMEWORK_DLL xiiIDE
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     VisualStudioCode,
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -42,10 +42,11 @@ struct XII_EDITORFRAMEWORK_DLL xiiCompiler
     Gcc,
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS)
     Vs2022,
+    Vs2026,
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    Default = Vs2022
+    Default = Vs2026
 #else
     Default = Gcc
 #endif
