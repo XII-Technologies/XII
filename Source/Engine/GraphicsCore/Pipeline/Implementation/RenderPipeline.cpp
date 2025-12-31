@@ -1195,7 +1195,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
   XII_ASSERT_DEV(pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled, "Vertex shader render target index must be supported for stereo rendering.");
-  
+
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   // Also set pipeline specific permutation variables.

@@ -140,7 +140,7 @@ VS_OUT FillVertexData(VS_IN Input)
 
 #if defined(CAMERA_MODE)
 #  if CAMERA_MODE == CAMERA_MODE_STEREO
-    Output.RenderTargetArrayIndex = Input.InstanceID % 2;
+  Output.RenderTargetArrayIndex = Input.InstanceID % 2;
 #  endif
 #endif
 
