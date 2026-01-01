@@ -39,10 +39,11 @@ void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPo
   }
   else
   {
-    xiiStringBuilder sScenePath = GetStartupSceneFile();
-    sScenePath.MakeCleanPath();
+    xiiString sSceneFile;
+    xiiString sPreloadCollection;
+    GetStartupOptions(sSceneFile, sPreloadCollection);
 
-    if (sScenePath.IsEmpty())
+    if (sSceneFile.IsEmpty())
     {
       SwitchToLoadingScreen("");
 

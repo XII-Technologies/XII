@@ -65,12 +65,13 @@ void xiiGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, 
   }
   else
   {
-    xiiStringBuilder sSceneFile = GetStartupSceneFile();
+    xiiString sSceneFile;
+    xiiString sPreloadCollection;
+    GetStartupOptions(sSceneFile, sPreloadCollection);
 
     if (!sSceneFile.IsEmpty())
     {
-      // TODO: also pass along a preload collection
-      LoadScene(sSceneFile, {}, sStartPosition, startPositionOffset);
+      LoadScene(sSceneFile, sPreloadCollection, sStartPosition, startPositionOffset);
     }
   }
 }
@@ -526,9 +527,16 @@ xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiW
   return pOutput;
 }
 
-xiiString xiiGameState::GetStartupSceneFile()
+void xiiGameState::GetStartupOptions(xiiString& out_sScene, xiiString& out_sPreloadCollection)
 {
-  return xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-scene");
+  out_sScene = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-scene");
+
+  xiiStringBuilder sPreloadCollection = out_sScene;
+  sPreloadCollection.ChangeFileExtension("xiiBinCollection");
+  if (xiiFileSystem::ExistsFile(sPreloadCollection))
+  {
+    out_sPreloadCollection = sPreloadCollection;
+  }
 }
 
 void xiiGameState::LoadScene(xiiStringView sSceneFile, xiiStringView sPreloadCollection, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
