@@ -155,6 +155,7 @@ const xiiCameraComponent* xiiFallbackGameState::FindActiveCameraComponent()
   Cameras[xiiCameraUsageHint::RenderTarget].Clear();
   Cameras[xiiCameraUsageHint::Culling].Clear();
   Cameras[xiiCameraUsageHint::Shadow].Clear();
+  Cameras[xiiCameraUsageHint::Reflection].Clear();
   Cameras[xiiCameraUsageHint::Thumbnail].Clear();
 
   if (m_iActiveCameraComponentIndex == -3)

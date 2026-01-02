@@ -191,7 +191,7 @@ struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     None,
     MainView,
