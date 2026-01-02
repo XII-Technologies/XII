@@ -18,3 +18,6 @@ target_sources(${PROJECT_NAME} PUBLIC "${XII_ROOT_DIR}/Source/Engine/Foundation/
 target_compile_definitions(${PROJECT_NAME} PRIVATE "RUNTIME_PROJECT_FOLDER=${CMAKE_CURRENT_LIST_DIR}/../../")
 
 add_dependencies(${PROJECT_NAME} SourceTemplatePlugin)
+
+# sets the SourceTemplateRuntime project as the default startup project in Visual Studio
+set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT SourceTemplateRuntime)
