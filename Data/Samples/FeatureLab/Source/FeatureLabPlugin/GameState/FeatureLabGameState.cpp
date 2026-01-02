@@ -1,4 +1,4 @@
-#include <SourceTemplatePlugin/SourceTemplatePluginPCH.h>
+#include <FeatureLabPlugin/FeatureLabPluginPCH.h>
 
 #include <Core/Input/InputManager.h>
 #include <Core/System/Window.h>
@@ -6,15 +6,15 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Logging/Log.h>
 
-#include <SourceTemplatePlugin/GameState/SourceTemplateGameState.h>
+#include <FeatureLabPlugin/GameState/FeatureLabGameState.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(SourceTemplateGameState, 1, xiiRTTIDefaultAllocator<SourceTemplateGameState>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(FeatureLabGameState, 1, xiiRTTIDefaultAllocator<FeatureLabGameState>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-SourceTemplateGameState::SourceTemplateGameState() = default;
-SourceTemplateGameState::~SourceTemplateGameState() = default;
+FeatureLabGameState::FeatureLabGameState() = default;
+FeatureLabGameState::~FeatureLabGameState() = default;
 
-void SourceTemplateGameState::GetStartupOptions(xiiString& out_sScene, xiiString& out_sPreloadCollection)
+void FeatureLabGameState::GetStartupOptions(xiiString& out_sScene, xiiString& out_sPreloadCollection)
 {
   // replace this to load a certain scene at startup
   // the default implementation looks at the command line "-scene" argument
@@ -40,7 +40,7 @@ void SourceTemplateGameState::GetStartupOptions(xiiString& out_sScene, xiiString
   }
 }
 
-void SourceTemplateGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
+void FeatureLabGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   XII_LOG_BLOCK("GameState::Activate");
 
@@ -52,12 +52,12 @@ void SourceTemplateGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStar
   // see below and see xiiGameState for additional details
 }
 
-void SourceTemplateGameState::AfterWorldUpdate()
+void FeatureLabGameState::AfterWorldUpdate()
 {
   SUPER::AfterWorldUpdate();
 }
 
-void SourceTemplateGameState::BeforeWorldUpdate()
+void FeatureLabGameState::BeforeWorldUpdate()
 {
   SUPER::BeforeWorldUpdate();
 
@@ -66,13 +66,13 @@ void SourceTemplateGameState::BeforeWorldUpdate()
   // if you need to modify the world, this is a good place to do it
 }
 
-xiiResult SourceTemplateGameState::SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
+xiiResult FeatureLabGameState::SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   // replace this to create a custom player object or load a prefab
   return SUPER::SpawnPlayer(sStartPosition, startPositionOffset);
 }
 
-void SourceTemplateGameState::OnChangedMainWorld(xiiWorld* pPrevWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
+void FeatureLabGameState::OnChangedMainWorld(xiiWorld* pPrevWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   SUPER::OnChangedMainWorld(pPrevWorld, pNewWorld, sStartPosition, startPositionOffset);
 
@@ -91,17 +91,17 @@ static void RegisterInputAction(const char* szInputSet, const char* szInputActio
   xiiInputManager::SetInputActionConfig(szInputSet, szInputAction, cfg, true);
 }
 
-void SourceTemplateGameState::ConfigureInputActions()
+void FeatureLabGameState::ConfigureInputActions()
 {
   SUPER::ConfigureInputActions();
 }
 
-void SourceTemplateGameState::ProcessInput()
+void FeatureLabGameState::ProcessInput()
 {
   SUPER::ProcessInput();
 }
 
-void SourceTemplateGameState::ConfigureMainCamera()
+void FeatureLabGameState::ConfigureMainCamera()
 {
   SUPER::ConfigureMainCamera();
 

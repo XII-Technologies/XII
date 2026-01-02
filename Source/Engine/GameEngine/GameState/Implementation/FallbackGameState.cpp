@@ -39,10 +39,11 @@ void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPo
   }
   else
   {
-    xiiStringBuilder sScenePath = GetStartupSceneFile();
-    sScenePath.MakeCleanPath();
+    xiiString sSceneFile;
+    xiiString sPreloadCollection;
+    GetStartupOptions(sSceneFile, sPreloadCollection);
 
-    if (sScenePath.IsEmpty())
+    if (sSceneFile.IsEmpty())
     {
       SwitchToLoadingScreen("");
 
@@ -154,6 +155,7 @@ const xiiCameraComponent* xiiFallbackGameState::FindActiveCameraComponent()
   Cameras[xiiCameraUsageHint::RenderTarget].Clear();
   Cameras[xiiCameraUsageHint::Culling].Clear();
   Cameras[xiiCameraUsageHint::Shadow].Clear();
+  Cameras[xiiCameraUsageHint::Reflection].Clear();
   Cameras[xiiCameraUsageHint::Thumbnail].Clear();
 
   if (m_iActiveCameraComponentIndex == -3)

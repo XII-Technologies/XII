@@ -73,6 +73,8 @@ xii_add_external_projects_folder("_1")
 xii_add_external_projects_folder("_2")
 xii_add_external_projects_folder("_3")
 
+xii_finalize_projects()
+
 if(NOT XII_SUBMODULE_MODE)
   if(TARGET Editor)
     # sets the Editor project as the default startup project in Visual Studio
@@ -88,8 +90,6 @@ if(NOT XII_SUBMODULE_MODE)
     endif()
   endif()
 endif()
-
-xii_finalize_projects()
 
 get_property(EXPORT_PROJECTS GLOBAL PROPERTY "EXPORT_PROJECTS")
 xii_get_export_location(XII_EXPORT_LOCATION)

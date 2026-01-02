@@ -1,19 +1,19 @@
 #pragma once
 
-#include <SourceTemplatePlugin/SourceTemplatePluginDLL.h>
+#include <FeatureLabPlugin/FeatureLabPluginDLL.h>
 
 #include <Core/Input/Declarations.h>
 #include <Core/World/Declarations.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameState/GameState.h>
 
-class SourceTemplateGameState : public xiiGameState
+class FeatureLabGameState : public xiiGameState
 {
-  XII_ADD_DYNAMIC_REFLECTION(SourceTemplateGameState, xiiGameState);
+  XII_ADD_DYNAMIC_REFLECTION(FeatureLabGameState, xiiGameState);
 
 public:
-  SourceTemplateGameState();
-  ~SourceTemplateGameState();
+  FeatureLabGameState();
+  ~FeatureLabGameState();
 
   virtual void ProcessInput() override;
 
