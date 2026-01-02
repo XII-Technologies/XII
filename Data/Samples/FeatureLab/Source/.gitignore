@@ -1,0 +1,5 @@
+Build/*
+AssetCache/
+
+# VSCode specific
+CMakeUserPresets.json

@@ -1,5 +1,11 @@
 PluginState
 {
+	string %ID{"FeatureLabPlugin"}
+	bool %Selected{true}
+	bool %LoadCopy{true}
+}
+PluginState
+{
 	string %ID{"GameComponents"}
 	bool %Selected{true}
 	bool %LoadCopy{false}

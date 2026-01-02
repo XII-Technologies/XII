@@ -1,5 +1,10 @@
 Plugin
 {
+	string %Path{"FeatureLabPlugin"}
+	bool %LoadCopy{true}
+}
+Plugin
+{
 	string %Path{"xiiGameComponentsPlugin"}
 	bool %LoadCopy{false}
 }
