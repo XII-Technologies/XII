@@ -276,7 +276,6 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
 
 void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-#ifdef CORE_ENABLE
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);
   pInstanceData->BindResources(pCommandList);
 
@@ -284,14 +283,14 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
   if (pRenderData1st->m_uiFlipWinding)
   {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
-  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
   for (auto it = batch.GetIterator<xiiCustomMeshRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
   {
@@ -299,7 +298,7 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
     xiiResourceLock<xiiDynamicMeshBufferResource> pBuffer(pRenderData->m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
 
-    pRenderContext->BindMaterial(pRenderData->m_hMaterial);
+    renderViewContext.m_pRenderContext->BindMaterial(pRenderData->m_hMaterial);
 
     xiiUInt32                       uiInstanceDataOffset = 0;
     xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(1, uiInstanceDataOffset);
@@ -323,17 +322,16 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
       instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
     }
 
-    pInstanceData->UpdateInstanceData(pRenderContext->GetCommandList(), 1);
+    pInstanceData->UpdateInstanceData(renderViewContext.m_pRenderContext->GetCommandList(), 1);
 
     const auto& desc = pBuffer->GetDescriptor();
-    pBuffer->UpdateGpuBuffer(pRenderContext->GetCommandList());
+    pBuffer->UpdateGpuBuffer(renderViewContext.m_pRenderContext->GetCommandList());
 
     // redo this after the primitive count has changed
-    pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer(pRenderData->m_uiNumPrimitives, pRenderData->m_uiFirstPrimitive).IgnoreResult();
   }
-#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_CustomMeshComponent);
