@@ -4,14 +4,15 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GameEngine/XR/XRInterface.h>
 #include <GameEngine/XR/XRWindow.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActorPluginWindowXR, 1, xiiRTTINoAllocator)
-  ;
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
@@ -100,42 +101,32 @@ void xiiWindowOutputTargetXR::CompanionViewEndFrame()
 
   m_bRender = false;
 
-#ifdef CORE_ENABLE
   XII_PROFILE_SCOPE("RenderCompanionView");
-  xiiGALTextureHandle m_hColorRT = m_pXrInterface->GetCurrentTexture();
-  if (m_hColorRT.IsInvalidated() || !m_pCompanionWindowOutputTarget)
+  xiiSharedPtr<xiiGALTexture> pColorRT = m_pXrInterface->GetCurrentTexture();
+  if (!pColorRT || !m_pCompanionWindowOutputTarget)
     return;
 
-  xiiGALDevice*     pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext* m_pRenderContext = xiiRenderContext::GetDefaultInstance();
-
+  xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
   {
-    const xiiGALSwapChain* pSwapChain             = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
-    xiiGALTextureHandle    hCompanionRenderTarget = pSwapChain->GetBackBufferTexture();
-    const xiiGALTexture*   tex                    = pDevice->GetTexture(hCompanionRenderTarget);
-    auto                   hRenderTargetView      = xiiGALDevice::GetDefaultDevice()->GetTexture(hCompanionRenderTarget)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-    xiiVec2                targetSize             = xiiVec2((float)tex->GetDescription().m_Size.width, (float)tex->GetDescription().m_Size.height);
+    xiiSharedPtr<xiiGALTexture>             pBackBufferTexture = m_pCompanionWindowOutputTarget->m_pSwapChain->GetBackBufferTexture();
+    const xiiGALTextureCreationDescription& textureDescription = pBackBufferTexture->GetDescription();
+    xiiVec2                                 vTargetSize        = xiiVec2((float)textureDescription.GetWidth(), (float)textureDescription.GetHeight());
 
-    xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hRenderTargetView);
+    xiiRenderingSetup renderingSetup;
+    renderingSetup.AddColorAttachment({m_pCompanionWindowOutputTarget->m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget)});
 
-    m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Blit CompanionView");
+    pRenderContext->BeginRendering(std::move(renderingSetup), xiiRectFloat(vTargetSize.x, vTargetSize.y), "Blit CompanionView");
+    pRenderContext->BindShader(m_hCompanionShader);
+    pRenderContext->BindBuffer("xiiVRCompanionViewConstants", m_pCompanionConstantBuffer);
+    pRenderContext->BindTexture("VRTexture", pColorRT);
+    {
+      xiiGALMapHelper<xiiVRCompanionViewConstants> pVRCompanionViewConstants(pRenderContext->GetCommandList(), m_pCompanionConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-    m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    m_pRenderContext->BindConstantBuffer("xiiVRCompanionViewConstants", m_hCompanionConstantBuffer);
-    m_pRenderContext->BindShader(m_hCompanionShader);
-
-    auto* constants       = xiiRenderContext::GetConstantBufferData<xiiVRCompanionViewConstants>(m_hCompanionConstantBuffer);
-    constants->TargetSize = targetSize;
-
-    xiiGALTextureViewHandle hInputView = pDevice->GetTexture(m_hColorRT)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-    m_pRenderContext->BindTexture2D("VRTexture", hInputView);
-    m_pRenderContext->DrawMeshBuffer().IgnoreResult();
-
-    m_pRenderContext->EndRendering();
-    m_pRenderContext->ResetContextState();
+      pVRCompanionViewConstants->TargetSize = vTargetSize;
+    }
+    pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
+    pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
-#endif
 }
 
 xiiResult xiiWindowOutputTargetXR::CaptureImage(xiiImage& out_image)
