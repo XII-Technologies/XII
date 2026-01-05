@@ -30,6 +30,15 @@ XII_DEFINE_AS_POD_TYPE(VmaBudget);
 
 namespace
 {
+  struct ExportedSharedPool
+  {
+    VmaPool                                    m_Pool;                      ///< The VMA pool handle.
+    xiiUniquePtr<vk::ExportMemoryAllocateInfo> m_pExportMemoryAllocateInfo; ///< The export memory allocate info structure. This must stay alive as long as the pool is used.
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    xiiUniquePtr<vk::ExportMemoryWin32HandleInfoKHR> m_pExportMemoryWin32HandleInfoKHR; ///< The export memory Win32 handle info structure.
+#endif
+  };
+
   XII_ALWAYS_INLINE static VmaMemoryUsage ConvertUsage(xiiVulkanMemoryUsage::Enum usage)
   {
     switch (usage)
@@ -106,11 +115,14 @@ namespace
 
 struct xiiVulkanMemoryAllocator::Implementation
 {
-  VmaAllocator                       m_VmaAllocator = VK_NULL_HANDLE;
-  vk::Instance                       m_vkInstance;
-  vk::PhysicalDevice                 m_vkPhysicalDevice;
-  vk::Device                         m_vkLogicalDevice;
-  vk::PhysicalDeviceMemoryProperties m_vkMemoryProperties;
+  VmaAllocator                       m_VmaAllocator = VK_NULL_HANDLE; ///< The VMA allocator handle.
+  vk::Instance                       m_vkInstance;                    ///< The Vulkan instance.
+  vk::PhysicalDevice                 m_vkPhysicalDevice;              ///< The Vulkan physical device.
+  vk::Device                         m_vkLogicalDevice;               ///< The Vulkan logical device.
+  vk::PhysicalDeviceMemoryProperties m_vkMemoryProperties;            ///< The physical device memory properties.
+
+  xiiMutex                                    m_ExportedSharedPoolsMutex; ///< Mutex to protect access to the exported shared pools.
+  xiiHashTable<xiiUInt32, ExportedSharedPool> m_ExportedSharedPools;      ///< Hashtable of exported shared pools, keyed by memory type index.
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -164,6 +176,23 @@ vk::Result xiiVulkanMemoryAllocator::Initialize(xiiGALDeviceVulkan* pDeviceVulka
 
 void xiiVulkanMemoryAllocator::DeInitialize()
 {
+  XII_ASSERT_DEV(m_pImplementation != nullptr, "xiiVulkanMemoryAllocator not initialized or already de-initialized.");
+
+  for (auto& it : m_pImplementation->m_ExportedSharedPools)
+  {
+    vmaDestroyPool(m_pImplementation->m_VmaAllocator, it.Value().m_Pool);
+  }
+  m_pImplementation->m_ExportedSharedPools.Clear();
+
+  vmaDestroyAllocator(m_pImplementation->m_VmaAllocator);
+  m_pImplementation->m_VmaAllocator = VK_NULL_HANDLE;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+  char* pStatsString = nullptr;
+  vmaBuildStatsString(m_pImplementation->m_VmaAllocator, &pStatsString, true);
+  xiiLog::Info("Vulkan Memory Allocator Stats:\n%s", pStatsString);
+  vmaFreeStatsString(m_pImplementation->m_VmaAllocator, pStatsString);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -177,6 +206,57 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
   vmaAllocationCreateInfo.requiredFlags           = ConvertMemoryPropertyFlags(allocationCreateInfo.m_RequiredFlags);
   vmaAllocationCreateInfo.preferredFlags          = ConvertMemoryPropertyFlags(allocationCreateInfo.m_PreferredFlags);
   vmaAllocationCreateInfo.pUserData               = (void*)allocationCreateInfo.m_pUserData;
+
+  if (allocationCreateInfo.m_bExportSharedAllocation)
+  {
+    vmaAllocationCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+    XII_LOCK(m_pImplementation->m_ExportedSharedPoolsMutex);
+
+    xiiUInt32 uiMemoryTypeIndex = 0U;
+    if (VkResult vkResult = vmaFindMemoryTypeIndexForBufferInfo(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, &uiMemoryTypeIndex); vkResult != VK_SUCCESS)
+    {
+      return vk::Result{vkResult};
+    }
+
+    ExportedSharedPool* pExportedSharedPool = m_pImplementation->m_ExportedSharedPools.GetValue(uiMemoryTypeIndex);
+    if (pExportedSharedPool == nullptr)
+    {
+      ExportedSharedPool newExportedSharedPool;
+      {
+        newExportedSharedPool.m_pExportMemoryAllocateInfo = XII_DEFAULT_NEW(vk::ExportMemoryAllocateInfo);
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+        newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+#elif XII_ENABLED(XII_PLATFORM_WINDOWS)
+
+        newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR           = XII_DEFAULT_NEW(vk::ExportMemoryWin32HandleInfoKHR);
+        newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR->dwAccess = GENERIC_READ | GENERIC_WRITE;
+
+        newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+        newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
+#else
+        XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+      }
+
+      VmaPoolCreateInfo vmaPoolCreateInfo   = {};
+      vmaPoolCreateInfo.memoryTypeIndex     = uiMemoryTypeIndex;
+      vmaPoolCreateInfo.pMemoryAllocateNext = newExportedSharedPool.m_pExportMemoryAllocateInfo.Borrow();
+
+      VmaPool vmaPool;
+      if (VkResult vkResult = vmaCreatePool(m_pImplementation->m_VmaAllocator, &vmaPoolCreateInfo, &vmaPool); vkResult != VK_SUCCESS)
+      {
+        return vk::Result{vkResult};
+      }
+
+      XII_VERIFY(m_pImplementation->m_ExportedSharedPools.Insert(uiMemoryTypeIndex, std::move(newExportedSharedPool)), "Failed to insert exported shared pool.");
+
+      pExportedSharedPool = m_pImplementation->m_ExportedSharedPools.GetValue(uiMemoryTypeIndex);
+    }
+
+    vmaAllocationCreateInfo.pool = pExportedSharedPool->m_Pool;
+  }
 
   return static_cast<vk::Result>(vmaCreateBuffer(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&out_buffer), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
 }
@@ -202,6 +282,57 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
   vmaAllocationCreateInfo.requiredFlags           = ConvertMemoryPropertyFlags(allocationCreateInfo.m_RequiredFlags);
   vmaAllocationCreateInfo.preferredFlags          = ConvertMemoryPropertyFlags(allocationCreateInfo.m_PreferredFlags);
   vmaAllocationCreateInfo.pUserData               = (void*)allocationCreateInfo.m_pUserData;
+
+  if (allocationCreateInfo.m_bExportSharedAllocation)
+  {
+    vmaAllocationCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+    XII_LOCK(m_pImplementation->m_ExportedSharedPoolsMutex);
+
+    xiiUInt32 uiMemoryTypeIndex = 0U;
+    if (VkResult vkResult = vmaFindMemoryTypeIndexForImageInfo(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, &uiMemoryTypeIndex); vkResult != VK_SUCCESS)
+    {
+      return vk::Result{vkResult};
+    }
+
+    ExportedSharedPool* pExportedSharedPool = m_pImplementation->m_ExportedSharedPools.GetValue(uiMemoryTypeIndex);
+    if (pExportedSharedPool == nullptr)
+    {
+      ExportedSharedPool newExportedSharedPool;
+      {
+        newExportedSharedPool.m_pExportMemoryAllocateInfo = XII_DEFAULT_NEW(vk::ExportMemoryAllocateInfo);
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+        newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+#elif XII_ENABLED(XII_PLATFORM_WINDOWS)
+
+        newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR           = XII_DEFAULT_NEW(vk::ExportMemoryWin32HandleInfoKHR);
+        newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR->dwAccess = GENERIC_READ | GENERIC_WRITE;
+
+        newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+        newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
+#else
+        XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+      }
+
+      VmaPoolCreateInfo vmaPoolCreateInfo   = {};
+      vmaPoolCreateInfo.memoryTypeIndex     = uiMemoryTypeIndex;
+      vmaPoolCreateInfo.pMemoryAllocateNext = newExportedSharedPool.m_pExportMemoryAllocateInfo.Borrow();
+
+      VmaPool vmaPool;
+      if (VkResult vkResult = vmaCreatePool(m_pImplementation->m_VmaAllocator, &vmaPoolCreateInfo, &vmaPool); vkResult != VK_SUCCESS)
+      {
+        return vk::Result{vkResult};
+      }
+
+      XII_VERIFY(m_pImplementation->m_ExportedSharedPools.Insert(uiMemoryTypeIndex, std::move(newExportedSharedPool)), "Failed to insert exported shared pool.");
+
+      pExportedSharedPool = m_pImplementation->m_ExportedSharedPools.GetValue(uiMemoryTypeIndex);
+    }
+
+    vmaAllocationCreateInfo.pool = pExportedSharedPool->m_Pool;
+  }
 
   return static_cast<vk::Result>(vmaCreateImage(m_pImplementation->m_VmaAllocator, reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&out_image), reinterpret_cast<VmaAllocation*>(&out_allocation), reinterpret_cast<VmaAllocationInfo*>(pAllocationInfo)));
 }

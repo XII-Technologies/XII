@@ -103,11 +103,12 @@ XII_DECLARE_FLAGS_OPERATORS(xiiVulkanMemoryPropertyFlags);
 /// This structure defines how memory should be allocated, including usage hints, allocation strategy flags, and optional user metadata.
 struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateInfo
 {
-  xiiBitflags<xiiVulkanAllocationCreateFlags> m_Flags;               ///< Flags that control allocation strategy and behavior.
-  xiiEnum<xiiVulkanMemoryUsage>               m_Usage;               ///< Intended usage pattern for the allocation (e.g., GPU-only, CPU-to-GPU).
-  xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_RequiredFlags;       ///< Memory property flags that must be present in the selected memory type. Used to enforce strict compatibility (e.g., HostVisible, DeviceLocal).
-  xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_PreferredFlags;      ///< Memory property flags that are desirable but not mandatory. The allocator will prioritize memory types that include these flags when multiple options are available.
-  const char*                                 m_pUserData = nullptr; ///< Optional pointer to user-defined data associated with the allocation.
+  xiiBitflags<xiiVulkanAllocationCreateFlags> m_Flags;                             ///< Flags that control allocation strategy and behavior.
+  xiiEnum<xiiVulkanMemoryUsage>               m_Usage;                             ///< Intended usage pattern for the allocation (e.g., GPU-only, CPU-to-GPU).
+  xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_RequiredFlags;                     ///< Memory property flags that must be present in the selected memory type. Used to enforce strict compatibility (e.g., HostVisible, DeviceLocal).
+  xiiBitflags<xiiVulkanMemoryPropertyFlags>   m_PreferredFlags;                    ///< Memory property flags that are desirable but not mandatory. The allocator will prioritize memory types that include these flags when multiple options are available.
+  const char*                                 m_pUserData               = nullptr; ///< Optional pointer to user-defined data associated with the allocation.
+  bool                                        m_bExportSharedAllocation = false;   ///< If true, the allocation will be created with exportable handle capabilities for sharing between Vulkan devices or APIs.
 };
 
 /// \brief Describes a Vulkan memory allocation and its associated metadata.

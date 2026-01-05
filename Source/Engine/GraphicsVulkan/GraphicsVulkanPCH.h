@@ -91,6 +91,7 @@ XII_DEFINE_AS_POD_TYPE(vk::Image);
 XII_DEFINE_AS_POD_TYPE(vk::Buffer);
 XII_DEFINE_AS_POD_TYPE(vk::Viewport);
 XII_DEFINE_AS_POD_TYPE(vk::Rect2D);
+XII_DEFINE_AS_POD_TYPE(vk::ExportMemoryAllocateInfo);
 
 #define VK_REMAINING_ARRAY_LAYERS (~0U)
 #define VK_REMAINING_MIP_LEVELS   (~0U)

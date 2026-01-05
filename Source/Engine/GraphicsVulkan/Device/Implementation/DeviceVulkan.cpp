@@ -1363,11 +1363,11 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceVulkan::CreateShaderPlatform(
   return pShaderVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
+xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   xiiInternal::NewInstance<xiiGALBufferVulkan> pBufferVulkan = XII_NEW(&m_Allocator, xiiGALBufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pBufferVulkan->InitPlatform(pInitialData).Failed())
+  if (pBufferVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
     XII_DELETE(pBufferVulkan.m_pAllocator, pBufferVulkan.m_pInstance);
     return nullptr;
@@ -1376,11 +1376,11 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(
   return pBufferVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
+xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   xiiInternal::NewInstance<xiiGALTextureVulkan> pTextureVulkan = XII_NEW(&m_Allocator, xiiGALTextureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pTextureVulkan->InitPlatform(pInitialData).Failed())
+  if (pTextureVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
     XII_DELETE(pTextureVulkan.m_pAllocator, pTextureVulkan.m_pInstance);
     return nullptr;
