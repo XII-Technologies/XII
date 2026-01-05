@@ -83,7 +83,7 @@ public:
   xiiEnum<ConnectionState> GetConnectionState() const { return xiiEnum<ConnectionState>(m_iConnectionState); }
 
   /// \brief Sends a message. pMsg can be destroyed after the call.
-  bool Send(xiiArrayPtr<const xiiUInt8> data);
+  bool Send(xiiArrayPtr<const xiiUInt8> pData);
 
   using ReceiveCallback = xiiDelegate<void(xiiArrayPtr<const xiiUInt8> message)>;
   void SetReceiveCallback(ReceiveCallback callback);
@@ -114,7 +114,7 @@ protected:
   void SetConnectionState(xiiEnum<ConnectionState> state);
   /// \brief Implementation needs to call this when new data has been received.
   ///  data can be invalidated after the function.
-  void ReceiveData(xiiArrayPtr<const xiiUInt8> data);
+  void ReceiveData(xiiArrayPtr<const xiiUInt8> pData);
   void FlushPendingOperations();
 
 private:

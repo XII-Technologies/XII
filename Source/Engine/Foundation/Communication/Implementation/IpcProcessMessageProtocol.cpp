@@ -15,7 +15,7 @@ xiiIpcProcessMessageProtocol::~xiiIpcProcessMessageProtocol()
 {
   m_pChannel->SetReceiveCallback({});
 
-  while (xiiUniquePtr<xiiProcessMessage> msg = PopMessage())
+  while (xiiUniquePtr<xiiProcessMessage> pMsg = PopMessage())
   {
   }
 }

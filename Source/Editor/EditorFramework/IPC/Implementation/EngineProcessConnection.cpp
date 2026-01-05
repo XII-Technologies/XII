@@ -32,8 +32,8 @@ void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicat
 {
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiSyncWithProcessMsgToEditor>())
   {
-    const xiiSyncWithProcessMsgToEditor* msg = static_cast<const xiiSyncWithProcessMsgToEditor*>(e.m_pMessage);
-    m_uiRedrawCountReceived                  = msg->m_uiRedrawCount;
+    const xiiSyncWithProcessMsgToEditor* pMsg = static_cast<const xiiSyncWithProcessMsgToEditor*>(e.m_pMessage);
+    m_uiRedrawCountReceived                  = pMsg->m_uiRedrawCount;
   }
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiEditorEngineDocumentMsg>())
   {
@@ -294,13 +294,13 @@ void xiiEditorEngineProcessConnection::ShutdownProcess()
 
 bool xiiEditorEngineProcessConnection::SendMessage(xiiProcessMessage* pMessage)
 {
-  bool res = m_IPC.SendMessage(pMessage);
+  bool bResult = m_IPC.SendMessage(pMessage);
 
   if (m_pRemoteProcess)
   {
     m_pRemoteProcess->SendMessage(pMessage);
   }
-  return res;
+  return bResult;
 }
 
 xiiResult xiiEditorEngineProcessConnection::WaitForMessage(const xiiRTTI* pMessageType, xiiTime timeout, xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback)
@@ -468,14 +468,14 @@ void xiiEditorEngineConnection::SendHighlightObjectMessage(xiiViewHighlightMsgTo
 {
   // without this check there will be so many messages, that the editor comes to a crawl (< 10 FPS)
   // This happens because Qt sends hundreds of mouse-move events and since each 'SendMessageToEngine'
-  // requires a round-trip to the engine process, doing this too often will be sloooow
+  // requires a round-trip to the engine process, doing this too often will be very slow.
 
-  static xiiUuid LastHighlightGuid;
+  static xiiUuid lastHighlightGuid;
 
-  if (LastHighlightGuid == pMessage->m_HighlightObject)
+  if (lastHighlightGuid == pMessage->m_HighlightObject)
     return;
 
-  LastHighlightGuid = pMessage->m_HighlightObject;
+  lastHighlightGuid = pMessage->m_HighlightObject;
 
   SendMessage(pMessage);
 }
