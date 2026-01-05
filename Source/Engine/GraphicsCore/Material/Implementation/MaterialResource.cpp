@@ -898,8 +898,10 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
   }
   if (m_pMaterialData.GetCount() != pBinding->m_uiTotalSize)
   {
-    xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
-
+    if (!m_pMaterialData.IsEmpty())
+    {
+      xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
+    }
     m_pMaterialData.Clear();
 
     m_pMaterialData = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(pBinding->m_uiTotalSize, 16U)), pBinding->m_uiTotalSize);

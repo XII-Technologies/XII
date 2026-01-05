@@ -12,6 +12,7 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 2, xiiComponentMode::Static)
@@ -276,8 +277,8 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
 
 void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);
-  pInstanceData->BindResources(pCommandList);
+  xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
+  pInstanceData->BindResources(renderViewContext.m_pRenderContext);
 
   const xiiCustomMeshRenderData* pRenderData1st = batch.GetFirstData<xiiCustomMeshRenderData>();
 
