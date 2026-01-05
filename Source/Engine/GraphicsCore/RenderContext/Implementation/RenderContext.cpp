@@ -743,7 +743,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
         m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
       }
-      else // Compute
+      else if (m_RenderContextScope == RenderContextScope::Compute)
       {
         PrepareComputePipelineDescriptor(pShaderPermutation);
 
