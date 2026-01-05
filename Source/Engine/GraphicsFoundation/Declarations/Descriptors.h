@@ -402,3 +402,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
   /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
   XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALResourceFormatComponentType::Compressed ? m_uiComponentCount : 1); };
 };
+
+/// \brief This describes the external memory description.
+///
+/// Used to import external memory handles into the graphics device. This is useful for interop scenarios where memory is shared between different APIs or processes.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHashableStruct<xiiGALExternalMemoryDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiBitflags<xiiGALExternalMemoryKind>  m_Type          = xiiGALExternalMemoryKind::None;  ///< The type of external memory handle.
+  xiiBitflags<xiiGALExternalMemoryFlags> m_Flags         = xiiGALExternalMemoryFlags::None; ///< The usage flags for the external memory.
+  void*                                  m_pNativeHandle = nullptr;                         ///< Pointer to the native external memory handle (e.g., HANDLE on Windows, file descriptor on Linux).
+  xiiUInt64                              m_uiSize        = 0U;                              ///< Size of the external memory in bytes.
+};

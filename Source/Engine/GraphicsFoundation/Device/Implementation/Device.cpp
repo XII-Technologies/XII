@@ -278,7 +278,7 @@ xiiSharedPtr<xiiGALShader> xiiGALDevice::CreateShader(const xiiGALShaderCreation
   return CreateShaderPlatform(description);
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/)
+xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
@@ -419,7 +419,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     XII_GAL_DEVICE_CHECK(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger or equal to the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
-  xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData);
+  xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeBufferInternal(description, pBuffer);
 
@@ -436,7 +436,7 @@ void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription&
   }
 }
 
-xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
+xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
@@ -664,7 +664,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     }
   }
 
-  xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);
+  xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeTextureInternal(description, pTexture);
 

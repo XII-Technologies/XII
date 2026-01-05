@@ -1829,7 +1829,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 
   enum Enum : StorageType
   {
-    Immediate,
+    Immediate = 0U,
     VSync,
 
     ENUM_COUNT,
@@ -1839,6 +1839,67 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPresentMode);
+
+/// \brief This describes the external memory kind.
+///
+/// These kinds mirror [VkExternalMemoryFeatureFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkExternalMemoryFeatureFlagBits).
+///
+/// \note Not all external memory kinds may be supported on all platforms. For example, ImportedExportable kind may not be supported on some platforms.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryKind
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None               = 0U,                    ///< Normal engine-owned memory.
+    Imported           = 1U,                    ///< Created from external memory.
+    Exportable         = 2U,                    ///< Can be exported to an external handle.
+    ImportedExportable = Imported | Exportable, ///< Both imported and exportable.
+
+    ENUM_COUNT,
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType Imported : 1;
+    StorageType Exportable : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALExternalMemoryKind);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryKind);
+
+/// \brief This describes the external memory usage flags.
+///
+/// These flags mirror [VkExternalMemoryHandleTypeFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkExternalMemoryHandleTypeFlagBits).
+///
+/// \note Not all flags may be supported for all external memory types. For example, UserPointer external memory type may only support None flag.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None         = 0U,
+    ReadOnly     = XII_BIT(0), ///< The external memory is immutable and will not be written by the GAL.
+    WriteOnly    = XII_BIT(1), ///< The external memory may be written by the GAL.
+    SharedAccess = XII_BIT(2), ///< The external memory will be accessed by both the GAL and an external producer/consumer.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType ReadOnly : 1;
+    StorageType WriteOnly : 1;
+    StorageType SharedAccess : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALExternalMemoryFlags);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryFlags);
 
 namespace xiiGAL
 {
