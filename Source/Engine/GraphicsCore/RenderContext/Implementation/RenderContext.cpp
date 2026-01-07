@@ -688,18 +688,15 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
   bool bIsMeshModified = bIsShaderModified || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged);
 
-  if ((bForce || bIsMeshModified) && m_RenderContextScope == RenderContextScope::Graphics)
+  if (m_RenderContextScope == RenderContextScope::Graphics)
   {
     // Vertex shader must be bound.
     xiiSharedPtr<xiiGALShader> pVertexShader = m_ActiveGALShaders[xiiGALShaderType::Vertex];
     if (!pVertexShader)
       return XII_FAILURE;
 
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
-    {
-      m_pCommandList->SetVertexBuffers(0, m_VertexBuffers, m_VertexBufferOffsets);
-      m_pCommandList->SetIndexBuffer(m_pIndexBuffer);
-    }
+    m_pCommandList->SetVertexBuffers(0, m_VertexBuffers, m_VertexBufferOffsets);
+    m_pCommandList->SetIndexBuffer(m_pIndexBuffer);
 
     // Build custom or standard input layout.
     bool bHasInputLayout = (m_pInputLayoutInfo != nullptr) || !m_CustomInputLayout.m_VertexStreams.IsEmpty();
@@ -725,75 +722,39 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
   }
 
-  bool bIsPipelineModified = bForce || m_StateFlags.IsSet(xiiRenderContextFlags::PipelineChanged);
-  if (bIsPipelineModified)
+  if (pShaderPermutation)
   {
-    m_StateFlags.Remove(xiiRenderContextFlags::PipelineChanged);
-  }
-
-  bool bIsPipelineInvalidated = false;
-  {
-    if (pShaderPermutation)
+    if (m_RenderContextScope == RenderContextScope::Graphics)
     {
-      if (m_RenderContextScope == RenderContextScope::Graphics)
-      {
-        PrepareGraphicsPipelineDescriptor(pShaderPermutation);
+      PrepareGraphicsPipelineDescriptor(pShaderPermutation);
 
-        m_pGraphicsPipelineState = xiiGALPipelineCache::GetPipeline(m_GraphicsPipelineDescription);
+      m_pGraphicsPipelineState = xiiGALPipelineCache::GetPipeline(m_GraphicsPipelineDescription);
 
-        m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
-      }
-      else if (m_RenderContextScope == RenderContextScope::Compute)
-      {
-        PrepareComputePipelineDescriptor(pShaderPermutation);
-
-        m_pComputePipelineState = xiiGALPipelineCache::GetPipeline(m_ComputePipelineDescription);
-
-        m_pCommandList->SetPipelineState(m_pComputePipelineState);
-      }
-
-      bIsPipelineInvalidated = true;
-      XII_ASSERT_DEV(m_pGraphicsPipelineState || m_pComputePipelineState, "Pipeline creation failed.");
+      m_pCommandList->SetPipelineState(m_pGraphicsPipelineState);
     }
-  }
-
-  if (bIsAnyBindingModified || bIsPipelineInvalidated || bIsPipelineModified)
-  {
-    if (bIsPipelineInvalidated || bIsPipelineModified)
+    else if (m_RenderContextScope == RenderContextScope::Compute)
     {
-      ApplyScissor();
+      PrepareComputePipelineDescriptor(pShaderPermutation);
+
+      m_pComputePipelineState = xiiGALPipelineCache::GetPipeline(m_ComputePipelineDescription);
+
+      m_pCommandList->SetPipelineState(m_pComputePipelineState);
     }
 
-    DoIf(bIsPipelineInvalidated || bIsPipelineModified || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferUAVBindingChanged),
-         [&]() {
-           ApplyBufferUAVBindings();
-           m_StateFlags.Remove(xiiRenderContextFlags::BufferUAVBindingChanged);
-         });
-
-    DoIf(bIsPipelineInvalidated || bIsPipelineModified || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureUAVBindingChanged),
-         [&]() {
-           ApplyTextureUAVBindings();
-           m_StateFlags.Remove(xiiRenderContextFlags::TextureUAVBindingChanged);
-         });
-
-    DoIf(bIsPipelineInvalidated || bIsPipelineModified || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged),
-         [&]() {
-           ApplyBufferSRVBindings();
-           m_StateFlags.Remove(xiiRenderContextFlags::BufferBindingChanged);
-         });
-
-    DoIf(bIsPipelineInvalidated || bIsPipelineModified || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged),
-         [&]() {
-           ApplyTextureSRVBindings();
-           m_StateFlags.Remove(xiiRenderContextFlags::TextureBindingChanged);
-         });
-
-    DoIf(bIsPipelineInvalidated || bIsPipelineModified || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged),
-         [&]() {
-           ApplySamplerBindings();
-           m_StateFlags.Remove(xiiRenderContextFlags::SamplerBindingChanged);
-         });
+    XII_ASSERT_DEV((m_pGraphicsPipelineState != nullptr) ^ (m_pComputePipelineState != nullptr), "Pipeline creation failed.");
   }
+
+  ApplyScissor();
+
+  ApplyBufferUAVBindings();
+
+  ApplyTextureUAVBindings();
+
+  ApplyBufferSRVBindings();
+
+  ApplyTextureSRVBindings();
+
+  ApplySamplerBindings();
 
   if (pMaterial)
   {
@@ -816,14 +777,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     memcpy(pPassConstants.GetMappedData(), m_pPassConstants.GetPtr(), sizeof(xiiPassConstants));
   }
 
-  if (bIsAnyBindingModified || bIsPipelineModified || bIsPipelineInvalidated)
-  {
-    DoIf(bIsPipelineInvalidated || bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged),
-         [&]() {
-           ApplyConstantBufferBindings();
-           m_StateFlags.Remove(xiiRenderContextFlags::ConstantBufferBindingChanged);
-         });
-  }
+  ApplyConstantBufferBindings();
 
   return XII_SUCCESS;
 }
