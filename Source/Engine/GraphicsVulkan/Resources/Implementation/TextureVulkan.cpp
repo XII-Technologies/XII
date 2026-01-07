@@ -66,6 +66,8 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
 
 xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind)
 {
+  XII_IGNORE_UNUSED(externalMemoryKind);
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
