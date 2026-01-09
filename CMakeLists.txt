@@ -42,6 +42,9 @@ if(NOT XII_SUBMODULE_MODE)
     DESCRIPTION "Copyright (c) 2022-2025 Theophilus Eriata. All Rights Reserved."
     HOMEPAGE_URL "www.xiitechnologies.com"
     LANGUAGES ${XII_LANGUAGES})
+
+  # Enable CTest suppot for unit tests.
+  enable_testing()
 endif()
 
 include("xiiPlatform")
