@@ -3,7 +3,8 @@ param
   [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2026', 'Win64vs2022')][string] $Target,
   [switch]$NoUnityBuild,
   [switch]$NoSubmoduleUpdate,
-  [string]$SolutionName
+  [string]$SolutionName,
+  [string]$WorkspaceDirectory
 )
 
 Set-Location $PSScriptRoot
@@ -57,6 +58,11 @@ $CMAKE_ARGS += "-G"
 
 Write-Host ""
 
+$IsCustomWorkspaceDirectory = $False
+if ($WorkspaceDirectory -ne "") {
+  $IsCustomWorkspaceDirectory = $True
+}
+
 if ($Target -eq "Win64vs2026") {
 
   Write-Host "=== Generating Solution for Visual Studio 2026 x64 ==="
@@ -64,8 +70,10 @@ if ($Target -eq "Win64vs2026") {
   $CMAKE_ARGS += "Visual Studio 18 2026"
   $CMAKE_ARGS += "-A"
   $CMAKE_ARGS += "x64"
-  $CMAKE_ARGS += "-B"
-  $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2026x64"
+
+  if (-not $IsCustomWorkspaceDirectory) {
+    $WorkspaceDirectory = "vs2026x64"
+  }
 }
 elseif ($Target -eq "Win64vs2022") {
 
@@ -79,6 +87,20 @@ elseif ($Target -eq "Win64vs2022") {
 }
 else {
   throw "Unknown target '$Target'."
+}
+
+# Add build directory to cmake arguments.
+$CMAKE_ARGS += "-B"
+$CMAKE_ARGS += "$PSScriptRoot\Workspace\$WorkspaceDirectory"
+
+Write-Host "Using workspace directory: $PSScriptRoot\Workspace\$WorkspaceDirectory"
+
+# Set custom output directories to avoid conflicts between different build targets.
+if ($IsCustomWorkspaceDirector) {
+  $CMAKE_ARGS += "-DXII_OUTPUT_DIRECTORY_DLL:PATH=$PSScriptRoot\Workspace\$WorkspaceDirectory-output\Bin"
+  $CMAKE_ARGS += "-DXII_OUTPUT_DIRECTORY_LIB:PATH=$PSScriptRoot\Workspace\$WorkspaceDirectory-output\Lib"
+
+  Write-Host "Custom output directories: Workspace\$WorkspaceDirectory-output\"
 }
 
 Write-Host ""
