@@ -8,6 +8,12 @@
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+#  include <errno.h>
+#  include <sys/syscall.h>
+#  include <unistd.h>
+#endif
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -103,17 +109,48 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     vk::ImageCreateInfo vkImageCreateInfo = {};
     ComputeVkImageCreateInfo(pDeviceVulkan, m_Description, vkImageCreateInfo);
 
+    vk::ExternalMemoryImageCreateInfo vkExternalMemoryImageCreateInfo = {};
+    if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+    {
+      if (pDeviceVulkan->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled)
+      {
+        xiiLog::Error("Exportable external memory for sparse textures requires the NativeFence device feature to be enabled.");
+        return XII_FAILURE;
+      }
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      vkExternalMemoryImageCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      vkExternalMemoryImageCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+#endif
+
+      vkExternalMemoryImageCreateInfo.pNext = vkImageCreateInfo.pNext;
+      vkImageCreateInfo.pNext               = &vkExternalMemoryImageCreateInfo;
+    }
+
     // initialLayout must be either VK_IMAGE_LAYOUT_UNDEFINED or VK_IMAGE_LAYOUT_PREINITIALIZED (11.4).
     // If it is VK_IMAGE_LAYOUT_PREINITIALIZED, then the image data can be preinitialized by the host while using this layout, and the transition away from this layout will preserve that data.
     // If it is VK_IMAGE_LAYOUT_UNDEFINED, then the contents of the data are considered to be undefined, and the transition away from this layout is not guaranteed to preserve that data.
     vkImageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    vk::ImageFormatProperties vkImageFormatProperties;
+    VK_ASSERT_DEBUG(pDeviceVulkan->GetVulkanPhysicalDevice().getImageFormatProperties(vkImageCreateInfo.format, vkImageCreateInfo.imageType, vkImageCreateInfo.tiling, vkImageCreateInfo.usage, vkImageCreateInfo.flags, &vkImageFormatProperties));
+#endif
 
     if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
     {
       xiiVulkanAllocationCreateInfo allocationCreateInfo;
       allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
 
+      if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
+      {
+        allocationCreateInfo.m_bExportSharedAllocation = true;
+      }
+
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
+
+      InitializeSharedMemoryProperties(externalMemoryKind);
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -125,7 +162,14 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
       allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
       allocationCreateInfo.m_RequiredFlags = bIsMemoryLess ? xiiVulkanMemoryPropertyFlags::LazilyAllocated : xiiVulkanMemoryPropertyFlags::DeviceLocal;
 
+      if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
+      {
+        allocationCreateInfo.m_bExportSharedAllocation = true;
+      }
+
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
+
+      InitializeSharedMemoryProperties(externalMemoryKind);
 
       if (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty())
       {
@@ -319,6 +363,25 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
     XII_ASSERT_DEBUG(uiByteCountPerTile == m_SparseTextureProperties.m_uiBlockSize, "Expected memory alignment equivalent to the block size.");
   }
 #endif
+}
+
+void xiiGALTextureVulkan::InitializeSharedMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
+{
+  if (!externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+    return;
+
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+
+#else
+  XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+
+  m_ExternalMemoryKind = externalMemoryKind;
 }
 
 void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
