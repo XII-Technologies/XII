@@ -179,7 +179,7 @@ protected:
 
   virtual ~xiiGALBuffer();
 
-  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
 
   virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) = 0;
 

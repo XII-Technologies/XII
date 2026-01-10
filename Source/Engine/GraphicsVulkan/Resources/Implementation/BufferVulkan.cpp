@@ -29,7 +29,7 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan()
   }
 }
 
-xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind)
+xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   XII_IGNORE_UNUSED(externalMemoryKind);
   

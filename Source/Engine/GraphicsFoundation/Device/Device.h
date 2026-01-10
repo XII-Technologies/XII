@@ -86,7 +86,7 @@ public:
   ///
   /// \remarks Size of a uniform buffer (xiiGALBindFlags::UniformBuffer) must be multiple of 16.\n
   /// Stride of a formatted buffer will be computed automatically from the format if the m_uiElementByteStride member of buffer description is set to default value (0).
-  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind = xiiGALExternalMemoryKind::None);
+  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind = xiiGALExternalMemoryKind::None);
 
 
   /// \brief This creates a new texture object.
@@ -103,7 +103,7 @@ public:
   ///
   ///           For example, for a 15 x 6 x 2 2D texture array, the following array of sub-resources should be provided: \n 15x6, 7x3, 3x1, 1x1, 15x6, 7x3, 3x1, 1x1.\n
   ///           For a 15 x 6 x 4 3D texture, the following array of sub-resources should be provided:\n 15x6x4, 7x3x2, 3x1x1, 1x1x1
-  [[nodiscard]] xiiSharedPtr<xiiGALTexture> CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind = xiiGALExternalMemoryKind::None);
+  [[nodiscard]] xiiSharedPtr<xiiGALTexture> CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind = xiiGALExternalMemoryKind::None);
 
 
   /// \brief This creates a new sampler object.
@@ -290,8 +290,8 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALDepthStencilState>         CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)                                                                          = 0;
   virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)                                                                              = 0;
   virtual xiiInternal::NewInstance<xiiGALShader>                    CreateShaderPlatform(const xiiGALShaderCreationDescription& description)                                                                                                = 0;
-  virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind)    = 0;
-  virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
+  virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)    = 0;
+  virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
   virtual xiiInternal::NewInstance<xiiGALSampler>                   CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)                                                                                              = 0;
   virtual xiiInternal::NewInstance<xiiGALQuery>                     CreateQueryPlatform(const xiiGALQueryCreationDescription& description)                                                                                                  = 0;
   virtual xiiInternal::NewInstance<xiiGALFence>                     CreateFencePlatform(const xiiGALFenceCreationDescription& description)                                                                                                  = 0;

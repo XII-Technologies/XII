@@ -278,7 +278,7 @@ xiiSharedPtr<xiiGALShader> xiiGALDevice::CreateShader(const xiiGALShaderCreation
   return CreateShaderPlatform(description);
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
+xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
@@ -436,7 +436,7 @@ void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription&
   }
 }
 
-xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
+xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 

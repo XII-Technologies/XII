@@ -210,7 +210,7 @@ protected:
 
   virtual ~xiiGALTexture();
 
-  virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
+  virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
 
   virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) = 0;
 

@@ -64,10 +64,8 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
   }
 }
 
-xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData, xiiEnum<xiiGALExternalMemoryKind> externalMemoryKind)
+xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  XII_IGNORE_UNUSED(externalMemoryKind);
-
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
@@ -90,7 +88,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     return XII_FAILURE;
   }
 
-  const auto& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+  const xiiGALResourceFormatDescription& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
   if (m_Description.m_pExistingNativeObject != nullptr)
   {
