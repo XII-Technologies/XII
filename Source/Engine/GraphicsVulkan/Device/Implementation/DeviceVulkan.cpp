@@ -177,7 +177,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 
   if (m_Instance != VK_NULL_HANDLE)
   {
-    if (m_DebugMode != DebugMode::Disabled)
+    if (m_InstanceFlags.m_DebugMode != DebugMode::Disabled)
     {
       if (m_DebugMessenger != VK_NULL_HANDLE)
       {
@@ -287,6 +287,26 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceExtensions.PushBack(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     }
 
+    // External memory extensions (required for interop with other APIs).
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalFenceCapabilities = true;
+    }
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalSemaphoreCapabilities = true;
+    }
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalMemoryCapabilities = true;
+    }
+
     for (const auto* szExtensionName : instanceExtensions)
     {
       XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
@@ -302,12 +322,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
       {
         // Prefer VK_EXT_debug_utils.
-        m_DebugMode = DebugMode::Utils;
+        m_InstanceFlags.m_DebugMode = DebugMode::Utils;
       }
       else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
       {
         // If debug utils are unavailable, use VK_EXT_debug_report.
-        m_DebugMode = DebugMode::Report;
+        m_InstanceFlags.m_DebugMode = DebugMode::Report;
       }
 
       const char* validationLayerNames[] = {
@@ -333,7 +353,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         instanceLayers.PushBack(szValidationLayerName);
 
-        if (m_DebugMode != DebugMode::Utils)
+        if (m_InstanceFlags.m_DebugMode != DebugMode::Utils)
         {
           // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
@@ -342,12 +362,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
           {
             if (IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
             {
-              m_DebugMode = DebugMode::Utils;
+              m_InstanceFlags.m_DebugMode = DebugMode::Utils;
             }
 
-            if (m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+            if (m_InstanceFlags.m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
             {
-              m_DebugMode = DebugMode::Report;
+              m_InstanceFlags.m_DebugMode = DebugMode::Report;
             }
           }
           else
@@ -357,11 +377,11 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         }
       }
 
-      if (m_DebugMode == DebugMode::Utils)
+      if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
       {
         instanceExtensions.PushBack(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       }
-      else if (m_DebugMode == DebugMode::Report)
+      else if (m_InstanceFlags.m_DebugMode == DebugMode::Report)
       {
         instanceExtensions.PushBack(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
       }
@@ -369,7 +389,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       {
         xiiLog::Error("Neither {} nor {} extension is available. Debug tools (validation layer message logging, performance markers, etc.) will be disabled.", VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
-        m_DebugMode                     = DebugMode::Disabled;
+        m_InstanceFlags.m_DebugMode     = DebugMode::Disabled;
         m_Description.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
       }
     }
@@ -426,7 +446,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   }
 
   // If requested, we enable the default validation layers for debugging purposes.
-  if (m_DebugMode == DebugMode::Utils)
+  if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
   {
     constexpr vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
     constexpr vk::DebugUtilsMessageTypeFlagsEXT     messageType     = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
@@ -441,7 +461,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugUtilsMessengerEXT(&debugMessengerCreateInfo, nullptr, &m_DebugMessenger, m_InstanceDispatchLoader));
   }
-  else if (m_DebugMode == DebugMode::Report)
+  else if (m_InstanceFlags.m_DebugMode == DebugMode::Report)
   {
     constexpr vk::DebugReportFlagsEXT reportFlags = vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eError;
 
@@ -519,7 +539,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         XII_LOG_BLOCK(sb);
 
-        for (const auto& extensionProperty : m_PhysicalDeviceSupportedExtensions)
+        for (const vk::ExtensionProperties& extensionProperty : m_PhysicalDeviceSupportedExtensions)
         {
           xiiLog::Dev("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
         }
@@ -1043,6 +1063,75 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_CustomBorderColor.pNext;
     }
 
+    // External memory support.
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalMemory = true;
+    }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32 = true;
+    }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd = true;
+    }
+#endif
+
+    // External semaphore support.
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore = true;
+    }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32 = true;
+    }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd = true;
+    }
+#endif
+
+    // External fence support.
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalFence = true;
+    }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32 = true;
+    }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME))
+    {
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+
+      m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd = true;
+    }
+#endif
+
     // Ensure that the last next is null.
     *pNextExtension = nullptr;
   }
@@ -1058,7 +1147,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
   }
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
@@ -2629,6 +2718,33 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   INITIALIZE_DEVICE_FEATURE(DepthStencilResolve, extensionProperties.m_DepthStencilResolve.supportedDepthResolveModes != vk::ResolveModeFlagBits::eNone || extensionProperties.m_DepthStencilResolve.supportedStencilResolveModes != vk::ResolveModeFlagBits::eNone);
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalMemory = m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalMemory = m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd;
+#else
+  const bool bPlatformSupportsExternalMemory = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalMemory, m_PhysicalDeviceExtensionFeatures.m_bExternalMemory && bPlatformSupportsExternalMemory);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalSemaphore = m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalSemaphore = m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd;
+#else
+  const bool bPlatformSupportsExternalSemaphore = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalSemaphore, m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore && bPlatformSupportsExternalSemaphore);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalFence = m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalFence = m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd;
+#else
+  const bool bPlatformSupportsExternalFence = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalFence, m_PhysicalDeviceExtensionFeatures.m_bExternalFence && bPlatformSupportsExternalFence);
+
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
@@ -2640,7 +2756,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   deviceFeatures.m_AsynchronousShaderCompilation = xiiGALDeviceFeatureState::Enabled;
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2727,11 +2843,14 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   ENABLE_DEVICE_FEATURE(AsynchronousShaderCompilation,      "Asynchronous shader compilation is");
   ENABLE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, "Vertex shader render target array index is");
   ENABLE_DEVICE_FEATURE(DepthStencilResolve,                "Depth/stencil resolve is");
+  ENABLE_DEVICE_FEATURE(ExternalMemory,                     "External memory support is");
+  ENABLE_DEVICE_FEATURE(ExternalSemaphore,                  "External semaphore support is");
+  ENABLE_DEVICE_FEATURE(ExternalFence,                      "External fence support is");
   // clang-format on
 
 #undef ENABLE_DEVICE_FEATURE
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }

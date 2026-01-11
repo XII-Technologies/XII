@@ -3,7 +3,7 @@ template <typename ObjectHandle, typename>
 XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  if (m_DebugMode == DebugMode::Utils)
+  if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
   {
     if (vkObject == VK_NULL_HANDLE)
       return;

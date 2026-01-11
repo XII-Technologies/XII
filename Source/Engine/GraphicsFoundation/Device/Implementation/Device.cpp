@@ -419,6 +419,13 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     XII_GAL_DEVICE_CHECK(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger or equal to the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+  {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled, "External memory kind flags cannot be used when the External Memory feature is disabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the Native Fence feature to be enabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
+  }
+
   xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeBufferInternal(description, pBuffer);
@@ -627,6 +634,13 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
   else
   {
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::SparseAlias), "The miscellaneous flags must not have xiiGALMiscTextureFlags::SparseAlias if the usage is not xiiGALResourceUsage::Sparse.");
+  }
+
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+  {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled, "External memory kind flags cannot be used when the External Memory feature is disabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the Native Fence feature to be enabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
   }
 
   xiiHybridArray<xiiGALTextureSubResourceData, 2U> subresourceData;

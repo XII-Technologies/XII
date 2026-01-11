@@ -384,6 +384,9 @@ public:
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
       deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_ExternalMemory                     = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_ExternalSemaphore                  = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;

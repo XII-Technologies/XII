@@ -190,7 +190,7 @@ void xiiVulkanMemoryAllocator::DeInitialize()
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   char* pStatsString = nullptr;
   vmaBuildStatsString(m_pImplementation->m_VmaAllocator, &pStatsString, true);
-  xiiLog::Info("Vulkan Memory Allocator Stats:\n%s", pStatsString);
+  xiiLog::Dev("Vulkan Memory Allocator Stats:\n%s", pStatsString);
   vmaFreeStatsString(m_pImplementation->m_VmaAllocator, pStatsString);
 #endif
 }

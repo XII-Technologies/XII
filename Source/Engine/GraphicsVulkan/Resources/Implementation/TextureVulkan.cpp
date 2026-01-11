@@ -135,7 +135,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     vk::ImageFormatProperties vkImageFormatProperties;
-    VK_ASSERT_DEBUG(pDeviceVulkan->GetVulkanPhysicalDevice().getImageFormatProperties(vkImageCreateInfo.format, vkImageCreateInfo.imageType, vkImageCreateInfo.tiling, vkImageCreateInfo.usage, vkImageCreateInfo.flags, &vkImageFormatProperties));
+    VK_ASSERT_DEBUG(pDeviceVulkan->GetVulkanPhysicalDevice().getImageFormatProperties(vkImageCreateInfo.format, vkImageCreateInfo.imageType, vkImageCreateInfo.tiling, vkImageCreateInfo.usage, vkImageCreateInfo.flags, &vkImageFormatProperties, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #endif
 
     if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
@@ -356,9 +356,9 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
-    const auto&     formatProperties    = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
-    const xiiUInt32 uiByteCountPerBlock = formatProperties.GetElementSize();
-    const xiiUInt32 uiByteCountPerTile  = (m_SparseTextureProperties.m_vTileSize.x / formatProperties.m_uiBlockWidth) * (m_SparseTextureProperties.m_vTileSize.y / formatProperties.m_uiBlockHeight) * (m_SparseTextureProperties.m_vTileSize.z * m_Description.m_uiSampleCount * uiByteCountPerBlock);
+    const xiiGALResourceFormatDescription& formatProperties    = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+    const xiiUInt32                        uiByteCountPerBlock = formatProperties.GetElementSize();
+    const xiiUInt32                        uiByteCountPerTile  = (m_SparseTextureProperties.m_vTileSize.x / formatProperties.m_uiBlockWidth) * (m_SparseTextureProperties.m_vTileSize.y / formatProperties.m_uiBlockHeight) * (m_SparseTextureProperties.m_vTileSize.z * m_Description.m_uiSampleCount * uiByteCountPerBlock);
 
     XII_ASSERT_DEBUG(uiByteCountPerTile == m_SparseTextureProperties.m_uiBlockSize, "Expected memory alignment equivalent to the block size.");
   }

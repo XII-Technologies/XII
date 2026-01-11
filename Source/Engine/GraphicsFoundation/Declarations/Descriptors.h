@@ -59,6 +59,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_AsynchronousShaderCompilation      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports asynchronous shader compilation.
   xiiEnum<xiiGALDeviceFeatureState> m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports SV_RenderTargetArrayIndex semantic in the vertex shader.
   xiiEnum<xiiGALDeviceFeatureState> m_DepthStencilResolve                = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports depth/stencil resolve operations.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalMemory                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared memory across multiple devices or APIs.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalSemaphore                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared semaphores across multiple devices or APIs.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalFence                      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared fences across multiple devices or APIs.
 };
 
 /// \brief This describes the optimized depth-stencil clear value.
