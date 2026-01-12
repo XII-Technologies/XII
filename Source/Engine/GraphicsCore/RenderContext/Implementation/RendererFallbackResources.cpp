@@ -27,9 +27,9 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiSharedPtr<xiiGALDevice> xiiRendererFallbackResources::s_pDevice;
 
 xiiHashTable<xiiRendererFallbackResources::Key, xiiSharedPtr<xiiGALTextureView>, xiiRendererFallbackResources::KeyHash> xiiRendererFallbackResources::s_TextureResourceViews;
-xiiHashTable<xiiEnum<xiiGALShaderResourceType>, xiiSharedPtr<xiiGALBufferView>, xiiRendererFallbackResources::KeyHash>     xiiRendererFallbackResources::s_BufferResourceViews;
-xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>                                                                                   xiiRendererFallbackResources::s_Buffers;
-xiiDynamicArray<xiiSharedPtr<xiiGALTexture>>                                                                                  xiiRendererFallbackResources::s_Textures;
+xiiHashTable<xiiEnum<xiiGALShaderResourceType>, xiiSharedPtr<xiiGALBufferView>, xiiRendererFallbackResources::KeyHash>  xiiRendererFallbackResources::s_BufferResourceViews;
+xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>                                                                             xiiRendererFallbackResources::s_Buffers;
+xiiDynamicArray<xiiSharedPtr<xiiGALTexture>>                                                                            xiiRendererFallbackResources::s_Textures;
 
 void xiiRendererFallbackResources::Initialize()
 {
@@ -55,8 +55,9 @@ void xiiRendererFallbackResources::Initialize()
       description.m_uiArraySizeOrDepth *= 6;
     }
 
-    xiiSharedPtr<xiiGALTexture> pTexture = s_pDevice->CreateTexture(description);
-    XII_ASSERT_DEV(!pTexture, "Failed to create fallback texture resource.");
+    xiiGALTextureData           initialData;
+    xiiSharedPtr<xiiGALTexture> pTexture = s_pDevice->CreateTexture(description, &initialData);
+    XII_ASSERT_DEV(pTexture != nullptr, "Failed to create fallback texture resource.");
     pTexture->SetDebugName("FallbackTexture");
 
     s_Textures.PushBack(pTexture);
@@ -65,7 +66,7 @@ void xiiRendererFallbackResources::Initialize()
   };
 
   {
-    xiiSharedPtr<xiiGALTexture> pTexture = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2D, false}]             = pTextureView;
@@ -74,7 +75,7 @@ void xiiRendererFallbackResources::Initialize()
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture2DArray, false}] = pTextureView;
   }
   {
-    xiiSharedPtr<xiiGALTexture> pTexture = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, true);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, true);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2D, true}]             = pTextureView;
@@ -84,7 +85,7 @@ void xiiRendererFallbackResources::Initialize()
   }
   {
     // Assume supported.
-    xiiSharedPtr<xiiGALTexture> pTexture = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::FourSamples, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::FourSamples, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2DMS, false}]             = pTextureView;
@@ -93,7 +94,7 @@ void xiiRendererFallbackResources::Initialize()
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture2DMSArray, false}] = pTextureView;
   }
   {
-    xiiSharedPtr<xiiGALTexture> pTexture = CreateTexture(xiiGALResourceDimension::TextureCube, xiiGALMSAASampleCount::OneSample, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::TextureCube, xiiGALMSAASampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::TextureCube, false}]             = pTextureView;
@@ -102,44 +103,30 @@ void xiiRendererFallbackResources::Initialize()
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::TextureCubeArray, false}] = pTextureView;
   }
   {
-    xiiSharedPtr<xiiGALTexture> pTexture = CreateTexture(xiiGALResourceDimension::Texture3D, xiiGALMSAASampleCount::OneSample, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture3D, xiiGALMSAASampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
-    s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture3D, false}]             = pTextureView;
-    s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture3D, false}]      = pTextureView;
+    s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture3D, false}]        = pTextureView;
+    s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture3D, false}] = pTextureView;
   }
 
   {
     xiiGALBufferCreationDescription description;
-    description.m_BindFlags = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
-    description.m_Usage     = xiiGALResourceUsage::Default;
-    description.m_Mode                = xiiGALBufferMode::Undefined;
+    description.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    description.m_Usage               = xiiGALResourceUsage::Default;
+    description.m_Mode                = xiiGALBufferMode::Raw;
     description.m_uiElementByteStride = 0U;
-    description.m_uiSize = 128U;
+    description.m_uiSize              = 128U;
 
     xiiSharedPtr<xiiGALBuffer> pBuffer = s_pDevice->CreateBuffer(description);
-    XII_ASSERT_DEV(!pBuffer, "Failed to create fallback buffer resource.");
+    XII_ASSERT_DEV(pBuffer != nullptr, "Failed to create fallback buffer resource.");
     pBuffer->SetDebugName("FallbackBuffer");
 
     s_Buffers.PushBack(pBuffer);
 
     s_BufferResourceViews[xiiGALShaderResourceType::ConstantBuffer] = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
-  }
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_BindFlags           = xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource;
-    description.m_Usage               = xiiGALResourceUsage::Default;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_uiElementByteStride = 0U;
-    description.m_uiSize              = 128U;
-
-    xiiSharedPtr<xiiGALBuffer> pBuffer = s_pDevice->CreateBuffer(description);
-    XII_ASSERT_DEV(!pBuffer, "Failed to create fallback buffer resource.");
-    pBuffer->SetDebugName("FallbackBuffer");
-
-    s_Buffers.PushBack(pBuffer);
-
-    s_BufferResourceViews[xiiGALShaderResourceType::BufferSRV] = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+    s_BufferResourceViews[xiiGALShaderResourceType::BufferSRV]      = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+    s_BufferResourceViews[xiiGALShaderResourceType::BufferUAV]      = pBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess);
   }
 }
 

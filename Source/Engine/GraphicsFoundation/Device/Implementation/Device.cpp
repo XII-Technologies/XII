@@ -474,7 +474,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_Size.height != 0U, "The texture height cannot be zero.");
   }
 
-  XII_GAL_DEVICE_CHECK(description.m_Type != xiiGALResourceDimension::Texture3D && description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
+  XII_GAL_DEVICE_CHECK(description.m_Type != xiiGALResourceDimension::Texture3D || description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
 
   if (description.m_Type == xiiGALResourceDimension::Texture1D || description.m_Type == xiiGALResourceDimension::Texture2D)
   {
