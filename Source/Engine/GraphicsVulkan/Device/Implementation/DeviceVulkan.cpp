@@ -2521,8 +2521,6 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
   if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME))
   {
-    deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
-
     m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd = true;
   }
 #endif
