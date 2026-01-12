@@ -304,6 +304,10 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
   deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
   deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Optional;
   deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_DepthStencilResolve                = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_ExternalMemory                     = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_ExternalSemaphore                  = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_ExternalFence                      = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;

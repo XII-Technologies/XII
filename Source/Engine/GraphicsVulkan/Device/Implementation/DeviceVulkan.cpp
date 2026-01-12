@@ -1052,6 +1052,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
     }
 
+    if (m_AdapterDescription.m_Features.m_VertexShaderRenderTargetArrayIndex != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
+    }
+
     // Custom border color.
     if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
     {
@@ -1064,73 +1071,56 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
 
     // External memory support.
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME))
+    if (m_AdapterDescription.m_Features.m_ExternalMemory != xiiGALDeviceFeatureState::Disabled)
     {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME), "");
+
       deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
 
-      m_PhysicalDeviceExtensionFeatures.m_bExternalMemory = true;
-    }
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME))
-    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME), "");
+
       deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
-
-      m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32 = true;
-    }
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
-    {
-      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME), "");
 
-      m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd = true;
-    }
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
 #endif
+    }
 
     // External semaphore support.
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
+    if (m_AdapterDescription.m_Features.m_ExternalSemaphore != xiiGALDeviceFeatureState::Disabled)
     {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME), "");
+
       deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
-
-      m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore = true;
-    }
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME))
-    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME), "");
+
       deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
-
-      m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32 = true;
-    }
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME))
-    {
-      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME), "");
 
-      m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd = true;
-    }
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
 #endif
+    }
 
     // External fence support.
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME))
+    if (m_AdapterDescription.m_Features.m_ExternalFence != xiiGALDeviceFeatureState::Disabled)
     {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME), "");
+
       deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
-
-      m_PhysicalDeviceExtensionFeatures.m_bExternalFence = true;
-    }
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME))
-    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME), "");
+
       deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME);
-
-      m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32 = true;
-    }
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-    if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME))
-    {
-      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME), "");
 
-      m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd = true;
-    }
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
 #endif
+    }
 
     // Ensure that the last next is null.
     *pNextExtension = nullptr;
@@ -1138,13 +1128,6 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   else
   {
     xiiLog::Error("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
-  }
-
-  if (m_PhysicalDeviceExtensionFeatures.m_bShaderViewportIndexLayer)
-  {
-    XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
-
-    deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
   }
 
   static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
@@ -2490,6 +2473,59 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve;
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve.pNext;
   }
+
+  // External memory support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemory = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd = true;
+  }
+#endif
+
+  // External semaphore support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd = true;
+  }
+#endif
+
+  // External fence support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFence = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME))
+  {
+    deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd = true;
+  }
+#endif
 
   // Ensure that last pNext is null
   *pNextFeature  = nullptr;
