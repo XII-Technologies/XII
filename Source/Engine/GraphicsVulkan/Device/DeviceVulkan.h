@@ -185,6 +185,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
   [[nodiscard]] XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::InstanceFlags& GetVulkanInstanceFlags() const { return m_InstanceFlags; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const char* const> GetVulkanInstanceEnabledExtensions() const { return m_EnabledExtensions; }

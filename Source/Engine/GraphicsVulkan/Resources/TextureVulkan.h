@@ -54,7 +54,7 @@ private:
 
   void InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData);
   void InitializeSparseTextureProperties();
-  void InitializeSharedMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind);
+  void InitializeExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind);
 
   static void ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
 
@@ -66,5 +66,6 @@ private:
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
 
-  vk::Semaphore m_vkSharedMemorySemaphore;
+  xiiGALExternalMemoryDescription m_ExternalMemoryDescription;
+  vk::Semaphore                   m_vkExternalMemorySemaphore;
 };

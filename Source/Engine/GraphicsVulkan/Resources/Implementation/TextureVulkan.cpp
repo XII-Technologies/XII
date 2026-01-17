@@ -150,7 +150,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
 
-      InitializeSharedMemoryProperties(externalMemoryKind);
+      InitializeExternalMemoryProperties(externalMemoryKind);
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -169,7 +169,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
 
-      InitializeSharedMemoryProperties(externalMemoryKind);
+      InitializeExternalMemoryProperties(externalMemoryKind);
 
       if (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty())
       {
@@ -365,7 +365,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 #endif
 }
 
-void xiiGALTextureVulkan::InitializeSharedMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
+void xiiGALTextureVulkan::InitializeExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   if (!externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
     return;

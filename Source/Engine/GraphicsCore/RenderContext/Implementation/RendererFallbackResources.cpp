@@ -85,7 +85,7 @@ void xiiRendererFallbackResources::Initialize()
   }
   {
     // Assume supported.
-    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::FourSamples, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2DMS, false}]             = pTextureView;
