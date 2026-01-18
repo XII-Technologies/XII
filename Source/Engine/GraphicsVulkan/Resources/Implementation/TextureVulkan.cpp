@@ -149,9 +149,18 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
         allocationCreateInfo.m_bExportSharedAllocation = true;
       }
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
+      if (externalMemoryKind == xiiGALExternalMemoryKind::None || externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
+      }
+      else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-      XII_SUCCEED_OR_RETURN(InitializeExternalMemoryProperties(externalMemoryKind));
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+
+      XII_SUCCEED_OR_RETURN(InitializeImageExternalMemoryProperties(externalMemoryKind));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -168,9 +177,18 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
         allocationCreateInfo.m_bExportSharedAllocation = true;
       }
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
+      if (externalMemoryKind == xiiGALExternalMemoryKind::None || externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
+      }
+      else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-      XII_SUCCEED_OR_RETURN(InitializeExternalMemoryProperties(externalMemoryKind));
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+
+      XII_SUCCEED_OR_RETURN(InitializeImageExternalMemoryProperties(externalMemoryKind));
 
       if (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty())
       {
@@ -366,7 +384,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 #endif
 }
 
-xiiResult xiiGALTextureVulkan::InitializeExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
+xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   if (!externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
     return XII_SUCCESS;
@@ -374,9 +392,9 @@ xiiResult xiiGALTextureVulkan::InitializeExternalMemoryProperties(xiiBitflags<xi
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
   if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
   {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
     xiiVulkanAllocationInfo allocationInfo = pDeviceVulkan->GetVulkanMemoryAllocator()->GetAllocationInfo(m_ImageMemoryAllocation);
 
     vk::MemoryGetWin32HandleInfoKHR vkGetMemoryHandleInfo = {};
@@ -416,12 +434,111 @@ xiiResult xiiGALTextureVulkan::InitializeExternalMemoryProperties(xiiBitflags<xi
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSemaphoreWin32HandleKHR(&vkSemaphoreGetHandleInfo, &hSemaphoreHandle, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hNativeHandle);
-  }
+
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 
 #else
-  XII_ASSERT_NOT_IMPLEMENTED;
+    XII_ASSERT_NOT_IMPLEMENTED;
 #endif
+  }
+  else if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
+  {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    const bool bNeedsForeignFileDescriptorsImport = m_ExternalMemoryDescription.m_uiProcessId != xiiProcess::GetCurrentProcessID();
+    if (bNeedsForeignFileDescriptorsImport)
+    {
+      HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE, FALSE, static_cast<DWORD>(m_ExternalMemoryDescription.m_uiProcessId));
+      if (hProcess == nullptr)
+      {
+        xiiLog::Error("Failed to open process with ID {} to import external memory handle. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(GetLastError()));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0;
+
+        return XII_FAILURE;
+      }
+
+      HANDLE hDuplicatedHandleA;
+      bool   bSuccess                              = DuplicateHandle(hProcess, reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle), GetCurrentProcess(), &hDuplicatedHandleA, 0, FALSE, DUPLICATE_SAME_ACCESS);
+      m_ExternalMemoryDescription.m_uiNativeHandle = reinterpret_cast<uintptr_t>(hDuplicatedHandleA);
+      if (!bSuccess)
+      {
+        xiiLog::Error("Failed to duplicate external memory handle from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(GetLastError()));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0;
+
+        CloseHandle(hProcess);
+        return XII_FAILURE;
+      }
+
+      HANDLE hDuplicatedHandleB;
+      bSuccess                                              = DuplicateHandle(hProcess, reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle), GetCurrentProcess(), &hDuplicatedHandleB, 0, FALSE, DUPLICATE_SAME_ACCESS);
+      m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hDuplicatedHandleB);
+      if (!bSuccess)
+      {
+        xiiLog::Error("Failed to duplicate external semaphore handle from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(GetLastError()));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
+
+        CloseHandle(hProcess);
+        return XII_FAILURE;
+      }
+    }
+
+    // Import semaphore.
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    vk::ImportSemaphoreWin32HandleInfoKHR vkImportSemaphoreHandleInfo = {};
+    vkImportSemaphoreHandleInfo.semaphore                             = m_vkExternalMemorySemaphore;
+    vkImportSemaphoreHandleInfo.handleType                            = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+    vkImportSemaphoreHandleInfo.handle                                = reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle);
+    vkImportSemaphoreHandleInfo.flags                                 = {};
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.importSemaphoreWin32HandleKHR(&vkImportSemaphoreHandleInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Image is already created, so import memory.
+    vk::ImageMemoryRequirementsInfo2 vkImageMemoryRequirementsInfo = {};
+    vkImageMemoryRequirementsInfo.image                            = m_vkImage;
+
+    vk::MemoryRequirements2 vkMemoryRequirements2 = {};
+    vkLogicalDevice.getImageMemoryRequirements2(&vkImageMemoryRequirementsInfo, &vkMemoryRequirements2, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    XII_ASSERT_DEBUG(m_ExternalMemoryDescription.m_uiSize >= vkMemoryRequirements2.memoryRequirements.size, "Imported memory size is smaller than required.");
+
+    vk::ImportMemoryWin32HandleInfoKHR vkImportMemoryHandleInfo = {};
+    vkImportMemoryHandleInfo.handle                             = reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle);
+    vkImportMemoryHandleInfo.handleType                         = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+    vkImportMemoryHandleInfo.pNext                              = nullptr;
+
+    vk::MemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.pNext                  = &vkImportMemoryHandleInfo;
+    vkMemoryAllocateInfo.allocationSize         = vkMemoryRequirements2.memoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex        = m_ExternalMemoryDescription.m_uiMemoryTypeIndex;
+
+    vk::DeviceMemory vkDeviceMemory;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.allocateMemory(&vkMemoryAllocateInfo, nullptr, &vkDeviceMemory, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ImageMemoryAllocation                      = {};
+    m_ImageMemoryAllocationInfo.m_vkDeviceMemory = vkDeviceMemory;
+    m_ImageMemoryAllocationInfo.m_uiOffset       = 0U;
+    m_ImageMemoryAllocationInfo.m_uiSize         = vkMemoryRequirements2.memoryRequirements.size;
+    m_ImageMemoryAllocationInfo.m_uiMemoryType   = vkMemoryAllocateInfo.memoryTypeIndex;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.bindImageMemory(m_vkImage, vkDeviceMemory, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+
+#else
+    XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+  }
 
   return XII_SUCCESS;
 }
