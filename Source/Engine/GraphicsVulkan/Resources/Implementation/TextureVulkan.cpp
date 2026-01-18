@@ -63,11 +63,19 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), std::move(m_StagingBufferMemoryAllocation));
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkExternalMemorySemaphore));
 
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExistingNativeObject == nullptr)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
+    if (m_ExternalMemoryDescription.m_Type == xiiGALExternalMemoryKind::Imported)
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), VK_NULL_HANDLE, std::move(m_ImageMemoryAllocationInfo.m_vkDeviceMemory));
+    }
+    else
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
+    }
   }
 }
 
@@ -388,6 +396,8 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
 {
   if (!externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
     return XII_SUCCESS;
+
+  m_ExternalMemoryDescription.m_Type = xiiGALExternalMemoryKind::None;
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();

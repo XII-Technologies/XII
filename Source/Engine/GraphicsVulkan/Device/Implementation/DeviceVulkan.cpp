@@ -1278,8 +1278,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
+void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation, vk::DeviceMemory vkExternalMemory)
 {
+  if (vkExternalMemory != VK_NULL_HANDLE)
+  {
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vkExternalMemory);
+    return;
+  }
   if (allocation != VK_NULL_HANDLE)
   {
     m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, allocation);
@@ -3026,6 +3031,29 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   }
 }
 
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
+{
+  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid Vulkan memory allocation.");
+  XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
+  XII_ASSERT_DEV(vkExternalMemory != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkObjectType                        = vkObjectType;
+  entry.m_pObject                             = pObject;
+  entry.m_vkExternalMemory                    = vkExternalMemory;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
+}
+
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
 {
   XII_ASSERT_DEV(pSemaphorePool != nullptr, "Semaphore pool must be valid.");
@@ -3114,6 +3142,10 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       {
         DestroyFence(entry.m_pFencePool, std::move(entry.m_vkFence));
       }
+      else if (entry.m_vkExternalMemory != VK_NULL_HANDLE)
+      {
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_vkExternalMemory);
+      }
       else if (entry.m_VulkanAllocation != VK_NULL_HANDLE)
       {
         DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VulkanAllocation);
@@ -3159,6 +3191,10 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         {
           DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
         }
+        else if (it->m_vkExternalMemory != VK_NULL_HANDLE)
+        {
+          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_vkExternalMemory);
+        }
         else if (it->m_VulkanAllocation != VK_NULL_HANDLE)
         {
           DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VulkanAllocation);
@@ -3196,12 +3232,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
     break;
     case vk::ObjectType::eBuffer:
     {
-      XII_REPORT_FAILURE("Buffer must be destroyed using the Vulkan memory allocator.");
+      XII_REPORT_FAILURE("Buffer must be destroyed using the Vulkan memory allocator or external memory semantics.");
     }
     break;
     case vk::ObjectType::eImage:
     {
-      XII_REPORT_FAILURE("Image must be destroyed using the Vulkan memory allocator.");
+      XII_REPORT_FAILURE("Image must be destroyed using the Vulkan memory allocator or external memory semantics.");
     }
     break;
     case vk::ObjectType::eEvent:
@@ -3291,6 +3327,28 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkO
     case vk::ObjectType::eImage:
     {
       m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyImage(reinterpret_cast<vk::Image&>(pObject), allocation);
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
+{
+  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+  switch (vkObjectType)
+  {
+    case vk::ObjectType::eBuffer:
+    {
+      vkLogicalDevice.destroyBuffer(reinterpret_cast<vk::Buffer&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vkLogicalDevice.freeMemory(vkExternalMemory, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eImage:
+    {
+      vkLogicalDevice.destroyImage(reinterpret_cast<vk::Image&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vkLogicalDevice.freeMemory(vkExternalMemory, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
     }
     break;
 

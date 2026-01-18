@@ -108,6 +108,7 @@ public:
 
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory);
 
     void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
     void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
@@ -131,6 +132,7 @@ public:
       vk::ObjectType      m_vkObjectType     = vk::ObjectType::eUnknown;
       void*               m_pObject          = VK_NULL_HANDLE;
       xiiVulkanAllocation m_VulkanAllocation = VK_NULL_HANDLE;
+      vk::DeviceMemory    m_vkExternalMemory = VK_NULL_HANDLE;
 
       xiiGALSemaphorePoolVulkan* m_pSemaphorePool = nullptr;
       vk::Semaphore              m_vkSemaphore    = VK_NULL_HANDLE;
@@ -149,6 +151,7 @@ public:
 
     void DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject);
     void DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
+    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory);
 
     void DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore);
     void DestroyFence(xiiGALFencePoolVulkan* pFencePool, vk::Fence&& vkReclaimFence);
@@ -171,7 +174,7 @@ public:
   XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation = {}) const;
 
   template <typename T, typename = std::enable_if_t<std::is_class_v<T> && HasObjectType<T>::value>>
-  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation = nullptr);
+  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation = nullptr, vk::DeviceMemory&& vkExternalMemory = nullptr);
 
   template <typename T>
   XII_ALWAYS_INLINE void ReclaimLater(T&& vkObject) { ReclaimLaterInternal(vkObject.objectType, (void*)vkObject); }
@@ -261,7 +264,7 @@ protected:
   /// \endcond
 
 private:
-  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
+  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation, vk::DeviceMemory vkExternalMemory);
   void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
   void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const;
 

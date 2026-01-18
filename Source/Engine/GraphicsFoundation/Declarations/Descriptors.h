@@ -418,6 +418,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHa
   xiiUInt64                              m_uiNativeHandle          = 0U;                              ///< Native external memory handle (e.g., HANDLE on Windows, file descriptor on Linux).
   xiiUInt64                              m_uiSize                  = 0U;                              ///< Size of the external memory in bytes.
   xiiUInt64                              m_uiProcessId             = 0U;                              ///< Process ID of the process that created the external memory handle. This is used for cross-process memory sharing.
-  xiiUInt64                              m_uiMemoryTypeIndex       = 0U;                              ///< Memory type index that is compatible with the external memory handle. This is used to ensure that the imported memory can be used with the graphics device.
+  xiiUInt32                              m_uiMemoryTypeIndex       = 0U;                              ///< Memory type index that is compatible with the external memory handle. This is used to ensure that the imported memory can be used with the graphics device.
   xiiUInt64                              m_uiNativeSemaphoreHandle = 0U;                              ///< Native external semaphore handle (e.g., HANDLE on Windows, file descriptor on Linux). Used when importing semaphores for synchronization.
 };
