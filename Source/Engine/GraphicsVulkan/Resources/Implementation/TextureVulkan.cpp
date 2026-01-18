@@ -1,5 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <Foundation/System/Process.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
@@ -150,7 +151,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
 
-      InitializeExternalMemoryProperties(externalMemoryKind);
+      XII_SUCCEED_OR_RETURN(InitializeExternalMemoryProperties(externalMemoryKind));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -169,7 +170,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation));
 
-      InitializeExternalMemoryProperties(externalMemoryKind);
+      XII_SUCCEED_OR_RETURN(InitializeExternalMemoryProperties(externalMemoryKind));
 
       if (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty())
       {
@@ -365,23 +366,64 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 #endif
 }
 
-void xiiGALTextureVulkan::InitializeExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
+xiiResult xiiGALTextureVulkan::InitializeExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   if (!externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
-    return;
+    return XII_SUCCESS;
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
+  {
+    xiiVulkanAllocationInfo allocationInfo = pDeviceVulkan->GetVulkanMemoryAllocator()->GetAllocationInfo(m_ImageMemoryAllocation);
 
+    vk::MemoryGetWin32HandleInfoKHR vkGetMemoryHandleInfo = {};
+    vkGetMemoryHandleInfo.memory                          = allocationInfo.m_vkDeviceMemory;
+    vkGetMemoryHandleInfo.handleType                      = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+
+    HANDLE hNativeHandle;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getMemoryWin32HandleKHR(&vkGetMemoryHandleInfo, &hNativeHandle, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_Type              = xiiGALExternalMemoryKind::Exportable;
+    m_ExternalMemoryDescription.m_Flags             = xiiGALExternalMemoryFlags::SharedAccess;
+    m_ExternalMemoryDescription.m_uiNativeHandle    = reinterpret_cast<uintptr_t>(hNativeHandle);
+    m_ExternalMemoryDescription.m_uiProcessId       = xiiProcess::GetCurrentProcessID();
+    m_ExternalMemoryDescription.m_uiSize            = allocationInfo.m_uiSize;
+    m_ExternalMemoryDescription.m_uiMemoryTypeIndex = allocationInfo.m_uiMemoryType;
+
+    vk::ExportSemaphoreWin32HandleInfoKHR vkExportSemaphoreHandleInfo = {};
+    vkExportSemaphoreHandleInfo.dwAccess                              = GENERIC_READ | GENERIC_WRITE;
+
+    vk::ExportSemaphoreCreateInfo vkExportSemaphoreCreateInfo = {};
+    vkExportSemaphoreCreateInfo.pNext                         = &vkExportSemaphoreHandleInfo;
+    vkExportSemaphoreCreateInfo.handleTypes                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkExportSemaphoreCreateInfo.pNext                        = &vkExportSemaphoreCreateInfo;
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    HANDLE                             hSemaphoreHandle;
+    vk::SemaphoreGetWin32HandleInfoKHR vkSemaphoreGetHandleInfo = {};
+    vkSemaphoreGetHandleInfo.semaphore                          = m_vkExternalMemorySemaphore;
+    vkSemaphoreGetHandleInfo.handleType                         = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSemaphoreWin32HandleKHR(&vkSemaphoreGetHandleInfo, &hSemaphoreHandle, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hNativeHandle);
+  }
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 
 #else
   XII_ASSERT_NOT_IMPLEMENTED;
 #endif
 
-  m_ExternalMemoryKind = externalMemoryKind;
+  return XII_SUCCESS;
 }
 
 void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)

@@ -169,7 +169,10 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& GetDescription() const { return m_Description; }
 
   /// \brief Returns the external memory kind flags for this texture.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryKind; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryDescription.m_Type; }
+
+  /// \brief Returns the external memory description for this texture.
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALExternalMemoryDescription& GetExternalMemoryDescription() const { return m_ExternalMemoryDescription; }
 
   /// \brief Returns the calculated memory consumption for texture.
   [[nodiscard]] virtual xiiUInt64 GetMemoryConsumption() const;
@@ -217,7 +220,7 @@ protected:
 protected:
   xiiGALTextureCreationDescription m_Description;
 
-  xiiBitflags<xiiGALExternalMemoryKind> m_ExternalMemoryKind;
+  xiiGALExternalMemoryDescription m_ExternalMemoryDescription;
 
   xiiSharedPtr<xiiGALTextureView> m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
 
