@@ -80,7 +80,7 @@ case "$Distribution" in
     ;;
   fedora)
     if [[ "$Version" -ge 38 ]]; then
-      packages=(cmake gcc gcc-c++ ninja-build egl-wayland uuid-devel mold freetype-devel ncurses-compat-libs)
+      packages=(cmake gcc gcc-c++ ninja-build egl-wayland libuuid-devel mold freetype-devel ncurses-compat-libs)
     fi
     ;;
 esac

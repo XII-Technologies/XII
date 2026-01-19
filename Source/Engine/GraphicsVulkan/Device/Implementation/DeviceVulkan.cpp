@@ -3168,7 +3168,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
 
       if (HasTimelineSemaphore())
       {
-        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiCompletedFenceValue, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore,  reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
       }
       else
       {

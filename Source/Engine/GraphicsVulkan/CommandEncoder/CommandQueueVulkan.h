@@ -18,7 +18,7 @@ public:
   XII_ALWAYS_INLINE virtual xiiUInt64 GetNextFenceValue() const override final { return m_uiNextFenceValue; }
 
   /// \brief This returns the last completed value of the internal fence.
-  XII_ALWAYS_INLINE virtual xiiUInt64 GetCompletedFenceValue() override final;
+  virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   XII_ALWAYS_INLINE const xiiGALQueueInformationVulkan& GetQueueInformation() const { return m_QueueInformation; };
 

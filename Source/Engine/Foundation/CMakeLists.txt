@@ -19,22 +19,20 @@ if(XII_CMAKE_COMPILER_CLANG)
 endif()
 
 if(XII_CMAKE_PLATFORM_LINUX)
-  # Look for either uuid/uuid.h (Debian) or uuid.h (Fedora)
-  find_path(UUID_INCLUDE_DIR
-    NAMES uuid/uuid.h uuid.h
-    PATHS /usr/include /usr/local/include
-  )
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(UUID REQUIRED uuid)
 
-  if(NOT UUID_INCLUDE_DIR)
-    message(FATAL_ERROR "Missing uuid headers. Install uuid-dev (Debian/Ubuntu) or uuid-devel (Fedora).")
+  if(NOT UUID_FOUND)
+    message(FATAL_ERROR "Missing libuuid. Install uuid-dev (Debian/Ubuntu) or libuuid-devel (Fedora).")
   endif()
 
-  include_directories(${UUID_INCLUDE_DIR})
+  include_directories(${UUID_INCLUDE_DIRS})
+  link_directories(${UUID_LIBRARY_DIRS})
 
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
-    uuid
-    dl # dlopen, dlclose, etc
+      ${UUID_LIBRARIES}
+      dl # dlopen, dlclose, etc
   )
 endif()
 

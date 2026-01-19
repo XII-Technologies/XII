@@ -446,7 +446,8 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
     m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hNativeHandle);
 
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-
+    XII_IGNORE_UNUSED(pDeviceVulkan);
+    XII_IGNORE_UNUSED(vkLogicalDevice);
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
 #endif
@@ -544,7 +545,8 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.bindImageMemory(m_vkImage, vkDeviceMemory, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-
+    XII_IGNORE_UNUSED(pDeviceVulkan);
+    XII_IGNORE_UNUSED(vkLogicalDevice);
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
 #endif

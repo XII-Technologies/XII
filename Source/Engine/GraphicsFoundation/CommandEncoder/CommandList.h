@@ -214,8 +214,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResolveTextureSubresourceDescription
 
   XII_ALWAYS_INLINE xiiGALResolveTextureSubresourceDescription() = default;
 
-  XII_ALWAYS_INLINE xiiGALResolveTextureSubresourceDescription(xiiUInt32 uiSourceMip, xiiUInt32 uiSourceSlice, xiiUInt32 uiDestMip, xiiUInt32 uiDestSlice, xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown, xiiEnum<xiiGALStateTransitionMode> sourceMode = xiiGALStateTransitionMode::Transition, xiiEnum<xiiGALStateTransitionMode> destMode = xiiGALStateTransitionMode::Transition) :
-    m_uiSourceMipLevel(uiSourceMip), m_uiSourceSlice(uiSourceSlice), m_uiDestinationMipLevel(uiDestMip), m_uiDestinationSlice(uiDestSlice), m_Format(format), m_SourceTextureTransitionMode(sourceMode), m_DestinationTextureTransitionMode(destMode)
+  XII_ALWAYS_INLINE xiiGALResolveTextureSubresourceDescription(xiiUInt32 uiSourceMip, xiiUInt32 uiSourceSlice, xiiUInt32 uiDestinationMipLevel, xiiUInt32 uiDestinationSlice, xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown, xiiEnum<xiiGALStateTransitionMode> sourceMode = xiiGALStateTransitionMode::Transition, xiiEnum<xiiGALStateTransitionMode> destinationMode = xiiGALStateTransitionMode::Transition) :
+    m_uiSourceMipLevel(uiSourceMip), m_uiSourceSlice(uiSourceSlice), m_SourceTextureTransitionMode(sourceMode), m_uiDestinationMipLevel(uiDestinationMipLevel), m_uiDestinationSlice(uiDestinationSlice), m_DestinationTextureTransitionMode(destinationMode), m_Format(format)
   {
   }
 
