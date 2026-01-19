@@ -1,6 +1,8 @@
 #!/bin/bash -e
 
-# read arguments
+# -----------------------------
+# Parse arguments
+# -----------------------------
 opts=$(getopt \
   --longoptions help,clang,setup,no-cmake,no-unitybuild,build-type: \
   --name "$(basename "$0")" \
@@ -8,141 +10,171 @@ opts=$(getopt \
   -- "$@"
 )
 
-eval set --$opts
+eval set -- "$opts"
 
 RunCMake=true
 BuildType="Dev"
 NoUnityBuild=""
+UseClang=false
+Setup=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --help)
       echo "Usage: $(basename $0) [--setup] [--clang] [--no-cmake] [--build-type Debug|Dev|Shipping] [--no-unitybuild]"
-      echo "  --setup         Run first time setup. This installs dependencies and makes sure the git repository is setup correctly."
-      echo "  --clang         Use clang instead of gcc"
-      echo "  --no-cmake      Do not invoke cmake (usefull when only --setup is needed)"
-      echo "  --build-type    Which build type cmake should be invoked with Debug|Dev|Shipping"
-      echo "  --no-unitybuild Disable unity builds. This might help improve code completion in various code editors."
       exit 0
       ;;
-
-    --clang)
-      UseClang=true
-      shift 1
-      ;;
-
-    --setup)
-      Setup=true
-      shift 1
-      ;;
-
-    --no-cmake)
-      RunCMake=false
-      shift 1
-      ;;
-
-    --no-unitybuild)
-      NoUnityBuild="-DXII_ENABLE_FOLDER_UNITY_FILES=OFF"
-      shift 1
-      ;;
-
-    --build-type)
-      BuildType=$2
-      shift 2
-      ;;
-
-    *)
-      break
-      ;;
+    --clang)        UseClang=true; shift ;;
+    --setup)        Setup=true; shift ;;
+    --no-cmake)     RunCMake=false; shift ;;
+    --no-unitybuild) NoUnityBuild="-DXII_ENABLE_FOLDER_UNITY_FILES=OFF"; shift ;;
+    --build-type)   BuildType=$2; shift 2 ;;
+    *)              break ;;
   esac
 done
 
-if [ "$BuildType" != "Debug" -a "$BuildType" != "Dev" -a "$BuildType" != "Shipping" ]; then
-  >&2 echo "The build-type '${BuildType}' is not supported. Only Debug, Dev and Release are supported values."
+if [[ "$BuildType" != "Debug" && "$BuildType" != "Dev" && "$BuildType" != "Shipping" ]]; then
+  >&2 echo "Invalid build-type: '$BuildType'. Supported: Debug, Dev, Shipping."
   exit 1
 fi
 
-if [ ! -f "/etc/issue" ]; then
-	>&2 echo "/etc/issue does not exist. Failed distribution detection"
-	exit 1
+# -----------------------------
+# Detect distribution
+# -----------------------------
+if [ ! -f "/etc/os-release" ]; then
+  >&2 echo "/etc/os-release missing. Cannot detect distribution."
+  exit 1
 fi
 
-Issue=$(cat /etc/issue)
+. /etc/os-release   # loads ID, VERSION_ID
 
-UbuntuPattern="Ubuntu ([0-9][0-9])"
-MintPattern="Linux Mint ([0-9][0-9])"
-KaliPattern="Kali GNU/Linux Rolling(.+)"
+Distribution=$ID
+Version=$VERSION_ID
 
-if [[ $Issue =~ $UbuntuPattern ]]; then
-  Distribution="Ubuntu"
-  Version=${BASH_REMATCH[1]}
-elif [[ $Issue =~ $MintPattern ]]; then
-  Distribution="Mint"
-  Version=${BASH_REMATCH[1]}
-elif [[ $Issue =~ $KaliPattern ]]; then
-  Distribution="Kali"
+# -----------------------------
+# Version comparison helpers
+# -----------------------------
+verlte() { [ "$1" = "$(echo -e "$1\n$2" | sort -V | head -n1)" ]; }
+verlt()  { [ "$1" = "$2" ] && return 1 || verlte "$1" "$2"; }
 
-  LsbRelease=$(lsb_release -r)
-  # VersionPattern="(^Release:+\s+[0-9]+.+[0-9])"
-  VersionPattern="([0-9]+)"
-  if [[ $LsbRelease =~ $VersionPattern ]]; then
-    Version=${BASH_REMATCH[0]}
+# -----------------------------
+# Package selection
+# -----------------------------
+packages=()
+
+case "$Distribution" in
+  ubuntu)
+    if [[ "$Version" == "22.04" ]]; then
+      packages=(cmake build-essential ninja-build libwayland-dev libwayland-egl1 libwayland-cursor0 uuid-dev mold libfreetype-dev libtinfo5)
+    fi
+    ;;
+  linuxmint)
+    if [[ "$Version" == "21" ]]; then
+      packages=(cmake build-essential ninja-build libwayland-dev libwayland-egl1 libwayland-cursor0 uuid-dev mold libfreetype-dev libtinfo5)
+    fi
+    ;;
+  kali)
+    if [[ "$Version" =~ ^2023 ]]; then
+      packages=(cmake build-essential ninja-build libwayland-dev libwayland-egl1 libwayland-cursor0 uuid-dev mold libfreetype-dev libtinfo5)
+    fi
+    ;;
+  fedora)
+    if [[ "$Version" -ge 38 ]]; then
+      packages=(cmake gcc gcc-c++ ninja-build egl-wayland uuid-devel mold freetype-devel ncurses-compat-libs)
+    fi
+    ;;
+esac
+
+if [[ ${#packages[@]} -eq 0 ]]; then
+  >&2 echo "Unsupported distribution/version: $Distribution $Version"
+  >&2 echo "Supported:"
+  >&2 echo "  * Ubuntu 22.04"
+  >&2 echo "  * Linux Mint 21"
+  >&2 echo "  * Kali Rolling 2023"
+  >&2 echo "  * Fedora 38+"
+  exit 1
+fi
+
+# -----------------------------
+# Compiler selection
+# -----------------------------
+if $UseClang; then
+  if [[ "$Distribution" == "fedora" ]]; then
+    packages+=(clang libstdc++-devel)
+  else
+    packages+=(clang libstdc++-dev)
+  fi
+  c_compiler=clang
+  cxx_compiler=clang++
+else
+  if [[ "$Distribution" == "fedora" ]]; then
+    packages+=(gcc gcc-c++)
+  else
+    packages+=(gcc g++)
+  fi
+  c_compiler=gcc
+  cxx_compiler=g++
+fi
+
+# -----------------------------
+# Setup phase (install packages)
+# -----------------------------
+if $Setup; then
+  if [[ "$Distribution" == "fedora" ]]; then
+    qtVer=$(dnf info qt6-qtbase-devel 2>/dev/null | grep -o "6\.[0-9]*\.[0-9]")
+    echo "Detected Qt version: $qtVer"
+    if verlt "$qtVer" "6.3.0"; then
+      >&2 echo -e "\033[0;33mQt >= 6.3.0 not available in Fedora repos. Install manually."
+    else
+      packages+=(qt6-qtbase-devel qt6-qtsvg-devel qt6-qtbase-private-devel qt6-qtwayland-devel)
+    fi
+    git submodule update --init
+    echo "Installing packages via dnf: ${packages[*]}"
+    sudo dnf install -y "${packages[@]}"
+  else
+    qtVer=$(apt list qt6-base-dev 2>/dev/null | grep -o "6\.[0-9]*\.[0-9]")
+    echo "Detected Qt version: $qtVer"
+    if verlt "$qtVer" "6.3.0"; then
+      >&2 echo -e "\033[0;33mQt >= 6.3.0 not available in apt repos. Install manually."
+    else
+      packages+=(qt6-base-dev libqt6svg6-dev qt6-base-private-dev qt6-wayland)
+    fi
+    git submodule update --init
+    echo "Installing packages via apt: ${packages[*]}"
+    sudo apt install -y "${packages[@]}"
   fi
 fi
 
-# This requires a 'sort' that supports '-V'
-verlte() {
-  [  "$1" = "`echo -e "$1\n$2" | sort -V | head -n1`" ]
-}
-
-verlt() {
-  [ "$1" = "$2" ] && return 1 || verlte $1 $2
-}
-
-if [ "$Distribution" = "Ubuntu" -a "$Version" = "22" ] || [ "$Distribution" = "Mint" -a "$Version" = "21" ] || [ "$Distribution" = "Kali" -a "$Version" = "2023" ] ; then
-  packages=(cmake build-essential ninja-build libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev uuid-dev mold libfreetype-dev libtinfo5)
-
-  if [ "$UseClang" = true ]; then
-    packages+=(clang-14 libstdc++-12-dev)
-    c_compiler=clang-14
-    cxx_compiler=clang++-14
-  else
-    packages+=(gcc-12 g++-12)
-    c_compiler=gcc-12
-    cxx_compiler=g++-12
+# -----------------------------
+# Compiler version check
+# -----------------------------
+if $UseClang; then
+  clangVer=$(clang --version 2>/dev/null | head -n1 | grep -o "[0-9]\+" | head -n1)
+  if [[ -z "$clangVer" || "$clangVer" -lt 18 ]]; then
+    >&2 echo "Clang >= 18 required. Found: $clangVer"
+    exit 1
   fi
 else
-  >&2 echo "Your Distribution or Distribution version is not supported by this script"
-  >&2 echo "Currently supported are:"
-  >&2 echo "  * Ubuntu 22"
-  >&2 echo "  * Linux Mint 21"
-  >&2 echo "  * Kali GNU/Linux Rolling 23"
-  exit 1
-fi
-
-if [ "$Setup" = true ]; then
-  qtVer=$(apt list qt6-base-dev 2>/dev/null | grep -o "6\.[0-9]*\.[0-9]")
-  echo $qtVer
-
-  if verlt $qtVer "6.3.0"; then
-    >&2 echo -e "\033[0;33mYour distributions package manager does not provide Qt 6.3.0 or newer. Please install Qt manually."
-  else
-    packages+=(qt6-base-dev libqt6svg6-dev qt6-base-private-dev)
+  gccVer=$(gcc -dumpversion | cut -d. -f1)
+  if [[ -z "$gccVer" || "$gccVer" -lt 14 ]]; then
+    >&2 echo "GCC >= 14 required. Found: $gccVer"
+    exit 1
   fi
-
-  git submodule update --init
-  echo "Attempting to install the following packages through the package manager:"
-  echo ${packages[@]}
-  sudo apt install ${packages[@]}
 fi
 
-CompilerShort=gcc
-if [ "$UseClang" = true ]; then
-  CompilerShort=clang
-fi
+# -----------------------------
+# CMake phase
+# -----------------------------
+CompilerShort=$($UseClang && echo "clang" || echo "gcc")
 
-if [ "$RunCMake" = true ]; then
+if $RunCMake; then
   BuildDir="build-${BuildType}-${CompilerShort}"
-  cmake -B $BuildDir -S . -G Ninja -DCMAKE_CXX_COMPILER=$cxx_compiler -DCMAKE_C_COMPILER=$c_compiler -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $NoUnityBuild -DXII_BUILD_VULKAN=ON && \
+  cmake -B "$BuildDir" -S . -G Ninja \
+    -DCMAKE_CXX_COMPILER="$cxx_compiler" \
+    -DCMAKE_C_COMPILER="$c_compiler" \
+    -DCMAKE_BUILD_TYPE="$BuildType" \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    $NoUnityBuild \
+    -DXII_BUILD_VULKAN=ON && \
   echo -e "\nRun 'ninja -C ${BuildDir}' to build"
 fi
