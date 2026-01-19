@@ -120,11 +120,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelinePassConcurre
 /// \see xiiRenderPipelinePassResource, xiiRenderPipelinePassBase::QueryResourceProvider
 struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceRequest
 {
-  xiiRenderPipelineResourceRequest();
   xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALBufferCreationDescription& description);
   xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALTextureCreationDescription& description);
   xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALSamplerCreationDescription& description);
   xiiRenderPipelineResourceRequest(const xiiRenderPipelinePassResource& passResource);
+  ~xiiRenderPipelineResourceRequest();
 
   xiiEnum<xiiRenderPipelineNodePinResourceType> m_Type; ///< Indicates which union field is valid.
 
