@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 

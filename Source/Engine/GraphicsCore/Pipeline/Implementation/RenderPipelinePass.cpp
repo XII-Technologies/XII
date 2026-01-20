@@ -251,8 +251,6 @@ xiiUtilityPipelinePass::~xiiUtilityPipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest() = default;
-
 xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest(xiiRenderPipelineNodePinResourceType::Enum resourceType, const xiiGALBufferCreationDescription& description) :
   m_Type(resourceType), m_Buffer(description)
 {
@@ -285,6 +283,22 @@ xiiRenderPipelineResourceRequest::xiiRenderPipelineResourceRequest(const xiiRend
   else if (IsSampler())
   {
     m_Sampler = passResource.m_Sampler.m_Description;
+  }
+}
+
+xiiRenderPipelineResourceRequest::~xiiRenderPipelineResourceRequest()
+{
+  if (IsBuffer())
+  {
+    m_Buffer = {};
+  }
+  else if (IsTexture())
+  {
+    m_Texture = {};
+  }
+  else if (IsSampler())
+  {
+    m_Sampler = {};
   }
 }
 

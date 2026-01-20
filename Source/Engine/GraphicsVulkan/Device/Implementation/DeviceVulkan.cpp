@@ -177,7 +177,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 
   if (m_Instance != VK_NULL_HANDLE)
   {
-    if (m_DebugMode != DebugMode::Disabled)
+    if (m_InstanceFlags.m_DebugMode != DebugMode::Disabled)
     {
       if (m_DebugMessenger != VK_NULL_HANDLE)
       {
@@ -287,6 +287,26 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceExtensions.PushBack(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     }
 
+    // External memory extensions (required for interop with other APIs).
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalFenceCapabilities = true;
+    }
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalSemaphoreCapabilities = true;
+    }
+    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalMemoryCapabilities = true;
+    }
+
     for (const auto* szExtensionName : instanceExtensions)
     {
       XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
@@ -302,12 +322,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
       {
         // Prefer VK_EXT_debug_utils.
-        m_DebugMode = DebugMode::Utils;
+        m_InstanceFlags.m_DebugMode = DebugMode::Utils;
       }
       else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
       {
         // If debug utils are unavailable, use VK_EXT_debug_report.
-        m_DebugMode = DebugMode::Report;
+        m_InstanceFlags.m_DebugMode = DebugMode::Report;
       }
 
       const char* validationLayerNames[] = {
@@ -333,7 +353,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         instanceLayers.PushBack(szValidationLayerName);
 
-        if (m_DebugMode != DebugMode::Utils)
+        if (m_InstanceFlags.m_DebugMode != DebugMode::Utils)
         {
           // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
@@ -342,12 +362,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
           {
             if (IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
             {
-              m_DebugMode = DebugMode::Utils;
+              m_InstanceFlags.m_DebugMode = DebugMode::Utils;
             }
 
-            if (m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+            if (m_InstanceFlags.m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
             {
-              m_DebugMode = DebugMode::Report;
+              m_InstanceFlags.m_DebugMode = DebugMode::Report;
             }
           }
           else
@@ -357,11 +377,11 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         }
       }
 
-      if (m_DebugMode == DebugMode::Utils)
+      if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
       {
         instanceExtensions.PushBack(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       }
-      else if (m_DebugMode == DebugMode::Report)
+      else if (m_InstanceFlags.m_DebugMode == DebugMode::Report)
       {
         instanceExtensions.PushBack(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
       }
@@ -369,7 +389,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       {
         xiiLog::Error("Neither {} nor {} extension is available. Debug tools (validation layer message logging, performance markers, etc.) will be disabled.", VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
-        m_DebugMode                     = DebugMode::Disabled;
+        m_InstanceFlags.m_DebugMode     = DebugMode::Disabled;
         m_Description.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
       }
     }
@@ -426,7 +446,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   }
 
   // If requested, we enable the default validation layers for debugging purposes.
-  if (m_DebugMode == DebugMode::Utils)
+  if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
   {
     constexpr vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
     constexpr vk::DebugUtilsMessageTypeFlagsEXT     messageType     = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
@@ -441,7 +461,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugUtilsMessengerEXT(&debugMessengerCreateInfo, nullptr, &m_DebugMessenger, m_InstanceDispatchLoader));
   }
-  else if (m_DebugMode == DebugMode::Report)
+  else if (m_InstanceFlags.m_DebugMode == DebugMode::Report)
   {
     constexpr vk::DebugReportFlagsEXT reportFlags = vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eError;
 
@@ -519,7 +539,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         XII_LOG_BLOCK(sb);
 
-        for (const auto& extensionProperty : m_PhysicalDeviceSupportedExtensions)
+        for (const vk::ExtensionProperties& extensionProperty : m_PhysicalDeviceSupportedExtensions)
         {
           xiiLog::Dev("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
         }
@@ -1032,6 +1052,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
     }
 
+    if (m_AdapterDescription.m_Features.m_VertexShaderRenderTargetArrayIndex != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
+    }
+
     // Custom border color.
     if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
     {
@@ -1043,6 +1070,58 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_CustomBorderColor.pNext;
     }
 
+    // External memory support.
+    if (m_AdapterDescription.m_Features.m_ExternalMemory != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+#endif
+    }
+
+    // External semaphore support.
+    if (m_AdapterDescription.m_Features.m_ExternalSemaphore != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+#endif
+    }
+
+    // External fence support.
+    if (m_AdapterDescription.m_Features.m_ExternalFence != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+#endif
+    }
+
     // Ensure that the last next is null.
     *pNextExtension = nullptr;
   }
@@ -1051,14 +1130,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Error("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
   }
 
-  if (m_PhysicalDeviceExtensionFeatures.m_bShaderViewportIndexLayer)
-  {
-    XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
-
-    deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
-  }
-
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
@@ -1206,8 +1278,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
+void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation, vk::DeviceMemory vkExternalMemory)
 {
+  if (vkExternalMemory != VK_NULL_HANDLE)
+  {
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vkExternalMemory);
+    return;
+  }
   if (allocation != VK_NULL_HANDLE)
   {
     m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, allocation);
@@ -1363,11 +1440,11 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceVulkan::CreateShaderPlatform(
   return pShaderVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
+xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   xiiInternal::NewInstance<xiiGALBufferVulkan> pBufferVulkan = XII_NEW(&m_Allocator, xiiGALBufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pBufferVulkan->InitPlatform(pInitialData).Failed())
+  if (pBufferVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
     XII_DELETE(pBufferVulkan.m_pAllocator, pBufferVulkan.m_pInstance);
     return nullptr;
@@ -1376,11 +1453,11 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(
   return pBufferVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
+xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   xiiInternal::NewInstance<xiiGALTextureVulkan> pTextureVulkan = XII_NEW(&m_Allocator, xiiGALTextureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pTextureVulkan->InitPlatform(pInitialData).Failed())
+  if (pTextureVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
     XII_DELETE(pTextureVulkan.m_pAllocator, pTextureVulkan.m_pInstance);
     return nullptr;
@@ -2123,58 +2200,57 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
 vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
 {
-  const auto IsGraphicsAndComputeQueueSupported = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> bool {
+  auto FindGraphicsComputeQueueFamily = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> xiiUInt32 {
     xiiUInt32 uiQueueFamilyCount = 0U;
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, instanceDispatchLoader);
+    XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "No queue families available");
 
-    XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
+    xiiHybridArray<vk::QueueFamilyProperties, 8U> queueFamilies;
+    queueFamilies.SetCountUninitialized(uiQueueFamilyCount);
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilies.GetData(), instanceDispatchLoader);
 
-    xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
-    queueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
-
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
-    XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
-
-    // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
-    // must support both graphics and compute operations.
-    for (const vk::QueueFamilyProperties& properties : queueFamilyProperties)
+    for (xiiUInt32 i = 0U; i < uiQueueFamilyCount; ++i)
     {
-      if ((properties.queueFlags & vk::QueueFlagBits::eGraphics) && (properties.queueFlags & vk::QueueFlagBits::eCompute))
+      const vk::QueueFamilyProperties& vkQueueFamilyProperties = queueFamilies[i];
+
+      if ((vkQueueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) && (vkQueueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute))
       {
-        return true;
+        return i;
       }
     }
-    return false;
+    return xiiInvalidIndex;
   };
 
-  vk::PhysicalDevice selectedPhysicalDevice = VK_NULL_HANDLE;
-
-  if (uiAdapterID < m_PhysicalDevices.GetCount() && IsGraphicsAndComputeQueueSupported(m_PhysicalDevices[uiAdapterID]))
+  // Direct adapter selection if valid.
+  if (uiAdapterID < m_PhysicalDevices.GetCount())
   {
-    selectedPhysicalDevice = m_PhysicalDevices[uiAdapterID];
+    const vk::PhysicalDevice& vkPhysicalDeviceCandidate = m_PhysicalDevices[uiAdapterID];
+
+    if (FindGraphicsComputeQueueFamily(vkPhysicalDeviceCandidate) != xiiInvalidIndex)
+      return vkPhysicalDeviceCandidate;
   }
 
-  // Device Selection Criteria:
-  // - Exposes a queue family that supports both compute and graphics operations.
-  // - Prefer discrete GPU.
-  if (selectedPhysicalDevice == VK_NULL_HANDLE)
+  // Rank devices: discrete > integrated > others.
+  vk::PhysicalDevice     vkBestDevice = VK_NULL_HANDLE;
+  vk::PhysicalDeviceType vkBestType   = vk::PhysicalDeviceType::eOther;
+
+  for (const vk::PhysicalDevice& vkPhysicalDevice : m_PhysicalDevices)
   {
-    for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
+    vk::PhysicalDeviceProperties vkPhysicalDeviceProperties;
+    vkPhysicalDevice.getProperties(&vkPhysicalDeviceProperties, m_InstanceDispatchLoader);
+
+    if (FindGraphicsComputeQueueFamily(vkPhysicalDevice) == xiiInvalidIndex)
+      continue; // unsuitable
+
+    // Prefer discrete > integrated > virtual > CPU > other.
+    if ((vkBestDevice == VK_NULL_HANDLE) || (xiiVulkanTypeConversions::RankDeviceType(vkPhysicalDeviceProperties.deviceType) > xiiVulkanTypeConversions::RankDeviceType(vkBestType)))
     {
-      vk::PhysicalDeviceProperties deviceProperties;
-      physicalDevice.getProperties(&deviceProperties, m_InstanceDispatchLoader);
-
-      if (IsGraphicsAndComputeQueueSupported(physicalDevice))
-      {
-        selectedPhysicalDevice = physicalDevice;
-
-        if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-          break;
-      }
+      vkBestDevice = vkPhysicalDevice;
+      vkBestType   = vkPhysicalDeviceProperties.deviceType;
     }
   }
 
-  return selectedPhysicalDevice;
+  return vkBestDevice;
 }
 
 xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
@@ -2401,6 +2477,57 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve;
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve.pNext;
   }
+
+  // External memory support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemory = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd = true;
+  }
+#endif
+
+  // External semaphore support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd = true;
+  }
+#endif
+
+  // External fence support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFence = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd = true;
+  }
+#endif
 
   // Ensure that last pNext is null
   *pNextFeature  = nullptr;
@@ -2629,6 +2756,33 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   INITIALIZE_DEVICE_FEATURE(DepthStencilResolve, extensionProperties.m_DepthStencilResolve.supportedDepthResolveModes != vk::ResolveModeFlagBits::eNone || extensionProperties.m_DepthStencilResolve.supportedStencilResolveModes != vk::ResolveModeFlagBits::eNone);
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalMemory = m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalMemory = m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd;
+#else
+  const bool bPlatformSupportsExternalMemory = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalMemory, m_PhysicalDeviceExtensionFeatures.m_bExternalMemory && bPlatformSupportsExternalMemory);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalSemaphore = m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalSemaphore = m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd;
+#else
+  const bool bPlatformSupportsExternalSemaphore = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalSemaphore, m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore && bPlatformSupportsExternalSemaphore);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalFence = m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalFence = m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd;
+#else
+  const bool bPlatformSupportsExternalFence = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalFence, m_PhysicalDeviceExtensionFeatures.m_bExternalFence && bPlatformSupportsExternalFence);
+
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
@@ -2640,7 +2794,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   deviceFeatures.m_AsynchronousShaderCompilation = xiiGALDeviceFeatureState::Enabled;
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2727,11 +2881,14 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   ENABLE_DEVICE_FEATURE(AsynchronousShaderCompilation,      "Asynchronous shader compilation is");
   ENABLE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, "Vertex shader render target array index is");
   ENABLE_DEVICE_FEATURE(DepthStencilResolve,                "Depth/stencil resolve is");
+  ENABLE_DEVICE_FEATURE(ExternalMemory,                     "External memory support is");
+  ENABLE_DEVICE_FEATURE(ExternalSemaphore,                  "External semaphore support is");
+  ENABLE_DEVICE_FEATURE(ExternalFence,                      "External fence support is");
   // clang-format on
 
 #undef ENABLE_DEVICE_FEATURE
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 43, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2873,6 +3030,29 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   }
 }
 
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
+{
+  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid Vulkan memory allocation.");
+  XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
+  XII_ASSERT_DEV(vkExternalMemory != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
+
+  XII_LOCK(m_DeletionQueueMutex);
+
+  DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+  entry.m_vkObjectType                        = vkObjectType;
+  entry.m_pObject                             = pObject;
+  entry.m_vkExternalMemory                    = vkExternalMemory;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = m_uiNextSubmitValue;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
+}
+
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
 {
   XII_ASSERT_DEV(pSemaphorePool != nullptr, "Semaphore pool must be valid.");
@@ -2961,6 +3141,10 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       {
         DestroyFence(entry.m_pFencePool, std::move(entry.m_vkFence));
       }
+      else if (entry.m_vkExternalMemory != VK_NULL_HANDLE)
+      {
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_vkExternalMemory);
+      }
       else if (entry.m_VulkanAllocation != VK_NULL_HANDLE)
       {
         DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VulkanAllocation);
@@ -2983,7 +3167,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
 
       if (HasTimelineSemaphore())
       {
-        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiCompletedFenceValue, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
       }
       else
       {
@@ -3005,6 +3189,10 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         else if (it->m_pFencePool != nullptr)
         {
           DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
+        }
+        else if (it->m_vkExternalMemory != VK_NULL_HANDLE)
+        {
+          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_vkExternalMemory);
         }
         else if (it->m_VulkanAllocation != VK_NULL_HANDLE)
         {
@@ -3043,12 +3231,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
     break;
     case vk::ObjectType::eBuffer:
     {
-      XII_REPORT_FAILURE("Buffer must be destroyed using the Vulkan memory allocator.");
+      XII_REPORT_FAILURE("Buffer must be destroyed using the Vulkan memory allocator or external memory semantics.");
     }
     break;
     case vk::ObjectType::eImage:
     {
-      XII_REPORT_FAILURE("Image must be destroyed using the Vulkan memory allocator.");
+      XII_REPORT_FAILURE("Image must be destroyed using the Vulkan memory allocator or external memory semantics.");
     }
     break;
     case vk::ObjectType::eEvent:
@@ -3138,6 +3326,28 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkO
     case vk::ObjectType::eImage:
     {
       m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyImage(reinterpret_cast<vk::Image&>(pObject), allocation);
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
+{
+  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+  switch (vkObjectType)
+  {
+    case vk::ObjectType::eBuffer:
+    {
+      vkLogicalDevice.destroyBuffer(reinterpret_cast<vk::Buffer&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vkLogicalDevice.freeMemory(vkExternalMemory, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eImage:
+    {
+      vkLogicalDevice.destroyImage(reinterpret_cast<vk::Image&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vkLogicalDevice.freeMemory(vkExternalMemory, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
     }
     break;
 

@@ -2728,7 +2728,7 @@ void D3DX_BC7::Decode(HDRColorA* pOut) const noexcept
     OutputDebugStringA("BC7: Reserved mode 8 encountered during decoding\n");
 #endif
     // Per the BC7 format spec, we must return transparent black
-    memset(pOut, 0, sizeof(HDRColorA) * NUM_PIXELS_PER_BLOCK);
+    memset(static_cast<void*>(pOut), 0, sizeof(HDRColorA) * NUM_PIXELS_PER_BLOCK);
   }
 }
 

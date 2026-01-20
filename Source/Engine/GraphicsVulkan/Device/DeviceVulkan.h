@@ -30,6 +30,14 @@ public:
     Report,
   };
 
+  struct InstanceFlags
+  {
+    DebugMode m_DebugMode                      = DebugMode::Disabled;
+    bool      m_bExternalMemoryCapabilities    = false;
+    bool      m_bExternalSemaphoreCapabilities = false;
+    bool      m_bExternalFenceCapabilities     = false;
+  };
+
   struct ExtensionFeatures
   {
     vk::PhysicalDeviceMeshShaderFeaturesEXT             m_MeshShader;
@@ -46,20 +54,29 @@ public:
     vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR      m_TimelineSemaphore;
     vk::PhysicalDeviceHostQueryResetFeatures            m_HostQueryReset;
     vk::PhysicalDeviceFragmentShadingRateFeaturesKHR    m_ShadingRate;
-    vk::PhysicalDeviceFragmentDensityMapFeaturesEXT     m_FragmentDensityMap;  // Only for desktop devices
-    vk::PhysicalDeviceFragmentDensityMap2FeaturesEXT    m_FragmentDensityMap2; // Only for mobile devices
-    vk::PhysicalDeviceMultiviewFeaturesKHR              m_Multiview;           // Required for RenderPass2
+    vk::PhysicalDeviceFragmentDensityMapFeaturesEXT     m_FragmentDensityMap;  ///< Only for desktop devices.
+    vk::PhysicalDeviceFragmentDensityMap2FeaturesEXT    m_FragmentDensityMap2; ///< Only for mobile devices.
+    vk::PhysicalDeviceMultiviewFeaturesKHR              m_Multiview;           ///< Required for RenderPass2.
     vk::PhysicalDeviceMultiDrawFeaturesEXT              m_MultiDraw;
     vk::PhysicalDeviceShaderDrawParametersFeatures      m_ShaderDrawParameters;
     vk::PhysicalDeviceCustomBorderColorFeaturesEXT      m_CustomBorderColor;
 
-    bool m_bSpirv14                  = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
-    bool m_bSpirv15                  = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
-    bool m_bSubgroupOps              = false; // Requires Vulkan 1.1
+    bool m_bSpirv14                  = false; ///< Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension.
+    bool m_bSpirv15                  = false; ///< DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5.
+    bool m_bSubgroupOps              = false; ///< Requires Vulkan 1.1.
     bool m_bHasPortabilitySubset     = false;
     bool m_bRenderPass2              = false;
     bool m_bDrawIndirectCount        = false;
     bool m_bShaderViewportIndexLayer = false;
+    bool m_bExternalMemory           = false; ///< External memory support.
+    bool m_bExternalMemoryWin32      = false;
+    bool m_bExternalMemoryFd         = false;
+    bool m_bExternalSemaphore        = false; ///< External semaphore support.
+    bool m_bExternalSemaphoreWin32   = false;
+    bool m_bExternalSemaphoreFd      = false;
+    bool m_bExternalFence            = false; ///< External fence support.
+    bool m_bExternalFenceWin32       = false;
+    bool m_bExternalFenceFd          = false;
   };
 
   struct ExtensionProperties
@@ -80,6 +97,7 @@ public:
     vk::PhysicalDeviceMultiDrawPropertiesEXT              m_MultiDraw;
     vk::PhysicalDeviceCustomBorderColorPropertiesEXT      m_CustomBorderColor;
     vk::PhysicalDeviceDepthStencilResolveProperties       m_DepthStencilResolve;
+    vk::ExternalMemoryPropertiesKHR                       m_ExternalMemoryProperty;
   };
 
   class DeferredDeletionQueue
@@ -90,6 +108,7 @@ public:
 
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
     void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
+    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory);
 
     void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
     void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
@@ -113,6 +132,7 @@ public:
       vk::ObjectType      m_vkObjectType     = vk::ObjectType::eUnknown;
       void*               m_pObject          = VK_NULL_HANDLE;
       xiiVulkanAllocation m_VulkanAllocation = VK_NULL_HANDLE;
+      vk::DeviceMemory    m_vkExternalMemory = VK_NULL_HANDLE;
 
       xiiGALSemaphorePoolVulkan* m_pSemaphorePool = nullptr;
       vk::Semaphore              m_vkSemaphore    = VK_NULL_HANDLE;
@@ -131,6 +151,7 @@ public:
 
     void DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject);
     void DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
+    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory);
 
     void DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore);
     void DestroyFence(xiiGALFencePoolVulkan* pFencePool, vk::Fence&& vkReclaimFence);
@@ -153,7 +174,7 @@ public:
   XII_FORCE_INLINE void SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation = {}) const;
 
   template <typename T, typename = std::enable_if_t<std::is_class_v<T> && HasObjectType<T>::value>>
-  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation = nullptr);
+  XII_FORCE_INLINE void SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation = nullptr, vk::DeviceMemory&& vkExternalMemory = nullptr);
 
   template <typename T>
   XII_ALWAYS_INLINE void ReclaimLater(T&& vkObject) { ReclaimLaterInternal(vkObject.objectType, (void*)vkObject); }
@@ -167,6 +188,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32    GetVulkanVersion() const { return m_uiVulkanVersion; }
   [[nodiscard]] XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::InstanceFlags& GetVulkanInstanceFlags() const { return m_InstanceFlags; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const char* const> GetVulkanInstanceEnabledExtensions() const { return m_EnabledExtensions; }
@@ -197,7 +219,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::PipelineStageFlags GetSupportedStagesFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
   [[nodiscard]] XII_ALWAYS_INLINE vk::AccessFlags GetSupportedAccessFlags(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_DebugMode; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDeviceVulkan::DebugMode GetDebugMode() const { return m_InstanceFlags.m_DebugMode; }
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*     GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
@@ -220,8 +242,8 @@ protected:
   virtual xiiInternal::NewInstance<xiiGALDepthStencilState>         CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALRasterizerState>           CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALShader>                    CreateShaderPlatform(const xiiGALShaderCreationDescription& description) override final;
-  virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override final;
-  virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override final;
+  virtual xiiInternal::NewInstance<xiiGALBuffer>                    CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) override final;
+  virtual xiiInternal::NewInstance<xiiGALTexture>                   CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) override final;
   virtual xiiInternal::NewInstance<xiiGALSampler>                   CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALQuery>                     CreateQueryPlatform(const xiiGALQueryCreationDescription& description) override final;
   virtual xiiInternal::NewInstance<xiiGALFence>                     CreateFencePlatform(const xiiGALFenceCreationDescription& description) override final;
@@ -242,7 +264,7 @@ protected:
   /// \endcond
 
 private:
-  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
+  void SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation, vk::DeviceMemory vkExternalMemory);
   void ReclaimLaterInternal(vk::ObjectType vkObjectType, void* pObject);
   void SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const;
 
@@ -317,6 +339,7 @@ private:
   xiiDynamicArray<vk::ExtensionProperties> m_Extensions;
   xiiDynamicArray<const char*>             m_EnabledExtensions;
   xiiDynamicArray<vk::PhysicalDevice>      m_PhysicalDevices;
+  InstanceFlags                            m_InstanceFlags;
 
   // Vulkan Physical Device Objects.
   vk::PhysicalDevice                         m_PhysicalDevice;
@@ -337,7 +360,6 @@ private:
   xiiDynamicArray<vk::AccessFlags>        m_LogicalDeviceSupportedAccessFlags;
 
   // Vulkan Debug Resources.
-  DebugMode                  m_DebugMode = DebugMode::Disabled;
   vk::DebugUtilsMessengerEXT m_DebugMessenger;
   vk::DebugReportCallbackEXT m_DebugCallback;
 

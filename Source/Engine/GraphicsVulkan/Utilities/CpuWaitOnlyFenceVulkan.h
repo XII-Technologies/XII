@@ -21,9 +21,9 @@ public:
 
   ~xiiGALCpuWaitOnlyFenceVulkan();
 
-  virtual xiiUInt64 GetCompletedValue();
+  xiiUInt64 GetCompletedValue();
 
-  virtual void Wait(xiiUInt64 uiValue);
+  void Wait(xiiUInt64 uiValue);
 
   void Reset(xiiUInt64 uiValue);
 

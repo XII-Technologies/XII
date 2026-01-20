@@ -278,7 +278,7 @@ xiiSharedPtr<xiiGALShader> xiiGALDevice::CreateShader(const xiiGALShaderCreation
   return CreateShaderPlatform(description);
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/)
+xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
@@ -419,7 +419,14 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     XII_GAL_DEVICE_CHECK(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger or equal to the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
-  xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData);
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+  {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled, "External memory kind flags cannot be used when the External Memory feature is disabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the Native Fence feature to be enabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
+  }
+
+  xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeBufferInternal(description, pBuffer);
 
@@ -436,7 +443,7 @@ void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription&
   }
 }
 
-xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
+xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
@@ -467,7 +474,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_Size.height != 0U, "The texture height cannot be zero.");
   }
 
-  XII_GAL_DEVICE_CHECK(description.m_Type != xiiGALResourceDimension::Texture3D && description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
+  XII_GAL_DEVICE_CHECK(description.m_Type != xiiGALResourceDimension::Texture3D || description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
 
   if (description.m_Type == xiiGALResourceDimension::Texture1D || description.m_Type == xiiGALResourceDimension::Texture2D)
   {
@@ -629,6 +636,13 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::SparseAlias), "The miscellaneous flags must not have xiiGALMiscTextureFlags::SparseAlias if the usage is not xiiGALResourceUsage::Sparse.");
   }
 
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+  {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled, "External memory kind flags cannot be used when the External Memory feature is disabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the Native Fence feature to be enabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
+  }
+
   xiiHybridArray<xiiGALTextureSubResourceData, 2U> subresourceData;
   xiiDynamicArray<xiiUInt8>                        zeroData;
   xiiGALTextureData                                textureData;
@@ -664,7 +678,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     }
   }
 
-  xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);
+  xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeTextureInternal(description, pTexture);
 

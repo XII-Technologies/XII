@@ -85,7 +85,7 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
     // GetSemaphoreCounter() is thread safe.
 
     xiiUInt64 uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
-    VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiSemaphoreCounter, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiSemaphoreCounter), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     return uiSemaphoreCounter;
   }
@@ -100,9 +100,6 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
   XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence must have no timeline semaphore.");
-
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   while (!m_SyncPoints.IsEmpty())
   {
@@ -216,7 +213,7 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
     vkWaitInformation.flags                 = {};
     vkWaitInformation.semaphoreCount        = 1U;
     vkWaitInformation.pSemaphores           = &m_vkTimelineSemaphore;
-    vkWaitInformation.pValues               = &uiValue;
+    vkWaitInformation.pValues               = reinterpret_cast<uint64_t*>(&uiValue);
 
     VK_ASSERT_DEV(vkLogicalDevice.waitSemaphoresKHR(&vkWaitInformation, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }

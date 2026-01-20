@@ -156,7 +156,7 @@ void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewC
   // Setup lighting data here (e.g., upload light buffers, set shader parameters).
 
   // Setup clustered data.
-  if (m_ShadingQuality >= xiiShadingQualityLevel::Medium)
+  if (m_ShadingQuality.GetValue() >= xiiShadingQualityLevel::Medium)
   {
     auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
 

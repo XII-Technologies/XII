@@ -27,7 +27,8 @@ void xiiObjectPickingResult::Reset()
 class xiiQtNativeSurfaceWidget : public QWidget
 {
 public:
-  xiiQtNativeSurfaceWidget(QWidget* pParent = nullptr) : QWidget(pParent)
+  xiiQtNativeSurfaceWidget(QWidget* pParent = nullptr) :
+    QWidget(pParent)
   {
     // setAttribute(Qt::WA_OpaquePaintEvent);
     setAutoFillBackground(false);
@@ -92,11 +93,11 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
     if (m_pDocumentWindow->GetDocument()->SendMessageToEngine(&msg))
     {
       // Wait for engine process response
-      auto callback = [&](xiiProcessMessage* pMsg) -> bool {
+      auto Callback = [&](xiiProcessMessage* pMsg) -> bool {
         auto pResponse = static_cast<xiiViewDestroyedResponseMsgToEditor*>(pMsg);
         return pResponse->m_DocumentGuid == m_pDocumentWindow->GetDocument()->GetGuid() && pResponse->m_uiViewID == msg.m_uiViewID;
       };
-      xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
+      xiiProcessCommunicationChannel::WaitForMessageCallback cb = Callback;
 
       if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::MakeFromSeconds(5), &cb).Failed())
       {
@@ -113,11 +114,11 @@ void xiiQtEngineViewWidget::SyncToEngine()
   xiiViewRedrawMsgToEngine cam;
   cam.m_uiRenderMode = m_pViewConfig->m_RenderMode;
 
-  float fov = m_pViewConfig->m_Camera.GetFovOrDim();
+  float fFov = m_pViewConfig->m_Camera.GetFovOrDim();
   if (m_pViewConfig->m_Camera.IsPerspective())
   {
-    xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-    fov                             = pPref->m_fPerspectiveFieldOfView;
+    xiiEditorPreferencesUser* pEditorPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+    fFov                                         = pEditorPreferences->m_fPerspectiveFieldOfView;
   }
 
   cam.m_uiViewID                    = GetViewID();
@@ -125,7 +126,7 @@ void xiiQtEngineViewWidget::SyncToEngine()
   cam.m_fFarPlane                   = m_pViewConfig->m_Camera.GetFarPlane();
   cam.m_iCameraMode                 = (xiiInt8)m_pViewConfig->m_Camera.GetCameraMode();
   cam.m_bUseCameraTransformOnDevice = m_pViewConfig->m_bUseCameraTransformOnDevice;
-  cam.m_fFovOrDim                   = fov;
+  cam.m_fFovOrDim                   = fFov;
   cam.m_vDirForwards                = m_pViewConfig->m_Camera.GetCenterDirForwards();
   cam.m_vDirUp                      = m_pViewConfig->m_Camera.GetCenterDirUp();
   cam.m_vDirRight                   = m_pViewConfig->m_Camera.GetCenterDirRight();
@@ -208,7 +209,6 @@ void xiiQtEngineViewWidget::InterpolateCameraTo(const xiiVec3& vPosition, const 
 
   if (fFovOrDim > 0.0f)
     m_fCameraTargetFovOrDim = fFovOrDim;
-
 
   XII_ASSERT_DEV(m_fCameraTargetFovOrDim > 0, "Invalid FOV or ortho dimension");
 

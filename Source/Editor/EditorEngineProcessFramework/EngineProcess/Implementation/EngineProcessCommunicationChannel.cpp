@@ -22,13 +22,15 @@ bool xiiEngineProcessCommunicationChannel::IsHostAlive() const
   bool bValid = true;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  DWORD  pid      = static_cast<DWORD>(m_iHostPID);
-  HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+  DWORD  uiPID    = static_cast<DWORD>(m_iHostPID);
+  HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, uiPID);
   bValid          = (hProcess != INVALID_HANDLE_VALUE) && (hProcess != nullptr);
 
-  DWORD exitcode = 0;
-  if (GetExitCodeProcess(hProcess, &exitcode) && exitcode != STILL_ACTIVE)
+  DWORD uiExitCode = 0;
+  if (GetExitCodeProcess(hProcess, &uiExitCode) && uiExitCode != STILL_ACTIVE)
+  {
     bValid = false;
+  }
 
   CloseHandle(hProcess);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
@@ -36,7 +38,9 @@ bool xiiEngineProcessCommunicationChannel::IsHostAlive() const
   // If this succeeds, the process with the given PID exists
   // if it fails, the process does not / no longer exist.
   if (kill(m_iHostPID, 0) < 0)
+  {
     bValid = false;
+  }
 #else
 #  error Not implemented
 #endif
@@ -73,6 +77,7 @@ xiiResult xiiEngineProcessCommunicationChannel::ConnectToHostProcess()
   {
     m_pChannel = xiiIpcChannel::CreateNetworkChannel("localhost:1050", xiiIpcChannel::Mode::Server);
   }
+
   m_pProtocol = XII_DEFAULT_NEW(xiiIpcProcessMessageProtocol, m_pChannel.Borrow());
   m_pProtocol->m_MessageEvent.AddEventHandler(xiiMakeDelegate(&xiiProcessCommunicationChannel::MessageFunc, this));
   m_pChannel->Connect();

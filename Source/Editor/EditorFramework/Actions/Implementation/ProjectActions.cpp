@@ -762,12 +762,12 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       xiiStringBuilder sEngineProfilingFile;
       {
         // Wait for engine process response
-        auto callback = [&](xiiProcessMessage* pMsg) -> bool {
+        auto Callback = [&](xiiProcessMessage* pMsg) -> bool {
           auto pSimpleCfg      = static_cast<xiiSaveProfilingResponseToEditor*>(pMsg);
           sEngineProfilingFile = pSimpleCfg->m_sProfilingFile;
           return true;
         };
-        xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
+        xiiProcessCommunicationChannel::WaitForMessageCallback cb = Callback;
 
         if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiSaveProfilingResponseToEditor>(), xiiTime::MakeFromSeconds(15), &cb).Failed())
         {

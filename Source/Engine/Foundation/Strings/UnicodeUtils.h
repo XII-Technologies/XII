@@ -4,7 +4,12 @@
 #  error "UnicodeUtils.h must not be included directly, but instead include Foundation/Basics.h."
 #endif
 
+XII_WARNING_PUSH();
+XII_WARNING_DISABLE_CLANG("-Wcharacter-conversion");
+
 #include <Foundation/ThirdParty/utf8/utf8.h>
+
+XII_WARNING_POP();
 
 /// \brief Helper functions to work with Unicode.
 class XII_FOUNDATION_DLL xiiUnicodeUtils

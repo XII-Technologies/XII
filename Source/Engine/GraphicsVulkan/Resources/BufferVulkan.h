@@ -35,7 +35,7 @@ protected:
 
   virtual ~xiiGALBufferVulkan();
 
-  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) override final;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) override final;
 
   virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) override;
 

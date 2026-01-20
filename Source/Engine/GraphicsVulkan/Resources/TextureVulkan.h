@@ -43,7 +43,7 @@ protected:
 
   virtual ~xiiGALTextureVulkan();
 
-  virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) override final;
+  virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) override final;
 
   virtual xiiInternal::NewInstance<xiiGALTextureView> CreateViewPlatform(const xiiGALTextureViewCreationDescription& description) override;
 
@@ -52,16 +52,20 @@ protected:
 private:
   vk::Result CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties);
 
-  void InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData);
-  void InitializeSparseTextureProperties();
+  void      InitializeImageContent(const vk::ImageCreateInfo& vkImageCreateInfo, const xiiGALResourceFormatDescription& formatProperties, const xiiGALTextureData* pInitialData);
+  void      InitializeSparseTextureProperties();
+  xiiResult InitializeImageExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind);
 
   static void ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo);
 
-  vk::Image           m_vkImage;
-  xiiVulkanAllocation m_ImageMemoryAllocation;
+  vk::Image               m_vkImage;
+  xiiVulkanAllocation     m_ImageMemoryAllocation;
+  xiiVulkanAllocationInfo m_ImageMemoryAllocationInfo;
 
   vk::Buffer          m_vkStagingBuffer;
   xiiVulkanAllocation m_StagingBufferMemoryAllocation;
 
   xiiGALSparseTextureProperties m_SparseTextureProperties;
+
+  vk::Semaphore m_vkExternalMemorySemaphore;
 };

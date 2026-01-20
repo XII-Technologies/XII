@@ -108,6 +108,9 @@ public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferCreationDescription& GetDescription() const { return m_Description; }
 
+  /// \brief This returns the external memory kind flags for this buffer.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryKind; }
+
   /// \brief This returns the buffer size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
 
@@ -176,7 +179,7 @@ protected:
 
   virtual ~xiiGALBuffer();
 
-  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) = 0;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
 
   virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) = 0;
 
@@ -186,6 +189,7 @@ protected:
 protected:
   xiiGALBufferCreationDescription m_Description;
 
+  xiiBitflags<xiiGALExternalMemoryKind>  m_ExternalMemoryKind;
   xiiBitflags<xiiGALMemoryPropertyFlags> m_MemoryPropertyFlags;
 
   xiiSharedPtr<xiiGALBufferView> m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];

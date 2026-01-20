@@ -30,7 +30,7 @@ if ($NoSubmoduleUpdate -eq $False) {
   }
 
   if ($UPDATE_SUBMODULES) {
-    Write-Host "Updating submodules"
+    Write-Host "Updating submodules" -ForegroundColor Green
 
     git submodule init
     git submodule update
@@ -104,7 +104,7 @@ if ($IsCustomWorkspaceDirector) {
 }
 
 Write-Host ""
-Write-Host "Running cmake.exe $CMAKE_ARGS"
+Write-Host "Running cmake.exe $CMAKE_ARGS" -ForegroundColor Green
 Write-Host ""
 &Data\Tools\Precompiled\cmake\bin\cmake.exe $CMAKE_ARGS
 

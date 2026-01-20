@@ -29,8 +29,10 @@ xiiGALBufferVulkan::~xiiGALBufferVulkan()
   }
 }
 
-xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
+xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
+  XII_IGNORE_UNUSED(externalMemoryKind);
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 

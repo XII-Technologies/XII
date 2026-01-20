@@ -59,6 +59,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_AsynchronousShaderCompilation      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports asynchronous shader compilation.
   xiiEnum<xiiGALDeviceFeatureState> m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports SV_RenderTargetArrayIndex semantic in the vertex shader.
   xiiEnum<xiiGALDeviceFeatureState> m_DepthStencilResolve                = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports depth/stencil resolve operations.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalMemory                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared memory across multiple devices or APIs.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalSemaphore                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared semaphores across multiple devices or APIs.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalFence                      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared fences across multiple devices or APIs.
 };
 
 /// \brief This describes the optimized depth-stencil clear value.
@@ -239,7 +242,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHa
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALGraphicsDeviceType>    m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Undefined;
-  xiiEnum<xiiGALDeviceAdapterType>     m_AdapterType        = xiiGALDeviceAdapterType::Unknown;
   xiiEnum<xiiGALDeviceValidationLevel> m_ValidationLevel    = xiiGALDeviceValidationLevel::Standard;
   xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;
   xiiGALDeviceFeatures                 m_DeviceFeatures;
@@ -401,4 +403,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
 
   /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
   XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALResourceFormatComponentType::Compressed ? m_uiComponentCount : 1); };
+};
+
+/// \brief This describes the external memory description.
+///
+/// Used to import external memory handles into the graphics device. This is useful for interop scenarios where memory is shared between different APIs or processes.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHashableStruct<xiiGALExternalMemoryDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiBitflags<xiiGALExternalMemoryKind>  m_Type                    = xiiGALExternalMemoryKind::None;  ///< The type of external memory handle.
+  xiiBitflags<xiiGALExternalMemoryFlags> m_Flags                   = xiiGALExternalMemoryFlags::None; ///< The usage flags for the external memory.
+  xiiUInt64                              m_uiNativeHandle          = 0U;                              ///< Native external memory handle (e.g., HANDLE on Windows, file descriptor on Linux).
+  xiiUInt64                              m_uiSize                  = 0U;                              ///< Size of the external memory in bytes.
+  xiiUInt64                              m_uiProcessId             = 0U;                              ///< Process ID of the process that created the external memory handle. This is used for cross-process memory sharing.
+  xiiUInt32                              m_uiMemoryTypeIndex       = 0U;                              ///< Memory type index that is compatible with the external memory handle. This is used to ensure that the imported memory can be used with the graphics device.
+  xiiUInt64                              m_uiNativeSemaphoreHandle = 0U;                              ///< Native external semaphore handle (e.g., HANDLE on Windows, file descriptor on Linux). Used when importing semaphores for synchronization.
 };

@@ -241,9 +241,9 @@ void xiiGALTexture::CreateDefaultResourceViews()
 {
   // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.
   xiiUInt32 uiArraySize = XII_GAL_REMAINING_ARRAY_SLICES;
-  if (m_Description.IsCube() && m_Description.IsArray())
+  if (m_Description.Is3D())
   {
-    uiArraySize = m_Description.GetArraySize() / 6U;
+    uiArraySize = 1U;
   }
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
@@ -253,7 +253,7 @@ void xiiGALTexture::CreateDefaultResourceViews()
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = XII_GAL_REMAINING_ARRAY_SLICES;
+    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
 
     if (m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
       viewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);

@@ -3,7 +3,7 @@ template <typename ObjectHandle, typename>
 XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  if (m_DebugMode == DebugMode::Utils)
+  if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
   {
     if (vkObject == VK_NULL_HANDLE)
       return;
@@ -26,12 +26,12 @@ XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle&
 }
 
 template <typename T, typename>
-XII_ALWAYS_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation /*= nullptr*/)
+XII_ALWAYS_INLINE void xiiGALDeviceVulkan::SafeReleaseDeviceObject(T&& vkObject, xiiVulkanAllocation&& allocation /*= nullptr*/, vk::DeviceMemory&& vkExternalMemory /*= nullptr*/)
 {
   if (vkObject == VK_NULL_HANDLE)
     return;
 
-  SafeReleaseDeviceObjectInternal(vkObject.objectType, static_cast<void*>(vkObject), allocation);
+  SafeReleaseDeviceObjectInternal(vkObject.objectType, static_cast<void*>(vkObject), allocation, vkExternalMemory);
 }
 
 XII_ALWAYS_INLINE void xiiGALDeviceVulkan::LockCommandQueueAndRun(xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(const vk::Queue&)> action)
