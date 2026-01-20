@@ -242,7 +242,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHa
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALGraphicsDeviceType>    m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Undefined;
-  xiiEnum<xiiGALDeviceAdapterType>     m_AdapterType        = xiiGALDeviceAdapterType::Unknown;
   xiiEnum<xiiGALDeviceValidationLevel> m_ValidationLevel    = xiiGALDeviceValidationLevel::Standard;
   xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;
   xiiGALDeviceFeatures                 m_DeviceFeatures;

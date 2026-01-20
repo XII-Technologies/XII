@@ -112,6 +112,8 @@ public:
   static vk::ResolveModeFlagBits GetDepthResolveMode(xiiEnum<xiiGALDepthResolveMode> mode);
 
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
+
+  static xiiUInt32 RankDeviceType(vk::PhysicalDeviceType type);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

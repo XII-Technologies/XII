@@ -2200,58 +2200,57 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
 vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
 {
-  const auto IsGraphicsAndComputeQueueSupported = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> bool {
+  auto FindGraphicsComputeQueueFamily = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> xiiUInt32 {
     xiiUInt32 uiQueueFamilyCount = 0U;
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, instanceDispatchLoader);
+    XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "No queue families available");
 
-    XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
+    xiiHybridArray<vk::QueueFamilyProperties, 8U> queueFamilies;
+    queueFamilies.SetCountUninitialized(uiQueueFamilyCount);
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilies.GetData(), instanceDispatchLoader);
 
-    xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
-    queueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
-
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
-    XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
-
-    // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
-    // must support both graphics and compute operations.
-    for (const vk::QueueFamilyProperties& properties : queueFamilyProperties)
+    for (xiiUInt32 i = 0U; i < uiQueueFamilyCount; ++i)
     {
-      if ((properties.queueFlags & vk::QueueFlagBits::eGraphics) && (properties.queueFlags & vk::QueueFlagBits::eCompute))
+      const vk::QueueFamilyProperties& vkQueueFamilyProperties = queueFamilies[i];
+
+      if ((vkQueueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) && (vkQueueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute))
       {
-        return true;
+        return i;
       }
     }
-    return false;
+    return xiiInvalidIndex;
   };
 
-  vk::PhysicalDevice selectedPhysicalDevice = VK_NULL_HANDLE;
-
-  if (uiAdapterID < m_PhysicalDevices.GetCount() && IsGraphicsAndComputeQueueSupported(m_PhysicalDevices[uiAdapterID]))
+  // Direct adapter selection if valid.
+  if (uiAdapterID < m_PhysicalDevices.GetCount())
   {
-    selectedPhysicalDevice = m_PhysicalDevices[uiAdapterID];
+    const vk::PhysicalDevice& vkPhysicalDeviceCandidate = m_PhysicalDevices[uiAdapterID];
+
+    if (FindGraphicsComputeQueueFamily(vkPhysicalDeviceCandidate) != xiiInvalidIndex)
+      return vkPhysicalDeviceCandidate;
   }
 
-  // Device Selection Criteria:
-  // - Exposes a queue family that supports both compute and graphics operations.
-  // - Prefer discrete GPU.
-  if (selectedPhysicalDevice == VK_NULL_HANDLE)
+  // Rank devices: discrete > integrated > others.
+  vk::PhysicalDevice     vkBestDevice = VK_NULL_HANDLE;
+  vk::PhysicalDeviceType vkBestType   = vk::PhysicalDeviceType::eOther;
+
+  for (const vk::PhysicalDevice& vkPhysicalDevice : m_PhysicalDevices)
   {
-    for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
+    vk::PhysicalDeviceProperties vkPhysicalDeviceProperties;
+    vkPhysicalDevice.getProperties(&vkPhysicalDeviceProperties, m_InstanceDispatchLoader);
+
+    if (FindGraphicsComputeQueueFamily(vkPhysicalDevice) == xiiInvalidIndex)
+      continue; // unsuitable
+
+    // Prefer discrete > integrated > virtual > CPU > other.
+    if ((vkBestDevice == VK_NULL_HANDLE) || (xiiVulkanTypeConversions::RankDeviceType(vkPhysicalDeviceProperties.deviceType) > xiiVulkanTypeConversions::RankDeviceType(vkBestType)))
     {
-      vk::PhysicalDeviceProperties deviceProperties;
-      physicalDevice.getProperties(&deviceProperties, m_InstanceDispatchLoader);
-
-      if (IsGraphicsAndComputeQueueSupported(physicalDevice))
-      {
-        selectedPhysicalDevice = physicalDevice;
-
-        if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-          break;
-      }
+      vkBestDevice = vkPhysicalDevice;
+      vkBestType   = vkPhysicalDeviceProperties.deviceType;
     }
   }
 
-  return selectedPhysicalDevice;
+  return vkBestDevice;
 }
 
 xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
@@ -3168,7 +3167,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
 
       if (HasTimelineSemaphore())
       {
-        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore,  reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
       }
       else
       {
