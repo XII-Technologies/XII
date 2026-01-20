@@ -48,8 +48,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
     const Destination& copyConverted = copy;
     for (size_t i = 0; i < uiCount; i++)
     {
-      memcpy(static_cast<void*>(pDestination + i), static_cast<const void*>(&copyConverted)
-      , sizeof(Destination));
+      memcpy(static_cast<void*>(pDestination + i), static_cast<const void*>(&copyConverted), sizeof(Destination));
     }
   }
   else

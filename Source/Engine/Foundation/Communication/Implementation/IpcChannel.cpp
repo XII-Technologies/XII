@@ -160,7 +160,7 @@ void xiiIpcChannel::ReceiveData(xiiArrayPtr<const xiiUInt8> pData)
       else
       {
         xiiUInt32                   uiRemainingHeaderData = HEADER_SIZE - m_MessageAccumulator.GetCount();
-        xiiArrayPtr<const xiiUInt8> pHeaderData            = pRemainingData.GetSubArray(0, uiRemainingHeaderData);
+        xiiArrayPtr<const xiiUInt8> pHeaderData           = pRemainingData.GetSubArray(0, uiRemainingHeaderData);
         m_MessageAccumulator.PushBackRange(pHeaderData);
         XII_ASSERT_DEBUG(m_MessageAccumulator.GetCount() == HEADER_SIZE, "We should have a full header now.");
         pRemainingData = pRemainingData.GetSubArray(uiRemainingHeaderData);
@@ -185,7 +185,7 @@ void xiiIpcChannel::ReceiveData(xiiArrayPtr<const xiiUInt8> pData)
 
     // Write missing data into message accumulator
     xiiUInt32                   uiRemainingMessageData = uiMessageSize - m_MessageAccumulator.GetCount();
-    xiiArrayPtr<const xiiUInt8> pMessageData          = pRemainingData.GetSubArray(0, uiRemainingMessageData);
+    xiiArrayPtr<const xiiUInt8> pMessageData           = pRemainingData.GetSubArray(0, uiRemainingMessageData);
     m_MessageAccumulator.PushBackRange(pMessageData);
     XII_ASSERT_DEBUG(m_MessageAccumulator.GetCount() == uiMessageSize, "");
     pRemainingData = pRemainingData.GetSubArray(uiRemainingMessageData);

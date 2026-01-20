@@ -33,7 +33,7 @@ void xiiEditorEngineProcessConnection::HandleIPCEvent(const xiiProcessCommunicat
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiSyncWithProcessMsgToEditor>())
   {
     const xiiSyncWithProcessMsgToEditor* pMsg = static_cast<const xiiSyncWithProcessMsgToEditor*>(e.m_pMessage);
-    m_uiRedrawCountReceived                  = pMsg->m_uiRedrawCount;
+    m_uiRedrawCountReceived                   = pMsg->m_uiRedrawCount;
   }
   if (e.m_pMessage->GetDynamicRTTI()->IsDerivedFrom<xiiEditorEngineDocumentMsg>())
   {
