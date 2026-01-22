@@ -934,47 +934,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceAdapterType);
 
-/// \brief This describes how an image is stretched to fit a given monitor's resolution.
-/// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173066(v=vs.85)">DXGI_MODE_SCALING enumeration on MSDN</a>,
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALScalingMode
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Unspecified = 0U, ///< Unspecified scaling.
-    Centered,         ///< Specifies no scaling. The image is centered on the display. This flag is typically used for a fixed-dot-pitch display (such as an LED display).
-    Stretched,        ///< Specifies a stretched scaling.
-
-    ENUM_COUNT,
-
-    Default = Unspecified
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALScalingMode);
-
-/// \brief This describes the method the raster uses to create an image on a surface.
-/// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173067(v=vs.85)">DXGI_MODE_SCANLINE_ORDER enumeration on MSDN</a>,
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALScanLineOrder
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Unspecified = 0U, ///< Unspecified scanline order.
-    Progressive,      ///< The image is created from the first scanline to the last without skipping any.
-    UpperFieldFirst,  ///< The image is created beginning with the upper field.
-    LowerFieldFirst,  ///< The image is created beginning with the lower field.
-
-    ENUM_COUNT,
-
-    Default = Unspecified
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALScanLineOrder);
-
 /// \brief This describes the method the raster uses to create an image on a surface.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
 {
