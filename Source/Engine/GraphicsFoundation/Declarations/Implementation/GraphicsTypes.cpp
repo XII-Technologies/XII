@@ -434,19 +434,6 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDeviceAdapterType, 1)
   XII_ENUM_CONSTANT(xiiGALDeviceAdapterType::Discrete),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScalingMode, 1)
-  XII_ENUM_CONSTANT(xiiGALScalingMode::Unspecified),
-  XII_ENUM_CONSTANT(xiiGALScalingMode::Centered),
-  XII_ENUM_CONSTANT(xiiGALScalingMode::Stretched),
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScanLineOrder, 1)
-  XII_ENUM_CONSTANT(xiiGALScanLineOrder::Unspecified),
-  XII_ENUM_CONSTANT(xiiGALScanLineOrder::Progressive),
-  XII_ENUM_CONSTANT(xiiGALScanLineOrder::UpperFieldFirst),
-  XII_ENUM_CONSTANT(xiiGALScanLineOrder::LowerFieldFirst),
-XII_END_STATIC_REFLECTED_ENUM;
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSwapChainUsageFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSwapChainUsageFlags::RenderTarget),
   XII_BITFLAGS_CONSTANT(xiiGALSwapChainUsageFlags::ShaderResource),
