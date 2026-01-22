@@ -780,18 +780,4 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   return XII_SUCCESS;
 }
 
-void xiiGALSwapChainVulkan::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
-{
-  XII_IGNORE_UNUSED(displayMode);
-}
-
-void xiiGALSwapChainVulkan::SetWindowedMode()
-{
-}
-
-void xiiGALSwapChainVulkan::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
-{
-  XII_IGNORE_UNUSED(uiMaxLatency);
-}
-
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_SwapChainVulkan);

@@ -83,19 +83,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
   xiiGALDepthStencilClearValue  m_DepthStencil;                                   ///< Depth stencil clear value.
 };
 
-/// \brief This describes the display mode attributes.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALDisplayModeDescription : public xiiHashableStruct<xiiGALDisplayModeDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiSizeU32                    m_Resolution               = xiiSizeU32(0U, 0U);               ///< Display resolution.
-  xiiEnum<xiiGALResourceFormat> m_ResourceFormat           = xiiGALResourceFormat::Unknown;    ///< Display format.
-  xiiUInt32                     m_uiRefreshRateNumerator   = 0U;                               ///< Refresh rate numerator.
-  xiiUInt32                     m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
-  xiiEnum<xiiGALScalingMode>    m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
-  xiiEnum<xiiGALScanLineOrder>  m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
-};
-
 /// \brief This describes the swap chain creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xiiHashableStruct<xiiGALSwapChainCreationDescription>
 {
@@ -110,18 +97,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   xiiUInt32 m_uiBufferCount         = 2U;                                                                  ///< The number of buffers in the swap chain.
   float     m_fDefaultDepthValue    = 1.0f;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
-};
-
-/// \brief This describes the full screen mode description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALFullScreenModeDescription : public xiiHashableStruct<xiiGALFullScreenModeDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  bool                         m_bIsFullScreen            = false;                            ///< Specifies whether the swap chain is in full screen mode.
-  xiiUInt32                    m_uiRefreshRateNumerator   = 0U;                               ///< Refresh rate numerator.
-  xiiUInt32                    m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
-  xiiEnum<xiiGALScalingMode>   m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
-  xiiEnum<xiiGALScanLineOrder> m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
 };
 
 /// \brief This describes the texture properties.
@@ -223,19 +198,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputeShaderProperties : public xiiHash
   xiiUInt32 m_uiMaxThreadGroupCountZ = 0U; ///< The maximum number of thread groups that can be dispatched in Z dimension.
 };
 
-/// \brief This describes the normalized device coordinates attribute.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALNormalizedDeviceCoordinates : public xiiHashableStruct<xiiGALNormalizedDeviceCoordinates>
-{
-  XII_DECLARE_POD_TYPE();
-
-  float m_fMinZ          = 0.0f;
-  float m_fZToDepthScale = 0.0f;
-  float m_fYToVScale     = 0.0f;
-
-  /// \brief Returns ZtoDepthBias such that given NDC z coordinate, depth value can be computed as d = z * ZtoDepthScale + ZtoDepthBias.
-  XII_ALWAYS_INLINE constexpr float GetZtoDepthBias() const { return -m_fMinZ * m_fZToDepthScale; };
-};
-
 /// \brief This describes the graphics device creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHashableStruct<xiiGALDeviceCreationDescription>
 {
@@ -245,7 +207,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHa
   xiiEnum<xiiGALDeviceValidationLevel> m_ValidationLevel    = xiiGALDeviceValidationLevel::Standard;
   xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;
   xiiGALDeviceFeatures                 m_DeviceFeatures;
-  xiiGALNormalizedDeviceCoordinates    m_DeviceNormalizedCoordinates;
 };
 
 /// \brief This describes the device memory properties.

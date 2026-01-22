@@ -26,12 +26,6 @@ public:
 
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
 
-  virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) override final;
-
-  virtual void SetWindowedMode() override final;
-
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override final;
-
 private:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
