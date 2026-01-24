@@ -1652,6 +1652,51 @@ xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture>
   return UnmapTextureSubresourcePlatform(pTexture, textureMipLevelData);
 }
 
+void xiiGALCommandList::SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(primitiveCombinerFlags.GetValue()), "Primitive combiner flags ({}) must represent a single combiner mode.", primitiveCombinerFlags.GetValue());
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(textureCombinerFlags.GetValue()), "Texture combiner flags ({}) must represent a single combiner mode.", textureCombinerFlags.GetValue());
+  XII_ASSERT_DEV(m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "xiiGALCommandList::SetShadingRate requires VariableRateShading feature support on the device.");
+
+  const xiiGALShadingRateProperties&                  shadingRateProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_ShadingRateProperties;
+  const xiiBitflags<xiiGALShadingRateCapabilityFlags> requiredCapabilities  = xiiGALShadingRateCapabilityFlags::PerDraw | xiiGALShadingRateCapabilityFlags::PerPrimitive | xiiGALShadingRateCapabilityFlags::TextureBased;
+  XII_ASSERT_DEV(shadingRateProperties.m_CapabilityFlags.IsAnySet(requiredCapabilities), "xiiGALCommandList::SetShadingRate requires one of the following capabilities: xiiGALShadingRateCapabilityFlags::PerDraw, or xiiGALShadingRateCapabilityFlags::PerPrimitive, or xiiGALShadingRateCapabilityFlags::TextureBased");
+
+  if (shadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::PerPrimitive))
+  {
+    XII_ASSERT_DEV(primitiveCombinerFlags.IsAnySet(primitiveCombinerFlags), "Primitive combiner flags ({}) must contain at least one primitive combiner flag when the device supports per-primitive shading rates.", primitiveCombinerFlags.GetValue());
+  }
+  else
+  {
+    XII_ASSERT_DEV(primitiveCombinerFlags == xiiGALShadingRateCombinerFlags::PassThrough, "xiiGALCommandList::SetShadingRate requires primitive combiner to be xiiGALShadingRateCombinerFlags::PassThrough when per-primitive shading is not supported.");
+  }
+
+  if (shadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureBased))
+  {
+    XII_ASSERT_DEV(textureCombinerFlags.IsAnySet(textureCombinerFlags), "Texture combiner flags ({}) must contain at least one texture combiner flag when the device supports texture-based shading rates.", textureCombinerFlags.GetValue());
+  }
+  else
+  {
+    XII_ASSERT_DEV(textureCombinerFlags == xiiGALShadingRateCombinerFlags::PassThrough, "xiiGALCommandList::SetShadingRate requires texture combiner to be xiiGALShadingRateCombinerFlags::PassThrough when texture-based shading is not supported.");
+  }
+
+  bool bIsSupportedRate = false;
+  for (const xiiGALShadingRateMode& mode : shadingRateProperties.m_Modes)
+  {
+    if (mode.m_ShadingRate == baseRateFlags)
+    {
+      bIsSupportedRate = true;
+      break;
+    }
+  }
+  XII_ASSERT_DEV(bIsSupportedRate, "xiiGALCommandList::SetShadingRate: Base shading rate flags ({}) are not supported by the device.", baseRateFlags.GetValue());
+#endif
+
+  return SetShadingRatePlatform(baseRateFlags, primitiveCombinerFlags, textureCombinerFlags);
+}
+
 void xiiGALCommandList::InvalidateState()
 {
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "Invalidating the command list is disallowed while a render pass is active. Call EndRenderPass to finish the pass.");
