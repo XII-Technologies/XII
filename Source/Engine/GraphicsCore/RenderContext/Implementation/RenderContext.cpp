@@ -215,6 +215,15 @@ void xiiRenderContext::EndRendering()
 
   m_bStereoRendering   = false;
   m_RenderContextScope = RenderContextScope::None;
+
+  if (m_bIsShadingRateSet)
+  {
+    m_bIsShadingRateSet        = false;
+    m_PipelineShadingRateFlags = {};
+    m_BaseShadingRateFlags     = {};
+    m_PrimitiveCombinerFlags   = {};
+    m_TextureCombinerFlags     = {};
+  }
 }
 
 void xiiRenderContext::BeginCompute(xiiStringView sName)
@@ -595,6 +604,18 @@ void xiiRenderContext::BindMeshBuffer(xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pV
   m_StateFlags.Add(xiiRenderContextFlags::MeshBufferBindingChanged);
 }
 
+void xiiRenderContext::SetShadingRate(xiiBitflags<xiiGALPipelineShadingRateFlags> pipelineShadingRateFlags, xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
+{
+  if (pipelineShadingRateFlags.IsNoFlagSet())
+    return;
+
+  m_bIsShadingRateSet        = true;
+  m_PipelineShadingRateFlags = pipelineShadingRateFlags;
+  m_BaseShadingRateFlags     = baseRateFlags;
+  m_PrimitiveCombinerFlags   = primitiveCombinerFlags;
+  m_TextureCombinerFlags     = textureCombinerFlags;
+}
+
 xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount /*= 0xFFFFFFFFU*/, xiiUInt32 uiFirstPrimitive /*= 0*/, xiiUInt32 uiInstanceCount /*= 1*/)
 {
   BeginClearThenLoadInternalRenderPass();
@@ -620,6 +641,11 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount /*= 0xFFFF
 
   BeginInternalRenderPass();
   XII_SCOPE_EXIT(EndInternalRenderPass());
+
+  if (m_bIsShadingRateSet)
+  {
+    m_pCommandList->SetShadingRate(m_BaseShadingRateFlags, m_PrimitiveCombinerFlags, m_TextureCombinerFlags);
+  }
 
   if (m_pIndexBuffer)
   {
@@ -1228,6 +1254,11 @@ void xiiRenderContext::PrepareGraphicsPipelineDescriptor(xiiShaderPermutationRes
 
   if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
     m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+
+  if (m_bIsShadingRateSet)
+  {
+    m_GraphicsPipelineDescription.m_GraphicsPipeline.m_ShadingRateFlags = m_PipelineShadingRateFlags;
+  }
 
   m_StateFlags.Add(xiiRenderContextFlags::PipelineChanged);
 }

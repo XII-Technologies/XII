@@ -378,6 +378,9 @@ public:
   /// Allows procedural or non-resource-backed geometry.
   void BindMeshBuffer(xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiSharedPtr<xiiGALBuffer> pIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount);
 
+  /// \brief Sets the shading rate for variable rate shading (VRS).
+  void SetShadingRate(xiiBitflags<xiiGALPipelineShadingRateFlags> pipelineShadingRateFlags, xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags);
+
   /// \brief Issues a draw call for the currently bound mesh buffer.
   ///
   /// \param uiPrimitiveCount Optional override for draw range.
@@ -634,4 +637,10 @@ private:
   xiiUInt32 m_uiMeshBufferPrimitiveCount = 0U;
 
   xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
+
+  bool                                        m_bIsShadingRateSet = false;
+  xiiBitflags<xiiGALPipelineShadingRateFlags> m_PipelineShadingRateFlags;
+  xiiBitflags<xiiGALShadingRateFlags>         m_BaseShadingRateFlags;
+  xiiBitflags<xiiGALShadingRateCombinerFlags> m_PrimitiveCombinerFlags;
+  xiiBitflags<xiiGALShadingRateCombinerFlags> m_TextureCombinerFlags;
 };
