@@ -1484,6 +1484,7 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderP
     m_CommandListState.m_uiFramebufferWidth       = framebufferDescription.m_FramebufferSize.width;
     m_CommandListState.m_uiFramebufferHeight      = framebufferDescription.m_FramebufferSize.height;
     m_CommandListState.m_uiFramebufferArraySlices = framebufferDescription.m_uiArraySliceCount;
+    m_CommandListState.m_bIsShadingRateSet        = false;
   }
 
   // m_bShadingRateIsSet = false;
@@ -2583,6 +2584,33 @@ xiiResult xiiGALCommandListVulkan::UnmapTextureSubresourcePlatform(xiiSharedPtr<
   }
 
   return XII_SUCCESS;
+}
+
+void xiiGALCommandListVulkan::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan     = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const auto&                      extensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
+
+  if (extensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
+  {
+    vk::FragmentShadingRateCombinerOpKHR primitiveCombinerOps[2] = {xiiVulkanTypeConversions::GetFragmentShadingRateCombinerOp(primitiveCombinerFlags), xiiVulkanTypeConversions::GetFragmentShadingRateCombinerOp(textureCombinerFlags)};
+    vk::Extent2D                         vkFragmentSize          = xiiVulkanTypeConversions::ShadingRateToFragmentSize(baseRateFlags);
+
+    m_vkCommandBuffer.setFragmentShadingRateKHR(&vkFragmentSize, primitiveCombinerOps, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+
+    m_CommandListState.m_bIsShadingRateSet = true;
+  }
+  else if (extensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False)
+  {
+    // Ignored.
+    XII_ASSERT_DEV(baseRateFlags == xiiGALShadingRateFlags::_1X1, "Fragment density map is supported, but fragment shading rate attachment is not. Setting a non-default shading rate is not supported in this configuration.");
+    XII_ASSERT_DEV(primitiveCombinerFlags == xiiGALShadingRateCombinerFlags::PassThrough, "Fragment density map is supported, but fragment shading rate attachment is not. Setting a non-default primitive combiner is not supported in this configuration.");
+    XII_ASSERT_DEV(textureCombinerFlags == xiiGALShadingRateCombinerFlags::CombinerOverride, "Fragment density map is supported, but fragment shading rate attachment is not. Setting a non-default texture combiner is not supported in this configuration.");
+  }
+  else
+  {
+    xiiLog::Error("Attempting to set shading rate on a device that does not support fragment shading rate attachment.");
+  }
 }
 
 void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)

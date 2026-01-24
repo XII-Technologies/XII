@@ -1606,3 +1606,26 @@ XII_ALWAYS_INLINE xiiUInt32 xiiVulkanTypeConversions::RankDeviceType(vk::Physica
     default: return 0;
   }
 }
+
+XII_ALWAYS_INLINE vk::FragmentShadingRateCombinerOpKHR xiiVulkanTypeConversions::GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(e.GetValue()), "Expected a single combiner flag.");
+
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateCombinerFlags::PassThrough:
+      return vk::FragmentShadingRateCombinerOpKHR::eKeep;
+    case xiiGALShadingRateCombinerFlags::CombinerOverride:
+      return vk::FragmentShadingRateCombinerOpKHR::eReplace;
+    case xiiGALShadingRateCombinerFlags::CombinerMin:
+      return vk::FragmentShadingRateCombinerOpKHR::eMin;
+    case xiiGALShadingRateCombinerFlags::CombinerMax:
+      return vk::FragmentShadingRateCombinerOpKHR::eMax;
+    case xiiGALShadingRateCombinerFlags::CombinerSum:
+    case xiiGALShadingRateCombinerFlags::CombinerMul:
+      return vk::FragmentShadingRateCombinerOpKHR::eMul;
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate combiner flag.");
+      return vk::FragmentShadingRateCombinerOpKHR();
+  }
+}
