@@ -78,6 +78,7 @@ public:
     xiiUInt32       m_uiFramebufferArraySlices = 0;
     xiiUInt32       m_uiInsidePassQueries      = 0;
     xiiUInt32       m_uiOutsidePassQueries     = 0;
+    bool            m_bIsShadingRateSet        = false;
   };
 
   struct CommandListFlags
@@ -183,6 +184,8 @@ protected:
   virtual void      GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
   virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData) override final;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
+
+  virtual void SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags) override final;
 
   virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) override final;
 

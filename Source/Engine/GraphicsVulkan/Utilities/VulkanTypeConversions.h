@@ -114,6 +114,8 @@ public:
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
 
   static xiiUInt32 RankDeviceType(vk::PhysicalDeviceType type);
+
+  static vk::FragmentShadingRateCombinerOpKHR GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

@@ -1171,6 +1171,21 @@ public:
   /// \param textureMipLevelData - Specifies the subresource to unmap.
   xiiResult UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData);
 
+  // Shading rate methods.
+
+  /// \brief Sets the fragment shading rate for subsequent draw calls.
+  ///
+  /// Configures the base shading rate and combiner logic used to resolve per-primitive and screen-space (texture-based) shading rates. This allows dynamic control over rendering performance and visual fidelity by adjusting the number of pixels shaded per fragment.
+  ///
+  /// \param baseRateFlags          - The default shading rate to apply if no overrides are present (e.g., 1x1, 2x2).
+  /// \param primitiveCombinerFlags - The combiner logic used when both base and primitive rates are specified.
+  /// \param textureCombinerFlags   - The combiner logic used when both primitive and texture rates are applied.
+  ///
+  /// \note Requires graphics backend support for Variable Rate Shading (VRS), see xiiGALDeviceFeatures.
+  ///
+  /// \see xiiGALShadingRateFlags, xiiGALShadingRateCombinerFlags
+  void SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags);
+
   // Resource methods.
 
   /// \brief Transitions the resource states.
@@ -1345,6 +1360,8 @@ protected:
   virtual void      GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView)                                                                                                                                                                                                                                       = 0;
   virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)                                     = 0;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                                     = 0;
+
+  virtual void SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags) = 0;
 
   virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) = 0;
 
