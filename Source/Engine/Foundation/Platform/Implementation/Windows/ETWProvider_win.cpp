@@ -39,7 +39,7 @@ void xiiETWProvider::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndent
 {
   const xiiStringBuilder sTemp = sText;
 
-  TraceLoggingWrite(g_xiiETWLogProvider, "LogMessge", TraceLoggingValue((xiiInt32)eventType, "Type"), TraceLoggingValue(uiIndentation, "Indentation"), TraceLoggingValue(sTemp.GetData(), "Text"));
+  TraceLoggingWrite(g_xiiETWLogProvider, "LogMessage", TraceLoggingValue((xiiInt32)eventType, "Type"), TraceLoggingValue(uiIndentation, "Indentation"), TraceLoggingValue(sTemp.GetData(), "Text"));
 }
 
 xiiETWProvider& xiiETWProvider::GetInstance()
