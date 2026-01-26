@@ -4,7 +4,6 @@
 #include <Shaders/Common/Common.h>
 #include <Shaders/Common/GlobalConstants.h>
 #include <Shaders/Common/ObjectConstants.h>
-#include <Shaders/Common/PassConstants.h>
 #include <Shaders/Materials/MaterialData.h>
 #include <Shaders/Materials/MaterialInterpolator.h>
 
@@ -58,25 +57,7 @@ void FillCustomGlobals();
 
 uint CalculateCoverage()
 {
-#if defined(USE_ALPHA_TEST_SUPER_SAMPLING) && defined(USE_TEXCOORD0)
-  uint coverage = 0;
-
-  float2 texCoords = G.Input.TexCoord0;
-
-  for (uint i = 0; i < MSAASampleCount; ++i)
-  {
-    G.Input.TexCoord0 = xiiEvaluateAttributeAtSample(texCoords, i, MSAASampleCount);
-
-    float opacity = GetOpacity();
-    coverage |= (opacity > 0.0) ? (1U << i) : 0;
-  }
-
-  G.Input.TexCoord0 = texCoords;
-
-  return coverage;
-#else
   return GetOpacity() > 0.0;
-#endif
 }
 
 xiiMaterialData FillMaterialData()

@@ -27,7 +27,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/PassConstants.h>
 
 // Define this to force usage of fileserve functionality.
 // #define USE_FILESERVE XII_ON

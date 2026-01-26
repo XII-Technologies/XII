@@ -245,7 +245,7 @@ xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
 
   xiiView* pView = nullptr;
   XII_VERIFY(xiiRenderWorld::TryGetView(m_hMainView, pView), "");
-  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, xiiGALMSAASampleCount::Default, std::move(pMainWindow), std::move(pOutput));
+  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, xiiGALSampleCount::OneSample, std::move(pMainWindow), std::move(pOutput));
   return std::move(pXRActor);
 }
 

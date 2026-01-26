@@ -1,0 +1,4 @@
+#pragma once
+
+#undef XII_SHADER_PLATFORM
+#define XII_SHADER_PLATFORM XII_ON

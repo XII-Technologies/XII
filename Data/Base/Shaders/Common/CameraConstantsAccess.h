@@ -1,6 +1,6 @@
 #pragma once
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 
 // For stereo support, set this at the beginning of the shader to access the correct values in all camera getters.
 static uint s_ActiveCameraEyeIndex = 0;

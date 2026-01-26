@@ -11,7 +11,43 @@ static void SetConsoleColor(WORD ui)
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), ui);
 }
 #elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
-static void SetConsoleColor(xiiUInt8 ui) {}
+static void SetConsoleColor(xiiUInt8 ui)
+{
+  // Map Windows console attributes to ANSI escape codes.
+  switch (ui)
+  {
+    case 0x00:
+      printf("\033[0m"); // Reset
+      break;
+    case 0x02:
+      printf("\033[32m"); // Green
+      break;
+    case 0x07:
+      printf("\033[0m"); // Default / white
+      break;
+    case 0x08:
+      printf("\033[90m"); // Dark grey
+      break;
+    case 0x09:
+      printf("\033[94m"); // Blue
+      break;
+    case 0x0A:
+      printf("\033[92m"); // Bright green
+      break;
+    case 0x0C:
+      printf("\033[91m"); // Bright red
+      break;
+    case 0x0D:
+      printf("\033[95m"); // Magenta
+      break;
+    case 0x0E:
+      printf("\033[93m"); // Yellow
+      break;
+    default:
+      printf("\033[0m"); // Fallback
+      break;
+  }
+}
 #else
 #  error "Unknown Platform."
 static void SetConsoleColor(xiiUInt8 ui) {}
@@ -28,76 +64,91 @@ void xiiLogWriter::Console::LogMessageHandler(const xiiLoggingEventData& eventDa
   XII_LOCK(WriterLock);
 
   if (eventData.m_EventType == xiiLogMsgType::BeginGroup)
+  {
     printf("\n");
-
+  }
   for (xiiUInt32 i = 0; i < eventData.m_uiIndentation; ++i)
+  {
     printf(" ");
+  }
 
   xiiStringBuilder sTemp1, sTemp2;
 
   switch (eventData.m_EventType)
   {
     case xiiLogMsgType::Flush:
+    {
       fflush(stdout);
-      break;
-
+    }
+    break;
     case xiiLogMsgType::BeginGroup:
+    {
       SetConsoleColor(0x02);
       printf("+++++ %s (%s) +++++\n", eventData.m_sText.GetData(sTemp1), eventData.m_sTag.GetData(sTemp2));
-      break;
-
+    }
+    break;
     case xiiLogMsgType::EndGroup:
+    {
       SetConsoleColor(0x02);
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       printf("----- %s (%.6f sec)-----\n\n", eventData.m_sText.GetData(sTemp1), eventData.m_fSeconds);
 #else
       printf("----- %s (%s)-----\n\n", eventData.m_sText.GetData(sTemp1), "timing info not available");
 #endif
-      break;
-
+    }
+    break;
     case xiiLogMsgType::ErrorMsg:
+    {
       SetConsoleColor(0x0C);
       printf("%sError: %s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       fflush(stdout);
-      break;
-
+    }
+    break;
     case xiiLogMsgType::SeriousWarningMsg:
+    {
       SetConsoleColor(0x0C);
       printf("%sSeriously: %s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
-      break;
-
+    }
+    break;
     case xiiLogMsgType::WarningMsg:
+    {
       SetConsoleColor(0x0E);
       printf("%sWarning: %s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
-      break;
-
+    }
+    break;
     case xiiLogMsgType::SuccessMsg:
+    {
       SetConsoleColor(0x0A);
       printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
       fflush(stdout);
-      break;
-
+    }
+    break;
     case xiiLogMsgType::InfoMsg:
+    {
       SetConsoleColor(0x07);
       printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
-      break;
-
+    }
+    break;
     case xiiLogMsgType::DevMsg:
+    {
       SetConsoleColor(0x08);
       printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
-      break;
-
+    }
+    break;
     case xiiLogMsgType::DebugMsg:
+    {
       SetConsoleColor(0x09);
       printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
-      break;
-
+    }
+    break;
     default:
+    {
       SetConsoleColor(0x0D);
       printf("%s%s\n", sTimestamp.GetData(), eventData.m_sText.GetData(sTemp1));
 
       xiiLog::Warning("Unknown Message Type {0}", eventData.m_EventType);
-      break;
+    }
+    break;
   }
 
   SetConsoleColor(0x07);

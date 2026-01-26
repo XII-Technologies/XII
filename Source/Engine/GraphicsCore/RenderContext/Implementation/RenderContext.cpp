@@ -16,7 +16,6 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/PassConstants.h>
 
 namespace
 {
@@ -77,14 +76,9 @@ xiiRenderContext::xiiRenderContext()
 
   m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants), "xiiGlobalConstants");
   m_pGlobalConstants       = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);
-  m_pPassConstantsBuffer   = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiPassConstants), "xiiPassConstants");
-  m_pPassConstants         = xiiMakeBlobPtr(reinterpret_cast<xiiPassConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiPassConstants), 16U)), 1U);
+  XII_ASSERT_DEBUG(!m_pGlobalConstants.IsEmpty(), "Invalid global constants buffer.");
 
   xiiMemoryUtils::ZeroFill(m_pGlobalConstants.GetPtr(), 1U);
-  xiiMemoryUtils::ZeroFill(m_pPassConstants.GetPtr(), 1U);
-
-  XII_ASSERT_DEBUG(!m_pGlobalConstants.IsEmpty(), "Invalid global constants buffer.");
-  XII_ASSERT_DEBUG(!m_pPassConstants.IsEmpty(), "Invalid pass constants buffer.");
 
   ResetContextState();
 }
@@ -92,7 +86,6 @@ xiiRenderContext::xiiRenderContext()
 xiiRenderContext::~xiiRenderContext()
 {
   xiiFoundation::GetAlignedAllocator()->Deallocate(m_pGlobalConstants.GetPtr());
-  xiiFoundation::GetAlignedAllocator()->Deallocate(m_pPassConstants.GetPtr());
 
   m_GraphicsPipelineDescription = {};
   m_pGraphicsPipelineState.Clear();
@@ -103,8 +96,6 @@ xiiRenderContext::~xiiRenderContext()
   m_pCommandList.Clear();
   m_pGlobalConstants.Clear();
   m_pGlobalConstantsBuffer.Clear();
-  m_pPassConstants.Clear();
-  m_pPassConstantsBuffer.Clear();
 }
 
 xiiRenderContext* xiiRenderContext::GetDefaultInstance()
@@ -147,29 +138,9 @@ void xiiRenderContext::BeginRendering(const xiiRenderingSetup& renderingSetup, c
     }
   }
 
-  xiiUInt8 uiSampleCount = xiiGALMSAASampleCount::OneSample;
-
-  if (!renderPassDescription.m_Attachments.IsEmpty())
-  {
-    uiSampleCount = renderPassDescription.m_Attachments.PeekBack().m_uiSampleCount;
-  }
-
-  if (uiSampleCount > 1)
-  {
-    SetShaderPermutationVariable("MSAA", "TRUE");
-  }
-  else
-  {
-    SetShaderPermutationVariable("MSAA", "FALSE");
-  }
-
   {
     xiiGlobalConstants* pGlobalConstants = GetGlobalConstants();
     pGlobalConstants->ViewportSize       = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-
-    xiiPassConstants* pPassConstants                                               = GetPassConstants();
-    pPassConstants->MSAASampleCount                                                = uiSampleCount;
-    m_GraphicsPipelineDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount = uiSampleCount;
   }
 
   m_pCommandList->Begin();
@@ -790,17 +761,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
   }
 
   BindConstantBuffer(XII_PP_STRINGIFY(xiiGlobalConstants), m_pGlobalConstantsBuffer);
-  BindConstantBuffer(XII_PP_STRINGIFY(xiiPassConstants), m_pPassConstantsBuffer);
 
   {
     xiiGALMapHelper<xiiGlobalConstants> pGlobalConstants(m_pCommandList, m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
     memcpy(pGlobalConstants.GetMappedData(), m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants));
-  }
-  {
-    xiiGALMapHelper<xiiPassConstants> pPassConstants(m_pCommandList, m_pPassConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-
-    memcpy(pPassConstants.GetMappedData(), m_pPassConstants.GetPtr(), sizeof(xiiPassConstants));
   }
 
   ApplyConstantBufferBindings();
@@ -1428,9 +1393,9 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiSharedPtr<xiiGALShader> pVertexS
         This can happen when the resource system gives you a fallback resource, which then selects a shader that does not fit the mesh layout.
         E.g. when a material is not yet loaded and the fallback material is used, that fallback material may use another shader, that requires more data streams, than what the mesh provides.
         This problem will go away, once the proper material is loaded.
-        
+
         This can be fixed by ensuring that the fallback material uses a shader that only requires data that is always there, e.g. only position and maybe a texcoord, and of course all meshes must provide at least those data streams.
-        
+
         Otherwise, this is harmless, the renderer will ignore invalid drawcalls and once all the correct stuff is available, it will work.
       */
 

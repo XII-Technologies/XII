@@ -105,7 +105,7 @@ void xiiGPUResourcePool::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer)
   }
 }
 
-xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
+xiiSharedPtr<xiiGALTexture> xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALSampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
 {
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Format             = format;

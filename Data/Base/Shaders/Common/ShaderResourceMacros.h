@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Platforms.h"
+#include <Shaders/Platform/Platform.h>
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 
 // HLSL
 
@@ -43,7 +43,7 @@ float3x3 TransformToRotation(Transform t)
     Type         Name;                                    \
     SamplerState Name##_AutoSampler
 
-#  if XII_ENABLED(PLATFORM_VULKAN)
+#  if XII_ENABLED(XII_SHADER_PLATFORM_VULKAN)
 #    define DECLARE_CONSTANT_BUFFER(Name, Slot, Set)            cbuffer Name : register(b##Slot, space##Set)
 #    define DECLARE_TEXTURE(Name, Type, Slot, Set)              Type Name : register(t##Slot, space##Set)
 #    define DECLARE_SAMPLER(Name, Slot, Set)                    SamplerState Name : register(s##Slot, space##Set)

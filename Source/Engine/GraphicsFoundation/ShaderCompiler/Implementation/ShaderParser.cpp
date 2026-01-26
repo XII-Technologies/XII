@@ -406,7 +406,7 @@ xiiResult xiiGALShaderParser::PreprocessSection(xiiStreamReader& inout_stream, x
   {
     XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("TRUE 1"));
     XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("FALSE 0"));
-    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("PLATFORM_SHADER ="));
+    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("XII_SHADER_PLATFORM ="));
 
     for (auto& sDefine : pCustomDefines)
     {

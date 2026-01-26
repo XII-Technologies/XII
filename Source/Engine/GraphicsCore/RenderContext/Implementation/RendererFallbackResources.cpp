@@ -35,7 +35,7 @@ void xiiRendererFallbackResources::Initialize()
 {
   s_pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto CreateTexture = [](xiiGALResourceDimension::Enum dimension, xiiGALMSAASampleCount::Enum samples, bool bDepth) -> xiiSharedPtr<xiiGALTexture> {
+  auto CreateTexture = [](xiiGALResourceDimension::Enum dimension, xiiGALSampleCount::Enum samples, bool bDepth) -> xiiSharedPtr<xiiGALTexture> {
     xiiGALTextureCreationDescription description;
     description.m_Type               = dimension;
     description.m_Format             = bDepth ? xiiGALResourceFormat::D16UNormalized : xiiGALResourceFormat::BGRA8UNormalizedSRGB;
@@ -66,7 +66,7 @@ void xiiRendererFallbackResources::Initialize()
   };
 
   {
-    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALSampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2D, false}]             = pTextureView;
@@ -75,7 +75,7 @@ void xiiRendererFallbackResources::Initialize()
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture2DArray, false}] = pTextureView;
   }
   {
-    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, true);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALSampleCount::OneSample, true);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2D, true}]             = pTextureView;
@@ -84,17 +84,7 @@ void xiiRendererFallbackResources::Initialize()
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture2DArray, true}] = pTextureView;
   }
   {
-    // Assume supported.
-    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture2D, xiiGALMSAASampleCount::OneSample, false);
-    xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
-
-    s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2DMS, false}]             = pTextureView;
-    s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture2DMSArray, false}]        = pTextureView;
-    s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture2DMS, false}]      = pTextureView;
-    s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::Texture2DMSArray, false}] = pTextureView;
-  }
-  {
-    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::TextureCube, xiiGALMSAASampleCount::OneSample, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::TextureCube, xiiGALSampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::TextureCube, false}]             = pTextureView;
@@ -103,7 +93,7 @@ void xiiRendererFallbackResources::Initialize()
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureAndSampler, xiiGALShaderTextureType::TextureCubeArray, false}] = pTextureView;
   }
   {
-    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture3D, xiiGALMSAASampleCount::OneSample, false);
+    xiiSharedPtr<xiiGALTexture>     pTexture     = CreateTexture(xiiGALResourceDimension::Texture3D, xiiGALSampleCount::OneSample, false);
     xiiSharedPtr<xiiGALTextureView> pTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
     s_TextureResourceViews[{xiiGALShaderResourceType::TextureSRV, xiiGALShaderTextureType::Texture3D, false}]        = pTextureView;

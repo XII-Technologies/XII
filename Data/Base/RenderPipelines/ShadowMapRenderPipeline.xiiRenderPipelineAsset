@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{18364454300628380606,5580974198777950276}}
-		u4 %Hash{2332766259394098587}
+		u4 %Hash{12196820337759528455}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -114,7 +114,7 @@ o
 		Uuid %Output{u4{2573992475785453051,2516975213049453610}}
 		u3 %SampleCount{1}
 		u1 %StencilClearValue{0}
-		s %Type{"xiiGALResourceDimension::Texture2DArray"}
+		s %Type{"xiiGALResourceDimension::Texture2D"}
 		s %Usage{"xiiGALResourceUsage::Mutable"}
 	}
 }

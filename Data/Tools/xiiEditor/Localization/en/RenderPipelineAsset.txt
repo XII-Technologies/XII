@@ -69,24 +69,23 @@ xiiGALResourceFormat::BC6Float;BC6 Float
 xiiGALResourceFormat::BC7UNormalized;BC7 UNormalized
 xiiGALResourceFormat::BC7UNormalizedsRGB;BC7 UNormalized sRGB
 
-xiiGALMSAASampleCount::OneSample;One Sample
-xiiGALMSAASampleCount::TwoSamples;Two Samples
-xiiGALMSAASampleCount::FourSamples;Four Samples
-xiiGALMSAASampleCount::EightSamples;Eight Samples
-xiiGALMSAASampleCount::SixteenSamples;16 Samples
-xiiGALMSAASampleCount::ThirtyTwoSamples;32 Samples
-xiiGALMSAASampleCount::SixtyFourSamples;64 Samples
-
-xiiLSAODepthCompareFunction::NormalAndSampleDistance;Normal And Sample-Distance
-
 xiiImguiExtractor;ImGUI Extractor
 
 xiiSourceFormat::Color4Channel8BitNormalized_sRGB;Color 4-Channel 8-Bit Normalized sRGB
 xiiSourceFormat::Color4Channel8BitNormalized;Color 4-Channel 8-Bit Normalized
+xiiSourceFormat::Color2Channel16BitFloat;Color 2-Channel 16-Bit Float
 xiiSourceFormat::Color4Channel16BitFloat;Color 4-Channel 16-Bit Float
+xiiSourceFormat::Color2Channel32BitFloat;Color 2-Channel 32-Bit Float
+xiiSourceFormat::Color3Channel32BitFloat;Color 3-Channel 32-Bit Float
 xiiSourceFormat::Color4Channel32BitFloat;Color 4-Channel 32-Bit Float
 xiiSourceFormat::Color3Channel11_11_10BitFloat;Color 3-Channel 11-11-10-Bit Float
-xiiSourceFormat::Color3Channel32BitFloat;Color 3-Channel 32-Bit Float
 xiiSourceFormat::Depth16Bit;Depth 16-Bit
 xiiSourceFormat::Depth24BitStencil8Bit;Depth 24-Bit Stencil 8-Bit
 xiiSourceFormat::Depth32BitFloat;Depth 32-Bit Float
+xiiSourceFormat::BC1_RGB_DXT1;BC1 RGB (DXT1)
+xiiSourceFormat::BC2_RGBA_DXT3;BC2 RGBA (DXT3)
+xiiSourceFormat::BC3_RGBA_DXT5;BC3 RGBA (DXT5)
+xiiSourceFormat::BC4_R_Grey_DXT5A;BC4 R Grey (DXT5A)
+xiiSourceFormat::BC5_RG_Grey_DXT5A;BC5 RG Grey (DXT5A)
+xiiSourceFormat::BC6H_RGB_Float;BC6H RGB Float
+xiiSourceFormat::BC7_RGBA;BC7 RGBA

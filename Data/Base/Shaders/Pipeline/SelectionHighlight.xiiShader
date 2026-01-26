@@ -3,7 +3,6 @@ ALL
 
 [PERMUTATIONS]
 
-MSAA
 CAMERA_MODE
 
 [RENDERSTATE]
@@ -36,24 +35,12 @@ struct PS_IN
   #if CAMERA_MODE == CAMERA_MODE_STEREO
     uint RenderTargetArrayIndex : SV_RenderTargetArrayIndex;
   #endif
-  #if MSAA
-    uint SampleIndex : SV_SampleIndex;
-  #endif
 };
 
-#if MSAA
-  Texture2DMSArray<float> SelectionDepthTexture;
-  Texture2DMSArray<float> SceneDepthTexture;
+Texture2DArray SelectionDepthTexture;
+Texture2DArray SceneDepthTexture;
 
-  #define SampleDepth(texture, coords, input) texture.Load(int3(coords.xy, 0), input.SampleIndex).r
-
-#else
-  Texture2DArray SelectionDepthTexture;
-  Texture2DArray SceneDepthTexture;
-
-  #define SampleDepth(texture, coords, input) texture.Load(int4(coords.xy, 0, 0)).r
-
-#endif
+#define SampleDepth(texture, coords, input) texture.Load(int4(coords.xy, 0, 0)).r
 
 float4 main(PS_IN Input) : SV_Target
 {
