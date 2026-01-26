@@ -39,7 +39,7 @@ public:
   /// \brief Retrieves a render target texture with simplified input parameters.
   ///
   /// Internally constructs a full texture creation description and either reuses or allocates a new texture.
-  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray);
+  xiiSharedPtr<xiiGALTexture> GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALSampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray);
 
   /// \brief Retrieves a texture from the pool or creates a new one with the provided description.
   xiiSharedPtr<xiiGALTexture> GetTexture(const xiiGALTextureCreationDescription& description);

@@ -73,7 +73,7 @@ bool xiiDummyXR::SupportsCompanionView()
   return true;
 }
 
-xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALMSAASampleCount> msaaCount, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput)
+xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSampleCount> msaaCount, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput)
 {
   XII_ASSERT_DEV(IsInitialized(), "Need to call 'Initialize' first.");
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();

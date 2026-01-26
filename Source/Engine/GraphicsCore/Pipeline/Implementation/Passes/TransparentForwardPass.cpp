@@ -94,17 +94,9 @@ void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& 
 
 void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(xiiSharedPtr<xiiGALTexture> pSceneColorTexture, xiiSharedPtr<xiiGALTexture> pCurrentColorTexture)
 {
-  xiiGALResolveTextureSubresourceDescription description;
-  description.m_uiSourceMipLevel                 = 0;
-  description.m_uiSourceSlice                    = 0;
-  description.m_SourceTextureTransitionMode      = xiiGALStateTransitionMode::Transition;
-  description.m_uiDestinationMipLevel            = 0;
-  description.m_uiDestinationSlice               = 0;
-  description.m_DestinationTextureTransitionMode = xiiGALStateTransitionMode::Transition;
+  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("Copy Scene Color Texture");
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("Resolve Scene Color Texture");
-
-  pCommandList->ResolveTextureSubResource(pCurrentColorTexture, pSceneColorTexture, description);
+  pCommandList->CopyTexture(pCurrentColorTexture, pSceneColorTexture);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_TransparentForwardPass);

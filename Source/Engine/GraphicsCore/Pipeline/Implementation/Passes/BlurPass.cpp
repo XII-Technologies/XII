@@ -98,7 +98,7 @@ xiiResult xiiBlurPass::GetResourceDescriptions(const xiiView& view, const xiiArr
   // Colour attachment.
   if (pInputs[m_PinInput.m_uiInputIndex])
   {
-    if (pInputs[m_PinInput.m_uiInputIndex]->m_Texture.m_Description.m_uiSampleCount != static_cast<xiiUInt32>(xiiGALMSAASampleCount::OneSample))
+    if (pInputs[m_PinInput.m_uiInputIndex]->m_Texture.m_Description.m_uiSampleCount != static_cast<xiiUInt32>(xiiGALSampleCount::OneSample))
     {
       xiiLog::Error("Input texture must be a non-MSAA source in pass '{0}'!", GetName());
       return XII_FAILURE;

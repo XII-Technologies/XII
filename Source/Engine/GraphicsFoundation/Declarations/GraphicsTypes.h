@@ -1305,27 +1305,6 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 
-/// \brief This describes the multi-sample count.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALMSAASampleCount
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    OneSample        = 1U,  ///< One sample.
-    TwoSamples       = 2U,  ///< Two samples.
-    FourSamples      = 4U,  ///< Four samples.
-    EightSamples     = 8U,  ///< Eight samples.
-    SixteenSamples   = 16U, ///< Sixteen samples.
-    ThirtyTwoSamples = 32U, ///< Thirty-two samples.
-    SixtyFourSamples = 64U, ///< Sixty-four samples.
-
-    Default = OneSample
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMSAASampleCount);
-
 /// \brief This describes the shading rate capability flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
 {

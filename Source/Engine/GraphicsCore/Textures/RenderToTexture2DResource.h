@@ -11,7 +11,7 @@ struct XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResourceDescriptor
   xiiUInt32                                 m_uiWidth  = 0;
   xiiUInt32                                 m_uiHeight = 0;
   xiiEnum<xiiGALResourceFormat>             m_Format   = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-  xiiEnum<xiiGALMSAASampleCount>            m_SampleCount;
+  xiiEnum<xiiGALSampleCount>            m_SampleCount;
   xiiGALSamplerCreationDescription          m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
   xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
