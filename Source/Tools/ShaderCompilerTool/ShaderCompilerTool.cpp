@@ -37,7 +37,7 @@ Spaces are used to separate multiple arguments, therefore each argument mustn't 
 In the form of 'SOME_VAR=VALUE'\n\
 Examples:\n\
   -perm BLEND_MODE=BLEND_MODE_OPAQUE\n\
-  -perm TWO_SIDED=FALSE MSAA=TRUE\n\
+  -perm TWO_SIDED=FALSE\n\
 \n\
 If a permutation variable is not set to a fixed value, all shader permutations for that variable will generated and compiled.\n\
 ",

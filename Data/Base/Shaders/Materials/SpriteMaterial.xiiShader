@@ -102,20 +102,12 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 
 [PIXELSHADER]
 
-#if BLEND_MODE == BLEND_MODE_MASKED && MSAA
-  #define USE_ALPHA_TEST_SUPER_SAMPLING
-#endif
-
 #include <Shaders/Materials/MaterialHelper.h>
 
 struct PS_OUT
 {
   #if RENDER_PASS != RENDER_PASS_DEPTH_ONLY
     float4 Color : SV_Target;
-  #endif
-
-  #if defined(USE_ALPHA_TEST_SUPER_SAMPLING)
-    uint Coverage : SV_Coverage;
   #endif
 };
 
@@ -171,10 +163,6 @@ PS_OUT main(PS_IN Input)
     }
   #elif RENDER_PASS != RENDER_PASS_DEPTH_ONLY
     Output.Color = color;
-  #endif
-
-  #if defined(USE_ALPHA_TEST_SUPER_SAMPLING)
-    Output.Coverage = coverage;
   #endif
 
   #if RENDER_PASS != RENDER_PASS_DEPTH_ONLY && BLEND_MODE == BLEND_MODE_MASKED
