@@ -741,17 +741,29 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     XII_ASSERT_DEV((m_pGraphicsPipelineState != nullptr) ^ (m_pComputePipelineState != nullptr), "Pipeline creation failed.");
   }
 
-  ApplyScissor();
+  if (m_pGraphicsPipelineState && m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState)
+  {
+    const xiiGALRasterizerStateCreationDescription& description = m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState->GetDescription();
 
-  ApplyBufferUAVBindings();
+    if (description.m_bScissorEnable)
+    {
+      const xiiGALFramebufferCreationDescription& framebufferDescription = GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup)->GetDescription();
 
-  ApplyTextureUAVBindings();
+      m_pCommandList->SetScissorRect({framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height});
+    }
+  }
 
-  ApplyBufferSRVBindings();
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
 
-  ApplyTextureSRVBindings();
-
-  ApplySamplerBindings();
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
   if (pMaterial)
   {
@@ -768,7 +780,69 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     memcpy(pGlobalConstants.GetMappedData(), m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants));
   }
 
-  ApplyConstantBufferBindings();
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
+  {
+    if (binding.m_ResourceType == xiiGALShaderResourceType::ConstantBuffer)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALBuffer> pBuffer;
+      if (m_BoundConstantBuffers.TryGetValue(uiResourceHash, pBuffer))
+      {
+        m_pCommandList->SetConstantBuffer(binding, pBuffer);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::BufferUAV)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALBufferView> pBufferUAV;
+      if (m_BoundBufferUAVs.TryGetValue(uiResourceHash, pBufferUAV))
+      {
+        m_pCommandList->SetUnorderedAccessBufferView(binding, pBufferUAV);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::TextureUAV)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALTextureView> pTextureUAV;
+      if (m_BoundTextureUAVs.TryGetValue(uiResourceHash, pTextureUAV))
+      {
+        m_pCommandList->SetUnorderedAccessTextureView(binding, pTextureUAV);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::BufferSRV)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALBufferView> pBufferSRV;
+      if (m_BoundBufferSRVs.TryGetValue(uiResourceHash, pBufferSRV))
+      {
+        m_pCommandList->SetShaderResourceBufferView(binding, pBufferSRV);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV || binding.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALTextureView> pTextureSRV;
+      if (m_BoundTextureSRVs.TryGetValue(uiResourceHash, pTextureSRV))
+      {
+        m_pCommandList->SetShaderResourceTextureView(binding, pTextureSRV);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::Sampler || binding.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALSampler> pSampler;
+      if (m_BoundSamplers.TryGetValue(uiResourceHash, pSampler))
+      {
+        m_pCommandList->SetSampler(binding, pSampler);
+      }
+    }
+  }
 
   return XII_SUCCESS;
 }
