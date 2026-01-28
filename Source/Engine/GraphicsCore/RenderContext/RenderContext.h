@@ -521,12 +521,6 @@ private:
 
   xiiShaderPermutationResource* ApplyShaderState();
   xiiMaterialResource*          ApplyMaterialState();
-  void                          ApplyConstantBufferBindings();
-  void                          ApplyBufferSRVBindings();
-  void                          ApplyTextureSRVBindings();
-  void                          ApplyBufferUAVBindings();
-  void                          ApplyTextureUAVBindings();
-  void                          ApplySamplerBindings();
 
   void BeginInternalRenderPass();
   void BeginClearThenLoadInternalRenderPass();

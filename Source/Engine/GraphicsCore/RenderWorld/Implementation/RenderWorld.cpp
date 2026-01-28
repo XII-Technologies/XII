@@ -11,7 +11,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
-xiiCVarBool cvar_RenderingMultithreading("Rendering.Multithreading", true, xiiCVarFlags::Default, "Enables multi-threaded update and rendering.");
+xiiCVarBool cvar_RenderingMultithreading("Rendering.Multithreading", false, xiiCVarFlags::Default, "Enables multi-threaded update and rendering.");
 xiiCVarBool cvar_RenderingCachingStaticObjects("Rendering.Caching.StaticObjects", true, xiiCVarFlags::Default, "Enables render data caching of static objects.");
 
 xiiEvent<xiiView*, xiiMutex> xiiRenderWorld::s_ViewCreatedEvent;

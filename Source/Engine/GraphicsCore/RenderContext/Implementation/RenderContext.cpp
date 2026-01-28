@@ -7,6 +7,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsCore/RenderContext/RendererFallbackResources.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -741,17 +742,29 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     XII_ASSERT_DEV((m_pGraphicsPipelineState != nullptr) ^ (m_pComputePipelineState != nullptr), "Pipeline creation failed.");
   }
 
-  ApplyScissor();
+  if (m_pGraphicsPipelineState && m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState)
+  {
+    const xiiGALRasterizerStateCreationDescription& description = m_GraphicsPipelineDescription.m_GraphicsPipeline.m_pRasterizerState->GetDescription();
 
-  ApplyBufferUAVBindings();
+    if (description.m_bScissorEnable)
+    {
+      const xiiGALFramebufferCreationDescription& framebufferDescription = GetOrCreateFramebuffer(m_pActiveRenderPass->GetDescription(), m_RenderingSetup)->GetDescription();
 
-  ApplyTextureUAVBindings();
+      m_pCommandList->SetScissorRect({framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height});
+    }
+  }
 
-  ApplyBufferSRVBindings();
+  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
+  if (m_RenderContextScope == RenderContextScope::Graphics)
+  {
+    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
+  else if (m_RenderContextScope == RenderContextScope::Compute)
+  {
+    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
+  }
 
-  ApplyTextureSRVBindings();
-
-  ApplySamplerBindings();
+  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
 
   if (pMaterial)
   {
@@ -768,7 +781,95 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     memcpy(pGlobalConstants.GetMappedData(), m_pGlobalConstants.GetPtr(), sizeof(xiiGlobalConstants));
   }
 
-  ApplyConstantBufferBindings();
+  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
+  {
+    if (binding.m_ResourceType == xiiGALShaderResourceType::ConstantBuffer)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALBuffer> pBuffer;
+      if (m_BoundConstantBuffers.TryGetValue(uiResourceHash, pBuffer))
+      {
+        m_pCommandList->SetConstantBuffer(binding, pBuffer);
+      }
+      else
+      {
+        // If the shader was compiled with debug info the shader compiler will not strip unused resources and thus this error would trigger although the shader doesn't actually use the resource.
+        /// \todo if (!pBinary->m_bWasCompiledWithDebug)
+        xiiLog::Error("No resource is bound for constant buffer slot '{0}'", binding.m_sName);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::BufferUAV)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALBufferView> pBufferUAV;
+      if (m_BoundBufferUAVs.TryGetValue(uiResourceHash, pBufferUAV))
+      {
+        m_pCommandList->SetUnorderedAccessBufferView(binding, pBufferUAV);
+      }
+      else
+      {
+        xiiLog::Error("No resource is bound for buffer UAV slot '{0}'", binding.m_sName);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::TextureUAV)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALTextureView> pTextureUAV;
+      if (m_BoundTextureUAVs.TryGetValue(uiResourceHash, pTextureUAV))
+      {
+        m_pCommandList->SetUnorderedAccessTextureView(binding, pTextureUAV);
+      }
+      else
+      {
+        xiiLog::Error("No resource is bound for texture UAV slot '{0}'", binding.m_sName);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::BufferSRV)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALBufferView> pBufferSRV;
+      if (m_BoundBufferSRVs.TryGetValue(uiResourceHash, pBufferSRV))
+      {
+        m_pCommandList->SetShaderResourceBufferView(binding, pBufferSRV);
+      }
+      else
+      {
+        xiiLog::Error("No resource is bound for buffer slot '{0}'", binding.m_sName);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV || binding.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALTextureView> pTextureSRV;
+      if (m_BoundTextureSRVs.TryGetValue(uiResourceHash, pTextureSRV))
+      {
+        m_pCommandList->SetShaderResourceTextureView(binding, pTextureSRV);
+      }
+      else
+      {
+        xiiLog::Error("No resource is bound for texture slot '{0}'", binding.m_sName);
+      }
+    }
+    if (binding.m_ResourceType == xiiGALShaderResourceType::Sampler || binding.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler)
+    {
+      const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+
+      xiiSharedPtr<xiiGALSampler> pSampler;
+      if (m_BoundSamplers.TryGetValue(uiResourceHash, pSampler))
+      {
+        m_pCommandList->SetSampler(binding, pSampler);
+      }
+      else
+      {
+        xiiLog::Error("No resource is bound for sampler slot '{0}'", binding.m_sName);
+      }
+    }
+  }
 
   return XII_SUCCESS;
 }
@@ -922,193 +1023,6 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
   xiiResourceManager::EndAcquireResource(pMaterial);
 
   return nullptr;
-}
-
-void xiiRenderContext::ApplyConstantBufferBindings()
-{
-  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
-  if (m_RenderContextScope == RenderContextScope::Graphics)
-  {
-    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-  else if (m_RenderContextScope == RenderContextScope::Compute)
-  {
-    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-
-  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
-
-  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
-  {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::ConstantBuffer)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiSharedPtr<xiiGALBuffer> pConstantBuffer;
-    if (!m_BoundConstantBuffers.TryGetValue(uiResourceHash, pConstantBuffer))
-    {
-      // If the shader was compiled with debug info the shader compiler will not strip unused resources and thus this error would trigger although the shader doesn't actually use the resource.
-      /// \todo if (!pBinary->m_bWasCompiledWithDebug)
-      {
-        xiiLog::Error("No resource is bound for constant buffer slot '{0}'", binding.m_sName);
-      }
-
-      m_pCommandList->SetConstantBuffer(binding, nullptr);
-      continue;
-    }
-
-    m_pCommandList->SetConstantBuffer(binding, pConstantBuffer);
-  }
-}
-
-void xiiRenderContext::ApplyBufferSRVBindings()
-{
-  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
-  if (m_RenderContextScope == RenderContextScope::Graphics)
-  {
-    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-  else if (m_RenderContextScope == RenderContextScope::Compute)
-  {
-    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-
-  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
-
-  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
-  {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::BufferSRV)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiSharedPtr<xiiGALBufferView> pBufferSRV;
-    if (m_BoundBufferSRVs.TryGetValue(uiResourceHash, pBufferSRV))
-    {
-      m_pCommandList->SetShaderResourceBufferView(binding, pBufferSRV);
-    }
-  }
-}
-
-void xiiRenderContext::ApplyTextureSRVBindings()
-{
-  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
-  if (m_RenderContextScope == RenderContextScope::Graphics)
-  {
-    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-  else if (m_RenderContextScope == RenderContextScope::Compute)
-  {
-    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-
-  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
-
-  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
-  {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureSRV && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiSharedPtr<xiiGALTextureView> pTextureSRV;
-    if (m_BoundTextureSRVs.TryGetValue(uiResourceHash, pTextureSRV))
-    {
-      m_pCommandList->SetShaderResourceTextureView(binding, pTextureSRV);
-    }
-  }
-}
-
-void xiiRenderContext::ApplyBufferUAVBindings()
-{
-  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
-  if (m_RenderContextScope == RenderContextScope::Graphics)
-  {
-    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-  else if (m_RenderContextScope == RenderContextScope::Compute)
-  {
-    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-
-  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
-
-  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
-  {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::BufferUAV)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiSharedPtr<xiiGALBufferView> pBufferUAV;
-    if (m_BoundBufferUAVs.TryGetValue(uiResourceHash, pBufferUAV))
-    {
-      m_pCommandList->SetShaderResourceBufferView(binding, pBufferUAV);
-    }
-  }
-}
-
-void xiiRenderContext::ApplyTextureUAVBindings()
-{
-  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
-  if (m_RenderContextScope == RenderContextScope::Graphics)
-  {
-    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-  else if (m_RenderContextScope == RenderContextScope::Compute)
-  {
-    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-
-  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
-
-  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
-  {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::TextureUAV && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiSharedPtr<xiiGALTextureView> pTextureUAV;
-    if (m_BoundTextureUAVs.TryGetValue(uiResourceHash, pTextureUAV))
-    {
-      m_pCommandList->SetShaderResourceTextureView(binding, pTextureUAV);
-    }
-  }
-}
-
-void xiiRenderContext::ApplySamplerBindings()
-{
-  xiiSharedPtr<xiiGALPipelineResourceSignature> pResourceSignature;
-  if (m_RenderContextScope == RenderContextScope::Graphics)
-  {
-    pResourceSignature = m_pGraphicsPipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-  else if (m_RenderContextScope == RenderContextScope::Compute)
-  {
-    pResourceSignature = m_pComputePipelineState->GetDescription().m_pPipelineResourceSignature;
-  }
-
-  const auto& resourceBindings = pResourceSignature->GetDescription().m_Resources;
-
-  for (const xiiGALPipelineResourceDescription& binding : resourceBindings)
-  {
-    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler && binding.m_ResourceType != xiiGALShaderResourceType::TextureAndSampler)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiSharedPtr<xiiGALSampler> pSampler;
-    if (m_BoundSamplers.TryGetValue(uiResourceHash, pSampler))
-    {
-      m_pCommandList->SetSampler(binding, pSampler);
-    }
-    else
-    {
-      m_pCommandList->SetSampler(binding, GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering)); // Bind a default sampler state.
-    }
-  }
 }
 
 void xiiRenderContext::BeginInternalRenderPass()
