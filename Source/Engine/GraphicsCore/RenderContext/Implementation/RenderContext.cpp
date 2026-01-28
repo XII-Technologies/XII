@@ -7,6 +7,7 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsCore/RenderContext/RendererFallbackResources.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -14,7 +15,6 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <GraphicsCore/RenderContext/RendererFallbackResources.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
