@@ -225,27 +225,54 @@ void xiiRenderData::ClearRendererInstances()
 
 //////////////////////////////////////////////////////////////////////////
 
+// -----------------------------------------------------------------------------
+// LIGHTING & ENVIRONMENT
+// -----------------------------------------------------------------------------
 xiiRenderData::Category xiiDefaultRenderDataCategories::Light           = xiiRenderData::RegisterCategory("Light", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::Decal           = xiiRenderData::RegisterCategory("Decal", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::ReflectionProbe = xiiRenderData::RegisterCategory("ReflectionProbe", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::Sky             = xiiRenderData::RegisterCategory("Sky", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitOpaqueStatic  = xiiRenderData::RegisterCategory("LitOpaqueStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitOpaqueDynamic = xiiRenderData::RegisterCategory("LitOpaqueDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitOpaque        = xiiRenderData::RegisterRedirectedCategory("LitOpaque", xiiDefaultRenderDataCategories::LitOpaqueStatic, xiiDefaultRenderDataCategories::LitOpaqueDynamic);
+// -----------------------------------------------------------------------------
+// OPAQUE GEOMETRY (STATIC + DYNAMIC)
+// These feed: Depth Pre-pass -> Opaque Forward Clustered
+// -----------------------------------------------------------------------------
+xiiRenderData::Category xiiDefaultRenderDataCategories::OpaqueStatic  = xiiRenderData::RegisterCategory("OpaqueStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::OpaqueDynamic = xiiRenderData::RegisterCategory("OpaqueDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::Opaque        = xiiRenderData::RegisterRedirectedCategory("Opaque", xiiDefaultRenderDataCategories::OpaqueStatic, xiiDefaultRenderDataCategories::OpaqueDynamic);
 
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitMaskedStatic  = xiiRenderData::RegisterCategory("LitMaskedStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitMaskedDynamic = xiiRenderData::RegisterCategory("LitMaskedDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitMasked        = xiiRenderData::RegisterRedirectedCategory("LitMasked", xiiDefaultRenderDataCategories::LitMaskedStatic, xiiDefaultRenderDataCategories::LitMaskedDynamic);
 
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitTransparent = xiiRenderData::RegisterCategory("LitTransparent", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitForeground  = xiiRenderData::RegisterCategory("LitForeground", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitScreenFX    = xiiRenderData::RegisterCategory("LitScreenFX", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
+// -----------------------------------------------------------------------------
+// MASKED GEOMETRY (STATIC + DYNAMIC)
+// Masked objects must be rendered after opaque depth pre-pass.
+// -----------------------------------------------------------------------------
+xiiRenderData::Category xiiDefaultRenderDataCategories::MaskedStatic  = xiiRenderData::RegisterCategory("MaskedStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::MaskedDynamic = xiiRenderData::RegisterCategory("MaskedDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::Masked        = xiiRenderData::RegisterRedirectedCategory("Masked", xiiDefaultRenderDataCategories::MaskedStatic, xiiDefaultRenderDataCategories::MaskedDynamic);
 
+
+// -----------------------------------------------------------------------------
+// TRANSPARENT GEOMETRY
+// These feed: TransparencyCull -> TransparencyForwardPass
+// -----------------------------------------------------------------------------
+xiiRenderData::Category xiiDefaultRenderDataCategories::Transparent = xiiRenderData::RegisterCategory("Transparent", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
+
+// -----------------------------------------------------------------------------
+// FOREGROUND & SCREEN EFFECTS
+// -----------------------------------------------------------------------------
+xiiRenderData::Category xiiDefaultRenderDataCategories::Foreground = xiiRenderData::RegisterCategory("Foreground", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::ScreenFX   = xiiRenderData::RegisterCategory("ScreenFX", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
+
+// -----------------------------------------------------------------------------
+// SIMPLE MATERIALS (non‑lit or debug)
+// -----------------------------------------------------------------------------
 xiiRenderData::Category xiiDefaultRenderDataCategories::SimpleOpaque      = xiiRenderData::RegisterCategory("SimpleOpaque", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::SimpleTransparent = xiiRenderData::RegisterCategory("SimpleTransparent", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
-xiiRenderData::Category xiiDefaultRenderDataCategories::SimpleForeground  = xiiRenderData::RegisterCategory("SimpleForeground", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 
+
+// -----------------------------------------------------------------------------
+// EDITOR / DEBUG
+// -----------------------------------------------------------------------------
 xiiRenderData::Category xiiDefaultRenderDataCategories::Selection = xiiRenderData::RegisterCategory("Selection", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::GUI       = xiiRenderData::RegisterCategory("GUI", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
 
