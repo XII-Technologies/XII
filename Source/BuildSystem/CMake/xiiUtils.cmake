@@ -628,6 +628,10 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
     set(PKG_TYPE "exe")
   else()
     get_filename_component(PKG_TYPE ${URL} LAST_EXT)
+    # get_filename_component can return an extension starting with a dot (e.g. ".7z").
+    # Normalize by removing a leading dot so we don't end up with filenames like
+    # "pkgname..7z" when composing FULL_FILENAME below.
+    string(REGEX REPLACE "^\\." "" PKG_TYPE "${PKG_TYPE}")
   endif()
 
   set(FULL_FILENAME "${DEST_FILENAME}.${PKG_TYPE}")
