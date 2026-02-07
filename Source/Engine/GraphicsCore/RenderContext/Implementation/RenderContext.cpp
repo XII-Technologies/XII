@@ -15,6 +15,8 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 

@@ -4,7 +4,7 @@
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
 #include <GraphicsCore/Components/SpriteComponent.h>
-#include <GraphicsCore/Components/SpriteRenderer.h>
+#include <GraphicsCore/Pipeline/Renderer/SpriteRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>

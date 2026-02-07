@@ -10,6 +10,7 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <Shaders/Materials/LensFlareData.h>
 static_assert(sizeof(xiiPerLensFlareData) == 48);
@@ -31,7 +32,7 @@ void xiiLensFlareRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiR
 
 void xiiLensFlareRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
 }
 
 void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const

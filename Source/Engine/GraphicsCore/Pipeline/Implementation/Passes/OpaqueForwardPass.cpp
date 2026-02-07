@@ -91,10 +91,10 @@ void xiiOpaqueForwardRenderPass::SetupPermutationVariables(const xiiRenderViewCo
 
 void xiiOpaqueForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
 {
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaqueStatic);
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaqueDynamic);
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMaskedStatic);
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMaskedDynamic);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::OpaqueStatic);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::OpaqueDynamic);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::MaskedStatic);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::MaskedDynamic);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_OpaqueForwardPass);

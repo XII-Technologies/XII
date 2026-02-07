@@ -23,7 +23,7 @@ xiiTempHashedString xiiSpriteBlendMode::GetPermutationValue(Enum blendMode)
     case xiiSpriteBlendMode::ShapeIcon:
       return "BLEND_MODE_MASKED";
     case xiiSpriteBlendMode::Transparent:
-      return "BLEND_MODE_TRANSPARENT";
+      return "BLEND_MODE_TRANSLUCENT";
     case xiiSpriteBlendMode::Additive:
       return "BLEND_MODE_ADDITIVE";
   }
@@ -116,10 +116,10 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
   }
 
   // Determine render data category.
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitTransparent;
+  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Transparent;
   if (m_BlendMode == xiiSpriteBlendMode::Masked)
   {
-    category = xiiDefaultRenderDataCategories::LitMasked;
+    category = xiiDefaultRenderDataCategories::Masked;
   }
 
   msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);

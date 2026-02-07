@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/Renderer.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiRenderPipelinePassCapabilityFlags, 1)

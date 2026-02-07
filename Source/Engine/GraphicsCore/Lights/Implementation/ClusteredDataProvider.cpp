@@ -11,6 +11,7 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
 {

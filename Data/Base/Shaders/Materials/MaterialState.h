@@ -42,7 +42,7 @@ ComparisonDepthFunction = ComparisonFunction_LessEqual
 // Blend State
 #if defined(BLEND_MODE)
 
-  #if BLEND_MODE == BLEND_MODE_TRANSPARENT
+  #if BLEND_MODE == BLEND_MODE_TRANSLUCENT
     BlendEnable0 = true
     BlendOperation0 = BlendOperation_Add
     DestinationBlend0 = BlendFactor_InverseSourceAlpha

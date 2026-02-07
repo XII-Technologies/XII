@@ -14,6 +14,9 @@
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 struct xiiBakedProbesComponent::RenderDebugViewTask : public xiiTask
 {

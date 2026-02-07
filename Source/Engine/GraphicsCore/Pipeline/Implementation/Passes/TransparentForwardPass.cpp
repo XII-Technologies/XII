@@ -81,15 +81,15 @@ void xiiTransparentForwardRenderPass::SetupResources(const xiiRenderViewContext&
 
 void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& renderViewContext)
 {
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Transparent);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitScreenFX);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::ScreenFX);
 }
 
 void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(xiiSharedPtr<xiiGALTexture> pSceneColorTexture, xiiSharedPtr<xiiGALTexture> pCurrentColorTexture)

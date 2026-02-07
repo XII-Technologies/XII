@@ -83,26 +83,26 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
   // Opaque
   if (m_bRenderStaticObjects)
   {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaqueStatic);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::OpaqueStatic);
   }
   if (m_bRenderDynamicObjects)
   {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaqueDynamic);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::OpaqueDynamic);
   }
 
   // Masked
   if (m_bRenderStaticObjects)
   {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMaskedStatic);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::MaskedStatic);
   }
   if (m_bRenderDynamicObjects)
   {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMaskedDynamic);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::MaskedDynamic);
   }
 
   // Transparent
   if (m_bRenderTransparentObjects)
   {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Transparent);
   }
 }
