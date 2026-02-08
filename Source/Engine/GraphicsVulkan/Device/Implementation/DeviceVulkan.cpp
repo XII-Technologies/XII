@@ -6,7 +6,6 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
