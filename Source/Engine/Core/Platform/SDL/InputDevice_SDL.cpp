@@ -15,10 +15,8 @@
 #    include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #  endif
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 bool xiiStandardInputDevice::s_bMainWindowUsed = false;
 

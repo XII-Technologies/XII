@@ -7,6 +7,19 @@
     },
     "configurePresets": [
       {
+        "name": "vs2026x64",
+        "hidden": false,
+        "generator": "Visual Studio 18 2026",
+        "architecture": "x64",
+        "binaryDir": "${sourceDir}/Workspace/${presetName}",
+        "cacheVariables": {
+          "XII_BUILD_VULKAN": "ON",
+          "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
+          "XII_COMPILE_ENGINE_AS_DLL" : "ON"
+        },
+        "environment": {}
+      },
+      {
         "name": "vs2022x64",
         "hidden": false,
         "generator": "Visual Studio 17 2022",
