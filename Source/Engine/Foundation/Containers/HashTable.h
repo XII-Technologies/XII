@@ -147,7 +147,7 @@ public:
 /// All insertion/erasure/lookup functions take O(1) time if the table does not need to be expanded,
 /// which happens when the load gets greater than 60%.
 /// The hash function can be customized by providing a Hasher helper class like xiiHashHelper.
-
+/// 
 /// \see xiiHashHelper
 template <typename KeyType, typename ValueType, typename Hasher>
 class xiiHashTableBase
