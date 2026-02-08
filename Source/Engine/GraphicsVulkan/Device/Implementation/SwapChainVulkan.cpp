@@ -19,11 +19,6 @@
 #  include <wayland-client.h>
 #endif
 
-#ifdef VK_USE_PLATFORM_XCB_KHR
-#  include <X11/Xlib-xcb.h>
-#  include <xcb/xcb.h>
-#endif
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -136,15 +131,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.surface                         = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-
-  vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                       = nullptr;
-  vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = static_cast<Display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr));
-  vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else
 #  error "Unsupported platform."
 #endif

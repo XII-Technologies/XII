@@ -32,11 +32,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitOpaqueWithoutSelection", xiiDefaultRenderDataCategories::LitOpaqueStatic);
-static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitMaskedWithoutSelection", xiiDefaultRenderDataCategories::LitMaskedStatic);
-static xiiRenderData::Category s_LitMaskedDynamicWithoutSelection = xiiRenderData::RegisterDerivedCategory("LitMaskedDynamicWithoutSelection", xiiDefaultRenderDataCategories::LitMaskedDynamic);
+static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitOpaqueWithoutSelection", xiiDefaultRenderDataCategories::OpaqueStatic);
+static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitMaskedWithoutSelection", xiiDefaultRenderDataCategories::MaskedStatic);
+static xiiRenderData::Category s_LitMaskedDynamicWithoutSelection = xiiRenderData::RegisterDerivedCategory("LitMaskedDynamicWithoutSelection", xiiDefaultRenderDataCategories::MaskedDynamic);
 
-static xiiRenderData::Category s_LitTransparentWithoutSelection    = xiiRenderData::RegisterDerivedCategory("LitTransparentWithoutSelection", xiiDefaultRenderDataCategories::LitTransparent);
+static xiiRenderData::Category s_LitTransparentWithoutSelection    = xiiRenderData::RegisterDerivedCategory("LitTransparentWithoutSelection", xiiDefaultRenderDataCategories::Transparent);
 static xiiRenderData::Category s_SimpleTransparentWithoutSelection = xiiRenderData::RegisterDerivedCategory("SimpleTransparentWithoutSelection", xiiDefaultRenderDataCategories::SimpleTransparent);
 
 xiiPickingRenderPass::xiiPickingRenderPass() :
@@ -116,10 +116,10 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     RenderDataWithCategory(renderViewContext, s_LitTransparentWithoutSelection);
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
   }
 
   if (m_bPickSelected)
@@ -135,10 +135,10 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   }
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
 
@@ -426,15 +426,15 @@ void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extr
     }
   };
 
-  Filter(xiiDefaultRenderDataCategories::LitOpaqueStatic, s_LitOpaqueWithoutSelection);
-  Filter(xiiDefaultRenderDataCategories::LitOpaqueDynamic, s_LitOpaqueWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::OpaqueStatic, s_LitOpaqueWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::OpaqueDynamic, s_LitOpaqueWithoutSelection);
 
-  Filter(xiiDefaultRenderDataCategories::LitMaskedStatic, s_LitMaskedWithoutSelection);
-  Filter(xiiDefaultRenderDataCategories::LitMaskedDynamic, s_LitOpaqueWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::MaskedStatic, s_LitMaskedWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::MaskedDynamic, s_LitOpaqueWithoutSelection);
 
   if (m_bPickTransparent)
   {
-    Filter(xiiDefaultRenderDataCategories::LitTransparent, s_LitTransparentWithoutSelection);
+    Filter(xiiDefaultRenderDataCategories::Transparent, s_LitTransparentWithoutSelection);
     Filter(xiiDefaultRenderDataCategories::SimpleTransparent, s_SimpleTransparentWithoutSelection);
   }
 }

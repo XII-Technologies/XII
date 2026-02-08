@@ -30,7 +30,7 @@ void xiiGizmoRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*
 void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& inout_categories) const
 {
   inout_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
-  inout_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
+  inout_categories.PushBack(xiiDefaultRenderDataCategories::Foreground);
 }
 
 void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const

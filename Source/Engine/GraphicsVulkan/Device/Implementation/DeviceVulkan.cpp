@@ -267,9 +267,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
       instanceExtensions.PushBack(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_XCB_KHR)
-      instanceExtensions.PushBack(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#endif
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
       instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 #endif

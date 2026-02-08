@@ -169,7 +169,7 @@ void xiiHeightfieldComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ms
     bool bDontCacheYet = false;
 
     // Determine render data category.
-    xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitOpaque;
+    xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
 
     if (hMaterial.IsValid())
     {
