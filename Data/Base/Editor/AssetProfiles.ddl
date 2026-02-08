@@ -43,17 +43,6 @@ AssetProfiles
 					uint16 %MaxResolution{16384}
 				}
 			}
-			o
-			{
-				Uuid %id{uint64{10688866045028468411,17021851764261564183}}
-				string %t{"xiiXRConfig"}
-				uint32 %v{2}
-				p
-				{
-					bool %EnableXR{false}
-					string %XRRenderPipeline{"{ 2fe25ded-776c-7f9e-354f-e4c52a33d125 }"}
-				}
-			}
 		}
 	}
 }

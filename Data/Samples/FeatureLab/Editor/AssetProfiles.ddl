@@ -29,17 +29,6 @@ AssetProfiles
 			}
 			o
 			{
-				Uuid %id{uint64{6024007684197752254,9388485812360408817}}
-				string %t{"xiiXRConfig"}
-				uint32 %v{2}
-				p
-				{
-					bool %EnableXR{false}
-					string %XRRenderPipeline{"{ 2fe25ded-776c-7f9e-354f-e4c52a33d125 }"}
-				}
-			}
-			o
-			{
 				Uuid %id{uint64{8341519292606584866,16089769571062246001}}
 				string %t{"xiiPlatformProfile"}
 				uint32 %v{1}

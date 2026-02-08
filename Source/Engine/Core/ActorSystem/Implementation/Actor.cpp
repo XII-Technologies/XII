@@ -2,10 +2,8 @@
 
 #include <Core/ActorSystem/Actor.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiActor, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 struct xiiActorImpl
 {
@@ -14,7 +12,6 @@ struct xiiActorImpl
   xiiHybridArray<xiiUniquePtr<xiiActorPlugin>, 4> m_AllPlugins;
   xiiMap<const xiiRTTI*, xiiActorPlugin*>         m_PluginLookupCache;
 };
-
 
 xiiActor::xiiActor(xiiStringView sActorName, const void* pCreatedBy)
 {

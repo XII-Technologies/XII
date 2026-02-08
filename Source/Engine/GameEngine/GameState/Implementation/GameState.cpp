@@ -13,13 +13,9 @@
 #include <Foundation/System/Screen.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <GameEngine/Configuration/RendererProfileConfigs.h>
-#include <GameEngine/Configuration/XRConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GameEngine/Gameplay/PlayerStartPointComponent.h>
-#include <GameEngine/XR/DummyXR.h>
-#include <GameEngine/XR/XRInterface.h>
-#include <GameEngine/XR/XRRemotingInterface.h>
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -79,24 +75,6 @@ void xiiGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, 
 void xiiGameState::OnDeactivation()
 {
   CancelBackgroundSceneLoading();
-
-  if (m_bXREnabled)
-  {
-    m_bXREnabled                 = false;
-    xiiXRInterface* pXRInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRInterface>();
-    xiiActorManager::GetSingleton()->DestroyAllActors(pXRInterface);
-    pXRInterface->Deinitialize();
-
-    if (xiiXRRemotingInterface* pXRRemotingInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRRemotingInterface>())
-    {
-      if (pXRRemotingInterface->Deinitialize().Failed())
-      {
-        xiiLog::Error("Failed to deinitialize xiiXRRemotingInterface, make sure all actors are destroyed and xiiXRInterface deinitialized.");
-      }
-    }
-
-    m_pDummyXR = nullptr;
-  }
 
   xiiRenderWorld::DeleteView(m_hMainView);
 
@@ -163,101 +141,9 @@ bool xiiGameState::IsInLoadingScreen() const
   return m_pMainWorld == m_pLoadingScreenWorld;
 }
 
-xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
-{
-  XII_LOG_BLOCK("CreateXRActor");
-
-  // Init XR
-  const xiiXRConfig* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
-  if (!pConfig)
-    return nullptr;
-
-  if (!pConfig->m_bEnableXR)
-    return nullptr;
-
-  xiiXRInterface* pXRInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRInterface>();
-  if (!pXRInterface)
-  {
-    xiiLog::Warning("No xiiXRInterface interface found. Please load a XR plugin to enable XR. Loading dummyXR interface.");
-
-    m_pDummyXR   = XII_DEFAULT_NEW(xiiDummyXR);
-    pXRInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRInterface>();
-
-    XII_ASSERT_DEV(pXRInterface, "Creating dummyXR did not register the xiiXRInterface.");
-  }
-
-  xiiXRRemotingInterface* pXRRemotingInterface = xiiSingletonRegistry::GetSingletonInstance<xiiXRRemotingInterface>();
-  if (xiiXRRemotingInterface::cvar_XrRemoting)
-  {
-    if (pXRRemotingInterface)
-    {
-      if (pXRRemotingInterface->Initialize().Failed())
-      {
-        xiiLog::Error("xiiXRRemotingInterface could not be initialized. See log for details.");
-      }
-      else
-      {
-        m_bXRRemotingEnabled = true;
-      }
-    }
-    else
-    {
-      xiiLog::Error("No xiiXRRemotingInterface interface found. Please load a XR remoting plugin to enable XR Remoting.");
-    }
-  }
-
-  if (pXRInterface->Initialize().Failed())
-  {
-    xiiLog::Error("xiiXRInterface could not be initialized. See log for details.");
-    return nullptr;
-  }
-  m_bXREnabled = true;
-
-  xiiUniquePtr<xiiWindow>                pMainWindow;
-  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput;
-
-  if (pXRInterface->SupportsCompanionView())
-  {
-    // XR Window with added companion window (allows keyboard / mouse input).
-    pMainWindow = CreateMainWindow();
-    XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateActors().");
-
-    pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
-
-    ConfigureMainWindowInputDevices(pMainWindow.Borrow());
-    CreateMainView();
-    SetupMainView(pOutput->m_pSwapChain, pMainWindow->GetClientAreaSize());
-  }
-  else
-  {
-    // XR Window (no companion window)
-    CreateMainView();
-    SetupMainView({}, {});
-  }
-
-  if (m_bXRRemotingEnabled)
-  {
-    if (pXRRemotingInterface->Connect(xiiXRRemotingInterface::cvar_XrRemotingHostName.GetValue().GetData()).Failed())
-    {
-      xiiLog::Error("Failed to connect XR Remoting.");
-    }
-  }
-
-  xiiView* pView = nullptr;
-  XII_VERIFY(xiiRenderWorld::TryGetView(m_hMainView, pView), "");
-  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, xiiGALSampleCount::OneSample, std::move(pMainWindow), std::move(pOutput));
-  return std::move(pXRActor);
-}
-
 void xiiGameState::CreateActors()
 {
   XII_LOG_BLOCK("CreateActors");
-  xiiUniquePtr<xiiActor> pXRActor = CreateXRActor();
-  if (pXRActor != nullptr)
-  {
-    xiiActorManager::GetSingleton()->AddActor(std::move(pXRActor));
-    return;
-  }
 
   xiiUniquePtr<xiiWindow> pMainWindow = CreateMainWindow();
   XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateActors().");
@@ -292,26 +178,12 @@ void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSi
     return;
   }
 
-  if (m_bXREnabled)
-  {
-    const xiiXRConfig* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiXRConfig>();
-
-    auto hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sXRRenderPipeline);
-    pView->SetRenderPipelineResource(hRenderPipeline);
-    // Render target setup is done by xiiXRInterface::CreateActor
-  }
-  else
-  {
-    // Render target setup
-    {
-      const auto* pConfig        = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
-      auto        hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sMainRenderPipeline);
-      pView->SetRenderPipelineResource(hRenderPipeline);
-      pView->SetSwapChain(pSwapChain);
-      pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)viewportSize.width, (float)viewportSize.height));
-      pView->ForceUpdate();
-    }
-  }
+  const xiiRenderPipelineProfileConfig* pConfig         = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
+  auto                                  hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sMainRenderPipeline);
+  pView->SetRenderPipelineResource(hRenderPipeline);
+  pView->SetSwapChain(pSwapChain);
+  pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)viewportSize.width, (float)viewportSize.height));
+  pView->ForceUpdate();
 }
 
 xiiView* xiiGameState::CreateMainView()
