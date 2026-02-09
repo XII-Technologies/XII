@@ -2967,6 +2967,12 @@ xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVul
 
     vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
     VK_ASSERT_DEV(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Mark timeline semaphore availability while holding the deletion queue mutex to avoid data races with other threads reading this flag.
+    {
+      XII_LOCK(m_DeletionQueueMutex);
+      m_bHasTimelineSemaphore = true;
+    }
   }
 }
 
@@ -2995,7 +3001,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    // m_uiNextSubmitValue contains the next submit value that will be reserved.
+    // The fence value that corresponds to already submitted work is therefore (m_uiNextSubmitValue - 1). Use that so resources are not freed prematurely.
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3018,7 +3026,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3041,7 +3049,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3062,7 +3070,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphoreP
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3078,13 +3086,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptor
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
   entry.m_vkDescriptorPool                    = vkDescriptorPool;
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3100,13 +3107,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolV
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pFencePool                          = pFencePool;
   entry.m_vkFence                             = vkFence;
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3154,14 +3160,29 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
   }
   else
   {
-    XII_LOCK(m_DeletionQueueMutex);
-
     // Release only resources that are not in use.
-    for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
+    while (true)
     {
+      // Grab the next deletion entry in a thread-safe manner.
+      xiiGALDeviceVulkan::DeferredDeletionQueue::DeletionEntry entryCopy;
+      bool bHasEntry = false;
+
+      {
+        XII_LOCK(m_DeletionQueueMutex);
+        if (!m_DeletionQueue.IsEmpty())
+        {
+          entryCopy = m_DeletionQueue.PeekFront();
+          bHasEntry = true;
+        }
+      }
+
+      if (!bHasEntry)
+        break;
+
       xiiUInt64 uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
 
-      if (HasTimelineSemaphore())
+      // Query completed fence/timeline value without holding the deletion queue mutex to avoid lock-order inversions (command queue mutex vs deletion queue mutex).
+      if (m_bHasTimelineSemaphore)
       {
         VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
       }
@@ -3172,41 +3193,54 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         });
       }
 
-      if (it->m_uiFenceValue <= uiCompletedFenceValue)
+      // If the entry is ready to be destroyed, lock and remove it. Otherwise we're done.
+      if (entryCopy.m_uiFenceValue <= uiCompletedFenceValue)
       {
-        if (it->m_pSemaphorePool != nullptr)
+        XII_LOCK(m_DeletionQueueMutex);
+
+        // Ensure the front entry still matches what we looked at earlier.
+        if (!m_DeletionQueue.IsEmpty())
         {
-          DestroySemaphore(it->m_pSemaphorePool, std::move(it->m_vkSemaphore));
-        }
-        else if (it->m_pDescriptorSetPool != nullptr)
-        {
-          DestroyDescriptorSetPool(it->m_pDescriptorSetPool, std::move(it->m_vkDescriptorPool));
-        }
-        else if (it->m_pFencePool != nullptr)
-        {
-          DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
-        }
-        else if (it->m_vkExternalMemory != VK_NULL_HANDLE)
-        {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_vkExternalMemory);
-        }
-        else if (it->m_VulkanAllocation != VK_NULL_HANDLE)
-        {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VulkanAllocation);
-        }
-        else
-        {
-          DestroyObject(vkLogicalDevice, it->m_vkObjectType, it->m_pObject);
+          auto& front = m_DeletionQueue.PeekFront();
+          if (front == entryCopy)
+          {
+            // Destroy the resource while holding the deletion queue mutex to keep ordering consistent.
+            if (front.m_pSemaphorePool != nullptr)
+            {
+              DestroySemaphore(front.m_pSemaphorePool, std::move(front.m_vkSemaphore));
+            }
+            else if (front.m_pDescriptorSetPool != nullptr)
+            {
+              DestroyDescriptorSetPool(front.m_pDescriptorSetPool, std::move(front.m_vkDescriptorPool));
+            }
+            else if (front.m_pFencePool != nullptr)
+            {
+              DestroyFence(front.m_pFencePool, std::move(front.m_vkFence));
+            }
+            else if (front.m_vkExternalMemory != VK_NULL_HANDLE)
+            {
+              DestroyObject(front.m_vkObjectType, front.m_pObject, front.m_vkExternalMemory);
+            }
+            else if (front.m_VulkanAllocation != VK_NULL_HANDLE)
+            {
+              DestroyObject(front.m_vkObjectType, front.m_pObject, front.m_VulkanAllocation);
+            }
+            else
+            {
+              DestroyObject(vkLogicalDevice, front.m_vkObjectType, front.m_pObject);
+            }
+
+            m_DeletionQueue.PopFront();
+            continue; // Check next entry.
+          }
         }
 
-        m_DeletionQueue.RemoveAndCopy(*it);
-        it = begin(m_DeletionQueue);
+        // If the front changed in the meantime, restart loop.
+        continue;
       }
-      else
-      {
-        // ++it;
-        break;
-      }
+
+      // Not ready yet.
+      break;
     }
   }
 }
