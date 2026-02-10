@@ -1694,7 +1694,7 @@ void xiiGALCommandList::SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseR
   XII_ASSERT_DEV(bIsSupportedRate, "xiiGALCommandList::SetShadingRate: Base shading rate flags ({}) are not supported by the device.", baseRateFlags.GetValue());
 #endif
 
-  return SetShadingRatePlatform(baseRateFlags, primitiveCombinerFlags, textureCombinerFlags);
+  SetShadingRatePlatform(baseRateFlags, primitiveCombinerFlags, textureCombinerFlags);
 }
 
 void xiiGALCommandList::InvalidateState()
