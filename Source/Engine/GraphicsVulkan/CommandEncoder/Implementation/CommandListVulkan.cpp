@@ -637,6 +637,63 @@ void xiiGALCommandListVulkan::SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipeli
   m_CommandListData.m_bPipelineStateModified = true;
 }
 
+void xiiGALCommandListVulkan::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData)
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  const auto& pushRanges = m_pPipelineResourceSignature->GetDescription().m_PushConstantRanges;
+
+  bool                 bFound       = false;
+  vk::ShaderStageFlags vkStageFlags = {};
+
+  for (const xiiGALPushConstantRange& range : pushRanges)
+  {
+    const xiiUInt32 uiRangeStart = range.m_uiOffset;
+    const xiiUInt32 uiRangeEnd   = range.m_uiOffset + range.m_uiSize;
+
+    if (uiOffset >= uiRangeStart && (uiOffset + pData.GetCount()) <= uiRangeEnd)
+    {
+      vkStageFlags = xiiVulkanTypeConversions::GetShaderStageFlags(range.m_ShaderStages);
+      bFound       = true;
+      break;
+    }
+  }
+
+  if (!bFound)
+  {
+    xiiLog::Error("PushConstants: No matching push constant range found for offset {} with size {}.", uiOffset, pData.GetCount());
+    return;
+  }
+
+  vk::PipelineLayout vkPipelineLayout = VK_NULL_HANDLE;
+
+  const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
+
+  if (pipelineDescription.IsAnyGraphicsPipeline())
+  {
+    xiiSharedPtr<xiiGALGraphicsPipelineStateVulkan> pGraphics = m_pPipelineState.Downcast<xiiGALGraphicsPipelineStateVulkan>();
+    vkPipelineLayout                                          = pGraphics->GetVulkanPipelineLayout();
+  }
+  else if (pipelineDescription.IsComputePipeline())
+  {
+    xiiSharedPtr<xiiGALComputePipelineStateVulkan> pCompute = m_pPipelineState.Downcast<xiiGALComputePipelineStateVulkan>();
+    vkPipelineLayout                                        = pCompute->GetVulkanPipelineLayout();
+  }
+  else if (pipelineDescription.IsRayTracingPipeline())
+  {
+    xiiSharedPtr<xiiGALRayTracingPipelineStateVulkan> pRT = m_pPipelineState.Downcast<xiiGALRayTracingPipelineStateVulkan>();
+    vkPipelineLayout                                      = pRT->GetVulkanPipelineLayout();
+  }
+
+  if (vkPipelineLayout == VK_NULL_HANDLE)
+  {
+    xiiLog::Error("PushConstants: Pipeline layout is null.");
+    return;
+  }
+
+  m_vkCommandBuffer.pushConstants(vkPipelineLayout, vkStageFlags, uiOffset, pData.GetCount(), pData.GetPtr(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
 void xiiGALCommandListVulkan::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
