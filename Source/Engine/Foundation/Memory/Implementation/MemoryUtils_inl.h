@@ -12,7 +12,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Construct(T* pDestination, size_t uiCount
   }
   else
   {
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       ::new (pDestination + i) T();
     }
@@ -46,7 +46,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
                   "Can't copy POD types that are derived from each other. Are you certain any of these types should be POD?");
 
     const Destination& copyConverted = copy;
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       memcpy(static_cast<void*>(pDestination + i), static_cast<const void*>(&copyConverted), sizeof(Destination));
     }
@@ -55,7 +55,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
   {
     XII_CHECK_CLASS(Destination);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       ::new (pDestination + i) Destination(copy); // Note that until now copy has not been converted to Destination. This allows for calling
                                                   // specialized constructors if available.
@@ -76,7 +76,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstructArray(T* pDestination, const
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       ::new (pDestination + i) T(pSource[i]);
     }
@@ -147,7 +147,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateConstruct(T* pDestination, T* pSo
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       // Note that this calls the move constructor only if available and will copy otherwise.
       ::new (pDestination + i) T(std::move(pSource[i]));
@@ -211,7 +211,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Copy(T* pDestination, const T* pSource, s
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       pDestination[i] = pSource[i];
     }
@@ -234,7 +234,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOverlapped(T* pDestination, const T* 
 
     if (pDestination < pSource)
     {
-      for (size_t i = 0; i < uiCount; i++)
+      for (size_t i = 0; i < uiCount; ++i)
       {
         pDestination[i] = pSource[i];
       }
@@ -262,7 +262,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Relocate(T* pDestination, T* pSource, siz
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       // Note that this calls the move constructor only if available and will copy otherwise.
       pDestination[i] = std::move(pSource[i]);
@@ -302,7 +302,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateOverlapped(T* pDestination, T* pS
 
     if (pDestination < pSource)
     {
-      for (size_t i = 0; i < uiCount; i++)
+      for (size_t i = 0; i < uiCount; ++i)
       {
         pDestination[i] = std::move(pSource[i]);
       }
@@ -418,7 +418,7 @@ XII_ALWAYS_INLINE bool xiiMemoryUtils::IsEqual(const T* a, const T* b, size_t ui
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       if (!(a[i] == b[i]))
         return false;

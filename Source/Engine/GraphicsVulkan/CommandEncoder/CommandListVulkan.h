@@ -131,6 +131,7 @@ protected:
   virtual void SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList) override final;
 
   virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) override final;
+  virtual void PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) override final;
