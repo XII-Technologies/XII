@@ -29,6 +29,13 @@ namespace
     {
       function();
     }
+
+xiiSharedPtr<xiiGALCommandList> xiiRenderContext::ReplaceCommandList(xiiSharedPtr<xiiGALCommandList> pNewCommandList)
+{
+  xiiSharedPtr<xiiGALCommandList> pOld = m_pCommandList;
+  m_pCommandList = pNewCommandList;
+  return pOld;
+}
   }
 } // namespace
 
@@ -76,6 +83,7 @@ xiiRenderContext::xiiRenderContext()
 
   m_pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   XII_ASSERT_DEV(m_pCommandList != nullptr, "Failed to create command list!");
+
 
   m_pGlobalConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), sizeof(xiiGlobalConstants), "xiiGlobalConstants");
   m_pGlobalConstants       = xiiMakeBlobPtr(reinterpret_cast<xiiGlobalConstants*>(xiiFoundation::GetAlignedAllocator()->Allocate(sizeof(xiiGlobalConstants), 16U)), 1U);

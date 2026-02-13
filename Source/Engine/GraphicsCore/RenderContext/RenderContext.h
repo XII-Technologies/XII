@@ -151,6 +151,9 @@ public:
   static xiiRenderContext* CreateInstance();
   static void              DestroyInstance(xiiRenderContext* pRenderContext);
 
+  /// Replaces the internal command list with the provided one and returns the previous command list.
+  xiiSharedPtr<xiiGALCommandList> ReplaceCommandList(xiiSharedPtr<xiiGALCommandList> pNewCommandList);
+
 public:
   class GraphicsScope
   {
