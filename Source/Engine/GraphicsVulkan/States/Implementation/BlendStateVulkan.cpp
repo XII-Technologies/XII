@@ -34,8 +34,8 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform()
   {
     for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < m_Description.m_RenderTargets.GetCount(); ++uiAttachmentIndex)
     {
-      auto& rtBlendState      = m_Description.m_RenderTargets[uiAttachmentIndex];
-      auto& rtAttachmentState = m_BlendAttachmentState.ExpandAndGetRef();
+      xiiGALRenderTargetBlendDescription&    rtBlendState      = m_Description.m_RenderTargets[uiAttachmentIndex];
+      vk::PipelineColorBlendAttachmentState& rtAttachmentState = m_BlendAttachmentState.ExpandAndGetRef();
 
       rtAttachmentState.blendEnable         = VK_BOOL(rtBlendState.m_bBlendEnable);
       rtAttachmentState.colorBlendOp        = xiiVulkanTypeConversions::GetBlendOp(rtBlendState.m_BlendOperation);
@@ -49,7 +49,7 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform()
   }
   else
   {
-    auto& rtBlendState0 = m_Description.m_RenderTargets[0];
+    xiiGALRenderTargetBlendDescription& rtBlendState0 = m_Description.m_RenderTargets[0];
 
     vk::PipelineColorBlendAttachmentState rtAttachmentState0 = {};
     rtAttachmentState0.blendEnable                           = VK_BOOL(rtBlendState0.m_bBlendEnable);
