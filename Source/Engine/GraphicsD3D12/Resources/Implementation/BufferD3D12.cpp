@@ -1,0 +1,45 @@
+#include <GraphicsD3D12/GraphicsD3D12PCH.h>
+
+#include <GraphicsD3D12/Device/DeviceD3D12.h>
+#include <GraphicsD3D12/Resources/BufferD3D12.h>
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALBufferD3D12::xiiGALBufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALBuffer(pDeviceD3D12, creationDescription)
+{
+}
+
+xiiGALBufferD3D12::~xiiGALBufferD3D12() = default;
+
+xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData)
+{
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALBufferD3D12::DeInitPlatform()
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+
+  return XII_SUCCESS;
+}
+
+void xiiGALBufferD3D12::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
+{
+}
+
+void xiiGALBufferD3D12::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
+{
+}
+
+xiiGALSparseBufferProperties xiiGALBufferD3D12::GetSparseProperties() const
+{
+  return xiiGALSparseBufferProperties();
+}
+
+XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_BufferD3D12);
