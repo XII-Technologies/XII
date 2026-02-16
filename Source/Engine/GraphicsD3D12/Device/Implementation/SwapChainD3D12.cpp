@@ -10,31 +10,33 @@
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>
 
-xiiGALSwapChainD3D12::xiiGALSwapChainD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(pDeviceD3D12, creationDescription)
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScalingModeD3D12, 1)
+  XII_ENUM_CONSTANT(xiiGALScalingModeD3D12::Unspecified),
+  XII_ENUM_CONSTANT(xiiGALScalingModeD3D12::Centered),
+  XII_ENUM_CONSTANT(xiiGALScalingModeD3D12::Stretched),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScanLineOrderD3D12, 1)
+  XII_ENUM_CONSTANT(xiiGALScanLineOrderD3D12::Unspecified),
+  XII_ENUM_CONSTANT(xiiGALScanLineOrderD3D12::Progressive),
+  XII_ENUM_CONSTANT(xiiGALScanLineOrderD3D12::UpperFieldFirst),
+  XII_ENUM_CONSTANT(xiiGALScanLineOrderD3D12::LowerFieldFirst),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALSwapChainD3D12::xiiGALSwapChainD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALSwapChainCreationDescription& creationDescription) :
+  xiiGALSwapChain(std::move(pDeviceD3D12), creationDescription)
 {
 }
 
-xiiGALSwapChainD3D12::~xiiGALSwapChainD3D12() = default;
-
-xiiResult xiiGALSwapChainD3D12::InitPlatform()
+xiiGALSwapChainD3D12::~xiiGALSwapChainD3D12()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
-  if (CreateDXGISwapChain().Failed())
-    return XII_FAILURE;
-
-  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
-  m_Description.m_pWindow->AddReference();
-
-  return CreateBackBufferInternal(pDeviceD3D12);
-}
-
-xiiResult xiiGALSwapChainD3D12::DeInitPlatform()
-{
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
-  DestroyBackBufferInternal(pDeviceD3D12);
+  m_BackBufferTextures.Clear();
+  m_pBackBufferTexture.Clear();
 
   if (m_pDXGISwapChain3)
   {
@@ -54,11 +56,20 @@ xiiResult xiiGALSwapChainD3D12::DeInitPlatform()
 
     m_Description.m_pWindow->RemoveReference();
   }
-
-  return XII_SUCCESS;
 }
 
-void xiiGALSwapChainD3D12::SetDebugNamePlatform(xiiStringView sName)
+xiiResult xiiGALSwapChainD3D12::InitPlatform()
+{
+  if (CreateDXGISwapChain().Failed())
+    return XII_FAILURE;
+
+  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
+  m_Description.m_pWindow->AddReference();
+
+  return CreateBackBufferInternal();
+}
+
+void xiiGALSwapChainD3D12::SetDebugNamePlatform(xiiStringView sName) const
 {
   if (m_pDXGISwapChain3 != nullptr)
   {
@@ -72,7 +83,7 @@ void xiiGALSwapChainD3D12::SetDebugNamePlatform(xiiStringView sName)
 
 xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
 
   if (m_Description.m_PreTransform != xiiGALSurfaceTransform::Optimal && m_Description.m_PreTransform != xiiGALSurfaceTransform::Identity)
   {
@@ -83,7 +94,7 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
 
   HWND hNativeWindow = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
 
-  if (!m_Description.m_Resolution.HasNonZeroArea())
+  if (!m_CurrentSize.HasNonZeroArea())
   {
     RECT rect;
     if (m_FullScreenMode.m_bIsFullScreen)
@@ -95,14 +106,14 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     {
       GetClientRect(hNativeWindow, &rect);
     }
-    m_Description.m_Resolution = xiiSizeU32(rect.right - rect.left, rect.bottom - rect.top);
+    m_CurrentSize = xiiSizeU32(rect.right - rect.left, rect.bottom - rect.top);
   }
 
   DXGI_FORMAT dxgiColorBufferFormat = xiiD3D12TypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
   DXGI_SWAP_CHAIN_DESC1 swapChainDescription = {};
-  swapChainDescription.Width                 = m_Description.m_Resolution.width;
-  swapChainDescription.Height                = m_Description.m_Resolution.height;
+  swapChainDescription.Width                 = m_CurrentSize.width;
+  swapChainDescription.Height                = m_CurrentSize.height;
   swapChainDescription.Stereo                = FALSE;
 
   // Multi-sampled swap chains are not supported anymore. CreateSwapChainForHwnd() fails when sample count is not 1 for any swap effect.
@@ -191,7 +202,7 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     }
   }
 
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
   IDXGISwapChain1*         pDXGISwapChain1    = nullptr;
   XII_GAL_D3D12_RELEASE(pDXGISwapChain1);
 
@@ -254,26 +265,18 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
 
 xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
 
   // When switching to full screen mode, WM_SIZE is send to the window
   // and Resize() is called before the new swap chain is created
   if (!m_pDXGISwapChain3)
     return XII_SUCCESS;
 
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false));
-  // Flush command queue?
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
 
   {
-    // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
-    for (xiiUInt32 i = 0; i < m_BackBufferTextures.GetCount(); ++i)
-    {
-      xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDeviceD3D12->GetTexture(m_BackBufferTextures[i]));
-
-      pCommandQueueD3D12->UnbindTextureFromFramebuffer(pTextureD3D12);
-    }
-
-    DestroyBackBufferInternal(pDeviceD3D12);
+    m_BackBufferTextures.Clear();
+    m_pBackBufferTexture.Clear();
 
     // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
     pDeviceD3D12->WaitIdle();
@@ -290,7 +293,7 @@ xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
       memset(&swapChainDescription, 0, sizeof(swapChainDescription));
       m_pDXGISwapChain3->GetDesc(&swapChainDescription);
 
-      HRESULT hResult = m_pDXGISwapChain3->ResizeBuffers(swapChainDescription.BufferCount, m_Description.m_Resolution.width, m_Description.m_Resolution.height, swapChainDescription.BufferDesc.Format, swapChainDescription.Flags);
+      HRESULT hResult = m_pDXGISwapChain3->ResizeBuffers(swapChainDescription.BufferCount, m_CurrentSize.width, m_CurrentSize.height, swapChainDescription.BufferDesc.Format, swapChainDescription.Flags);
       if (FAILED(hResult))
       {
         xiiLog::Error("Failed to resize the DXGI swap chain: {}", xiiHRESULTtoString(hResult));
@@ -298,22 +301,12 @@ xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
       }
     }
   }
-  return CreateBackBufferInternal(pDeviceD3D12);
+  return CreateBackBufferInternal();
 }
 
-xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12)
+xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal()
 {
   return XII_SUCCESS;
-}
-
-void xiiGALSwapChainD3D12::DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12)
-{
-  for (xiiUInt32 i = 0; i < m_BackBufferTextures.GetCount(); ++i)
-  {
-    pDeviceD3D12->DestroyTexture(m_BackBufferTextures[i]);
-    m_BackBufferTextures[i].Invalidate();
-  }
-  m_hBackBufferTexture.Invalidate();
 }
 
 void xiiGALSwapChainD3D12::WaitForFrame()
@@ -342,22 +335,6 @@ void xiiGALSwapChainD3D12::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
-#if 0
-  if (!m_hActualBackBufferTexture.IsInvalidated())
-  {
-    if (auto pQueue = pDeviceD3D12->GetGraphicsQueue())
-    {
-      auto pCommandList = pQueue->BeginCommandList();
-
-      pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
-
-      pQueue->Submit(pCommandList);
-    }
-  }
-#endif
-
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
   {
@@ -369,8 +346,7 @@ void xiiGALSwapChainD3D12::Present()
       break;
   }
 
-  // In contrast to MSDN sample, we wait for the frame as late as possible - right
-  // before presenting.
+  // In contrast to MSDN sample, we wait for the frame as late as possible - right before presenting.
   // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
   WaitForFrame();
 
@@ -389,19 +365,19 @@ xiiResult xiiGALSwapChainD3D12::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurface
   }
   newTransform = xiiGALSurfaceTransform::Optimal;
 
-  if (newSize.HasNonZeroArea() && (newSize.width != m_Description.m_Resolution.width || newSize.height != m_Description.m_Resolution.height || m_DesiredSurfaceTransform != newTransform))
+  if (newSize.HasNonZeroArea() && (newSize.width != m_CurrentSize.width || newSize.height != m_CurrentSize.height || m_DesiredSurfaceTransform != newTransform))
   {
-    m_Description.m_Resolution = newSize;
+    m_CurrentSize = newSize;
 
     if (UpdateSwapChain(false).Succeeded())
     {
-      xiiLog::Info("Resized swapchain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+      xiiLog::Info("Resized swapchain to {}x{}.", m_CurrentSize.width, m_CurrentSize.height);
     }
   }
   return XII_SUCCESS;
 }
 
-void xiiGALSwapChainD3D12::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
+void xiiGALSwapChainD3D12::SetFullScreenMode(const xiiGALDisplayModeDescriptionD3D12& displayMode)
 {
   if (m_pDXGISwapChain3)
   {
@@ -419,7 +395,7 @@ void xiiGALSwapChainD3D12::SetFullScreenMode(const xiiGALDisplayModeDescription&
     m_FullScreenMode.m_ScalingMode              = displayMode.m_ScalingMode;
     m_FullScreenMode.m_ScanLineOrder            = displayMode.m_ScanLineOrder;
 
-    m_Description.m_Resolution = displayMode.m_Resolution;
+    m_CurrentSize = displayMode.m_Resolution;
     if (displayMode.m_ResourceFormat != xiiGALResourceFormat::Unknown)
     {
       m_Description.m_ColorBufferFormat = displayMode.m_ResourceFormat;
@@ -454,11 +430,11 @@ void xiiGALSwapChainD3D12::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
     {
       // SetFullscreenState(FALSE) calls Resize that initializes Width and Height
       // with the window size. We need to save current values and restore them.
-      xiiSizeU32 size = m_Description.m_Resolution;
+      xiiSizeU32 size = m_CurrentSize;
 
       m_pDXGISwapChain3->SetFullscreenState(FALSE, nullptr);
 
-      m_Description.m_Resolution = size;
+      m_CurrentSize = size;
     }
 
     // Destroying the swap chain and creating a new one is the only reliable way to
