@@ -14,8 +14,9 @@ public:
   XII_ALWAYS_INLINE xiiArrayPtr<const D3D12_INPUT_ELEMENT_DESC> GetD3D12InputLayoutElements() const { return m_InputLayoutElements; }
 
 protected:
-  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D12;
+  friend class xiiGALShaderD3D12;
 
   xiiGALInputLayoutD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALInputLayoutCreationDescription& creationDescription);
 
