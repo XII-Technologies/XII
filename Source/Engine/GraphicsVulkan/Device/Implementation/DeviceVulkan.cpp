@@ -6,7 +6,6 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
@@ -267,9 +266,6 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
       instanceExtensions.PushBack(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#endif
-#if defined(VK_USE_PLATFORM_XCB_KHR)
-      instanceExtensions.PushBack(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
       instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
@@ -1817,8 +1813,8 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     // VK_KHR_fragment_shading_rate
     if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
-      auto& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
-      auto  SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
+      xiiBitflags<xiiGALShadingRateCapabilityFlags>& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
+      auto                                           SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
         if (vkFlag != vk::False)
         {
           shadingRateCapabilityFlags |= capabilityFlag;
@@ -1869,11 +1865,11 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
       for (xiiUInt32 i = 0U; i < shadingRates.GetCount(); ++i)
       {
-        const auto& srcShadingRate = shadingRates[i];
-        auto&       dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
+        const vk::PhysicalDeviceFragmentShadingRateKHR& srcShadingRate = shadingRates[i];
+        xiiGALShadingRateMode&                          dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
 
         // maxFragmentShadingRateRasterizationSamples - contains only maximum bit
-        // sampleCounts - contains all supported bits
+        // sampleCounts                               - contains all supported bits
         XII_ASSERT_DEV((srcShadingRate.fragmentSize.width == 1 && srcShadingRate.fragmentSize.height == 1) || (xiiUInt32{srcShadingRate.sampleCounts} <= ((static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateRasterizationSamples) << 1) - 1)), "");
 
         if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e1)
@@ -2971,6 +2967,12 @@ xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVul
 
     vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
     VK_ASSERT_DEV(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Mark timeline semaphore availability while holding the deletion queue mutex to avoid data races with other threads reading this flag.
+    {
+      XII_LOCK(m_DeletionQueueMutex);
+      m_bHasTimelineSemaphore = true;
+    }
   }
 }
 
@@ -2999,7 +3001,9 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    // m_uiNextSubmitValue contains the next submit value that will be reserved.
+    // The fence value that corresponds to already submitted work is therefore (m_uiNextSubmitValue - 1). Use that so resources are not freed prematurely.
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3022,7 +3026,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3045,7 +3049,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3066,7 +3070,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphoreP
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3082,13 +3086,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptor
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
   entry.m_vkDescriptorPool                    = vkDescriptorPool;
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3104,13 +3107,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolV
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
   entry.m_pFencePool                          = pFencePool;
   entry.m_vkFence                             = vkFence;
 
   if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
   {
-    entry.m_uiFenceValue = m_uiNextSubmitValue;
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
   }
   else
   {
@@ -3158,14 +3160,29 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
   }
   else
   {
-    XII_LOCK(m_DeletionQueueMutex);
-
     // Release only resources that are not in use.
-    for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
+    while (true)
     {
+      // Grab the next deletion entry in a thread-safe manner.
+      xiiGALDeviceVulkan::DeferredDeletionQueue::DeletionEntry entryCopy;
+      bool                                                     bHasEntry = false;
+
+      {
+        XII_LOCK(m_DeletionQueueMutex);
+        if (!m_DeletionQueue.IsEmpty())
+        {
+          entryCopy = m_DeletionQueue.PeekFront();
+          bHasEntry = true;
+        }
+      }
+
+      if (!bHasEntry)
+        break;
+
       xiiUInt64 uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
 
-      if (HasTimelineSemaphore())
+      // Query completed fence/timeline value without holding the deletion queue mutex to avoid lock-order inversions (command queue mutex vs deletion queue mutex).
+      if (m_bHasTimelineSemaphore)
       {
         VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
       }
@@ -3176,41 +3193,54 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
         });
       }
 
-      if (it->m_uiFenceValue <= uiCompletedFenceValue)
+      // If the entry is ready to be destroyed, lock and remove it. Otherwise we're done.
+      if (entryCopy.m_uiFenceValue <= uiCompletedFenceValue)
       {
-        if (it->m_pSemaphorePool != nullptr)
+        XII_LOCK(m_DeletionQueueMutex);
+
+        // Ensure the front entry still matches what we looked at earlier.
+        if (!m_DeletionQueue.IsEmpty())
         {
-          DestroySemaphore(it->m_pSemaphorePool, std::move(it->m_vkSemaphore));
-        }
-        else if (it->m_pDescriptorSetPool != nullptr)
-        {
-          DestroyDescriptorSetPool(it->m_pDescriptorSetPool, std::move(it->m_vkDescriptorPool));
-        }
-        else if (it->m_pFencePool != nullptr)
-        {
-          DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
-        }
-        else if (it->m_vkExternalMemory != VK_NULL_HANDLE)
-        {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_vkExternalMemory);
-        }
-        else if (it->m_VulkanAllocation != VK_NULL_HANDLE)
-        {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VulkanAllocation);
-        }
-        else
-        {
-          DestroyObject(vkLogicalDevice, it->m_vkObjectType, it->m_pObject);
+          auto& front = m_DeletionQueue.PeekFront();
+          if (front == entryCopy)
+          {
+            // Destroy the resource while holding the deletion queue mutex to keep ordering consistent.
+            if (front.m_pSemaphorePool != nullptr)
+            {
+              DestroySemaphore(front.m_pSemaphorePool, std::move(front.m_vkSemaphore));
+            }
+            else if (front.m_pDescriptorSetPool != nullptr)
+            {
+              DestroyDescriptorSetPool(front.m_pDescriptorSetPool, std::move(front.m_vkDescriptorPool));
+            }
+            else if (front.m_pFencePool != nullptr)
+            {
+              DestroyFence(front.m_pFencePool, std::move(front.m_vkFence));
+            }
+            else if (front.m_vkExternalMemory != VK_NULL_HANDLE)
+            {
+              DestroyObject(front.m_vkObjectType, front.m_pObject, front.m_vkExternalMemory);
+            }
+            else if (front.m_VulkanAllocation != VK_NULL_HANDLE)
+            {
+              DestroyObject(front.m_vkObjectType, front.m_pObject, front.m_VulkanAllocation);
+            }
+            else
+            {
+              DestroyObject(vkLogicalDevice, front.m_vkObjectType, front.m_pObject);
+            }
+
+            m_DeletionQueue.PopFront();
+            continue; // Check next entry.
+          }
         }
 
-        m_DeletionQueue.RemoveAndCopy(*it);
-        it = begin(m_DeletionQueue);
+        // If the front changed in the meantime, restart loop.
+        continue;
       }
-      else
-      {
-        // ++it;
-        break;
-      }
+
+      // Not ready yet.
+      break;
     }
   }
 }
