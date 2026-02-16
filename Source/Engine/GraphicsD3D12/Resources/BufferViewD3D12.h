@@ -10,16 +10,17 @@ class XII_GRAPHICSD3D12_DLL xiiGALBufferViewD3D12 final : public xiiGALBufferVie
 
 public:
 protected:
-  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D12;
+  friend class xiiGALBufferD3D12;
 
-  xiiGALBufferViewD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferViewD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, xiiSharedPtr<xiiGALBuffer> pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferViewD3D12();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
-protected:
+private:
 };

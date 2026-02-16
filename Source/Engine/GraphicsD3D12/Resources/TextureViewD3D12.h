@@ -10,16 +10,17 @@ class XII_GRAPHICSD3D12_DLL xiiGALTextureViewD3D12 final : public xiiGALTextureV
 
 public:
 protected:
-  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D12;
+  friend class xiiGALTextureD3D12;
 
-  xiiGALTextureViewD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureViewD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureViewD3D12();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
-protected:
+private:
 };

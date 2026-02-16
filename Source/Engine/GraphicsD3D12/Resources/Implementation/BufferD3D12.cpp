@@ -2,39 +2,53 @@
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
+#include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
-xiiGALBufferD3D12::xiiGALBufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALBuffer(pDeviceD3D12, creationDescription)
+xiiGALBufferD3D12::xiiGALBufferD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALBuffer(std::move(pDeviceD3D12), creationDescription)
 {
 }
 
 xiiGALBufferD3D12::~xiiGALBufferD3D12() = default;
 
-xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData)
+xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
-  return XII_SUCCESS;
+  XII_IGNORE_UNUSED(pInitialData);
+  XII_IGNORE_UNUSED(externalMemoryKind);
+  return XII_FAILURE;
 }
 
-xiiResult xiiGALBufferD3D12::DeInitPlatform()
+xiiInternal::NewInstance<xiiGALBufferView> xiiGALBufferD3D12::CreateViewPlatform(const xiiGALBufferViewCreationDescription& description)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiSharedPtr<xiiGALDeviceD3D12>                 pDeviceD3D12     = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiInternal::NewInstance<xiiGALBufferViewD3D12> pBufferViewD3D12 = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALBufferViewD3D12, pDeviceD3D12, xiiSharedPtr<xiiGALBuffer>(this, pDeviceD3D12->GetAllocator()), description);
 
-  return XII_SUCCESS;
+  if (pBufferViewD3D12->InitPlatform().Succeeded())
+    return pBufferViewD3D12;
+
+  XII_DELETE(pBufferViewD3D12.m_pAllocator, pBufferViewD3D12.m_pInstance);
+
+  return pBufferViewD3D12;
+}
+
+void xiiGALBufferD3D12::SetDebugNamePlatform(xiiStringView sName) const
+{
+  XII_IGNORE_UNUSED(sName);
 }
 
 void xiiGALBufferD3D12::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  XII_IGNORE_UNUSED(uiStartOffset);
+  XII_IGNORE_UNUSED(uiSize);
 }
 
 void xiiGALBufferD3D12::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
+  XII_IGNORE_UNUSED(uiStartOffset);
+  XII_IGNORE_UNUSED(uiSize);
 }
 
 xiiGALSparseBufferProperties xiiGALBufferD3D12::GetSparseProperties() const
