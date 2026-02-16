@@ -9,7 +9,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALTextureView(std::move(pDeviceVulkan), pTexture, creationDescription)
+  xiiGALTextureView(std::move(pDeviceVulkan), std::move(pTexture), creationDescription)
 {
 }
 

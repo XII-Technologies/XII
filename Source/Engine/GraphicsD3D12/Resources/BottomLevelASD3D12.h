@@ -21,13 +21,13 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelASD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelASD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelASD3D12();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
-protected:
+private:
 };

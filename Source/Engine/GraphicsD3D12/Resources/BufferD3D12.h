@@ -16,16 +16,18 @@ public:
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
 protected:
-  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D12;
 
-  xiiGALBufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBufferD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferD3D12();
 
-  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) override final;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) override final;
 
-  virtual xiiResult DeInitPlatform() override final;
+  virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) override;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 protected:
 };
