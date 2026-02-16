@@ -2,12 +2,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-#include <Foundation/Basics/Platform/Windows/MinWindows.h>
-#include <Foundation/Types/UniquePtr.h>
-#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsFoundation/Device/Device.h>
-
-#include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 
 enum D3D_FEATURE_LEVEL;
 
@@ -32,19 +27,7 @@ public:
   ~xiiGALDeviceD3D12();
 
 public:
-  XII_ALWAYS_INLINE virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType, bool bAllowGraphicsCommandQueueFallback) const override final
-  {
-    if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics) && m_pGraphicsCommandQueue != nullptr)
-      return m_pGraphicsCommandQueue.Borrow();
-
-    if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
-      return m_pComputeCommandQueue.Borrow();
-
-    if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
-      return m_pTransferCommandQueue.Borrow();
-
-    return bAllowGraphicsCommandQueueFallback ? GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics, false) : nullptr;
-  };
+  virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
 
   // Internal objects retrieval.
 
@@ -142,7 +125,7 @@ private:
 
   xiiUniquePtr<xiiMemoryAllocatorD3D12> m_pAllocatorD3D12;
 
-  xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;
+  xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12> m_DisplayModes;
 
   xiiUInt64 m_uiFrameCounter = 0U;
 

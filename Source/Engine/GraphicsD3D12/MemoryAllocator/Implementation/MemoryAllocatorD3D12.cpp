@@ -39,7 +39,7 @@ xiiMemoryAllocatorD3D12::xiiMemoryAllocatorD3D12(IDXGIAdapter1* pDXGIAdapter, ID
     .pAdapter             = pDXGIAdapter,
   };
 
-  XII_VERIFY(SUCCEEDED(D3D12MA::CreateAllocator(&allocatorDescription, &m_pD3D12MAAllocator)), "Failed to intiaize D3D12 Memory Allocator.");
+  XII_VERIFY(SUCCEEDED(D3D12MA::CreateAllocator(&allocatorDescription, &m_pD3D12MAAllocator)), "Failed to initialize D3D12 Memory Allocator.");
 }
 
 xiiMemoryAllocatorD3D12::~xiiMemoryAllocatorD3D12()

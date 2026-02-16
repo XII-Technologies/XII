@@ -2,7 +2,6 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
@@ -26,17 +25,18 @@
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
 #include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
-#include <GraphicsD3D12/States/PipelineStateD3D12.h>
+#include <GraphicsD3D12/States/GraphicsPipelineStateD3D12.h>
+#include <GraphicsD3D12/States/ComputePipelineStateD3D12.h>
+#include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
+#include <GraphicsD3D12/States/TilePipelineStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
 #include <dxgi1_4.h>
 #include <dxgidebug.h>
 #include <sdkddkver.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
@@ -374,6 +374,20 @@ void xiiGALDeviceD3D12::EndFramePlatform(xiiArrayPtr<xiiGALSwapChain*> swapchain
 {
 
   ++m_uiFrameCounter;
+}
+
+xiiGALCommandQueue* xiiGALDeviceD3D12::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
+{
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+    return m_pGraphicsCommandQueue.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
+    return m_pComputeCommandQueue.Borrow();
+
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
+    return m_pTransferCommandQueue.Borrow();
+
+  return m_pGraphicsCommandQueue.Borrow();
 }
 
 xiiGALSwapChain* xiiGALDeviceD3D12::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)

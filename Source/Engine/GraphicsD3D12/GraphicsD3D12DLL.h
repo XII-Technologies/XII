@@ -63,5 +63,11 @@ class xiiGALShaderD3D12;
 class xiiGALBlendStateD3D12;
 class xiiGALDepthStencilStateD3D12;
 class xiiGALRasterizerStateD3D12;
-class xiiGALPipelineStateD3D12;
+class xiiGALGraphicsPipelineStateD3D12;
+class xiiGALComputePipelineStateD3D12;
+class xiiGALRayTracingPipelineStateD3D12;
+class xiiGALTilePipelineStateD3D12;
 class xiiGALPipelineResourceSignatureD3D12;
+
+struct xiiGALDisplayModeDescriptionD3D12;
+struct xiiGALFullScreenModeDescriptionD3D12;
