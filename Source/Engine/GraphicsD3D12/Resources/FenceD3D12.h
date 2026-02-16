@@ -18,18 +18,16 @@ public:
   XII_ALWAYS_INLINE ID3D12Fence* GetD3D12Fence() const { return m_pD3D12Fence; }
 
 protected:
-  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D12;
 
-  xiiGALFenceD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceD3D12();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 protected:
   ID3D12Fence* m_pD3D12Fence = nullptr;
