@@ -10,16 +10,14 @@ class XII_GRAPHICSD3D12_DLL xiiGALRenderPassD3D12 final : public xiiGALRenderPas
 
 public:
 protected:
-  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
+  friend class xiiGALDeviceD3D12;
 
-  xiiGALRenderPassD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALRenderPassCreationDescription& creationDescription);
+  xiiGALRenderPassD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALRenderPassCreationDescription& creationDescription);
 
   virtual ~xiiGALRenderPassD3D12();
 
   virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform() override final;
-
-protected:
+private:
 };

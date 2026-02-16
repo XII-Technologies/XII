@@ -8,18 +8,13 @@ class XII_GRAPHICSD3D12_DLL xiiGALFramebufferD3D12 final : public xiiGALFramebuf
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebufferD3D12, xiiGALFramebuffer);
 
-public:
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALFramebufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALFramebufferCreationDescription& creationDescription);
+  xiiGALFramebufferD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALFramebufferCreationDescription& creationDescription);
 
   virtual ~xiiGALFramebufferD3D12();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
-
-protected:
 };

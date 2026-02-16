@@ -3,16 +3,25 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 
-xiiGALFenceD3D12::xiiGALFenceD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALFence(pDeviceD3D12, creationDescription), m_pFenceCompleteEvent{CreateEvent(NULL, TRUE, FALSE, NULL)}
+xiiGALFenceD3D12::xiiGALFenceD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALFenceCreationDescription& creationDescription) :
+  xiiGALFence(std::move(pDeviceD3D12), creationDescription), m_pFenceCompleteEvent{CreateEvent(NULL, TRUE, FALSE, NULL)}
 {
 }
 
-xiiGALFenceD3D12::~xiiGALFenceD3D12() = default;
+xiiGALFenceD3D12::~xiiGALFenceD3D12()
+{
+  /// \todo Schedule deletion on device.
+  XII_ASSERT_NOT_IMPLEMENTED;
+
+  if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
+  {
+    CloseHandle(m_pFenceCompleteEvent);
+  }
+}
 
 xiiResult xiiGALFenceD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
 
   if (m_pFenceCompleteEvent == NULL)
   {
@@ -23,18 +32,6 @@ xiiResult xiiGALFenceD3D12::InitPlatform()
   D3D12_FENCE_FLAGS fenceFlags = D3D12_FENCE_FLAG_SHARED;
   XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D12Fence)));
 
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALFenceD3D12::DeInitPlatform()
-{
-  // Schedule deletion on device.
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
-  {
-    CloseHandle(m_pFenceCompleteEvent);
-  }
   return XII_SUCCESS;
 }
 
@@ -73,7 +70,7 @@ void xiiGALFenceD3D12::Wait(xiiUInt64 uiValue)
   }
 }
 
-void xiiGALFenceD3D12::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALFenceD3D12::SetDebugNamePlatform(xiiStringView sName) const
 {
   if (m_pD3D12Fence != nullptr)
   {
