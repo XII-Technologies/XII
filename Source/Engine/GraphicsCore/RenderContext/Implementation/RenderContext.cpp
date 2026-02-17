@@ -29,6 +29,13 @@ namespace
     {
       function();
     }
+
+xiiSharedPtr<xiiGALCommandList> xiiRenderContext::ReplaceCommandList(xiiSharedPtr<xiiGALCommandList> pNewCommandList)
+{
+  xiiSharedPtr<xiiGALCommandList> pOld = m_pCommandList;
+  m_pCommandList = pNewCommandList;
+  return pOld;
+}
   }
 } // namespace
 
@@ -1424,11 +1431,4 @@ void xiiRenderContext::GALStaticDeviceEventHandler(const xiiGALDeviceEvent& e)
       s_pDefaultInstance->ResetContextState();
     }
   }
-}
-
-xiiSharedPtr<xiiGALCommandList> xiiRenderContext::ReplaceCommandList(xiiSharedPtr<xiiGALCommandList> pNewCommandList)
-{
-  xiiSharedPtr<xiiGALCommandList> pOld = m_pCommandList;
-  m_pCommandList                       = pNewCommandList;
-  return pOld;
 }
