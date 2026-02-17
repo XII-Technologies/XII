@@ -7,8 +7,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 #include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/Resources/Fence.h>
 
 class xiiView;
 class xiiFrustum;
@@ -81,42 +79,8 @@ private:
   xiiResult     InitializePassResourceDescriptions(const xiiView& view);
   xiiResult     CreatePassResourceUsage(const xiiView& view);
   xiiResult     InitializeRenderPipelinePasses(const xiiView& view);
-  xiiResult     BuildExecutionPlan(const xiiView& view);
   void          SortExtractors();
   void          UpdateViewData(const xiiView& view, xiiUInt32 uiDataIndex);
-
-  // Modern in-place render-graph authoring API (replaces node-pin authoring)
-public:
-  using RGResourceId = xiiUInt32;
-  using RGPassId = xiiUInt32;
-
-  RGResourceId CreateResource(xiiStringView sName);
-  RGPassId     CreatePass(xiiStringView sName, xiiEnum<xiiGALCommandQueueFlags> queue = xiiGALCommandQueueFlags::Graphics);
-  void         AddPassInput(RGPassId pass, RGResourceId resource);
-  void         AddPassOutput(RGPassId pass, RGResourceId resource);
-
-  // Callback type that mirrors existing pass Execute signature. Optional: pass implementations can still derive xiiRenderPipelinePassBase.
-  using RenderPassCallback = xiiDelegate<void(const xiiRenderViewContext&, const xiiArrayPtr<xiiRenderPipelinePassConnection* const>, const xiiArrayPtr<xiiRenderPipelinePassConnection* const>)>;
-  void SetPassCallback(RGPassId pass, RenderPassCallback callback);
-
-private:
-  struct RGResourceDesc
-  {
-    xiiString m_sName;
-  };
-
-  struct RGPassDesc
-  {
-    xiiString                                    m_sName;
-    xiiEnum<xiiGALCommandQueueFlags>             m_Queue = xiiGALCommandQueueFlags::Graphics;
-    xiiDynamicArray<RGResourceId>                m_Inputs;
-    xiiDynamicArray<RGResourceId>                m_Outputs;
-    RenderPassCallback                           m_Callback;
-    xiiRenderPipelinePassBase*                   m_pLegacyImpl = nullptr; // optional bridge
-  };
-
-  xiiDynamicArray<RGResourceDesc> m_RGResources;
-  xiiDynamicArray<RGPassDesc>     m_RGPasses;
 
   void RemoveConnections(xiiRenderPipelinePassBase* pPass);
   void ClearRenderPassGraphResources();
@@ -166,39 +130,15 @@ private: // Member data
   struct ResourceUsageData
   {
     xiiHybridArray<xiiRenderPipelinePassConnection*, 4> m_UsedBy;                      ///< All the connections that use this resource. Due to passthrough pins, this can be larger than 1.
-    xiiUInt32                                           m_uiFirstUsageIdx;             ///< Used to decide when to acquire a temporary resource.
-    xiiUInt32                                           m_uiLastUsageIdx;              ///< Used to decide when to return a temporary resource.
+    xiiUInt16                                           m_uiFirstUsageIdx;             ///< Used to decide when to acquire a temporary resource.
+    xiiUInt16                                           m_uiLastUsageIdx;              ///< Used to decide when to return a temporary resource.
     const xiiRenderPipelineNodePin*                     m_pResourceProvider = nullptr; ///< If set, this node and parent pass provide an external resource to the pipeline. This could be a render target from a xiiTargetPass or a history buffer that is preserved across frames. At the start of every frame the parent pass will be asked for the current value of the resource a this pin.
   };
   xiiDynamicArray<ResourceUsageData> m_ResourceUsage;                      ///< All unique resources used during the pipeline run.
-  xiiDynamicArray<xiiUInt32>         m_ResourceUsageIdxSortedByFirstUsage; ///< Indices map into m_ResourceUsage.
-  xiiDynamicArray<xiiUInt32>         m_ResourceUsageIdxSortedByLastUsage;  ///< Indices map into m_ResourceUsage.
+  xiiDynamicArray<xiiUInt16>         m_ResourceUsageIdxSortedByFirstUsage; ///< Indices map into m_ResourceUsage.
+  xiiDynamicArray<xiiUInt16>         m_ResourceUsageIdxSortedByLastUsage;  ///< Indices map into m_ResourceUsage.
 
   xiiHashTable<xiiRenderPipelinePassConnection*, xiiUInt32> m_ConnectionToResourceIndex;
-
-  // Compiled execution plan: a compact, immutable representation created during Rebuild/Compile.
-  struct CompiledPass
-  {
-    xiiUInt32                         m_uiPassIndex = xiiInvalidIndex; // index into m_Passes after sorting
-    xiiEnum<xiiGALCommandQueueFlags>  m_QueueFlags;                       // which queue this pass prefers (graphics/compute/transfer)
-    xiiDynamicArray<xiiUInt32>        m_ResourceIndices;                  // resource indices used by this pass (indices into m_ResourceUsage)
-    xiiDynamicArray<xiiGALStateTransitionDescription> m_Barriers; // barriers to apply before executing this pass
-    // Additional fields (pipeline keys, descriptor set indices, barriers) can be added during compilation.
-  };
-
-  struct QueueSynchronization
-  {
-    xiiUInt32                        m_uiProducerPassIdx; // pass that produces / last-writes a resource
-    xiiUInt32                        m_uiConsumerPassIdx; // pass that consumes / first-reads the resource on another queue
-    xiiEnum<xiiGALCommandQueueFlags> m_ProducerQueue;      // queue type of producer
-    xiiEnum<xiiGALCommandQueueFlags> m_ConsumerQueue;      // queue type of consumer
-    xiiUInt32                        m_uiFenceIdx = xiiInvalidIndex; // index into m_QueueSyncFences
-  };
-
-  xiiDynamicArray<CompiledPass>       m_CompiledPasses;       ///< Compiled, ordered passes used for execution.
-  xiiDynamicArray<QueueSynchronization> m_QueueSynchronizations; ///< Explicit cross-queue synchronization points.
-  xiiDynamicArray<xiiSharedPtr<xiiGALFence>> m_QueueSyncFences;    ///< Fence objects used for cross-queue sync
-  xiiDynamicArray<xiiUInt64>                 m_QueueSyncValues;    ///< Recorded fence values after submission
 
   // Extractors
   xiiDynamicArray<xiiUniquePtr<xiiExtractor>> m_Extractors;

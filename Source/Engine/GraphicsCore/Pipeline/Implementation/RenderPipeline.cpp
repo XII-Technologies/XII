@@ -23,8 +23,6 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-#include <Foundation/Types/Delegate.h>
-
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -48,43 +46,6 @@ xiiRenderPipeline::xiiRenderPipeline()
   m_AverageCullingTime = xiiTime::MakeFromSeconds(0.1f);
 #endif
 }
-
-// Modern render-graph API implementations
-xiiRenderPipeline::RGResourceId xiiRenderPipeline::CreateResource(xiiStringView sName)
-{
-  RGResourceDesc desc;
-  desc.m_sName = sName;
-  m_RGResources.PushBack(desc);
-  return static_cast<RGResourceId>(m_RGResources.GetCount() - 1);
-}
-
-xiiRenderPipeline::RGPassId xiiRenderPipeline::CreatePass(xiiStringView sName, xiiEnum<xiiGALCommandQueueFlags> queue)
-{
-  RGPassDesc p;
-  p.m_sName = sName;
-  p.m_Queue = queue;
-  m_RGPasses.PushBack(std::move(p));
-  return static_cast<RGPassId>(m_RGPasses.GetCount() - 1);
-}
-
-void xiiRenderPipeline::AddPassInput(RGPassId pass, RGResourceId resource)
-{
-  if (pass < m_RGPasses.GetCount() && resource < m_RGResources.GetCount())
-    m_RGPasses[pass].m_Inputs.PushBack(resource);
-}
-
-void xiiRenderPipeline::AddPassOutput(RGPassId pass, RGResourceId resource)
-{
-  if (pass < m_RGPasses.GetCount() && resource < m_RGResources.GetCount())
-    m_RGPasses[pass].m_Outputs.PushBack(resource);
-}
-
-void xiiRenderPipeline::SetPassCallback(RGPassId pass, RenderPassCallback callback)
-{
-  if (pass < m_RGPasses.GetCount())
-    m_RGPasses[pass].m_Callback = callback;
-}
-
 
 xiiRenderPipeline::~xiiRenderPipeline()
 {
@@ -344,190 +305,8 @@ xiiResult xiiRenderPipeline::RebuildInternal(const xiiView& view)
   XII_SUCCEED_OR_RETURN(InitializePassResourceDescriptions(view));
   XII_SUCCEED_OR_RETURN(CreatePassResourceUsage(view));
   XII_SUCCEED_OR_RETURN(InitializeRenderPipelinePasses(view));
-  XII_SUCCEED_OR_RETURN(BuildExecutionPlan(view));
 
   SortExtractors();
-
-  return XII_SUCCESS;
-}
-
-
-xiiResult xiiRenderPipeline::BuildExecutionPlan(const xiiView& view)
-{
-  xiiLogBlock b("Build Execution Plan");
-
-  m_CompiledPasses.Clear();
-  m_QueueSynchronizations.Clear();
-  // If modern RG authored passes exist, compile them into compiled passes.
-  if (!m_RGPasses.IsEmpty())
-  {
-    // Map RG resources to usage blocks similar to previous logic.
-    // Build producers / consumers per resource.
-    xiiDynamicArray<xiiDynamicArray<xiiUInt32>> producers;
-    xiiDynamicArray<xiiDynamicArray<xiiUInt32>> consumers;
-    producers.SetCount(m_RGResources.GetCount());
-    consumers.SetCount(m_RGResources.GetCount());
-
-    for (xiiUInt32 p = 0; p < m_RGPasses.GetCount(); ++p)
-    {
-      const RGPassDesc& pass = m_RGPasses[p];
-      for (RGResourceId r : pass.m_Outputs)
-        producers[r].PushBack(p);
-      for (RGResourceId r : pass.m_Inputs)
-        consumers[r].PushBack(p);
-    }
-
-    // Topological sort Kahn's algorithm
-    xiiDynamicArray<xiiDynamicArray<xiiUInt32>> edges;
-    edges.SetCount(m_RGPasses.GetCount());
-    xiiDynamicArray<xiiUInt32> indegree;
-    indegree.SetCount(m_RGPasses.GetCount());
-
-    for (RGResourceId r = 0; r < m_RGResources.GetCount(); ++r)
-    {
-      for (xiiUInt32 prod : producers[r])
-        for (xiiUInt32 cons : consumers[r])
-          if (prod != cons)
-          {
-            edges[prod].PushBack(cons);
-            indegree[cons]++;
-          }
-    }
-
-    xiiDynamicArray<xiiUInt32> queue;
-    for (xiiUInt32 p = 0; p < m_RGPasses.GetCount(); ++p)
-      if (indegree[p] == 0)
-        queue.PushBack(p);
-
-    xiiDynamicArray<xiiUInt32> order;
-    for (xiiUInt32 idx = 0; idx < queue.GetCount(); ++idx)
-    {
-      xiiUInt32 cur = queue[idx];
-      order.PushBack(cur);
-      for (xiiUInt32 to : edges[cur])
-      {
-        if (--indegree[to] == 0)
-          queue.PushBack(to);
-      }
-    }
-
-    if (order.GetCount() != m_RGPasses.GetCount())
-    {
-      xiiLog::Error("RenderPipeline: RG cycle detected or missing producers");
-      return XII_FAILURE;
-    }
-
-    // Create compiled passes following the RG order.
-    m_CompiledPasses.Reserve(order.GetCount());
-    for (xiiUInt32 idx = 0; idx < order.GetCount(); ++idx)
-    {
-      xiiUInt32 p = order[idx];
-      CompiledPass cp;
-      cp.m_uiPassIndex = p;
-      cp.m_QueueFlags = m_RGPasses[p].m_Queue;
-      // collect resource indices (map RG resource id to resource usage blocks if any)
-      for (RGResourceId r : m_RGPasses[p].m_Inputs)
-        cp.m_ResourceIndices.PushBack(r);
-      for (RGResourceId r : m_RGPasses[p].m_Outputs)
-        cp.m_ResourceIndices.PushBack(r);
-      m_CompiledPasses.PushBack(cp);
-    }
-
-    // Compute cross-queue synchronizations
-    xiiDynamicArray<xiiInt32> passOrderIndex;
-    passOrderIndex.SetCount(order.GetCount());
-    for (xiiUInt32 i = 0; i < order.GetCount(); ++i)
-      passOrderIndex[order[i]] = i;
-
-    for (RGResourceId r = 0; r < m_RGResources.GetCount(); ++r)
-    {
-      if (producers[r].IsEmpty() || consumers[r].IsEmpty())
-        continue;
-
-      xiiUInt32 lastProd = xiiInvalidIndex;
-      int lastIdx = -1;
-      for (xiiUInt32 p : producers[r])
-      {
-        int idx = passOrderIndex[p];
-        if (idx > lastIdx) { lastIdx = idx; lastProd = p; }
-      }
-
-      xiiUInt32 firstCons = xiiInvalidIndex;
-      int firstIdx = std::numeric_limits<int>::max();
-      for (xiiUInt32 p : consumers[r])
-      {
-        int idx = passOrderIndex[p];
-        if (idx >= 0 && idx < firstIdx) { firstIdx = idx; firstCons = p; }
-      }
-
-      if (lastProd == xiiInvalidIndex || firstCons == xiiInvalidIndex) continue;
-
-      xiiEnum<xiiGALCommandQueueFlags> qProd = m_RGPasses[lastProd].m_Queue;
-      xiiEnum<xiiGALCommandQueueFlags> qCons = m_RGPasses[firstCons].m_Queue;
-      if (qProd != qCons)
-      {
-        QueueSynchronization s;
-        s.m_uiProducerPassIdx = lastProd;
-        s.m_uiConsumerPassIdx = firstCons;
-        s.m_ProducerQueue = qProd;
-        s.m_ConsumerQueue = qCons;
-        m_QueueSynchronizations.PushBack(s);
-      }
-    }
-
-    return XII_SUCCESS;
-  }
-
-  // Fallback: legacy behavior (node-pin model)
-  for (xiiUInt32 i = 0; i < m_Passes.GetCount(); ++i)
-  {
-    CompiledPass cp;
-    cp.m_uiPassIndex = i;
-
-    xiiRenderPipelinePassBase* pPass = m_Passes[i].Borrow();
-    xiiBitflags<xiiRenderPipelinePassFlags> flags = pPass->GetPassFlags();
-    if (flags.IsSet(xiiRenderPipelinePassFlags::AsyncTransfer))
-      cp.m_QueueFlags = xiiGALCommandQueueFlags::Transfer;
-    else if (flags.IsSet(xiiRenderPipelinePassFlags::AsyncCompute))
-      cp.m_QueueFlags = xiiGALCommandQueueFlags::Compute;
-    else
-      cp.m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
-
-    ConnectionData& conn = m_Connections[pPass];
-    for (auto pConn : conn.m_Inputs)
-    {
-      if (!pConn) continue;
-      xiiUInt32 uiIdx = m_ConnectionToResourceIndex[pConn];
-      cp.m_ResourceIndices.PushBack(uiIdx);
-    }
-    for (auto pConn : conn.m_Outputs)
-    {
-      if (!pConn) continue;
-      xiiUInt32 uiIdx = m_ConnectionToResourceIndex[pConn];
-      cp.m_ResourceIndices.PushBack(uiIdx);
-    }
-
-    m_CompiledPasses.PushBack(cp);
-  }
-
-  for (xiiUInt32 resIdx = 0; resIdx < m_ResourceUsage.GetCount(); ++resIdx)
-  {
-    const ResourceUsageData& usage = m_ResourceUsage[resIdx];
-    xiiUInt32 producer = usage.m_uiLastUsageIdx;
-    xiiUInt32 consumer = usage.m_uiFirstUsageIdx;
-    if (producer >= m_CompiledPasses.GetCount() || consumer >= m_CompiledPasses.GetCount()) continue;
-    const CompiledPass& cpProd = m_CompiledPasses[producer];
-    const CompiledPass& cpCons = m_CompiledPasses[consumer];
-    if (cpProd.m_QueueFlags != cpCons.m_QueueFlags)
-    {
-      QueueSynchronization sync;
-      sync.m_uiProducerPassIdx = producer;
-      sync.m_uiConsumerPassIdx = consumer;
-      sync.m_ProducerQueue = cpProd.m_QueueFlags;
-      sync.m_ConsumerQueue = cpCons.m_QueueFlags;
-      m_QueueSynchronizations.PushBack(sync);
-    }
-  }
 
   return XII_SUCCESS;
 }
@@ -874,8 +653,8 @@ xiiResult xiiRenderPipeline::CreatePassResourceUsage(const xiiView& view)
     if (data.m_UsedBy[0]->m_Resource.IsSampler() && data.m_UsedBy[0]->m_Resource.m_Sampler.m_Description.CalculateHash() == uiDefaultSamplerHash)
       continue;
 
-    m_ResourceUsageIdxSortedByFirstUsage.PushBack((xiiUInt32)i);
-    m_ResourceUsageIdxSortedByLastUsage.PushBack((xiiUInt32)i);
+    m_ResourceUsageIdxSortedByFirstUsage.PushBack((xiiUInt16)i);
+    m_ResourceUsageIdxSortedByLastUsage.PushBack((xiiUInt16)i);
   }
 
   // Sort first and last usage arrays, these will determine the lifetime of the pool resources.
@@ -1080,10 +859,6 @@ void xiiRenderPipeline::ClearRenderPassGraphResources()
   m_ResourceUsage.Clear();
   m_ResourceUsageIdxSortedByFirstUsage.Clear();
   m_ResourceUsageIdxSortedByLastUsage.Clear();
-  m_CompiledPasses.Clear();
-  m_QueueSynchronizations.Clear();
-  m_RGResources.Clear();
-  m_RGPasses.Clear();
 
   for (auto it = m_Connections.GetIterator(); it.IsValid(); ++it)
   {
@@ -1440,60 +1215,38 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   }
 
   {
-    // If the modern in-place render-graph is used, execute compiled RG passes.
-    if (!m_RGPasses.IsEmpty())
+    // Update resources from resource providers as these can change every frame (e.g. swap chain textures).
+    for (ResourceUsageData& resourceUsageData : m_ResourceUsage)
     {
-      // Simple execution model for RG: create a per-pass command list targeted at the pass' preferred queue,
-      // swap it into the render context, invoke the pass callback or legacy bridge, then submit the list.
-      for (CompiledPass& cp : m_CompiledPasses)
+      if (!resourceUsageData.m_pResourceProvider)
+        continue;
+
+      auto                             pPass         = static_cast<xiiRenderPipelinePassBase*>(resourceUsageData.m_pResourceProvider->m_pParent);
+      xiiSharedPtr<xiiGALDeviceObject> pDeviceObject = pPass->QueryResourceProvider(resourceUsageData.m_pResourceProvider, xiiRenderPipelineResourceRequest(resourceUsageData.m_UsedBy[0]->m_Resource));
+      for (xiiRenderPipelinePassConnection* pUsedByConnection : resourceUsageData.m_UsedBy)
       {
-        xiiUInt32 passId = cp.m_uiPassIndex;
-
-        xiiEnum<xiiGALCommandQueueFlags> queueFlags = cp.m_QueueFlags;
-
-        // Create a command list targeted at the chosen queue. Do not touch the xiiRenderContext (deprecated soon).
-        xiiSharedPtr<xiiGALCommandList> pCmdList = xiiGALDevice::GetDefaultDevice()->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiBitflags<xiiGALCommandQueueFlags>(queueFlags)});
-        pCmdList->Begin();
-
-        // Apply pre-pass barriers if present. For now, assume barriers contain valid device resource handles
-        // or are empty. We avoid attempting to resolve resources via the RenderContext.
-        if (!cp.m_Barriers.IsEmpty())
+        for (auto pUsedByConnection : resourceUsageData.m_UsedBy)
         {
-          pCmdList->TransitionResourceStates(cp.m_Barriers);
-        }
-
-        // Execute pass callback or legacy bridge if available. Passes should perform recording directly to the
-        // provided xiiGALCommandList where necessary. We do not rely on xiiRenderContext for command list routing.
-        if (passId < m_RGPasses.GetCount())
-        {
-          RGPassDesc& desc = m_RGPasses[passId];
-
-          if (desc.m_Callback.IsValid())
+          if (pUsedByConnection->m_Resource.IsBuffer())
           {
-            xiiDynamicArray<xiiRenderPipelinePassConnection*> tmpInputs;
-            xiiDynamicArray<xiiRenderPipelinePassConnection*> tmpOutputs;
-            desc.m_Callback(renderViewContext, tmpInputs, tmpOutputs);
+            pUsedByConnection->m_Resource.m_Buffer.m_pBuffer = pDeviceObject.Downcast<xiiGALBuffer>();
+
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Buffer.m_Description == pUsedByConnection->m_Resource.m_Buffer.m_pBuffer->GetDescription(), "Buffer mismatch or invalid.");
           }
-          else if (desc.m_pLegacyImpl)
+          else if (pUsedByConnection->m_Resource.IsTexture())
           {
-            xiiDynamicArray<xiiRenderPipelinePassConnection*> tmpInputs;
-            xiiDynamicArray<xiiRenderPipelinePassConnection*> tmpOutputs;
-            desc.m_pLegacyImpl->Execute(renderViewContext, tmpInputs, tmpOutputs);
+            pUsedByConnection->m_Resource.m_Texture.m_pTexture = pDeviceObject.Downcast<xiiGALTexture>();
+
+            // XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Texture.m_Description == pUsedByConnection->m_Resource.m_Texture.m_pTexture->GetDescription(), "Texture mismatch or invalid.");
           }
-        }
+          else if (pUsedByConnection->m_Resource.IsSampler())
+          {
+            pUsedByConnection->m_Resource.m_Sampler.m_pSampler = pDeviceObject.Downcast<xiiGALSampler>();
 
-        pCmdList->End();
-
-        xiiGALCommandQueue* pQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags>(queueFlags));
-        if (pQueue)
-        {
-          pQueue->Submit(pCmdList);
+            XII_ASSERT_DEBUG(pUsedByConnection->m_Resource.m_Sampler.m_Description == pUsedByConnection->m_Resource.m_Sampler.m_pSampler->GetDescription(), "Sampler mismatch or invalid.");
+          }
         }
       }
-
-      data.Clear();
-      m_CurrentRenderThread = (xiiThreadID)0;
-      return;
     }
 
     xiiUInt32 uiCurrentFirstUsageIdx = 0;
@@ -1564,65 +1317,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
       {
         ConnectionData& connectionData = m_Connections[pPass.Borrow()];
 
-        // Submit per-pass work into a command list scoped by queue type.
-        xiiEnum<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics;
-        xiiBitflags<xiiRenderPipelinePassFlags> pf = pPass->GetPassFlags();
-        if (pf.IsSet(xiiRenderPipelinePassFlags::AsyncTransfer))
-          queueFlags = xiiGALCommandQueueFlags::Transfer;
-        else if (pf.IsSet(xiiRenderPipelinePassFlags::AsyncCompute))
-          queueFlags = xiiGALCommandQueueFlags::Compute;
-
-        // Create a temporary command list for this pass targeted at the chosen queue.
-        xiiSharedPtr<xiiGALCommandList> pCmdList = xiiGALDevice::GetDefaultDevice()->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiBitflags<xiiGALCommandQueueFlags>(queueFlags)});
-        pCmdList->Begin();
-
-        // Swap render context's command list to record into pCmdList.
-        xiiSharedPtr<xiiGALCommandList> pOldCmdList = renderViewContext.m_pRenderContext->ReplaceCommandList(pCmdList);
-
-        // Apply pre-pass barriers if available in compiled plan (legacy model only).
-        if (!m_CompiledPasses.IsEmpty())
-        {
-          // Find compiled pass entry for this pass index i
-          if (i < m_CompiledPasses.GetCount())
-          {
-            CompiledPass& cp = m_CompiledPasses[i];
-            if (!cp.m_Barriers.IsEmpty())
-            {
-              xiiDynamicArray<xiiGALStateTransitionDescription> barriers;
-              barriers.SetCount(cp.m_Barriers.GetCount());
-
-              for (xiiUInt32 bi = 0; bi < cp.m_Barriers.GetCount(); ++bi)
-              {
-                xiiGALStateTransitionDescription desc = cp.m_Barriers[bi];
-                // Map resource index to live device object via resource usage
-                if (bi < cp.m_ResourceIndices.GetCount())
-                {
-                  xiiUInt32 uiResIdx = cp.m_ResourceIndices[bi];
-                  if (uiResIdx < m_ResourceUsage.GetCount())
-                  {
-                    ResourceUsageData& usage = m_ResourceUsage[uiResIdx];
-                    xiiRenderPipelinePassConnection* pConn = usage.m_UsedBy[0];
-                    if (pConn->m_Resource.IsTexture())
-                    {
-                      desc.m_pResource = pConn->m_Resource.m_Texture.m_pTexture;
-                    }
-                    else if (pConn->m_Resource.IsBuffer())
-                    {
-                      desc.m_pResource = pConn->m_Resource.m_Buffer.m_pBuffer;
-                    }
-                  }
-                }
-                barriers[bi] = desc;
-              }
-
-              if (!barriers.IsEmpty())
-              {
-                pCmdList->TransitionResourceStates(barriers);
-              }
-            }
-          }
-        }
-
         if (pPass->m_bActive)
         {
           pPass->Execute(renderViewContext, connectionData.m_Inputs, connectionData.m_Outputs);
@@ -1630,18 +1324,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         else
         {
           pPass->ExecuteInactive(renderViewContext, connectionData.m_Inputs, connectionData.m_Outputs);
-        }
-
-        // Restore command list and finalize.
-        renderViewContext.m_pRenderContext->ReplaceCommandList(pOldCmdList);
-        pCmdList->End();
-
-        // Store or submit the command list depending on queue and synchronization plan.
-        // For now, submit immediately to the corresponding queue. Later this can be batched.
-        xiiGALCommandQueue* pQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags>(queueFlags));
-        if (pQueue)
-        {
-          pQueue->Submit(pCmdList);
         }
       }
 
