@@ -3,7 +3,9 @@
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
@@ -57,8 +59,8 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
-  const xiiEnum<xiiGALResourceFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
-  const auto&                         formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+  const xiiEnum<xiiGALResourceFormat>    format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
   ref_td.m_DescGAL.m_Format      = format;
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);

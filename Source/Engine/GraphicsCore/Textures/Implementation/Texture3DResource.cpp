@@ -3,12 +3,12 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
-
-#include <Texture/Image/Formats/DdsFileFormat.h>
-#include <Texture/Image/Image.h>
-
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <Texture/Image/Formats/DdsFileFormat.h>
+#include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture3DResource, 1, xiiRTTIDefaultAllocator<xiiTexture3DResource>)
@@ -57,8 +57,8 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
-  const xiiEnum<xiiGALResourceFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
-  const auto&                         formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+  const xiiEnum<xiiGALResourceFormat>    format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
   ref_td.m_DescGAL.m_Format      = format;
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);

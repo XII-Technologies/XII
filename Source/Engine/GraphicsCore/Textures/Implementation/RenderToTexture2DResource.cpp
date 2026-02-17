@@ -8,6 +8,8 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderToTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiRenderToTexture2DResource>)
