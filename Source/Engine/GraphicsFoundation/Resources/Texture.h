@@ -47,20 +47,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALResourceDimension>    m_Type               = xiiGALResourceDimension::Undefined; ///< Texture type. The default is Undefined.
-  xiiSizeU32                          m_Size               = xiiSizeU32(0, 0);                   ///< Texture width and height in pixels. The default is (0, 0).
-  xiiUInt32                           m_uiArraySizeOrDepth = 1U;                                 ///< For a 1D Array or 2D Array, the number of array slices. For cube maps and cube map arrays, this value must be a multiple of 6. For a 3D texture, the number of depth slices. The default is 1.
-  xiiEnum<xiiGALResourceFormat>       m_Format             = xiiGALResourceFormat::Unknown;      ///< Texture format. The default is Unknown.
-  xiiUInt32                           m_uiMipLevels        = 1U;                                 ///< Number of Mip levels in the texture. Multi-sampled textures can only have 1 Mip level. Specify 0 to create full mipmap chain. The default is 1.
-  xiiUInt32                           m_uiSampleCount      = 1U;                                 ///< Number of samples. Only 2D textures or 2D texture arrays can be multi-sampled. The default is 1.
-  xiiBitflags<xiiGALBindFlags>        m_BindFlags          = xiiGALBindFlags::None;              ///< Bind flags. The default is None.
-  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Mutable;       ///< Texture usage. The default is Default.
-  xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags     = xiiGALCPUAccessFlag::None;          ///< CPU access flags. The default is None.
-  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags. The default is None.
-  xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
-  xiiUInt64                           m_uiCommandQueueMask = XII_BIT(0);                         ///< Defines which command queues are allowed to execute commands that use this texture. The default is the main command queue.
-                                                                                                 ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
-  void* m_pExistingNativeObject = nullptr;                                                       ///< Can be used to encapsulate existing native textures in objects usable by the GAL
+  xiiEnum<xiiGALResourceDimension>    m_Type                  = xiiGALResourceDimension::Undefined; ///< Texture type. The default is Undefined.
+  xiiSizeU32                          m_Size                  = xiiSizeU32(0, 0);                   ///< Texture width and height in pixels. The default is (0, 0).
+  xiiUInt32                           m_uiArraySizeOrDepth    = 1U;                                 ///< For a 1D Array or 2D Array, the number of array slices. For cube maps and cube map arrays, this value must be a multiple of 6. For a 3D texture, the number of depth slices. The default is 1.
+  xiiEnum<xiiGALResourceFormat>       m_Format                = xiiGALResourceFormat::Unknown;      ///< Texture format. The default is Unknown.
+  xiiUInt32                           m_uiMipLevels           = 1U;                                 ///< Number of Mip levels in the texture. Multi-sampled textures can only have 1 Mip level. Specify 0 to create full mipmap chain. The default is 1.
+  xiiUInt32                           m_uiSampleCount         = 1U;                                 ///< Number of samples. Only 2D textures or 2D texture arrays can be multi-sampled. The default is 1.
+  xiiBitflags<xiiGALBindFlags>        m_BindFlags             = xiiGALBindFlags::None;              ///< Bind flags. The default is None.
+  xiiEnum<xiiGALResourceUsage>        m_Usage                 = xiiGALResourceUsage::Mutable;       ///< Texture usage. The default is Default.
+  xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags        = xiiGALCPUAccessFlag::None;          ///< CPU access flags. The default is None.
+  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags             = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags. The default is None.
+  xiiGALOptimizedClearValue           m_ClearValue            = {};                                 ///< Optimized clear value.
+  void*                               m_pExistingNativeObject = nullptr;                            ///< Used to encapsulate existing native textures in objects usable by the GAL.
 
   constexpr XII_ALWAYS_INLINE bool      IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
   constexpr XII_ALWAYS_INLINE bool      Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }

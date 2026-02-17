@@ -156,8 +156,6 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
   }
   else
   {
-    XII_ASSERT_DEV(m_Description.m_Usage != xiiGALResourceUsage::Dynamic && xiiMath::CountBits(m_Description.m_uiCommandQueueMask) <= 1U, "The command queue mask must contain a single set bit, this error should have been caught in buffer validation.");
-
     xiiVulkanAllocationCreateInfo allocationCreateInfo;
     allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
 
