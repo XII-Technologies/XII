@@ -6,7 +6,6 @@
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
-#include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
 class xiiView;
 class xiiFrustum;
@@ -14,6 +13,8 @@ class xiiDGMLGraph;
 class xiiRasterizerView;
 class xiiFrameDataProviderBase;
 class xiiRenderPipelinePassBase;
+
+struct xiiGALPermutationVariable;
 
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 {
