@@ -2,7 +2,7 @@
 
 #include <EnginePluginScene/SceneContext/LayerContext.h>
 #include <EnginePluginScene/SceneContext/SceneContext.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 
 
 // clang-format off

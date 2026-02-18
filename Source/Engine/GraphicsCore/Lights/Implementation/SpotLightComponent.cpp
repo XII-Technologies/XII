@@ -4,7 +4,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Lights/SpotLightComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
 

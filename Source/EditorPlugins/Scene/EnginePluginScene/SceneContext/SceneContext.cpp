@@ -16,7 +16,7 @@
 #include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Lights/SkyLightComponent.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 

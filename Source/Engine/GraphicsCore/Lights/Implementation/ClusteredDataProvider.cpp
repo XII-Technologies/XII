@@ -5,7 +5,7 @@
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
 #include <GraphicsCore/Lights/Implementation/ClusteredDataUtils.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>

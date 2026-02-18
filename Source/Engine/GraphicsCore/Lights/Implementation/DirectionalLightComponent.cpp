@@ -3,7 +3,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Lights/Implementation/ShadowPool.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 // clang-format off
