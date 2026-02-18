@@ -100,6 +100,9 @@ private:
   xiiRasterizerView* PrepareOcclusionCulling(const xiiFrustum& frustum, const xiiView& view);
   void               PreviewOcclusionBuffer(const xiiRasterizerView& rasterizer, const xiiView& view);
 
+  // Resolve dependencies between collected submissions and perform batched, deadlock-safe submits.
+  void ResolveAndSubmitAll();
+
 private: // Member data
   // Thread data
   xiiThreadID m_CurrentExtractThread;
@@ -172,6 +175,6 @@ private: // Member data
 
   xiiDynamicArray<SubmissionNode> m_FrameSubmissionNodes; ///< Collected submissions for this frame, resolved & submitted together.
 
-  // Resolve dependencies between collected submissions and perform batched, deadlock-safe submits.
-  void ResolveAndSubmitAll();
+  // Map of command list pointers to the signal value enqueued during recording.
+  xiiHashTable<xiiGALCommandList*, xiiUInt64> m_CommandListSignalValues;
 };

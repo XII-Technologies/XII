@@ -1833,9 +1833,61 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
     }
   }
 
-  // NOTE: we intentionally do NOT insert DeviceWaitForFence or EnqueueSignal into the command list here.
-  // Submissions are collected and resolved centrally to avoid GPU-level cycles. The command list is returned
-  // to the pass for recording as usual.
+  // Insert device waits/signals when native timeline fences are supported so waits can be handled on the GPU
+  // without requiring a host-side stall. If native fences are not available, the scheduler will perform
+  // host-waits as a fallback during ResolveAndSubmitAll().
+  if (pDevice->GetFeatures().m_NativeFence == xiiGALDeviceFeatureState::Enabled)
+  {
+    xiiHybridArray<xiiUInt32, 8U> waitIndices;
+    waitIndices.Reserve(resourceIndices.GetCount());
+
+    for (xiiUInt32 uiResourceIndex : resourceIndices)
+    {
+      xiiUInt8 uiLastPrimary = m_ResourceLastPrimaryQueue[uiResourceIndex];
+      if (uiLastPrimary != 0xFFu && uiLastPrimary != uiPrimary)
+      {
+        const xiiUInt64 uiWaitValue = m_ResourceLastFenceValue[uiResourceIndex];
+        if (uiWaitValue != 0ULL)
+        {
+          if (!waitIndices.Contains(uiResourceIndex))
+          {
+            waitIndices.PushBack(uiResourceIndex);
+          }
+        }
+      }
+    }
+
+    for (xiiUInt32 uiWaitIndex : waitIndices)
+    {
+      xiiUInt8                  uiLastPrimary = m_ResourceLastPrimaryQueue[uiWaitIndex];
+      xiiSharedPtr<xiiGALFence> pWaitFence    = m_QueueFences[uiLastPrimary];
+
+      if (!pWaitFence)
+        continue;
+
+      const xiiUInt64 uiWaitValue = m_ResourceLastFenceValue[uiWaitIndex];
+      if (uiWaitValue == 0ULL)
+        continue;
+
+      pCommandList->DeviceWaitForFence(pWaitFence, uiWaitValue);
+    }
+
+    // Enqueue the signal value this command list will produce on its primary queue fence and remember it.
+    xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlags);
+    if (pQueue && m_QueueFences[uiPrimary])
+    {
+      const xiiUInt64 uiSignalValue = pQueue->GetNextFenceValue();
+
+      pCommandList->EnqueueSignal(m_QueueFences[uiPrimary], uiSignalValue);
+      m_CommandListSignalValues.Insert(pCommandList.Borrow(), uiSignalValue);
+    }
+  }
+  else
+  {
+    // No native fence support: scheduler will use host-waits when necessary.
+  }
+
+  // Return the command list for recording.
   return pCommandList;
 }
 
@@ -1879,7 +1931,17 @@ void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase
     xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlag);
     if (pQueue)
     {
-      node.m_uiSignalValue = pQueue->GetNextFenceValue();
+      // If CreateCommandListForPass already reserved and enqueued a signal, use that value.
+      auto itSignal = m_CommandListSignalValues.Find(node.m_pCommandList.Borrow());
+      if (itSignal.IsValid())
+      {
+        node.m_uiSignalValue = itSignal.Value();
+        m_CommandListSignalValues.Remove(node.m_pCommandList.Borrow());
+      }
+      else
+      {
+        node.m_uiSignalValue = pQueue->GetNextFenceValue();
+      }
     }
   }
 
@@ -1895,10 +1957,10 @@ void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase
       if (!m_ConnectionToResourceIndex.Contains(pConnection))
         return;
 
-      xiiUInt32 uiResIdx = m_ConnectionToResourceIndex[pConnection];
-      if (!out_Data.Contains(uiResIdx))
+      xiiUInt32 uiResourceIndex = m_ConnectionToResourceIndex[pConnection];
+      if (!out_Data.Contains(uiResourceIndex))
       {
-        out_Data.PushBack(uiResIdx);
+        out_Data.PushBack(uiResourceIndex);
       }
     };
 
@@ -1913,6 +1975,15 @@ void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase
   }
 
   m_FrameSubmissionNodes.PushBack(std::move(node));
+
+  // Immediately update last-writer metadata so subsequent CreateCommandListForPass calls
+  // can insert device waits for native-fence-enabled devices. This records the reserved
+  // signal as the next signaled value for the resource.
+  for (xiiUInt32 uiResource : m_FrameSubmissionNodes.PeekBack().m_ResourcesWritten)
+  {
+    m_ResourceLastPrimaryQueue[uiResource] = m_FrameSubmissionNodes.PeekBack().m_uiQueueIndex;
+    m_ResourceLastFenceValue[uiResource]   = m_FrameSubmissionNodes.PeekBack().m_uiSignalValue;
+  }
 }
 
 void xiiRenderPipeline::ResolveAndSubmitAll()
@@ -1992,7 +2063,12 @@ void xiiRenderPipeline::ResolveAndSubmitAll()
         if (uiRequiredValue == 0ULL)
           continue;
 
-        pFence->Wait(uiRequiredValue);
+        // If the device supports native timeline fences, the consumer command list already recorded
+        // a DeviceWaitForFence and we do not need to host-wait here. Otherwise, perform a host wait.
+        if (pDevice->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled)
+        {
+          pFence->Wait(uiRequiredValue);
+        }
       }
 
       xiiBitflags<xiiGALCommandQueueFlags> queueFlag = xiiGALCommandQueueFlags::Graphics;
@@ -2032,11 +2108,11 @@ void xiiRenderPipeline::ResolveAndSubmitAll()
         SubmissionNode& node = m_FrameSubmissionNodes[i];
         for (xiiUInt32 uiResource : node.m_ResourcesRead)
         {
-          xiiUInt8 lastPrimary = m_ResourceLastPrimaryQueue[uiResource];
-          if (lastPrimary == 0xFFU || lastPrimary == node.m_uiQueueIndex)
+          xiiUInt8 uiLastPrimary = m_ResourceLastPrimaryQueue[uiResource];
+          if (uiLastPrimary == 0xFFU || uiLastPrimary == node.m_uiQueueIndex)
             continue;
 
-          xiiSharedPtr<xiiGALFence> pFence = m_QueueFences[lastPrimary];
+          xiiSharedPtr<xiiGALFence> pFence = m_QueueFences[uiLastPrimary];
           if (!pFence)
             continue;
 
@@ -2044,7 +2120,10 @@ void xiiRenderPipeline::ResolveAndSubmitAll()
           if (uiRequiredValue == 0ULL)
             continue;
 
-          pFence->Wait(uiRequiredValue);
+          if (pDevice->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled)
+          {
+            pFence->Wait(uiRequiredValue);
+          }
         }
 
         xiiBitflags<xiiGALCommandQueueFlags> queueFlag = xiiGALCommandQueueFlags::Graphics;
