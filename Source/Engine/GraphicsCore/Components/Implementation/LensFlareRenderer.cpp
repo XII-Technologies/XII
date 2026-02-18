@@ -6,7 +6,6 @@
 #include <GraphicsCore/Components/LensFlareRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
@@ -43,18 +42,18 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
   xiiSharedPtr<xiiGALBuffer> pLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(pLensFlareData));
 
-  renderViewContext.m_pRenderContext->BindShader(m_hShader);
-  renderViewContext.m_pRenderContext->BindBuffer("lensFlareData", pLensFlareData);
-  renderViewContext.m_pRenderContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
+  // renderViewContext.m_pRenderContext->BindShader(m_hShader);
+  // renderViewContext.m_pRenderContext->BindBuffer("lensFlareData", pLensFlareData);
+  // renderViewContext.m_pRenderContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
 
   FillLensFlareData(batch);
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
+    // xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
 
-    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
-    renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+    // renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
+    // renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
 }
 

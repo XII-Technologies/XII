@@ -12,7 +12,7 @@ body:
     id: section
     attributes:
       label: Affected Section or API
-      placeholder: e.g., RenderGraph overview, `xiiRenderContext::BeginRendering`
+      placeholder: e.g., RenderGraph overview, `xiiGALCommandList::Begin`
     validations:
       required: true
 

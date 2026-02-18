@@ -151,7 +151,7 @@ xiiClusteredDataGPU::~xiiClusteredDataGPU()
   m_pClusterDataConstantBuffer.Borrow();
 }
 
-void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
+void xiiClusteredDataGPU::BindResources()
 {
   // pRenderContext->BindBuffer("perLightDataBuffer", m_pLightDataBuffer);
   // pRenderContext->BindBuffer("perDecalDataBuffer", m_pDecalDataBuffer);

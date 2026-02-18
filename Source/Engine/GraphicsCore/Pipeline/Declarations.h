@@ -19,7 +19,6 @@ class xiiCopyPipelinePass;
 class xiiPresentPipelinePass;
 class xiiUtilityPipelinePass;
 class xiiDebugRendererContext;
-class xiiRenderContext;
 
 struct xiiRenderPipelineNodePin;
 struct xiiRenderPipelineNodeInputBufferPin;

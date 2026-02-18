@@ -28,7 +28,7 @@ public:
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
   xiiSharedPtr<xiiGALSampler> m_pDecalAtlasSampler;
 
-  void BindResources(xiiRenderContext* pRenderContext);
+  void BindResources();
 };
 
 class XII_GRAPHICSCORE_DLL xiiClusteredDataProvider : public xiiFrameDataProvider<xiiClusteredDataGPU>

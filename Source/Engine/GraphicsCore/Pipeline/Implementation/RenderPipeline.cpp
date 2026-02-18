@@ -1126,7 +1126,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 #endif
 }
 
-void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
+void xiiRenderPipeline::Render()
 {
   XII_PROFILE_SCOPE(m_sName.GetView());
 
@@ -1146,59 +1146,8 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   xiiRenderViewContext renderViewContext;
   renderViewContext.m_pCamera            = &data.GetCamera();
   renderViewContext.m_pViewData          = &data.GetViewData();
-  renderViewContext.m_pRenderContext     = pRenderContext;
   renderViewContext.m_pWorldDebugContext = &data.GetWorldDebugContext();
   renderViewContext.m_pViewDebugContext  = &data.GetViewDebugContext();
-
-  {
-    xiiGlobalConstants* pGlobalConstants = pRenderContext->GetGlobalConstants();
-
-    for (xiiUInt32 i = 0; i < 2; ++i)
-    {
-      pGlobalConstants->CameraToScreenMatrix[i] = renderViewContext.m_pViewData->m_ProjectionMatrix[i];
-      pGlobalConstants->ScreenToCameraMatrix[i] = renderViewContext.m_pViewData->m_InverseProjectionMatrix[i];
-      pGlobalConstants->WorldToCameraMatrix[i]  = renderViewContext.m_pViewData->m_ViewMatrix[i];
-      pGlobalConstants->CameraToWorldMatrix[i]  = renderViewContext.m_pViewData->m_InverseViewMatrix[i];
-      pGlobalConstants->WorldToScreenMatrix[i]  = renderViewContext.m_pViewData->m_ViewProjectionMatrix[i];
-      pGlobalConstants->ScreenToWorldMatrix[i]  = renderViewContext.m_pViewData->m_InverseViewProjectionMatrix[i];
-    }
-
-    const xiiRectFloat& viewport   = renderViewContext.m_pViewData->m_ViewPortRect;
-    pGlobalConstants->ViewportSize = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-
-    float fNear                  = renderViewContext.m_pCamera->GetNearPlane();
-    float fFar                   = renderViewContext.m_pCamera->GetFarPlane();
-    pGlobalConstants->ClipPlanes = xiiVec4(fNear, fFar, 1.0f / fFar, 0.0f);
-
-    const bool bIsDirectionalLightShadow = renderViewContext.m_pViewData->m_CameraUsageHint == xiiCameraUsageHint::Shadow && renderViewContext.m_pCamera->IsOrthographic();
-    pGlobalConstants->MaxZValue          = bIsDirectionalLightShadow ? 0.0f : xiiMath::MinValue<float>();
-
-    pGlobalConstants->Exposure   = renderViewContext.m_pCamera->GetExposure();
-    pGlobalConstants->RenderPass = xiiViewRenderMode::GetRenderPassForShader(renderViewContext.m_pViewData->m_ViewRenderMode);
-
-    pRenderContext->SetGlobalAndWorldTimeConstants(data.GetWorldTime());
-  }
-
-  // Set camera mode permutation variable here since it doesn't change throughout the frame.
-  static xiiHashedString sCameraMode  = xiiMakeHashedString("CAMERA_MODE");
-  static xiiHashedString sOrtho       = xiiMakeHashedString("CAMERA_MODE_ORTHO");
-  static xiiHashedString sPerspective = xiiMakeHashedString("CAMERA_MODE_PERSPECTIVE");
-  static xiiHashedString sStereo      = xiiMakeHashedString("CAMERA_MODE_STEREO");
-
-  static xiiHashedString sClipSpaceFlipped = xiiMakeHashedString("CLIP_SPACE_FLIPPED");
-  static xiiHashedString sTrue             = xiiMakeHashedString("TRUE");
-  static xiiHashedString sFalse            = xiiMakeHashedString("FALSE");
-
-  if (renderViewContext.m_pCamera->IsOrthographic())
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sOrtho);
-  else if (renderViewContext.m_pCamera->IsStereoscopic())
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sStereo);
-  else
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
-
-  XII_ASSERT_DEV(pDevice->GetFeatures().m_VertexShaderRenderTargetArrayIndex == xiiGALDeviceFeatureState::Enabled, "Vertex shader render target index must be supported for stereo rendering.");
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
   xiiRenderWorldRenderEvent renderEvent;
   renderEvent.m_Type               = xiiRenderWorldRenderEvent::Type::BeforePipelineExecution;
@@ -1976,9 +1925,8 @@ void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase
 
   m_FrameSubmissionNodes.PushBack(std::move(node));
 
-  // Immediately update last-writer metadata so subsequent CreateCommandListForPass calls
-  // can insert device waits for native-fence-enabled devices. This records the reserved
-  // signal as the next signaled value for the resource.
+  // Immediately update last-writer metadata so subsequent CreateCommandListForPass calls can insert device waits for native-fence-enabled devices.
+  // This records the reserved signal as the next signaled value for the resource.
   for (xiiUInt32 uiResource : m_FrameSubmissionNodes.PeekBack().m_ResourcesWritten)
   {
     m_ResourceLastPrimaryQueue[uiResource] = m_FrameSubmissionNodes.PeekBack().m_uiQueueIndex;

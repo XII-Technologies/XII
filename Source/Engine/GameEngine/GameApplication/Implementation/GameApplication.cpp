@@ -21,7 +21,6 @@
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -128,7 +127,7 @@ void xiiGameApplication::Run_WorldUpdateAndRender()
   RenderFps();
   RenderConsole();
 
-  xiiRenderWorld::Render(xiiRenderContext::GetDefaultInstance());
+  xiiRenderWorld::Render();
 
   if (xiiRenderWorld::GetUseMultithreadedRendering())
   {

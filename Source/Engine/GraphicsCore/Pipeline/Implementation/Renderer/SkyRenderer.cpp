@@ -50,20 +50,20 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
   xiiSharedPtr<xiiGALBuffer> pSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteSpriteDataBuffer(pSpriteData));
 
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
-  renderViewContext.m_pRenderContext->BindShader(m_hShader);
-  renderViewContext.m_pRenderContext->BindBuffer("spriteData", pSpriteData);
-  renderViewContext.m_pRenderContext->BindTexture2D("spriteTexture", pRenderData->m_hTexture);
+  // renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
+  // renderViewContext.m_pRenderContext->SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
+  // renderViewContext.m_pRenderContext->BindShader(m_hShader);
+  // renderViewContext.m_pRenderContext->BindBuffer("spriteData", pSpriteData);
+  // renderViewContext.m_pRenderContext->BindTexture2D("spriteTexture", pRenderData->m_hTexture);
 
   FillSpriteData(batch);
 
   if (!m_SpriteData.IsEmpty()) // Instance data might be empty if all render data was filtered.
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), pSpriteData, 0U, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
+    // xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), pSpriteData, 0U, m_SpriteData.GetByteArrayPtr()).AssertSuccess();
 
-    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2U);
-    renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+    // renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2U);
+    // renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
 }
 

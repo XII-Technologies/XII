@@ -22,10 +22,10 @@ xiiInstanceData::~xiiInstanceData()
   m_pObjectConstantsBuffer.Clear();
 }
 
-void xiiInstanceData::BindResources(xiiRenderContext* pRenderContext)
+void xiiInstanceData::BindResources()
 {
-  pRenderContext->BindBuffer("perInstanceData", m_pInstanceDataBuffer);
-  pRenderContext->BindConstantBuffer("xiiObjectConstants", m_pObjectConstantsBuffer);
+  // pRenderContext->BindBuffer("perInstanceData", m_pInstanceDataBuffer);
+  // pRenderContext->BindConstantBuffer("xiiObjectConstants", m_pObjectConstantsBuffer);
 }
 
 xiiArrayPtr<xiiPerInstanceData> xiiInstanceData::GetInstanceData(xiiUInt32 uiCount, xiiUInt32& out_uiOffset)

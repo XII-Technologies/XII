@@ -406,7 +406,7 @@ class XII_GRAPHICSCORE_DLL xiiUtilityPipelinePass : public xiiRenderPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiUtilityPipelinePass);
 
 public:
-  xiiUtilityPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags = xiiRenderPipelinePassCapabilityFlags::StereoAware);
+  xiiUtilityPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics);
 
   virtual ~xiiUtilityPipelinePass();
 };
