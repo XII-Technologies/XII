@@ -133,8 +133,6 @@ public:
   /// \brief Returns the frustum that should be used for determine visible objects for this view.
   void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
-  void SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue);
-
   void SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
   void SetExtractorProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
 
@@ -197,11 +195,6 @@ private:
   mutable xiiViewData m_Data;
 
   xiiInternal::RenderDataCache* m_pRenderDataCache = nullptr;
-
-  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
-  bool                                       m_bPermutationVariablesModified = false;
-
-  void ApplyPermutationVariables();
 
   struct PropertyValue
   {

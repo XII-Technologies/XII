@@ -182,32 +182,6 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
   out_frustum = xiiFrustum::MakeFromMVP(projectionMatrix * viewMatrix);
 }
 
-void xiiView::SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue)
-{
-  xiiHashedString sNameHash;
-  sNameHash.Assign(sName);
-
-  for (auto& permutationVariable : m_PermutationVariables)
-  {
-    if (permutationVariable.m_sName == sNameHash)
-    {
-      if (permutationVariable.m_sValue.GetView() != sValue)
-      {
-        permutationVariable.m_sValue.Assign(sValue);
-
-        m_bPermutationVariablesModified = true;
-      }
-      return;
-    }
-  }
-
-  auto& permutationVariable   = m_PermutationVariables.ExpandAndGetRef();
-  permutationVariable.m_sName = sNameHash;
-  permutationVariable.m_sValue.Assign(sValue);
-
-  m_bPermutationVariablesModified = true;
-}
-
 void xiiView::SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
   SetProperty(m_PassProperties, sPassName, sPropertyName, value);
@@ -306,7 +280,6 @@ void xiiView::UpdateCachedMatrices() const
     m_uiLastCameraSettingsModification = pCamera->GetSettingsModificationCounter();
     m_fLastViewportAspectRatio         = fViewportAspectRatio;
 
-
     pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[0], xiiCameraEye::Left);
     m_Data.m_InverseProjectionMatrix[0] = m_Data.m_ProjectionMatrix[0].GetInverse(0.0f);
 
@@ -339,61 +312,49 @@ void xiiView::EnsureUpToDate()
       m_pRenderPipeline = pPipeline->CreateRenderPipeline();
       xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
 
-      m_bPermutationVariablesModified = true;
-
       ResetAllPropertyStates(m_PassProperties);
       ResetAllPropertyStates(m_ExtractorProperties);
     }
 
-    ApplyPermutationVariables();
     ApplyRenderPassProperties();
     ApplyExtractorProperties();
   }
-}
-
-void xiiView::ApplyPermutationVariables()
-{
-  if (!m_bPermutationVariablesModified)
-    return;
-
-  m_pRenderPipeline->m_PermutationVariables = m_PermutationVariables;
-  m_bPermutationVariablesModified           = false;
 }
 
 void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
   xiiStringBuilder sKey(sPassName, "::", sPropertyName);
 
-  bool  bExisted = false;
-  auto& prop     = map.FindOrAdd(sKey, &bExisted).Value();
+  bool           bExisted      = false;
+  PropertyValue& propertyValue = map.FindOrAdd(sKey, &bExisted).Value();
 
   if (!bExisted)
   {
-    prop.m_sObjectName   = sPassName;
-    prop.m_sPropertyName = sPropertyName;
-    prop.m_bIsValid      = true;
+    propertyValue.m_sObjectName   = sPassName;
+    propertyValue.m_sPropertyName = sPropertyName;
+    propertyValue.m_bIsValid      = true;
   }
 
-  prop.m_bIsDirty     = true;
-  prop.m_CurrentValue = value;
+  propertyValue.m_bIsDirty     = true;
+  propertyValue.m_CurrentValue = value;
 }
 
 void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
   xiiStringBuilder sKey(sPassName, "::", sPropertyName);
 
-  bool  bExisted = false;
-  auto& prop     = map.FindOrAdd(sKey, &bExisted).Value();
+  bool           bExisted      = false;
+  PropertyValue& propertyValue = map.FindOrAdd(sKey, &bExisted).Value();
 
   if (!bExisted)
   {
-    prop.m_sObjectName   = sPassName;
-    prop.m_sPropertyName = sPropertyName;
-    prop.m_bIsValid      = true;
+    propertyValue.m_sObjectName   = sPassName;
+    propertyValue.m_sPropertyName = sPropertyName;
+    propertyValue.m_bIsValid      = true;
   }
 
-  prop.m_bIsDirty     = false;
-  prop.m_CurrentValue = value;
+  propertyValue.m_bIsDirty     = false;
+  propertyValue.m_CurrentValue = value;
 }
 
 void xiiView::ReadBackPassProperties()
@@ -421,7 +382,7 @@ void xiiView::ApplyRenderPassProperties()
 {
   for (auto it = m_PassProperties.GetIterator(); it.IsValid(); ++it)
   {
-    auto& propertyValue = it.Value();
+    PropertyValue& propertyValue = it.Value();
 
     if (!propertyValue.m_bIsValid || !propertyValue.m_bIsDirty)
       continue;

@@ -14,8 +14,6 @@ class xiiRasterizerView;
 class xiiFrameDataProviderBase;
 class xiiRenderPipelinePassBase;
 
-struct xiiGALPermutationVariable;
-
 class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipeline);
@@ -151,6 +149,4 @@ private: // Member data
 
   // Processors
   xiiDynamicArray<RenderDataProcessor> m_RenderDataProcessors;
-
-  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
 };

@@ -4,11 +4,13 @@
 #include <GraphicsCore/Meshes/InstancedMeshComponent.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
-
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+
+#include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMeshInstanceData, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiMeshInstanceData>)

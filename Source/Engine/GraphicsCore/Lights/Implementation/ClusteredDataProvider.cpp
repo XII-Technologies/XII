@@ -7,7 +7,6 @@
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
 #include <GraphicsCore/Lights/Implementation/ShadowPool.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
@@ -153,26 +152,26 @@ xiiClusteredDataGPU::~xiiClusteredDataGPU()
 
 void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
-  pRenderContext->BindBuffer("perLightDataBuffer", m_pLightDataBuffer);
-  pRenderContext->BindBuffer("perDecalDataBuffer", m_pDecalDataBuffer);
-  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", m_pReflectionProbeDataBuffer);
-  pRenderContext->BindBuffer("perClusterDataBuffer", m_pClusterDataBuffer);
-  pRenderContext->BindBuffer("clusterItemBuffer", m_pClusterItemBuffer);
+  // pRenderContext->BindBuffer("perLightDataBuffer", m_pLightDataBuffer);
+  // pRenderContext->BindBuffer("perDecalDataBuffer", m_pDecalDataBuffer);
+  // pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", m_pReflectionProbeDataBuffer);
+  // pRenderContext->BindBuffer("perClusterDataBuffer", m_pClusterDataBuffer);
+  // pRenderContext->BindBuffer("clusterItemBuffer", m_pClusterItemBuffer);
 
-  pRenderContext->BindBuffer("shadowDataBuffer", xiiShadowPool::GetShadowDataBuffer());
-  pRenderContext->BindTexture("ShadowAtlasTexture", xiiShadowPool::GetShadowAtlasTexture());
-  pRenderContext->BindSampler("ShadowSampler", m_pShadowSampler);
+  // pRenderContext->BindBuffer("shadowDataBuffer", xiiShadowPool::GetShadowDataBuffer());
+  // pRenderContext->BindTexture("ShadowAtlasTexture", xiiShadowPool::GetShadowAtlasTexture());
+  // pRenderContext->BindSampler("ShadowSampler", m_pShadowSampler);
 
-  xiiResourceLock<xiiDecalAtlasResource> pDecalAtlas(m_hDecalAtlas, xiiResourceAcquireMode::AllowLoadingFallback);
-  pRenderContext->BindTexture2D("DecalAtlasBaseColorTexture", pDecalAtlas->GetBaseColorTexture());
-  pRenderContext->BindTexture2D("DecalAtlasNormalTexture", pDecalAtlas->GetNormalTexture());
-  pRenderContext->BindTexture2D("DecalAtlasORMTexture", pDecalAtlas->GetORMTexture());
-  pRenderContext->BindSampler("DecalAtlasSampler", m_pDecalAtlasSampler);
+  // xiiResourceLock<xiiDecalAtlasResource> pDecalAtlas(m_hDecalAtlas, xiiResourceAcquireMode::AllowLoadingFallback);
+  // pRenderContext->BindTexture2D("DecalAtlasBaseColorTexture", pDecalAtlas->GetBaseColorTexture());
+  // pRenderContext->BindTexture2D("DecalAtlasNormalTexture", pDecalAtlas->GetNormalTexture());
+  // pRenderContext->BindTexture2D("DecalAtlasORMTexture", pDecalAtlas->GetORMTexture());
+  // pRenderContext->BindSampler("DecalAtlasSampler", m_pDecalAtlasSampler);
 
-  pRenderContext->BindTexture("ReflectionSpecularTexture", xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_CameraUsageHint));
-  pRenderContext->BindTexture("SkyIrradianceTexture", xiiReflectionPool::GetSkyIrradianceTexture());
+  // pRenderContext->BindTexture("ReflectionSpecularTexture", xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_CameraUsageHint));
+  // pRenderContext->BindTexture("SkyIrradianceTexture", xiiReflectionPool::GetSkyIrradianceTexture());
 
-  pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_pClusterDataConstantBuffer);
+  // pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_pClusterDataConstantBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////

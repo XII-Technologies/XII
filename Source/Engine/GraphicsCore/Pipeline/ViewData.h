@@ -4,7 +4,6 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Pipeline/ViewRenderMode.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 /// \brief Holds view data like the viewport, view and projection matrices
