@@ -3,7 +3,6 @@
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/Passes/FrameConstantsPass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -102,7 +101,17 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
     pGlobalConstants->WorldTime  = (float)xiiMath::Mod(GetPipeline()->GetRenderData().GetWorldTime().GetSeconds(), fWrapAround);
   }
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
+  pCommandList->Begin();
+  {
+    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+
+    pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
+  }
+  pCommandList->End();
+
+  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
 }

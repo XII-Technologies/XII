@@ -410,7 +410,7 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     xiiWorld* pWorld     = xiiWorld::GetWorld(updateInfo.m_probe.m_uiWorldIndex);
     pView->SetWorld(pWorld);
 
-    xiiRenderTargets renderTargets;
+    xiiView::RenderTargets renderTargets;
     if (step.m_UpdateStep == UpdateStep::Filter)
     {
       renderTargets.m_pRTs[0] = updateInfo.m_TargetSlot.m_pSpecularOutputTexture->GetDefaultView(xiiGALTextureViewType::RenderTarget);

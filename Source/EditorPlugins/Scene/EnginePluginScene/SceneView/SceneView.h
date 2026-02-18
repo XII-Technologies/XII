@@ -3,8 +3,8 @@
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
+#include <GraphicsCore/Pipeline/View.h>
 
-class xiiView;
 class xiiViewRedrawMsgToEngine;
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
@@ -27,7 +27,7 @@ public:
   ~xiiSceneViewContext();
 
   virtual void HandleViewMessage(const xiiEditorEngineViewMsg* pMsg) override;
-  virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight) override;
+  virtual void SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiView::RenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight) override;
 
   bool UpdateThumbnailCamera(const xiiBoundingBoxSphere& bounds);
   void SetInvisibleLayerTags(const xiiArrayPtr<xiiTag> removeTags, const xiiArrayPtr<xiiTag> addTags);

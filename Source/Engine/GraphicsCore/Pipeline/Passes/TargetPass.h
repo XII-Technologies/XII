@@ -1,7 +1,8 @@
 #pragma once
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
+
+class xiiView;
 
 /// \brief A render pipeline pass that presents rendered output to a target such as a swap chain.
 ///
@@ -52,24 +53,16 @@ public:
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
 
 protected:
-  /// @name Colour Attachment Pins
-  ///@{
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour0; ///< First colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour1; ///< Second colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour2; ///< Third colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour3; ///< Fourth colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour4; ///< Fifth colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour5; ///< Sixth colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour6; ///< Seventh colour attachment input.
-  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour7; ///< Eighth colour attachment input.
-  ///@}
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour0;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour1;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour2;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour3;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour4;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour5;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour6;
+  xiiRenderPipelineNodeInputColourAttachmentProviderPin m_PinColour7;
 
-  /// \brief Depth/Stencil attachment input pin.
   xiiRenderPipelineNodeInputDepthAttachmentProviderPin m_PinDepthStencil;
 
-  /// \brief Pointer to the swap chain associated with this pass (if any).
-  xiiGALSwapChain* m_pSwapChain = nullptr;
-
-  /// \brief Cached render targets used during execution.
-  xiiRenderTargets m_RenderTargets;
+  const xiiView* m_pView = nullptr;
 };

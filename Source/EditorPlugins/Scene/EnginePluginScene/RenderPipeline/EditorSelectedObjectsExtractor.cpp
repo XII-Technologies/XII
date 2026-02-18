@@ -145,7 +145,7 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetView(const xiiView& vi
 
   m_RenderTargetCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 45, 0.1f, 100.0f);
 
-  xiiRenderTargets renderTargets;
+  xiiView::RenderTargets renderTargets;
   renderTargets.m_pRTs[0] = pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
   pRenderTargetView->SetRenderTargets(renderTargets);
 

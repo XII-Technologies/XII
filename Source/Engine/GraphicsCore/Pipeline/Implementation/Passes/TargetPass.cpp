@@ -36,8 +36,7 @@ xiiResult xiiTargetPass::GetResourceDescriptions(const xiiView& view, const xiiA
   XII_IGNORE_UNUSED(pInputs);
   XII_IGNORE_UNUSED(pOutputs);
 
-  m_pSwapChain    = view.GetSwapChain();
-  m_RenderTargets = view.GetRenderTargets();
+  m_pView = &view;
 
   return XII_SUCCESS;
 }
@@ -48,24 +47,15 @@ xiiSharedPtr<xiiGALDeviceObject> xiiTargetPass::QueryResourceProvider(const xiiR
 
   if (pPin->m_uiOutputIndex == 8)
   {
-    return m_RenderTargets.m_pDSTarget;
+    if (m_pView)
+    {
+      return m_pView->GetActiveDepthStencilTexture()->GetTexture();
+    }
+    return xiiSharedPtr<xiiGALDeviceObject>();
   }
   else
   {
-    if (m_pSwapChain)
-    {
-      if (pPin->m_uiInputIndex == 0)
-      {
-        return m_pSwapChain->GetBackBufferTexture();
-      }
-    }
-    else
-    {
-      if (m_RenderTargets.m_pRTs[pPin->m_uiInputIndex])
-      {
-        return m_RenderTargets.m_pRTs[pPin->m_uiInputIndex]->GetTexture();
-      }
-    }
+    return m_pView->GetActiveRenderTargetTexture(pPin->m_uiInputIndex)->GetTexture();
   }
   return xiiSharedPtr<xiiGALDeviceObject>();
 }

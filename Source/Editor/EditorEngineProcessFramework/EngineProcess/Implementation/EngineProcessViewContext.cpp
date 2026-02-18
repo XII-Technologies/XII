@@ -172,7 +172,7 @@ void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChai
   }
 }
 
-void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiRenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
+void xiiEngineProcessViewContext::SetupRenderTarget(xiiSharedPtr<xiiGALSwapChain> pSwapChain, const xiiView::RenderTargets* pRenderTargets, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
 {
   XII_LOG_BLOCK("xiiEngineProcessViewContext::SetupRenderTarget");
   XII_ASSERT_DEV((pSwapChain != nullptr && pRenderTargets == nullptr) || (pSwapChain == nullptr && pRenderTargets != nullptr), "hSwapChain and pRenderTargets are mutually exclusive.");

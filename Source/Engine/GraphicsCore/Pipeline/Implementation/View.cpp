@@ -65,12 +65,12 @@ void xiiView::SetWorld(xiiWorld* pWorld)
 
 void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
 {
-  if (m_Data.m_pSwapChain != pSwapChain)
+  if (m_pSwapChain != pSwapChain)
   {
     // Swap chain and render target setup are mutually exclusive.
-    m_Data.m_pSwapChain                       = pSwapChain;
-    m_Data.m_SwapChainRenderTargets.m_pRTs[0] = m_Data.m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-    m_Data.m_RenderTargets                    = xiiRenderTargets();
+    m_pSwapChain    = pSwapChain;
+    m_RenderTargets = RenderTargets();
+
     if (m_pRenderPipeline)
     {
       xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
@@ -78,34 +78,46 @@ void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
   }
 }
 
-void xiiView::SetRenderTargets(const xiiRenderTargets& renderTargets)
+void xiiView::SetRenderTargets(const RenderTargets& targets)
 {
-  if (m_Data.m_RenderTargets != renderTargets)
+  if (m_RenderTargets == targets)
+    return;
+
+  // Swap chain and render target setup are mutually exclusive.
+  m_pSwapChain    = nullptr;
+  m_RenderTargets = targets;
+
+  if (m_pRenderPipeline)
   {
-    // Swap chain and render target setup are mutually exclusive.
-    m_Data.m_pSwapChain             = xiiSharedPtr<xiiGALSwapChain>();
-    m_Data.m_SwapChainRenderTargets = xiiRenderTargets();
-    m_Data.m_RenderTargets          = renderTargets;
-    if (m_pRenderPipeline)
-    {
-      xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
-    }
+    xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
   }
 }
 
-const xiiRenderTargets& xiiView::GetActiveRenderTargets() const
+xiiSharedPtr<xiiGALTextureView> xiiView::GetActiveRenderTargetTexture(xiiUInt32 uiIndex) const
 {
-  if (m_Data.m_pSwapChain)
+  if (m_pSwapChain)
   {
-    xiiSharedPtr<xiiGALTextureView> pBackbufferRT = m_Data.m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-
-    if (pBackbufferRT != m_Data.m_SwapChainRenderTargets.m_pRTs[0])
+    if (uiIndex == 0U)
     {
-      m_Data.m_SwapChainRenderTargets.m_pRTs[0] = pBackbufferRT;
+      return m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     }
-    return m_Data.m_SwapChainRenderTargets;
+    return xiiSharedPtr<xiiGALTextureView>();
   }
-  return m_Data.m_RenderTargets;
+
+  if (m_RenderTargets.m_pRTs[uiIndex])
+  {
+    return m_RenderTargets.m_pRTs[uiIndex];
+  }
+  return xiiSharedPtr<xiiGALTextureView>();
+}
+
+xiiSharedPtr<xiiGALTextureView> xiiView::GetActiveDepthStencilTexture() const
+{
+  if (m_pSwapChain)
+  {
+    return xiiSharedPtr<xiiGALTextureView>();
+  }
+  return m_RenderTargets.m_pDSTarget;
 }
 
 void xiiView::SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline)

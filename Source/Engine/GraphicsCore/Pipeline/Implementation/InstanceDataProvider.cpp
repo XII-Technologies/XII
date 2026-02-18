@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 

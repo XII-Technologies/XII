@@ -181,7 +181,7 @@ private:
   xiiUInt16                    m_uiThumbnailWidth             = 0;
   xiiUInt16                    m_uiThumbnailHeight            = 0;
   xiiEngineProcessViewContext* m_pThumbnailViewContext        = nullptr;
-  xiiRenderTargets             m_ThumbnailRenderTargets;
+  xiiView::RenderTargets       m_ThumbnailRenderTargets;
   xiiSharedPtr<xiiGALTexture>  m_pThumbnailColorRT;
   xiiSharedPtr<xiiGALTexture>  m_pThumbnailColorRTStaging;
   xiiSharedPtr<xiiGALTexture>  m_pThumbnailDepthRT;

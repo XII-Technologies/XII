@@ -283,7 +283,7 @@ struct xiiShadowPool::Data
 
     pView->SetCameraUsageHint(xiiCameraUsageHint::Shadow);
 
-    xiiRenderTargets renderTargets;
+    xiiView::RenderTargets renderTargets;
     renderTargets.m_pDSTarget = m_pShadowAtlasTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil);
     pView->SetRenderTargets(renderTargets);
 

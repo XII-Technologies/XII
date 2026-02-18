@@ -11,7 +11,6 @@
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
 class xiiFrustum;
 class xiiWorld;
@@ -22,6 +21,15 @@ class xiiRenderPipeline;
 class XII_GRAPHICSCORE_DLL xiiView : public xiiRenderPipelineNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiRenderPipelineNode);
+
+public:
+  struct RenderTargets
+  {
+    bool operator==(const RenderTargets& other) const;
+
+    xiiSharedPtr<xiiGALTextureView> m_pRTs[8];
+    xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
+  };
 
 private:
   /// \brief Use xiiRenderLoop::CreateView to create a view.
@@ -44,13 +52,14 @@ public:
   void             SetSwapChain(xiiGALSwapChain* pSwapChain);
   xiiGALSwapChain* GetSwapChain() const;
 
-  /// \brief Sets the off-screen render targets. Use SetSwapChain if rendering to a window.
-  /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the swap chain.
-  void                    SetRenderTargets(const xiiRenderTargets& renderTargets);
-  const xiiRenderTargets& GetRenderTargets() const;
+  void                 SetRenderTargets(const RenderTargets& targets);
+  const RenderTargets& GetRenderTargets() const;
 
-  /// \brief Returns the render targets that were either set via the swapchain or via the manually set render targets.
-  const xiiRenderTargets& GetActiveRenderTargets() const;
+  /// Returns the active render target texture for the given colour index (or nullptr).
+  xiiSharedPtr<xiiGALTextureView> GetActiveRenderTargetTexture(xiiUInt32 uiIndex) const;
+
+  /// Returns the active depth-stencil texture (or nullptr).
+  xiiSharedPtr<xiiGALTextureView> GetActiveDepthStencilTexture() const;
 
   void                            SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline);
   xiiRenderPipelineResourceHandle GetRenderPipelineResource() const;
@@ -170,6 +179,8 @@ private:
   const xiiCamera*                m_pCullingCamera = nullptr;
   const xiiCamera*                m_pLodCamera     = nullptr;
 
+  RenderTargets    m_RenderTargets;
+  xiiGALSwapChain* m_pSwapChain = nullptr;
 
 private:
   xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget0;

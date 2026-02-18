@@ -4,7 +4,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/Renderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off

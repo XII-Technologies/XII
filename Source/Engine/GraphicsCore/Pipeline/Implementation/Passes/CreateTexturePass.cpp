@@ -76,10 +76,9 @@ xiiResult xiiCreateColourAttachmentPass::Deserialize(xiiStreamReader& inout_stre
 xiiResult xiiCreateColourAttachmentPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
   const xiiRectFloat&        viewport        = view.GetViewport();
-  const xiiRenderTargets&    renderTargets   = view.GetActiveRenderTargets();
   xiiGALResourceFormat::Enum preferredFormat = xiiGALResourceFormat::Unknown;
 
-  if (const xiiGALTextureView* pTextureView = renderTargets.m_pRTs[0].Borrow())
+  if (xiiSharedPtr<xiiGALTextureView> pTextureView = view.GetActiveRenderTargetTexture(0))
   {
     const xiiGALTextureViewCreationDescription& viewDescription = pTextureView->GetDescription();
     preferredFormat                                             = viewDescription.m_Format;
@@ -201,7 +200,6 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
     }
   }
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
   xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
@@ -217,7 +215,7 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -408,7 +406,6 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
     }
   }
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
   xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
@@ -425,5 +422,5 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
 }

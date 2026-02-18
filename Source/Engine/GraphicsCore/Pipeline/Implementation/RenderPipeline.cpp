@@ -19,7 +19,6 @@
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
@@ -1723,15 +1722,15 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel1, 0.0f, xiiColor::MediumPurple);
 
   xiiTexture2DResourceDescriptor d;
-  d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
-  d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
-  d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
-  d.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
+  d.m_TextureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+  d.m_TextureDescription.m_Size.width  = rasterizer.GetResolutionX();
+  d.m_TextureDescription.m_Size.height = rasterizer.GetResolutionY();
+  d.m_TextureDescription.m_Format      = xiiGALResourceFormat::RGBA8SNormalized;
 
   xiiGALTextureSubResourceData content[1];
   content[0].m_pData         = fb.GetByteArrayPtr();
-  content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
-  content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
+  content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_TextureDescription.m_Size.width;
+  content[0].m_uiDepthStride = content[0].m_uiStride * d.m_TextureDescription.m_Size.height;
   d.m_InitialContent         = content;
 
   static xiiAtomicInteger32 name = 0;

@@ -66,7 +66,7 @@ void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderView
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,5 +132,5 @@ void xiiCopyDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewC
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
 }

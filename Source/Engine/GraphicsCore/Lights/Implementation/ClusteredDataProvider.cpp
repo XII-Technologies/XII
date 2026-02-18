@@ -9,8 +9,9 @@
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
 {
@@ -192,54 +193,63 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
     m_Data.m_uiSkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
     m_Data.m_CameraUsageHint      = pData->m_cameraUsageHint;
 
-    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("xiiClusteredDataProvider::UpdateData");
+    xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+    xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+    XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
+    pCommandList->Begin();
     {
-      // Update buffer
-      if (!pData->m_ClusterItemList.IsEmpty())
       {
-        if (!pData->m_LightData.IsEmpty())
+        xiiGALScopedDebugGroup scope(pCommandList, "xiiClusteredDataProvider::UpdateData");
+
+        if (!pData->m_ClusterItemList.IsEmpty())
         {
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList(), m_Data.m_pLightDataBuffer, 0, pData->m_LightData.ToByteArray()).AssertSuccess();
+          if (!pData->m_LightData.IsEmpty())
+          {
+            xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pLightDataBuffer, 0, pData->m_LightData.ToByteArray()).AssertSuccess();
+          }
+
+          if (!pData->m_DecalData.IsEmpty())
+          {
+            xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pDecalDataBuffer, 0, pData->m_DecalData.ToByteArray()).AssertSuccess();
+          }
+
+          if (!pData->m_ReflectionProbeData.IsEmpty())
+          {
+            xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray()).AssertSuccess();
+          }
+
+          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray()).AssertSuccess();
         }
 
-        if (!pData->m_DecalData.IsEmpty())
-        {
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList(), m_Data.m_pDecalDataBuffer, 0, pData->m_DecalData.ToByteArray()).AssertSuccess();
-        }
-
-        if (!pData->m_ReflectionProbeData.IsEmpty())
-        {
-          xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList(), m_Data.m_pReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray()).AssertSuccess();
-        }
-
-        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList(), m_Data.m_pClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray()).AssertSuccess();
+        xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_Data.m_pClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray()).AssertSuccess();
       }
+      {
+        xiiGALScopedDebugGroup scope(pCommandList, "xiiClusteredDataProvider::UpdateConstants");
 
-      xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList(), m_Data.m_pClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray()).AssertSuccess();
+        const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
+
+        xiiGALMapHelper<xiiClusteredDataConstants> pConstants(pCommandList, m_Data.m_pClusterDataConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+        pConstants->DepthSliceScale = s_fDepthSliceScale;
+        pConstants->DepthSliceBias  = s_fDepthSliceBias;
+        pConstants->InvTileSize     = xiiVec2(NUM_CLUSTERS_X / viewport.width, NUM_CLUSTERS_Y / viewport.height);
+        pConstants->NumLights       = pData->m_LightData.GetCount();
+        pConstants->NumDecals       = pData->m_DecalData.GetCount();
+
+        pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
+
+        pConstants->FogHeight             = pData->m_fFogHeight;
+        pConstants->FogHeightFalloff      = pData->m_fFogHeightFalloff;
+        pConstants->FogDensityAtCameraPos = pData->m_fFogDensityAtCameraPos;
+        pConstants->FogDensity            = pData->m_fFogDensity;
+        pConstants->FogColor              = pData->m_FogColor;
+        pConstants->FogInvSkyDistance     = pData->m_fFogInvSkyDistance;
+      }
     }
+    pCommandList->End();
 
-    // Update Constants
-    {
-      const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
-
-      xiiGALMapHelper<xiiClusteredDataConstants> pConstants(pCommandListScope.GetCommandList(), m_Data.m_pClusterDataConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-
-      pConstants->DepthSliceScale = s_fDepthSliceScale;
-      pConstants->DepthSliceBias  = s_fDepthSliceBias;
-      pConstants->InvTileSize     = xiiVec2(NUM_CLUSTERS_X / viewport.width, NUM_CLUSTERS_Y / viewport.height);
-      pConstants->NumLights       = pData->m_LightData.GetCount();
-      pConstants->NumDecals       = pData->m_DecalData.GetCount();
-
-      pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
-
-      pConstants->FogHeight             = pData->m_fFogHeight;
-      pConstants->FogHeightFalloff      = pData->m_fFogHeightFalloff;
-      pConstants->FogDensityAtCameraPos = pData->m_fFogDensityAtCameraPos;
-      pConstants->FogDensity            = pData->m_fFogDensity;
-      pConstants->FogColor              = pData->m_FogColor;
-      pConstants->FogInvSkyDistance     = pData->m_fFogInvSkyDistance;
-    }
+    pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
   }
 
   return &m_Data;

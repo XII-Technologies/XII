@@ -66,5 +66,5 @@ void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, c
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(pCommandList);
+  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
 }

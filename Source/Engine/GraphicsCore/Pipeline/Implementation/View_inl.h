@@ -1,4 +1,17 @@
 
+XII_ALWAYS_INLINE bool xiiView::RenderTargets::operator==(const RenderTargets& other) const
+{
+  if (m_pDSTarget != other.m_pDSTarget)
+    return false;
+
+  for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_ARRAY_SIZE(m_pRTs); ++uiRTIndex)
+  {
+    if (m_pRTs[uiRTIndex] != other.m_pRTs[uiRTIndex])
+      return false;
+  }
+  return true;
+}
+
 XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
 {
   return xiiViewHandle(m_InternalId);
@@ -21,12 +34,12 @@ XII_ALWAYS_INLINE const xiiWorld* xiiView::GetWorld() const
 
 XII_ALWAYS_INLINE xiiGALSwapChain* xiiView::GetSwapChain() const
 {
-  return m_Data.m_pSwapChain;
+  return m_pSwapChain;
 }
 
-XII_ALWAYS_INLINE const xiiRenderTargets& xiiView::GetRenderTargets() const
+XII_ALWAYS_INLINE const xiiView::RenderTargets& xiiView::GetRenderTargets() const
 {
-  return m_Data.m_RenderTargets;
+  return m_RenderTargets;
 }
 
 XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)
