@@ -17,11 +17,13 @@
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
 #include <GraphicsCore/Pipeline/Passes/TargetPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -1371,6 +1373,9 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     XII_ASSERT_DEV(uiCurrentLastUsageIdx == m_ResourceUsageIdxSortedByLastUsage.GetCount(), "Rendering all passes should have moved us through all texture usage blocks!");
   }
 
+  // Resolve collected submissions and perform batched, deadlock-safe submits before broadcasting completion.
+  ResolveAndSubmitAll();
+
   renderEvent.m_Type = xiiRenderWorldRenderEvent::Type::AfterPipelineExecution;
   {
     XII_PROFILE_SCOPE("AfterPipelineExecution");
@@ -1762,7 +1767,7 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
     for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
     {
       m_ResourceLastPrimaryQueue[i] = 0xFFu;
-      m_ResourceLastFenceValue[i] = 0ULL;
+      m_ResourceLastFenceValue[i]   = 0ULL;
     }
   }
 
@@ -1770,15 +1775,15 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
   pCommandList->Begin();
 
   // Determine primary queue for this pass (0=Graphics,1=Compute,2=Transfer)
-  const xiiBitflags<xiiGALCommandQueueFlags> queueFlags = pPass->GetPassQueueFlags();
-  auto GetPrimaryQueueIndex = [](xiiBitflags<xiiGALCommandQueueFlags> f) -> xiiUInt8 {
+  const xiiBitflags<xiiGALCommandQueueFlags> queueFlags           = pPass->GetPassQueueFlags();
+  auto                                       GetPrimaryQueueIndex = [](xiiBitflags<xiiGALCommandQueueFlags> f) -> xiiUInt8 {
     if (f.IsSet(xiiGALCommandQueueFlags::Graphics))
-      return 0u;
+      return 0U;
     if (f.IsSet(xiiGALCommandQueueFlags::Compute))
-      return 1u;
+      return 1U;
     if (f.IsSet(xiiGALCommandQueueFlags::Transfer))
-      return 2u;
-    return 0u;
+      return 2U;
+    return 0U;
   };
 
   xiiUInt8 uiPrimary = GetPrimaryQueueIndex(queueFlags);
@@ -1787,7 +1792,7 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
   if (!m_QueueFences[uiPrimary])
   {
     xiiGALFenceCreationDescription fenceDesc;
-    fenceDesc.m_Type = xiiGALFenceType::General;
+    fenceDesc.m_Type         = xiiGALFenceType::General;
     m_QueueFences[uiPrimary] = pDevice->CreateFence(fenceDesc);
     if (m_QueueFences[uiPrimary])
     {
@@ -1796,9 +1801,10 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
     }
   }
 
-  // Collect resources used by this pass (inputs + outputs) and add waits for their last-signaled fence if cross-queue.
-  xiiHybridArray<xiiUInt32, 8> waitFencesIndices;
-  auto it = m_Connections.Find(pPass);
+  // Collect resources used by this pass (inputs + outputs).
+  // Submission waits/signals are resolved later by the frame submission scheduler in ResolveAndSubmitAll().
+  xiiHybridArray<xiiUInt32, 8> resourceIndices;
+  auto                         it = m_Connections.Find(pPass);
   if (it.IsValid())
   {
     ConnectionData& data = it.Value();
@@ -1806,46 +1812,30 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
     auto CheckConnection = [&](xiiRenderPipelinePassConnection* pConnection) {
       if (pConnection == nullptr)
         return;
+
       if (!m_ConnectionToResourceIndex.Contains(pConnection))
         return;
-      xiiUInt32 uiResIdx = m_ConnectionToResourceIndex[pConnection];
-      xiiUInt8 lastPrimary = m_ResourceLastPrimaryQueue[uiResIdx];
-      if (lastPrimary != 0xFFu && lastPrimary != uiPrimary)
+
+      xiiUInt32 uiResourceIndex = m_ConnectionToResourceIndex[pConnection];
+      if (!resourceIndices.Contains(uiResourceIndex))
       {
-        // enqueue a device wait for the fence value produced by last writer
-        if (!waitFencesIndices.Contains(uiResIdx))
-          waitFencesIndices.PushBack(uiResIdx);
+        resourceIndices.PushBack(uiResourceIndex);
       }
     };
 
-    for (xiiRenderPipelinePassConnection* pC : data.m_Inputs)
-      CheckConnection(pC);
-    for (xiiRenderPipelinePassConnection* pC : data.m_Outputs)
-      CheckConnection(pC);
+    for (xiiRenderPipelinePassConnection* pPassConnection : data.m_Inputs)
+    {
+      CheckConnection(pPassConnection);
+    }
+    for (xiiRenderPipelinePassConnection* pPassConnection : data.m_Outputs)
+    {
+      CheckConnection(pPassConnection);
+    }
   }
 
-  for (xiiUInt32 uiIdx : waitFencesIndices)
-  {
-    xiiUInt8 lastPrimary = m_ResourceLastPrimaryQueue[uiIdx];
-    if (lastPrimary == 0xFFu)
-      continue;
-    xiiSharedPtr<xiiGALFence> pWaitFence = m_QueueFences[lastPrimary];
-    if (!pWaitFence)
-      continue;
-    const xiiUInt64 uiWaitValue = m_ResourceLastFenceValue[uiIdx];
-    if (uiWaitValue == 0ULL)
-      continue;
-    pCommandList->DeviceWaitForFence(pWaitFence, uiWaitValue);
-  }
-
-  // Enqueue a signal for this command list on its primary queue fence using the next fence value.
-  xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlags);
-  if (pQueue && m_QueueFences[uiPrimary])
-  {
-    const xiiUInt64 uiSignalValue = pQueue->GetNextFenceValue();
-    pCommandList->EnqueueSignal(m_QueueFences[uiPrimary], uiSignalValue);
-  }
-
+  // NOTE: we intentionally do NOT insert DeviceWaitForFence or EnqueueSignal into the command list here.
+  // Submissions are collected and resolved centrally to avoid GPU-level cycles. The command list is returned
+  // to the pass for recording as usual.
   return pCommandList;
 }
 
@@ -1854,46 +1844,238 @@ void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase
   if (!pCommandList)
     return;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-  XII_ASSERT_DEV(pDevice != nullptr, "No GAL device available.");
+  // Create a submission node for later scheduling.
+  SubmissionNode node;
+  node.m_pCommandList = std::move(pCommandList);
 
   auto queueFlags = pPass->GetPassQueueFlags();
-  xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlags);
-  XII_ASSERT_DEV(pQueue != nullptr, "Requested command queue is not available on the device.");
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+  {
+    node.m_uiQueueIndex = 0U;
+  }
+  else if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
+  {
+    node.m_uiQueueIndex = 1U;
+  }
+  else if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
+  {
+    node.m_uiQueueIndex = 2U;
+  }
 
-  // Submit and obtain the fence value signaled by this queue.
-  const xiiUInt64 uiFenceValue = pQueue->Submit(std::move(pCommandList));
+  // Reserve a signal value so other submissions in this frame can depend on it.
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice)
+  {
+    xiiBitflags<xiiGALCommandQueueFlags> queueFlag = xiiGALCommandQueueFlags::Graphics;
+    if (node.m_uiQueueIndex == 1)
+    {
+      queueFlag = xiiGALCommandQueueFlags::Compute;
+    }
+    else if (node.m_uiQueueIndex == 2)
+    {
+      queueFlag = xiiGALCommandQueueFlags::Transfer;
+    }
 
-  // Update per-resource last-usage info for resources used by this pass.
+    xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlag);
+    if (pQueue)
+    {
+      node.m_uiSignalValue = pQueue->GetNextFenceValue();
+    }
+  }
+
   auto it = m_Connections.Find(pPass);
   if (it.IsValid())
   {
     ConnectionData& data = it.Value();
 
-    auto UpdateConnection = [&](xiiRenderPipelinePassConnection* pConnection) {
+    auto Collect = [&](xiiRenderPipelinePassConnection* pConnection, xiiDynamicArray<xiiUInt32>& out_Data) {
       if (pConnection == nullptr)
         return;
+
       if (!m_ConnectionToResourceIndex.Contains(pConnection))
         return;
-      xiiUInt32 uiResIdx = m_ConnectionToResourceIndex[pConnection];
-      // Determine primary index for this pass
-      xiiUInt8 uiPrimary = 0u;
-      if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
-        uiPrimary = 0u;
-      else if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
-        uiPrimary = 1u;
-      else if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
-        uiPrimary = 2u;
 
-      m_ResourceLastPrimaryQueue[uiResIdx] = uiPrimary;
-      m_ResourceLastFenceValue[uiResIdx] = uiFenceValue;
+      xiiUInt32 uiResIdx = m_ConnectionToResourceIndex[pConnection];
+      if (!out_Data.Contains(uiResIdx))
+      {
+        out_Data.PushBack(uiResIdx);
+      }
     };
 
-    for (xiiRenderPipelinePassConnection* pC : data.m_Inputs)
-      UpdateConnection(pC);
-    for (xiiRenderPipelinePassConnection* pC : data.m_Outputs)
-      UpdateConnection(pC);
+    for (xiiRenderPipelinePassConnection* pPassConnection : data.m_Inputs)
+    {
+      Collect(pPassConnection, node.m_ResourcesRead);
+    }
+    for (xiiRenderPipelinePassConnection* pPassConnection : data.m_Outputs)
+    {
+      Collect(pPassConnection, node.m_ResourcesWritten);
+    }
   }
+
+  m_FrameSubmissionNodes.PushBack(std::move(node));
+}
+
+void xiiRenderPipeline::ResolveAndSubmitAll()
+{
+  if (m_FrameSubmissionNodes.IsEmpty())
+    return;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "No GAL device available.");
+
+  const xiiUInt32 uiNodeCount = (xiiUInt32)m_FrameSubmissionNodes.GetCount();
+
+  // Build map of last in-frame producers per resource.
+  xiiHashTable<xiiUInt32, xiiUInt32> lastProducerInFrame;
+  lastProducerInFrame.Reserve(uiNodeCount * 2);
+  for (xiiUInt32 i = 0; i < uiNodeCount; ++i)
+  {
+    for (xiiUInt32 r : m_FrameSubmissionNodes[i].m_ResourcesWritten)
+    {
+      lastProducerInFrame[r] = i;
+    }
+  }
+
+  xiiDynamicArray<bool> submitted;
+  submitted.SetCount(uiNodeCount);
+  for (xiiUInt32 i = 0; i < uiNodeCount; ++i)
+  {
+    submitted[i] = false;
+  }
+
+  xiiUInt32 uiSubmittedCount = 0;
+
+  while (uiSubmittedCount < uiNodeCount)
+  {
+    bool bProgress = false;
+
+    for (xiiUInt32 i = 0; i < uiNodeCount; ++i)
+    {
+      if (submitted[i])
+        continue;
+
+      // Check if all in-frame producers for this node are already submitted.
+      bool hasUnsubmittedProducer = false;
+      for (xiiUInt32 uiResource : m_FrameSubmissionNodes[i].m_ResourcesRead)
+      {
+        auto it = lastProducerInFrame.Find(uiResource);
+        if (it.IsValid())
+        {
+          xiiUInt32 prodIdx = it.Value();
+          if (prodIdx != i && !submitted[prodIdx])
+          {
+            hasUnsubmittedProducer = true;
+            break;
+          }
+        }
+      }
+
+      if (hasUnsubmittedProducer)
+        continue;
+
+      // All in-frame producers submitted -> perform external waits and submit.
+      SubmissionNode& node = m_FrameSubmissionNodes[i];
+
+      // For each read resource, if the last writer is on another queue, host-wait its fence value.
+      for (xiiUInt32 uiResource : node.m_ResourcesRead)
+      {
+        xiiUInt8 uiLastPrimary = m_ResourceLastPrimaryQueue[uiResource];
+
+        if (uiLastPrimary == 0xFFU || uiLastPrimary == node.m_uiQueueIndex)
+          continue;
+
+        xiiSharedPtr<xiiGALFence> pFence = m_QueueFences[uiLastPrimary];
+        if (!pFence)
+          continue;
+
+        const xiiUInt64 uiRequiredValue = m_ResourceLastFenceValue[uiResource];
+        if (uiRequiredValue == 0ULL)
+          continue;
+
+        pFence->Wait(uiRequiredValue);
+      }
+
+      xiiBitflags<xiiGALCommandQueueFlags> queueFlag = xiiGALCommandQueueFlags::Graphics;
+      if (node.m_uiQueueIndex == 1)
+      {
+        queueFlag = xiiGALCommandQueueFlags::Compute;
+      }
+      else if (node.m_uiQueueIndex == 2)
+      {
+        queueFlag = xiiGALCommandQueueFlags::Transfer;
+      }
+
+      xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlag);
+      XII_ASSERT_DEV(pQueue != nullptr, "Requested command queue is not available on the device.");
+
+      const xiiUInt64 uiFenceValue = pQueue->Submit(std::move(node.m_pCommandList));
+
+      for (xiiUInt32 uiResource : node.m_ResourcesWritten)
+      {
+        m_ResourceLastPrimaryQueue[uiResource] = node.m_uiQueueIndex;
+        m_ResourceLastFenceValue[uiResource]   = uiFenceValue;
+      }
+
+      submitted[i] = true;
+      ++uiSubmittedCount;
+      bProgress = true;
+    }
+
+    if (!bProgress)
+    {
+      // Cycle detected. Break by submitting the first unsubmitted node after performing external waits.
+      for (xiiUInt32 i = 0; i < uiNodeCount; ++i)
+      {
+        if (submitted[i])
+          continue;
+
+        SubmissionNode& node = m_FrameSubmissionNodes[i];
+        for (xiiUInt32 uiResource : node.m_ResourcesRead)
+        {
+          xiiUInt8 lastPrimary = m_ResourceLastPrimaryQueue[uiResource];
+          if (lastPrimary == 0xFFU || lastPrimary == node.m_uiQueueIndex)
+            continue;
+
+          xiiSharedPtr<xiiGALFence> pFence = m_QueueFences[lastPrimary];
+          if (!pFence)
+            continue;
+
+          const xiiUInt64 uiRequiredValue = m_ResourceLastFenceValue[uiResource];
+          if (uiRequiredValue == 0ULL)
+            continue;
+
+          pFence->Wait(uiRequiredValue);
+        }
+
+        xiiBitflags<xiiGALCommandQueueFlags> queueFlag = xiiGALCommandQueueFlags::Graphics;
+        if (node.m_uiQueueIndex == 1)
+        {
+          queueFlag = xiiGALCommandQueueFlags::Compute;
+        }
+        else if (node.m_uiQueueIndex == 2)
+        {
+          queueFlag = xiiGALCommandQueueFlags::Transfer;
+        }
+
+        xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlag);
+        XII_ASSERT_DEV(pQueue != nullptr, "Requested command queue is not available on the device.");
+
+        const xiiUInt64 uiFenceValue = pQueue->Submit(std::move(node.m_pCommandList));
+
+        for (xiiUInt32 uiResource : node.m_ResourcesWritten)
+        {
+          m_ResourceLastPrimaryQueue[uiResource] = node.m_uiQueueIndex;
+          m_ResourceLastFenceValue[uiResource]   = uiFenceValue;
+        }
+
+        submitted[i] = true;
+        ++uiSubmittedCount;
+        break;
+      }
+    }
+  }
+
+  m_FrameSubmissionNodes.Clear();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);

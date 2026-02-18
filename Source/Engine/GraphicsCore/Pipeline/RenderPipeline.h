@@ -153,9 +153,25 @@ private: // Member data
 
   // Processors
   xiiDynamicArray<RenderDataProcessor> m_RenderDataProcessors;
- 
-    // Cross-queue synchronization helpers
-    xiiDynamicArray<xiiUInt8>         m_ResourceLastPrimaryQueue; ///< Per-resource: last primary queue index (0=Graphics,1=Compute,2=Transfer), 0xFF if none.
-    xiiDynamicArray<xiiUInt64>       m_ResourceLastFenceValue;   ///< Per-resource: last signaled fence value.
-    xiiSharedPtr<xiiGALFence>        m_QueueFences[3];           ///< Per-primary-queue fence object used for timeline synchronization.
+
+  // Cross-queue synchronization helpers.
+  xiiDynamicArray<xiiUInt8>  m_ResourceLastPrimaryQueue; ///< Per-resource: last primary queue index (0=Graphics, 1=Compute, 2=Transfer), 0xFF if none.
+  xiiDynamicArray<xiiUInt64> m_ResourceLastFenceValue;   ///< Per-resource: last signaled fence value.
+  xiiSharedPtr<xiiGALFence>  m_QueueFences[3];           ///< Per-primary-queue fence object used for timeline synchronization.
+
+  // Submission graph for the current frame.
+  struct SubmissionNode
+  {
+    xiiSharedPtr<xiiGALCommandList> m_pCommandList;
+    xiiUInt8                        m_uiQueueIndex  = 0u; // 0=Graphics, 1=Compute, 2=Transfer.
+    xiiUInt64                       m_uiSignalValue = 0u; // Reserved signal value for this submission.
+    xiiDynamicArray<xiiUInt32>      m_ResourcesRead;      // Indices into m_ResourceUsage.
+    xiiDynamicArray<xiiUInt32>      m_ResourcesWritten;   // Indices into m_ResourceUsage.
+    bool                            m_bSubmitted = false;
+  };
+
+  xiiDynamicArray<SubmissionNode> m_FrameSubmissionNodes; ///< Collected submissions for this frame, resolved & submitted together.
+
+  // Resolve dependencies between collected submissions and perform batched, deadlock-safe submits.
+  void ResolveAndSubmitAll();
 };
