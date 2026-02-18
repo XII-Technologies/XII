@@ -47,16 +47,13 @@ xiiResult xiiCopyColourAttachmentPass::GetResourceDescriptions(const xiiView& vi
 void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(renderViewContext);
-
   auto pInput  = pInputs[m_PinInput.m_uiInputIndex];
   auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
 
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
+  xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
 
   pCommandList->Begin();
   {
@@ -66,7 +63,7 @@ void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderView
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
+  GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -120,10 +117,8 @@ void xiiCopyDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewC
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
-
   pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
@@ -132,5 +127,5 @@ void xiiCopyDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewC
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
+  GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));
 }

@@ -3,6 +3,7 @@
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/Passes/FrameConstantsPass.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Pipeline/RenderPipeline.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -101,9 +102,7 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
     pGlobalConstants->WorldTime  = (float)xiiMath::Mod(GetPipeline()->GetRenderData().GetWorldTime().GetSeconds(), fWrapAround);
   }
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
-  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
+  xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
 
   pCommandList->Begin();
   {
@@ -113,5 +112,5 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
+  GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));
 }

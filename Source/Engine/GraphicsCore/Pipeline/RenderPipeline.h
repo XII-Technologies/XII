@@ -54,6 +54,10 @@ public:
   using RenderDataProcessor = xiiDelegate<void(xiiExtractedRenderData&)>;
   xiiUInt32 AddRenderDataProcessor(RenderDataProcessor processor);
 
+  // Command list/queue helpers centralized on the pipeline so cross-queue submission and synchronization can be handled in one place.
+  xiiSharedPtr<xiiGALCommandList> CreateCommandListForPass(const xiiRenderPipelinePassBase* pPass);
+  void                            SubmitCommandListForPass(const xiiRenderPipelinePassBase* pPass, xiiSharedPtr<xiiGALCommandList> pCommandList);
+
   /// \brief Creates a DGML graph of all passes and resources. Can be used to verify that no accidental temporary resources are created due to poorly constructed pipelines or errors in code.
   void CreateDgmlGraph(xiiDGMLGraph& ref_graph);
 

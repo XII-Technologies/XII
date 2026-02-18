@@ -238,9 +238,9 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePassBase : public xiiRenderPipelineN
 public:
   /// \brief Constructor to define a named render pass with required capability flags.
   ///
-  /// \param sName           - The name identifier of the pass (used for debugging and editor integration).
-  /// \param capabilityFlags - Declares what features this pass supports (e.g., stereo-aware, subpass fusion).
-  xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags);
+  /// \param sName      - The name identifier of the pass (used for debugging and editor integration).
+  /// \param queueFlags - The GAL command queue flags this pass prefers. This informs the graph compiler about which type of queue (graphics, compute, transfer) to schedule this pass on.
+  xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags);
 
   /// \brief Virtual destructor.
   virtual ~xiiRenderPipelinePassBase();
@@ -301,6 +301,12 @@ public:
   /// \return A string view of the pass's name.
   XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; }; // [ property ]
 
+  /// \brief Returns the GAL command queue flags this pass requests.
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueFlags> GetPassQueueFlags() const { return m_QueueFlags; }
+
+  /// \brief Sets the GAL command queue flags for this pass.
+  XII_ALWAYS_INLINE void SetPassQueueFlags(xiiBitflags<xiiGALCommandQueueFlags> flags) { m_QueueFlags = flags; }
+
   /// \brief Retrieves the render pipeline pass capability flags.
   XII_ALWAYS_INLINE xiiBitflags<xiiRenderPipelinePassCapabilityFlags> GetCapabilityFlags() const { return m_CapabilityFlags; }
 
@@ -340,6 +346,7 @@ private:
   xiiBitflags<xiiRenderPipelinePassCapabilityFlags> m_CapabilityFlags;
   xiiBitflags<xiiRenderPipelinePassFlags>           m_PassFlags;
   xiiEnum<xiiRenderPipelinePassConcurrencyHint>     m_PassConcurrencyHint;
+  xiiBitflags<xiiGALCommandQueueFlags>              m_QueueFlags;
 };
 
 class XII_GRAPHICSCORE_DLL xiiGraphicsPipelinePass : public xiiRenderPipelinePassBase
@@ -349,7 +356,7 @@ class XII_GRAPHICSCORE_DLL xiiGraphicsPipelinePass : public xiiRenderPipelinePas
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGraphicsPipelinePass);
 
 public:
-  xiiGraphicsPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags);
+  xiiGraphicsPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics);
 
   virtual ~xiiGraphicsPipelinePass();
 
@@ -363,7 +370,7 @@ class XII_GRAPHICSCORE_DLL xiiComputePipelinePass : public xiiRenderPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiComputePipelinePass);
 
 public:
-  xiiComputePipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags);
+  xiiComputePipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Compute);
 
   virtual ~xiiComputePipelinePass();
 };
@@ -375,7 +382,7 @@ class XII_GRAPHICSCORE_DLL xiiCopyPipelinePass : public xiiRenderPipelinePassBas
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCopyPipelinePass);
 
 public:
-  xiiCopyPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags = xiiRenderPipelinePassCapabilityFlags::StereoAware);
+  xiiCopyPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Transfer);
 
   virtual ~xiiCopyPipelinePass();
 };
@@ -387,7 +394,7 @@ class XII_GRAPHICSCORE_DLL xiiPresentPipelinePass : public xiiRenderPipelinePass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiPresentPipelinePass);
 
 public:
-  xiiPresentPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags = xiiRenderPipelinePassCapabilityFlags::StereoAware);
+  xiiPresentPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags = xiiGALCommandQueueFlags::Graphics);
 
   virtual ~xiiPresentPipelinePass();
 };

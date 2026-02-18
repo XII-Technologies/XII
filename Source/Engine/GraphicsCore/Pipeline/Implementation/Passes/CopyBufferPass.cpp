@@ -47,15 +47,13 @@ xiiResult xiiCopyBufferPass::GetResourceDescriptions(const xiiView& view, const 
 void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   XII_IGNORE_UNUSED(renderViewContext);
-
   auto pInput  = pInputs[m_PinInput.m_uiInputIndex];
   auto pOutput = pOutputs[m_PinOutput.m_uiOutputIndex];
 
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
   pCommandList->Begin();
@@ -66,5 +64,5 @@ void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, c
   }
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
+  GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));
 }

@@ -94,8 +94,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiUtilityPipelinePass, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiRenderPipelinePassBase::xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags) :
-  m_CapabilityFlags(capabilityFlags)
+xiiRenderPipelinePassBase::xiiRenderPipelinePassBase(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags) :
+  m_QueueFlags(queueFlags)
 {
   if (!sName.IsEmpty())
   {
@@ -183,8 +183,8 @@ void xiiRenderPipelinePassBase::ReadBackProperties(xiiView* pView)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiGraphicsPipelinePass::xiiGraphicsPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags) :
-  xiiRenderPipelinePassBase(sName, capabilityFlags)
+xiiGraphicsPipelinePass::xiiGraphicsPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags /*= xiiGALCommandQueueFlags::Graphics*/) :
+  xiiRenderPipelinePassBase(sName, queueFlags)
 {
 }
 
@@ -215,8 +215,8 @@ void xiiGraphicsPipelinePass::RenderDataWithCategory(const xiiRenderViewContext&
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiComputePipelinePass::xiiComputePipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags) :
-  xiiRenderPipelinePassBase(sName, capabilityFlags)
+xiiComputePipelinePass::xiiComputePipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags /*= xiiGALCommandQueueFlags::Compute*/) :
+  xiiRenderPipelinePassBase(sName, queueFlags)
 {
 }
 
@@ -224,8 +224,8 @@ xiiComputePipelinePass::~xiiComputePipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiCopyPipelinePass::xiiCopyPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags /*= xiiRenderPipelinePassCapabilityFlags::StereoAware*/) :
-  xiiRenderPipelinePassBase(sName, capabilityFlags)
+xiiCopyPipelinePass::xiiCopyPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags /*= xiiGALCommandQueueFlags::Transfer*/) :
+  xiiRenderPipelinePassBase(sName, queueFlags)
 {
 }
 
@@ -233,8 +233,8 @@ xiiCopyPipelinePass::~xiiCopyPipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiPresentPipelinePass::xiiPresentPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags /*= xiiRenderPipelinePassCapabilityFlags::StereoAware*/) :
-  xiiRenderPipelinePassBase(sName, capabilityFlags)
+xiiPresentPipelinePass::xiiPresentPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags /*= xiiGALCommandQueueFlags::Graphics*/) :
+  xiiRenderPipelinePassBase(sName, queueFlags)
 {
 }
 
@@ -242,8 +242,8 @@ xiiPresentPipelinePass::~xiiPresentPipelinePass() = default;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-xiiUtilityPipelinePass::xiiUtilityPipelinePass(xiiStringView sName, xiiBitflags<xiiRenderPipelinePassCapabilityFlags> capabilityFlags /*= xiiRenderPipelinePassCapabilityFlags::StereoAware*/) :
-  xiiRenderPipelinePassBase(sName, capabilityFlags)
+xiiUtilityPipelinePass::xiiUtilityPipelinePass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags /*= xiiGALCommandQueueFlags::Graphics*/) :
+  xiiRenderPipelinePassBase(sName, queueFlags)
 {
 }
 

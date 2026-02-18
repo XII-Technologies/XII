@@ -1306,7 +1306,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
         }
       }
 
-      // Execute pass block.
+      // Execute pass block. Use the pass' declared GAL queue flags.
       {
         ConnectionData& connectionData = m_Connections[pPass.Borrow()];
 
@@ -1742,6 +1742,34 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
 
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
+}
+
+
+xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(const xiiRenderPipelinePassBase* pPass)
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "No GAL device available.");
+
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = pPass->GetPassQueueFlags()});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list for pass.");
+
+  return pCommandList;
+}
+
+void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase* pPass, xiiSharedPtr<xiiGALCommandList> pCommandList)
+{
+  if (!pCommandList)
+    return;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "No GAL device available.");
+
+  auto queueFlags = pPass->GetPassQueueFlags();
+  xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlags);
+  XII_ASSERT_DEV(pQueue != nullptr, "Requested command queue is not available on the device.");
+
+  // TODO: Insert cross-queue synchronization here when necessary (semaphores/fences/timeline) to ensure resource hazards are handled.
+  pQueue->Submit(std::move(pCommandList));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);
