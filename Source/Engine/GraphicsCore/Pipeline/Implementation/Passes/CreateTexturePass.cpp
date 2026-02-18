@@ -2,7 +2,9 @@
 
 #include <GraphicsCore/Pipeline/Passes/CreateTexturePass.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCreateColourAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCreateColourAttachmentPass>)
@@ -199,13 +201,23 @@ void xiiCreateColourAttachmentPass::Execute(const xiiRenderViewContext& renderVi
     }
   }
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  xiiGALOptimizedClearValue clearValue;
-  clearValue.m_ClearColour = m_ClearColour;
+  pCommandList->Begin();
+  {
+    xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
-  pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
-  pCommandList->EndRenderPass();
+    xiiGALOptimizedClearValue clearValue;
+    clearValue.m_ClearColour = m_ClearColour;
+
+    pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
+    pCommandList->EndRenderPass();
+  }
+  pCommandList->End();
+
+  pDevice->GetCommandQueue()->Submit(pCommandList);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -396,12 +408,22 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
     }
   }
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  xiiGALOptimizedClearValue clearValue;
-  clearValue.m_DepthStencil.m_fDepth    = m_fDepthClearValue;
-  clearValue.m_DepthStencil.m_uiStencil = m_uiStencilClearValue;
+  pCommandList->Begin();
+  {
+    xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
-  pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
-  pCommandList->EndRenderPass();
+    xiiGALOptimizedClearValue clearValue;
+    clearValue.m_DepthStencil.m_fDepth    = m_fDepthClearValue;
+    clearValue.m_DepthStencil.m_uiStencil = m_uiStencilClearValue;
+
+    pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
+    pCommandList->EndRenderPass();
+  }
+  pCommandList->End();
+
+  pDevice->GetCommandQueue()->Submit(pCommandList);
 }

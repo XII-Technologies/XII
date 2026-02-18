@@ -169,14 +169,14 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalAtlasResource, xiiDecalAtlasResourceDe
 void xiiDecalAtlasResource::CreateLayerTexture(const xiiImage& img, bool bSRGB, xiiTexture2DResourceHandle& out_hTexture)
 {
   xiiTexture2DResourceDescriptor td;
-  td.m_SamplerDesc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-  td.m_SamplerDesc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-  td.m_SamplerDesc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+  td.m_SamplerDescription.m_AddressU = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+  td.m_SamplerDescription.m_AddressV = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+  td.m_SamplerDescription.m_AddressW = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
 
   xiiUInt32                                        uiMemory;
   xiiHybridArray<xiiGALTextureSubResourceData, 32> initData;
   xiiTexture2DResource::FillOutDescriptor(td, &img, bSRGB, img.GetNumMipLevels(), uiMemory, initData);
-  xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::HighQuality, td.m_SamplerDesc);
+  xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::HighQuality, td.m_SamplerDescription);
 
   xiiStringBuilder sTexId;
   sTexId.SetFormat("{0}_Tex{1}", GetResourceID(), s_uiDecalAtlasResources);

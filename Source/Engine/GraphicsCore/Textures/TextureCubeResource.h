@@ -17,26 +17,44 @@ using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCube
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTextureCubeResource> to create textures from data in memory.
 struct xiiTextureCubeResourceDescriptor
 {
-  xiiTextureCubeResourceDescriptor() :
-    m_DescGAL(xiiGALTextureUtilities::GetDefaultTextureCubeDescription()),
-    m_SamplerDesc(xiiGALGraphicsUtilities::GetDefaultSamplerDescription()),
-    m_uiQualityLevelsDiscardable(0),
-    m_uiQualityLevelsLoadable(0)
-  {
-  }
-
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_TextureDescription;
-  xiiGALSamplerCreationDescription m_SamplerDescription;
+  xiiGALTextureCreationDescription m_TextureDescription = {
+    .m_Type               = xiiGALResourceDimension::TextureCube,
+    .m_Size               = xiiSizeU32(0, 0),
+    .m_uiArraySizeOrDepth = 6U,
+    .m_Format             = xiiGALResourceFormat::Unknown,
+    .m_uiMipLevels        = 1U,
+    .m_uiSampleCount      = xiiGALSampleCount::OneSample,
+    .m_BindFlags          = xiiGALBindFlags::ShaderResource,
+    .m_Usage              = xiiGALResourceUsage::Immutable,
+    .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
+    .m_MiscFlags          = xiiGALMiscTextureFlags::None,
+  };
+
+  xiiGALSamplerCreationDescription m_SamplerDescription = {
+    .m_MinFilter          = xiiGALFilterType::Linear,
+    .m_MagFilter          = xiiGALFilterType::Linear,
+    .m_MipFilter          = xiiGALFilterType::Linear,
+    .m_AddressU           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressV           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressW           = xiiGALTextureAddressMode::Wrap,
+    .m_Flags              = xiiGALSamplerFlags::None,
+    .m_bUnormalizedCoords = false,
+    .m_fMipLODBias        = 0.0f,
+    .m_uiMaxAnisotropy    = 4,
+    .m_ComparisonFunction = xiiGALComparisonFunction::Never,
+    .m_BorderColor        = xiiColor::Black,
+    .m_fMinLOD            = -1.0f,
+    .m_fMaxLOD            = 4200.0f,
+  };
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
-  xiiUInt8 m_uiQualityLevelsDiscardable;
+  xiiUInt8 m_uiQualityLevelsDiscardable = 0U;
 
   /// How many additional quality levels can be loaded (typically from file).
-  xiiUInt8 m_uiQualityLevelsLoadable;
+  xiiUInt8 m_uiQualityLevelsLoadable = 0U;
 
-  /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not
-  /// initialize data.
+  /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
   xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
 

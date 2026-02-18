@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/CopyTexturePass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyColourAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCopyColourAttachmentPass>)
@@ -52,9 +54,19 @@ void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderView
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
+  pCommandList->Begin();
+  {
+    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+
+    pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
+  }
+  pCommandList->End();
+
+  pDevice->GetCommandQueue()->Submit(pCommandList);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,7 +120,17 @@ void xiiCopyDepthAttachmentPass::Execute(const xiiRenderViewContext& renderViewC
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
+  pCommandList->Begin();
+  {
+    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+
+    pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
+  }
+  pCommandList->End();
+
+  pDevice->GetCommandQueue()->Submit(pCommandList);
 }

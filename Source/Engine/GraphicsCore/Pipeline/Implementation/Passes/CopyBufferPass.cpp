@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/Passes/CopyBufferPass.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyBufferPass, 1, xiiRTTIDefaultAllocator<xiiCopyBufferPass>)
@@ -52,7 +54,17 @@ void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, c
   if (pInput == nullptr || pOutput == nullptr)
     return;
 
-  auto pCommandList = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>(GetName());
+  xiiSharedPtr<xiiGALDevice>      pDevice      = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
+  pCommandList->Begin();
+  {
+    xiiGALScopedDebugGroup scope(pCommandList, GetName());
+
+    pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
+  }
+  pCommandList->End();
+
+  pDevice->GetCommandQueue()->Submit(pCommandList);
 }
