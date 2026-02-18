@@ -2,9 +2,9 @@
 
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeResource, 1, xiiRTTIDefaultAllocator<xiiTextureCubeResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -90,29 +90,29 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   m_Format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), texFormat.m_bSRGB);
   m_uiWidthAndHeight = pImage->GetWidth(uiHighestMipLevel);
 
-  xiiGALTextureCreationDescription texDesc;
-  texDesc.m_Format      = m_Format;
-  texDesc.m_Size.width  = m_uiWidthAndHeight;
-  texDesc.m_Size.height = m_uiWidthAndHeight;
-  texDesc.m_uiMipLevels = uiNumMipLevels;
-  texDesc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
-  texDesc.m_Usage       = xiiGALResourceUsage::Immutable;
+  xiiGALTextureCreationDescription textureDescription;
+  textureDescription.m_Format      = m_Format;
+  textureDescription.m_Size.width  = m_uiWidthAndHeight;
+  textureDescription.m_Size.height = m_uiWidthAndHeight;
+  textureDescription.m_uiMipLevels = uiNumMipLevels;
+  textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+  textureDescription.m_Usage       = xiiGALResourceUsage::Immutable;
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
   if (uiDepth > 1)
   {
-    texDesc.m_Type               = xiiGALResourceDimension::Texture3D;
-    texDesc.m_uiArraySizeOrDepth = uiDepth;
+    textureDescription.m_Type               = xiiGALResourceDimension::Texture3D;
+    textureDescription.m_uiArraySizeOrDepth = uiDepth;
   }
   else
   {
-    texDesc.m_uiArraySizeOrDepth = pImage->GetNumArrayIndices();
-    texDesc.m_Type               = (texDesc.m_uiArraySizeOrDepth > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+    textureDescription.m_uiArraySizeOrDepth = pImage->GetNumArrayIndices();
+    textureDescription.m_Type               = (textureDescription.m_uiArraySizeOrDepth > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
 
     if (pImage->GetNumFaces() == 6)
     {
-      texDesc.m_Type               = xiiGALResourceDimension::TextureCube;
-      texDesc.m_uiArraySizeOrDepth = 6;
+      textureDescription.m_Type               = xiiGALResourceDimension::TextureCube;
+      textureDescription.m_uiArraySizeOrDepth = 6;
     }
   }
 
@@ -156,13 +156,13 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   const xiiArrayPtr<xiiGALTextureSubResourceData> InitDataPtr(InitData);
 
   xiiTextureCubeResourceDescriptor td;
-  td.m_DescGAL                = texDesc;
-  td.m_SamplerDesc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeU);
-  td.m_SamplerDesc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeV);
-  td.m_SamplerDesc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeW);
-  td.m_InitialContent         = InitDataPtr;
+  td.m_TextureDescription            = textureDescription;
+  td.m_SamplerDescription.m_AddressU = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeU);
+  td.m_SamplerDescription.m_AddressV = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeV);
+  td.m_SamplerDescription.m_AddressW = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeW);
+  td.m_InitialContent                = InitDataPtr;
 
-  xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
+  xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDescription);
 
   // ignore its return value here, we build our own
   CreateResource(std::move(td));
@@ -197,21 +197,21 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  XII_ASSERT_DEV(descriptor.m_DescGAL.m_Size.width == descriptor.m_DescGAL.m_Size.height, "Cubemap width and height must be identical");
+  XII_ASSERT_DEV(descriptor.m_TextureDescription.m_Size.width == descriptor.m_TextureDescription.m_Size.height, "Cubemap width and height must be identical");
 
-  m_Format           = descriptor.m_DescGAL.m_Format;
-  m_uiWidthAndHeight = descriptor.m_DescGAL.m_Size.width;
+  m_Format           = descriptor.m_TextureDescription.m_Format;
+  m_uiWidthAndHeight = descriptor.m_TextureDescription.m_Size.width;
 
   xiiGALTextureData textureData(descriptor.m_InitialContent);
-  descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
-  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
+  descriptor.m_TextureDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+  m_pGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_TextureDescription, &textureData);
 
   XII_ASSERT_DEV(m_pGALTexture[m_uiLoadedTextures] != nullptr, "Texture Data could not be uploaded to the GPU");
 
   m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
 
   m_pSampler.Clear();
-  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
+  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
 
   XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler error");
 

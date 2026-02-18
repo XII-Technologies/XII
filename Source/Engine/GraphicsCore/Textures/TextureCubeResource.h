@@ -26,8 +26,8 @@ struct xiiTextureCubeResourceDescriptor
   }
 
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL;
-  xiiGALSamplerCreationDescription m_SamplerDesc;
+  xiiGALTextureCreationDescription m_TextureDescription;
+  xiiGALSamplerCreationDescription m_SamplerDescription;
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable;

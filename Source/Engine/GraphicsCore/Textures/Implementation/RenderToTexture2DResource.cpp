@@ -5,11 +5,11 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
-#include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderToTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiRenderToTexture2DResource>)
@@ -70,7 +70,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
   m_pGALTexture[m_uiLoadedTextures]->SetDebugName(GetResourceDescription());
 
   m_pSampler.Clear();
-  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
+  m_pSampler = pDevice->CreateSampler(descriptor.m_SamplerDescription);
 
   XII_ASSERT_DEV(m_pSampler != nullptr, "Sampler state error");
 
@@ -149,9 +149,9 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
     *Stream >> bIsFallback;
     texFormat.ReadHeader(*Stream);
 
-    td.m_SamplerDesc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeU);
-    td.m_SamplerDesc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeV);
-    td.m_SamplerDesc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeW);
+    td.m_SamplerDescription.m_AddressU = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeU);
+    td.m_SamplerDescription.m_AddressV = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeV);
+    td.m_SamplerDescription.m_AddressW = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeW);
   }
 
   const bool bIsRenderTarget = texFormat.m_iRenderTargetResolutionX != 0;
@@ -185,7 +185,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
     td.m_uiWidth  = texFormat.m_iRenderTargetResolutionX;
     td.m_uiHeight = texFormat.m_iRenderTargetResolutionY;
 
-    xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
+    xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDescription);
 
     m_uiLoadedTextures = 0;
 

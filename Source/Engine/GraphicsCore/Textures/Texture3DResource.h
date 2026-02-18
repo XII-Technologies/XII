@@ -2,14 +2,12 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <Foundation/IO/MemoryStream.h>
-
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
-
-#include <GraphicsFoundation/Resources/Sampler.h>
-
+#include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 class xiiImage;
 
@@ -17,8 +15,35 @@ class xiiImage;
 struct XII_GRAPHICSCORE_DLL xiiTexture3DResourceDescriptor
 {
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL     = xiiGALTextureUtilities::GetDefaultTexture3DDescription();
-  xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+  xiiGALTextureCreationDescription m_TextureDescription = {
+    .m_Type               = xiiGALResourceDimension::Texture3D,
+    .m_Size               = xiiSizeU32(0, 0),
+    .m_uiArraySizeOrDepth = 1U,
+    .m_Format             = xiiGALResourceFormat::Unknown,
+    .m_uiMipLevels        = 1U,
+    .m_uiSampleCount      = xiiGALSampleCount::OneSample,
+    .m_BindFlags          = xiiGALBindFlags::ShaderResource,
+    .m_Usage              = xiiGALResourceUsage::Immutable,
+    .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
+    .m_MiscFlags          = xiiGALMiscTextureFlags::None,
+  };
+
+  xiiGALSamplerCreationDescription m_SamplerDescription = {
+    .m_MinFilter          = xiiGALFilterType::Linear,
+    .m_MagFilter          = xiiGALFilterType::Linear,
+    .m_MipFilter          = xiiGALFilterType::Linear,
+    .m_AddressU           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressV           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressW           = xiiGALTextureAddressMode::Wrap,
+    .m_Flags              = xiiGALSamplerFlags::None,
+    .m_bUnormalizedCoords = false,
+    .m_fMipLODBias        = 0.0f,
+    .m_uiMaxAnisotropy    = 4,
+    .m_ComparisonFunction = xiiGALComparisonFunction::Never,
+    .m_BorderColor        = xiiColor::Black,
+    .m_fMinLOD            = -1.0f,
+    .m_fMaxLOD            = 4200.0f,
+  };
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable = 0;

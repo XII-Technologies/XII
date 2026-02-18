@@ -8,11 +8,26 @@ using xiiRenderToTexture2DResourceHandle = xiiTypedResourceHandle<class xiiRende
 
 struct XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResourceDescriptor
 {
-  xiiUInt32                                 m_uiWidth  = 0;
-  xiiUInt32                                 m_uiHeight = 0;
-  xiiEnum<xiiGALResourceFormat>             m_Format   = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-  xiiEnum<xiiGALSampleCount>                m_SampleCount;
-  xiiGALSamplerCreationDescription          m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+  xiiUInt32                        m_uiWidth  = 0;
+  xiiUInt32                        m_uiHeight = 0;
+  xiiEnum<xiiGALResourceFormat>    m_Format   = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  xiiEnum<xiiGALSampleCount>       m_SampleCount;
+  xiiGALSamplerCreationDescription m_SamplerDescription = xiiGALSamplerCreationDescription{
+    .m_MinFilter          = xiiGALFilterType::Linear,
+    .m_MagFilter          = xiiGALFilterType::Linear,
+    .m_MipFilter          = xiiGALFilterType::Linear,
+    .m_AddressU           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressV           = xiiGALTextureAddressMode::Wrap,
+    .m_AddressW           = xiiGALTextureAddressMode::Wrap,
+    .m_Flags              = xiiGALSamplerFlags::None,
+    .m_bUnormalizedCoords = false,
+    .m_fMipLODBias        = 0.0f,
+    .m_uiMaxAnisotropy    = 4,
+    .m_ComparisonFunction = xiiGALComparisonFunction::Never,
+    .m_BorderColor        = xiiColor::Black,
+    .m_fMinLOD            = -1.0f,
+    .m_fMaxLOD            = 4200.0f,
+  };
   xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
 
