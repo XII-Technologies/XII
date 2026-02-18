@@ -104,12 +104,12 @@ void xiiFrameConstantsPass::Execute(const xiiRenderViewContext& renderViewContex
 
   xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
 
-  pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
     pCommandList->UpdateBuffer(pOutput->m_Resource.m_Buffer.m_pBuffer, 0U, xiiMakeByteArrayPtr(m_pGlobalConstants.GetPtr(), 1U));
   }
+
   pCommandList->End();
 
   GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));

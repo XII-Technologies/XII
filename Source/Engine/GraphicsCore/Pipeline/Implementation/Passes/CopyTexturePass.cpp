@@ -55,12 +55,12 @@ void xiiCopyColourAttachmentPass::Execute(const xiiRenderViewContext& renderView
 
   xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
 
-  pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
     pCommandList->CopyTexture(pInput->m_Resource.m_Texture.m_pTexture, pOutput->m_Resource.m_Texture.m_pTexture);
   }
+
   pCommandList->End();
 
   GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));

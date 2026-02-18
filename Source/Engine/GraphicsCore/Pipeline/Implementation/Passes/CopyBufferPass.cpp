@@ -56,12 +56,12 @@ void xiiCopyBufferPass::Execute(const xiiRenderViewContext& renderViewContext, c
   xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
     pCommandList->CopyBuffer(pInput->m_Resource.m_Buffer.m_pBuffer, pOutput->m_Resource.m_Buffer.m_pBuffer);
   }
+
   pCommandList->End();
 
   GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));

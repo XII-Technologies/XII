@@ -153,4 +153,9 @@ private: // Member data
 
   // Processors
   xiiDynamicArray<RenderDataProcessor> m_RenderDataProcessors;
+ 
+    // Cross-queue synchronization helpers
+    xiiDynamicArray<xiiUInt8>         m_ResourceLastPrimaryQueue; ///< Per-resource: last primary queue index (0=Graphics,1=Compute,2=Transfer), 0xFF if none.
+    xiiDynamicArray<xiiUInt64>       m_ResourceLastFenceValue;   ///< Per-resource: last signaled fence value.
+    xiiSharedPtr<xiiGALFence>        m_QueueFences[3];           ///< Per-primary-queue fence object used for timeline synchronization.
 };

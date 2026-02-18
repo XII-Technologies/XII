@@ -17,6 +17,7 @@
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
 #include <GraphicsCore/Pipeline/Passes/TargetPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Rasterizer/RasterizerView.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
@@ -1753,6 +1754,98 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
   xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = pPass->GetPassQueueFlags()});
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list for pass.");
 
+  // Ensure resource-last arrays are ready.
+  if (m_ResourceLastPrimaryQueue.GetCount() != m_ResourceUsage.GetCount())
+  {
+    m_ResourceLastPrimaryQueue.SetCountUninitialized(m_ResourceUsage.GetCount());
+    m_ResourceLastFenceValue.SetCountUninitialized(m_ResourceUsage.GetCount());
+    for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
+    {
+      m_ResourceLastPrimaryQueue[i] = 0xFFu;
+      m_ResourceLastFenceValue[i] = 0ULL;
+    }
+  }
+
+  // Begin recording so we can insert device waits (must be recorded before End()).
+  pCommandList->Begin();
+
+  // Determine primary queue for this pass (0=Graphics,1=Compute,2=Transfer)
+  const xiiBitflags<xiiGALCommandQueueFlags> queueFlags = pPass->GetPassQueueFlags();
+  auto GetPrimaryQueueIndex = [](xiiBitflags<xiiGALCommandQueueFlags> f) -> xiiUInt8 {
+    if (f.IsSet(xiiGALCommandQueueFlags::Graphics))
+      return 0u;
+    if (f.IsSet(xiiGALCommandQueueFlags::Compute))
+      return 1u;
+    if (f.IsSet(xiiGALCommandQueueFlags::Transfer))
+      return 2u;
+    return 0u;
+  };
+
+  xiiUInt8 uiPrimary = GetPrimaryQueueIndex(queueFlags);
+
+  // Ensure a fence exists for the primary queue.
+  if (!m_QueueFences[uiPrimary])
+  {
+    xiiGALFenceCreationDescription fenceDesc;
+    fenceDesc.m_Type = xiiGALFenceType::General;
+    m_QueueFences[uiPrimary] = pDevice->CreateFence(fenceDesc);
+    if (m_QueueFences[uiPrimary])
+    {
+      const char* names[3] = {"RenderPipeline.QueueFence.Graphics", "RenderPipeline.QueueFence.Compute", "RenderPipeline.QueueFence.Transfer"};
+      m_QueueFences[uiPrimary]->SetDebugName(names[uiPrimary]);
+    }
+  }
+
+  // Collect resources used by this pass (inputs + outputs) and add waits for their last-signaled fence if cross-queue.
+  xiiHybridArray<xiiUInt32, 8> waitFencesIndices;
+  auto it = m_Connections.Find(pPass);
+  if (it.IsValid())
+  {
+    ConnectionData& data = it.Value();
+
+    auto CheckConnection = [&](xiiRenderPipelinePassConnection* pConnection) {
+      if (pConnection == nullptr)
+        return;
+      if (!m_ConnectionToResourceIndex.Contains(pConnection))
+        return;
+      xiiUInt32 uiResIdx = m_ConnectionToResourceIndex[pConnection];
+      xiiUInt8 lastPrimary = m_ResourceLastPrimaryQueue[uiResIdx];
+      if (lastPrimary != 0xFFu && lastPrimary != uiPrimary)
+      {
+        // enqueue a device wait for the fence value produced by last writer
+        if (!waitFencesIndices.Contains(uiResIdx))
+          waitFencesIndices.PushBack(uiResIdx);
+      }
+    };
+
+    for (xiiRenderPipelinePassConnection* pC : data.m_Inputs)
+      CheckConnection(pC);
+    for (xiiRenderPipelinePassConnection* pC : data.m_Outputs)
+      CheckConnection(pC);
+  }
+
+  for (xiiUInt32 uiIdx : waitFencesIndices)
+  {
+    xiiUInt8 lastPrimary = m_ResourceLastPrimaryQueue[uiIdx];
+    if (lastPrimary == 0xFFu)
+      continue;
+    xiiSharedPtr<xiiGALFence> pWaitFence = m_QueueFences[lastPrimary];
+    if (!pWaitFence)
+      continue;
+    const xiiUInt64 uiWaitValue = m_ResourceLastFenceValue[uiIdx];
+    if (uiWaitValue == 0ULL)
+      continue;
+    pCommandList->DeviceWaitForFence(pWaitFence, uiWaitValue);
+  }
+
+  // Enqueue a signal for this command list on its primary queue fence using the next fence value.
+  xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlags);
+  if (pQueue && m_QueueFences[uiPrimary])
+  {
+    const xiiUInt64 uiSignalValue = pQueue->GetNextFenceValue();
+    pCommandList->EnqueueSignal(m_QueueFences[uiPrimary], uiSignalValue);
+  }
+
   return pCommandList;
 }
 
@@ -1768,8 +1861,39 @@ void xiiRenderPipeline::SubmitCommandListForPass(const xiiRenderPipelinePassBase
   xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(queueFlags);
   XII_ASSERT_DEV(pQueue != nullptr, "Requested command queue is not available on the device.");
 
-  // TODO: Insert cross-queue synchronization here when necessary (semaphores/fences/timeline) to ensure resource hazards are handled.
-  pQueue->Submit(std::move(pCommandList));
+  // Submit and obtain the fence value signaled by this queue.
+  const xiiUInt64 uiFenceValue = pQueue->Submit(std::move(pCommandList));
+
+  // Update per-resource last-usage info for resources used by this pass.
+  auto it = m_Connections.Find(pPass);
+  if (it.IsValid())
+  {
+    ConnectionData& data = it.Value();
+
+    auto UpdateConnection = [&](xiiRenderPipelinePassConnection* pConnection) {
+      if (pConnection == nullptr)
+        return;
+      if (!m_ConnectionToResourceIndex.Contains(pConnection))
+        return;
+      xiiUInt32 uiResIdx = m_ConnectionToResourceIndex[pConnection];
+      // Determine primary index for this pass
+      xiiUInt8 uiPrimary = 0u;
+      if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+        uiPrimary = 0u;
+      else if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
+        uiPrimary = 1u;
+      else if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
+        uiPrimary = 2u;
+
+      m_ResourceLastPrimaryQueue[uiResIdx] = uiPrimary;
+      m_ResourceLastFenceValue[uiResIdx] = uiFenceValue;
+    };
+
+    for (xiiRenderPipelinePassConnection* pC : data.m_Inputs)
+      UpdateConnection(pC);
+    for (xiiRenderPipelinePassConnection* pC : data.m_Outputs)
+      UpdateConnection(pC);
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipeline);
