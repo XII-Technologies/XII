@@ -192,7 +192,7 @@ xiiGraphicsPipelinePass::~xiiGraphicsPipelinePass() = default;
 
 void xiiGraphicsPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category)
 {
-  xiiGALScopedDebugGroup renderGroup(renderViewContext.m_pRenderContext->GetCommandList(), xiiRenderData::GetCategoryName(category));
+  // xiiGALScopedDebugGroup renderGroup(renderViewContext.m_pRenderContext->GetCommandList(), xiiRenderData::GetCategoryName(category));
 
   xiiRenderDataBatchList batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(category);
   const xiiUInt32        uiBatchCount = batchList.GetBatchCount();

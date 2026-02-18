@@ -2,7 +2,6 @@
 
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/Meshes/SkinnedMeshRenderer.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -19,6 +18,7 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
 {
   // Don't call base class implementation here since the state will be overwritten in this method anyways.
 
+#if CORE_ENABLE
   auto pSkinnedRenderData = static_cast<const xiiSkinnedMeshRenderData*>(pRenderData);
 
   if (!pSkinnedRenderData->m_pSkinningTransforms)
@@ -30,6 +30,7 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "TRUE");
     renderViewContext.m_pRenderContext->BindBuffer("skinningTransforms", pSkinnedRenderData->m_pSkinningTransforms);
   }
+#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_SkinnedMeshRenderer);

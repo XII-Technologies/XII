@@ -3,7 +3,6 @@
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/Implementation/RenderPipelineResourceLoader.h>
 #include <GraphicsCore/Pipeline/Passes/CreateTexturePass.h>
-#include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/TargetPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
@@ -46,14 +45,6 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
     pRenderPipeline->AddPass(std::move(pPass));
   }
 
-  xiiSimpleRenderPass* pSimplePass = nullptr;
-  {
-    xiiUniquePtr<xiiSimpleRenderPass> pPass = XII_DEFAULT_NEW(xiiSimpleRenderPass, "SimplePass");
-    pSimplePass                             = pPass.Borrow();
-    pSimplePass->SetMessage("Render pipeline resource is missing. Ensure that the corresponding asset has been transformed.");
-    pRenderPipeline->AddPass(std::move(pPass));
-  }
-
   xiiTargetPass* pTargetPass = nullptr;
   {
     xiiUniquePtr<xiiTargetPass> pPass = XII_DEFAULT_NEW(xiiTargetPass);
@@ -61,8 +52,7 @@ xiiRenderPipelineResourceHandle xiiRenderPipelineResource::CreateMissingPipeline
     pRenderPipeline->AddPass(std::move(pPass));
   }
 
-  XII_VERIFY(pRenderPipeline->Connect(pColourSourcePass, "Output", pSimplePass, "Colour"), "Connect failed!");
-  XII_VERIFY(pRenderPipeline->Connect(pSimplePass, "Colour", pTargetPass, "Colour0"), "Connect failed!");
+  XII_VERIFY(pRenderPipeline->Connect(pColourSourcePass, "Output", pTargetPass, "Colour0"), "Connect failed!");
 
   xiiRenderPipelineResourceDescriptor desc;
   xiiRenderPipelineResourceLoader::CreateRenderPipelineResourceDescriptor(pRenderPipeline.Borrow(), desc);

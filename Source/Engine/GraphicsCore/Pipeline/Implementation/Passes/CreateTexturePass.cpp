@@ -406,10 +406,9 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
     }
   }
 
-  xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+  xiiSharedPtr<xiiGALCommandList> pCommandList = GetPipeline()->CreateCommandListForPass(this);
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
 
-  pCommandList->Begin();
   {
     xiiGALScopedDebugGroup scope(pCommandList, GetName());
 
@@ -420,7 +419,8 @@ void xiiCreateDepthAttachmentPass::Execute(const xiiRenderViewContext& renderVie
     pCommandList->BeginRenderPass({m_pRenderPass, pFramebuffer, xiiMakeArrayPtr(&clearValue, 1U)});
     pCommandList->EndRenderPass();
   }
+
   pCommandList->End();
 
-  pDevice->GetCommandQueue()->Submit(std::move(pCommandList));
+  GetPipeline()->SubmitCommandListForPass(this, std::move(pCommandList));
 }

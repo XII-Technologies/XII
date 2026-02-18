@@ -4,6 +4,8 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsCore/Pipeline/RenderPipeline.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyColourAttachmentPass, 1, xiiRTTIDefaultAllocator<xiiCopyColourAttachmentPass>)

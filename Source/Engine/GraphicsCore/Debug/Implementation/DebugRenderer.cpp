@@ -1529,6 +1529,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
   if (pData == nullptr)
     return;
 
+#if CORE_ENABLE
   // SolidBoxes
   {
     xiiUInt32 uiNumSolidBoxes = pData->m_SolidBoxes.GetCount();
@@ -1721,6 +1722,7 @@ void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& c
       }
     }
   }
+#endif
 }
 
 // static
@@ -1833,6 +1835,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
   // update the frame counter
   pDoubleBufferedContextData->m_uiLastRenderedFrame = xiiRenderWorld::GetFrameCounter();
 
+#if CORE_ENABLE
   // 2D Rectangles
   {
     xiiUInt32 uiNum2DVertices = pData->m_Triangle2DVertices.GetCount();
@@ -1960,6 +1963,7 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
       }
     }
   }
+#endif
 }
 
 void xiiDebugRenderer::OnEngineStartup()
