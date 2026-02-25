@@ -9,14 +9,6 @@ class XII_GRAPHICSVULKAN_DLL xiiGALBottomLevelASVulkan final : public xiiGALBott
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelASVulkan, xiiGALBottomLevelAS);
 
 public:
-  virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override final;
-
-  virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const override final;
-
-  virtual xiiUInt32 GetActualGeometryCount() const override final;
-
-  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
