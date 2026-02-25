@@ -87,7 +87,7 @@ namespace
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
 {
-  m_PushConstantStaging.SetCount(256, 0); // default staging capacity
+  m_PushConstantStaging.SetCount(256U, 0U); // Default staging capacity.
 }
 
 xiiGALCommandList::~xiiGALCommandList() = default;
@@ -295,6 +295,14 @@ void xiiGALCommandList::PushConstants(xiiUInt32 uiOffset, xiiArrayPtr<xiiUInt8> 
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "PushConstants arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr, "PushConstants: No pipeline resource signature set. A pipeline state with a valid pipeline resource signature must be set before push constants can be used.");
   XII_ASSERT_DEV(!pData.IsEmpty(), "PushConstants: pData must not be null");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  {
+    const xiiGALGraphicsDeviceAdapterDescription& graphicsAdapterProperties = m_pDevice->GetGraphicsDeviceAdapterProperties();
+
+    XII_ASSERT_DEV(uiOffset < graphicsAdapterProperties.m_DeviceLimits.m_uiMaxPushConstantsSize, "PushConstants: Offset ({}) exceeds device limit of {} bytes.", uiOffset, graphicsAdapterProperties.m_DeviceLimits.m_uiMaxPushConstantsSize);
+  }
+#endif
 
   if (m_PushConstantStaging.GetCount() < uiOffset + pData.GetCount())
   {
