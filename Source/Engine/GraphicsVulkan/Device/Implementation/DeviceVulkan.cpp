@@ -131,7 +131,7 @@ namespace
 } // namespace
 
 xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description) :
-  xiiGALDevice(pAllocator, description)
+  xiiGALDevice(pAllocator, description), m_Layers(GetAllocator()), m_Extensions(GetAllocator()), m_EnabledExtensions(GetAllocator()), m_PhysicalDevices(GetAllocator()), m_PhysicalDeviceQueueFamilyProperties(GetAllocator()), m_PhysicalDeviceSupportedExtensions(GetAllocator()), m_LogicalDeviceEnabledExtensions(GetAllocator()), m_LogicalDeviceSupportedStagesFlags(GetAllocator()), m_LogicalDeviceSupportedAccessFlags(GetAllocator())
 {
 }
 
