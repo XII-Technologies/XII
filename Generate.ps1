@@ -84,6 +84,10 @@ elseif ($Target -eq "Win64vs2022") {
   $CMAKE_ARGS += "x64"
   $CMAKE_ARGS += "-B"
   $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64"
+
+  if (-not $IsCustomWorkspaceDirectory) {
+    $WorkspaceDirectory = "vs2022x64"
+  }
 }
 else {
   throw "Unknown target '$Target'."
