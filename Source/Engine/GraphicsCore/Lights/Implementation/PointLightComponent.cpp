@@ -2,8 +2,8 @@
 
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Lights/PointLightComponent.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 // clang-format off

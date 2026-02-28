@@ -7,16 +7,16 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Lights/PointLightComponent.h>
 #include <GraphicsCore/Lights/SpotLightComponent.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightData.h>
 

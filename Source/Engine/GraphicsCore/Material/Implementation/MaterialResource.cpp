@@ -12,8 +12,8 @@
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <Texture/Image/Formats/DdsFileFormat.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <Texture/Image/Formats/DdsFileFormat.h>
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
 #  include <Foundation/IO/CompressedStreamZstd.h>

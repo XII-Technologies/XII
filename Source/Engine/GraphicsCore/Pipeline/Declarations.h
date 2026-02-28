@@ -159,8 +159,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadingQualityLevel);
 
 struct XII_GRAPHICSCORE_DLL xiiRenderViewContext
 {
-  const xiiCamera*   m_pCamera        = nullptr;
-  const xiiViewData* m_pViewData      = nullptr;
+  const xiiCamera*   m_pCamera   = nullptr;
+  const xiiViewData* m_pViewData = nullptr;
 
   const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
   const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;

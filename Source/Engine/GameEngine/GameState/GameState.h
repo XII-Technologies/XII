@@ -215,8 +215,8 @@ protected:
 
   xiiWorld* m_pMainWorld = nullptr;
 
-  xiiCamera                m_MainCamera;
-  bool                     m_bStateWantsToQuit  = false;
+  xiiCamera m_MainCamera;
+  bool      m_bStateWantsToQuit = false;
 
   bool                              m_bTransitionWhenReady = false;
   xiiUniquePtr<xiiSceneLoadUtility> m_pBackgroundSceneLoad;

@@ -2,8 +2,8 @@
 
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/Passes/FrameConstantsPass.h>
-#include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
+#include <GraphicsCore/Pipeline/View.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 

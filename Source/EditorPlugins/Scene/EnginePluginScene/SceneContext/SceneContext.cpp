@@ -16,8 +16,8 @@
 #include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Lights/DirectionalLightComponent.h>
-#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Lights/SkyLightComponent.h>
+#include <GraphicsCore/Managers/ShadowPool.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 
 // clang-format off

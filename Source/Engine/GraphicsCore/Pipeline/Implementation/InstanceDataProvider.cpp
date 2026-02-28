@@ -2,8 +2,8 @@
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <Shaders/Common/ObjectConstants.h>
 

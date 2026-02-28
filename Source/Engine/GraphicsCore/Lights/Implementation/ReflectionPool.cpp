@@ -15,9 +15,9 @@
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ReflectionPool)

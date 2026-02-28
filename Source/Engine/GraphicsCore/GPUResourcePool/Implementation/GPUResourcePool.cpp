@@ -5,8 +5,8 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 #  include <Foundation/Utilities/Stats.h>
