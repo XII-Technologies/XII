@@ -1699,7 +1699,6 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, hDebug, xiiVec2(1, -1));
 }
 
-
 xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(const xiiRenderPipelinePassBase* pPass)
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -1713,9 +1712,10 @@ xiiSharedPtr<xiiGALCommandList> xiiRenderPipeline::CreateCommandListForPass(cons
   {
     m_ResourceLastPrimaryQueue.SetCountUninitialized(m_ResourceUsage.GetCount());
     m_ResourceLastFenceValue.SetCountUninitialized(m_ResourceUsage.GetCount());
+
     for (xiiUInt32 i = 0; i < m_ResourceUsage.GetCount(); ++i)
     {
-      m_ResourceLastPrimaryQueue[i] = 0xFFu;
+      m_ResourceLastPrimaryQueue[i] = 0xFFU;
       m_ResourceLastFenceValue[i]   = 0ULL;
     }
   }
