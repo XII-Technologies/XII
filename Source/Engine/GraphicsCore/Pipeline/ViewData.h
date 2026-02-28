@@ -9,6 +9,25 @@
 /// \brief Holds view data like the viewport, view and projection matrices
 struct XII_GRAPHICSCORE_DLL xiiViewData
 {
+  struct RenderTargets
+  {
+    XII_ALWAYS_INLINE bool operator==(const RenderTargets& other) const
+    {
+      if (m_pDSTarget != other.m_pDSTarget)
+        return false;
+
+      for (xiiUInt8 uiRTIndex = 0; uiRTIndex < XII_ARRAY_SIZE(m_pRTs); ++uiRTIndex)
+      {
+        if (m_pRTs[uiRTIndex] != other.m_pRTs[uiRTIndex])
+          return false;
+      }
+      return true;
+    }
+
+    xiiSharedPtr<xiiGALTextureView> m_pRTs[8];
+    xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
+  };
+
   xiiViewData()
   {
     m_ViewPortRect   = xiiRectFloat(0.0f, 0.0f);
@@ -24,6 +43,11 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
       m_InverseViewProjectionMatrix[i].SetIdentity();
     }
   }
+
+  xiiHashedString m_sName;
+
+  RenderTargets    m_RenderTargets;
+  xiiGALSwapChain* m_pSwapChain = nullptr;
 
   xiiRectFloat                m_ViewPortRect;
   xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;

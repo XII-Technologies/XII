@@ -46,7 +46,7 @@ xiiView::~xiiView() = default;
 
 void xiiView::SetName(xiiStringView sName)
 {
-  m_sName.Assign(sName);
+  m_Data.m_sName.Assign(sName);
 
   xiiStringBuilder sb = sName;
   sb.Append(".ExtractData");
@@ -65,11 +65,11 @@ void xiiView::SetWorld(xiiWorld* pWorld)
 
 void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
 {
-  if (m_pSwapChain != pSwapChain)
+  if (m_Data.m_pSwapChain != pSwapChain)
   {
     // Swap chain and render target setup are mutually exclusive.
-    m_pSwapChain    = pSwapChain;
-    m_RenderTargets = RenderTargets();
+    m_Data.m_pSwapChain    = pSwapChain;
+    m_Data.m_RenderTargets = xiiViewData::RenderTargets();
 
     if (m_pRenderPipeline)
     {
@@ -78,14 +78,14 @@ void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
   }
 }
 
-void xiiView::SetRenderTargets(const RenderTargets& targets)
+void xiiView::SetRenderTargets(const xiiViewData::RenderTargets& targets)
 {
-  if (m_RenderTargets == targets)
+  if (m_Data.m_RenderTargets == targets)
     return;
 
   // Swap chain and render target setup are mutually exclusive.
-  m_pSwapChain    = nullptr;
-  m_RenderTargets = targets;
+  m_Data.m_pSwapChain    = nullptr;
+  m_Data.m_RenderTargets = targets;
 
   if (m_pRenderPipeline)
   {
@@ -95,29 +95,29 @@ void xiiView::SetRenderTargets(const RenderTargets& targets)
 
 xiiSharedPtr<xiiGALTextureView> xiiView::GetActiveRenderTargetTexture(xiiUInt32 uiIndex) const
 {
-  if (m_pSwapChain)
+  if (m_Data.m_pSwapChain)
   {
     if (uiIndex == 0U)
     {
-      return m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      return m_Data.m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     }
     return xiiSharedPtr<xiiGALTextureView>();
   }
 
-  if (m_RenderTargets.m_pRTs[uiIndex])
+  if (m_Data.m_RenderTargets.m_pRTs[uiIndex])
   {
-    return m_RenderTargets.m_pRTs[uiIndex];
+    return m_Data.m_RenderTargets.m_pRTs[uiIndex];
   }
   return xiiSharedPtr<xiiGALTextureView>();
 }
 
 xiiSharedPtr<xiiGALTextureView> xiiView::GetActiveDepthStencilTexture() const
 {
-  if (m_pSwapChain)
+  if (m_Data.m_pSwapChain)
   {
     return xiiSharedPtr<xiiGALTextureView>();
   }
-  return m_RenderTargets.m_pDSTarget;
+  return m_Data.m_RenderTargets.m_pDSTarget;
 }
 
 void xiiView::SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline)
@@ -174,7 +174,7 @@ void xiiView::ExtractData()
   extractionEvent.m_uiFrameCounter = xiiRenderWorld::GetFrameCounter();
   xiiRenderWorld::s_ExtractionEvent.Broadcast(extractionEvent);
 
-  m_pRenderPipeline->m_sName = m_sName;
+  m_pRenderPipeline->m_sName = m_Data.m_sName;
   m_pRenderPipeline->ExtractData(*this);
 
   extractionEvent.m_Type = xiiRenderWorldExtractionEvent::Type::AfterViewExtraction;

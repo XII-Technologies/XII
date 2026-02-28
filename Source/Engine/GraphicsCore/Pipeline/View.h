@@ -22,15 +22,6 @@ class XII_GRAPHICSCORE_DLL xiiView : public xiiRenderPipelineNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiRenderPipelineNode);
 
-public:
-  struct RenderTargets
-  {
-    bool operator==(const RenderTargets& other) const;
-
-    xiiSharedPtr<xiiGALTextureView> m_pRTs[8];
-    xiiSharedPtr<xiiGALTextureView> m_pDSTarget;
-  };
-
 private:
   /// \brief Use xiiRenderLoop::CreateView to create a view.
   xiiView();
@@ -52,8 +43,8 @@ public:
   void             SetSwapChain(xiiGALSwapChain* pSwapChain);
   xiiGALSwapChain* GetSwapChain() const;
 
-  void                 SetRenderTargets(const RenderTargets& targets);
-  const RenderTargets& GetRenderTargets() const;
+  void                              SetRenderTargets(const xiiViewData::RenderTargets& targets);
+  const xiiViewData::RenderTargets& GetRenderTargets() const;
 
   /// Returns the active render target texture for the given colour index (or nullptr).
   xiiSharedPtr<xiiGALTextureView> GetActiveRenderTargetTexture(xiiUInt32 uiIndex) const;
@@ -165,8 +156,7 @@ private:
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
 
-  xiiViewId       m_InternalId;
-  xiiHashedString m_sName;
+  xiiViewId m_InternalId;
 
   xiiSharedPtr<xiiTask> m_pExtractTask;
 
@@ -178,9 +168,6 @@ private:
   xiiCamera*                      m_pCamera        = nullptr;
   const xiiCamera*                m_pCullingCamera = nullptr;
   const xiiCamera*                m_pLodCamera     = nullptr;
-
-  RenderTargets    m_RenderTargets;
-  xiiGALSwapChain* m_pSwapChain = nullptr;
 
 private:
   xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget0;

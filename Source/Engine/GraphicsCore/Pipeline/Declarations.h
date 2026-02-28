@@ -10,6 +10,7 @@ class xiiExtractor;
 class xiiView;
 class xiiRenderer;
 class xiiRenderData;
+class xiiRenderDataManager;
 class xiiRenderDataBatch;
 class xiiRenderPipeline;
 class xiiRenderPipelinePassBase;
