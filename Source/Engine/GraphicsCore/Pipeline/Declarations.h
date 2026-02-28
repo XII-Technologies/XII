@@ -127,28 +127,16 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSourceFormat);
 ///
 /// This enumeration allows rendering systems or materials to selectively enable or disable visual features depending on the desired quality level.
 /// Lower settings may omit expensive effects (e.g., shadows, complex lighting), while higher levels offer more realistic and detailed shading.
-///
-/// The quality level can be globally configured or overridden per-pass/material depending on engine support.
-///
-/// Typical usage:
-/// - Low: Minimal shading, suitable for previews or constrained hardware.
-/// - Medium: Standard shading with balanced performance and fidelity.
-/// - High: Enhanced shading with advanced lighting or material features.
-/// - Ultra: Maximum visual fidelity; may include ray tracing or physically-based effects.
-///
-/// \note The Default value is set to Medium.
-///
-/// \sa xiiMaterialResource, xiiRenderPipelineNode, xiiGALShaderStage
 struct XII_GRAPHICSCORE_DLL xiiShadingQualityLevel
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Low = 0, ///< Minimal shading features; optimized for speed.
-    Medium,  ///< Balanced shading quality; default setting.
-    High,    ///< Advanced shading features enabled.
-    Ultra,   ///< Maximum-quality shading; highest visual fidelity.
+    Low = 0U, ///< Minimal shading, suitable for previews or constrained hardware.
+    Medium,   ///< Standard shading with balanced performance and fidelity.
+    High,     ///< Enhanced shading with advanced lighting or material features.
+    Ultra,    ///< Maximum visual fidelity, which may include ray tracing or physically-based effects.
 
     ENUM_COUNT,
 
@@ -192,14 +180,14 @@ struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
 
   enum Enum : StorageType
   {
-    None,
-    MainView,
-    EditorView,
-    RenderTarget,
-    Culling,
-    Shadow,
-    Reflection,
-    Thumbnail,
+    None,         ///< No hint, camera may not be used, at all.
+    MainView,     ///< The main camera from which the scene gets rendered. There should only be one camera with this hint.
+    EditorView,   ///< The editor view shall be rendered from this camera.
+    RenderTarget, ///< The camera is used to render to a render target.
+    Culling,      ///< This camera should be used for culling only. Usually culling is done from the main view, but with a dedicated culling camera, one can debug the culling system.
+    Shadow,       ///< This camera is used for rendering shadow maps.
+    Reflection,   ///< This camera is used for rendering reflections.
+    Thumbnail,    ///< This camera should be used for rendering a scene thumbnail when exporting from the editor.
 
     ENUM_COUNT,
 
