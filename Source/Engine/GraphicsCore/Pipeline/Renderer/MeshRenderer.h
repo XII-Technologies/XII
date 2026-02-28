@@ -5,7 +5,6 @@
 class xiiMeshRenderData;
 struct xiiPerInstanceData;
 
-/// \brief Implements rendering of static meshes
 class XII_GRAPHICSCORE_DLL xiiMeshRenderer : public xiiRenderer
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderer, xiiRenderer);
@@ -18,9 +17,6 @@ public:
 
   // xiiRenderer implementation
   virtual void GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& out_types) const override;
-  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
-protected:
-  virtual void SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const;
-  virtual void FillPerInstanceData(xiiArrayPtr<xiiPerInstanceData> pInstanceData, const xiiRenderDataBatch& batch, xiiUInt32 uiStartIndex, xiiUInt32& out_uiFilteredCount) const;
+  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 };
