@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Foundation/Communication/Message.h>
-#include <Foundation/Math/BoundingBoxSphere.h>
-#include <Foundation/Math/Transform.h>
+#include <Foundation/Math/Vec3.h>
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
@@ -22,7 +21,7 @@ public:
 
     bool operator==(const Category& other) const;
 
-    XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0xFFFF; }
+    XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0xFFFFU; }
 
     xiiUInt16 m_uiValue = 0xFFFF;
   };
@@ -30,9 +29,9 @@ public:
   /// \brief This function generates a 64bit sorting key for the given render data. Data with lower sorting key is rendered first.
   using SortingKeyFunc = xiiUInt64 (*)(const xiiRenderData*, const xiiCamera&);
 
-  static Category RegisterCategory(xiiStringView sCategoryName, SortingKeyFunc sortingKeyFunc);
-  static Category RegisterDerivedCategory(xiiStringView sCategoryName, Category baseCategory);
-  static Category RegisterRedirectedCategory(xiiStringView sCategoryName, Category staticCategory, Category dynamicCategory);
+  static Category RegisterCategory(const char* szCategoryName, SortingKeyFunc sortingKeyFunc);
+  static Category RegisterDerivedCategory(const char* szCategoryName, Category baseCategory);
+  static Category RegisterRedirectedCategory(const char* szCategoryName, Category staticCategory, Category dynamicCategory);
   static Category FindCategory(xiiTempHashedString sCategoryName);
   static Category ResolveCategory(Category category, bool bDynamic);
 
@@ -47,7 +46,11 @@ public:
     enum Enum : StorageType
     {
       Never = 0U,
-      IfStatic
+      IfStatic,
+
+      ENUM_COUNT,
+
+      Default = Never
     };
   };
 
@@ -57,7 +60,8 @@ public:
 
     enum Enum : StorageType
     {
-      Dynamic = XII_BIT(0),
+      Dynamic     = XII_BIT(0),
+      FlipWinding = XII_BIT(1),
 
       Default = 0U
     };
@@ -65,8 +69,13 @@ public:
     struct Bits
     {
       StorageType Dynamic : 1;
+      StorageType FlipWinding : 1;
     };
   };
+
+  bool IsDynamic() const;
+  bool IsStatic() const;
+  bool FlipWinding() const;
 
   /// \brief Returns the final sorting for this render data with the given category and camera.
   xiiUInt64 GetFinalSortingKey(Category category, const xiiCamera& camera) const;
@@ -77,11 +86,10 @@ public:
 
   xiiBitflags<Flags> m_Flags;
 
-  xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();
-  xiiBoundingBoxSphere m_GlobalBounds;
+  xiiVec3 m_vGlobalPosition     = xiiVec3::MakeZero();
+  float   m_fSortingDepthOffset = 0.0f;
 
-  xiiUInt32 m_uiSortingKey        = 0;
-  float     m_fSortingDepthOffset = 0.0f;
+  xiiUInt32 m_uiSortingKey = 0;
 
   xiiGameObjectHandle m_hOwner;
 
@@ -92,20 +100,39 @@ public:
 private:
   struct CategoryData
   {
-    xiiHashedString m_sName;
-    SortingKeyFunc  m_SortingKeyFunc;
-
     Category m_BaseCategory;
     Category m_StaticCategory;
     Category m_DynamicCategory;
+
+    xiiHashedString m_sName;
+    SortingKeyFunc  m_SortingKeyFunc;
   };
 
   static xiiHybridArray<CategoryData, 32> s_CategoryData;
 };
 
-/// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
-template <typename T>
-static T* xiiCreateRenderDataForThisFrame(const xiiGameObject* pOwner);
+/// \brief Base class for render data that make uses of the instance data offset buffer which will be generated during the extraction phase.
+class XII_GRAPHICSCORE_DLL xiiInstanceableRenderData : public xiiRenderData
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiInstanceableRenderData, xiiRenderData);
+
+public:
+  struct DataOffsets
+  {
+    xiiUInt32 m_uiInstance       = 0U;
+    xiiUInt32 m_uiCustomInstance = 0U;
+    xiiUInt32 m_uiMaterial       = 0U;
+    xiiUInt32 m_uiSkinning       = 0U; // TODO: this could be removed if we switch to compute shader skinning
+  };
+
+  DataOffsets m_DataOffsets;
+
+  xiiUInt32                 m_uiNumInstances = 1;
+  xiiGALDynamicBufferHandle m_hInstanceDataBuffer;
+
+protected:
+  bool CanBatchByBaseValues(const xiiInstanceableRenderData& other) const;
+};
 
 struct XII_GRAPHICSCORE_DLL xiiDefaultRenderDataCategories
 {
@@ -134,12 +161,13 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractRenderData, xiiMessage);
 
-  const xiiView*          m_pView            = nullptr;
-  xiiRenderData::Category m_OverrideCategory = xiiInvalidRenderDataCategory;
+  const xiiView*              m_pView              = nullptr;
+  const xiiRenderDataManager* m_pRenderDataManager = nullptr;
+  xiiRenderData::Category     m_OverrideCategory   = xiiInvalidRenderDataCategory;
 
   /// \brief Adds render data for the current view. This data can be cached depending on the specified caching behavior.
-  /// Non-cached data is only valid for this frame. Cached data must be manually deleted using the xiiRenderWorld::DeleteCachedRenderData
-  /// function.
+  ///
+  /// Non-cached data is only valid for this frame. Cached data must be manually deleted using the xiiRenderWorld::DeleteCachedRenderData function.
   void AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category, xiiRenderData::Caching::Enum cachingBehavior);
 
 private:
@@ -176,6 +204,37 @@ private:
   };
 
   xiiHybridArray<Data, 16> m_ExtractedOccluderData;
+};
+
+struct xiiInstanceDataOffset
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiInstanceDataOffset() :
+    m_uiOffset(xiiMath::Bitmask_LowN<xiiUInt32>(31)), m_uiIsDynamic(0)
+  {
+  }
+
+  XII_ALWAYS_INLINE bool IsInvalidated() const { return m_uiOffset == xiiMath::Bitmask_LowN<xiiUInt32>(31); }
+
+  xiiUInt32 m_uiOffset : 31;
+  xiiUInt32 m_uiIsDynamic : 1;
+};
+
+struct xiiCustomInstanceDataOffset
+{
+  XII_DECLARE_POD_TYPE();
+
+  XII_ALWAYS_INLINE bool IsInvalidated() const { return m_uiOffset == xiiInvalidIndex; }
+
+  xiiUInt32 m_uiOffset = xiiInvalidIndex;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiMsgCustomInstanceDataOffsetChanged : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgCustomInstanceDataOffsetChanged, xiiMessage);
+
+  xiiCustomInstanceDataOffset m_NewOffset;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderData_inl.h>
