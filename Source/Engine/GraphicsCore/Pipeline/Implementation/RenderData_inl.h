@@ -24,24 +24,7 @@ XII_FORCE_INLINE xiiHashedString xiiRenderData::GetCategoryName(Category categor
   return xiiHashedString();
 }
 
-// static
-XII_FORCE_INLINE const xiiRenderer* xiiRenderData::GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType)
-{
-  if (s_bRendererInstancesDirty)
-  {
-    CreateRendererInstances();
-  }
-
-  auto& categoryData = s_CategoryData[category.m_uiValue];
-
-  xiiUInt32 uiIndex = 0;
-  if (categoryData.m_TypeToRendererIndex.TryGetValue(pRenderDataType, uiIndex))
-  {
-    return s_RendererInstances[uiIndex].Borrow();
-  }
-
-  return nullptr;
-}
+//////////////////////////////////////////////////////////////////////////
 
 XII_FORCE_INLINE xiiUInt64 xiiRenderData::GetFinalSortingKey(Category category, const xiiCamera& camera) const
 {

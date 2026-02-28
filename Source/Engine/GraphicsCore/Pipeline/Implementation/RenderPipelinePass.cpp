@@ -3,7 +3,7 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsCore/Pipeline/Renderer.h>
+#include <GraphicsCore/Pipeline/RendererRegistry.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // clang-format off
@@ -205,7 +205,7 @@ void xiiGraphicsPipelinePass::RenderDataWithCategory(const xiiRenderViewContext&
     {
       const xiiRTTI* pType = pRenderData->GetDynamicRTTI();
 
-      if (const xiiRenderer* pRenderer = xiiRenderData::GetCategoryRenderer(category, pType))
+      if (const xiiRenderer* pRenderer = xiiRendererRegistry::GetRenderer(pType))
       {
         pRenderer->RenderBatch(renderViewContext, this, batch);
       }

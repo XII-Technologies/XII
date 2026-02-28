@@ -39,8 +39,6 @@ public:
   static xiiHashedString GetCategoryName(Category category);
   static void            GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);
 
-  static const xiiRenderer* GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType);
-
 public:
   struct Caching
   {
@@ -92,20 +90,10 @@ public:
 #endif
 
 private:
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RenderData);
-
-  static void PluginEventHandler(const xiiPluginEvent& e);
-  static void UpdateRendererTypes();
-
-  static void CreateRendererInstances();
-  static void ClearRendererInstances();
-
   struct CategoryData
   {
     xiiHashedString m_sName;
     SortingKeyFunc  m_SortingKeyFunc;
-
-    xiiHashTable<const xiiRTTI*, xiiUInt32> m_TypeToRendererIndex;
 
     Category m_BaseCategory;
     Category m_StaticCategory;
@@ -113,10 +101,6 @@ private:
   };
 
   static xiiHybridArray<CategoryData, 32> s_CategoryData;
-
-  static xiiHybridArray<const xiiRTTI*, 16>         s_RendererTypes;
-  static xiiDynamicArray<xiiUniquePtr<xiiRenderer>> s_RendererInstances;
-  static bool                                       s_bRendererInstancesDirty;
 };
 
 /// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.

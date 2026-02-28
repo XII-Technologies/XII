@@ -112,18 +112,3 @@ public:
 
   xiiUInt32 m_uiUniqueID = 0;
 };
-
-/// \brief A renderer that handles all xiiCustomMeshRenderData.
-class XII_GRAPHICSCORE_DLL xiiCustomMeshRenderer : public xiiRenderer
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiCustomMeshRenderer, xiiRenderer);
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiCustomMeshRenderer);
-
-public:
-  xiiCustomMeshRenderer();
-  ~xiiCustomMeshRenderer();
-
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
-  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
-};
