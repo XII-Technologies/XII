@@ -1,0 +1,30 @@
+#include <GraphicsD3D12/GraphicsD3D12PCH.h>
+
+XII_STATICLINK_LIBRARY(GraphicsD3D12)
+{
+  if (bReturn)
+    return;
+
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_CommandEncoder_Implementation_CommandListD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_CommandEncoder_Implementation_CommandQueueD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Device_Implementation_DeviceD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Device_Implementation_SwapChainD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_BottomLevelASD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_BufferD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_BufferViewD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_FenceD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_FramebufferD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_QueryD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_RenderPassD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_SamplerD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_TextureD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_TextureViewD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Resources_Implementation_TopLevelASD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Shader_Implementation_InputLayoutD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_Shader_Implementation_ShaderD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_States_Implementation_BlendStateD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_States_Implementation_DepthStencilStateD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_States_Implementation_PipelineStateD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_States_Implementation_PipelineResourceSignatureD3D12);
+  XII_STATICLINK_REFERENCE(GraphicsD3D12_States_Implementation_RasterizerStateD3D12);
+}

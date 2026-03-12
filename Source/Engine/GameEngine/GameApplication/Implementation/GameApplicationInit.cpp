@@ -32,6 +32,8 @@
 
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "Vulkan";
+#elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #else
 constexpr const char* szDefaultGraphicsAPI = "";
 #endif

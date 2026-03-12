@@ -2,13 +2,11 @@
 
 #include <GraphicsFoundation/Resources/Resource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALResource, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALResourceView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALResource::xiiGALResource(xiiSharedPtr<xiiGALDevice> pDevice) :
   xiiGALDeviceObject(std::move(pDevice))

@@ -191,6 +191,10 @@ function(xii_set_common_target_definitions TARGET_NAME)
     target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_VULKAN_SUPPORT)
   endif()
 
+  if(XII_BUILD_D3D12)
+    target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D12_SUPPORT)
+  endif()
+
   # On Windows, make sure to use the Unicode API
   target_compile_definitions(${TARGET_NAME} PUBLIC UNICODE _UNICODE)
 endfunction()

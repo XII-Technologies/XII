@@ -5,6 +5,7 @@ message(STATUS "Configuring Platform: Linux")
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_LINUX ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_POSIX ON)
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_VULKAN ON)
+set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_SUPPORTS_D3D12 OFF)
 
 # #####################################
 # ## General settings
