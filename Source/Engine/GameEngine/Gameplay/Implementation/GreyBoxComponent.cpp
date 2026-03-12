@@ -199,7 +199,7 @@ void xiiGreyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) c
     bool bDontCacheYet = false;
 
     // Determine render data category.
-    xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
+    xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitOpaque;
 
     if (hMaterial.IsValid())
     {

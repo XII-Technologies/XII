@@ -194,7 +194,7 @@ void xiiLodAnimatedMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData
     }
 
     // Determine render data category.
-    xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
+    xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitOpaque;
     if (hMaterial.IsValid())
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
