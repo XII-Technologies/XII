@@ -17,7 +17,6 @@ class xiiView;
 struct xiiActorEvent;
 class xiiWindowOutputTargetGAL;
 class xiiActor;
-class xiiDummyXR;
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 
@@ -152,9 +151,6 @@ protected:
   /// Returns XII_SUCCESS if a prefab was spawned, XII_FAILURE if nothing was done.
   virtual xiiResult SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
 
-  /// \brief Creates an XR Actor, if XR is configured and available for the project.
-  xiiUniquePtr<xiiActor> CreateXRActor();
-
   /// \brief Creates a default main view.
   xiiView* CreateMainView();
 
@@ -220,10 +216,7 @@ protected:
   xiiWorld* m_pMainWorld = nullptr;
 
   xiiCamera                m_MainCamera;
-  xiiUniquePtr<xiiDummyXR> m_pDummyXR;
   bool                     m_bStateWantsToQuit  = false;
-  bool                     m_bXREnabled         = false;
-  bool                     m_bXRRemotingEnabled = false;
 
   bool                              m_bTransitionWhenReady = false;
   xiiUniquePtr<xiiSceneLoadUtility> m_pBackgroundSceneLoad;
