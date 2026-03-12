@@ -16,7 +16,6 @@ AssetProfiles
 					{
 						Uuid{uint64{11754538365307859884,8572204067211736280}}
 						Uuid{uint64{18165925277888737543,17003377905246685588}}
-						Uuid{uint64{10688866045028468411,17021851764261564183}}
 					}
 					string %Name{"PC"}
 					string %Platform{"xiiProfileTargetPlatform::PC"}
