@@ -3165,7 +3165,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     {
       // Grab the next deletion entry in a thread-safe manner.
       xiiGALDeviceVulkan::DeferredDeletionQueue::DeletionEntry entryCopy;
-      bool bHasEntry = false;
+      bool                                                     bHasEntry = false;
 
       {
         XII_LOCK(m_DeletionQueueMutex);
