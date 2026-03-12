@@ -23,26 +23,4 @@ void xiiGALBottomLevelASD3D12::SetDebugNamePlatform(xiiStringView sName) const
   XII_IGNORE_UNUSED(sName);
 }
 
-xiiUInt32 xiiGALBottomLevelASD3D12::GetGeometryDescriptionIndex(xiiStringView sName) const
-{
-  XII_IGNORE_UNUSED(sName);
-  return xiiUInt32();
-}
-
-xiiUInt32 xiiGALBottomLevelASD3D12::GetGeometryIndex(xiiStringView sName) const
-{
-  XII_IGNORE_UNUSED(sName);
-  return xiiUInt32();
-}
-
-xiiUInt32 xiiGALBottomLevelASD3D12::GetActualGeometryCount() const
-{
-  return xiiUInt32();
-}
-
-xiiGALScratchBufferSizeDescription xiiGALBottomLevelASD3D12::GetScratchBufferSizeDescription() const
-{
-  return xiiGALScratchBufferSizeDescription();
-}
-
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_BottomLevelASD3D12);

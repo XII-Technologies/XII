@@ -9,14 +9,6 @@ class XII_GRAPHICSD3D12_DLL xiiGALBottomLevelASD3D12 final : public xiiGALBottom
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelASD3D12, xiiGALBottomLevelAS);
 
 public:
-  virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override final;
-
-  virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const override final;
-
-  virtual xiiUInt32 GetActualGeometryCount() const override final;
-
-  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;

@@ -127,8 +127,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
 
 #if XII_ENABLED(XII_PLATFORM_LITTLE_ENDIAN)
 
-  static XII_ALWAYS_INLINE void LittleEndianToNative(xiiUInt16* /*pWords*/, xiiUInt32 /*uiCount*/)
-  {}
+  static XII_ALWAYS_INLINE void LittleEndianToNative(xiiUInt16* /*pWords*/, xiiUInt32 /*uiCount*/) {}
 
   static XII_ALWAYS_INLINE void NativeToLittleEndian(xiiUInt16* /*pWords*/, xiiUInt32 /*uiCount*/) {}
 
@@ -154,10 +153,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
 
 #elif XII_ENABLED(XII_PLATFORM_BIG_ENDIAN)
 
-  static XII_ALWAYS_INLINE void LittleEndianToNative(xiiUInt16* pWords, xiiUInt32 uiCount)
-  {
-    SwitchWords(pWords, uiCount);
-  }
+  static XII_ALWAYS_INLINE void LittleEndianToNative(xiiUInt16* pWords, xiiUInt32 uiCount) { SwitchWords(pWords, uiCount); }
 
   static XII_ALWAYS_INLINE void NativeToLittleEndian(xiiUInt16* pWords, xiiUInt32 uiCount) { SwitchWords(pWords, uiCount); }
 
