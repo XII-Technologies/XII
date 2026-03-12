@@ -802,6 +802,12 @@ public:
   /// \param pPipelineState - The handle to the pipeline state object.
   void SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState);
 
+  /// \brief Writes push constant data to the command list.
+  ///
+  /// \param uiOffset - Byte offset into the push constant block.
+  /// \param pData    - Pointer to the source data.
+  void PushConstants(xiiUInt32 uiOffset, xiiArrayPtr<xiiUInt8> pData);
+
   /// \brief Sets the stencil reference value used in the stencil test.
   ///
   /// \param uiStencilRef - Stencil reference value.
@@ -1306,7 +1312,8 @@ protected:
 
   virtual void SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList) = 0;
 
-  virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) = 0;
+  virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState)   = 0;
+  virtual void PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData) = 0;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
@@ -1386,6 +1393,7 @@ protected:
 
   xiiSharedPtr<xiiGALPipelineState>             m_pPipelineState;
   xiiSharedPtr<xiiGALPipelineResourceSignature> m_pPipelineResourceSignature;
+  xiiStaticArray<xiiUInt8, 256U>                m_PushConstantStaging;
 
   xiiHybridArray<VertexStreamDescription, 2U> m_VertexStreams;
 

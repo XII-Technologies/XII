@@ -1404,6 +1404,17 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
     }
   }
 
+  // Ensure that push constant ranges are within the device limits.
+  for (const xiiGALPushConstantRange& range : description.m_PushConstantRanges)
+  {
+    XII_GAL_DEVICE_CHECK(range.m_ShaderStages != xiiGALShaderType::Unknown && !range.m_ShaderStages.IsNoFlagSet(), "Push constant range with offset {} and size {} has invalid shader stages. A push constant range must specify at least one valid shader stage.", range.m_uiOffset, range.m_uiSize);
+    XII_GAL_DEVICE_CHECK(range.m_uiOffset < static_cast<xiiUInt64>(m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize), "Push constant range offset ({}) exceeds device limit of {} bytes.", range.m_uiOffset, m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize);
+    XII_GAL_DEVICE_CHECK(range.m_uiSize <= static_cast<xiiUInt64>(m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize), "Push constant range size ({}) exceeds device limit of {} bytes.", range.m_uiSize, m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize);
+    XII_GAL_DEVICE_CHECK(static_cast<xiiUInt64>(range.m_uiOffset) + static_cast<xiiUInt64>(range.m_uiSize) <= static_cast<xiiUInt64>(m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize), "Push constant range (offset {} size {}) exceeds device limit of {} bytes.", range.m_uiOffset, range.m_uiSize, m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize);
+    XII_GAL_DEVICE_CHECK(range.m_uiOffset % 4U == 0U, "Push constant range offset ({}) must be a multiple of 4 bytes.", range.m_uiOffset);
+    XII_GAL_DEVICE_CHECK(range.m_uiSize != 0U, "Push constant range size must be greater than zero.");
+  }
+
   /// \todo Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
 
   // Finally, sort the resources by their ascending set index.

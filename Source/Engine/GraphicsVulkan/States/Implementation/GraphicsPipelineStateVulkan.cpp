@@ -233,12 +233,35 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
   {
     auto pDescriptorSetLayouts = pPipelineResourceSignatureVulkan->GetVulkanDescriptorSetLayouts();
 
-    vkPipelineLayoutCreateInfo.pNext                  = nullptr;
-    vkPipelineLayoutCreateInfo.flags                  = {};
-    vkPipelineLayoutCreateInfo.setLayoutCount         = pDescriptorSetLayouts.GetCount();
-    vkPipelineLayoutCreateInfo.pSetLayouts            = pDescriptorSetLayouts.GetPtr();
-    vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0;       // TODO.
-    vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr; // TODO.
+    vkPipelineLayoutCreateInfo.pNext          = nullptr;
+    vkPipelineLayoutCreateInfo.flags          = {};
+    vkPipelineLayoutCreateInfo.setLayoutCount = pDescriptorSetLayouts.GetCount();
+    vkPipelineLayoutCreateInfo.pSetLayouts    = pDescriptorSetLayouts.GetPtr();
+
+    // Build push constant ranges from the pipeline resource signature description.
+    const auto&                            pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
+    xiiDynamicArray<vk::PushConstantRange> vkPushRanges(pDeviceVulkan->GetAllocator());
+
+    if (!pushConstantRanges.IsEmpty())
+    {
+      vkPushRanges.SetCount(pushConstantRanges.GetCount());
+
+      for (xiiUInt32 i = 0; i < pushConstantRanges.GetCount(); ++i)
+      {
+        const xiiGALPushConstantRange& range = pushConstantRanges[i];
+        vkPushRanges[i].stageFlags           = xiiVulkanTypeConversions::GetShaderStageFlags(range.m_ShaderStages);
+        vkPushRanges[i].offset               = range.m_uiOffset;
+        vkPushRanges[i].size                 = range.m_uiSize;
+      }
+
+      vkPipelineLayoutCreateInfo.pushConstantRangeCount = vkPushRanges.GetCount();
+      vkPipelineLayoutCreateInfo.pPushConstantRanges    = vkPushRanges.GetData();
+    }
+    else
+    {
+      vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0U;
+      vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr;
+    }
 
     VK_ASSERT_DEV(vkLogicalDevice.createPipelineLayout(&vkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
