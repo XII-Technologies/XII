@@ -19,11 +19,6 @@
 #  include <wayland-client.h>
 #endif
 
-#ifdef VK_USE_PLATFORM_XCB_KHR
-#  include <X11/Xlib-xcb.h>
-#  include <xcb/xcb.h>
-#endif
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -136,15 +131,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.surface                         = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-
-  vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                       = nullptr;
-  vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = static_cast<Display*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr));
-  vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else
 #  error "Unsupported platform."
 #endif
@@ -299,6 +285,15 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   m_CurrentSize.width  = vkSwapchainExtent.width;
   m_CurrentSize.height = vkSwapchainExtent.height;
+
+  // If the computed swap chain extent has zero area, the window is effectively minimized.
+  // Do not create a swap chain with zero extent as that causes issues when restoring the window.
+  if (m_CurrentSize.width == 0 || m_CurrentSize.height == 0)
+  {
+    m_bIsMinimized = true;
+    xiiLog::Dev("Swap chain creation skipped because surface extent is 0x0 (minimized).");
+    return XII_SUCCESS;
+  }
 
   // The FIFO present mode is guaranteed by the spec to always be supported.
   vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
@@ -530,6 +525,15 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
+  // If there is no Vulkan swap chain (e.g. because the window is minimized), nothing to do.
+  if (m_vkSwapChain == VK_NULL_HANDLE || !m_CurrentSize.HasNonZeroArea())
+  {
+    m_pBackBufferTexture.Clear();
+    m_SwapChainTextures.Clear();
+    m_SwapChainImagesInitialized.Clear();
+    return XII_SUCCESS;
+  }
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
     xiiUInt32  uiSwapChainImageCount = 0U;
@@ -591,6 +595,22 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   // This also ensures that there are no more than BufferCount frames in flight at any time.
   ThrottleFrameSubmission();
 
+  // If there is no swap chain (window minimized) nothing to acquire.
+  if (m_vkSwapChain == VK_NULL_HANDLE || m_bIsMinimized || !m_CurrentSize.HasNonZeroArea())
+  {
+    m_bIsImageAcquired = false;
+    m_pBackBufferTexture.Clear();
+    return vk::Result::eSuccess;
+  }
+
+  // Guard against the case where the semaphore pool hasn't been populated yet (e.g. after rapid minimize/restore).
+  if (m_ImageAcquiredSemaphores.GetCount() == 0 || m_uiSemaphoreIndex >= m_ImageAcquiredSemaphores.GetCount())
+  {
+    m_bIsImageAcquired = false;
+    m_pBackBufferTexture.Clear();
+    return vk::Result::eSuccess;
+  }
+
   const vk::Semaphore& vkImageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
 
   vk::Result result  = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), vkImageAcquiredSemaphore, VK_NULL_HANDLE, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
@@ -647,8 +667,46 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
 
 void xiiGALSwapChainVulkan::Present()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  // Do not read m_pBackBufferTexture here because we may recreate the swap chain below
+  // and m_pBackBufferTexture may change. Resolve the current backbuffer after recreation.
+
+  // If there is no swap chain (e.g. window minimized) or the surface has zero area, try to detect an unminimize and recreate.
+  if (m_vkSwapChain == VK_NULL_HANDLE || m_bIsMinimized || !m_CurrentSize.HasNonZeroArea())
+  {
+    // Check if the window was restored without a resize event. If the client area is now non-zero, recreate the swap chain.
+    xiiSizeU32 windowSize = m_Description.m_pWindow->GetClientAreaSize();
+    if (windowSize.HasNonZeroArea())
+    {
+      xiiLog::Dev("Window restored to non-zero size ({}x{}). Recreating swap chain.", windowSize.width, windowSize.height);
+
+      // Attempt to recreate the swap chain now that the window has a valid size.
+      RecreateVulkanSwapChain().IgnoreResult();
+      m_bIsMinimized = false;
+
+      m_uiSemaphoreIndex = m_Description.m_uiBufferCount > 0 ? m_Description.m_uiBufferCount - 1 : 0;
+
+      // Try to acquire the first image for rendering.
+      AcquireNextImage();
+    }
+    else
+    {
+      ThrottleFrameSubmission();
+      return;
+    }
+  }
+
+  // Ensure draw-complete semaphores are available and the back buffer index is valid.
+  if (m_DrawCompleteSemaphores.GetCount() == 0 || m_uiBackBufferIndex >= m_DrawCompleteSemaphores.GetCount())
+  {
+    xiiLog::Dev("Draw-complete semaphore unavailable (count={} index={}). Attempting to recreate swap chain.", m_DrawCompleteSemaphores.GetCount(), m_uiBackBufferIndex);
+
+    // Try to recreate and acquire a valid image. If that fails, throttle and skip present this frame.
+    RecreateVulkanSwapChain().IgnoreResult();
+    AcquireNextImage();
+    ThrottleFrameSubmission();
+    return;
+  }
 
   const vk::Semaphore& vkDrawCompleteSemaphore = m_DrawCompleteSemaphores[m_uiBackBufferIndex];
 
@@ -660,8 +718,13 @@ void xiiGALSwapChainVulkan::Present()
       // a separate semaphore per swap chain image and index these semaphores using the index of the acquired image.
       if (m_bIsImageAcquired && !m_bIsMinimized)
       {
-        pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-        pCommandListVulkan->AddSignalSemaphore(vkDrawCompleteSemaphore);
+        xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
+
+        if (pCurrentBackbufferVulkan)
+        {
+          pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+          pCommandListVulkan->AddSignalSemaphore(vkDrawCompleteSemaphore);
+        }
       }
 
       pCommandListVulkan->EnqueueSignal(m_pFrameCompleteFence, m_uiFrameIndex++);
@@ -752,12 +815,15 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
 {
   bool bRecreateSwapChain = false;
 
+  // Set minimized flag based on new size early so creation logic can react accordingly.
+  m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
+
   if (newSize.HasNonZeroArea() && (newSize != m_CurrentSize || m_DesiredSurfaceTransform != newTransform))
   {
     m_DesiredSurfaceTransform = newTransform;
     bRecreateSwapChain        = true;
 
-    xiiLog::Dev("Resizing swap chain to {}x{}.", m_CurrentSize.width, m_CurrentSize.height);
+    xiiLog::Dev("Resizing swap chain to {}x{}.", newSize.width, newSize.height);
   }
 
   if (bRecreateSwapChain)

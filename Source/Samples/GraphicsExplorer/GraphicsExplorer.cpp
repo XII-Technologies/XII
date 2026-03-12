@@ -154,28 +154,42 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pGraphicsQueue = m_pDevice->GetCommandQueue();
+      // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
+      bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr) && (m_pDepthStencilTexture != nullptr) && (m_pRenderPass != nullptr);
 
-      m_pCommandList->Begin();
+      if (bCanRender)
       {
-        xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
+        auto pGraphicsQueue = m_pDevice->GetCommandQueue();
 
-        auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
-        depthClearValue.m_DepthStencil.m_uiStencil = 0U;
+        m_pCommandList->Begin();
+        {
+          xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
 
-        float fGlobalTime             = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        auto& colorClearValue         = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        colorClearValue.m_ClearColour = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+          auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+          depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
+          depthClearValue.m_DepthStencil.m_uiStencil = 0U;
 
-        m_pCommandList->BeginRenderPass(beginRenderPass);
-        m_pCommandList->EndRenderPass();
+          float fGlobalTime             = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+          auto& colorClearValue         = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+          colorClearValue.m_ClearColour = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+
+          m_pCommandList->BeginRenderPass(beginRenderPass);
+          m_pCommandList->EndRenderPass();
+        }
+        m_pCommandList->End();
+
+        pGraphicsQueue->Submit(m_pCommandList);
+
+        m_pSwapChain->Present();
       }
-      m_pCommandList->End();
-
-      pGraphicsQueue->Submit(m_pCommandList);
-
-      m_pSwapChain->Present();
+      else
+      {
+        // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
+        if (m_pSwapChain)
+        {
+          m_pSwapChain->Present();
+        }
+      }
 
       m_pDevice->EndFrame();
     }
@@ -334,7 +348,11 @@ public:
 
     UpdateSwapChain();
 
-    CreateRenderPass();
+    // Only create the render pass if we have a valid back buffer and depth stencil.
+    if (m_pSwapChain && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() && m_pDepthStencilTexture)
+    {
+      CreateRenderPass();
+    }
 
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
@@ -407,7 +425,9 @@ public:
       }
     }
 
-    if (!m_pDepthStencilTexture)
+    // Create or recreate depth stencil only when the window has a non-zero area.
+    auto currentSize = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
+    if (currentSize.HasNonZeroArea() && !m_pDepthStencilTexture)
     {
       xiiGALTextureCreationDescription texDesc;
       texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -419,6 +439,12 @@ public:
       m_pDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
 
       m_pDepthStencilTexture->SetDebugName("Depth Stencil");
+    }
+
+    // Ensure render pass exists only when we have a valid backbuffer and depth stencil.
+    if (currentSize.HasNonZeroArea())
+    {
+      CreateRenderPass();
     }
   }
 

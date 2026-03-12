@@ -116,13 +116,19 @@ public:
 
     void ReleaseResources(bool bForceReleaseAll = false);
 
-    [[nodiscard]] XII_ALWAYS_INLINE bool IsEmpty() const { return m_DeletionQueue.IsEmpty(); }
+    [[nodiscard]] XII_ALWAYS_INLINE bool IsEmpty() const
+    {
+      XII_LOCK(m_DeletionQueueMutex);
+      return m_DeletionQueue.IsEmpty();
+    }
 
-    [[nodiscard]] XII_ALWAYS_INLINE bool HasTimelineSemaphore() const { return m_vkTimelineSemaphore != VK_NULL_HANDLE; }
+    [[nodiscard]] XII_ALWAYS_INLINE bool HasTimelineSemaphore() const { return static_cast<bool>(m_bHasTimelineSemaphore); }
 
     [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
 
-    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 ReserveSubmitValue() { return m_uiNextSubmitValue++; }
+    /// \brief Reserve and return the next submit value atomically. This avoids holding the deletion queue mutex during reservation and reduces contention.
+    /// The value returned is the value that will be signaled for the next timeline submit.
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 ReserveSubmitValue() { return m_uiNextSubmitValue.PostIncrement(); }
 
   private:
     struct DeletionEntry
@@ -159,10 +165,11 @@ public:
 
     xiiGALDeviceVulkan*     m_pDeviceVulkan;
     xiiDeque<DeletionEntry> m_DeletionQueue;
-    xiiMutex                m_DeletionQueueMutex;
+    mutable xiiMutex        m_DeletionQueueMutex;
 
-    vk::Semaphore m_vkTimelineSemaphore = VK_NULL_HANDLE;
-    xiiUInt64     m_uiNextSubmitValue   = 1ULL;
+    vk::Semaphore       m_vkTimelineSemaphore = VK_NULL_HANDLE;
+    xiiAtomicBool       m_bHasTimelineSemaphore{false};
+    xiiAtomicIntegerU64 m_uiNextSubmitValue{1ULL};
   };
 
 public:

@@ -80,7 +80,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryPropertyFlags
     HostCoherent    = 0x00000004, ///< Host writes are automatically visible to the device without flushing.
     HostCached      = 0x00000008, ///< Host memory access is cached (may require flushing/invalidation).
     LazilyAllocated = 0x00000010, ///< Memory is lazily allocated by the driver (used with transient resources).
-    Protected       = 0x00000020, ///< Memory with protection features—typically used for secure buffers.
+    Protected       = 0x00000020, ///< Memory with protection features - typically used for secure buffers.
 
     Default = 0U ///< No flags set.
   };

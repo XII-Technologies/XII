@@ -15,28 +15,28 @@ public:
   /// \brief Initializes the value to zero.
   xiiAtomicInteger(); // [tested]
 
-  /// \brief Initializes the object with a value
+  /// \brief Initializes the object with a value.
   xiiAtomicInteger(const T value); // [tested]
 
-  /// \brief Copy-constructor
+  /// \brief Copy-constructor.
   xiiAtomicInteger(const xiiAtomicInteger<T>& value); // [tested]
 
-  /// \brief Assigns a new integer value to this object
+  /// \brief Assigns a new integer value to this object.
   xiiAtomicInteger& operator=(T value); // [tested]
 
-  /// \brief Assignment operator
+  /// \brief Assignment operator.
   xiiAtomicInteger& operator=(const xiiAtomicInteger& value); // [tested]
 
-  /// \brief Increments the internal value and returns the incremented value
+  /// \brief Increments the internal value and returns the incremented value.
   T Increment(); // [tested]
 
-  /// \brief Decrements the internal value and returns the decremented value
+  /// \brief Decrements the internal value and returns the decremented value.
   T Decrement(); // [tested]
 
-  /// \brief Increments the internal value and returns the value immediately before the increment
+  /// \brief Increments the internal value and returns the value immediately before the increment.
   T PostIncrement(); // [tested]
 
-  /// \brief Decrements the internal value and returns the value immediately before the decrement
+  /// \brief Decrements the internal value and returns the value immediately before the decrement.
   T PostDecrement(); // [tested]
 
   void Add(T x);      // [tested]
@@ -55,8 +55,7 @@ public:
   /// \brief Sets the internal value to x if the internal value is equal to expected and returns true, otherwise does nothing and returns false.
   bool TestAndSet(T expected, T x); // [tested]
 
-  /// \brief If this is equal to *expected*, it is set to *value*. Otherwise it won't be modified. Always returns the previous value of this before
-  /// the modification.
+  /// \brief If this is equal to *expected*, it is set to *value*. Otherwise it won't be modified. Always returns the previous value of this before the modification.
   T CompareAndSwap(T expected, T x); // [tested]
 
   operator T() const; // [tested]
@@ -73,10 +72,10 @@ public:
   xiiAtomicBool(); // [tested]
   ~xiiAtomicBool();
 
-  /// \brief Initializes the object with a value
+  /// \brief Initializes the object with a value.
   xiiAtomicBool(bool value); // [tested]
 
-  /// \brief Copy-constructor
+  /// \brief Copy-constructor.
   xiiAtomicBool(const xiiAtomicBool& rhs);
 
   /// \brief Sets the bool to the given value and returns its previous value.
@@ -91,15 +90,13 @@ public:
   /// \brief Returns the current value.
   operator bool() const; // [tested]
 
-  /// \brief Sets the internal value to \a newValue if the internal value is equal to \a expected and returns true, otherwise does nothing and returns
-  /// false.
+  /// \brief Sets the internal value to \a newValue if the internal value is equal to \a expected and returns true, otherwise does nothing and returns false.
   bool TestAndSet(bool bExpected, bool bNewValue);
 
 private:
   xiiAtomicInteger<xiiInt32> m_iAtomicInt;
 };
 
-// Include inline file
 #include <Foundation/Threading/Implementation/AtomicInteger_inl.h>
 
 using xiiAtomicInteger8   = xiiAtomicInteger<xiiInt8>;   // [tested]

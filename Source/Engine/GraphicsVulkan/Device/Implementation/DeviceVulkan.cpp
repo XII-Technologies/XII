@@ -1813,8 +1813,8 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     // VK_KHR_fragment_shading_rate
     if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
-      xiiBitflags<xiiGALShadingRateCapabilityFlags>& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
-      auto                                           SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
+      auto& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
+      auto  SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
         if (vkFlag != vk::False)
         {
           shadingRateCapabilityFlags |= capabilityFlag;
@@ -1865,11 +1865,11 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 
       for (xiiUInt32 i = 0U; i < shadingRates.GetCount(); ++i)
       {
-        const vk::PhysicalDeviceFragmentShadingRateKHR& srcShadingRate = shadingRates[i];
-        xiiGALShadingRateMode&                          dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
+        const auto& srcShadingRate = shadingRates[i];
+        auto&       dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
 
         // maxFragmentShadingRateRasterizationSamples - contains only maximum bit
-        // sampleCounts                               - contains all supported bits
+        // sampleCounts - contains all supported bits
         XII_ASSERT_DEV((srcShadingRate.fragmentSize.width == 1 && srcShadingRate.fragmentSize.height == 1) || (xiiUInt32{srcShadingRate.sampleCounts} <= ((static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateRasterizationSamples) << 1) - 1)), "");
 
         if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e1)
