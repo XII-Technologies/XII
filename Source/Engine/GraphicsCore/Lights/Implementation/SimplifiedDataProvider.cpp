@@ -4,7 +4,6 @@
 #include <GraphicsCore/Lights/SimplifiedDataExtractor.h>
 #include <GraphicsCore/Lights/SimplifiedDataProvider.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightDataSimplified.h>
 XII_DEFINE_AS_POD_TYPE(xiiSimplifiedDataConstants);
