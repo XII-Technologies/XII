@@ -81,10 +81,10 @@ xiiResult xiiGALComputePipelineStateVulkan::InitPlatform()
 
       for (xiiUInt32 i = 0; i < pushConstantRanges.GetCount(); ++i)
       {
-        const xiiGALPushConstantRange& src = pushConstantRanges[i];
-        vkPushRanges[i].stageFlags         = xiiVulkanTypeConversions::GetShaderStageFlags(src.m_ShaderStages);
-        vkPushRanges[i].offset             = src.m_uiOffset;
-        vkPushRanges[i].size               = src.m_uiSize;
+        const xiiGALPushConstantRange& range = pushConstantRanges[i];
+        vkPushRanges[i].stageFlags           = xiiVulkanTypeConversions::GetShaderStageFlags(range.m_ShaderStages);
+        vkPushRanges[i].offset               = range.m_uiOffset;
+        vkPushRanges[i].size                 = range.m_uiSize;
       }
 
       vkPipelineLayoutCreateInfo.pushConstantRangeCount = vkPushRanges.GetCount();
