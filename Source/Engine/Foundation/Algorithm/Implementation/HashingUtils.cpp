@@ -191,8 +191,10 @@ xiiUInt32 xiiHashingUtils::CRC32Hash(const void* pKey, size_t uiSizeInBytes)
 
   xiiUInt32 uiCRC32 = 0xFFFFFFFF;
 
-  for (size_t i = 0; i < uiSizeInBytes; i++)
+  for (size_t i = 0; i < uiSizeInBytes; ++i)
+  {
     uiCRC32 = (uiCRC32 >> 8) ^ uiCRC32Table[(uiCRC32 & 0xFF) ^ static_cast<const xiiUInt8*>(pKey)[i]];
+  }
 
   return static_cast<xiiUInt32>(uiCRC32 ^ 0xFFFFFFFF);
 }
