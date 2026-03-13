@@ -10,8 +10,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderer : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderer, xiiReflectedClass);
 
 public:
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const                    = 0;
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const = 0;
+  virtual void GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& out_types) const = 0;
 
   virtual void RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const = 0;
 };
