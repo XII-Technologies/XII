@@ -5,6 +5,7 @@
 
 class xiiSpriteRenderData;
 struct xiiPerInstanceData;
+struct xiiPerSpriteData;
 
 class XII_GRAPHICSCORE_DLL xiiSpriteRenderer : public xiiRenderer
 {
