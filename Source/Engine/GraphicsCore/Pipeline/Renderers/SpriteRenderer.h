@@ -1,5 +1,6 @@
 #pragma once
 
+#include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/Renderer.h>
 
 class xiiSpriteRenderData;
@@ -18,5 +19,13 @@ public:
   // xiiRenderer implementation
   virtual void GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& out_types) const override;
 
-  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
+  virtual void RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
+
+protected:
+  xiiSharedPtr<xiiGALBuffer> CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const;
+  void                       DeleteSpriteDataBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer) const;
+  virtual void               FillSpriteData(const xiiRenderDataBatch& batch) const;
+
+  xiiShaderResourceHandle                                               m_hShader;
+  mutable xiiDynamicArray<xiiPerSpriteData, xiiAlignedAllocatorWrapper> m_SpriteData;
 };
