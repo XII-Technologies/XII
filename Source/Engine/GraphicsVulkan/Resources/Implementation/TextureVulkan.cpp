@@ -43,8 +43,8 @@ namespace
 
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const auto&                      fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
+  xiiSharedPtr<xiiGALDeviceVulkan>                       pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const vk::PhysicalDeviceFragmentDensityMapFeaturesEXT& fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
   return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
 }
 
@@ -445,9 +445,43 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
 
     m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hNativeHandle);
 
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-    XII_IGNORE_UNUSED(pDeviceVulkan);
-    XII_IGNORE_UNUSED(vkLogicalDevice);
+#elif XII_ENABLED(XII_PLATFORM_LINUX) && defined(SYS_pidfd_getfd)
+    xiiVulkanAllocationInfo allocationInfo = pDeviceVulkan->GetVulkanMemoryAllocator()->GetAllocationInfo(m_ImageMemoryAllocation);
+
+    vk::MemoryGetFdInfoKHR vkGetMemoryFdInfo = {};
+    vkGetMemoryFdInfo.memory                 = allocationInfo.m_vkDeviceMemory;
+    vkGetMemoryFdInfo.handleType             = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+
+    xiiInt32 iFD;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getMemoryFdKHR(&vkGetMemoryFdInfo, &iFD, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_Type              = xiiGALExternalMemoryKind::Exportable;
+    m_ExternalMemoryDescription.m_Flags             = xiiGALExternalMemoryFlags::SharedAccess;
+    m_ExternalMemoryDescription.m_uiNativeHandle    = static_cast<uintptr_t>(iFD);
+    m_ExternalMemoryDescription.m_uiProcessId       = xiiProcess::GetCurrentProcessID();
+    m_ExternalMemoryDescription.m_uiSize            = allocationInfo.m_uiSize;
+    m_ExternalMemoryDescription.m_uiMemoryTypeIndex = allocationInfo.m_uiMemoryType;
+
+    vk::ExportSemaphoreCreateInfo vkExportSemaphoreCreateInfo = {};
+    vkExportSemaphoreCreateInfo.handleTypes                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+    vkSemaphoreTypeCreateInfo.pNext                          = &vkExportSemaphoreCreateInfo;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    xiiInt32                  iSemaphoreFD;
+    vk::SemaphoreGetFdInfoKHR vkSemaphoreGetFdInfo = {};
+    vkSemaphoreGetFdInfo.semaphore                 = m_vkExternalMemorySemaphore;
+    vkSemaphoreGetFdInfo.handleType                = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSemaphoreFdKHR(&vkSemaphoreGetFdInfo, &iSemaphoreFD, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = static_cast<uintptr_t>(iSemaphoreFD);
+
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
 #endif
@@ -545,8 +579,93 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.bindImageMemory(m_vkImage, vkDeviceMemory, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-    XII_IGNORE_UNUSED(pDeviceVulkan);
-    XII_IGNORE_UNUSED(vkLogicalDevice);
+    const bool bNeedsForeignFileDescriptorsImport = m_ExternalMemoryDescription.m_uiProcessId != xiiProcess::GetCurrentProcessID();
+    if (bNeedsForeignFileDescriptorsImport)
+    {
+      // On Linux, file descriptors are shared between processes, so no duplication is necessary. However, we still need to check if the process that created the external memory is still alive to avoid importing stale file descriptors.
+      xiiInt32 iProcessFD = syscall(SYS_pidfd_open, static_cast<pid_t>(m_ExternalMemoryDescription.m_uiProcessId), 0);
+      if (iProcessFD == -1)
+      {
+        xiiLog::Error("Failed to open (SYS_pidfd_open) process with ID {} to import external memory handle. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(errno));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0U;
+        return XII_FAILURE;
+      }
+      XII_SCOPE_EXIT(close(iProcessFD));
+
+      m_ExternalMemoryDescription.m_uiNativeHandle = syscall(SYS_pidfd_getfd, iProcessFD, static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeHandle), 0);
+      if (m_ExternalMemoryDescription.m_uiNativeHandle == static_cast<uintptr_t>(-1))
+      {
+        xiiLog::Error("Failed to duplicate external memory file descriptor (SYS_pidfd_getfd) from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(errno));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0U;
+        return XII_FAILURE;
+      }
+
+      m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = syscall(SYS_pidfd_getfd, iProcessFD, static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle), 0);
+      if (m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle == static_cast<uintptr_t>(-1))
+      {
+        xiiLog::Error("Failed to duplicate external semaphore file descriptor (SYS_pidfd_getfd) from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(errno));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+        return XII_FAILURE;
+      }
+    }
+
+    // Import semaphore.
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    vk::ImportSemaphoreFdInfoKHR vkImportSemaphoreFdInfo = {};
+    vkImportSemaphoreFdInfo.semaphore                    = m_vkExternalMemorySemaphore;
+    vkImportSemaphoreFdInfo.handleType                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+    vkImportSemaphoreFdInfo.fd                           = static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle);
+    vkImportSemaphoreFdInfo.flags                        = {};
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.importSemaphoreFdKHR(&vkImportSemaphoreFdInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Note: Importing a semaphore payload from a file descriptor does not transfer ownership of the file descriptor to the Vulkan implementation, so the application is still responsible for closing the file descriptor when it is no longer needed.
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+
+    // Image is already created, so import memory.
+    vk::ImageMemoryRequirementsInfo2 vkImageMemoryRequirementsInfo = {};
+    vkImageMemoryRequirementsInfo.image                            = m_vkImage;
+
+    vk::MemoryRequirements2 vkMemoryRequirements2 = {};
+    vkLogicalDevice.getImageMemoryRequirements2(&vkImageMemoryRequirementsInfo, &vkMemoryRequirements2, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    XII_ASSERT_DEBUG(m_ExternalMemoryDescription.m_uiSize >= vkMemoryRequirements2.memoryRequirements.size, "Imported memory size is smaller than required.");
+
+    vk::ImportMemoryFdInfoKHR vkImportMemoryFdInfo = {};
+    vkImportMemoryFdInfo.fd                        = static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeHandle);
+    vkImportMemoryFdInfo.handleType                = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+    vkImportMemoryFdInfo.pNext                     = nullptr;
+
+    vk::MemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.pNext                  = &vkImportMemoryFdInfo;
+    vkMemoryAllocateInfo.allocationSize         = vkMemoryRequirements2.memoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex        = m_ExternalMemoryDescription.m_uiMemoryTypeIndex;
+
+    vk::DeviceMemory vkDeviceMemory;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.allocateMemory(&vkMemoryAllocateInfo, nullptr, &vkDeviceMemory, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ImageMemoryAllocation                      = {};
+    m_ImageMemoryAllocationInfo.m_vkDeviceMemory = vkDeviceMemory;
+    m_ImageMemoryAllocationInfo.m_uiOffset       = 0U;
+    m_ImageMemoryAllocationInfo.m_uiSize         = vkMemoryRequirements2.memoryRequirements.size;
+    m_ImageMemoryAllocationInfo.m_uiMemoryType   = vkMemoryAllocateInfo.memoryTypeIndex;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.bindImageMemory(m_vkImage, vkDeviceMemory, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Note: Importing memory from a file descriptor does not transfer ownership of the file descriptor to the Vulkan implementation, so the application is still responsible for closing the file descriptor when it is no longer needed.
+    m_ExternalMemoryDescription.m_uiNativeHandle = 0U;
+
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
 #endif
@@ -557,10 +676,10 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
 
 void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
 {
-  const bool  bIsMemoryLess         = creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless);
-  const auto& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(creationDescription.m_Format);
-  const bool  bImageView2DSupported = !creationDescription.Is3D() || pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_bTextureView2DOn3DSupported;
-  const auto& vkExtensionFeatures   = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
+  const bool                             bIsMemoryLess         = creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless);
+  const xiiGALResourceFormatDescription& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(creationDescription.m_Format);
+  const bool                             bImageView2DSupported = !creationDescription.Is3D() || pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_bTextureView2DOn3DSupported;
+  const auto&                            vkExtensionFeatures   = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
   ref_vkImageCreateInfo       = vk::ImageCreateInfo();
   ref_vkImageCreateInfo.pNext = nullptr;

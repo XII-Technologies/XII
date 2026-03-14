@@ -171,7 +171,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   m_vkColorFormat = xiiVulkanTypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
-  vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+  vk::ColorSpaceKHR vkColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
   if (uiFormatCount == 1 && supportedFormats.PeekBack().format == vk::Format::eUndefined)
   {
     // If the format list includes just one entry of vk::Format::eUndefined, the surface has no preferred format. Otherwise, at least one supported format will be returned.
@@ -186,7 +186,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       if (surfaceFormat.format == m_vkColorFormat)
       {
         bFormatFound = true;
-        colorSpace   = surfaceFormat.colorSpace;
+        vkColorSpace = surfaceFormat.colorSpace;
+        break;
       }
     }
 
@@ -209,7 +210,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
         if (surfaceFormat.format == vkReplacementColorFormat)
         {
           bReplacementFormatFound = true;
-          colorSpace              = surfaceFormat.colorSpace;
+          vkColorSpace            = surfaceFormat.colorSpace;
+          break;
         }
       }
 
@@ -222,7 +224,14 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       }
       else
       {
-        xiiLog::Warning("Requested color buffer format '{}' is not supported by the surface.", vk::to_string(m_vkColorFormat).data());
+        // Neither the requested format nor the common replacement are supported.
+        // Fall back to the first supported surface format to guarantee a valid swapchain format.
+        const vk::SurfaceFormatKHR& vkFallbackFormat = supportedFormats[0];
+        xiiLog::Dev("Requested color buffer format '{}' is not supported by the surface. Falling back to supported format '{}'.", vk::to_string(m_vkColorFormat).data(), vk::to_string(vkFallbackFormat.format).data());
+
+        vkColorSpace                      = vkFallbackFormat.colorSpace;
+        m_vkColorFormat                   = vkFallbackFormat.format;
+        m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALResourceFormat(m_vkColorFormat);
       }
     }
   }
@@ -381,7 +390,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   swapChainCreateInfo.presentMode                = presentMode;
   swapChainCreateInfo.oldSwapchain               = vkOldSwapChain;
   swapChainCreateInfo.clipped                    = vk::True;
-  swapChainCreateInfo.imageColorSpace            = colorSpace;
+  swapChainCreateInfo.imageColorSpace            = vkColorSpace;
 
   XII_ASSERT_DEV(m_Description.m_UsageFlags != xiiGALSwapChainUsageFlags::None, "No swap chain flags are defined.");
   if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
