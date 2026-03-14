@@ -445,9 +445,43 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
 
     m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hNativeHandle);
 
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-    XII_IGNORE_UNUSED(pDeviceVulkan);
-    XII_IGNORE_UNUSED(vkLogicalDevice);
+#elif XII_ENABLED(XII_PLATFORM_LINUX) && defined(SYS_pidfd_getfd)
+    xiiVulkanAllocationInfo allocationInfo = pDeviceVulkan->GetVulkanMemoryAllocator()->GetAllocationInfo(m_ImageMemoryAllocation);
+
+    vk::MemoryGetFdInfoKHR vkGetMemoryFdInfo = {};
+    vkGetMemoryFdInfo.memory                 = allocationInfo.m_vkDeviceMemory;
+    vkGetMemoryFdInfo.handleType             = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+
+    xiiInt32 iFD;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getMemoryFdKHR(&vkGetMemoryFdInfo, &iFD, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_Type              = xiiGALExternalMemoryKind::Exportable;
+    m_ExternalMemoryDescription.m_Flags             = xiiGALExternalMemoryFlags::SharedAccess;
+    m_ExternalMemoryDescription.m_uiNativeHandle    = static_cast<uintptr_t>(iFD);
+    m_ExternalMemoryDescription.m_uiProcessId       = xiiProcess::GetCurrentProcessID();
+    m_ExternalMemoryDescription.m_uiSize            = allocationInfo.m_uiSize;
+    m_ExternalMemoryDescription.m_uiMemoryTypeIndex = allocationInfo.m_uiMemoryType;
+
+    vk::ExportSemaphoreCreateInfo vkExportSemaphoreCreateInfo = {};
+    vkExportSemaphoreCreateInfo.handleTypes                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+    vkSemaphoreTypeCreateInfo.pNext                          = &vkExportSemaphoreCreateInfo;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    xiiInt32                  iSemaphoreFD;
+    vk::SemaphoreGetFdInfoKHR vkSemaphoreGetFdInfo = {};
+    vkSemaphoreGetFdInfo.semaphore                 = m_vkExternalMemorySemaphore;
+    vkSemaphoreGetFdInfo.handleType                = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSemaphoreFdKHR(&vkSemaphoreGetFdInfo, &iSemaphoreFD, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = static_cast<uintptr_t>(iSemaphoreFD);
+
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
 #endif
