@@ -43,8 +43,8 @@ namespace
 
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const auto&                      fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
+  xiiSharedPtr<xiiGALDeviceVulkan>                       pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const vk::PhysicalDeviceFragmentDensityMapFeaturesEXT& fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
   return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
 }
 
