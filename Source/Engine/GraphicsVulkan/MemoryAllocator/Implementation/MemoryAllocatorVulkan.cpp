@@ -250,6 +250,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
         return vk::Result{vkResult};
       }
 
+      newExportedSharedPool.m_Pool = vmaPool;
+
       XII_VERIFY(m_pImplementation->m_ExportedSharedPools.Insert(uiMemoryTypeIndex, std::move(newExportedSharedPool)), "Failed to insert exported shared pool.");
 
       pExportedSharedPool = m_pImplementation->m_ExportedSharedPools.GetValue(uiMemoryTypeIndex);
@@ -325,6 +327,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
       {
         return vk::Result{vkResult};
       }
+
+      newExportedSharedPool.m_Pool = vmaPool;
 
       XII_VERIFY(m_pImplementation->m_ExportedSharedPools.Insert(uiMemoryTypeIndex, std::move(newExportedSharedPool)), "Failed to insert exported shared pool.");
 
