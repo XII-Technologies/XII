@@ -95,8 +95,8 @@ void xiiSelectedObjectsExtractorBase::Extract(const xiiView& view, const xiiDyna
         VisualizeSelectedObject(view, pObject, m_pSpatialVisBoundsCVar->GetValue(), m_pSpatialVisLocalBBoxCVar->GetValue(), m_pSpatialVisDataCVar->GetValue(), m_pSpatialVisDataOnlyCategoryCVar->GetValue().IsEmpty());
       }
     }
-  }
 #endif
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
