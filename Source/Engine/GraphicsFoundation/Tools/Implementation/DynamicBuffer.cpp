@@ -11,67 +11,118 @@ xiiGALDynamicBuffer::xiiGALDynamicBuffer(xiiSharedPtr<xiiGALDevice> pDevice, con
 {
   /// \todo Support sparse buffer.
 
-  m_Description.m_uiSize = 0U; // Current buffer size.
+  // Tracks the current internal buffer size, starts at 0.
+  m_Description.m_uiSize = 0U;
 
   if (m_pDevice && m_uiPendingSize > 0)
   {
+    XII_LOCK(m_Mutex);
+
     InitializeBuffer();
   }
 }
 
 xiiGALDynamicBuffer::~xiiGALDynamicBuffer() = default;
 
+xiiGALBufferCreationDescription xiiGALDynamicBuffer::GetDescription() const
+{
+  XII_LOCK(m_Mutex);
+
+  return m_Description;
+}
+
+xiiSharedPtr<xiiGALBuffer> xiiGALDynamicBuffer::GetBuffer() const
+{
+  XII_LOCK(m_Mutex);
+
+  return m_pBuffer;
+}
+
+bool xiiGALDynamicBuffer::PendingUpdate() const
+{
+  XII_LOCK(m_Mutex);
+
+  return m_uiPendingSize != m_Description.m_uiSize;
+}
+
 xiiSharedPtr<xiiGALBuffer> xiiGALDynamicBuffer::Resize(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiUInt64 uiNewSize, bool bDiscardContent)
 {
-  if (m_Description.m_uiSize != uiNewSize)
   {
-    m_uiPendingSize = uiNewSize;
+    XII_LOCK(m_Mutex);
 
-    if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
+    if (m_Description.m_uiSize != uiNewSize)
     {
-      if (!m_pStaleBuffer)
-      {
-        m_pStaleBuffer = std::move(m_pBuffer);
-      }
-      else
-      {
-        XII_ASSERT_DEV(!m_pBuffer || uiNewSize == 0, "There is a non-null stale buffer. This likely indicates that Resize() has been called multiple times with different sizes, but copy has not been committed by providing a non-null command list to either Resize() or Update().");
-      }
+      m_uiPendingSize = uiNewSize;
 
-      if (m_uiPendingSize == 0)
+      if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
       {
-        m_pStaleBuffer.Clear();
-        m_pBuffer.Clear();
-        m_Description.m_uiSize = 0U;
-      }
+        if (!m_pStaleBuffer)
+        {
+          m_pStaleBuffer = std::move(m_pBuffer);
+        }
+        else
+        {
+          XII_ASSERT_DEV(!m_pBuffer || uiNewSize == 0, "There is a non-null stale buffer. This likely indicates that Resize() has been called multiple times with different sizes, but copy has not been committed by providing a non-null command list to either Resize() or Update().");
+        }
 
-      if (bDiscardContent)
-      {
-        m_pStaleBuffer.Clear();
+        if (m_uiPendingSize == 0)
+        {
+          m_pStaleBuffer.Clear();
+          m_pBuffer.Clear();
+
+          m_Description.m_uiSize = 0U;
+        }
+
+        if (bDiscardContent)
+        {
+          m_pStaleBuffer.Clear();
+        }
       }
     }
   }
 
-  ResolvePendingResize(pCommandList, true);
+  // Resolve pending resize.
+  {
+    XII_LOCK(m_Mutex);
 
-  return m_pBuffer ? m_pBuffer : nullptr;
+    ResolvePendingResize(pCommandList, true);
+
+    return m_pBuffer;
+  }
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiGALDynamicBuffer::Update(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
-  ResolvePendingResize(pCommandList, false);
-
-  if (m_uiLastAfterResizeFenceValue + 1 < m_uiNextAfterResizeFenceValue)
   {
-    XII_ASSERT_DEV(pCommandList != nullptr, "The command list is invalid, but waiting for the fence is required.");
-    XII_ASSERT_DEV(m_pAfterResizeFence != nullptr, "The after resize fence is invalid.");
+    XII_LOCK(m_Mutex);
 
-    m_uiLastAfterResizeFenceValue = m_uiNextAfterResizeFenceValue - 1;
+    ResolvePendingResize(pCommandList, false);
+  }
 
+  // Fence wait logic: we need the command list to wait on the fence if required.
+  {
+    XII_LOCK(m_Mutex);
+
+    if (m_uiLastAfterResizeFenceValue + 1 < m_uiNextAfterResizeFenceValue)
+    {
+      XII_ASSERT_DEV(pCommandList != nullptr, "The command list is invalid, but waiting for the fence is required.");
+      XII_ASSERT_DEV(m_pAfterResizeFence != nullptr, "The after resize fence is invalid.");
+
+      m_uiLastAfterResizeFenceValue = m_uiNextAfterResizeFenceValue - 1;
+
+      // Release lock while waiting to avoid blocking other callers that might need to update state.
+    }
+  }
+
+  // Wait outside the lock to avoid deadlocks and allow other threads to make progress.
+  if (m_uiLastAfterResizeFenceValue != 0 && pCommandList != nullptr && m_pAfterResizeFence != nullptr)
+  {
     pCommandList->DeviceWaitForFence(m_pAfterResizeFence, m_uiLastAfterResizeFenceValue);
   }
 
-  return m_pBuffer ? m_pBuffer : nullptr;
+  XII_LOCK(m_Mutex);
+
+  return m_pBuffer;
 }
 
 void xiiGALDynamicBuffer::InitializeBuffer()
@@ -121,7 +172,7 @@ void xiiGALDynamicBuffer::ResolvePendingResize(xiiSharedPtr<xiiGALCommandList> p
     {
       if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
       {
-        ResizeDefaultBuffer(pCommandList);
+        CopyStaleBuffer(pCommandList);
       }
 
       m_Description.m_uiSize = m_uiPendingSize;
@@ -133,7 +184,7 @@ void xiiGALDynamicBuffer::ResolvePendingResize(xiiSharedPtr<xiiGALCommandList> p
   }
 }
 
-void xiiGALDynamicBuffer::ResizeDefaultBuffer(xiiSharedPtr<xiiGALCommandList> pCommandList)
+void xiiGALDynamicBuffer::CopyStaleBuffer(xiiSharedPtr<xiiGALCommandList> pCommandList)
 {
   if (!m_pStaleBuffer)
     return;
