@@ -123,26 +123,26 @@ private:
 template <typename T>
 static T* xiiCreateRenderDataForThisFrame(const xiiGameObject* pOwner);
 
+/// \brief This struct contains some default render data categories that can be used by the engine and the game. It is not required to use these categories, but it is recommended to use them if they fit the needs of the render data, as they are already sorted in a way that allows for correct rendering and good performance.
 struct XII_GRAPHICSCORE_DLL xiiDefaultRenderDataCategories
 {
-  static xiiRenderData::Category Light;
-  static xiiRenderData::Category Decal;
-  static xiiRenderData::Category ReflectionProbe;
-  static xiiRenderData::Category Sky;
-  static xiiRenderData::Category LitOpaque;
-  static xiiRenderData::Category LitOpaqueStatic;
-  static xiiRenderData::Category LitOpaqueDynamic;
-  static xiiRenderData::Category LitMasked;
-  static xiiRenderData::Category LitMaskedStatic;
-  static xiiRenderData::Category LitMaskedDynamic;
-  static xiiRenderData::Category LitTransparent;
-  static xiiRenderData::Category LitForeground;
-  static xiiRenderData::Category LitScreenFX;
-  static xiiRenderData::Category SimpleOpaque;
-  static xiiRenderData::Category SimpleTransparent;
-  static xiiRenderData::Category SimpleForeground;
-  static xiiRenderData::Category Selection;
-  static xiiRenderData::Category GUI;
+  static xiiRenderData::Category Light;             ///< This category is intended for all light sources. It should be rendered before all other categories, so that the light information is available for the rendering of the other categories.
+  static xiiRenderData::Category Decal;             ///< This category is intended for decals. It should be rendered after the opaque categories, but before the transparent categories, so that it can be blended correctly with both opaque and transparent objects.
+  static xiiRenderData::Category ReflectionProbe;   ///< This category is intended for reflection probes. It should be rendered after the opaque categories, but before the transparent categories, so that it can be blended correctly with both opaque and transparent objects.
+  static xiiRenderData::Category Sky;               ///< This category is intended for sky rendering. It should be rendered after all other categories, so that it is always in the background.
+  static xiiRenderData::Category OpaqueStatic;      ///< This category is intended for static opaque objects. It should be rendered before the dynamic opaque objects, so that it can be batched together and rendered in fewer draw calls.
+  static xiiRenderData::Category OpaqueDynamic;     ///< This category is intended for dynamic opaque objects. It should be rendered after the static opaque objects, so that it can be batched together and rendered in fewer draw calls.
+  static xiiRenderData::Category Opaque;            ///< This category is intended for all opaque objects. It should be rendered before the transparent objects, so that it can be blended correctly with the transparent objects.
+  static xiiRenderData::Category MaskedStatic;      ///< This category is intended for static masked objects, e.g. objects with alpha tested materials. It should be rendered after the opaque objects, but before the transparent objects, so that it can be blended correctly with the transparent objects.
+  static xiiRenderData::Category MaskedDynamic;     ///< This category is intended for dynamic masked objects, e.g. objects with alpha tested materials. It should be rendered after the opaque objects, but before the transparent objects, so that it can be blended correctly with the transparent objects.
+  static xiiRenderData::Category Masked;            ///< This category is intended for all masked objects, e.g. objects with alpha tested materials. It should be rendered after the opaque objects, but before the transparent objects, so that it can be blended correctly with the transparent objects.
+  static xiiRenderData::Category Transparent;       ///< This category is intended for all transparent objects. It should be rendered after the opaque objects, so that it can be blended correctly with the opaque objects.
+  static xiiRenderData::Category Foreground;        ///< This category is intended for foreground rendering, e.g. for objects that should be rendered on top of all other objects, but are not part of the GUI. It should be rendered after all other categories, so that it is always in the foreground.
+  static xiiRenderData::Category ScreenFX;          ///< This category is intended for screen space effects, e.g. for full screen post processing effects that should be rendered on top of all other objects, but are not part of the GUI. It should be rendered after all other categories, so that it is always on top of the screen.
+  static xiiRenderData::Category SimpleOpaque;      ///< This category is intended for simple opaque objects, e.g. objects that do not require any special handling and can be rendered with a simple shader. It should be rendered before the other opaque categories, so that it can be batched together and rendered in fewer draw calls.
+  static xiiRenderData::Category SimpleTransparent; ///< This category is intended for simple transparent objects, e.g. objects that do not require any special handling and can be rendered with a simple shader. It should be rendered after the other transparent categories, so that it can be blended correctly with the opaque objects.
+  static xiiRenderData::Category Selection;         ///< This category is intended for selection rendering, e.g. for rendering objects in a special way when they are selected in the editor. It should be rendered after all other categories, so that it can be blended correctly with all other objects.
+  static xiiRenderData::Category GUI;               ///< This category is intended for GUI rendering, e.g. for rendering the user interface. It should be rendered after all other categories, so that it is always on top of the GUI.
 };
 
 #define xiiInvalidRenderDataCategory xiiRenderData::Category()

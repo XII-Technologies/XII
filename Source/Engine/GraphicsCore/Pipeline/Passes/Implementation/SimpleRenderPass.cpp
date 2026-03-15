@@ -119,10 +119,10 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   xiiDebugRenderer::RenderWorldSpace(renderViewContext);
 
   pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
   pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
 

@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Decals/DecalAtlasResource.h>
-#include <GraphicsCore/Lights/ClusteredDataExtractor.h>
+#include <GraphicsCore/Pipeline/Extractors/ClusteredDataExtractor.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
 #include <GraphicsCore/Lights/Implementation/ClusteredDataUtils.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>

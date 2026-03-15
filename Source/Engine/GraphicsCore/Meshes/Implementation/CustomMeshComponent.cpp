@@ -264,9 +264,9 @@ xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;
 
 void xiiCustomMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 

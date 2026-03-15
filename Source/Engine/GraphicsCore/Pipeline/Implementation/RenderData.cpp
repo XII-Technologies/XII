@@ -230,21 +230,22 @@ xiiRenderData::Category xiiDefaultRenderDataCategories::Decal           = xiiRen
 xiiRenderData::Category xiiDefaultRenderDataCategories::ReflectionProbe = xiiRenderData::RegisterCategory("ReflectionProbe", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::Sky             = xiiRenderData::RegisterCategory("Sky", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitOpaqueStatic  = xiiRenderData::RegisterCategory("LitOpaqueStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitOpaqueDynamic = xiiRenderData::RegisterCategory("LitOpaqueDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitOpaque        = xiiRenderData::RegisterRedirectedCategory("LitOpaque", xiiDefaultRenderDataCategories::LitOpaqueStatic, xiiDefaultRenderDataCategories::LitOpaqueDynamic);
+xiiRenderData::Category xiiDefaultRenderDataCategories::OpaqueStatic  = xiiRenderData::RegisterCategory("OpaqueStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::OpaqueDynamic = xiiRenderData::RegisterCategory("OpaqueDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::Opaque        = xiiRenderData::RegisterRedirectedCategory("Opaque", xiiDefaultRenderDataCategories::OpaqueStatic, xiiDefaultRenderDataCategories::OpaqueDynamic);
 
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitMaskedStatic  = xiiRenderData::RegisterCategory("LitMaskedStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitMaskedDynamic = xiiRenderData::RegisterCategory("LitMaskedDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitMasked        = xiiRenderData::RegisterRedirectedCategory("LitMasked", xiiDefaultRenderDataCategories::LitMaskedStatic, xiiDefaultRenderDataCategories::LitMaskedDynamic);
 
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitTransparent = xiiRenderData::RegisterCategory("LitTransparent", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitForeground  = xiiRenderData::RegisterCategory("LitForeground", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
-xiiRenderData::Category xiiDefaultRenderDataCategories::LitScreenFX    = xiiRenderData::RegisterCategory("LitScreenFX", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
+xiiRenderData::Category xiiDefaultRenderDataCategories::MaskedStatic  = xiiRenderData::RegisterCategory("MaskedStatic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::MaskedDynamic = xiiRenderData::RegisterCategory("MaskedDynamic", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::Masked        = xiiRenderData::RegisterRedirectedCategory("Masked", xiiDefaultRenderDataCategories::MaskedStatic, xiiDefaultRenderDataCategories::MaskedDynamic);
+
+xiiRenderData::Category xiiDefaultRenderDataCategories::Transparent = xiiRenderData::RegisterCategory("Transparent", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
+
+xiiRenderData::Category xiiDefaultRenderDataCategories::Foreground = xiiRenderData::RegisterCategory("Foreground", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
+xiiRenderData::Category xiiDefaultRenderDataCategories::ScreenFX   = xiiRenderData::RegisterCategory("ScreenFX", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
 
 xiiRenderData::Category xiiDefaultRenderDataCategories::SimpleOpaque      = xiiRenderData::RegisterCategory("SimpleOpaque", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::SimpleTransparent = xiiRenderData::RegisterCategory("SimpleTransparent", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);
-xiiRenderData::Category xiiDefaultRenderDataCategories::SimpleForeground  = xiiRenderData::RegisterCategory("SimpleForeground", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 
 xiiRenderData::Category xiiDefaultRenderDataCategories::Selection = xiiRenderData::RegisterCategory("Selection", &xiiRenderSortingFunctions::ByRenderDataThenFrontToBack);
 xiiRenderData::Category xiiDefaultRenderDataCategories::GUI       = xiiRenderData::RegisterCategory("GUI", &xiiRenderSortingFunctions::BackToFrontThenByRenderData);

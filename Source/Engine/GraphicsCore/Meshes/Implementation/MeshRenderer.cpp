@@ -24,13 +24,12 @@ void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*,
 void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Sky);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitForeground);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Foreground);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
