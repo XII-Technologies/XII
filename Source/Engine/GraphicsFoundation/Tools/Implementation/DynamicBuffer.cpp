@@ -3,10 +3,8 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Tools/DynamicBuffer.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDynamicBuffer, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiGALDynamicBuffer::xiiGALDynamicBuffer(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALBufferCreationDescription& description) :
   xiiGALObject(), m_pDevice(pDevice), m_Description(description), m_uiPendingSize(description.m_uiSize)

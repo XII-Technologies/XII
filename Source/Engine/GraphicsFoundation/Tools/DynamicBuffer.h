@@ -5,7 +5,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 
-class XII_GRAPHICSFOUNDATION_DLL xiiGALDynamicBuffer : xiiGALObject
+class XII_GRAPHICSFOUNDATION_DLL xiiGALDynamicBuffer : public xiiGALObject
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALDynamicBuffer);
 
