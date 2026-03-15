@@ -64,10 +64,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutSemantic
     TexCoord9,
 
     BiTangent,
+
     BoneIndices0,
     BoneIndices1,
     BoneWeights0,
     BoneWeights1,
+
+    DataOffsets,
 
     ENUM_COUNT,
 
