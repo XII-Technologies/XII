@@ -60,7 +60,6 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 xiiRenderContext*                                                                                           xiiRenderContext::s_pDefaultInstance = nullptr;
 xiiHybridArray<xiiRenderContext*, 2U>                                                                       xiiRenderContext::s_Instances;
-xiiSharedPtr<xiiGALSampler>                                                                                 xiiRenderContext::s_hDefaultSamplers[4];
 xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::RenderPassCache, xiiGALDescriptorHash>  xiiRenderContext::s_RenderPassCache;
 xiiHashTable<xiiGALRenderPassCreationDescription, xiiRenderContext::FramebufferCache, xiiGALDescriptorHash> xiiRenderContext::s_FramebufferCache;
 xiiMap<xiiRenderContext::ShaderVertexDeclaration, xiiSharedPtr<xiiGALInputLayout>>                          xiiRenderContext::s_InputLayouts;
@@ -1346,44 +1345,6 @@ void xiiRenderContext::SetGlobalAndWorldTimeConstants(xiiTime worldTime)
 }
 
 // static
-xiiGALSamplerCreationDescription xiiRenderContext::GetDefaultSamplerDescription(xiiBitflags<xiiDefaultSamplerFlags> flags)
-{
-  xiiGALSamplerCreationDescription samplerDescription;
-  samplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-  samplerDescription.m_BorderColor        = xiiColor::Black;
-  samplerDescription.m_fMipLODBias        = 0.0f;
-  samplerDescription.m_fMinLOD            = -1.0f;
-  samplerDescription.m_fMaxLOD            = 42000.0f;
-  samplerDescription.m_uiMaxAnisotropy    = 4U;
-
-  samplerDescription.m_MinFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
-  samplerDescription.m_MagFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
-  samplerDescription.m_MipFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
-
-  samplerDescription.m_AddressU = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
-  samplerDescription.m_AddressV = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
-  samplerDescription.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
-
-  return samplerDescription;
-}
-
-xiiSharedPtr<xiiGALSampler> xiiRenderContext::GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags)
-{
-  xiiUInt32 uiSamplerIndex = flags.GetValue();
-  XII_ASSERT_DEV(uiSamplerIndex < XII_ARRAY_SIZE(s_hDefaultSamplers), "");
-
-  if (!s_hDefaultSamplers[uiSamplerIndex])
-  {
-    xiiSharedPtr<xiiGALDevice>       pDevice            = xiiGALDevice::GetDefaultDevice();
-    xiiGALSamplerCreationDescription samplerDescription = GetDefaultSamplerDescription(flags);
-
-    s_hDefaultSamplers[uiSamplerIndex] = pDevice->CreateSampler(samplerDescription);
-  }
-
-  return s_hDefaultSamplers[uiSamplerIndex];
-}
-
-// static
 void xiiRenderContext::OnEngineStartup()
 {
   xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiRenderContext::GALStaticDeviceEventHandler));
@@ -1392,12 +1353,6 @@ void xiiRenderContext::OnEngineStartup()
 // static
 void xiiRenderContext::OnEngineShutdown()
 {
-  // Cleanup sampler states.
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(s_hDefaultSamplers); ++i)
-  {
-    s_hDefaultSamplers[i].Clear();
-  }
-
   s_FramebufferCache.Clear();
   s_RenderPassCache.Clear();
   s_InputLayouts.Clear();
