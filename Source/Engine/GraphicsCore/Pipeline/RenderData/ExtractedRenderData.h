@@ -14,9 +14,6 @@ public:
   XII_ALWAYS_INLINE void             SetCamera(const xiiCamera& camera) { m_Camera = camera; }
   XII_ALWAYS_INLINE const xiiCamera& GetCamera() const { return m_Camera; }
 
-  XII_ALWAYS_INLINE void             SetLodCamera(const xiiCamera& camera) { m_LodCamera = camera; }
-  XII_ALWAYS_INLINE const xiiCamera& GetLodCamera() const { return m_LodCamera; }
-
   XII_ALWAYS_INLINE void               SetViewData(const xiiViewData& viewData) { m_ViewData = viewData; }
   XII_ALWAYS_INLINE const xiiViewData& GetViewData() const { return m_ViewData; }
 
