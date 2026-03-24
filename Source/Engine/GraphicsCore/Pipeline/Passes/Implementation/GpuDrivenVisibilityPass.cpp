@@ -86,6 +86,11 @@ void xiiRenderGraphGpuVisibilityPass::RecordCommands(const xiiRenderGraphPassExe
     m_SetupCommandListFunc(*executionContext.m_pCommandList, executionContext);
   }
 
+  if (executionContext.m_pCommandList->CommitShaderResources().Failed())
+  {
+    return;
+  }
+
   if (m_pIndirectDispatchArguments != nullptr)
   {
     executionContext.m_pCommandList->DispatchComputeIndirect(xiiGALDispatchComputeIndirectDescription(m_pIndirectDispatchArguments, m_IndirectBufferTransitionMode, m_uiIndirectDispatchArgumentOffset));

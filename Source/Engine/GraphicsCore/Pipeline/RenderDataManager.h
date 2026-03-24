@@ -164,6 +164,15 @@ public:
   /// \brief Returns a snapshot of currently visible instance indices.
   xiiArrayPtr<const xiiUInt32> GetGpuDrivenVisibleInstanceIndices() const;
 
+  /// \brief Returns the current GPU scene-instances buffer used by visibility dispatch.
+  xiiSharedPtr<xiiGALBuffer> GetGpuDrivenSceneInstancesBuffer() const;
+
+  /// \brief Returns the current GPU visible-instance indices buffer written by visibility dispatch.
+  xiiSharedPtr<xiiGALBuffer> GetGpuDrivenVisibleInstancesBuffer() const;
+
+  /// \brief Returns the current GPU visible-instance count buffer written by visibility dispatch.
+  xiiSharedPtr<xiiGALBuffer> GetGpuDrivenVisibleInstanceCountBuffer() const;
+
   /// \brief Registers the GPU-driven visibility pass into the provided render graph runtime.
   void AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -188,6 +197,9 @@ private:
   void CompactSkinningDataBuffer(const UpdateContext& context);
   void OnExtractionEvent(const xiiRenderWorldExtractionEvent& e);
 
+  void EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const;
+  void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+
   mutable xiiMutex m_Mutex;
 
   xiiHybridArray<xiiSharedPtr<xiiGALDynamicBuffer>, 16> m_Buffers;
@@ -202,6 +214,11 @@ private:
 
   mutable xiiDynamicArray<xiiGpuDrivenInstance> m_GpuDrivenInstances;
   mutable xiiDynamicArray<xiiUInt32>            m_GpuDrivenVisibleInstanceIndices;
+  mutable xiiShaderResourceHandle               m_hGpuDrivenVisibilityShader;
+  mutable xiiSharedPtr<xiiGALComputePipelineState> m_pGpuDrivenVisibilityPipelineState;
+  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuSceneInstancesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstancesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstanceCountBuffer;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass> m_pGpuDrivenVisibilityPass;
 };
 

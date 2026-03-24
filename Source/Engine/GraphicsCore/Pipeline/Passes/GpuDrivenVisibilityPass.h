@@ -7,8 +7,8 @@
 
 /// \brief Compute-queue RenderGraph pass scaffold for GPU-driven visibility culling.
 ///
-/// This pass intentionally defaults to metadata-only mode (dispatch disabled) until
-/// a compute PSO and descriptor bindings are wired by the caller.
+/// The pass supports a default compute-PSO setup path and allows callers to override
+/// binding logic through an optional setup callback.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphGpuVisibilityPass final : public xiiRenderGraphPassBase
 {
 public:
