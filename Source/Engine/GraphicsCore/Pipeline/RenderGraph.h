@@ -49,7 +49,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiRenderGraphResourceAccessFlags);
 /// \brief Declares one input/output dependency of a pass.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceUsage
 {
-  xiiHashedString                                 m_sResourceName;
+  xiiHashedString                                m_sResourceName;
   xiiBitflags<xiiRenderGraphResourceAccessFlags> m_AccessFlags   = xiiRenderGraphResourceAccessFlags::Read;
   xiiBitflags<xiiGALResourceStateFlags>          m_RequiredState = xiiGALResourceStateFlags::Unknown;
 };
@@ -57,10 +57,30 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceUsage
 /// \brief Immutable pass metadata used by the render graph compiler.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphPassDescription
 {
-  xiiHashedString                        m_sPassName;
-  xiiBitflags<xiiGALCommandQueueFlags>  m_QueueFlags = xiiGALCommandQueueFlags::Graphics;
+  xiiHashedString                                 m_sPassName;
+  xiiBitflags<xiiGALCommandQueueFlags>            m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
+  bool                                            m_bHasSideEffects = false;
   xiiHybridArray<xiiRenderGraphResourceUsage, 8U> m_Inputs;
   xiiHybridArray<xiiRenderGraphResourceUsage, 8U> m_Outputs;
+};
+
+/// \brief Compile-time knobs for optimizing RenderGraph scheduling.
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompileSettings
+{
+  bool      m_bEnablePassCulling  = false;
+  bool      m_bEnableCompileCache = true;
+  xiiUInt32 m_uiCacheSalt         = 0U;
+};
+
+/// \brief Runtime statistics describing the latest compile/execute state.
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphStatistics
+{
+  xiiUInt32 m_uiRegisteredPassCount = 0U;
+  xiiUInt32 m_uiCompiledPassCount   = 0U;
+  xiiUInt32 m_uiCulledPassCount     = 0U;
+  xiiUInt32 m_uiBarrierCount        = 0U;
+  xiiUInt64 m_uiGraphSignature      = 0ULL;
+  bool      m_bUsedCachedCompile    = false;
 };
 
 /// \brief Context provided to a pass when recording commands.
@@ -93,11 +113,11 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 /// \brief Represents one synthesized resource state transition between two passes.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphBarrier
 {
-  xiiHashedString                        m_sResourceName;
-  xiiBitflags<xiiGALResourceStateFlags>  m_BeforeState  = xiiGALResourceStateFlags::Unknown;
-  xiiBitflags<xiiGALResourceStateFlags>  m_AfterState   = xiiGALResourceStateFlags::Unknown;
-  xiiUInt32                              m_uiFromPassIndex = xiiInvalidIndex;
-  xiiUInt32                              m_uiToPassIndex   = xiiInvalidIndex;
+  xiiHashedString                       m_sResourceName;
+  xiiBitflags<xiiGALResourceStateFlags> m_BeforeState     = xiiGALResourceStateFlags::Unknown;
+  xiiBitflags<xiiGALResourceStateFlags> m_AfterState      = xiiGALResourceStateFlags::Unknown;
+  xiiUInt32                             m_uiFromPassIndex = xiiInvalidIndex;
+  xiiUInt32                             m_uiToPassIndex   = xiiInvalidIndex;
 };
 
 /// \brief Resolves graph resource names to runtime GAL resources during execution.
@@ -119,11 +139,10 @@ public:
   void AddPass(const xiiRenderGraphPassBase* pPass);
   void Reset();
 
-  [[nodiscard]] xiiResult Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiStringBuilder* out_pErrorMessage = nullptr) const;
-  [[nodiscard]] xiiResult Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiDynamicArray<xiiRenderGraphBarrier>& out_barriers, xiiStringBuilder* out_pErrorMessage = nullptr) const;
+  [[nodiscard]] xiiResult Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiDynamicArray<xiiRenderGraphBarrier>& out_barriers, const xiiRenderGraphCompileSettings& compileSettings, xiiRenderGraphStatistics* out_pStatistics, xiiStringBuilder* out_pErrorMessage = nullptr) const;
 
 private:
-  [[nodiscard]] xiiResult ValidatePassDescription(const xiiRenderGraphPassDescription& passDescription, xiiUInt32 uiPassIndex, xiiStringBuilder* out_pErrorMessage) const;
+  [[nodiscard]] xiiResult                                    ValidatePassDescription(const xiiRenderGraphPassDescription& passDescription, xiiUInt32 uiPassIndex, xiiStringBuilder* out_pErrorMessage) const;
   [[nodiscard]] static xiiBitflags<xiiGALResourceStateFlags> DeriveRequiredState(xiiBitflags<xiiRenderGraphResourceAccessFlags> accessFlags);
 
 private:
@@ -184,7 +203,14 @@ public:
   void AddPass(const xiiRenderGraphPassBase* pPass);
   void ClearPasses();
 
-  void SetExternalResourceResolver(const xiiRenderGraphResourceResolver* pResourceResolver);
+  XII_ALWAYS_INLINE void SetCompileSettings(const xiiRenderGraphCompileSettings& compileSettings)
+  {
+    m_CompileSettings = compileSettings;
+    m_bIsCompiled     = false;
+  }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiRenderGraphCompileSettings& GetCompileSettings() const { return m_CompileSettings; }
+
+  void                   SetExternalResourceResolver(const xiiRenderGraphResourceResolver* pResourceResolver);
   XII_ALWAYS_INLINE void SetResource(xiiHashedString sResourceName, xiiSharedPtr<xiiGALResource> pResource)
   {
     m_LocalResources.SetResource(sResourceName, pResource);
@@ -197,9 +223,12 @@ public:
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphCompiledPass> GetCompiledPasses() const { return m_CompiledPasses; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphBarrier> GetBarriers() const { return m_Barriers; }
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiRenderGraphStatistics&          GetStatistics() const { return m_Statistics; }
 
 private:
   xiiDynamicArray<const xiiRenderGraphPassBase*> m_Passes;
+
+  xiiRenderGraphCompileSettings m_CompileSettings;
 
   xiiRenderGraphCompiler      m_Compiler;
   xiiRenderGraphExecutor      m_Executor;
@@ -207,6 +236,9 @@ private:
 
   xiiDynamicArray<xiiRenderGraphCompiledPass> m_CompiledPasses;
   xiiDynamicArray<xiiRenderGraphBarrier>      m_Barriers;
+
+  xiiRenderGraphStatistics m_Statistics;
+  xiiUInt64                m_uiLastCompileSignature = 0ULL;
 
   const xiiRenderGraphResourceResolver* m_pExternalResourceResolver = nullptr;
   bool                                  m_bIsCompiled               = false;

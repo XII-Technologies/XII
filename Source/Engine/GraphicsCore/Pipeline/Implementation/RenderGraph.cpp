@@ -1,5 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
 namespace
@@ -95,6 +96,128 @@ namespace
       }
     }
   }
+
+  static void AppendHash(xiiUInt64& inout_uiSeed, const void* pData, xiiUInt64 uiNumBytes)
+  {
+    inout_uiSeed = xiiHashingUtils::xxHash64(pData, static_cast<size_t>(uiNumBytes), inout_uiSeed);
+  }
+
+  template <typename T>
+  static void AppendHashValue(xiiUInt64& inout_uiSeed, const T& value)
+  {
+    AppendHash(inout_uiSeed, &value, sizeof(T));
+  }
+
+  static xiiUInt64 ComputeRenderGraphSignature(const xiiArrayPtr<const xiiRenderGraphPassBase* const>& passes, const xiiRenderGraphCompileSettings& compileSettings)
+  {
+    xiiUInt64 uiSeed = 0x9E3779B97F4A7C15ULL;
+
+    AppendHashValue(uiSeed, compileSettings.m_bEnablePassCulling);
+    AppendHashValue(uiSeed, compileSettings.m_bEnableCompileCache);
+    AppendHashValue(uiSeed, compileSettings.m_uiCacheSalt);
+
+    const xiiUInt32 uiPassCount = passes.GetCount();
+    AppendHashValue(uiSeed, uiPassCount);
+
+    for (const xiiRenderGraphPassBase* pPass : passes)
+    {
+      if (pPass == nullptr)
+      {
+        const xiiUInt32 uiNullPassMarker = 0xFFFFFFFFU;
+        AppendHashValue(uiSeed, uiNullPassMarker);
+        continue;
+      }
+
+      const xiiRenderGraphPassDescription& passDescription = pPass->GetDescription();
+      const xiiUInt64                      uiPassNameHash  = passDescription.m_sPassName.GetHash();
+      const xiiUInt32                      uiQueueFlags    = passDescription.m_QueueFlags.GetValue();
+
+      AppendHashValue(uiSeed, uiPassNameHash);
+      AppendHashValue(uiSeed, uiQueueFlags);
+      AppendHashValue(uiSeed, passDescription.m_bHasSideEffects);
+
+      const xiiUInt32 uiInputCount  = passDescription.m_Inputs.GetCount();
+      const xiiUInt32 uiOutputCount = passDescription.m_Outputs.GetCount();
+
+      AppendHashValue(uiSeed, uiInputCount);
+      AppendHashValue(uiSeed, uiOutputCount);
+
+      for (const xiiRenderGraphResourceUsage& usage : passDescription.m_Inputs)
+      {
+        const xiiUInt64 uiResourceNameHash = usage.m_sResourceName.GetHash();
+        const xiiUInt16 uiAccessFlags      = usage.m_AccessFlags.GetValue();
+        const xiiUInt32 uiRequiredState    = usage.m_RequiredState.GetValue();
+
+        AppendHashValue(uiSeed, uiResourceNameHash);
+        AppendHashValue(uiSeed, uiAccessFlags);
+        AppendHashValue(uiSeed, uiRequiredState);
+      }
+
+      for (const xiiRenderGraphResourceUsage& usage : passDescription.m_Outputs)
+      {
+        const xiiUInt64 uiResourceNameHash = usage.m_sResourceName.GetHash();
+        const xiiUInt16 uiAccessFlags      = usage.m_AccessFlags.GetValue();
+        const xiiUInt32 uiRequiredState    = usage.m_RequiredState.GetValue();
+
+        AppendHashValue(uiSeed, uiResourceNameHash);
+        AppendHashValue(uiSeed, uiAccessFlags);
+        AppendHashValue(uiSeed, uiRequiredState);
+      }
+    }
+
+    return uiSeed;
+  }
+
+  static void BuildLivePassMask(const xiiArrayPtr<const xiiRenderGraphPassBase* const>& passes, const xiiArrayPtr<const xiiHybridArray<xiiUInt32, 8U>>& dependencies, const xiiRenderGraphCompileSettings& compileSettings, xiiDynamicArray<bool>& out_livePassMask)
+  {
+    out_livePassMask.SetCount(passes.GetCount(), true);
+
+    if (!compileSettings.m_bEnablePassCulling)
+    {
+      return;
+    }
+
+    xiiDynamicArray<bool> livePasses;
+    livePasses.SetCount(passes.GetCount(), false);
+
+    xiiDynamicArray<xiiUInt32> livePassStack;
+    livePassStack.Reserve(passes.GetCount());
+
+    for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < passes.GetCount(); ++uiPassIndex)
+    {
+      const xiiRenderGraphPassBase* pPass = passes[uiPassIndex];
+      if (pPass != nullptr && pPass->GetDescription().m_bHasSideEffects)
+      {
+        livePasses[uiPassIndex] = true;
+        livePassStack.PushBack(uiPassIndex);
+      }
+    }
+
+    if (livePassStack.IsEmpty())
+    {
+      // Keep current behavior if no terminal passes were explicitly tagged as side-effectful.
+      return;
+    }
+
+    while (!livePassStack.IsEmpty())
+    {
+      const xiiUInt32 uiPassIndex = livePassStack.PeekBack();
+      livePassStack.PopBack();
+
+      for (xiiUInt32 uiDependencyPassIndex : dependencies[uiPassIndex])
+      {
+        if (livePasses[uiDependencyPassIndex])
+        {
+          continue;
+        }
+
+        livePasses[uiDependencyPassIndex] = true;
+        livePassStack.PushBack(uiDependencyPassIndex);
+      }
+    }
+
+    out_livePassMask = livePasses;
+  }
 } // namespace
 
 void xiiRenderGraphCompiler::AddPass(const xiiRenderGraphPassBase* pPass)
@@ -109,13 +232,7 @@ void xiiRenderGraphCompiler::Reset()
   m_Passes.Clear();
 }
 
-xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiStringBuilder* out_pErrorMessage) const
-{
-  xiiDynamicArray<xiiRenderGraphBarrier> unusedBarriers;
-  return Compile(out_compiledPasses, unusedBarriers, out_pErrorMessage);
-}
-
-xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiDynamicArray<xiiRenderGraphBarrier>& out_barriers, xiiStringBuilder* out_pErrorMessage) const
+xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiDynamicArray<xiiRenderGraphBarrier>& out_barriers, const xiiRenderGraphCompileSettings& compileSettings, xiiRenderGraphStatistics* out_pStatistics, xiiStringBuilder* out_pErrorMessage) const
 {
   out_compiledPasses.Clear();
   out_barriers.Clear();
@@ -125,6 +242,14 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
     out_pErrorMessage->Clear();
   }
 
+  if (out_pStatistics != nullptr)
+  {
+    out_pStatistics->m_uiRegisteredPassCount = m_Passes.GetCount();
+    out_pStatistics->m_uiCompiledPassCount   = 0U;
+    out_pStatistics->m_uiCulledPassCount     = 0U;
+    out_pStatistics->m_uiBarrierCount        = 0U;
+  }
+
   out_compiledPasses.Reserve(m_Passes.GetCount());
 
   xiiHashTable<xiiHashedString, xiiUInt32> passNameToIndex;
@@ -132,7 +257,7 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
 
   xiiDynamicArray<xiiHybridArray<xiiUInt32, 8U>> dependencies;
   xiiDynamicArray<xiiHybridArray<xiiUInt32, 8U>> dependents;
-  xiiDynamicArray<xiiUInt32>                    inDegree;
+  xiiDynamicArray<xiiUInt32>                     inDegree;
 
   dependencies.SetCount(m_Passes.GetCount());
   dependents.SetCount(m_Passes.GetCount());
@@ -165,7 +290,7 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
         XII_VERIFY(resourceProducer.TryGetValue(output.m_sResourceName, uiProducerIndex), "Producer lookup must succeed.");
 
         const xiiRenderGraphPassDescription& producerDescription = m_Passes[uiProducerIndex]->GetDescription();
-        xiiStringBuilder sError;
+        xiiStringBuilder                     sError;
         sError.SetFormat("Resource '{0}' is written by multiple passes ('{1}' and '{2}').", output.m_sResourceName.GetView(), producerDescription.m_sPassName.GetView(), passDescription.m_sPassName.GetView());
         return BuildError(out_pErrorMessage, sError.GetView());
       }
@@ -202,11 +327,31 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
     }
   }
 
+  xiiDynamicArray<bool> livePassMask;
+  BuildLivePassMask(m_Passes, dependencies, compileSettings, livePassMask);
+
+  xiiUInt32 uiIncludedPassCount = 0U;
+  for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < livePassMask.GetCount(); ++uiPassIndex)
+  {
+    if (livePassMask[uiPassIndex])
+    {
+      ++uiIncludedPassCount;
+      continue;
+    }
+
+    inDegree[uiPassIndex] = 0U;
+  }
+
   xiiDynamicArray<xiiUInt32> readyPasses;
   readyPasses.Reserve(m_Passes.GetCount());
 
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < m_Passes.GetCount(); ++uiPassIndex)
   {
+    if (!livePassMask[uiPassIndex])
+    {
+      continue;
+    }
+
     if (inDegree[uiPassIndex] == 0U)
     {
       readyPasses.PushBack(uiPassIndex);
@@ -216,14 +361,19 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
   xiiUInt32 uiReadyCursor = 0U;
   while (uiReadyCursor < readyPasses.GetCount())
   {
-    const xiiUInt32 uiPassIndex           = readyPasses[uiReadyCursor++];
+    const xiiUInt32             uiPassIndex  = readyPasses[uiReadyCursor++];
     xiiRenderGraphCompiledPass& compiledPass = out_compiledPasses.ExpandAndGetRef();
-    compiledPass.m_pPass                  = m_Passes[uiPassIndex];
-    compiledPass.m_uiPassIndex            = uiPassIndex;
-    compiledPass.m_Dependencies           = dependencies[uiPassIndex];
+    compiledPass.m_pPass                     = m_Passes[uiPassIndex];
+    compiledPass.m_uiPassIndex               = uiPassIndex;
+    compiledPass.m_Dependencies              = dependencies[uiPassIndex];
 
     for (xiiUInt32 uiDependentPassIndex : dependents[uiPassIndex])
     {
+      if (!livePassMask[uiDependentPassIndex])
+      {
+        continue;
+      }
+
       XII_ASSERT_DEV(inDegree[uiDependentPassIndex] > 0U, "In-degree must be greater than zero before decrement.");
       --inDegree[uiDependentPassIndex];
 
@@ -234,7 +384,7 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
     }
   }
 
-  if (out_compiledPasses.GetCount() != m_Passes.GetCount())
+  if (out_compiledPasses.GetCount() != uiIncludedPassCount)
   {
     xiiStringBuilder sError;
     sError.Set("Render graph contains a cycle. Topological scheduling failed.");
@@ -242,7 +392,7 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
   }
 
   xiiHashTable<xiiHashedString, xiiBitflags<xiiGALResourceStateFlags>> currentResourceStates;
-  xiiHashTable<xiiHashedString, xiiUInt32>                              lastPassUsingResource;
+  xiiHashTable<xiiHashedString, xiiUInt32>                             lastPassUsingResource;
   xiiHashTable<xiiHashedString, xiiBitflags<xiiGALResourceStateFlags>> passResourceStates;
 
   for (const xiiRenderGraphCompiledPass& compiledPass : out_compiledPasses)
@@ -252,11 +402,11 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
 
     for (auto it = passResourceStates.GetIterator(); it.IsValid(); ++it)
     {
-      const xiiHashedString& resourceName                                = it.Key();
-      const xiiBitflags<xiiGALResourceStateFlags> requiredState          = it.Value();
+      const xiiHashedString&                      resourceName  = it.Key();
+      const xiiBitflags<xiiGALResourceStateFlags> requiredState = it.Value();
 
-      xiiBitflags<xiiGALResourceStateFlags> currentState                 = xiiGALResourceStateFlags::Unknown;
-      const bool bHasCurrentState = currentResourceStates.TryGetValue(resourceName, currentState);
+      xiiBitflags<xiiGALResourceStateFlags> currentState     = xiiGALResourceStateFlags::Unknown;
+      const bool                            bHasCurrentState = currentResourceStates.TryGetValue(resourceName, currentState);
 
       xiiUInt32 uiPreviousPassIndex = xiiInvalidIndex;
       XII_IGNORE_UNUSED(lastPassUsingResource.TryGetValue(resourceName, uiPreviousPassIndex));
@@ -274,6 +424,13 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
       currentResourceStates.Insert(resourceName, requiredState);
       lastPassUsingResource.Insert(resourceName, compiledPass.m_uiPassIndex);
     }
+  }
+
+  if (out_pStatistics != nullptr)
+  {
+    out_pStatistics->m_uiCompiledPassCount = out_compiledPasses.GetCount();
+    out_pStatistics->m_uiCulledPassCount   = m_Passes.GetCount() - out_compiledPasses.GetCount();
+    out_pStatistics->m_uiBarrierCount      = out_barriers.GetCount();
   }
 
   return XII_SUCCESS;
@@ -372,26 +529,23 @@ xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraph
     return BuildError(out_pErrorMessage, "Render graph execution requires a resource resolver when barriers are present.");
   }
 
-  xiiHashTable<xiiUInt32, xiiHybridArray<const xiiRenderGraphBarrier*, 4U>> barriersByTargetPass;
-  barriersByTargetPass.Reserve(barriers.GetCount());
+  xiiUInt32 uiMaxPassIndex = 0U;
+  for (const xiiRenderGraphCompiledPass& compiledPass : compiledPasses)
+  {
+    uiMaxPassIndex = xiiMath::Max(uiMaxPassIndex, compiledPass.m_uiPassIndex);
+  }
+
+  xiiDynamicArray<xiiHybridArray<const xiiRenderGraphBarrier*, 4U>> barriersByTargetPass;
+  barriersByTargetPass.SetCount(uiMaxPassIndex + 1U);
 
   for (const xiiRenderGraphBarrier& barrier : barriers)
   {
-    if (barrier.m_uiToPassIndex == xiiInvalidIndex)
+    if (barrier.m_uiToPassIndex == xiiInvalidIndex || barrier.m_uiToPassIndex >= barriersByTargetPass.GetCount())
     {
       continue;
     }
 
-    xiiHybridArray<const xiiRenderGraphBarrier*, 4U> passBarriers;
-    if (!barriersByTargetPass.TryGetValue(barrier.m_uiToPassIndex, passBarriers))
-    {
-      passBarriers.PushBack(&barrier);
-      barriersByTargetPass.Insert(barrier.m_uiToPassIndex, passBarriers);
-      continue;
-    }
-
-    passBarriers.PushBack(&barrier);
-    barriersByTargetPass.Insert(barrier.m_uiToPassIndex, passBarriers);
+    barriersByTargetPass[barrier.m_uiToPassIndex].PushBack(&barrier);
   }
 
   xiiHybridArray<xiiGALStateTransitionDescription, 16U> stateTransitions;
@@ -400,15 +554,16 @@ xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraph
   {
     stateTransitions.Clear();
 
-    xiiHybridArray<const xiiRenderGraphBarrier*, 4U> passBarriers;
-    if (barriersByTargetPass.TryGetValue(compiledPass.m_uiPassIndex, passBarriers))
+    if (compiledPass.m_uiPassIndex < barriersByTargetPass.GetCount())
     {
+      const xiiHybridArray<const xiiRenderGraphBarrier*, 4U>& passBarriers = barriersByTargetPass[compiledPass.m_uiPassIndex];
+
       for (const xiiRenderGraphBarrier* pBarrier : passBarriers)
       {
         XII_ASSERT_DEV(pBarrier != nullptr, "Barrier pointer must be valid.");
 
         xiiGALStateTransitionDescription& transition = stateTransitions.ExpandAndGetRef();
-        transition.m_pResource                      = pResourceResolver->ResolveResource(pBarrier->m_sResourceName);
+        transition.m_pResource                       = pResourceResolver->ResolveResource(pBarrier->m_sResourceName);
         if (transition.m_pResource == nullptr)
         {
           xiiStringBuilder sError;
@@ -416,10 +571,10 @@ xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraph
           return BuildError(out_pErrorMessage, sError.GetView());
         }
 
-        transition.m_OldState                       = pBarrier->m_BeforeState;
-        transition.m_NewState                       = pBarrier->m_AfterState;
-        transition.m_TransitionType                 = xiiGALStateTransitionType::Immediate;
-        transition.m_TransitionFlags                = xiiGALStateTransitionFlags::UpdateState;
+        transition.m_OldState        = pBarrier->m_BeforeState;
+        transition.m_NewState        = pBarrier->m_AfterState;
+        transition.m_TransitionType  = xiiGALStateTransitionType::Immediate;
+        transition.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
       }
     }
 
@@ -444,7 +599,8 @@ void xiiRenderGraphRuntime::AddPass(const xiiRenderGraphPassBase* pPass)
   XII_ASSERT_DEV(pPass != nullptr, "Render graph runtime pass must be valid.");
 
   m_Passes.PushBack(pPass);
-  m_bIsCompiled = false;
+  m_bIsCompiled                     = false;
+  m_Statistics.m_bUsedCachedCompile = false;
 }
 
 void xiiRenderGraphRuntime::ClearPasses()
@@ -452,7 +608,9 @@ void xiiRenderGraphRuntime::ClearPasses()
   m_Passes.Clear();
   m_CompiledPasses.Clear();
   m_Barriers.Clear();
-  m_bIsCompiled = false;
+  m_Statistics             = xiiRenderGraphStatistics();
+  m_uiLastCompileSignature = 0ULL;
+  m_bIsCompiled            = false;
 }
 
 void xiiRenderGraphRuntime::SetExternalResourceResolver(const xiiRenderGraphResourceResolver* pResourceResolver)
@@ -472,6 +630,20 @@ void xiiRenderGraphRuntime::ClearResources()
 
 xiiResult xiiRenderGraphRuntime::Compile(xiiStringBuilder* out_pErrorMessage)
 {
+  const xiiUInt64 uiGraphSignature = ComputeRenderGraphSignature(m_Passes, m_CompileSettings);
+
+  m_Statistics.m_uiRegisteredPassCount = m_Passes.GetCount();
+  m_Statistics.m_uiGraphSignature      = uiGraphSignature;
+
+  if (m_CompileSettings.m_bEnableCompileCache && m_bIsCompiled && uiGraphSignature == m_uiLastCompileSignature)
+  {
+    m_Statistics.m_uiCompiledPassCount = m_CompiledPasses.GetCount();
+    m_Statistics.m_uiCulledPassCount   = m_Passes.GetCount() - m_CompiledPasses.GetCount();
+    m_Statistics.m_uiBarrierCount      = m_Barriers.GetCount();
+    m_Statistics.m_bUsedCachedCompile  = true;
+    return XII_SUCCESS;
+  }
+
   m_Compiler.Reset();
 
   for (const xiiRenderGraphPassBase* pPass : m_Passes)
@@ -479,9 +651,12 @@ xiiResult xiiRenderGraphRuntime::Compile(xiiStringBuilder* out_pErrorMessage)
     m_Compiler.AddPass(pPass);
   }
 
-  XII_SUCCEED_OR_RETURN(m_Compiler.Compile(m_CompiledPasses, m_Barriers, out_pErrorMessage));
+  XII_SUCCEED_OR_RETURN(m_Compiler.Compile(m_CompiledPasses, m_Barriers, m_CompileSettings, &m_Statistics, out_pErrorMessage));
 
-  m_bIsCompiled = true;
+  m_Statistics.m_uiGraphSignature   = uiGraphSignature;
+  m_Statistics.m_bUsedCachedCompile = false;
+  m_uiLastCompileSignature          = uiGraphSignature;
+  m_bIsCompiled                     = true;
   return XII_SUCCESS;
 }
 
