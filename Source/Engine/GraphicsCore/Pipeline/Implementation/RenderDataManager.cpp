@@ -1,7 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/World/World.h>
+#include <GraphicsCore/Pipeline/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 constexpr xiiUInt32 s_uiSkinningBufferIndex = 2;
@@ -18,6 +20,8 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld)
   : xiiWorldModule(pWorld)
 {
   xiiRenderWorld::GetExtractionEvent().AddEventHandler(xiiMakeDelegate(&xiiRenderDataManager::OnExtractionEvent, this));
+
+  m_pGpuDrivenVisibilityPass = XII_DEFAULT_NEW(xiiRenderGraphGpuVisibilityPass);
 
   // Keep indices stable for callers that expect static/dynamic/skinning slots.
   m_Buffers.SetCount(3);
@@ -128,6 +132,71 @@ xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetSkinningDataBuffer() 
   }
 
   return nullptr;
+}
+
+void xiiRenderDataManager::BeginGpuDrivenBuild()
+{
+  XII_LOCK(m_Mutex);
+
+  m_GpuDrivenInstances.Clear();
+  m_GpuDrivenVisibleInstanceIndices.Clear();
+}
+
+void xiiRenderDataManager::AddGpuDrivenInstance(const xiiTransform& globalTransform, const xiiBoundingSphere& bounds, xiiUInt32 uiMeshId, xiiUInt32 uiMaterialId, xiiUInt32 uiFlags /*= 0U*/)
+{
+  XII_LOCK(m_Mutex);
+
+  xiiGpuDrivenInstance& instance = m_GpuDrivenInstances.ExpandAndGetRef();
+  instance.m_ObjectToWorld       = globalTransform.GetAsMat4();
+  instance.m_Bounds              = bounds;
+  instance.m_uiMeshId            = uiMeshId;
+  instance.m_uiMaterialId        = uiMaterialId;
+  instance.m_uiFlags             = uiFlags;
+}
+
+void xiiRenderDataManager::EndGpuDrivenBuild()
+{
+}
+
+xiiArrayPtr<const xiiGpuDrivenInstance> xiiRenderDataManager::GetGpuDrivenInstances() const
+{
+  XII_LOCK(m_Mutex);
+
+  static thread_local xiiDynamicArray<xiiGpuDrivenInstance> s_GpuDrivenInstancesSnapshot;
+  s_GpuDrivenInstancesSnapshot = m_GpuDrivenInstances;
+  return s_GpuDrivenInstancesSnapshot;
+}
+
+void xiiRenderDataManager::SetGpuDrivenVisibleInstanceIndices(xiiArrayPtr<const xiiUInt32> visibleInstanceIndices)
+{
+  XII_LOCK(m_Mutex);
+
+  m_GpuDrivenVisibleInstanceIndices.SetCountUninitialized(visibleInstanceIndices.GetCount());
+  if (!visibleInstanceIndices.IsEmpty())
+  {
+    xiiMemoryUtils::Copy(m_GpuDrivenVisibleInstanceIndices.GetData(), visibleInstanceIndices.GetPtr(), visibleInstanceIndices.GetCount());
+  }
+}
+
+xiiArrayPtr<const xiiUInt32> xiiRenderDataManager::GetGpuDrivenVisibleInstanceIndices() const
+{
+  XII_LOCK(m_Mutex);
+
+  static thread_local xiiDynamicArray<xiiUInt32> s_GpuDrivenVisibleInstanceIndicesSnapshot;
+  s_GpuDrivenVisibleInstanceIndicesSnapshot = m_GpuDrivenVisibleInstanceIndices;
+  return s_GpuDrivenVisibleInstanceIndicesSnapshot;
+}
+
+void xiiRenderDataManager::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+
+  m_pGpuDrivenVisibilityPass->SetInstanceCount(m_GpuDrivenInstances.GetCount());
+  m_pGpuDrivenVisibilityPass->SetDispatchEnabled(bEnableDispatch);
+
+  inout_runtime.AddPass(m_pGpuDrivenVisibilityPass.Borrow());
 }
 
 void xiiRenderDataManager::CompactSkinningDataBuffer(const UpdateContext& context)

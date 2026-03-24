@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/World/WorldModule.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Shader/Types.h>
@@ -8,6 +9,8 @@
 
 struct xiiPerInstanceData;
 struct xiiRenderWorldExtractionEvent;
+class xiiRenderGraphRuntime;
+class xiiRenderGraphGpuVisibilityPass;
 
 struct XII_GRAPHICSCORE_DLL xiiInstanceDataOffset
 {
@@ -39,6 +42,18 @@ struct XII_GRAPHICSCORE_DLL xiiMsgCustomInstanceDataOffsetChanged : public xiiMe
   XII_DECLARE_MESSAGE_TYPE(xiiMsgCustomInstanceDataOffsetChanged, xiiMessage);
 
   xiiCustomInstanceDataOffset m_NewOffset;
+};
+
+/// \brief CPU-side staging entry for GPU-driven visibility and indirect submission.
+struct XII_GRAPHICSCORE_DLL xiiGpuDrivenInstance
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiMat4           m_ObjectToWorld = xiiMat4::MakeIdentity();
+  xiiBoundingSphere m_Bounds        = xiiBoundingSphere::MakeInvalid();
+  xiiUInt32         m_uiMeshId      = 0U;
+  xiiUInt32         m_uiMaterialId  = 0U;
+  xiiUInt32         m_uiFlags       = 0U;
 };
 
 /// \brief Manager for render data and instance data buffers.
@@ -129,6 +144,27 @@ public:
   /// \brief Returns the underlying dynamic buffer that holds the skinning data.
   xiiSharedPtr<xiiGALDynamicBuffer> GetSkinningDataBuffer() const;
 
+  /// \brief Starts collecting GPU-driven scene instances for the next visibility pass.
+  void BeginGpuDrivenBuild();
+
+  /// \brief Appends one instance entry to the GPU-driven scene staging buffer.
+  void AddGpuDrivenInstance(const xiiTransform& globalTransform, const xiiBoundingSphere& bounds, xiiUInt32 uiMeshId, xiiUInt32 uiMaterialId, xiiUInt32 uiFlags = 0U);
+
+  /// \brief Finalizes GPU-driven scene staging before pass registration.
+  void EndGpuDrivenBuild();
+
+  /// \brief Returns a snapshot of staged GPU-driven instances for debug/profiling.
+  xiiArrayPtr<const xiiGpuDrivenInstance> GetGpuDrivenInstances() const;
+
+  /// \brief Stores the latest visible-instance list produced by visibility processing.
+  void SetGpuDrivenVisibleInstanceIndices(xiiArrayPtr<const xiiUInt32> visibleInstanceIndices);
+
+  /// \brief Returns a snapshot of currently visible instance indices.
+  xiiArrayPtr<const xiiUInt32> GetGpuDrivenVisibleInstanceIndices() const;
+
+  /// \brief Registers the GPU-driven visibility pass into the provided render graph runtime.
+  void AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
 private:
   xiiByteArrayPtr GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiStructByteSize, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount) const;
 
@@ -146,6 +182,10 @@ private:
   };
 
   ExtractionData m_ExtractionData;
+
+  mutable xiiDynamicArray<xiiGpuDrivenInstance> m_GpuDrivenInstances;
+  mutable xiiDynamicArray<xiiUInt32>            m_GpuDrivenVisibleInstanceIndices;
+  mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass> m_pGpuDrivenVisibilityPass;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderDataManager_inl.h>
