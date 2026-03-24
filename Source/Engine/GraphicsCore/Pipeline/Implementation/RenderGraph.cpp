@@ -16,7 +16,7 @@ namespace
 
   static xiiBitflags<xiiGALResourceStateFlags> ResolveRequiredState(const xiiRenderGraphResourceUsage& usage)
   {
-    if (usage.m_RequiredState != xiiGALResourceStateFlags::Unknown)
+    if (usage.m_RequiredState.GetValue() != 0U)
     {
       return usage.m_RequiredState;
     }
@@ -53,7 +53,7 @@ namespace
       states.Add(xiiGALResourceStateFlags::BuildASRead | xiiGALResourceStateFlags::BuildASWrite | xiiGALResourceStateFlags::RayTracing);
     }
 
-    if (states == xiiGALResourceStateFlags::Unknown)
+    if (states.GetValue() == 0U)
     {
       states = xiiGALResourceStateFlags::Common;
     }
@@ -136,8 +136,7 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
 
   dependencies.SetCount(m_Passes.GetCount());
   dependents.SetCount(m_Passes.GetCount());
-  inDegree.SetCount(m_Passes.GetCount());
-  inDegree.Fill(0U);
+  inDegree.SetCount(m_Passes.GetCount(), 0U);
 
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < m_Passes.GetCount(); ++uiPassIndex)
   {
@@ -262,7 +261,7 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
       xiiUInt32 uiPreviousPassIndex = xiiInvalidIndex;
       XII_IGNORE_UNUSED(lastPassUsingResource.TryGetValue(resourceName, uiPreviousPassIndex));
 
-      if (bHasCurrentState && currentState != requiredState)
+      if (bHasCurrentState && currentState.GetValue() != requiredState.GetValue())
       {
         xiiRenderGraphBarrier& barrier = out_barriers.ExpandAndGetRef();
         barrier.m_sResourceName        = resourceName;
@@ -313,7 +312,7 @@ xiiResult xiiRenderGraphCompiler::ValidatePassDescription(const xiiRenderGraphPa
     }
 
     const xiiBitflags<xiiGALResourceStateFlags> requiredState = input.m_RequiredState.IsNoFlagSet() ? DeriveRequiredState(input.m_AccessFlags) : input.m_RequiredState;
-    if (requiredState.IsNoFlagSet() || requiredState == xiiGALResourceStateFlags::Unknown)
+    if (requiredState.GetValue() == 0U)
     {
       xiiStringBuilder sError;
       sError.SetFormat("Render graph pass '{0}' input '{1}' could not derive a valid resource state.", passDescription.m_sPassName.GetView(), input.m_sResourceName.GetView());
@@ -338,7 +337,7 @@ xiiResult xiiRenderGraphCompiler::ValidatePassDescription(const xiiRenderGraphPa
     }
 
     const xiiBitflags<xiiGALResourceStateFlags> requiredState = output.m_RequiredState.IsNoFlagSet() ? DeriveRequiredState(output.m_AccessFlags) : output.m_RequiredState;
-    if (requiredState.IsNoFlagSet() || requiredState == xiiGALResourceStateFlags::Unknown)
+    if (requiredState.GetValue() == 0U)
     {
       xiiStringBuilder sError;
       sError.SetFormat("Render graph pass '{0}' output '{1}' could not derive a valid resource state.", passDescription.m_sPassName.GetView(), output.m_sResourceName.GetView());
@@ -354,4 +353,88 @@ xiiBitflags<xiiGALResourceStateFlags> xiiRenderGraphCompiler::DeriveRequiredStat
   xiiRenderGraphResourceUsage usage;
   usage.m_AccessFlags = accessFlags;
   return ResolveRequiredState(usage);
+}
+
+xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraphCompiledPass> compiledPasses, const xiiArrayPtr<const xiiRenderGraphBarrier> barriers, const xiiRenderGraphPassExecutionContext& executionContext, const xiiRenderGraphResourceResolver* pResourceResolver, xiiStringBuilder* out_pErrorMessage) const
+{
+  if (out_pErrorMessage != nullptr)
+  {
+    out_pErrorMessage->Clear();
+  }
+
+  if (executionContext.m_pCommandList == nullptr)
+  {
+    return BuildError(out_pErrorMessage, "Render graph execution requires a valid command list.");
+  }
+
+  if (!barriers.IsEmpty() && pResourceResolver == nullptr)
+  {
+    return BuildError(out_pErrorMessage, "Render graph execution requires a resource resolver when barriers are present.");
+  }
+
+  xiiHashTable<xiiUInt32, xiiHybridArray<const xiiRenderGraphBarrier*, 4U>> barriersByTargetPass;
+  barriersByTargetPass.Reserve(barriers.GetCount());
+
+  for (const xiiRenderGraphBarrier& barrier : barriers)
+  {
+    if (barrier.m_uiToPassIndex == xiiInvalidIndex)
+    {
+      continue;
+    }
+
+    xiiHybridArray<const xiiRenderGraphBarrier*, 4U> passBarriers;
+    if (!barriersByTargetPass.TryGetValue(barrier.m_uiToPassIndex, passBarriers))
+    {
+      passBarriers.PushBack(&barrier);
+      barriersByTargetPass.Insert(barrier.m_uiToPassIndex, passBarriers);
+      continue;
+    }
+
+    passBarriers.PushBack(&barrier);
+    barriersByTargetPass.Insert(barrier.m_uiToPassIndex, passBarriers);
+  }
+
+  xiiHybridArray<xiiGALStateTransitionDescription, 16U> stateTransitions;
+
+  for (const xiiRenderGraphCompiledPass& compiledPass : compiledPasses)
+  {
+    stateTransitions.Clear();
+
+    xiiHybridArray<const xiiRenderGraphBarrier*, 4U> passBarriers;
+    if (barriersByTargetPass.TryGetValue(compiledPass.m_uiPassIndex, passBarriers))
+    {
+      for (const xiiRenderGraphBarrier* pBarrier : passBarriers)
+      {
+        XII_ASSERT_DEV(pBarrier != nullptr, "Barrier pointer must be valid.");
+
+        xiiGALStateTransitionDescription& transition = stateTransitions.ExpandAndGetRef();
+        transition.m_pResource                      = pResourceResolver->ResolveResource(pBarrier->m_sResourceName);
+        if (transition.m_pResource == nullptr)
+        {
+          xiiStringBuilder sError;
+          sError.SetFormat("Render graph failed to resolve resource '{0}' for pass index {1}.", pBarrier->m_sResourceName.GetView(), compiledPass.m_uiPassIndex);
+          return BuildError(out_pErrorMessage, sError.GetView());
+        }
+
+        transition.m_OldState                       = pBarrier->m_BeforeState;
+        transition.m_NewState                       = pBarrier->m_AfterState;
+        transition.m_TransitionType                 = xiiGALStateTransitionType::Immediate;
+        transition.m_TransitionFlags                = xiiGALStateTransitionFlags::UpdateState;
+      }
+    }
+
+    if (!stateTransitions.IsEmpty())
+    {
+      executionContext.m_pCommandList->TransitionResourceStates(stateTransitions);
+    }
+
+    if (compiledPass.m_pPass == nullptr)
+    {
+      return BuildError(out_pErrorMessage, "Render graph execution encountered a null compiled pass.");
+    }
+
+    compiledPass.m_pPass->RecordCommands(executionContext);
+  }
+
+  return XII_SUCCESS;
 }

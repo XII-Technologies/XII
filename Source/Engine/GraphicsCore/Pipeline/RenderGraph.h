@@ -3,12 +3,14 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Strings/StringBuilder.h>
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief Describes how a render-graph pass uses a resource.
 struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceAccessFlags
@@ -97,6 +99,15 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphBarrier
   xiiUInt32                              m_uiToPassIndex   = xiiInvalidIndex;
 };
 
+/// \brief Resolves graph resource names to runtime GAL resources during execution.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphResourceResolver
+{
+public:
+  virtual ~xiiRenderGraphResourceResolver() = default;
+
+  [[nodiscard]] virtual xiiSharedPtr<xiiGALResource> ResolveResource(xiiHashedString sResourceName) const = 0;
+};
+
 /// \brief Minimal graph compiler for the new explicit rendering path.
 ///
 /// This implementation validates pass descriptions and compiles passes into deterministic topological order.
@@ -116,4 +127,11 @@ private:
 
 private:
   xiiDynamicArray<const xiiRenderGraphPassBase*> m_Passes;
+};
+
+/// \brief Executes a compiled render graph and applies synthesized barriers.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphExecutor
+{
+public:
+  [[nodiscard]] xiiResult Execute(const xiiArrayPtr<const xiiRenderGraphCompiledPass> compiledPasses, const xiiArrayPtr<const xiiRenderGraphBarrier> barriers, const xiiRenderGraphPassExecutionContext& executionContext, const xiiRenderGraphResourceResolver* pResourceResolver = nullptr, xiiStringBuilder* out_pErrorMessage = nullptr) const;
 };
