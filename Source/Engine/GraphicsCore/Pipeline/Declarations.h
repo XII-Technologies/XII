@@ -10,6 +10,8 @@ class xiiView;
 class xiiRenderer;
 class xiiRenderData;
 class xiiRenderDataBatch;
+class xiiGraphicsPipelinePass;
+class xiiRenderPipeline;
 class xiiDebugRendererContext;
 class xiiRenderContext;
 

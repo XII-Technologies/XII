@@ -64,9 +64,19 @@ void xiiRenderGraphGpuVisibilityPass::SetSetupCommandListFunc(SetupCommandListFu
   m_SetupCommandListFunc = setupCommandListFunc;
 }
 
+void xiiRenderGraphGpuVisibilityPass::SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc)
+{
+  m_PostDispatchCommandListFunc = postDispatchCommandListFunc;
+}
+
 void xiiRenderGraphGpuVisibilityPass::ClearSetupCommandListFunc()
 {
   m_SetupCommandListFunc = {};
+}
+
+void xiiRenderGraphGpuVisibilityPass::ClearPostDispatchCommandListFunc()
+{
+  m_PostDispatchCommandListFunc = {};
 }
 
 const xiiRenderGraphPassDescription& xiiRenderGraphGpuVisibilityPass::GetDescription() const
@@ -94,6 +104,12 @@ void xiiRenderGraphGpuVisibilityPass::RecordCommands(const xiiRenderGraphPassExe
   if (m_pIndirectDispatchArguments != nullptr)
   {
     executionContext.m_pCommandList->DispatchComputeIndirect(xiiGALDispatchComputeIndirectDescription(m_pIndirectDispatchArguments, m_IndirectBufferTransitionMode, m_uiIndirectDispatchArgumentOffset));
+
+    if (m_PostDispatchCommandListFunc.IsValid())
+    {
+      m_PostDispatchCommandListFunc(*executionContext.m_pCommandList, executionContext);
+    }
+
     return;
   }
 
@@ -114,6 +130,11 @@ void xiiRenderGraphGpuVisibilityPass::RecordCommands(const xiiRenderGraphPassExe
   }
 
   executionContext.m_pCommandList->DispatchCompute(xiiGALDispatchComputeDescription(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ));
+
+  if (m_PostDispatchCommandListFunc.IsValid())
+  {
+    m_PostDispatchCommandListFunc(*executionContext.m_pCommandList, executionContext);
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Implementation_GpuDrivenVisibilityPass);

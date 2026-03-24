@@ -11,6 +11,7 @@ struct xiiPerInstanceData;
 struct xiiRenderWorldExtractionEvent;
 struct xiiRenderGraphPassExecutionContext;
 class xiiGALCommandList;
+class xiiGALFence;
 class xiiRenderGraphRuntime;
 class xiiRenderGraphGpuVisibilityPass;
 
@@ -173,6 +174,9 @@ public:
   /// \brief Returns the current GPU visible-instance count buffer written by visibility dispatch.
   xiiSharedPtr<xiiGALBuffer> GetGpuDrivenVisibleInstanceCountBuffer() const;
 
+  /// \brief Attempts to read back the latest GPU-written visible-instance count.
+  bool TryGetGpuDrivenVisibleInstanceCountReadback(xiiUInt32& out_uiVisibleInstanceCount, bool bWaitForCompletion = false) const;
+
   /// \brief Registers the GPU-driven visibility pass into the provided render graph runtime.
   void AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -202,6 +206,7 @@ private:
 
   void EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
 
   mutable xiiMutex m_Mutex;
 
@@ -222,7 +227,11 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstanceCountBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstanceCountReadbackBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibilityDispatchArgumentsBuffer;
+  mutable xiiSharedPtr<xiiGALFence>                m_pGpuVisibilityReadbackFence;
+  mutable xiiUInt64                                 m_uiGpuVisibilityReadbackFenceValue  = 0U;
+  mutable xiiUInt64                                 m_uiGpuVisibilityReadbackCompletedValue = 0U;
   mutable xiiUInt32                                m_uiGpuVisibilityThreadGroupSize = 64U;
   mutable bool                                     m_bGpuVisibilityUseInternalIndirectDispatch = false;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass> m_pGpuDrivenVisibilityPass;

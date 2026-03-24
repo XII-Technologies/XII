@@ -13,6 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphGpuVisibilityPass final : public xiiRen
 {
 public:
   using SetupCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using PostDispatchCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphGpuVisibilityPass();
 
@@ -22,7 +23,9 @@ public:
   void SetDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
   void SetIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset = 0U, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode = xiiGALStateTransitionMode::Transition);
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
+  void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
   void ClearSetupCommandListFunc();
+  void ClearPostDispatchCommandListFunc();
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetInstanceCount() const { return m_uiInstanceCount; }
   [[nodiscard]] XII_ALWAYS_INLINE bool      IsDispatchEnabled() const { return m_bDispatchEnabled; }
@@ -44,5 +47,6 @@ private:
   xiiUInt64                          m_uiIndirectDispatchArgumentOffset = 0U;
 
   SetupCommandListFunc m_SetupCommandListFunc;
+  PostDispatchCommandListFunc m_PostDispatchCommandListFunc;
   bool                 m_bDispatchEnabled = false;
 };

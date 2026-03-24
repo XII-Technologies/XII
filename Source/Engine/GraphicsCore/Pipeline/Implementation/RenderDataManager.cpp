@@ -11,6 +11,7 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 
 constexpr xiiUInt32 s_uiSkinningBufferIndex = 2;
 
@@ -39,6 +40,8 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld)
 
   m_pGpuDrivenVisibilityPass = XII_DEFAULT_NEW(xiiRenderGraphGpuVisibilityPass);
   m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList, this));
+  m_pGpuDrivenVisibilityPass->SetPostDispatchCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch, this));
+  m_bGpuVisibilityUseInternalIndirectDispatch = true;
 
   // Keep indices stable for callers that expect static/dynamic/skinning slots.
   m_Buffers.SetCount(3);
@@ -244,6 +247,41 @@ xiiSharedPtr<xiiGALBuffer> xiiRenderDataManager::GetGpuDrivenVisibleInstanceCoun
   return m_pGpuVisibleInstanceCountBuffer;
 }
 
+bool xiiRenderDataManager::TryGetGpuDrivenVisibleInstanceCountReadback(xiiUInt32& out_uiVisibleInstanceCount, bool bWaitForCompletion /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  if (m_pGpuVisibilityReadbackFence == nullptr || m_pGpuVisibleInstanceCountReadbackBuffer == nullptr || m_uiGpuVisibilityReadbackFenceValue == 0U)
+  {
+    return false;
+  }
+
+  if (bWaitForCompletion)
+  {
+    m_pGpuVisibilityReadbackFence->Wait(m_uiGpuVisibilityReadbackFenceValue);
+  }
+
+  const xiiUInt64 uiCompletedValue = m_pGpuVisibilityReadbackFence->GetCompletedValue();
+  if (uiCompletedValue < m_uiGpuVisibilityReadbackFenceValue || uiCompletedValue == m_uiGpuVisibilityReadbackCompletedValue)
+  {
+    return false;
+  }
+
+  auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Transfer>("xiiRenderDataManager::TryGetGpuDrivenVisibleInstanceCountReadback");
+
+  void* pMappedData = nullptr;
+  if (pCommandListScope->MapBuffer(m_pGpuVisibleInstanceCountReadbackBuffer, xiiGALMapType::Read, xiiGALMapFlags::None, pMappedData).Failed())
+  {
+    return false;
+  }
+
+  out_uiVisibleInstanceCount = *reinterpret_cast<const xiiUInt32*>(pMappedData);
+  pCommandListScope->UnmapBuffer(m_pGpuVisibleInstanceCountReadbackBuffer, xiiGALMapType::Read).AssertSuccess("Failed to unmap GPU visibility readback buffer.");
+
+  m_uiGpuVisibilityReadbackCompletedValue = uiCompletedValue;
+  return true;
+}
+
 void xiiRenderDataManager::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -385,17 +423,45 @@ void xiiRenderDataManager::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstan
   if (m_pGpuVisibilityDispatchArgumentsBuffer == nullptr)
   {
     xiiGALBufferCreationDescription bufferDescription;
-    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
     bufferDescription.m_BindFlags           = xiiGALBindFlags::IndirectDrawArguments;
     bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiElementByteStride = 0U;
     bufferDescription.m_uiSize              = sizeof(GpuDrivenDispatchArguments);
 
     m_pGpuVisibilityDispatchArgumentsBuffer = pDevice->CreateBuffer(bufferDescription);
     if (m_pGpuVisibilityDispatchArgumentsBuffer != nullptr)
     {
       m_pGpuVisibilityDispatchArgumentsBuffer->SetDebugName("RenderDataManager::GpuVisibilityDispatchArguments");
+    }
+  }
+
+  if (m_pGpuVisibleInstanceCountReadbackBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::None;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Staging;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Read;
+    bufferDescription.m_uiElementByteStride = 0U;
+    bufferDescription.m_uiSize              = sizeof(xiiUInt32);
+
+    m_pGpuVisibleInstanceCountReadbackBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pGpuVisibleInstanceCountReadbackBuffer != nullptr)
+    {
+      m_pGpuVisibleInstanceCountReadbackBuffer->SetDebugName("RenderDataManager::GpuVisibleInstanceCountReadback");
+    }
+  }
+
+  if (m_pGpuVisibilityReadbackFence == nullptr)
+  {
+    xiiGALFenceCreationDescription fenceDescription;
+    fenceDescription.m_Type = xiiGALFenceType::CpuWaitOnly;
+    m_pGpuVisibilityReadbackFence = pDevice->CreateFence(fenceDescription);
+    if (m_pGpuVisibilityReadbackFence != nullptr)
+    {
+      m_pGpuVisibilityReadbackFence->SetDebugName("RenderDataManager::GpuVisibilityReadbackFence");
     }
   }
 }
@@ -454,6 +520,24 @@ void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstanceCount"), m_pGpuVisibleInstanceCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
+}
+
+void xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  if (m_pGpuVisibleInstanceCountBuffer == nullptr || m_pGpuVisibleInstanceCountReadbackBuffer == nullptr || m_pGpuVisibilityReadbackFence == nullptr)
+  {
+    return;
+  }
+
+  commandList.CopyBufferRegion(m_pGpuVisibleInstanceCountBuffer, 0U, m_pGpuVisibleInstanceCountReadbackBuffer, 0U, sizeof(xiiUInt32));
+
+  const xiiUInt64 uiFenceValue = m_uiGpuVisibilityReadbackFenceValue + 1U;
+  commandList.EnqueueSignal(m_pGpuVisibilityReadbackFence, uiFenceValue);
+  m_uiGpuVisibilityReadbackFenceValue = uiFenceValue;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderDataManager);

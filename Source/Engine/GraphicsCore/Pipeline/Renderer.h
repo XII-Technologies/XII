@@ -3,6 +3,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HybridArray.h>
 
+#include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
 /// \brief This is the base class for types that handle rendering of different object types.
