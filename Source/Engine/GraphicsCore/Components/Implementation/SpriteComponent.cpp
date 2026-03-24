@@ -4,7 +4,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/SpriteComponent.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 

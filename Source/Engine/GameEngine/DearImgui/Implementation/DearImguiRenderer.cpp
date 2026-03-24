@@ -5,7 +5,7 @@
 #  include <Foundation/IO/TypeVersionContext.h>
 #  include <GameEngine/DearImgui/DearImgui.h>
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
-#  include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#  include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #  include <GraphicsCore/Pipeline/View.h>
 #  include <GraphicsCore/RenderContext/RenderContext.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>

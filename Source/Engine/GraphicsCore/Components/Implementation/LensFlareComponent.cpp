@@ -6,7 +6,7 @@
 #include <GraphicsCore/Components/LensFlareComponent.h>
 #include <GraphicsCore/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Lights/SpotLightComponent.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 

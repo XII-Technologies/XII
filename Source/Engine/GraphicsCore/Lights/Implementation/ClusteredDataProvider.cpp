@@ -6,7 +6,7 @@
 #include <GraphicsCore/Lights/Implementation/ClusteredDataUtils.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
 #include <GraphicsCore/Lights/Implementation/ShadowPool.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>

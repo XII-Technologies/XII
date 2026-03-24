@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/IO/TypeVersionContext.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/Extractor.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>

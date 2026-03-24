@@ -3,7 +3,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Foundation/Configuration/CVar.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 

@@ -9,7 +9,7 @@
 #include <GraphicsCore/Lights/AmbientLightComponent.h>
 #include <GraphicsCore/Pipeline/Extractors/ClusteredDataExtractor.h>
 #include <GraphicsCore/Lights/Implementation/ClusteredDataUtils.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

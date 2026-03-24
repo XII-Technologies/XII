@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Profiling/Profiling.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 
 xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
@@ -52,7 +52,7 @@ void xiiExtractedRenderData::SortAndBatch()
 
     for (xiiUInt32 i = 1; i < data.GetCount(); ++i)
     {
-      auto pRenderData = data[i].m_pRenderData;
+      const xiiRenderData* pRenderData = data[i].m_pRenderData;
 
       if (pRenderData->GetDynamicRTTI() != pCurrentBatchType || pRenderData->CanBatch(*pCurrentBatchRenderData) == false)
       {
@@ -103,7 +103,7 @@ xiiArrayPtr<const xiiRenderDataBatch::SortableRenderData> xiiExtractedRenderData
 
 const xiiRenderData* xiiExtractedRenderData::GetFrameData(const xiiRTTI* pRtti) const
 {
-  for (auto pData : m_FrameData)
+  for (const xiiRenderData* pData : m_FrameData)
   {
     if (pData->IsInstanceOf(pRtti))
     {
