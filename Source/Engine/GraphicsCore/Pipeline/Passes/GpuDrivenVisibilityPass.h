@@ -33,14 +33,14 @@ public:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
 
-  xiiUInt32 m_uiInstanceCount   = 0U;
-  xiiUInt32 m_uiThreadGroupSize = 64U;
+  xiiUInt32 m_uiInstanceCount           = 0U;
+  xiiUInt32 m_uiThreadGroupSize         = 64U;
   xiiUInt32 m_uiDirectThreadGroupCountX = 0U;
   xiiUInt32 m_uiDirectThreadGroupCountY = 1U;
   xiiUInt32 m_uiDirectThreadGroupCountZ = 1U;
 
-  xiiSharedPtr<xiiGALBuffer>         m_pIndirectDispatchArguments = nullptr;
-  xiiEnum<xiiGALStateTransitionMode> m_IndirectBufferTransitionMode = xiiGALStateTransitionMode::Transition;
+  xiiSharedPtr<xiiGALBuffer>         m_pIndirectDispatchArguments      = nullptr;
+  xiiEnum<xiiGALStateTransitionMode> m_IndirectBufferTransitionMode    = xiiGALStateTransitionMode::Transition;
   xiiUInt64                          m_uiIndirectDispatchArgumentOffset = 0U;
 
   SetupCommandListFunc m_SetupCommandListFunc;

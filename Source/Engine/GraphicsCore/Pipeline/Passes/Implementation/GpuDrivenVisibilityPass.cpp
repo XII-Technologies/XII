@@ -1,12 +1,12 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Pipeline/GpuDrivenVisibilityPass.h>
+#include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 
 xiiRenderGraphGpuVisibilityPass::xiiRenderGraphGpuVisibilityPass()
 {
-  m_PassDescription.m_sPassName        = xiiMakeHashedString("GpuVisibilityCulling");
-  m_PassDescription.m_QueueFlags       = xiiGALCommandQueueFlags::Compute;
-  m_PassDescription.m_bHasSideEffects  = false;
+  m_PassDescription.m_sPassName       = xiiMakeHashedString("GpuVisibilityCulling");
+  m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
+  m_PassDescription.m_bHasSideEffects = false;
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
@@ -54,9 +54,9 @@ void xiiRenderGraphGpuVisibilityPass::SetDirectDispatchThreadGroupCount(xiiUInt3
 
 void xiiRenderGraphGpuVisibilityPass::SetIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
-  m_pIndirectDispatchArguments   = pIndirectDispatchArguments;
+  m_pIndirectDispatchArguments      = pIndirectDispatchArguments;
   m_uiIndirectDispatchArgumentOffset = uiDispatchArgumentOffset;
-  m_IndirectBufferTransitionMode = bufferTransitionMode;
+  m_IndirectBufferTransitionMode    = bufferTransitionMode;
 }
 
 void xiiRenderGraphGpuVisibilityPass::SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc)
@@ -111,4 +111,4 @@ void xiiRenderGraphGpuVisibilityPass::RecordCommands(const xiiRenderGraphPassExe
   executionContext.m_pCommandList->DispatchCompute(xiiGALDispatchComputeDescription(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ));
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_GpuDrivenVisibilityPass);
+XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Passes_Implementation_GpuDrivenVisibilityPass);

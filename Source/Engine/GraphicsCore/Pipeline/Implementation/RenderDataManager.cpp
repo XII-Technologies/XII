@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/World/World.h>
-#include <GraphicsCore/Pipeline/GpuDrivenVisibilityPass.h>
+#include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
