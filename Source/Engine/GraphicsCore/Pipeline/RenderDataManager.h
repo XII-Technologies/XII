@@ -9,6 +9,8 @@
 
 struct xiiPerInstanceData;
 struct xiiRenderWorldExtractionEvent;
+struct xiiRenderGraphPassExecutionContext;
+class xiiGALCommandList;
 class xiiRenderGraphRuntime;
 class xiiRenderGraphGpuVisibilityPass;
 
@@ -164,6 +166,21 @@ public:
 
   /// \brief Registers the GPU-driven visibility pass into the provided render graph runtime.
   void AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
+  /// \brief Configures direct-dispatch thread group size for GPU-driven visibility.
+  void SetGpuDrivenVisibilityThreadGroupSize(xiiUInt32 uiThreadGroupSize) const;
+
+  /// \brief Configures explicit direct-dispatch group counts. X = 0 switches back to auto-derived count.
+  void SetGpuDrivenVisibilityDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U) const;
+
+  /// \brief Configures indirect dispatch argument buffer for GPU-driven visibility.
+  void SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset = 0U, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode = xiiGALStateTransitionMode::Transition) const;
+
+  /// \brief Sets a callback that can bind compute PSO/resources before visibility dispatch.
+  void SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Clears the optional visibility setup callback.
+  void ClearGpuDrivenVisibilitySetupFunc() const;
 
 private:
   xiiByteArrayPtr GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiStructByteSize, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount) const;

@@ -199,6 +199,46 @@ void xiiRenderDataManager::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& ino
   inout_runtime.AddPass(m_pGpuDrivenVisibilityPass.Borrow());
 }
 
+void xiiRenderDataManager::SetGpuDrivenVisibilityThreadGroupSize(xiiUInt32 uiThreadGroupSize) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+  m_pGpuDrivenVisibilityPass->SetThreadGroupSize(uiThreadGroupSize);
+}
+
+void xiiRenderDataManager::SetGpuDrivenVisibilityDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY /*= 1U*/, xiiUInt32 uiThreadGroupCountZ /*= 1U*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+  m_pGpuDrivenVisibilityPass->SetDirectDispatchThreadGroupCount(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
+}
+
+void xiiRenderDataManager::SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode /*= xiiGALStateTransitionMode::Transition*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+  m_pGpuDrivenVisibilityPass->SetIndirectDispatchArguments(pIndirectDispatchArguments, uiDispatchArgumentOffset, bufferTransitionMode);
+}
+
+void xiiRenderDataManager::SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+  m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearGpuDrivenVisibilitySetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+  m_pGpuDrivenVisibilityPass->ClearSetupCommandListFunc();
+}
+
 void xiiRenderDataManager::CompactSkinningDataBuffer(const UpdateContext& context)
 {
   XII_IGNORE_UNUSED(context);

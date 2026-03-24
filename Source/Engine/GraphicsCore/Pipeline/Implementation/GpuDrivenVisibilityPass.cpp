@@ -45,6 +45,30 @@ void xiiRenderGraphGpuVisibilityPass::SetThreadGroupSize(xiiUInt32 uiThreadGroup
   m_uiThreadGroupSize = xiiMath::Max(1U, uiThreadGroupSize);
 }
 
+void xiiRenderGraphGpuVisibilityPass::SetDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY /*= 1U*/, xiiUInt32 uiThreadGroupCountZ /*= 1U*/)
+{
+  m_uiDirectThreadGroupCountX = uiThreadGroupCountX;
+  m_uiDirectThreadGroupCountY = xiiMath::Max(1U, uiThreadGroupCountY);
+  m_uiDirectThreadGroupCountZ = xiiMath::Max(1U, uiThreadGroupCountZ);
+}
+
+void xiiRenderGraphGpuVisibilityPass::SetIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode /*= xiiGALStateTransitionMode::Transition*/)
+{
+  m_pIndirectDispatchArguments   = pIndirectDispatchArguments;
+  m_uiIndirectDispatchArgumentOffset = uiDispatchArgumentOffset;
+  m_IndirectBufferTransitionMode = bufferTransitionMode;
+}
+
+void xiiRenderGraphGpuVisibilityPass::SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc)
+{
+  m_SetupCommandListFunc = setupCommandListFunc;
+}
+
+void xiiRenderGraphGpuVisibilityPass::ClearSetupCommandListFunc()
+{
+  m_SetupCommandListFunc = {};
+}
+
 const xiiRenderGraphPassDescription& xiiRenderGraphGpuVisibilityPass::GetDescription() const
 {
   return m_PassDescription;
@@ -52,13 +76,39 @@ const xiiRenderGraphPassDescription& xiiRenderGraphGpuVisibilityPass::GetDescrip
 
 void xiiRenderGraphGpuVisibilityPass::RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const
 {
-  if (!m_bDispatchEnabled || m_uiInstanceCount == 0U || executionContext.m_pCommandList == nullptr)
+  if (!m_bDispatchEnabled || executionContext.m_pCommandList == nullptr)
   {
     return;
   }
 
-  const xiiUInt32 uiThreadGroupCountX = (m_uiInstanceCount + (m_uiThreadGroupSize - 1U)) / m_uiThreadGroupSize;
-  executionContext.m_pCommandList->DispatchCompute(xiiGALDispatchComputeDescription(uiThreadGroupCountX, 1U, 1U));
+  if (m_SetupCommandListFunc.IsValid())
+  {
+    m_SetupCommandListFunc(*executionContext.m_pCommandList, executionContext);
+  }
+
+  if (m_pIndirectDispatchArguments != nullptr)
+  {
+    executionContext.m_pCommandList->DispatchComputeIndirect(xiiGALDispatchComputeIndirectDescription(m_pIndirectDispatchArguments, m_IndirectBufferTransitionMode, m_uiIndirectDispatchArgumentOffset));
+    return;
+  }
+
+  xiiUInt32 uiThreadGroupCountX = m_uiDirectThreadGroupCountX;
+  xiiUInt32 uiThreadGroupCountY = m_uiDirectThreadGroupCountY;
+  xiiUInt32 uiThreadGroupCountZ = m_uiDirectThreadGroupCountZ;
+
+  if (uiThreadGroupCountX == 0U)
+  {
+    if (m_uiInstanceCount == 0U)
+    {
+      return;
+    }
+
+    uiThreadGroupCountX = (m_uiInstanceCount + (m_uiThreadGroupSize - 1U)) / m_uiThreadGroupSize;
+    uiThreadGroupCountY = 1U;
+    uiThreadGroupCountZ = 1U;
+  }
+
+  executionContext.m_pCommandList->DispatchCompute(xiiGALDispatchComputeDescription(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ));
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_GpuDrivenVisibilityPass);
