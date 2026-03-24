@@ -438,3 +438,65 @@ xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraph
 
   return XII_SUCCESS;
 }
+
+void xiiRenderGraphRuntime::AddPass(const xiiRenderGraphPassBase* pPass)
+{
+  XII_ASSERT_DEV(pPass != nullptr, "Render graph runtime pass must be valid.");
+
+  m_Passes.PushBack(pPass);
+  m_bIsCompiled = false;
+}
+
+void xiiRenderGraphRuntime::ClearPasses()
+{
+  m_Passes.Clear();
+  m_CompiledPasses.Clear();
+  m_Barriers.Clear();
+  m_bIsCompiled = false;
+}
+
+void xiiRenderGraphRuntime::SetExternalResourceResolver(const xiiRenderGraphResourceResolver* pResourceResolver)
+{
+  m_pExternalResourceResolver = pResourceResolver;
+}
+
+void xiiRenderGraphRuntime::RemoveResource(xiiHashedString sResourceName)
+{
+  m_LocalResources.RemoveResource(sResourceName);
+}
+
+void xiiRenderGraphRuntime::ClearResources()
+{
+  m_LocalResources.ClearResources();
+}
+
+xiiResult xiiRenderGraphRuntime::Compile(xiiStringBuilder* out_pErrorMessage)
+{
+  m_Compiler.Reset();
+
+  for (const xiiRenderGraphPassBase* pPass : m_Passes)
+  {
+    m_Compiler.AddPass(pPass);
+  }
+
+  XII_SUCCEED_OR_RETURN(m_Compiler.Compile(m_CompiledPasses, m_Barriers, out_pErrorMessage));
+
+  m_bIsCompiled = true;
+  return XII_SUCCESS;
+}
+
+xiiResult xiiRenderGraphRuntime::Execute(const xiiRenderGraphPassExecutionContext& executionContext, xiiStringBuilder* out_pErrorMessage) const
+{
+  if (!m_bIsCompiled)
+  {
+    return BuildError(out_pErrorMessage, "Render graph runtime is not compiled. Call Compile() before Execute().");
+  }
+
+  const xiiRenderGraphResourceResolver* pResolver = m_pExternalResourceResolver;
+  if (pResolver == nullptr)
+  {
+    pResolver = &m_LocalResources;
+  }
+
+  return m_Executor.Execute(m_CompiledPasses, m_Barriers, executionContext, pResolver, out_pErrorMessage);
+}

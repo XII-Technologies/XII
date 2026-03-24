@@ -7,6 +7,7 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/Types/SharedPtr.h>
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -134,4 +135,79 @@ class XII_GRAPHICSCORE_DLL xiiRenderGraphExecutor
 {
 public:
   [[nodiscard]] xiiResult Execute(const xiiArrayPtr<const xiiRenderGraphCompiledPass> compiledPasses, const xiiArrayPtr<const xiiRenderGraphBarrier> barriers, const xiiRenderGraphPassExecutionContext& executionContext, const xiiRenderGraphResourceResolver* pResourceResolver = nullptr, xiiStringBuilder* out_pErrorMessage = nullptr) const;
+};
+
+/// \brief Default resource table used by xiiRenderGraphRuntime.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphResourceTable : public xiiRenderGraphResourceResolver
+{
+public:
+  XII_ALWAYS_INLINE void SetResource(xiiHashedString sResourceName, xiiSharedPtr<xiiGALResource> pResource)
+  {
+    if (pResource == nullptr)
+    {
+      m_Resources.Remove(sResourceName);
+      return;
+    }
+
+    m_Resources.Insert(sResourceName, pResource);
+  }
+
+  XII_ALWAYS_INLINE void RemoveResource(xiiHashedString sResourceName)
+  {
+    m_Resources.Remove(sResourceName);
+  }
+
+  XII_ALWAYS_INLINE void ClearResources()
+  {
+    m_Resources.Clear();
+  }
+
+  [[nodiscard]] XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALResource> ResolveResource(xiiHashedString sResourceName) const override
+  {
+    xiiSharedPtr<xiiGALResource> pResource;
+    if (m_Resources.TryGetValue(sResourceName, pResource))
+    {
+      return pResource;
+    }
+
+    return {};
+  }
+
+private:
+  xiiHashTable<xiiHashedString, xiiSharedPtr<xiiGALResource>> m_Resources;
+};
+
+/// \brief Bootstrap runtime that owns pass registration, compilation, and execution for RenderGraph v2.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphRuntime
+{
+public:
+  void AddPass(const xiiRenderGraphPassBase* pPass);
+  void ClearPasses();
+
+  void SetExternalResourceResolver(const xiiRenderGraphResourceResolver* pResourceResolver);
+  XII_ALWAYS_INLINE void SetResource(xiiHashedString sResourceName, xiiSharedPtr<xiiGALResource> pResource)
+  {
+    m_LocalResources.SetResource(sResourceName, pResource);
+  }
+  void RemoveResource(xiiHashedString sResourceName);
+  void ClearResources();
+
+  [[nodiscard]] xiiResult Compile(xiiStringBuilder* out_pErrorMessage = nullptr);
+  [[nodiscard]] xiiResult Execute(const xiiRenderGraphPassExecutionContext& executionContext, xiiStringBuilder* out_pErrorMessage = nullptr) const;
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphCompiledPass> GetCompiledPasses() const { return m_CompiledPasses; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiRenderGraphBarrier> GetBarriers() const { return m_Barriers; }
+
+private:
+  xiiDynamicArray<const xiiRenderGraphPassBase*> m_Passes;
+
+  xiiRenderGraphCompiler      m_Compiler;
+  xiiRenderGraphExecutor      m_Executor;
+  xiiRenderGraphResourceTable m_LocalResources;
+
+  xiiDynamicArray<xiiRenderGraphCompiledPass> m_CompiledPasses;
+  xiiDynamicArray<xiiRenderGraphBarrier>      m_Barriers;
+
+  const xiiRenderGraphResourceResolver* m_pExternalResourceResolver = nullptr;
+  bool                                  m_bIsCompiled               = false;
 };
