@@ -38,6 +38,18 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
 
   out_compiledPasses.Reserve(m_Passes.GetCount());
 
+  xiiHashTable<xiiHashedString, xiiUInt32> passNameToIndex;
+  xiiHashTable<xiiHashedString, xiiUInt32> resourceProducer;
+
+  xiiDynamicArray<xiiHybridArray<xiiUInt32, 8U>> dependencies;
+  xiiDynamicArray<xiiHybridArray<xiiUInt32, 8U>> dependents;
+  xiiDynamicArray<xiiUInt32>                    inDegree;
+
+  dependencies.SetCount(m_Passes.GetCount());
+  dependents.SetCount(m_Passes.GetCount());
+  inDegree.SetCount(m_Passes.GetCount());
+  inDegree.Fill(0U);
+
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < m_Passes.GetCount(); ++uiPassIndex)
   {
     const xiiRenderGraphPassBase* pPass = m_Passes[uiPassIndex];
@@ -49,20 +61,96 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
     const xiiRenderGraphPassDescription& passDescription = pPass->GetDescription();
     XII_SUCCEED_OR_RETURN(ValidatePassDescription(passDescription, uiPassIndex, out_pErrorMessage));
 
-    for (xiiUInt32 uiOtherPassIndex = 0U; uiOtherPassIndex < uiPassIndex; ++uiOtherPassIndex)
+    if (passNameToIndex.Contains(passDescription.m_sPassName))
     {
-      const xiiRenderGraphPassDescription& otherDescription = m_Passes[uiOtherPassIndex]->GetDescription();
-      if (otherDescription.m_sPassName == passDescription.m_sPassName)
+      xiiStringBuilder sError;
+      sError.SetFormat("Render graph contains duplicate pass name '{0}'.", passDescription.m_sPassName.GetView());
+      return BuildError(out_pErrorMessage, sError.GetView());
+    }
+    passNameToIndex.Insert(passDescription.m_sPassName, uiPassIndex);
+
+    for (const xiiRenderGraphResourceUsage& output : passDescription.m_Outputs)
+    {
+      if (resourceProducer.Contains(output.m_sResourceName))
       {
+        xiiUInt32 uiProducerIndex = xiiInvalidIndex;
+        XII_VERIFY(resourceProducer.TryGetValue(output.m_sResourceName, uiProducerIndex), "Producer lookup must succeed.");
+
+        const xiiRenderGraphPassDescription& producerDescription = m_Passes[uiProducerIndex]->GetDescription();
         xiiStringBuilder sError;
-        sError.SetFormat("Render graph contains duplicate pass name '{0}'.", passDescription.m_sPassName.GetView());
+        sError.SetFormat("Resource '{0}' is written by multiple passes ('{1}' and '{2}').", output.m_sResourceName.GetView(), producerDescription.m_sPassName.GetView(), passDescription.m_sPassName.GetView());
         return BuildError(out_pErrorMessage, sError.GetView());
       }
-    }
 
+      resourceProducer.Insert(output.m_sResourceName, uiPassIndex);
+    }
+  }
+
+  for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < m_Passes.GetCount(); ++uiPassIndex)
+  {
+    const xiiRenderGraphPassDescription& passDescription = m_Passes[uiPassIndex]->GetDescription();
+    for (const xiiRenderGraphResourceUsage& input : passDescription.m_Inputs)
+    {
+      xiiUInt32 uiProducerIndex = xiiInvalidIndex;
+      if (!resourceProducer.TryGetValue(input.m_sResourceName, uiProducerIndex))
+      {
+        // Input can be an external resource imported by the runtime.
+        continue;
+      }
+
+      if (uiProducerIndex == uiPassIndex)
+      {
+        continue;
+      }
+
+      if (dependencies[uiPassIndex].Contains(uiProducerIndex))
+      {
+        continue;
+      }
+
+      dependencies[uiPassIndex].PushBack(uiProducerIndex);
+      dependents[uiProducerIndex].PushBack(uiPassIndex);
+      ++inDegree[uiPassIndex];
+    }
+  }
+
+  xiiDynamicArray<xiiUInt32> readyPasses;
+  readyPasses.Reserve(m_Passes.GetCount());
+
+  for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < m_Passes.GetCount(); ++uiPassIndex)
+  {
+    if (inDegree[uiPassIndex] == 0U)
+    {
+      readyPasses.PushBack(uiPassIndex);
+    }
+  }
+
+  xiiUInt32 uiReadyCursor = 0U;
+  while (uiReadyCursor < readyPasses.GetCount())
+  {
+    const xiiUInt32 uiPassIndex           = readyPasses[uiReadyCursor++];
     xiiRenderGraphCompiledPass& compiledPass = out_compiledPasses.ExpandAndGetRef();
-    compiledPass.m_pPass                     = pPass;
-    compiledPass.m_uiPassIndex               = uiPassIndex;
+    compiledPass.m_pPass                  = m_Passes[uiPassIndex];
+    compiledPass.m_uiPassIndex            = uiPassIndex;
+    compiledPass.m_Dependencies           = dependencies[uiPassIndex];
+
+    for (xiiUInt32 uiDependentPassIndex : dependents[uiPassIndex])
+    {
+      XII_ASSERT_DEV(inDegree[uiDependentPassIndex] > 0U, "In-degree must be greater than zero before decrement.");
+      --inDegree[uiDependentPassIndex];
+
+      if (inDegree[uiDependentPassIndex] == 0U)
+      {
+        readyPasses.PushBack(uiDependentPassIndex);
+      }
+    }
+  }
+
+  if (out_compiledPasses.GetCount() != m_Passes.GetCount())
+  {
+    xiiStringBuilder sError;
+    sError.Set("Render graph contains a cycle. Topological scheduling failed.");
+    return BuildError(out_pErrorMessage, sError.GetView());
   }
 
   return XII_SUCCESS;

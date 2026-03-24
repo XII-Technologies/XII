@@ -84,12 +84,13 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
 {
   const xiiRenderGraphPassBase* m_pPass       = nullptr;
   xiiUInt32                     m_uiPassIndex = 0;
+  xiiHybridArray<xiiUInt32, 8U> m_Dependencies;
 };
 
 /// \brief Minimal graph compiler for the new explicit rendering path.
 ///
-/// This initial implementation validates pass descriptions and preserves insertion order.
-/// Topological sorting and barrier synthesis are intentionally deferred to the next iteration.
+/// This implementation validates pass descriptions and compiles passes into deterministic topological order.
+/// Barrier synthesis is intentionally deferred to the next iteration.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphCompiler
 {
 public:
