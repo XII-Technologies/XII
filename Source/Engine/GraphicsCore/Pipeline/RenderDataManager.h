@@ -185,6 +185,9 @@ public:
   /// \brief Configures indirect dispatch argument buffer for GPU-driven visibility.
   void SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset = 0U, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode = xiiGALStateTransitionMode::Transition) const;
 
+  /// \brief Enables or disables the manager-owned indirect dispatch path for GPU-driven visibility.
+  void SetGpuDrivenVisibilityUseInternalIndirectDispatch(bool bEnable) const;
+
   /// \brief Sets a callback that can bind compute PSO/resources before visibility dispatch.
   void SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -219,6 +222,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstanceCountBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibilityDispatchArgumentsBuffer;
+  mutable xiiUInt32                                m_uiGpuVisibilityThreadGroupSize = 64U;
+  mutable bool                                     m_bGpuVisibilityUseInternalIndirectDispatch = false;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass> m_pGpuDrivenVisibilityPass;
 };
 

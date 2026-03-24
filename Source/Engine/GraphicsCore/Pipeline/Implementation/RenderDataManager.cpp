@@ -14,6 +14,16 @@
 
 constexpr xiiUInt32 s_uiSkinningBufferIndex = 2;
 
+namespace
+{
+  struct GpuDrivenDispatchArguments
+  {
+    xiiUInt32 m_uiThreadGroupCountX = 0U;
+    xiiUInt32 m_uiThreadGroupCountY = 1U;
+    xiiUInt32 m_uiThreadGroupCountZ = 1U;
+  };
+}
+
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderDataManager);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderDataManager, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -168,10 +178,22 @@ void xiiRenderDataManager::EndGpuDrivenBuild()
   const xiiUInt32 uiInstanceCapacity = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
   EnsureGpuDrivenVisibilityResources(uiInstanceCapacity);
 
+  GpuDrivenDispatchArguments dispatchArguments;
+  if (!m_GpuDrivenInstances.IsEmpty())
+  {
+    const xiiUInt32 uiThreadGroupSize = xiiMath::Max(1U, m_uiGpuVisibilityThreadGroupSize);
+    dispatchArguments.m_uiThreadGroupCountX = (m_GpuDrivenInstances.GetCount() + (uiThreadGroupSize - 1U)) / uiThreadGroupSize;
+  }
+
   auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::EndGpuDrivenBuild");
   if (!m_GpuDrivenInstances.IsEmpty())
   {
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pGpuSceneInstancesBuffer, 0U, xiiMakeArrayPtr(m_GpuDrivenInstances.GetData(), m_GpuDrivenInstances.GetCount()).ToByteArray()).AssertSuccess();
+  }
+
+  if (m_pGpuVisibilityDispatchArgumentsBuffer != nullptr)
+  {
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pGpuVisibilityDispatchArgumentsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&dispatchArguments), sizeof(dispatchArguments))).AssertSuccess();
   }
 }
 
@@ -231,6 +253,15 @@ void xiiRenderDataManager::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& ino
   m_pGpuDrivenVisibilityPass->SetInstanceCount(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
   m_pGpuDrivenVisibilityPass->SetDispatchEnabled(bEnableDispatch);
 
+  if (m_bGpuVisibilityUseInternalIndirectDispatch && m_pGpuVisibilityDispatchArgumentsBuffer != nullptr)
+  {
+    m_pGpuDrivenVisibilityPass->SetIndirectDispatchArguments(m_pGpuVisibilityDispatchArgumentsBuffer, 0U, xiiGALStateTransitionMode::Transition);
+  }
+  else
+  {
+    m_pGpuDrivenVisibilityPass->SetIndirectDispatchArguments(nullptr, 0U, xiiGALStateTransitionMode::Transition);
+  }
+
   inout_runtime.AddPass(m_pGpuDrivenVisibilityPass.Borrow());
 }
 
@@ -239,7 +270,8 @@ void xiiRenderDataManager::SetGpuDrivenVisibilityThreadGroupSize(xiiUInt32 uiThr
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
-  m_pGpuDrivenVisibilityPass->SetThreadGroupSize(uiThreadGroupSize);
+  m_uiGpuVisibilityThreadGroupSize = xiiMath::Max(1U, uiThreadGroupSize);
+  m_pGpuDrivenVisibilityPass->SetThreadGroupSize(m_uiGpuVisibilityThreadGroupSize);
 }
 
 void xiiRenderDataManager::SetGpuDrivenVisibilityDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY /*= 1U*/, xiiUInt32 uiThreadGroupCountZ /*= 1U*/) const
@@ -255,7 +287,15 @@ void xiiRenderDataManager::SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSh
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pGpuDrivenVisibilityPass != nullptr, "GPU-driven visibility pass must be initialized.");
+  m_bGpuVisibilityUseInternalIndirectDispatch = false;
   m_pGpuDrivenVisibilityPass->SetIndirectDispatchArguments(pIndirectDispatchArguments, uiDispatchArgumentOffset, bufferTransitionMode);
+}
+
+void xiiRenderDataManager::SetGpuDrivenVisibilityUseInternalIndirectDispatch(bool bEnable) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_bGpuVisibilityUseInternalIndirectDispatch = bEnable;
 }
 
 void xiiRenderDataManager::SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
@@ -339,6 +379,23 @@ void xiiRenderDataManager::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstan
     if (m_pGpuVisibleInstanceCountBuffer != nullptr)
     {
       m_pGpuVisibleInstanceCountBuffer->SetDebugName("RenderDataManager::GpuVisibleInstanceCount");
+    }
+  }
+
+  if (m_pGpuVisibilityDispatchArgumentsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::IndirectDrawArguments;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = sizeof(GpuDrivenDispatchArguments);
+
+    m_pGpuVisibilityDispatchArgumentsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pGpuVisibilityDispatchArgumentsBuffer != nullptr)
+    {
+      m_pGpuVisibilityDispatchArgumentsBuffer->SetDebugName("RenderDataManager::GpuVisibilityDispatchArguments");
     }
   }
 }
