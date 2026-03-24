@@ -87,6 +87,16 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphCompiledPass
   xiiHybridArray<xiiUInt32, 8U> m_Dependencies;
 };
 
+/// \brief Represents one synthesized resource state transition between two passes.
+struct XII_GRAPHICSCORE_DLL xiiRenderGraphBarrier
+{
+  xiiHashedString                        m_sResourceName;
+  xiiBitflags<xiiGALResourceStateFlags>  m_BeforeState  = xiiGALResourceStateFlags::Unknown;
+  xiiBitflags<xiiGALResourceStateFlags>  m_AfterState   = xiiGALResourceStateFlags::Unknown;
+  xiiUInt32                              m_uiFromPassIndex = xiiInvalidIndex;
+  xiiUInt32                              m_uiToPassIndex   = xiiInvalidIndex;
+};
+
 /// \brief Minimal graph compiler for the new explicit rendering path.
 ///
 /// This implementation validates pass descriptions and compiles passes into deterministic topological order.
@@ -98,6 +108,7 @@ public:
   void Reset();
 
   [[nodiscard]] xiiResult Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiStringBuilder* out_pErrorMessage = nullptr) const;
+  [[nodiscard]] xiiResult Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiDynamicArray<xiiRenderGraphBarrier>& out_barriers, xiiStringBuilder* out_pErrorMessage = nullptr) const;
 
 private:
   [[nodiscard]] xiiResult ValidatePassDescription(const xiiRenderGraphPassDescription& passDescription, xiiUInt32 uiPassIndex, xiiStringBuilder* out_pErrorMessage) const;

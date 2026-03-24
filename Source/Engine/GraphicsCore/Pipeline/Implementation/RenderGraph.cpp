@@ -13,6 +13,88 @@ namespace
 
     return XII_FAILURE;
   }
+
+  static xiiBitflags<xiiGALResourceStateFlags> ResolveRequiredState(const xiiRenderGraphResourceUsage& usage)
+  {
+    if (usage.m_RequiredState != xiiGALResourceStateFlags::Unknown)
+    {
+      return usage.m_RequiredState;
+    }
+
+    xiiBitflags<xiiGALResourceStateFlags> states = xiiGALResourceStateFlags::Unknown;
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RenderTarget))
+    {
+      states.Add(xiiGALResourceStateFlags::RenderTarget);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::DepthStencilWrite))
+    {
+      states.Add(xiiGALResourceStateFlags::DepthWrite);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::DepthStencilReadOnly))
+    {
+      states.Add(xiiGALResourceStateFlags::DepthRead);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::UnorderedAccess | xiiRenderGraphResourceAccessFlags::Write))
+    {
+      states.Add(xiiGALResourceStateFlags::UnorderedAccess);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::Read))
+    {
+      states.Add(xiiGALResourceStateFlags::ShaderResource);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RayTracingStructure))
+    {
+      states.Add(xiiGALResourceStateFlags::BuildASRead | xiiGALResourceStateFlags::BuildASWrite | xiiGALResourceStateFlags::RayTracing);
+    }
+
+    if (states == xiiGALResourceStateFlags::Unknown)
+    {
+      states = xiiGALResourceStateFlags::Common;
+    }
+
+    return states;
+  }
+
+  static void CollectPassResourceStates(const xiiRenderGraphPassDescription& passDescription, xiiHashTable<xiiHashedString, xiiBitflags<xiiGALResourceStateFlags>>& out_resourceStates)
+  {
+    out_resourceStates.Clear();
+
+    for (const xiiRenderGraphResourceUsage& input : passDescription.m_Inputs)
+    {
+      const xiiBitflags<xiiGALResourceStateFlags> requiredState = ResolveRequiredState(input);
+
+      xiiBitflags<xiiGALResourceStateFlags> existingState = xiiGALResourceStateFlags::Unknown;
+      if (out_resourceStates.TryGetValue(input.m_sResourceName, existingState))
+      {
+        out_resourceStates.Insert(input.m_sResourceName, existingState | requiredState);
+      }
+      else
+      {
+        out_resourceStates.Insert(input.m_sResourceName, requiredState);
+      }
+    }
+
+    for (const xiiRenderGraphResourceUsage& output : passDescription.m_Outputs)
+    {
+      const xiiBitflags<xiiGALResourceStateFlags> requiredState = ResolveRequiredState(output);
+
+      xiiBitflags<xiiGALResourceStateFlags> existingState = xiiGALResourceStateFlags::Unknown;
+      if (out_resourceStates.TryGetValue(output.m_sResourceName, existingState))
+      {
+        out_resourceStates.Insert(output.m_sResourceName, existingState | requiredState);
+      }
+      else
+      {
+        out_resourceStates.Insert(output.m_sResourceName, requiredState);
+      }
+    }
+  }
 } // namespace
 
 void xiiRenderGraphCompiler::AddPass(const xiiRenderGraphPassBase* pPass)
@@ -29,7 +111,14 @@ void xiiRenderGraphCompiler::Reset()
 
 xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiStringBuilder* out_pErrorMessage) const
 {
+  xiiDynamicArray<xiiRenderGraphBarrier> unusedBarriers;
+  return Compile(out_compiledPasses, unusedBarriers, out_pErrorMessage);
+}
+
+xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiledPass>& out_compiledPasses, xiiDynamicArray<xiiRenderGraphBarrier>& out_barriers, xiiStringBuilder* out_pErrorMessage) const
+{
   out_compiledPasses.Clear();
+  out_barriers.Clear();
 
   if (out_pErrorMessage != nullptr)
   {
@@ -153,6 +242,41 @@ xiiResult xiiRenderGraphCompiler::Compile(xiiDynamicArray<xiiRenderGraphCompiled
     return BuildError(out_pErrorMessage, sError.GetView());
   }
 
+  xiiHashTable<xiiHashedString, xiiBitflags<xiiGALResourceStateFlags>> currentResourceStates;
+  xiiHashTable<xiiHashedString, xiiUInt32>                              lastPassUsingResource;
+  xiiHashTable<xiiHashedString, xiiBitflags<xiiGALResourceStateFlags>> passResourceStates;
+
+  for (const xiiRenderGraphCompiledPass& compiledPass : out_compiledPasses)
+  {
+    const xiiRenderGraphPassDescription& passDescription = compiledPass.m_pPass->GetDescription();
+    CollectPassResourceStates(passDescription, passResourceStates);
+
+    for (auto it = passResourceStates.GetIterator(); it.IsValid(); ++it)
+    {
+      const xiiHashedString& resourceName                                = it.Key();
+      const xiiBitflags<xiiGALResourceStateFlags> requiredState          = it.Value();
+
+      xiiBitflags<xiiGALResourceStateFlags> currentState                 = xiiGALResourceStateFlags::Unknown;
+      const bool bHasCurrentState = currentResourceStates.TryGetValue(resourceName, currentState);
+
+      xiiUInt32 uiPreviousPassIndex = xiiInvalidIndex;
+      XII_IGNORE_UNUSED(lastPassUsingResource.TryGetValue(resourceName, uiPreviousPassIndex));
+
+      if (bHasCurrentState && currentState != requiredState)
+      {
+        xiiRenderGraphBarrier& barrier = out_barriers.ExpandAndGetRef();
+        barrier.m_sResourceName        = resourceName;
+        barrier.m_BeforeState          = currentState;
+        barrier.m_AfterState           = requiredState;
+        barrier.m_uiFromPassIndex      = uiPreviousPassIndex;
+        barrier.m_uiToPassIndex        = compiledPass.m_uiPassIndex;
+      }
+
+      currentResourceStates.Insert(resourceName, requiredState);
+      lastPassUsingResource.Insert(resourceName, compiledPass.m_uiPassIndex);
+    }
+  }
+
   return XII_SUCCESS;
 }
 
@@ -227,42 +351,7 @@ xiiResult xiiRenderGraphCompiler::ValidatePassDescription(const xiiRenderGraphPa
 
 xiiBitflags<xiiGALResourceStateFlags> xiiRenderGraphCompiler::DeriveRequiredState(xiiBitflags<xiiRenderGraphResourceAccessFlags> accessFlags)
 {
-  xiiBitflags<xiiGALResourceStateFlags> states = xiiGALResourceStateFlags::Unknown;
-
-  if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RenderTarget))
-  {
-    states.Add(xiiGALResourceStateFlags::RenderTarget);
-  }
-
-  if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::DepthStencilWrite))
-  {
-    states.Add(xiiGALResourceStateFlags::DepthWrite);
-  }
-
-  if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::DepthStencilReadOnly))
-  {
-    states.Add(xiiGALResourceStateFlags::DepthRead);
-  }
-
-  if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::UnorderedAccess | xiiRenderGraphResourceAccessFlags::Write))
-  {
-    states.Add(xiiGALResourceStateFlags::UnorderedAccess);
-  }
-
-  if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::Read))
-  {
-    states.Add(xiiGALResourceStateFlags::ShaderResource);
-  }
-
-  if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RayTracingStructure))
-  {
-    states.Add(xiiGALResourceStateFlags::BuildASRead | xiiGALResourceStateFlags::BuildASWrite | xiiGALResourceStateFlags::RayTracing);
-  }
-
-  if (states == xiiGALResourceStateFlags::Unknown)
-  {
-    states = xiiGALResourceStateFlags::Common;
-  }
-
-  return states;
+  xiiRenderGraphResourceUsage usage;
+  usage.m_AccessFlags = accessFlags;
+  return ResolveRequiredState(usage);
 }
