@@ -2,7 +2,7 @@
 
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Meshes/InstancedMeshComponent.h>
-#include <GraphicsCore/Pipeline/InstanceDataProvider.h>
+#include <GraphicsCore/Pipeline/InstanceData.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 
 #include <Core/WorldSerializer/WorldReader.h>

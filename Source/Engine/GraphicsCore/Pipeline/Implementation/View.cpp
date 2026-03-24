@@ -3,8 +3,6 @@
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/Pipeline/Extractor.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -20,19 +18,6 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
 {
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("RenderTarget0", m_PinRenderTarget0),
-    XII_MEMBER_PROPERTY("RenderTarget1", m_PinRenderTarget1),
-    XII_MEMBER_PROPERTY("RenderTarget2", m_PinRenderTarget2),
-    XII_MEMBER_PROPERTY("RenderTarget3", m_PinRenderTarget3),
-    XII_MEMBER_PROPERTY("RenderTarget4", m_PinRenderTarget4),
-    XII_MEMBER_PROPERTY("RenderTarget5", m_PinRenderTarget5),
-    XII_MEMBER_PROPERTY("RenderTarget6", m_PinRenderTarget6),
-    XII_MEMBER_PROPERTY("RenderTarget7", m_PinRenderTarget7),
-    XII_MEMBER_PROPERTY("DepthStencil", m_PinDepthStencil),
-  }
-  XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -71,10 +56,6 @@ void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
     m_Data.m_pSwapChain                       = pSwapChain;
     m_Data.m_SwapChainRenderTargets.m_pRTs[0] = m_Data.m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     m_Data.m_RenderTargets                    = xiiRenderTargets();
-    if (m_pRenderPipeline)
-    {
-      xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
-    }
   }
 }
 
@@ -86,10 +67,6 @@ void xiiView::SetRenderTargets(const xiiRenderTargets& renderTargets)
     m_Data.m_pSwapChain             = xiiSharedPtr<xiiGALSwapChain>();
     m_Data.m_SwapChainRenderTargets = xiiRenderTargets();
     m_Data.m_RenderTargets          = renderTargets;
-    if (m_pRenderPipeline)
-    {
-      xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
-    }
   }
 }
 
@@ -116,10 +93,7 @@ void xiiView::SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipelin
   m_uiRenderPipelineResourceDescriptionCounter = 0;
   m_hRenderPipeline                            = hPipeline;
 
-  if (m_pRenderPipeline == nullptr)
-  {
-    EnsureUpToDate();
-  }
+  EnsureUpToDate();
 }
 
 xiiRenderPipelineResourceHandle xiiView::GetRenderPipelineResource() const
@@ -146,10 +120,6 @@ void xiiView::SetViewport(const xiiRectFloat& viewport)
 
 void xiiView::ForceUpdate()
 {
-  if (m_pRenderPipeline)
-  {
-    xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
-  }
 }
 
 void xiiView::ExtractData()
@@ -161,9 +131,6 @@ void xiiView::ExtractData()
   extractionEvent.m_pView          = this;
   extractionEvent.m_uiFrameCounter = xiiRenderWorld::GetFrameCounter();
   xiiRenderWorld::s_ExtractionEvent.Broadcast(extractionEvent);
-
-  m_pRenderPipeline->m_sName = m_sName;
-  m_pRenderPipeline->ExtractData(*this);
 
   extractionEvent.m_Type = xiiRenderWorldExtractionEvent::Type::AfterViewExtraction;
   xiiRenderWorld::s_ExtractionEvent.Broadcast(extractionEvent);
@@ -273,10 +240,7 @@ bool xiiView::IsRenderPassReadBackPropertyExisting(xiiStringView sPassName, xiiS
 
 void xiiView::UpdateViewData(xiiUInt32 uiDataIndex)
 {
-  if (m_pRenderPipeline != nullptr)
-  {
-    m_pRenderPipeline->UpdateViewData(*this, uiDataIndex);
-  }
+  XII_IGNORE_UNUSED(uiDataIndex);
 }
 
 void xiiView::UpdateCachedMatrices() const
@@ -326,29 +290,10 @@ void xiiView::UpdateCachedMatrices() const
 
 void xiiView::EnsureUpToDate()
 {
-  if (m_hRenderPipeline.IsValid())
-  {
-    xiiResourceLock<xiiRenderPipelineResource> pPipeline(m_hRenderPipeline, xiiResourceAcquireMode::BlockTillLoaded);
+  if (!m_hRenderPipeline.IsValid())
+    return;
 
-    xiiUInt32 uiCounter = pPipeline->GetCurrentResourceChangeCounter();
-
-    if (m_uiRenderPipelineResourceDescriptionCounter != uiCounter)
-    {
-      m_uiRenderPipelineResourceDescriptionCounter = uiCounter;
-
-      m_pRenderPipeline = pPipeline->CreateRenderPipeline();
-      xiiRenderWorld::AddRenderPipelineToRebuild(m_pRenderPipeline, GetHandle());
-
-      m_bPermutationVariablesModified = true;
-
-      ResetAllPropertyStates(m_PassProperties);
-      ResetAllPropertyStates(m_ExtractorProperties);
-    }
-
-    ApplyPermutationVariables();
-    ApplyRenderPassProperties();
-    ApplyExtractorProperties();
-  }
+  m_bPermutationVariablesModified = false;
 }
 
 void xiiView::ApplyPermutationVariables()
@@ -356,8 +301,7 @@ void xiiView::ApplyPermutationVariables()
   if (!m_bPermutationVariablesModified)
     return;
 
-  m_pRenderPipeline->m_PermutationVariables = m_PermutationVariables;
-  m_bPermutationVariablesModified           = false;
+  m_bPermutationVariablesModified = false;
 }
 
 void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
@@ -398,14 +342,6 @@ void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStri
 
 void xiiView::ReadBackPassProperties()
 {
-  xiiHybridArray<xiiRenderPipelinePassBase*, 16U> passes;
-
-  m_pRenderPipeline->GetPasses(passes);
-
-  for (auto pPass : passes)
-  {
-    pPass->ReadBackProperties(this);
-  }
 }
 
 void xiiView::ResetAllPropertyStates(xiiMap<xiiString, PropertyValue>& map)
@@ -421,33 +357,8 @@ void xiiView::ApplyRenderPassProperties()
 {
   for (auto it = m_PassProperties.GetIterator(); it.IsValid(); ++it)
   {
-    auto& propertyValue = it.Value();
-
-    if (!propertyValue.m_bIsValid || !propertyValue.m_bIsDirty)
-      continue;
-
-    propertyValue.m_bIsDirty = false;
-
-    xiiReflectedClass* pObject = nullptr;
-    const char*        szDot   = propertyValue.m_sObjectName.FindSubString(".");
-    if (szDot != nullptr)
-    {
-      XII_REPORT_FAILURE("Setting renderer properties is not possible anymore");
-    }
-    else
-    {
-      pObject = m_pRenderPipeline->GetPassByName(propertyValue.m_sObjectName);
-    }
-
-    if (pObject == nullptr)
-    {
-      xiiLog::Error("The render pass '{0}' does not exist. Property '{1}' cannot be applied.", propertyValue.m_sObjectName, propertyValue.m_sPropertyName);
-
-      propertyValue.m_bIsValid = false;
-      continue;
-    }
-
-    ApplyProperty(pObject, propertyValue, "render pass");
+    it.Value().m_bIsDirty = false;
+    it.Value().m_bIsValid = false;
   }
 }
 
@@ -455,21 +366,8 @@ void xiiView::ApplyExtractorProperties()
 {
   for (auto it = m_ExtractorProperties.GetIterator(); it.IsValid(); ++it)
   {
-    if (!it.Value().m_bIsValid || !it.Value().m_bIsDirty)
-      continue;
-
     it.Value().m_bIsDirty = false;
-
-    xiiExtractor* pExtractor = m_pRenderPipeline->GetExtractorByName(it.Value().m_sObjectName);
-    if (pExtractor == nullptr)
-    {
-      xiiLog::Error("The extractor '{0}' does not exist. Property '{1}' cannot be applied.", it.Value().m_sObjectName, it.Value().m_sPropertyName);
-
-      it.Value().m_bIsValid = false;
-      continue;
-    }
-
-    ApplyProperty(pExtractor, it.Value(), "extractor");
+    it.Value().m_bIsValid = false;
   }
 }
 

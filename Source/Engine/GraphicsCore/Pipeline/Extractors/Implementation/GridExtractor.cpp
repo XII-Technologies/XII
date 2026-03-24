@@ -3,6 +3,12 @@
 #include <GraphicsCore/Pipeline/Extractors/GridExtractor.h>
 #include <GraphicsCore/Pipeline/View.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGridRenderData, 1, xiiRTTIDefaultAllocator<xiiGridRenderData>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGridExtractor, 1, xiiRTTIDefaultAllocator<xiiGridExtractor>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiGridExtractor::xiiGridExtractor(xiiStringView sName) :
   xiiExtractor(sName)
 {

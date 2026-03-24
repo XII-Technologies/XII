@@ -317,7 +317,8 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
       pView->SetCameraUsageHint(xiiCameraUsageHint::Reflection);
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(s_uiReflectionCubeMapSize), static_cast<float>(s_uiReflectionCubeMapSize)));
 
-      pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>(sRenderPipelineResource));
+      XII_IGNORE_UNUSED(sRenderPipelineResource);
+      pView->SetRenderPipelineResource(xiiRenderPipelineResourceHandle());
 
       renderView.m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 90.0f, 0.1f, 100.0f);
       pView->SetCamera(&renderView.m_Camera);

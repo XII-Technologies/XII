@@ -24,9 +24,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererRegistry)
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderer, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiHybridArray<const xiiRTTI*, 16>         xiiRendererRegistry::s_RendererTypes;

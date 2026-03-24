@@ -4,9 +4,7 @@
 #include <GraphicsCore/Meshes/Implementation/MeshRendererUtils.h>
 #include <GraphicsCore/Meshes/InstancedMeshComponent.h>
 #include <GraphicsCore/Meshes/MeshRenderer.h>
-#include <GraphicsCore/Pipeline/InstanceDataProvider.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/InstanceData.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiMeshRenderer>)
@@ -15,7 +13,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiMeshRenderer::xiiMeshRenderer()  = default;
 xiiMeshRenderer::~xiiMeshRenderer() = default;
 
-void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
+void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& ref_types) const
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiMeshRenderData>());
   ref_types.PushBack(xiiGetStaticRTTI<xiiInstancedMeshRenderData>());
@@ -50,7 +48,11 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
   if (subMeshes.GetCount() <= uiPartIndex)
     return;
 
-  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
+  if (!bHasExplicitInstanceData)
+    return;
+
+  XII_IGNORE_UNUSED(pPass);
+  xiiInstanceData* pInstanceData = static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData;
 
   if (pRenderData->m_uiFlipWinding)
   {

@@ -7,7 +7,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Utilities/DGMLWriter.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -41,18 +41,7 @@ namespace
   static xiiMutex                  s_ViewsToRenderMutex;
   static xiiDynamicArray<xiiView*> s_ViewsToRender;
 
-  static xiiDynamicArray<xiiSharedPtr<xiiRenderPipeline>> s_FilteredRenderPipelines[2];
-
-  struct PipelineToRebuild
-  {
-    XII_DECLARE_POD_TYPE();
-
-    xiiRenderPipeline* m_pPipeline = nullptr;
-    xiiViewHandle      m_hView;
-  };
-
-  static xiiMutex                           s_PipelinesToRebuildMutex;
-  static xiiDynamicArray<PipelineToRebuild> s_PipelinesToRebuild;
+  static xiiDynamicArray<xiiViewHandle> s_FilteredRenderPipelines[2];
 
   static xiiProxyAllocator* s_pCacheAllocator = nullptr;
 
@@ -147,7 +136,6 @@ xiiViewHandle xiiRenderWorld::CreateView(xiiStringView sName, xiiView*& out_pVie
   }
 
   pView->SetName(sName);
-  pView->InitializePins();
 
   pView->m_pRenderDataCache = XII_NEW(s_pCacheAllocator, xiiInternal::RenderDataCache, s_pCacheAllocator);
 
@@ -172,15 +160,6 @@ void xiiRenderWorld::DeleteView(const xiiViewHandle& hView)
   XII_DELETE(s_pCacheAllocator, pView->m_pRenderDataCache);
 
   {
-    XII_LOCK(s_PipelinesToRebuildMutex);
-
-    for (xiiUInt32 i = s_PipelinesToRebuild.GetCount(); i-- > 0;)
-    {
-      if (s_PipelinesToRebuild[i].m_hView == hView)
-      {
-        s_PipelinesToRebuild.RemoveAtAndCopy(i);
-      }
-    }
   }
 
   RemoveMainView(hView);
@@ -515,10 +494,10 @@ void xiiRenderWorld::ExtractMainViews()
 
     for (xiiUInt32 i = s_ViewsToRender.GetCount(); i-- > 0;)
     {
-      auto& pRenderPipeline = s_ViewsToRender[i]->m_pRenderPipeline;
-      if (!filteredRenderPipelines.Contains(pRenderPipeline))
+      const xiiViewHandle hView = s_ViewsToRender[i]->GetHandle();
+      if (!filteredRenderPipelines.Contains(hView))
       {
-        filteredRenderPipelines.PushBack(pRenderPipeline);
+        filteredRenderPipelines.PushBack(hView);
       }
     }
 
@@ -555,35 +534,8 @@ void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
 
   auto& filteredRenderPipelines = s_FilteredRenderPipelines[GetDataIndexForRendering()];
 
-  if (s_bWriteRenderPipelineDgml)
-  {
-    // Executed via WriteRenderPipelineDgml console command.
-    s_bWriteRenderPipelineDgml = false;
-    const xiiDateTime dt       = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
-    for (xiiUInt32 i = 0; i < filteredRenderPipelines.GetCount(); ++i)
-    {
-      auto&            pRenderPipeline = filteredRenderPipelines[i];
-      xiiStringBuilder sPath(":appdata/Profiling/", xiiApplication::GetApplicationInstance()->GetApplicationName());
-      sPath.AppendFormat("_{0}-{1}-{2}_{3}-{4}-{5}_Pipeline{}_{}.dgml", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), i, pRenderPipeline->GetViewName().GetData());
-
-      xiiDGMLGraph graph(xiiDGMLGraph::Direction::TopToBottom);
-      pRenderPipeline->CreateDgmlGraph(graph);
-      if (xiiDGMLGraphWriter::WriteGraphToFile(sPath, graph).Failed())
-      {
-        xiiLog::Error("Failed to write render pipeline dgml: {}", sPath);
-      }
-    }
-  }
-
-  for (auto& pRenderPipeline : filteredRenderPipelines)
-  {
-    // If we are the only one holding a reference to the pipeline skip rendering. The pipeline is not needed anymore and will be deleted soon.
-    if (pRenderPipeline->GetRefCount() > 1)
-    {
-      pRenderPipeline->Render(pRenderContext);
-    }
-    pRenderPipeline = nullptr;
-  }
+  XII_IGNORE_UNUSED(pRenderContext);
+  XII_IGNORE_UNUSED(s_bWriteRenderPipelineDgml);
 
   filteredRenderPipelines.Clear();
 
@@ -604,8 +556,6 @@ void xiiRenderWorld::BeginFrame()
     pView->EnsureUpToDate();
   }
 
-  RebuildPipelines();
-
   xiiGALDevice::GetDefaultDevice()->BeginFrame();
 }
 
@@ -616,15 +566,6 @@ void xiiRenderWorld::EndFrame()
   xiiGALDevice::GetDefaultDevice()->EndFrame();
 
   ++s_uiFrameCounter;
-
-  for (auto it = s_Views.GetIterator(); it.IsValid(); ++it)
-  {
-    xiiView* pView = it.Value();
-    if (pView->IsValid())
-    {
-      pView->ReadBackPassProperties();
-    }
-  }
 
   ClearRenderDataCache();
   UpdateRenderDataCache();
@@ -754,40 +695,13 @@ void xiiRenderWorld::UpdateRenderDataCache()
 // static
 void xiiRenderWorld::AddRenderPipelineToRebuild(xiiRenderPipeline* pRenderPipeline, const xiiViewHandle& hView)
 {
-  XII_LOCK(s_PipelinesToRebuildMutex);
-
-  for (auto& pipelineToRebuild : s_PipelinesToRebuild)
-  {
-    if (pipelineToRebuild.m_hView == hView)
-    {
-      pipelineToRebuild.m_pPipeline = pRenderPipeline;
-      return;
-    }
-  }
-
-  auto& pipelineToRebuild       = s_PipelinesToRebuild.ExpandAndGetRef();
-  pipelineToRebuild.m_pPipeline = pRenderPipeline;
-  pipelineToRebuild.m_hView     = hView;
+  XII_IGNORE_UNUSED(pRenderPipeline);
+  XII_IGNORE_UNUSED(hView);
 }
 
 // static
 void xiiRenderWorld::RebuildPipelines()
 {
-  XII_PROFILE_SCOPE("RebuildPipelines");
-
-  for (auto& pipelineToRebuild : s_PipelinesToRebuild)
-  {
-    xiiView* pView = nullptr;
-    if (s_Views.TryGetValue(pipelineToRebuild.m_hView, pView))
-    {
-      if (pipelineToRebuild.m_pPipeline->Rebuild(*pView) == xiiRenderPipeline::PipelineState::RebuildError)
-      {
-        xiiLog::Error("Failed to rebuild pipeline '{}' for view '{}'.", pipelineToRebuild.m_pPipeline->m_sName, pView->GetName());
-      }
-    }
-  }
-
-  s_PipelinesToRebuild.Clear();
 }
 
 void xiiRenderWorld::OnEngineStartup()

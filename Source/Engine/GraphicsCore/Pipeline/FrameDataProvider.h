@@ -14,11 +14,8 @@ protected:
   void* GetData(const xiiRenderViewContext& renderViewContext);
 
 private:
-  friend class xiiRenderPipeline;
-
-  const xiiRenderPipeline* m_pOwnerPipeline    = nullptr;
-  void*                    m_pData             = nullptr;
-  xiiUInt64                m_uiLastUpdateFrame = 0;
+  void*     m_pData             = nullptr;
+  xiiUInt64 m_uiLastUpdateFrame = 0;
 };
 
 template <typename T>

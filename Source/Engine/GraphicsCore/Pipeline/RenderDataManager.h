@@ -9,6 +9,38 @@
 struct xiiPerInstanceData;
 struct xiiRenderWorldExtractionEvent;
 
+struct XII_GRAPHICSCORE_DLL xiiInstanceDataOffset
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiOffset    = xiiInvalidIndex;
+  xiiUInt8  m_uiIsDynamic = 0;
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsInvalidated() const
+  {
+    return m_uiOffset == xiiInvalidIndex;
+  }
+};
+
+struct XII_GRAPHICSCORE_DLL xiiCustomInstanceDataOffset
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiOffset = xiiInvalidIndex;
+
+  [[nodiscard]] XII_ALWAYS_INLINE bool IsInvalidated() const
+  {
+    return m_uiOffset == xiiInvalidIndex;
+  }
+};
+
+struct XII_GRAPHICSCORE_DLL xiiMsgCustomInstanceDataOffsetChanged : public xiiMessage
+{
+  XII_DECLARE_MESSAGE_TYPE(xiiMsgCustomInstanceDataOffsetChanged, xiiMessage);
+
+  xiiCustomInstanceDataOffset m_NewOffset;
+};
+
 /// \brief Manager for render data and instance data buffers.
 ///
 /// Render data is used to extract rendering information from components during the extraction phase that is then used for rendering.

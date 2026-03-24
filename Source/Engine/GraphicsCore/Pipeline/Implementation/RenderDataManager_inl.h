@@ -48,12 +48,10 @@ XII_FORCE_INLINE void xiiRenderDataManager::FillPerInstanceData(xiiPerInstanceDa
   if (pObject != nullptr)
   {
     out_perInstanceData.BoundingSphereRadius = pObject->GetGlobalBounds().m_fSphereRadius;
-    out_perInstanceData.RandomSeed = pObject->GetStableRandomSeed();
   }
   else
   {
     out_perInstanceData.BoundingSphereRadius = fBoundingSphereRadius;
-    out_perInstanceData.RandomSeed = uiRandomSeed;
   }
 
   out_perInstanceData.GameObjectID = uiUniqueID;

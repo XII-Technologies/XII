@@ -290,8 +290,8 @@ struct xiiShadowPool::Data
     XII_ASSERT_DEV(m_ShadowViewsMutex.IsLocked(), "m_ShadowViewsMutex must be locked at this point.");
     m_ShadowViewsMutex.Unlock(); // if the resource gets loaded in the call below, his could lead to a deadlock
 
-    // ShadowMapRenderPipeline.xiiRenderPipelineAsset
-    pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ eac7b044-9a76-4d73-be6b-d92ae3a5dbfe }"));
+    // Legacy render pipeline assets were removed with the RenderGraph migration.
+    pView->SetRenderPipelineResource(xiiRenderPipelineResourceHandle());
 
     m_ShadowViewsMutex.Lock();
 
