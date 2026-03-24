@@ -2,7 +2,6 @@
 
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
-#include <GraphicsCore/Pipeline/Extractor.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -180,27 +179,9 @@ void xiiView::SetRenderPassProperty(xiiStringView sPassName, xiiStringView sProp
   SetProperty(m_PassProperties, sPassName, sPropertyName, value);
 }
 
-void xiiView::SetExtractorProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
-{
-  SetProperty(m_ExtractorProperties, sPassName, sPropertyName, value);
-}
-
 void xiiView::ResetRenderPassProperties()
 {
   for (auto it : m_PassProperties)
-  {
-    auto& prop = it.Value();
-    if (prop.m_bIsValid)
-    {
-      prop.m_CurrentValue = prop.m_DefaultValue;
-      prop.m_bIsDirty     = true;
-    }
-  }
-}
-
-void xiiView::ResetExtractorProperties()
-{
-  for (auto it : m_ExtractorProperties)
   {
     auto& prop = it.Value();
     if (prop.m_bIsValid)
@@ -356,15 +337,6 @@ void xiiView::ResetAllPropertyStates(xiiMap<xiiString, PropertyValue>& map)
 void xiiView::ApplyRenderPassProperties()
 {
   for (auto it = m_PassProperties.GetIterator(); it.IsValid(); ++it)
-  {
-    it.Value().m_bIsDirty = false;
-    it.Value().m_bIsValid = false;
-  }
-}
-
-void xiiView::ApplyExtractorProperties()
-{
-  for (auto it = m_ExtractorProperties.GetIterator(); it.IsValid(); ++it)
   {
     it.Value().m_bIsDirty = false;
     it.Value().m_bIsValid = false;

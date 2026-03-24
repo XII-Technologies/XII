@@ -133,10 +133,8 @@ public:
   void SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue);
 
   void SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-  void SetExtractorProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
 
   void ResetRenderPassProperties();
-  void ResetExtractorProperties();
 
   void       SetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
   xiiVariant GetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName);
@@ -206,13 +204,11 @@ private:
   void ResetAllPropertyStates(xiiMap<xiiString, PropertyValue>& map);
 
   void ApplyRenderPassProperties();
-  void ApplyExtractorProperties();
 
   void ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, xiiStringView sTypeName);
 
   xiiMap<xiiString, PropertyValue> m_PassProperties;
   xiiMap<xiiString, PropertyValue> m_PassReadBackProperties;
-  xiiMap<xiiString, PropertyValue> m_ExtractorProperties;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

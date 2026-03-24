@@ -6,7 +6,6 @@
 
 class xiiCamera;
 class xiiExtractedRenderData;
-class xiiExtractor;
 class xiiView;
 class xiiRenderer;
 class xiiRenderData;

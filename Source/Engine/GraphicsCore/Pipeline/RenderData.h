@@ -160,7 +160,6 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
   void AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category, xiiRenderData::Caching::Enum cachingBehavior);
 
 private:
-  friend class xiiExtractor;
 
   struct Data
   {

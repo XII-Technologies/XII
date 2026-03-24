@@ -1,7 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Decals/DecalAtlasResource.h>
-#include <GraphicsCore/Pipeline/Extractors/ClusteredDataExtractor.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
 #include <GraphicsCore/Lights/Implementation/ClusteredDataUtils.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
@@ -11,6 +10,12 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusteredDataCPU, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiClusteredDataCPU::xiiClusteredDataCPU()  = default;
+xiiClusteredDataCPU::~xiiClusteredDataCPU() = default;
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
 {

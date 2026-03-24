@@ -686,7 +686,7 @@ void xiiRenderWorld::UpdateRenderDataCache()
         }
       }
 
-      // keep entries sorted, otherwise the logic xiiExtractor::ExtractRenderData doesn't work
+      // keep entries sorted to preserve deterministic per-object cache merge behavior
       perObjectCache.m_Entries.Sort();
     }
   }
