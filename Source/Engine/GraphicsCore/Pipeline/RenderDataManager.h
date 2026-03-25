@@ -66,29 +66,6 @@ struct XII_GRAPHICSCORE_DLL xiiGpuDrivenInstance
   xiiUInt32         m_uiFlags       = 0U;
 };
 
-struct XII_GRAPHICSCORE_DLL xiiPreviousFrameStats
-{
-  XII_DECLARE_POD_TYPE();
-
-  float m_fGpuFrameTimeMs         = 16.666f;
-  float m_fGpuSetupTimeMs         = 0.0f;
-  float m_fGpuUploadTimeMs        = 0.0f;
-  float m_fGpuPostProcessTimeMs   = 0.0f;
-  float m_fCpuFrameTimeMs         = 16.666f;
-  float m_fRenderScale            = 1.0f;
-  float m_fJitterX                = 0.0f;
-  float m_fJitterY                = 0.0f;
-};
-
-struct XII_GRAPHICSCORE_DLL xiiFrameTimestampRange
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt64 m_uiBeginTimestamp = 0U;
-  xiiUInt64 m_uiEndTimestamp   = 0U;
-};
-
-
 /// \brief Manager for render data and instance data buffers.
 ///
 /// Render data is used to extract rendering information from components during the extraction phase that is then used for rendering.

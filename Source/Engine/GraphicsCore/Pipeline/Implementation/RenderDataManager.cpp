@@ -1033,9 +1033,9 @@ void xiiRenderDataManager::UploadPerFrameBufferDataCommandList(xiiGALCommandList
 
   const xiiUInt32 uiRingWriteIndex = m_uiPerFrameUploadWriteIndex;
 
-  const xiiUInt64 uiCameraWriteOffset = static_cast<xiiUInt64>(uiRingWriteIndex) * sizeof(xiiPerFrameCameraUploadData);
-  const xiiUInt64 uiLightWriteOffset  = static_cast<xiiUInt64>(uiRingWriteIndex) * sizeof(xiiPerFrameLightUploadData);
-  const xiiUInt64 uiGlobalWriteOffset = static_cast<xiiUInt64>(uiRingWriteIndex) * sizeof(xiiPerFrameGlobalUploadData);
+  const xiiUInt32 uiCameraWriteOffset = uiRingWriteIndex * sizeof(xiiPerFrameCameraUploadData);
+  const xiiUInt32 uiLightWriteOffset  = uiRingWriteIndex * sizeof(xiiPerFrameLightUploadData);
+  const xiiUInt32 uiGlobalWriteOffset = uiRingWriteIndex * sizeof(xiiPerFrameGlobalUploadData);
 
   if (m_pPerFrameCameraConstantsBuffer != nullptr)
   {
