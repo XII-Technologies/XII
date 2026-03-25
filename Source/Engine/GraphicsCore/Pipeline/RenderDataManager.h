@@ -287,6 +287,9 @@ public:
   /// \brief Registers async decal classification from decal volumes and depth into tile lists.
   void AddDecalClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers compute decal resolve from GBuffer targets and tile lists to updated material attributes.
+  void AddDecalResolvePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -458,6 +461,15 @@ public:
   /// \brief Supplies decal tile-list output buffer written by decal classification.
   void SetDecalTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const;
 
+  /// \brief Supplies GBuffer targets consumed by decal resolve.
+  void SetDecalResolveGBufferResource(xiiSharedPtr<xiiGALResource> pGBufferResource) const;
+
+  /// \brief Supplies decal tile-list input consumed by decal resolve.
+  void SetDecalResolveTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const;
+
+  /// \brief Supplies material-attribute output resource written by decal resolve.
+  void SetDecalResolveOutputResource(xiiSharedPtr<xiiGALResource> pUpdatedMaterialAttributesResource) const;
+
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -548,6 +560,12 @@ public:
   /// \brief Clears the optional decal classification setup callback.
   void ClearDecalClassificationSetupFunc() const;
 
+  /// \brief Sets an optional callback for compute state setup before decal resolve dispatch.
+  void SetDecalResolveSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Clears the optional decal resolve setup callback.
+  void ClearDecalResolveSetupFunc() const;
+
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
 
@@ -608,6 +626,7 @@ private:
   void EnsureClusterGridBuildResources(xiiUInt32 uiClusterCapacity) const;
   void EnsureLightListConstructionResources(xiiUInt32 uiClusterCapacity, xiiUInt32 uiLightCapacity) const;
   void EnsureDecalClassificationResources(xiiUInt32 uiTileCapacity, xiiUInt32 uiDecalCapacity) const;
+  void EnsureDecalResolveResources() const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -635,6 +654,7 @@ private:
   void SetupClusterGridBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLightListConstructionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDecalClassificationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupDecalResolveCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -671,6 +691,7 @@ private:
   mutable xiiShaderResourceHandle                                m_hClusterGridBuildShader;
   mutable xiiShaderResourceHandle                                m_hLightListBuildShader;
   mutable xiiShaderResourceHandle                                m_hDecalClassificationShader;
+  mutable xiiShaderResourceHandle                                m_hDecalResolveShader;
   mutable xiiShaderResourceHandle                                m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDynamicResolutionPipelineState;
@@ -687,6 +708,7 @@ private:
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pClusterGridBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLightListBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDecalClassificationPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDecalResolvePipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuVisibleInstancesBuffer;
@@ -755,6 +777,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pDecalVolumesBuffer;
   mutable xiiSharedPtr<xiiGALResource>                           m_pDecalClassificationDepthResource;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pDecalTileListsBuffer;
+  mutable xiiSharedPtr<xiiGALResource>                           m_pDecalResolveGBufferResource;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pDecalResolveTileListsBuffer;
+  mutable xiiSharedPtr<xiiGALResource>                           m_pDecalResolveOutputResource;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameGlobalParamsBuffer;
@@ -798,6 +823,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphClusterGridBuildPass>       m_pClusterGridBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphLightListBuildPass>         m_pLightListBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphDecalResolvePass>           m_pDecalClassificationPass;
+  mutable xiiUniquePtr<xiiRenderGraphDecalResolvePass>           m_pDecalResolvePass;
   mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowRenderPass> m_pLocalLightShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowMapRenderPass>        m_pDirectionalShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>           m_pLodSelectionPass;

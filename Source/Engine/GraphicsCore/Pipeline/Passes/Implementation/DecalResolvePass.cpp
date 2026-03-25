@@ -45,6 +45,21 @@ void xiiRenderGraphDecalResolvePass::SetDecalTileListsResourceName(xiiHashedStri
   RebuildResourceLayout();
 }
 
+void xiiRenderGraphDecalResolvePass::SetGBufferTargetsResourceName(xiiHashedString sResourceName)
+{
+  SetDecalVolumesResourceName(sResourceName);
+}
+
+void xiiRenderGraphDecalResolvePass::SetDecalTileListsInputResourceName(xiiHashedString sResourceName)
+{
+  SetSceneDepthResourceName(sResourceName);
+}
+
+void xiiRenderGraphDecalResolvePass::SetUpdatedMaterialAttributesResourceName(xiiHashedString sResourceName)
+{
+  SetDecalTileListsResourceName(sResourceName);
+}
+
 void xiiRenderGraphDecalResolvePass::SetGBufferInputResourceName(xiiHashedString sResourceName)
 {
   SetDecalVolumesResourceName(sResourceName);

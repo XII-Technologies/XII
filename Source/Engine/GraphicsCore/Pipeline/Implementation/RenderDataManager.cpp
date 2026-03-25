@@ -188,6 +188,13 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pDecalClassificationPass->SetSceneDepthResourceName(xiiMakeHashedString("SceneDepth"));
   m_pDecalClassificationPass->SetDecalTileListsResourceName(xiiMakeHashedString("DecalTileLists"));
 
+  m_pDecalResolvePass = XII_DEFAULT_NEW(xiiRenderGraphDecalResolvePass);
+  m_pDecalResolvePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalResolveCommandList, this));
+  m_pDecalResolvePass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pDecalResolvePass->SetGBufferTargetsResourceName(xiiMakeHashedString("GBufferTargets"));
+  m_pDecalResolvePass->SetDecalTileListsInputResourceName(xiiMakeHashedString("DecalTileLists"));
+  m_pDecalResolvePass->SetUpdatedMaterialAttributesResourceName(xiiMakeHashedString("UpdatedMaterialAttributes"));
+
   m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
   m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
   m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList, this));
@@ -1305,6 +1312,36 @@ void xiiRenderDataManager::AddDecalClassificationPass(xiiRenderGraphRuntime& ino
   inout_runtime.AddPass(m_pDecalClassificationPass.Borrow());
 }
 
+void xiiRenderDataManager::AddDecalResolvePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDecalResolvePass != nullptr, "Decal resolve pass must be initialized.");
+
+  EnsureDecalResolveResources();
+
+  const xiiUInt32 uiTileCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  m_pDecalResolvePass->SetEnabled(bEnableDispatch);
+  m_pDecalResolvePass->SetDispatchThreadGroupCount(uiTileCount, 1U, 1U);
+
+  if (m_pDecalResolveGBufferResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GBufferTargets"), m_pDecalResolveGBufferResource);
+  }
+
+  if (m_pDecalResolveTileListsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("DecalTileLists"), m_pDecalResolveTileListsBuffer);
+  }
+
+  if (m_pDecalResolveOutputResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("UpdatedMaterialAttributes"), m_pDecalResolveOutputResource);
+  }
+
+  inout_runtime.AddPass(m_pDecalResolvePass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1776,6 +1813,27 @@ void xiiRenderDataManager::SetDecalTileListsResource(xiiSharedPtr<xiiGALBuffer> 
   m_pDecalTileListsBuffer = pDecalTileListsResource;
 }
 
+void xiiRenderDataManager::SetDecalResolveGBufferResource(xiiSharedPtr<xiiGALResource> pGBufferResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDecalResolveGBufferResource = pGBufferResource;
+}
+
+void xiiRenderDataManager::SetDecalResolveTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDecalResolveTileListsBuffer = pDecalTileListsResource;
+}
+
+void xiiRenderDataManager::SetDecalResolveOutputResource(xiiSharedPtr<xiiGALResource> pUpdatedMaterialAttributesResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDecalResolveOutputResource = pUpdatedMaterialAttributesResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -2014,6 +2072,22 @@ void xiiRenderDataManager::ClearDecalClassificationSetupFunc() const
 
   XII_ASSERT_DEV(m_pDecalClassificationPass != nullptr, "Decal classification pass must be initialized.");
   m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalClassificationCommandList, this));
+}
+
+void xiiRenderDataManager::SetDecalResolveSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDecalResolvePass != nullptr, "Decal resolve pass must be initialized.");
+  m_pDecalResolvePass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearDecalResolveSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDecalResolvePass != nullptr, "Decal resolve pass must be initialized.");
+  m_pDecalResolvePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalResolveCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -3043,6 +3117,24 @@ void xiiRenderDataManager::EnsureDecalClassificationResources(xiiUInt32 uiTileCa
     {
       m_pDecalTileListsBuffer->SetDebugName("RenderDataManager::DecalTileLists");
     }
+  }
+}
+
+void xiiRenderDataManager::EnsureDecalResolveResources() const
+{
+  if (m_pDecalResolveGBufferResource == nullptr)
+  {
+    m_pDecalResolveGBufferResource = m_pNormalRoughnessPrepassOutputResource;
+  }
+
+  if (m_pDecalResolveTileListsBuffer == nullptr)
+  {
+    m_pDecalResolveTileListsBuffer = m_pDecalTileListsBuffer;
+  }
+
+  if (m_pDecalResolveOutputResource == nullptr)
+  {
+    m_pDecalResolveOutputResource = m_pNormalRoughnessPrepassOutputResource;
   }
 }
 
@@ -4303,6 +4395,72 @@ void xiiRenderDataManager::SetupDecalClassificationCommandList(xiiGALCommandList
   if (m_pDecalTileListsBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("DecalTileLists"), m_pDecalTileListsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupDecalResolveCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureDecalResolveResources();
+
+  if (m_hDecalResolveShader.IsValid() == false)
+  {
+    m_hDecalResolveShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DecalResolve.xiiShader");
+  }
+
+  if (m_pDecalResolvePipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hDecalResolveShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pDecalResolvePipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pDecalResolvePipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pDecalResolvePipelineState);
+
+  if (m_pDecalResolveGBufferResource != nullptr)
+  {
+    if (xiiGALTexture* pGBufferTexture = xiiDynamicCast<xiiGALTexture*>(m_pDecalResolveGBufferResource.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("GBufferTargets"), pGBufferTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+  }
+
+  if (m_pDecalResolveTileListsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("DecalTileLists"), m_pDecalResolveTileListsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pDecalResolveOutputResource != nullptr)
+  {
+    if (xiiGALTexture* pOutputTexture = xiiDynamicCast<xiiGALTexture*>(m_pDecalResolveOutputResource.Borrow()))
+    {
+      commandList.ResolveAndSetUnorderedAccessTextureView(xiiTempHashedString("UpdatedMaterialAttributes"), pOutputTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    }
   }
 }
 

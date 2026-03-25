@@ -21,6 +21,11 @@ public:
   void SetSceneDepthResourceName(xiiHashedString sResourceName);
   void SetDecalTileListsResourceName(xiiHashedString sResourceName);
 
+  // Stage-24 aliases for compute decal resolve wiring.
+  void SetGBufferTargetsResourceName(xiiHashedString sResourceName);
+  void SetDecalTileListsInputResourceName(xiiHashedString sResourceName);
+  void SetUpdatedMaterialAttributesResourceName(xiiHashedString sResourceName);
+
   // Compatibility wrappers for legacy naming.
   void SetGBufferInputResourceName(xiiHashedString sResourceName);
   void SetDecalOutputResourceName(xiiHashedString sResourceName);

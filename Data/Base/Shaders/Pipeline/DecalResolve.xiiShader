@@ -1,0 +1,52 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+Texture2D<float4> GBufferTargets;
+StructuredBuffer<uint> DecalTileLists;
+RWTexture2D<float4> UpdatedMaterialAttributes;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint width = 0u;
+  uint height = 0u;
+  UpdatedMaterialAttributes.GetDimensions(width, height);
+
+  if (dispatchThreadId.x >= width || dispatchThreadId.y >= height)
+  {
+    return;
+  }
+
+  const uint tileIndex = dispatchThreadId.y * width + dispatchThreadId.x;
+
+  // Read compact decal tile-list entries to avoid full-screen decal loops.
+  const uint tileStride = 8u;
+  const uint tileStart = tileIndex * tileStride;
+
+  uint decalMask = 0u;
+  [unroll]
+  for (uint i = 0u; i < tileStride; ++i)
+  {
+    const uint listIndex = tileStart + i;
+    if (listIndex >= DecalTileLists.Length)
+    {
+      break;
+    }
+
+    decalMask ^= (DecalTileLists[listIndex] + 1u) * (i + 3u);
+  }
+
+  const float blend = saturate((float)(decalMask & 255u) / 255.0f * 0.35f);
+  const float4 base = GBufferTargets.Load(int3(dispatchThreadId.xy, 0));
+
+  // Compute resolve path: blend decal contribution into material attributes.
+  const float3 decalTint = float3(0.08f, 0.04f, 0.02f) * blend;
+  const float3 resolvedColor = saturate(base.rgb + decalTint);
+  const float resolvedRoughness = saturate(base.a * (1.0f - 0.2f * blend));
+
+  UpdatedMaterialAttributes[dispatchThreadId.xy] = float4(resolvedColor, resolvedRoughness);
+}
