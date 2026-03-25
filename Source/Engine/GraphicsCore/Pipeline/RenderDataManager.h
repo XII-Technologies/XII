@@ -20,6 +20,7 @@ class xiiRenderGraphFrameSetupPass;
 class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphInstanceUpdatePass;
 class xiiRenderGraphCoarseFrustumCullingPass;
+class xiiRenderGraphDepthPrepassPass;
 class xiiRenderGraphDrawCommandBuildPass;
 class xiiRenderGraphHiZBuildPass;
 class xiiRenderGraphHiZOcclusionCullingPass;
@@ -243,6 +244,9 @@ public:
   /// \brief Registers the async draw-indirect build and compaction pass from visible instances + material bins.
   void AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers the graphics main depth prepass driven by packed indirect draw commands.
+  void AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -294,6 +298,15 @@ public:
   /// \brief Supplies external indirect-draw count output buffer used by draw command compaction.
   void SetDrawIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const;
 
+  /// \brief Supplies the full-resolution scene depth resource written by the main depth prepass.
+  void SetMainDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const;
+
+  /// \brief Supplies packed indirect draw command buffer consumed by the main depth prepass.
+  void SetMainDepthPrepassIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const;
+
+  /// \brief Supplies packed indirect draw count buffer consumed by the main depth prepass.
+  void SetMainDepthPrepassIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const;
+
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -305,6 +318,18 @@ public:
 
   /// \brief Clears the optional occluder depth prepass draw callback.
   void ClearOccluderDepthPrepassDrawFunc() const;
+
+  /// \brief Sets an optional callback for graphics state setup before main depth prepass draws.
+  void SetMainDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Sets an optional callback that records full-resolution main depth prepass draws.
+  void SetMainDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const;
+
+  /// \brief Clears the optional main depth prepass setup callback.
+  void ClearMainDepthPrepassSetupFunc() const;
+
+  /// \brief Clears the optional main depth prepass draw callback.
+  void ClearMainDepthPrepassDrawFunc() const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -355,6 +380,7 @@ private:
   void EnsureCoarseFrustumCullingResources(xiiUInt32 uiElementCount) const;
   void EnsureLodSelectionResources(xiiUInt32 uiElementCount) const;
   void EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiDrawCapacity) const;
+  void EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -367,6 +393,8 @@ private:
   void SetupHiZPyramidBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupHiZOcclusionCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDrawIndirectCommandBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void DrawMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -419,6 +447,7 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuIndirectDrawCountsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountReadbackBuffer;
   mutable xiiSharedPtr<xiiGALResource>                      m_pOccluderDepthResource;
+  mutable xiiSharedPtr<xiiGALResource>                      m_pMainDepthPrepassDepthResource;
   mutable xiiSharedPtr<xiiGALResource>                      m_pHiZDepthSourceResource;
   mutable xiiSharedPtr<xiiGALResource>                      m_pHiZDepthPyramidResource;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibilityDispatchArgumentsBuffer;
@@ -466,6 +495,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphHiZBuildPass>          m_pHiZBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphHiZOcclusionCullingPass> m_pHiZOcclusionCullingPass;
   mutable xiiUniquePtr<xiiRenderGraphDrawCommandBuildPass>  m_pDrawCommandBuildPass;
+  mutable xiiUniquePtr<xiiRenderGraphDepthPrepassPass>      m_pMainDepthPrepassPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>      m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>          m_pSkinningPass;

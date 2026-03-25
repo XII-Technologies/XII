@@ -8,8 +8,9 @@ xiiRenderGraphDepthPrepassPass::xiiRenderGraphDepthPrepassPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sVisibleInstancesResourceName = xiiMakeHashedString("GpuVisibleInstances");
-  m_sDepthBufferResourceName      = xiiMakeHashedString("SceneDepth");
+  m_sIndirectCommandBufferResourceName = xiiMakeHashedString("GpuIndirectDrawCommands");
+  m_sIndirectCountBufferResourceName   = xiiMakeHashedString("GpuIndirectDrawCounts");
+  m_sDepthBufferResourceName           = xiiMakeHashedString("SceneDepth");
 
   RebuildResourceLayout();
 }
@@ -24,9 +25,15 @@ void xiiRenderGraphDepthPrepassPass::SetHasSideEffects(bool bHasSideEffects)
   m_PassDescription.m_bHasSideEffects = bHasSideEffects;
 }
 
-void xiiRenderGraphDepthPrepassPass::SetVisibleInstancesResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphDepthPrepassPass::SetIndirectCommandBufferResourceName(xiiHashedString sResourceName)
 {
-  m_sVisibleInstancesResourceName = sResourceName;
+  m_sIndirectCommandBufferResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphDepthPrepassPass::SetIndirectCountBufferResourceName(xiiHashedString sResourceName)
+{
+  m_sIndirectCountBufferResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -106,7 +113,14 @@ void xiiRenderGraphDepthPrepassPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sVisibleInstancesResourceName;
+    input.m_sResourceName              = m_sIndirectCommandBufferResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sIndirectCountBufferResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }

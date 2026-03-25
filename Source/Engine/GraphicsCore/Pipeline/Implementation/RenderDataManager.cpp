@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
+#include <GraphicsCore/Pipeline/Passes/DepthPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
@@ -91,6 +92,13 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pDrawCommandBuildPass->SetMaterialBinsResourceName(xiiMakeHashedString("GpuMaterialBins"));
   m_pDrawCommandBuildPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
   m_pDrawCommandBuildPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
+
+  m_pMainDepthPrepassPass = XII_DEFAULT_NEW(xiiRenderGraphDepthPrepassPass);
+  m_pMainDepthPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupMainDepthPrepassCommandList, this));
+  m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawMainDepthPrepassCommandList, this));
+  m_pMainDepthPrepassPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
+  m_pMainDepthPrepassPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
+  m_pMainDepthPrepassPass->SetDepthBufferResourceName(xiiMakeHashedString("SceneDepth"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -814,6 +822,39 @@ void xiiRenderDataManager::AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime
   inout_runtime.AddPass(m_pDrawCommandBuildPass.Borrow());
 }
 
+void xiiRenderDataManager::AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureMainDepthPrepassResources(uiInstanceCount);
+
+  xiiSharedPtr<xiiGALBuffer> pIndirectCommands = m_pGpuIndirectDrawCommandsBuffer;
+  xiiSharedPtr<xiiGALBuffer> pIndirectCounts   = m_pGpuIndirectDrawCountsBuffer;
+  xiiSharedPtr<xiiGALResource> pSceneDepth     = m_pMainDepthPrepassDepthResource != nullptr ? m_pMainDepthPrepassDepthResource : m_pOccluderDepthResource;
+
+  m_pMainDepthPrepassPass->SetEnabled(bEnablePass);
+
+  if (pIndirectCommands != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuIndirectDrawCommands"), pIndirectCommands);
+  }
+
+  if (pIndirectCounts != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuIndirectDrawCounts"), pIndirectCounts);
+  }
+
+  if (pSceneDepth != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepth"), pSceneDepth);
+  }
+
+  inout_runtime.AddPass(m_pMainDepthPrepassPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1000,6 +1041,27 @@ void xiiRenderDataManager::SetDrawIndirectCountBufferResource(xiiSharedPtr<xiiGA
   m_pGpuIndirectDrawCountsBuffer = pIndirectCountBufferResource;
 }
 
+void xiiRenderDataManager::SetMainDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pMainDepthPrepassDepthResource = pDepthResource;
+}
+
+void xiiRenderDataManager::SetMainDepthPrepassIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pGpuIndirectDrawCommandsBuffer = pIndirectCommandBufferResource;
+}
+
+void xiiRenderDataManager::SetMainDepthPrepassIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pGpuIndirectDrawCountsBuffer = pIndirectCountBufferResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1030,6 +1092,38 @@ void xiiRenderDataManager::ClearOccluderDepthPrepassDrawFunc() const
 
   XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
   m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawOccluderDepthPrepassCommandList, this));
+}
+
+void xiiRenderDataManager::SetMainDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
+  m_pMainDepthPrepassPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::SetMainDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
+  m_pMainDepthPrepassPass->SetDrawCommandListFunc(drawFunc);
+}
+
+void xiiRenderDataManager::ClearMainDepthPrepassSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
+  m_pMainDepthPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupMainDepthPrepassCommandList, this));
+}
+
+void xiiRenderDataManager::ClearMainDepthPrepassDrawFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
+  m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawMainDepthPrepassCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -1588,6 +1682,16 @@ void xiiRenderDataManager::EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiD
     {
       m_pGpuIndirectDrawCountsBuffer->SetDebugName("RenderDataManager::GpuIndirectDrawCounts");
     }
+  }
+}
+
+void xiiRenderDataManager::EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceCapacity) const
+{
+  EnsureDrawIndirectCommandBuildResources(xiiMath::Max(1U, uiInstanceCapacity));
+
+  if (m_pMainDepthPrepassDepthResource == nullptr)
+  {
+    m_pMainDepthPrepassDepthResource = m_pOccluderDepthResource;
   }
 }
 
@@ -2219,6 +2323,31 @@ void xiiRenderDataManager::SetupDrawIndirectCommandBuildCommandList(xiiGALComman
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuIndirectDrawCounts"), m_pGpuIndirectDrawCountsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
+}
+
+void xiiRenderDataManager::SetupMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureMainDepthPrepassResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  if (m_pGpuIndirectDrawCommandsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuIndirectDrawCommands"), m_pGpuIndirectDrawCommandsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (m_pGpuIndirectDrawCountsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuIndirectDrawCounts"), m_pGpuIndirectDrawCountsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+}
+
+void xiiRenderDataManager::DrawMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const

@@ -21,7 +21,8 @@ public:
   void SetEnabled(bool bEnabled);
   void SetHasSideEffects(bool bHasSideEffects);
 
-  void SetVisibleInstancesResourceName(xiiHashedString sResourceName);
+  void SetIndirectCommandBufferResourceName(xiiHashedString sResourceName);
+  void SetIndirectCountBufferResourceName(xiiHashedString sResourceName);
   void SetDepthBufferResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
@@ -42,7 +43,8 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
 
-  xiiHashedString m_sVisibleInstancesResourceName;
+  xiiHashedString m_sIndirectCommandBufferResourceName;
+  xiiHashedString m_sIndirectCountBufferResourceName;
   xiiHashedString m_sDepthBufferResourceName;
 
   SetupCommandListFunc m_SetupCommandListFunc;
