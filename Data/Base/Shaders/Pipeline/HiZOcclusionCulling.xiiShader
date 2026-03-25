@@ -1,0 +1,53 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<uint>   GpuVisibleCandidates;
+StructuredBuffer<uint>   GpuVisibleCandidateCount;
+Texture2D<float>         SceneDepthPyramid;
+RWStructuredBuffer<uint> GpuVisibleInstances;
+RWStructuredBuffer<uint> GpuVisibleInstanceCount;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (dispatchThreadId.x == 0 && GpuVisibleInstanceCount.Length > 0)
+  {
+    GpuVisibleInstanceCount[0] = 0;
+  }
+
+  if (GpuVisibleCandidateCount.Length == 0 || GpuVisibleInstances.Length == 0 || GpuVisibleInstanceCount.Length == 0)
+  {
+    return;
+  }
+
+  const uint candidateCount = GpuVisibleCandidateCount[0];
+  if (dispatchThreadId.x >= candidateCount || dispatchThreadId.x >= GpuVisibleCandidates.Length)
+  {
+    return;
+  }
+
+  const uint candidateInstance = GpuVisibleCandidates[dispatchThreadId.x];
+
+  uint depthWidth = 0;
+  uint depthHeight = 0;
+  SceneDepthPyramid.GetDimensions(depthWidth, depthHeight);
+
+  // Placeholder Hi-Z rejection metric tied to depth-pyramid occupancy at scene scale.
+  const uint2 sampleCoord = uint2(candidateInstance % max(depthWidth, 1), (candidateInstance / max(depthWidth, 1)) % max(depthHeight, 1));
+  const float hiZDepth = SceneDepthPyramid.Load(int3(sampleCoord, 0));
+
+  // Keep candidates with conservative threshold; later stages can tighten this test.
+  if (hiZDepth <= 0.999f)
+  {
+    uint writeIndex = 0;
+    InterlockedAdd(GpuVisibleInstanceCount[0], 1, writeIndex);
+    if (writeIndex < GpuVisibleInstances.Length)
+    {
+      GpuVisibleInstances[writeIndex] = candidateInstance;
+    }
+  }
+}

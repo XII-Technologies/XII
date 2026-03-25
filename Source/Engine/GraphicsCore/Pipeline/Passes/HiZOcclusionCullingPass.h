@@ -18,8 +18,10 @@ public:
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
   void SetCandidateInstancesResourceName(xiiHashedString sResourceName);
+  void SetCandidateInstanceCountResourceName(xiiHashedString sResourceName);
   void SetDepthPyramidResourceName(xiiHashedString sResourceName);
   void SetVisibleInstancesResourceName(xiiHashedString sResourceName);
+  void SetVisibleInstanceCountResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -35,8 +37,10 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sCandidateInstancesResourceName;
+  xiiHashedString               m_sCandidateInstanceCountResourceName;
   xiiHashedString               m_sDepthPyramidResourceName;
   xiiHashedString               m_sVisibleInstancesResourceName;
+  xiiHashedString               m_sVisibleInstanceCountResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;

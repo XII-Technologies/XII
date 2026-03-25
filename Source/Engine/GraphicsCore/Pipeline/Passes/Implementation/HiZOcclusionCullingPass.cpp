@@ -9,8 +9,10 @@ xiiRenderGraphHiZOcclusionCullingPass::xiiRenderGraphHiZOcclusionCullingPass()
   m_PassDescription.m_bHasSideEffects = false;
 
   m_sCandidateInstancesResourceName = xiiMakeHashedString("GpuSceneInstances");
+  m_sCandidateInstanceCountResourceName = xiiMakeHashedString("GpuVisibleCandidateCount");
   m_sDepthPyramidResourceName       = xiiMakeHashedString("SceneDepthPyramid");
   m_sVisibleInstancesResourceName   = xiiMakeHashedString("GpuVisibleInstances");
+  m_sVisibleInstanceCountResourceName = xiiMakeHashedString("GpuVisibleInstanceCount");
 
   RebuildResourceLayout();
 }
@@ -33,6 +35,12 @@ void xiiRenderGraphHiZOcclusionCullingPass::SetCandidateInstancesResourceName(xi
   RebuildResourceLayout();
 }
 
+void xiiRenderGraphHiZOcclusionCullingPass::SetCandidateInstanceCountResourceName(xiiHashedString sResourceName)
+{
+  m_sCandidateInstanceCountResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
 void xiiRenderGraphHiZOcclusionCullingPass::SetDepthPyramidResourceName(xiiHashedString sResourceName)
 {
   m_sDepthPyramidResourceName = sResourceName;
@@ -42,6 +50,12 @@ void xiiRenderGraphHiZOcclusionCullingPass::SetDepthPyramidResourceName(xiiHashe
 void xiiRenderGraphHiZOcclusionCullingPass::SetVisibleInstancesResourceName(xiiHashedString sResourceName)
 {
   m_sVisibleInstancesResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphHiZOcclusionCullingPass::SetVisibleInstanceCountResourceName(xiiHashedString sResourceName)
+{
+  m_sVisibleInstanceCountResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -120,8 +134,22 @@ void xiiRenderGraphHiZOcclusionCullingPass::RebuildResourceLayout()
   }
 
   {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sCandidateInstanceCountResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sVisibleInstancesResourceName;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
+    output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
+    output.m_sResourceName              = m_sVisibleInstanceCountResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }

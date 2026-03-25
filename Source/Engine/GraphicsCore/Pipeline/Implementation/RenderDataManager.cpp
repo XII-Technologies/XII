@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
+#include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
@@ -73,6 +74,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pHiZBuildPass = XII_DEFAULT_NEW(xiiRenderGraphHiZBuildPass);
   m_pHiZBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupHiZPyramidBuildCommandList, this));
   m_pHiZBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+
+  m_pHiZOcclusionCullingPass = XII_DEFAULT_NEW(xiiRenderGraphHiZOcclusionCullingPass);
+  m_pHiZOcclusionCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupHiZOcclusionCullingCommandList, this));
+  m_pHiZOcclusionCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pHiZOcclusionCullingPass->SetCandidateInstancesResourceName(xiiMakeHashedString("GpuVisibleCandidates"));
+  m_pHiZOcclusionCullingPass->SetCandidateInstanceCountResourceName(xiiMakeHashedString("GpuVisibleCandidateCount"));
+  m_pHiZOcclusionCullingPass->SetVisibleInstancesResourceName(xiiMakeHashedString("GpuVisibleInstances"));
+  m_pHiZOcclusionCullingPass->SetVisibleInstanceCountResourceName(xiiMakeHashedString("GpuVisibleInstanceCount"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -675,6 +684,89 @@ void xiiRenderDataManager::AddHiZPyramidBuildPass(xiiRenderGraphRuntime& inout_r
   inout_runtime.AddPass(m_pHiZBuildPass.Borrow());
 }
 
+void xiiRenderDataManager::AddHiZOcclusionCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pHiZOcclusionCullingPass != nullptr, "Hi-Z occlusion culling pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureGpuDrivenVisibilityResources(uiInstanceCount);
+
+  xiiSharedPtr<xiiGALBuffer> pCandidateInstances = m_pHiZOcclusionCandidateInstancesBuffer != nullptr ? m_pHiZOcclusionCandidateInstancesBuffer : m_pGpuVisibleInstancesBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCandidateCount     = m_pHiZOcclusionCandidateInstanceCountBuffer != nullptr ? m_pHiZOcclusionCandidateInstanceCountBuffer : m_pGpuVisibleInstanceCountBuffer;
+
+  if (m_pHiZOcclusionVisibleInstancesBuffer == nullptr || m_pHiZOcclusionVisibleInstancesBuffer->GetDescription().m_uiSize < m_pGpuVisibleInstancesBuffer->GetDescription().m_uiSize)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+    XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = m_pGpuVisibleInstancesBuffer->GetDescription().m_uiSize;
+
+    m_pHiZOcclusionVisibleInstancesBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pHiZOcclusionVisibleInstancesBuffer != nullptr)
+    {
+      m_pHiZOcclusionVisibleInstancesBuffer->SetDebugName("RenderDataManager::HiZOcclusionVisibleInstances");
+    }
+  }
+
+  if (m_pHiZOcclusionVisibleInstanceCountBuffer == nullptr)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+    XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = sizeof(xiiUInt32);
+
+    m_pHiZOcclusionVisibleInstanceCountBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pHiZOcclusionVisibleInstanceCountBuffer != nullptr)
+    {
+      m_pHiZOcclusionVisibleInstanceCountBuffer->SetDebugName("RenderDataManager::HiZOcclusionVisibleInstanceCount");
+    }
+  }
+
+  m_pHiZOcclusionCullingPass->SetEnabled(bEnableDispatch);
+  m_pHiZOcclusionCullingPass->SetDispatchThreadGroupCount(uiInstanceCount, 1U, 1U);
+
+  if (pCandidateInstances != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleCandidates"), pCandidateInstances);
+  }
+
+  if (pCandidateCount != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleCandidateCount"), pCandidateCount);
+  }
+
+  if (m_pHiZDepthPyramidResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepthPyramid"), m_pHiZDepthPyramidResource);
+  }
+
+  if (m_pHiZOcclusionVisibleInstancesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleInstances"), m_pHiZOcclusionVisibleInstancesBuffer);
+  }
+
+  if (m_pHiZOcclusionVisibleInstanceCountBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleInstanceCount"), m_pHiZOcclusionVisibleInstanceCountBuffer);
+  }
+
+  inout_runtime.AddPass(m_pHiZOcclusionCullingPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -824,6 +916,20 @@ void xiiRenderDataManager::SetHiZDepthPyramidResource(xiiSharedPtr<xiiGALResourc
   XII_LOCK(m_Mutex);
 
   m_pHiZDepthPyramidResource = pDepthPyramidResource;
+}
+
+void xiiRenderDataManager::SetHiZOcclusionCandidateInstancesResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstancesResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pHiZOcclusionCandidateInstancesBuffer = pCandidateInstancesResource;
+}
+
+void xiiRenderDataManager::SetHiZOcclusionCandidateInstanceCountResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstanceCountResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pHiZOcclusionCandidateInstanceCountBuffer = pCandidateInstanceCountResource;
 }
 
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
@@ -1852,6 +1958,80 @@ void xiiRenderDataManager::SetupHiZPyramidBuildCommandList(xiiGALCommandList& co
     {
       commandList.ResolveAndSetUnorderedAccessTextureView(xiiTempHashedString("SceneDepthPyramid"), pDepthPyramidTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     }
+  }
+}
+
+void xiiRenderDataManager::SetupHiZOcclusionCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  if (m_hHiZOcclusionCullingShader.IsValid() == false)
+  {
+    m_hHiZOcclusionCullingShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/HiZOcclusionCulling.xiiShader");
+  }
+
+  if (m_pHiZOcclusionCullingPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hHiZOcclusionCullingShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pHiZOcclusionCullingPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pHiZOcclusionCullingPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pHiZOcclusionCullingPipelineState);
+
+  xiiSharedPtr<xiiGALBuffer> pCandidateInstances = m_pHiZOcclusionCandidateInstancesBuffer != nullptr ? m_pHiZOcclusionCandidateInstancesBuffer : m_pGpuVisibleInstancesBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCandidateCount     = m_pHiZOcclusionCandidateInstanceCountBuffer != nullptr ? m_pHiZOcclusionCandidateInstanceCountBuffer : m_pGpuVisibleInstanceCountBuffer;
+
+  if (pCandidateInstances != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuVisibleCandidates"), pCandidateInstances->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (pCandidateCount != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuVisibleCandidateCount"), pCandidateCount->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pHiZDepthPyramidResource != nullptr)
+  {
+    if (xiiGALTexture* pDepthPyramidTexture = xiiDynamicCast<xiiGALTexture*>(m_pHiZDepthPyramidResource.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("SceneDepthPyramid"), pDepthPyramidTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+  }
+
+  if (m_pHiZOcclusionVisibleInstancesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstances"), m_pHiZOcclusionVisibleInstancesBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+
+  if (m_pHiZOcclusionVisibleInstanceCountBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstanceCount"), m_pHiZOcclusionVisibleInstanceCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 
