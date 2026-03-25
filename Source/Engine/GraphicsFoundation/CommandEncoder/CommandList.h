@@ -663,8 +663,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALUpdateSBTDescription
 /// \brief BLAS triangle build input data for one geometry description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleBuildDescription
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiSharedPtr<xiiGALBuffer> m_pVertexBuffer;             ///< Vertex buffer for this geometry.
   xiiUInt64                  m_uiVertexBufferOffset = 0U; ///< Byte offset into the vertex buffer.
   xiiUInt64                  m_uiVertexStride       = 0U; ///< Vertex stride in bytes.
@@ -678,8 +676,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleBuildDescription
 /// \brief BLAS axis-aligned bounding-box build input data for one geometry description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxBuildDescription
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiSharedPtr<xiiGALBuffer> m_pBoundingBoxBuffer;       ///< Buffer containing AABB data.
   xiiUInt64                  m_uiBoundingBoxOffset = 0U; ///< Byte offset into the AABB buffer.
   xiiUInt64                  m_uiBoundingBoxStride = 0U; ///< Byte stride between AABB records.

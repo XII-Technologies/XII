@@ -2,6 +2,7 @@
 
 #include <Core/World/WorldModule.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Shader/Types.h>
