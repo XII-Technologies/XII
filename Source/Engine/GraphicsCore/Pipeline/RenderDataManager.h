@@ -27,6 +27,7 @@ class xiiRenderGraphHiZOcclusionCullingPass;
 class xiiRenderGraphLodSelectionPass;
 class xiiRenderGraphNormalRoughnessPrepassPass;
 class xiiRenderGraphOccluderDepthPass;
+class xiiRenderGraphLocalLightShadowRenderPass;
 class xiiRenderGraphLocalLightShadowSetupPass;
 class xiiRenderGraphShadowMapRenderPass;
 class xiiRenderGraphShadowCasterCullingPass;
@@ -267,6 +268,9 @@ public:
   /// \brief Registers deterministic local-light shadow atlas allocation from spot/point requests.
   void AddLocalLightShadowAtlasAllocationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers spot and point shadow rendering into local shadow atlas pages.
+  void AddSpotAndPointShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -378,6 +382,18 @@ public:
   /// \brief Supplies local-light shadow atlas placement list written by local atlas allocation.
   void SetLocalLightShadowAtlasPlacementsResource(xiiSharedPtr<xiiGALBuffer> pPlacementsResource) const;
 
+  /// \brief Supplies local shadow caster draw list consumed by spot/point shadow rendering.
+  void SetLocalLightShadowCastersResource(xiiSharedPtr<xiiGALBuffer> pCastersResource) const;
+
+  /// \brief Supplies local shadow material bins consumed by spot/point shadow rendering.
+  void SetLocalLightShadowMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const;
+
+  /// \brief Supplies local shadow mode bins consumed by spot/point shadow rendering.
+  void SetLocalLightShadowModeBinsResource(xiiSharedPtr<xiiGALBuffer> pModeBinsResource) const;
+
+  /// \brief Supplies local shadow atlas pages resource written by spot/point shadow rendering.
+  void SetLocalLightShadowAtlasPagesResource(xiiSharedPtr<xiiGALResource> pAtlasPagesResource) const;
+
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -431,6 +447,18 @@ public:
 
   /// \brief Clears the optional local atlas allocation setup callback.
   void ClearLocalLightShadowAtlasAllocationSetupFunc() const;
+
+  /// \brief Sets an optional callback for graphics state setup before spot/point shadow rendering.
+  void SetSpotAndPointShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Sets an optional callback that records spot/point shadow draw commands.
+  void SetSpotAndPointShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const;
+
+  /// \brief Clears the optional spot/point shadow rendering setup callback.
+  void ClearSpotAndPointShadowRenderingSetupFunc() const;
+
+  /// \brief Clears the optional spot/point shadow rendering draw callback.
+  void ClearSpotAndPointShadowRenderingDrawFunc() const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -487,6 +515,7 @@ private:
   void EnsureDirectionalShadowCullingResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureDirectionalShadowRenderingResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureLocalLightShadowAtlasAllocationResources(xiiUInt32 uiRequestCapacity) const;
+  void EnsureSpotAndPointShadowRenderingResources(xiiUInt32 uiCasterCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -508,6 +537,8 @@ private:
   void SetupDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void DrawDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLocalLightShadowAtlasAllocationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void DrawSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -570,6 +601,7 @@ private:
   mutable xiiSharedPtr<xiiGALResource>                           m_pNormalRoughnessPrepassDepthResource;
   mutable xiiSharedPtr<xiiGALResource>                           m_pNormalRoughnessPrepassOutputResource;
   mutable xiiSharedPtr<xiiGALResource>                           m_pDirectionalShadowDepthAtlasResource;
+  mutable xiiSharedPtr<xiiGALResource>                           m_pLocalShadowAtlasPagesResource;
   mutable xiiSharedPtr<xiiGALResource>                           m_pHiZDepthSourceResource;
   mutable xiiSharedPtr<xiiGALResource>                           m_pHiZDepthPyramidResource;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuVisibilityDispatchArgumentsBuffer;
@@ -603,6 +635,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowRequestsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowAtlasPlacementsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowAllocatorParamsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowCastersBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowMaterialBinsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowModeBinsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameGlobalParamsBuffer;
@@ -640,6 +675,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphShadowCascadeSetupPass>     m_pShadowCascadeSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowCasterCullingPass>    m_pShadowCasterCullingPass;
   mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowSetupPass>  m_pLocalLightShadowSetupPass;
+  mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowRenderPass> m_pLocalLightShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowMapRenderPass>        m_pDirectionalShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>           m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass>      m_pDynamicResolutionPass;

@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
+#include <GraphicsCore/Pipeline/Passes/LocalLightShadowRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/LocalLightShadowSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/NormalRoughnessPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
@@ -151,6 +152,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pLocalLightShadowSetupPass->SetLocalShadowRequestsResourceName(xiiMakeHashedString("LocalShadowRequests"));
   m_pLocalLightShadowSetupPass->SetLocalShadowAllocatorParamsResourceName(xiiMakeHashedString("LocalShadowAllocatorParams"));
   m_pLocalLightShadowSetupPass->SetLocalShadowAtlasPlacementsResourceName(xiiMakeHashedString("LocalShadowAtlasPlacements"));
+
+  m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
+  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
+  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList, this));
+  m_pLocalLightShadowRenderingPass->SetLocalShadowCastersResourceName(xiiMakeHashedString("LocalShadowCasters"));
+  m_pLocalLightShadowRenderingPass->SetLocalShadowMaterialBinsResourceName(xiiMakeHashedString("LocalShadowMaterialBins"));
+  m_pLocalLightShadowRenderingPass->SetLocalShadowModeBinsResourceName(xiiMakeHashedString("LocalShadowModeBins"));
+  m_pLocalLightShadowRenderingPass->SetLocalShadowAtlasPagesResourceName(xiiMakeHashedString("LocalShadowAtlasPages"));
 
   m_pDirectionalShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphShadowMapRenderPass);
   m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList, this));
@@ -1088,6 +1097,40 @@ void xiiRenderDataManager::AddLocalLightShadowAtlasAllocationPass(xiiRenderGraph
   inout_runtime.AddPass(m_pLocalLightShadowSetupPass.Borrow());
 }
 
+void xiiRenderDataManager::AddSpotAndPointShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
+
+  const xiiUInt32 uiCasterCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureSpotAndPointShadowRenderingResources(uiCasterCount);
+
+  m_pLocalLightShadowRenderingPass->SetEnabled(bEnablePass);
+
+  if (m_pLocalLightShadowCastersBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowCasters"), m_pLocalLightShadowCastersBuffer);
+  }
+
+  if (m_pLocalLightShadowMaterialBinsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowMaterialBins"), m_pLocalLightShadowMaterialBinsBuffer);
+  }
+
+  if (m_pLocalLightShadowModeBinsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowModeBins"), m_pLocalLightShadowModeBinsBuffer);
+  }
+
+  if (m_pLocalShadowAtlasPagesResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowAtlasPages"), m_pLocalShadowAtlasPagesResource);
+  }
+
+  inout_runtime.AddPass(m_pLocalLightShadowRenderingPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1419,6 +1462,34 @@ void xiiRenderDataManager::SetLocalLightShadowAtlasPlacementsResource(xiiSharedP
   m_pLocalLightShadowAtlasPlacementsBuffer = pPlacementsResource;
 }
 
+void xiiRenderDataManager::SetLocalLightShadowCastersResource(xiiSharedPtr<xiiGALBuffer> pCastersResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pLocalLightShadowCastersBuffer = pCastersResource;
+}
+
+void xiiRenderDataManager::SetLocalLightShadowMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pLocalLightShadowMaterialBinsBuffer = pMaterialBinsResource;
+}
+
+void xiiRenderDataManager::SetLocalLightShadowModeBinsResource(xiiSharedPtr<xiiGALBuffer> pModeBinsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pLocalLightShadowModeBinsBuffer = pModeBinsResource;
+}
+
+void xiiRenderDataManager::SetLocalLightShadowAtlasPagesResource(xiiSharedPtr<xiiGALResource> pAtlasPagesResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pLocalShadowAtlasPagesResource = pAtlasPagesResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1561,6 +1632,38 @@ void xiiRenderDataManager::ClearLocalLightShadowAtlasAllocationSetupFunc() const
 
   XII_ASSERT_DEV(m_pLocalLightShadowSetupPass != nullptr, "Local-light shadow atlas allocation pass must be initialized.");
   m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList, this));
+}
+
+void xiiRenderDataManager::SetSpotAndPointShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
+  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::SetSpotAndPointShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
+  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(drawFunc);
+}
+
+void xiiRenderDataManager::ClearSpotAndPointShadowRenderingSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
+  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
+}
+
+void xiiRenderDataManager::ClearSpotAndPointShadowRenderingDrawFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
+  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2350,6 +2453,57 @@ void xiiRenderDataManager::EnsureLocalLightShadowAtlasAllocationResources(xiiUIn
     if (m_pLocalLightShadowAllocatorParamsBuffer != nullptr)
     {
       m_pLocalLightShadowAllocatorParamsBuffer->SetDebugName("RenderDataManager::LocalShadowAllocatorParams");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureSpotAndPointShadowRenderingResources(xiiUInt32 uiCasterCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt32 uiResolvedCasterCapacity = xiiMath::Max(1U, uiCasterCapacity);
+
+  EnsureLocalLightShadowAtlasAllocationResources(uiResolvedCasterCapacity);
+
+  if (m_pLocalLightShadowCastersBuffer == nullptr)
+  {
+    m_pLocalLightShadowCastersBuffer = m_pLocalLightShadowAtlasPlacementsBuffer;
+  }
+
+  const xiiUInt64 uiBinsSize = static_cast<xiiUInt64>(uiResolvedCasterCapacity) * sizeof(xiiUInt32);
+
+  if (m_pLocalLightShadowMaterialBinsBuffer == nullptr || m_pLocalLightShadowMaterialBinsBuffer->GetDescription().m_uiSize < uiBinsSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiBinsSize;
+
+    m_pLocalLightShadowMaterialBinsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pLocalLightShadowMaterialBinsBuffer != nullptr)
+    {
+      m_pLocalLightShadowMaterialBinsBuffer->SetDebugName("RenderDataManager::LocalShadowMaterialBins");
+    }
+  }
+
+  if (m_pLocalLightShadowModeBinsBuffer == nullptr || m_pLocalLightShadowModeBinsBuffer->GetDescription().m_uiSize < uiBinsSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiBinsSize;
+
+    m_pLocalLightShadowModeBinsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pLocalLightShadowModeBinsBuffer != nullptr)
+    {
+      m_pLocalLightShadowModeBinsBuffer->SetDebugName("RenderDataManager::LocalShadowModeBins");
     }
   }
 }
@@ -3294,6 +3448,36 @@ void xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList(xiiGA
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("LocalShadowAtlasPlacements"), m_pLocalLightShadowAtlasPlacementsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
+}
+
+void xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureSpotAndPointShadowRenderingResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  if (m_pLocalLightShadowCastersBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("LocalShadowCasters"), m_pLocalLightShadowCastersBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (m_pLocalLightShadowMaterialBinsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("LocalShadowMaterialBins"), m_pLocalLightShadowMaterialBinsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (m_pLocalLightShadowModeBinsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("LocalShadowModeBins"), m_pLocalLightShadowModeBinsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+}
+
+void xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const

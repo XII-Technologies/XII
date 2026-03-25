@@ -17,8 +17,10 @@ public:
 
   void SetEnabled(bool bEnabled);
 
-  void SetLocalShadowDataResourceName(xiiHashedString sResourceName);
-  void SetLocalShadowDepthAtlasResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowCastersResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowMaterialBinsResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowModeBinsResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowAtlasPagesResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetExecuteCommandListFunc(ExecuteCommandListFunc executeCommandListFunc);
@@ -35,8 +37,10 @@ private:
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;
-  xiiHashedString               m_sLocalShadowDataResourceName;
-  xiiHashedString               m_sLocalShadowDepthAtlasResourceName;
+  xiiHashedString               m_sLocalShadowCastersResourceName;
+  xiiHashedString               m_sLocalShadowMaterialBinsResourceName;
+  xiiHashedString               m_sLocalShadowModeBinsResourceName;
+  xiiHashedString               m_sLocalShadowAtlasPagesResourceName;
 
   SetupCommandListFunc       m_SetupCommandListFunc;
   ExecuteCommandListFunc     m_ExecuteCommandListFunc;

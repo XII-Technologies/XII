@@ -8,8 +8,10 @@ xiiRenderGraphLocalLightShadowRenderPass::xiiRenderGraphLocalLightShadowRenderPa
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sLocalShadowDataResourceName       = xiiMakeHashedString("LocalShadowData");
-  m_sLocalShadowDepthAtlasResourceName = xiiMakeHashedString("LocalShadowDepthAtlas");
+  m_sLocalShadowCastersResourceName      = xiiMakeHashedString("LocalShadowCasters");
+  m_sLocalShadowMaterialBinsResourceName = xiiMakeHashedString("LocalShadowMaterialBins");
+  m_sLocalShadowModeBinsResourceName     = xiiMakeHashedString("LocalShadowModeBins");
+  m_sLocalShadowAtlasPagesResourceName   = xiiMakeHashedString("LocalShadowAtlasPages");
 
   RebuildResourceLayout();
 }
@@ -19,15 +21,27 @@ void xiiRenderGraphLocalLightShadowRenderPass::SetEnabled(bool bEnabled)
   m_bEnabled = bEnabled;
 }
 
-void xiiRenderGraphLocalLightShadowRenderPass::SetLocalShadowDataResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphLocalLightShadowRenderPass::SetLocalShadowCastersResourceName(xiiHashedString sResourceName)
 {
-  m_sLocalShadowDataResourceName = sResourceName;
+  m_sLocalShadowCastersResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
-void xiiRenderGraphLocalLightShadowRenderPass::SetLocalShadowDepthAtlasResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphLocalLightShadowRenderPass::SetLocalShadowMaterialBinsResourceName(xiiHashedString sResourceName)
 {
-  m_sLocalShadowDepthAtlasResourceName = sResourceName;
+  m_sLocalShadowMaterialBinsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLocalLightShadowRenderPass::SetLocalShadowModeBinsResourceName(xiiHashedString sResourceName)
+{
+  m_sLocalShadowModeBinsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLocalLightShadowRenderPass::SetLocalShadowAtlasPagesResourceName(xiiHashedString sResourceName)
+{
+  m_sLocalShadowAtlasPagesResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -101,14 +115,28 @@ void xiiRenderGraphLocalLightShadowRenderPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sLocalShadowDataResourceName;
+    input.m_sResourceName              = m_sLocalShadowCastersResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::IndirectArgument | xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sLocalShadowMaterialBinsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sLocalShadowModeBinsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
-    output.m_sResourceName              = m_sLocalShadowDepthAtlasResourceName;
+    output.m_sResourceName              = m_sLocalShadowAtlasPagesResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::RenderTarget;
     output.m_RequiredState              = xiiGALResourceStateFlags::DepthWrite;
   }
