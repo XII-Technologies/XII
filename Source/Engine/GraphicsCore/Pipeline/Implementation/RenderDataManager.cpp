@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
+#include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
 #include <GraphicsCore/Pipeline/Passes/SkinningPass.h>
@@ -62,6 +63,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pCoarseFrustumCullingPass = XII_DEFAULT_NEW(xiiRenderGraphCoarseFrustumCullingPass);
   m_pCoarseFrustumCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupCoarseFrustumCullingCommandList, this));
   m_pCoarseFrustumCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+
+  m_pOccluderDepthPass = XII_DEFAULT_NEW(xiiRenderGraphOccluderDepthPass);
+  m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupOccluderDepthPrepassCommandList, this));
+  m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawOccluderDepthPrepassCommandList, this));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -611,6 +616,35 @@ void xiiRenderDataManager::AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& in
   inout_runtime.AddPass(m_pCoarseFrustumCullingPass.Borrow());
 }
 
+void xiiRenderDataManager::AddOccluderDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureGpuDrivenVisibilityResources(uiInstanceCount);
+
+  if (m_pOccluderInstanceListBuffer == nullptr)
+  {
+    m_pOccluderInstanceListBuffer = m_pGpuVisibleInstancesBuffer;
+  }
+
+  m_pOccluderDepthPass->SetEnabled(bEnablePass);
+
+  if (m_pOccluderInstanceListBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("OccluderInstances"), m_pOccluderInstanceListBuffer);
+  }
+
+  if (m_pOccluderDepthResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("OccluderDepth"), m_pOccluderDepthResource);
+  }
+
+  inout_runtime.AddPass(m_pOccluderDepthPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -732,6 +766,52 @@ void xiiRenderDataManager::SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, c
   XII_LOCK(m_Mutex);
 
   m_vCoarseFrustumPlaneSamples[uiPlaneIndex] = vPlane;
+}
+
+void xiiRenderDataManager::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pOccluderDepthResource = pDepthResource;
+}
+
+void xiiRenderDataManager::SetOccluderDepthPrepassInstanceListResource(xiiSharedPtr<xiiGALBuffer> pInstanceListResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pOccluderInstanceListBuffer = pInstanceListResource;
+}
+
+void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
+  m_pOccluderDepthPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::SetOccluderDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
+  m_pOccluderDepthPass->SetDrawCommandListFunc(drawFunc);
+}
+
+void xiiRenderDataManager::ClearOccluderDepthPrepassSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
+  m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupOccluderDepthPrepassCommandList, this));
+}
+
+void xiiRenderDataManager::ClearOccluderDepthPrepassDrawFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
+  m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawOccluderDepthPrepassCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -1650,6 +1730,25 @@ void xiiRenderDataManager::SetupCoarseFrustumCullingCommandList(xiiGALCommandLis
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstanceCount"), m_pGpuVisibleInstanceCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
+}
+
+void xiiRenderDataManager::SetupOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  xiiSharedPtr<xiiGALBuffer> pOccluderInstanceList = m_pOccluderInstanceListBuffer != nullptr ? m_pOccluderInstanceListBuffer : m_pGpuVisibleInstancesBuffer;
+  if (pOccluderInstanceList != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("OccluderInstances"), pOccluderInstanceList->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+}
+
+void xiiRenderDataManager::DrawOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const

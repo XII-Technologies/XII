@@ -21,6 +21,7 @@ class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphInstanceUpdatePass;
 class xiiRenderGraphCoarseFrustumCullingPass;
 class xiiRenderGraphLodSelectionPass;
+class xiiRenderGraphOccluderDepthPass;
 class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphSkinningPass;
 class xiiRenderGraphPerFrameBufferUploadPass;
@@ -227,6 +228,9 @@ public:
   /// \brief Registers the async coarse frustum culling reduction pass before depth tests.
   void AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers the low-cost occluder depth prepass on the graphics queue.
+  void AddOccluderDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -250,6 +254,24 @@ public:
 
   /// \brief Updates staged camera frustum planes consumed by coarse frustum culling.
   void SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, const xiiVec4& vPlane) const;
+
+  /// \brief Supplies the depth resource written by the occluder depth prepass.
+  void SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const;
+
+  /// \brief Supplies the occluder instance list consumed by the occluder depth prepass.
+  void SetOccluderDepthPrepassInstanceListResource(xiiSharedPtr<xiiGALBuffer> pInstanceListResource) const;
+
+  /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
+  void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Sets an optional callback that records geometry-only occluder draw commands.
+  void SetOccluderDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const;
+
+  /// \brief Clears the optional occluder depth prepass setup callback.
+  void ClearOccluderDepthPrepassSetupFunc() const;
+
+  /// \brief Clears the optional occluder depth prepass draw callback.
+  void ClearOccluderDepthPrepassDrawFunc() const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -306,6 +328,8 @@ private:
   void SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupInstanceUpdateCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupCoarseFrustumCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void DrawOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -342,7 +366,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pOccluderInstanceListBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountReadbackBuffer;
+  mutable xiiSharedPtr<xiiGALResource>                      m_pOccluderDepthResource;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibilityDispatchArgumentsBuffer;
   mutable xiiSharedPtr<xiiGALFence>                         m_pGpuVisibilityReadbackFence;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionFrameTimingBuffer;
@@ -384,6 +410,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphInstanceUpdatePass>    m_pInstanceUpdatePass;
   mutable xiiUniquePtr<xiiRenderGraphCoarseFrustumCullingPass> m_pCoarseFrustumCullingPass;
+  mutable xiiUniquePtr<xiiRenderGraphOccluderDepthPass>     m_pOccluderDepthPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>      m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>          m_pSkinningPass;
