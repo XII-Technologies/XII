@@ -730,6 +730,24 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyTLASDescription
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for both source and destination AS.
 };
 
+/// \brief Describes parameters for writing BLAS compacted size into a buffer.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteBLASCompactedSizeDescription
+{
+  xiiSharedPtr<xiiGALBottomLevelAS> m_pBottomLevelAS;              ///< Source BLAS whose compacted size is queried.
+  xiiSharedPtr<xiiGALBuffer>        m_pDestinationBuffer;          ///< Destination buffer receiving one 64-bit compacted size.
+  xiiUInt64                         m_uiDestinationBufferOffset = 0U; ///< Byte offset into destination buffer.
+  xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for source AS and destination buffer.
+};
+
+/// \brief Describes parameters for writing TLAS compacted size into a buffer.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteTLASCompactedSizeDescription
+{
+  xiiSharedPtr<xiiGALTopLevelAS>    m_pTopLevelAS;                 ///< Source TLAS whose compacted size is queried.
+  xiiSharedPtr<xiiGALBuffer>        m_pDestinationBuffer;          ///< Destination buffer receiving one 64-bit compacted size.
+  xiiUInt64                         m_uiDestinationBufferOffset = 0U; ///< Byte offset into destination buffer.
+  xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for source AS and destination buffer.
+};
+
 /// \brief Describes parameters for issuing a tile-based compute dispatch.
 ///
 /// Used for tile shaders or compute workloads that operate on screen-space tiles.
@@ -1244,6 +1262,12 @@ public:
   /// \brief Copies a TLAS (clone or compact).
   void CopyTLAS(const xiiGALCopyTLASDescription& description);
 
+  /// \brief Writes BLAS compacted size into a destination buffer.
+  void WriteBLASCompactedSize(const xiiGALWriteBLASCompactedSizeDescription& description);
+
+  /// \brief Writes TLAS compacted size into a destination buffer.
+  void WriteTLASCompactedSize(const xiiGALWriteTLASCompactedSizeDescription& description);
+
   // Query functions.
 
   /// \brief Begins a query.
@@ -1532,6 +1556,8 @@ protected:
   virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description)                             = 0;
   virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description)                               = 0;
   virtual void CopyTLASPlatform(const xiiGALCopyTLASDescription& description)                               = 0;
+  virtual void WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description)   = 0;
+  virtual void WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description)   = 0;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) = 0;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)   = 0;

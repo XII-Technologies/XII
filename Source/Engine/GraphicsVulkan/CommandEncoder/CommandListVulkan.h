@@ -175,6 +175,8 @@ protected:
   virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description) override final;
   virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description) override final;
   virtual void CopyTLASPlatform(const xiiGALCopyTLASDescription& description) override final;
+  virtual void WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description) override final;
+  virtual void WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description) override final;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;

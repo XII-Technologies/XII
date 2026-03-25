@@ -1414,6 +1414,44 @@ void xiiGALCommandList::CopyTLAS(const xiiGALCopyTLASDescription& description)
   CopyTLASPlatform(description);
 }
 
+void xiiGALCommandList::WriteBLASCompactedSize(const xiiGALWriteBLASCompactedSizeDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "WriteBLASCompactedSize must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "WriteBLASCompactedSize arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "WriteBLASCompactedSize command arguments are invalid. The operation must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pBottomLevelAS != nullptr, "WriteBLASCompactedSize command arguments are invalid. Source BLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationBuffer != nullptr, "WriteBLASCompactedSize command arguments are invalid. Destination buffer is invalid.");
+
+  const xiiGALBufferCreationDescription& destinationBufferDescription = description.m_pDestinationBuffer->GetDescription();
+  XII_ASSERT_DEV((description.m_uiDestinationBufferOffset + sizeof(xiiUInt64)) <= destinationBufferDescription.m_uiSize, "WriteBLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiWriteBLASCompactedSize;
+
+  WriteBLASCompactedSizePlatform(description);
+}
+
+void xiiGALCommandList::WriteTLASCompactedSize(const xiiGALWriteTLASCompactedSizeDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "WriteTLASCompactedSize must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "WriteTLASCompactedSize arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "WriteTLASCompactedSize command arguments are invalid. The operation must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pTopLevelAS != nullptr, "WriteTLASCompactedSize command arguments are invalid. Source TLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationBuffer != nullptr, "WriteTLASCompactedSize command arguments are invalid. Destination buffer is invalid.");
+
+  const xiiGALBufferCreationDescription& destinationBufferDescription = description.m_pDestinationBuffer->GetDescription();
+  XII_ASSERT_DEV((description.m_uiDestinationBufferOffset + sizeof(xiiUInt64)) <= destinationBufferDescription.m_uiSize, "WriteTLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiWriteTLASCompactedSize;
+
+  WriteTLASCompactedSizePlatform(description);
+}
+
 void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BeginQuery must be called while recording.");

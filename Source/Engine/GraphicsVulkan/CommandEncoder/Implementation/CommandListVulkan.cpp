@@ -24,6 +24,20 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  [[nodiscard]] vk::QueryPool CreateCompactedSizeQueryPool(xiiGALDeviceVulkan* pDeviceVulkan)
+  {
+    vk::QueryPoolCreateInfo vkQueryPoolCreateInfo = {};
+    vkQueryPoolCreateInfo.queryType                = vk::QueryType::eAccelerationStructureCompactedSizeKHR;
+    vkQueryPoolCreateInfo.queryCount               = 1U;
+
+    vk::QueryPool vkQueryPool = VK_NULL_HANDLE;
+    vk::Device    vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+    VK_ASSERT_DEV(vkLogicalDevice.createQueryPool(&vkQueryPoolCreateInfo, nullptr, &vkQueryPool, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    return vkQueryPool;
+  }
+
   [[nodiscard]] vk::BuildAccelerationStructureFlagsKHR ConvertBuildASFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
   {
     vk::BuildAccelerationStructureFlagsKHR vkFlags = {};
@@ -2229,6 +2243,78 @@ void xiiGALCommandListVulkan::CopyTLASPlatform(const xiiGALCopyTLASDescription& 
   FlushBarriers();
 
   m_vkCommandBuffer.copyAccelerationStructureKHR(&vkCopyInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
+void xiiGALCommandListVulkan::WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description)
+{
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdWriteAccelerationStructuresPropertiesKHR() must be called outside of render pass.");
+
+  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBottomLevelASVulkan> pBottomLevelASVulkan   = description.m_pBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan>        pDestinationBufferVulkan = description.m_pDestinationBuffer.Downcast<xiiGALBufferVulkan>();
+
+  TransitionOrVerifyBufferState(pDestinationBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using compacted size destination buffer");
+
+  xiiBitflags<xiiGALResourceStateFlags> oldState = pBottomLevelASVulkan->GetResourceState();
+  if (oldState == xiiGALResourceStateFlags::Unknown)
+    oldState = xiiGALResourceStateFlags::BuildASWrite;
+
+  if (description.m_ResourceStateTransitionMode == xiiGALStateTransitionMode::Transition)
+  {
+    MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(xiiGALResourceStateFlags::BuildASRead), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(xiiGALResourceStateFlags::BuildASRead));
+    pBottomLevelASVulkan->SetResourceState(xiiGALResourceStateFlags::BuildASRead);
+  }
+  else if (description.m_ResourceStateTransitionMode == xiiGALStateTransitionMode::Verify)
+  {
+    XII_ASSERT_DEV(oldState.IsSet(xiiGALResourceStateFlags::BuildASRead), "Source BLAS ({}) is not in BuildASRead state while verifying compacted-size write.", pBottomLevelASVulkan->GetDebugName());
+  }
+
+  vk::QueryPool vkQueryPool = CreateCompactedSizeQueryPool(pDeviceVulkan.Borrow());
+  m_CommandListData.m_TemporaryQueryPools.PushBack(vkQueryPool);
+
+  const vk::AccelerationStructureKHR vkAccelerationStructure = pBottomLevelASVulkan->GetVulkanAccelerationStructure();
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.resetQueryPool(vkQueryPool, 0U, 1U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_vkCommandBuffer.writeAccelerationStructuresPropertiesKHR(1U, &vkAccelerationStructure, vk::QueryType::eAccelerationStructureCompactedSizeKHR, vkQueryPool, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_vkCommandBuffer.copyQueryPoolResults(vkQueryPool, 0U, 1U, pDestinationBufferVulkan->GetVulkanBuffer(), description.m_uiDestinationBufferOffset, sizeof(xiiUInt64), vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
+void xiiGALCommandListVulkan::WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description)
+{
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdWriteAccelerationStructuresPropertiesKHR() must be called outside of render pass.");
+
+  xiiSharedPtr<xiiGALDeviceVulkan>     pDeviceVulkan         = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALTopLevelASVulkan> pTopLevelASVulkan     = description.m_pTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan>     pDestinationBufferVulkan = description.m_pDestinationBuffer.Downcast<xiiGALBufferVulkan>();
+
+  TransitionOrVerifyBufferState(pDestinationBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using compacted size destination buffer");
+
+  xiiBitflags<xiiGALResourceStateFlags> oldState = pTopLevelASVulkan->GetResourceState();
+  if (oldState == xiiGALResourceStateFlags::Unknown)
+    oldState = xiiGALResourceStateFlags::BuildASWrite;
+
+  if (description.m_ResourceStateTransitionMode == xiiGALStateTransitionMode::Transition)
+  {
+    MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(xiiGALResourceStateFlags::BuildASRead), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(xiiGALResourceStateFlags::BuildASRead));
+    pTopLevelASVulkan->SetResourceState(xiiGALResourceStateFlags::BuildASRead);
+  }
+  else if (description.m_ResourceStateTransitionMode == xiiGALStateTransitionMode::Verify)
+  {
+    XII_ASSERT_DEV(oldState.IsSet(xiiGALResourceStateFlags::BuildASRead), "Source TLAS ({}) is not in BuildASRead state while verifying compacted-size write.", pTopLevelASVulkan->GetDebugName());
+  }
+
+  vk::QueryPool vkQueryPool = CreateCompactedSizeQueryPool(pDeviceVulkan.Borrow());
+  m_CommandListData.m_TemporaryQueryPools.PushBack(vkQueryPool);
+
+  const vk::AccelerationStructureKHR vkAccelerationStructure = pTopLevelASVulkan->GetVulkanAccelerationStructure();
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.resetQueryPool(vkQueryPool, 0U, 1U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_vkCommandBuffer.writeAccelerationStructuresPropertiesKHR(1U, &vkAccelerationStructure, vk::QueryType::eAccelerationStructureCompactedSizeKHR, vkQueryPool, 0U, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_vkCommandBuffer.copyQueryPoolResults(vkQueryPool, 0U, 1U, pDestinationBufferVulkan->GetVulkanBuffer(), description.m_uiDestinationBufferOffset, sizeof(xiiUInt64), vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)

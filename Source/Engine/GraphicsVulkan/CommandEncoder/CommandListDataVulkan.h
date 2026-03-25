@@ -21,6 +21,7 @@ namespace vk
   class Buffer;
   class Image;
   class DescriptorSet;
+  class QueryPool;
   struct DescriptorBufferInfo;
 } // namespace vk
 
@@ -69,6 +70,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_pUploadStagingBufferPool    = std::move(other.m_pUploadStagingBufferPool);
     m_pDescriptorSetPoolVulkan    = std::move(other.m_pDescriptorSetPoolVulkan);
     m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
+    m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
   }
 
@@ -89,6 +91,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_pUploadStagingBufferPool    = std::move(other.m_pUploadStagingBufferPool);
     m_pDescriptorSetPoolVulkan    = std::move(other.m_pDescriptorSetPoolVulkan);
     m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
+    m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
 
     return *this;
@@ -155,6 +158,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
   xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pDescriptorSetPoolVulkan;
 
   xiiSharedPtr<xiiGALBufferVulkan> m_pNullVertexBuffer; ///< In Vulkan, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
+
+  xiiDynamicArray<vk::QueryPool> m_TemporaryQueryPools; ///< Query pools created while recording and destroyed after GPU execution completes.
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };
