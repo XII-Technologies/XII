@@ -3,6 +3,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
+#include <GraphicsCore/Pipeline/Passes/DynamicResolutionDecisionPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
@@ -46,6 +47,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pRayTracedShadowsPass = XII_DEFAULT_NEW(xiiRenderGraphRayTracedShadowsPass);
   m_pRayTracedShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupRayTracedShadowsCommandList, this));
   m_pRayTracedShadowsPass->SetDispatchRayTracingFunc(xiiMakeDelegate(&xiiRenderDataManager::DispatchRayTracedShadowsCommandList, this));
+
+  m_pDynamicResolutionDecisionPass = XII_DEFAULT_NEW(xiiRenderGraphDynamicResolutionDecisionPass);
+  m_pDynamicResolutionDecisionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDynamicResolutionDecisionCommandList, this));
+  m_pDynamicResolutionDecisionPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   // Keep indices stable for callers that expect static/dynamic/skinning slots.
   m_Buffers.SetCount(3);
@@ -365,6 +370,42 @@ void xiiRenderDataManager::AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pRayTracedShadowsPass.Borrow());
 }
 
+void xiiRenderDataManager::AddDynamicResolutionDecisionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= true*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDynamicResolutionDecisionPass != nullptr, "Dynamic-resolution decision pass must be initialized.");
+
+  EnsureDynamicResolutionDecisionResources(1U);
+
+  if (m_pDynamicResolutionFrameTimingBuffer != nullptr)
+  {
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddDynamicResolutionDecisionPass");
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pDynamicResolutionFrameTimingBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vDynamicResolutionFrameTimingSample), sizeof(m_vDynamicResolutionFrameTimingSample))).AssertSuccess();
+  }
+
+  m_pDynamicResolutionDecisionPass->SetEnabled(bEnableDispatch);
+
+  if (m_pDynamicResolutionFrameTimingBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("FrameTimingData"), m_pDynamicResolutionFrameTimingBuffer);
+  }
+
+  if (m_pDynamicResolutionDecisionBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("DynamicResolutionData"), m_pDynamicResolutionDecisionBuffer);
+  }
+
+  inout_runtime.AddPass(m_pDynamicResolutionDecisionPass.Borrow());
+}
+
+void xiiRenderDataManager::SetDynamicResolutionFrameTimingSample(const xiiVec4& vFrameTimingSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vDynamicResolutionFrameTimingSample = vFrameTimingSample;
+}
+
 void xiiRenderDataManager::SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const
 {
   XII_LOCK(m_Mutex);
@@ -575,6 +616,48 @@ void xiiRenderDataManager::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstan
   }
 }
 
+void xiiRenderDataManager::EnsureDynamicResolutionDecisionResources(xiiUInt32 uiElementCount) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt64 uiRequiredSize = static_cast<xiiUInt64>(xiiMath::Max(1U, uiElementCount)) * sizeof(xiiVec4);
+
+  if (m_pDynamicResolutionFrameTimingBuffer == nullptr || m_pDynamicResolutionFrameTimingBuffer->GetDescription().m_uiSize < uiRequiredSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiRequiredSize;
+
+    m_pDynamicResolutionFrameTimingBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pDynamicResolutionFrameTimingBuffer != nullptr)
+    {
+      m_pDynamicResolutionFrameTimingBuffer->SetDebugName("RenderDataManager::FrameTimingData");
+    }
+  }
+
+  if (m_pDynamicResolutionDecisionBuffer == nullptr || m_pDynamicResolutionDecisionBuffer->GetDescription().m_uiSize < uiRequiredSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiRequiredSize;
+
+    m_pDynamicResolutionDecisionBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pDynamicResolutionDecisionBuffer != nullptr)
+    {
+      m_pDynamicResolutionDecisionBuffer->SetDebugName("RenderDataManager::DynamicResolutionData");
+    }
+  }
+}
+
 void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
@@ -628,6 +711,61 @@ void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList
   if (m_pGpuVisibleInstanceCountBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstanceCount"), m_pGpuVisibleInstanceCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupDynamicResolutionDecisionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureDynamicResolutionDecisionResources(1U);
+
+  if (m_hDynamicResolutionDecisionShader.IsValid() == false)
+  {
+    m_hDynamicResolutionDecisionShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DynamicResolutionDecision.xiiShader");
+  }
+
+  if (m_pDynamicResolutionDecisionPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hDynamicResolutionDecisionShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pDynamicResolutionDecisionPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pDynamicResolutionDecisionPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pDynamicResolutionDecisionPipelineState);
+
+  if (m_pDynamicResolutionFrameTimingBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("FrameTimingData"), m_pDynamicResolutionFrameTimingBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pDynamicResolutionDecisionBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("DynamicResolutionData"), m_pDynamicResolutionDecisionBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 
