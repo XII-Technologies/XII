@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
+#include <GraphicsCore/Pipeline/Passes/NormalRoughnessPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
@@ -99,6 +100,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pMainDepthPrepassPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
   m_pMainDepthPrepassPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
   m_pMainDepthPrepassPass->SetDepthBufferResourceName(xiiMakeHashedString("SceneDepth"));
+
+  m_pNormalRoughnessPrepassPass = XII_DEFAULT_NEW(xiiRenderGraphNormalRoughnessPrepassPass);
+  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList, this));
+  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList, this));
+  m_pNormalRoughnessPrepassPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
+  m_pNormalRoughnessPrepassPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
+  m_pNormalRoughnessPrepassPass->SetDepthResourceName(xiiMakeHashedString("SceneDepth"));
+  m_pNormalRoughnessPrepassPass->SetNormalRoughnessResourceName(xiiMakeHashedString("SceneNormalRoughness"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -855,6 +864,44 @@ void xiiRenderDataManager::AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pMainDepthPrepassPass.Borrow());
 }
 
+void xiiRenderDataManager::AddOptionalNormalRoughnessPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureNormalRoughnessPrepassResources(uiInstanceCount);
+
+  xiiSharedPtr<xiiGALBuffer>   pIndirectCommands = m_pGpuIndirectDrawCommandsBuffer;
+  xiiSharedPtr<xiiGALBuffer>   pIndirectCounts   = m_pGpuIndirectDrawCountsBuffer;
+  xiiSharedPtr<xiiGALResource> pSceneDepth       = m_pNormalRoughnessPrepassDepthResource != nullptr ? m_pNormalRoughnessPrepassDepthResource : m_pMainDepthPrepassDepthResource;
+
+  m_pNormalRoughnessPrepassPass->SetEnabled(bEnablePass);
+
+  if (pIndirectCommands != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuIndirectDrawCommands"), pIndirectCommands);
+  }
+
+  if (pIndirectCounts != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuIndirectDrawCounts"), pIndirectCounts);
+  }
+
+  if (pSceneDepth != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepth"), pSceneDepth);
+  }
+
+  if (m_pNormalRoughnessPrepassOutputResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneNormalRoughness"), m_pNormalRoughnessPrepassOutputResource);
+  }
+
+  inout_runtime.AddPass(m_pNormalRoughnessPrepassPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1062,6 +1109,20 @@ void xiiRenderDataManager::SetMainDepthPrepassIndirectCountBufferResource(xiiSha
   m_pGpuIndirectDrawCountsBuffer = pIndirectCountBufferResource;
 }
 
+void xiiRenderDataManager::SetNormalRoughnessPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pNormalRoughnessPrepassDepthResource = pDepthResource;
+}
+
+void xiiRenderDataManager::SetNormalRoughnessPrepassOutputResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pNormalRoughnessPrepassOutputResource = pNormalRoughnessResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1124,6 +1185,38 @@ void xiiRenderDataManager::ClearMainDepthPrepassDrawFunc() const
 
   XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
   m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawMainDepthPrepassCommandList, this));
+}
+
+void xiiRenderDataManager::SetNormalRoughnessPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
+  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::SetNormalRoughnessPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
+  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(drawFunc);
+}
+
+void xiiRenderDataManager::ClearNormalRoughnessPrepassSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
+  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList, this));
+}
+
+void xiiRenderDataManager::ClearNormalRoughnessPrepassDrawFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
+  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -1692,6 +1785,16 @@ void xiiRenderDataManager::EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceC
   if (m_pMainDepthPrepassDepthResource == nullptr)
   {
     m_pMainDepthPrepassDepthResource = m_pOccluderDepthResource;
+  }
+}
+
+void xiiRenderDataManager::EnsureNormalRoughnessPrepassResources(xiiUInt32 uiInstanceCapacity) const
+{
+  EnsureMainDepthPrepassResources(xiiMath::Max(1U, uiInstanceCapacity));
+
+  if (m_pNormalRoughnessPrepassDepthResource == nullptr)
+  {
+    m_pNormalRoughnessPrepassDepthResource = m_pMainDepthPrepassDepthResource != nullptr ? m_pMainDepthPrepassDepthResource : m_pOccluderDepthResource;
   }
 }
 
@@ -2344,6 +2447,40 @@ void xiiRenderDataManager::SetupMainDepthPrepassCommandList(xiiGALCommandList& c
 }
 
 void xiiRenderDataManager::DrawMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
+}
+
+void xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureNormalRoughnessPrepassResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  if (m_pGpuIndirectDrawCommandsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuIndirectDrawCommands"), m_pGpuIndirectDrawCommandsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (m_pGpuIndirectDrawCountsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuIndirectDrawCounts"), m_pGpuIndirectDrawCountsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  xiiSharedPtr<xiiGALResource> pSceneDepth = m_pNormalRoughnessPrepassDepthResource != nullptr ? m_pNormalRoughnessPrepassDepthResource : m_pMainDepthPrepassDepthResource;
+  if (pSceneDepth != nullptr)
+  {
+    if (xiiGALTexture* pDepthTexture = xiiDynamicCast<xiiGALTexture*>(pSceneDepth.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("SceneDepth"), pDepthTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+    }
+  }
+}
+
+void xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);

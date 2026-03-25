@@ -25,6 +25,7 @@ class xiiRenderGraphDrawCommandBuildPass;
 class xiiRenderGraphHiZBuildPass;
 class xiiRenderGraphHiZOcclusionCullingPass;
 class xiiRenderGraphLodSelectionPass;
+class xiiRenderGraphNormalRoughnessPrepassPass;
 class xiiRenderGraphOccluderDepthPass;
 class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphSkinningPass;
@@ -247,6 +248,9 @@ public:
   /// \brief Registers the graphics main depth prepass driven by packed indirect draw commands.
   void AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = false) const;
 
+  /// \brief Registers the optional graphics normal-roughness prepass for denoisers and AO quality.
+  void AddOptionalNormalRoughnessPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -307,6 +311,12 @@ public:
   /// \brief Supplies packed indirect draw count buffer consumed by the main depth prepass.
   void SetMainDepthPrepassIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const;
 
+  /// \brief Supplies scene depth consumed by the optional normal-roughness prepass.
+  void SetNormalRoughnessPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const;
+
+  /// \brief Supplies compact normal-roughness render target written by the optional prepass.
+  void SetNormalRoughnessPrepassOutputResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const;
+
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -330,6 +340,18 @@ public:
 
   /// \brief Clears the optional main depth prepass draw callback.
   void ClearMainDepthPrepassDrawFunc() const;
+
+  /// \brief Sets an optional callback for graphics state setup before normal-roughness prepass draws.
+  void SetNormalRoughnessPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Sets an optional callback that records compact normal-roughness prepass draws.
+  void SetNormalRoughnessPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const;
+
+  /// \brief Clears the optional normal-roughness prepass setup callback.
+  void ClearNormalRoughnessPrepassSetupFunc() const;
+
+  /// \brief Clears the optional normal-roughness prepass draw callback.
+  void ClearNormalRoughnessPrepassDrawFunc() const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -381,6 +403,7 @@ private:
   void EnsureLodSelectionResources(xiiUInt32 uiElementCount) const;
   void EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiDrawCapacity) const;
   void EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceCapacity) const;
+  void EnsureNormalRoughnessPrepassResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -395,6 +418,8 @@ private:
   void SetupDrawIndirectCommandBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void DrawMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void DrawNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -448,6 +473,8 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                           m_pGpuVisibleInstanceCountReadbackBuffer;
   mutable xiiSharedPtr<xiiGALResource>                         m_pOccluderDepthResource;
   mutable xiiSharedPtr<xiiGALResource>                         m_pMainDepthPrepassDepthResource;
+  mutable xiiSharedPtr<xiiGALResource>                         m_pNormalRoughnessPrepassDepthResource;
+  mutable xiiSharedPtr<xiiGALResource>                         m_pNormalRoughnessPrepassOutputResource;
   mutable xiiSharedPtr<xiiGALResource>                         m_pHiZDepthSourceResource;
   mutable xiiSharedPtr<xiiGALResource>                         m_pHiZDepthPyramidResource;
   mutable xiiSharedPtr<xiiGALBuffer>                           m_pGpuVisibilityDispatchArgumentsBuffer;
@@ -496,6 +523,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphHiZOcclusionCullingPass>  m_pHiZOcclusionCullingPass;
   mutable xiiUniquePtr<xiiRenderGraphDrawCommandBuildPass>     m_pDrawCommandBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphDepthPrepassPass>         m_pMainDepthPrepassPass;
+  mutable xiiUniquePtr<xiiRenderGraphNormalRoughnessPrepassPass> m_pNormalRoughnessPrepassPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>         m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass>    m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>             m_pSkinningPass;
