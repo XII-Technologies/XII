@@ -5,7 +5,7 @@
 #include <Foundation/Types/Delegate.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
-/// \brief Compute scaffold for resolving decal contribution into surface buffers.
+/// \brief Compute scaffold for classifying decal volumes into depth-aware decal tile lists.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphDecalResolvePass final : public xiiRenderGraphPassBase
 {
 public:
@@ -17,6 +17,11 @@ public:
   void SetEnabled(bool bEnabled);
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
+  void SetDecalVolumesResourceName(xiiHashedString sResourceName);
+  void SetSceneDepthResourceName(xiiHashedString sResourceName);
+  void SetDecalTileListsResourceName(xiiHashedString sResourceName);
+
+  // Compatibility wrappers for legacy naming.
   void SetGBufferInputResourceName(xiiHashedString sResourceName);
   void SetDecalOutputResourceName(xiiHashedString sResourceName);
 
@@ -33,8 +38,9 @@ private:
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;
-  xiiHashedString               m_sGBufferInputResourceName;
-  xiiHashedString               m_sDecalOutputResourceName;
+  xiiHashedString               m_sDecalVolumesResourceName;
+  xiiHashedString               m_sSceneDepthResourceName;
+  xiiHashedString               m_sDecalTileListsResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;

@@ -4,12 +4,13 @@
 
 xiiRenderGraphDecalResolvePass::xiiRenderGraphDecalResolvePass()
 {
-  m_PassDescription.m_sPassName       = xiiMakeHashedString("DecalResolve");
+  m_PassDescription.m_sPassName       = xiiMakeHashedString("DecalClassification");
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sGBufferInputResourceName = xiiMakeHashedString("GBuffer");
-  m_sDecalOutputResourceName  = xiiMakeHashedString("DecalResolvedBuffer");
+  m_sDecalVolumesResourceName   = xiiMakeHashedString("DecalVolumes");
+  m_sSceneDepthResourceName     = xiiMakeHashedString("SceneDepth");
+  m_sDecalTileListsResourceName = xiiMakeHashedString("DecalTileLists");
 
   RebuildResourceLayout();
 }
@@ -26,16 +27,32 @@ void xiiRenderGraphDecalResolvePass::SetDispatchThreadGroupCount(xiiUInt32 uiThr
   m_uiDispatchThreadGroupsZ = xiiMath::Max(1U, uiThreadGroupCountZ);
 }
 
+void xiiRenderGraphDecalResolvePass::SetDecalVolumesResourceName(xiiHashedString sResourceName)
+{
+  m_sDecalVolumesResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphDecalResolvePass::SetSceneDepthResourceName(xiiHashedString sResourceName)
+{
+  m_sSceneDepthResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphDecalResolvePass::SetDecalTileListsResourceName(xiiHashedString sResourceName)
+{
+  m_sDecalTileListsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
 void xiiRenderGraphDecalResolvePass::SetGBufferInputResourceName(xiiHashedString sResourceName)
 {
-  m_sGBufferInputResourceName = sResourceName;
-  RebuildResourceLayout();
+  SetDecalVolumesResourceName(sResourceName);
 }
 
 void xiiRenderGraphDecalResolvePass::SetDecalOutputResourceName(xiiHashedString sResourceName)
 {
-  m_sDecalOutputResourceName = sResourceName;
-  RebuildResourceLayout();
+  SetDecalTileListsResourceName(sResourceName);
 }
 
 void xiiRenderGraphDecalResolvePass::SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc)
@@ -95,14 +112,21 @@ void xiiRenderGraphDecalResolvePass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sGBufferInputResourceName;
+    input.m_sResourceName              = m_sDecalVolumesResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sSceneDepthResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
-    output.m_sResourceName              = m_sDecalOutputResourceName;
+    output.m_sResourceName              = m_sDecalTileListsResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }

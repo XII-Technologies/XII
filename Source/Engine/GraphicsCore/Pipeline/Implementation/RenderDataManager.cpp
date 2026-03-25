@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/Passes/DepthPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
+#include <GraphicsCore/Pipeline/Passes/DecalResolvePass.h>
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
@@ -179,6 +180,13 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pLightListBuildPass->SetClusterDepthInfoResourceName(xiiMakeHashedString("ClusterDepthRange"));
   m_pLightListBuildPass->SetClusterLightIndicesResourceName(xiiMakeHashedString("ClusterLightIndices"));
   m_pLightListBuildPass->SetClusterLightPrefixSumsResourceName(xiiMakeHashedString("ClusterLightPrefixSums"));
+
+  m_pDecalClassificationPass = XII_DEFAULT_NEW(xiiRenderGraphDecalResolvePass);
+  m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalClassificationCommandList, this));
+  m_pDecalClassificationPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pDecalClassificationPass->SetDecalVolumesResourceName(xiiMakeHashedString("DecalVolumes"));
+  m_pDecalClassificationPass->SetSceneDepthResourceName(xiiMakeHashedString("SceneDepth"));
+  m_pDecalClassificationPass->SetDecalTileListsResourceName(xiiMakeHashedString("DecalTileLists"));
 
   m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
   m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
@@ -1266,6 +1274,37 @@ void xiiRenderDataManager::AddLightListConstructionPass(xiiRenderGraphRuntime& i
   inout_runtime.AddPass(m_pLightListBuildPass.Borrow());
 }
 
+void xiiRenderDataManager::AddDecalClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDecalClassificationPass != nullptr, "Decal classification pass must be initialized.");
+
+  const xiiUInt32 uiTileCount  = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  const xiiUInt32 uiDecalCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureDecalClassificationResources(uiTileCount, uiDecalCount);
+
+  m_pDecalClassificationPass->SetEnabled(bEnableDispatch);
+  m_pDecalClassificationPass->SetDispatchThreadGroupCount(uiTileCount, 1U, 1U);
+
+  if (m_pDecalVolumesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("DecalVolumes"), m_pDecalVolumesBuffer);
+  }
+
+  if (m_pDecalClassificationDepthResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepth"), m_pDecalClassificationDepthResource);
+  }
+
+  if (m_pDecalTileListsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("DecalTileLists"), m_pDecalTileListsBuffer);
+  }
+
+  inout_runtime.AddPass(m_pDecalClassificationPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1716,6 +1755,27 @@ void xiiRenderDataManager::SetClusterLightPrefixSumsResource(xiiSharedPtr<xiiGAL
   m_pClusterLightPrefixSumsBuffer = pClusterLightPrefixSumsResource;
 }
 
+void xiiRenderDataManager::SetDecalVolumesResource(xiiSharedPtr<xiiGALBuffer> pDecalVolumesResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDecalVolumesBuffer = pDecalVolumesResource;
+}
+
+void xiiRenderDataManager::SetDecalClassificationDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDecalClassificationDepthResource = pDepthResource;
+}
+
+void xiiRenderDataManager::SetDecalTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDecalTileListsBuffer = pDecalTileListsResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1938,6 +1998,22 @@ void xiiRenderDataManager::ClearLightListConstructionSetupFunc() const
 
   XII_ASSERT_DEV(m_pLightListBuildPass != nullptr, "Light-list construction pass must be initialized.");
   m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLightListConstructionCommandList, this));
+}
+
+void xiiRenderDataManager::SetDecalClassificationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDecalClassificationPass != nullptr, "Decal classification pass must be initialized.");
+  m_pDecalClassificationPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearDecalClassificationSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDecalClassificationPass != nullptr, "Decal classification pass must be initialized.");
+  m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalClassificationCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2916,6 +2992,56 @@ void xiiRenderDataManager::EnsureLightListConstructionResources(xiiUInt32 uiClus
     if (m_pClusterLightPrefixSumsBuffer != nullptr)
     {
       m_pClusterLightPrefixSumsBuffer->SetDebugName("RenderDataManager::ClusterLightPrefixSums");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureDecalClassificationResources(xiiUInt32 uiTileCapacity, xiiUInt32 uiDecalCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt32 uiResolvedTileCapacity  = xiiMath::Max(1U, uiTileCapacity);
+  const xiiUInt32 uiResolvedDecalCapacity = xiiMath::Max(1U, uiDecalCapacity);
+
+  if (m_pDecalClassificationDepthResource == nullptr)
+  {
+    m_pDecalClassificationDepthResource = m_pMainDepthPrepassDepthResource != nullptr ? m_pMainDepthPrepassDepthResource : m_pOccluderDepthResource;
+  }
+
+  const xiiUInt64 uiDecalVolumesSize = static_cast<xiiUInt64>(uiResolvedDecalCapacity) * sizeof(xiiVec4);
+  if (m_pDecalVolumesBuffer == nullptr || m_pDecalVolumesBuffer->GetDescription().m_uiSize < uiDecalVolumesSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiDecalVolumesSize;
+
+    m_pDecalVolumesBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pDecalVolumesBuffer != nullptr)
+    {
+      m_pDecalVolumesBuffer->SetDebugName("RenderDataManager::DecalVolumes");
+    }
+  }
+
+  const xiiUInt64 uiTileListSize = static_cast<xiiUInt64>(uiResolvedTileCapacity) * 8ULL * sizeof(xiiUInt32);
+  if (m_pDecalTileListsBuffer == nullptr || m_pDecalTileListsBuffer->GetDescription().m_uiSize < uiTileListSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiTileListSize;
+
+    m_pDecalTileListsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pDecalTileListsBuffer != nullptr)
+    {
+      m_pDecalTileListsBuffer->SetDebugName("RenderDataManager::DecalTileLists");
     }
   }
 }
@@ -4112,6 +4238,71 @@ void xiiRenderDataManager::SetupLightListConstructionCommandList(xiiGALCommandLi
   if (m_pClusterLightPrefixSumsBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ClusterLightPrefixSums"), m_pClusterLightPrefixSumsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupDecalClassificationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiTileCount  = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  const xiiUInt32 uiDecalCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureDecalClassificationResources(uiTileCount, uiDecalCount);
+
+  if (m_hDecalClassificationShader.IsValid() == false)
+  {
+    m_hDecalClassificationShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DecalClassification.xiiShader");
+  }
+
+  if (m_pDecalClassificationPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hDecalClassificationShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pDecalClassificationPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pDecalClassificationPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pDecalClassificationPipelineState);
+
+  if (m_pDecalVolumesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("DecalVolumes"), m_pDecalVolumesBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pDecalClassificationDepthResource != nullptr)
+  {
+    if (xiiGALTexture* pDepthTexture = xiiDynamicCast<xiiGALTexture*>(m_pDecalClassificationDepthResource.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("SceneDepth"), pDepthTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+  }
+
+  if (m_pDecalTileListsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("DecalTileLists"), m_pDecalTileListsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 
