@@ -19,6 +19,7 @@
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
 #include <GraphicsCore/Pipeline/Passes/ShadowCasterCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/ShadowCascadeSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/ShadowMapRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/SkinningPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -47,6 +48,12 @@ namespace
   {
     xiiVec4 m_vSunDirection   = xiiVec4(0.0f, -1.0f, 0.0f, 0.0f);
     xiiVec4 m_vSplitDistances = xiiVec4(10.0f, 30.0f, 80.0f, 200.0f);
+  };
+
+  struct DirectionalShadowAtlasParams
+  {
+    xiiVec4 m_vAtlasPacking = xiiVec4(0.5f, 0.5f, 0.0f, 0.0f);
+    xiiVec4 m_vTexelSnap    = xiiVec4(1.0f, 1.0f, 1.0f, 0.0f);
   };
 } // namespace
 
@@ -131,6 +138,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pShadowCasterCullingPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
   m_pShadowCasterCullingPass->SetShadowVisibleListResourceName(xiiMakeHashedString("ShadowVisibleList"));
   m_pShadowCasterCullingPass->SetShadowVisibleCountResourceName(xiiMakeHashedString("ShadowVisibleCount"));
+
+  m_pDirectionalShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphShadowMapRenderPass);
+  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList, this));
+  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList, this));
+  m_pDirectionalShadowRenderingPass->SetShadowVisibleListResourceName(xiiMakeHashedString("ShadowVisibleList"));
+  m_pDirectionalShadowRenderingPass->SetShadowVisibleCountResourceName(xiiMakeHashedString("ShadowVisibleCount"));
+  m_pDirectionalShadowRenderingPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
+  m_pDirectionalShadowRenderingPass->SetShadowDepthAtlasResourceName(xiiMakeHashedString("ShadowDepthAtlas"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -992,6 +1007,44 @@ void xiiRenderDataManager::AddDirectionalShadowCullingPass(xiiRenderGraphRuntime
   inout_runtime.AddPass(m_pShadowCasterCullingPass.Borrow());
 }
 
+void xiiRenderDataManager::AddDirectionalShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureDirectionalShadowRenderingResources(uiInstanceCount);
+
+  m_pDirectionalShadowRenderingPass->SetEnabled(bEnablePass);
+
+  xiiSharedPtr<xiiGALBuffer> pVisibleList = m_pDirectionalShadowRenderingVisibleListBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleListBuffer : m_pShadowCasterVisibleListBuffer;
+  xiiSharedPtr<xiiGALBuffer> pVisibleCount = m_pDirectionalShadowRenderingVisibleCountBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleCountBuffer : m_pShadowCasterVisibleCountBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCascadeData = m_pDirectionalShadowRenderingCascadeDataBuffer != nullptr ? m_pDirectionalShadowRenderingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
+
+  if (pVisibleList != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowVisibleList"), pVisibleList);
+  }
+
+  if (pVisibleCount != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowVisibleCount"), pVisibleCount);
+  }
+
+  if (pCascadeData != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowCascadeData"), pCascadeData);
+  }
+
+  if (m_pDirectionalShadowDepthAtlasResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowDepthAtlas"), m_pDirectionalShadowDepthAtlasResource);
+  }
+
+  inout_runtime.AddPass(m_pDirectionalShadowRenderingPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1134,6 +1187,20 @@ void xiiRenderDataManager::SetShadowCascadeSplitDistanceSample(xiiUInt32 uiSplit
   m_fShadowCascadeSplitDistances[uiSplitIndex] = xiiMath::Max(0.0f, fSplitDistance);
 }
 
+void xiiRenderDataManager::SetDirectionalShadowAtlasPackingSample(const xiiVec4& vAtlasPackingSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vDirectionalShadowAtlasPackingSample = vAtlasPackingSample;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowTexelSnapSample(const xiiVec4& vTexelSnapSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vDirectionalShadowTexelSnapSample = vTexelSnapSample;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
@@ -1260,6 +1327,34 @@ void xiiRenderDataManager::SetDirectionalShadowCullingVisibleCountResource(xiiSh
   m_pShadowCasterVisibleCountBuffer = pVisibleCountResource;
 }
 
+void xiiRenderDataManager::SetDirectionalShadowDepthAtlasResource(xiiSharedPtr<xiiGALResource> pDepthAtlasResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDirectionalShadowDepthAtlasResource = pDepthAtlasResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowRenderingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDirectionalShadowRenderingVisibleListBuffer = pVisibleListResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowRenderingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDirectionalShadowRenderingVisibleCountBuffer = pVisibleCountResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowRenderingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pDirectionalShadowRenderingCascadeDataBuffer = pCascadeDataResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1354,6 +1449,38 @@ void xiiRenderDataManager::ClearNormalRoughnessPrepassDrawFunc() const
 
   XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
   m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList, this));
+}
+
+void xiiRenderDataManager::SetDirectionalShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
+  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::SetDirectionalShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
+  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(drawFunc);
+}
+
+void xiiRenderDataManager::ClearDirectionalShadowRenderingSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
+  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList, this));
+}
+
+void xiiRenderDataManager::ClearDirectionalShadowRenderingDrawFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
+  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2027,6 +2154,46 @@ void xiiRenderDataManager::EnsureDirectionalShadowCullingResources(xiiUInt32 uiI
     if (m_pShadowCasterVisibleCountBuffer != nullptr)
     {
       m_pShadowCasterVisibleCountBuffer->SetDebugName("RenderDataManager::ShadowVisibleCount");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureDirectionalShadowRenderingResources(xiiUInt32 uiInstanceCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  EnsureDirectionalShadowCullingResources(xiiMath::Max(1U, uiInstanceCapacity));
+
+  if (m_pDirectionalShadowRenderingVisibleListBuffer == nullptr)
+  {
+    m_pDirectionalShadowRenderingVisibleListBuffer = m_pShadowCasterVisibleListBuffer;
+  }
+
+  if (m_pDirectionalShadowRenderingVisibleCountBuffer == nullptr)
+  {
+    m_pDirectionalShadowRenderingVisibleCountBuffer = m_pShadowCasterVisibleCountBuffer;
+  }
+
+  if (m_pDirectionalShadowRenderingCascadeDataBuffer == nullptr)
+  {
+    m_pDirectionalShadowRenderingCascadeDataBuffer = m_pShadowCascadeDataBuffer;
+  }
+
+  if (m_pDirectionalShadowAtlasParamsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = 2U * sizeof(xiiVec4);
+
+    m_pDirectionalShadowAtlasParamsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pDirectionalShadowAtlasParamsBuffer != nullptr)
+    {
+      m_pDirectionalShadowAtlasParamsBuffer->SetDebugName("RenderDataManager::DirectionalShadowAtlasParams");
     }
   }
 }
@@ -2854,6 +3021,54 @@ void xiiRenderDataManager::SetupDirectionalShadowCullingCommandList(xiiGALComman
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ShadowVisibleCount"), m_pShadowCasterVisibleCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
+}
+
+void xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureDirectionalShadowRenderingResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  DirectionalShadowAtlasParams atlasParams;
+  atlasParams.m_vAtlasPacking = m_vDirectionalShadowAtlasPackingSample;
+  atlasParams.m_vTexelSnap    = m_vDirectionalShadowTexelSnapSample;
+
+  if (m_pDirectionalShadowAtlasParamsBuffer != nullptr)
+  {
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pDirectionalShadowAtlasParamsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&atlasParams), sizeof(atlasParams))).AssertSuccess();
+  }
+
+  xiiSharedPtr<xiiGALBuffer> pVisibleList = m_pDirectionalShadowRenderingVisibleListBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleListBuffer : m_pShadowCasterVisibleListBuffer;
+  xiiSharedPtr<xiiGALBuffer> pVisibleCount = m_pDirectionalShadowRenderingVisibleCountBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleCountBuffer : m_pShadowCasterVisibleCountBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCascadeData = m_pDirectionalShadowRenderingCascadeDataBuffer != nullptr ? m_pDirectionalShadowRenderingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
+
+  if (pVisibleList != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ShadowVisibleList"), pVisibleList->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (pVisibleCount != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ShadowVisibleCount"), pVisibleCount->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (pCascadeData != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ShadowCascadeData"), pCascadeData->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+
+  if (m_pDirectionalShadowAtlasParamsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ShadowAtlasParams"), m_pDirectionalShadowAtlasParamsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Vertex);
+  }
+}
+
+void xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const

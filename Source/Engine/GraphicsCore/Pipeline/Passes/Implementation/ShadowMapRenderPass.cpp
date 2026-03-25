@@ -8,8 +8,10 @@ xiiRenderGraphShadowMapRenderPass::xiiRenderGraphShadowMapRenderPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sShadowVisibleListResourceName = xiiMakeHashedString("ShadowVisibleList");
-  m_sShadowDepthAtlasResourceName  = xiiMakeHashedString("ShadowDepthAtlas");
+  m_sShadowVisibleListResourceName  = xiiMakeHashedString("ShadowVisibleList");
+  m_sShadowVisibleCountResourceName = xiiMakeHashedString("ShadowVisibleCount");
+  m_sShadowCascadeDataResourceName  = xiiMakeHashedString("ShadowCascadeData");
+  m_sShadowDepthAtlasResourceName   = xiiMakeHashedString("ShadowDepthAtlas");
 
   RebuildResourceLayout();
 }
@@ -22,6 +24,18 @@ void xiiRenderGraphShadowMapRenderPass::SetEnabled(bool bEnabled)
 void xiiRenderGraphShadowMapRenderPass::SetShadowVisibleListResourceName(xiiHashedString sResourceName)
 {
   m_sShadowVisibleListResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphShadowMapRenderPass::SetShadowVisibleCountResourceName(xiiHashedString sResourceName)
+{
+  m_sShadowVisibleCountResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphShadowMapRenderPass::SetShadowCascadeDataResourceName(xiiHashedString sResourceName)
+{
+  m_sShadowCascadeDataResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -104,6 +118,20 @@ void xiiRenderGraphShadowMapRenderPass::RebuildResourceLayout()
     input.m_sResourceName              = m_sShadowVisibleListResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::IndirectArgument | xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sShadowVisibleCountResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sShadowCascadeDataResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {

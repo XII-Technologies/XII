@@ -18,6 +18,8 @@ public:
   void SetEnabled(bool bEnabled);
 
   void SetShadowVisibleListResourceName(xiiHashedString sResourceName);
+  void SetShadowVisibleCountResourceName(xiiHashedString sResourceName);
+  void SetShadowCascadeDataResourceName(xiiHashedString sResourceName);
   void SetShadowDepthAtlasResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
@@ -36,6 +38,8 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sShadowVisibleListResourceName;
+  xiiHashedString               m_sShadowVisibleCountResourceName;
+  xiiHashedString               m_sShadowCascadeDataResourceName;
   xiiHashedString               m_sShadowDepthAtlasResourceName;
 
   SetupCommandListFunc       m_SetupCommandListFunc;
