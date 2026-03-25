@@ -49,9 +49,19 @@ namespace
       states.Add(xiiGALResourceStateFlags::ShaderResource);
     }
 
-    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RayTracingStructure))
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::BuildASRead))
     {
-      states.Add(xiiGALResourceStateFlags::BuildASRead | xiiGALResourceStateFlags::BuildASWrite | xiiGALResourceStateFlags::RayTracing);
+      states.Add(xiiGALResourceStateFlags::BuildASRead);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::BuildASWrite))
+    {
+      states.Add(xiiGALResourceStateFlags::BuildASWrite);
+    }
+
+    if (usage.m_AccessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RayTracing))
+    {
+      states.Add(xiiGALResourceStateFlags::RayTracing);
     }
 
     if (states.GetValue() == 0U)

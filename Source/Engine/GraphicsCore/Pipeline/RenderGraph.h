@@ -27,7 +27,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceAccessFlags
     DepthStencilReadOnly = XII_BIT(3),
     DepthStencilWrite    = XII_BIT(4),
     UnorderedAccess      = XII_BIT(5),
-    RayTracingStructure  = XII_BIT(6),
+    RayTracing           = XII_BIT(6),
+    BuildASRead          = XII_BIT(7),
+    BuildASWrite         = XII_BIT(8),
 
     Default = None
   };
@@ -40,7 +42,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceAccessFlags
     StorageType DepthStencilReadOnly : 1;
     StorageType DepthStencilWrite : 1;
     StorageType UnorderedAccess : 1;
-    StorageType RayTracingStructure : 1;
+    StorageType RayTracing : 1;
+    StorageType BuildASRead : 1;
+    StorageType BuildASWrite : 1;
   };
 };
 
