@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
+#include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
@@ -57,6 +58,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pInstanceUpdatePass = XII_DEFAULT_NEW(xiiRenderGraphInstanceUpdatePass);
   m_pInstanceUpdatePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupInstanceUpdateCommandList, this));
   m_pInstanceUpdatePass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+
+  m_pCoarseFrustumCullingPass = XII_DEFAULT_NEW(xiiRenderGraphCoarseFrustumCullingPass);
+  m_pCoarseFrustumCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupCoarseFrustumCullingCommandList, this));
+  m_pCoarseFrustumCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -564,6 +569,48 @@ void xiiRenderDataManager::AddInstanceTransformAndBoundsUpdatePass(xiiRenderGrap
   inout_runtime.AddPass(m_pInstanceUpdatePass.Borrow());
 }
 
+void xiiRenderDataManager::AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pCoarseFrustumCullingPass != nullptr, "Coarse frustum culling pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureInstanceUpdateResources(uiInstanceCount);
+  EnsureCoarseFrustumCullingResources(uiInstanceCount);
+
+  if (m_pCameraFrustumPlanesBuffer != nullptr)
+  {
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddCoarseFrustumCullingPass");
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pCameraFrustumPlanesBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(m_vCoarseFrustumPlaneSamples), sizeof(m_vCoarseFrustumPlaneSamples))).AssertSuccess();
+  }
+
+  m_pCoarseFrustumCullingPass->SetEnabled(bEnableDispatch);
+  m_pCoarseFrustumCullingPass->SetDispatchThreadGroupCount(uiInstanceCount, 1U, 1U);
+
+  if (m_pGpuSceneBoundsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuSceneBounds"), m_pGpuSceneBoundsBuffer);
+  }
+
+  if (m_pCameraFrustumPlanesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("CameraFrustumPlanes"), m_pCameraFrustumPlanesBuffer);
+  }
+
+  if (m_pGpuVisibleInstancesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleInstances"), m_pGpuVisibleInstancesBuffer);
+  }
+
+  if (m_pGpuVisibleInstanceCountBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleInstanceCount"), m_pGpuVisibleInstanceCountBuffer);
+  }
+
+  inout_runtime.AddPass(m_pCoarseFrustumCullingPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -673,6 +720,18 @@ void xiiRenderDataManager::SetSceneTransformsSample(const xiiShaderTransform& sc
   XII_LOCK(m_Mutex);
 
   m_SceneTransformsSample = sceneTransformSample;
+}
+
+void xiiRenderDataManager::SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, const xiiVec4& vPlane) const
+{
+  if (uiPlaneIndex >= XII_ARRAY_SIZE(m_vCoarseFrustumPlaneSamples))
+  {
+    return;
+  }
+
+  XII_LOCK(m_Mutex);
+
+  m_vCoarseFrustumPlaneSamples[uiPlaneIndex] = vPlane;
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -1114,6 +1173,32 @@ void xiiRenderDataManager::EnsureInstanceUpdateResources(xiiUInt32 uiElementCoun
   }
 }
 
+void xiiRenderDataManager::EnsureCoarseFrustumCullingResources(xiiUInt32 uiElementCount) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  EnsureGpuDrivenVisibilityResources(xiiMath::Max(1U, uiElementCount));
+
+  const xiiUInt64 uiPlaneBufferSize = 6ULL * sizeof(xiiVec4);
+  if (m_pCameraFrustumPlanesBuffer == nullptr || m_pCameraFrustumPlanesBuffer->GetDescription().m_uiSize < uiPlaneBufferSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiPlaneBufferSize;
+
+    m_pCameraFrustumPlanesBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pCameraFrustumPlanesBuffer != nullptr)
+    {
+      m_pCameraFrustumPlanesBuffer->SetDebugName("RenderDataManager::CameraFrustumPlanes");
+    }
+  }
+}
+
 void xiiRenderDataManager::EnsureLodSelectionResources(xiiUInt32 uiElementCount) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -1497,6 +1582,73 @@ void xiiRenderDataManager::SetupInstanceUpdateCommandList(xiiGALCommandList& com
   if (m_pGpuSceneBoundsBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuSceneBounds"), m_pGpuSceneBoundsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupCoarseFrustumCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureInstanceUpdateResources(uiInstanceCount);
+  EnsureCoarseFrustumCullingResources(uiInstanceCount);
+
+  if (m_hCoarseFrustumCullingShader.IsValid() == false)
+  {
+    m_hCoarseFrustumCullingShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/CoarseFrustumCulling.xiiShader");
+  }
+
+  if (m_pCoarseFrustumCullingPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hCoarseFrustumCullingShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pCoarseFrustumCullingPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pCoarseFrustumCullingPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pCoarseFrustumCullingPipelineState);
+
+  if (m_pGpuSceneBoundsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuSceneBounds"), m_pGpuSceneBoundsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pCameraFrustumPlanesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("CameraFrustumPlanes"), m_pCameraFrustumPlanesBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pGpuVisibleInstancesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstances"), m_pGpuVisibleInstancesBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+
+  if (m_pGpuVisibleInstanceCountBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstanceCount"), m_pGpuVisibleInstanceCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 

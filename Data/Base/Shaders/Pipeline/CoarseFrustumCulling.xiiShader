@@ -1,0 +1,65 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4> GpuSceneBounds;
+StructuredBuffer<float4> CameraFrustumPlanes;
+RWStructuredBuffer<uint> GpuVisibleInstances;
+RWStructuredBuffer<uint> GpuVisibleInstanceCount;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint instanceIndex = dispatchThreadId.x;
+
+  if (instanceIndex == 0 && GpuVisibleInstanceCount.Length > 0)
+  {
+    GpuVisibleInstanceCount[0] = 0;
+  }
+
+  if (instanceIndex >= GpuSceneBounds.Length || GpuVisibleInstances.Length == 0 || GpuVisibleInstanceCount.Length == 0)
+  {
+    return;
+  }
+
+  const float4 bounds = GpuSceneBounds[instanceIndex];
+  const float3 center = bounds.xyz;
+  const float  radius = max(bounds.w, 0.001f);
+
+  if (CameraFrustumPlanes.Length < 6)
+  {
+    uint visibleWriteIndex = 0;
+    InterlockedAdd(GpuVisibleInstanceCount[0], 1, visibleWriteIndex);
+    if (visibleWriteIndex < GpuVisibleInstances.Length)
+    {
+      GpuVisibleInstances[visibleWriteIndex] = instanceIndex;
+    }
+    return;
+  }
+
+  const float d0 = dot(CameraFrustumPlanes[0], float4(center, 1.0f)) + radius;
+  const float d1 = dot(CameraFrustumPlanes[1], float4(center, 1.0f)) + radius;
+  const float d2 = dot(CameraFrustumPlanes[2], float4(center, 1.0f)) + radius;
+  const float d3 = dot(CameraFrustumPlanes[3], float4(center, 1.0f)) + radius;
+  const float d4 = dot(CameraFrustumPlanes[4], float4(center, 1.0f)) + radius;
+  const float d5 = dot(CameraFrustumPlanes[5], float4(center, 1.0f)) + radius;
+
+  const float minDistance = min(min(min(d0, d1), min(d2, d3)), min(d4, d5));
+  const bool  isVisible   = minDistance >= 0.0f;
+
+  if (!isVisible)
+  {
+    return;
+  }
+
+  uint visibleWriteIndex = 0;
+  InterlockedAdd(GpuVisibleInstanceCount[0], 1, visibleWriteIndex);
+
+  if (visibleWriteIndex < GpuVisibleInstances.Length)
+  {
+    GpuVisibleInstances[visibleWriteIndex] = instanceIndex;
+  }
+}

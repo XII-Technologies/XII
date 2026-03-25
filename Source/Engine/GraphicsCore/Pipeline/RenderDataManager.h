@@ -19,6 +19,7 @@ class xiiRenderGraphRuntime;
 class xiiRenderGraphFrameSetupPass;
 class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphInstanceUpdatePass;
+class xiiRenderGraphCoarseFrustumCullingPass;
 class xiiRenderGraphLodSelectionPass;
 class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphSkinningPass;
@@ -223,6 +224,9 @@ public:
   /// \brief Registers the async instance transform and bounds update pass.
   void AddInstanceTransformAndBoundsUpdatePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers the async coarse frustum culling reduction pass before depth tests.
+  void AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -243,6 +247,9 @@ public:
 
   /// \brief Updates a representative scene-transform sample consumed by the instance update pass.
   void SetSceneTransformsSample(const xiiShaderTransform& sceneTransformSample) const;
+
+  /// \brief Updates staged camera frustum planes consumed by coarse frustum culling.
+  void SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, const xiiVec4& vPlane) const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -290,6 +297,7 @@ private:
   void EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const;
   void EnsureSkinningAndMorphResources(xiiUInt32 uiElementCount) const;
   void EnsureInstanceUpdateResources(xiiUInt32 uiElementCount) const;
+  void EnsureCoarseFrustumCullingResources(xiiUInt32 uiElementCount) const;
   void EnsureLodSelectionResources(xiiUInt32 uiElementCount) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
@@ -297,6 +305,7 @@ private:
   void SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupInstanceUpdateCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupCoarseFrustumCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -322,11 +331,13 @@ private:
   mutable xiiShaderResourceHandle                           m_hDynamicResolutionShader;
   mutable xiiShaderResourceHandle                           m_hSkinningShader;
   mutable xiiShaderResourceHandle                           m_hInstanceUpdateShader;
+  mutable xiiShaderResourceHandle                           m_hCoarseFrustumCullingShader;
   mutable xiiShaderResourceHandle                           m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pDynamicResolutionPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pSkinningPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pInstanceUpdatePipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pCoarseFrustumCullingPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstancesBuffer;
@@ -344,6 +355,7 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pSceneTransformsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pUpdatedGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneBoundsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pCameraFrustumPlanesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuLodSelectionsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuDrawMetadataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pPreviousFrameStatsBuffer;
@@ -363,6 +375,7 @@ private:
   mutable xiiVec4                                           m_vSkinningInputSample                      = xiiVec4::MakeZero();
   mutable xiiVec4                                           m_vMorphWeightsSample                       = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
   mutable xiiShaderTransform                                m_SceneTransformsSample                     = {};
+  mutable xiiVec4                                           m_vCoarseFrustumPlaneSamples[6]            = {xiiVec4(1.0f, 0.0f, 0.0f, 1.0f), xiiVec4(-1.0f, 0.0f, 0.0f, 1.0f), xiiVec4(0.0f, 1.0f, 0.0f, 1.0f), xiiVec4(0.0f, -1.0f, 0.0f, 1.0f), xiiVec4(0.0f, 0.0f, 1.0f, 0.0f), xiiVec4(0.0f, 0.0f, -1.0f, 1.0f)};
   mutable xiiPreviousFrameStats                             m_PreviousFrameStatsSample;
   mutable xiiPerFrameCameraUploadData                       m_PerFrameCameraConstantsSample = {};
   mutable xiiPerFrameLightUploadData                        m_PerFrameLightDataSample       = {};
@@ -370,6 +383,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphFrameSetupPass>        m_pFrameSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphInstanceUpdatePass>    m_pInstanceUpdatePass;
+  mutable xiiUniquePtr<xiiRenderGraphCoarseFrustumCullingPass> m_pCoarseFrustumCullingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>      m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>          m_pSkinningPass;
