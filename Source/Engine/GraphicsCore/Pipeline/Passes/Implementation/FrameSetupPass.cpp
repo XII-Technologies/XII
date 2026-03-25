@@ -10,8 +10,10 @@ xiiRenderGraphFrameSetupPass::xiiRenderGraphFrameSetupPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
   m_PassDescription.m_bHasSideEffects = true;
 
+  m_sPreviousFrameStatsResourceName = xiiMakeHashedString("PreviousFrameStats");
   m_sFrameConstantsResourceName = xiiMakeHashedString("FrameConstants");
   m_sFrameTimingResourceName    = xiiMakeHashedString("FrameTimingData");
+  m_sFrameTimestampRangesResourceName = xiiMakeHashedString("FrameTimestampRanges");
 
   RebuildResourceLayout();
 }
@@ -26,6 +28,12 @@ void xiiRenderGraphFrameSetupPass::SetHasSideEffects(bool bHasSideEffects)
   m_PassDescription.m_bHasSideEffects = bHasSideEffects;
 }
 
+void xiiRenderGraphFrameSetupPass::SetPreviousFrameStatsResourceName(xiiHashedString sResourceName)
+{
+  m_sPreviousFrameStatsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
 void xiiRenderGraphFrameSetupPass::SetFrameConstantsResourceName(xiiHashedString sResourceName)
 {
   m_sFrameConstantsResourceName = sResourceName;
@@ -35,6 +43,12 @@ void xiiRenderGraphFrameSetupPass::SetFrameConstantsResourceName(xiiHashedString
 void xiiRenderGraphFrameSetupPass::SetFrameTimingResourceName(xiiHashedString sResourceName)
 {
   m_sFrameTimingResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphFrameSetupPass::SetFrameTimestampRangesResourceName(xiiHashedString sResourceName)
+{
+  m_sFrameTimestampRangesResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -112,6 +126,13 @@ void xiiRenderGraphFrameSetupPass::RebuildResourceLayout()
   m_PassDescription.m_Outputs.Clear();
 
   {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sPreviousFrameStatsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sFrameConstantsResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write;
@@ -123,6 +144,13 @@ void xiiRenderGraphFrameSetupPass::RebuildResourceLayout()
     output.m_sResourceName              = m_sFrameTimingResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write;
     output.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
+    output.m_sResourceName              = m_sFrameTimestampRangesResourceName;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
+    output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }
 }
 

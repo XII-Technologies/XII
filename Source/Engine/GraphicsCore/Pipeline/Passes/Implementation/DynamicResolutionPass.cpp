@@ -5,10 +5,11 @@
 xiiRenderGraphDynamicResolutionPass::xiiRenderGraphDynamicResolutionPass()
 {
   m_PassDescription.m_sPassName       = xiiMakeHashedString("DynamicResolution");
-  m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
+  m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
   m_sFrameTimingResourceName       = xiiMakeHashedString("FrameTimingData");
+  m_sCameraVelocityResourceName    = xiiMakeHashedString("CameraVelocityData");
   m_sDynamicResolutionResourceName = xiiMakeHashedString("DynamicResolutionData");
 
   RebuildResourceLayout();
@@ -34,6 +35,12 @@ void xiiRenderGraphDynamicResolutionPass::SetDispatchThreadGroupCount(xiiUInt32 
 void xiiRenderGraphDynamicResolutionPass::SetFrameTimingResourceName(xiiHashedString sResourceName)
 {
   m_sFrameTimingResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphDynamicResolutionPass::SetCameraVelocityResourceName(xiiHashedString sResourceName)
+{
+  m_sCameraVelocityResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -116,6 +123,13 @@ void xiiRenderGraphDynamicResolutionPass::RebuildResourceLayout()
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
     input.m_sResourceName              = m_sFrameTimingResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sCameraVelocityResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }

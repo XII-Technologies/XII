@@ -20,6 +20,7 @@ public:
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
   void SetFrameTimingResourceName(xiiHashedString sResourceName);
+  void SetCameraVelocityResourceName(xiiHashedString sResourceName);
   void SetDynamicResolutionResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
@@ -38,6 +39,7 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sFrameTimingResourceName;
+  xiiHashedString               m_sCameraVelocityResourceName;
   xiiHashedString               m_sDynamicResolutionResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
