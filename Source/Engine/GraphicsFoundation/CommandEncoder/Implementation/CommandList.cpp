@@ -39,6 +39,11 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStateTransitionMode, 1)
   XII_ENUM_CONSTANT(xiiGALStateTransitionMode::Verify),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALASCopyMode, 1)
+  XII_ENUM_CONSTANT(xiiGALASCopyMode::Clone),
+  XII_ENUM_CONSTANT(xiiGALASCopyMode::Compact),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -1337,6 +1342,76 @@ void xiiGALCommandList::TraceRaysIndirect(const xiiGALTraceRaysIndirectDescripti
   ++m_CommandListStatistics.m_CommandListCounters.m_uiTraceRaysIndirect;
 
   TraceRaysIndirectPlatform(description);
+}
+
+void xiiGALCommandList::BuildBLAS(const xiiGALBuildBLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BuildBLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "BuildBLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "BuildBLAS command arguments are invalid. BuildBLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pBottomLevelAS != nullptr, "BuildBLAS command arguments are invalid. BLAS handle is invalid.");
+  XII_ASSERT_DEV(description.m_pScratchBuffer != nullptr, "BuildBLAS command arguments are invalid. Scratch buffer handle is invalid.");
+
+  const xiiGALBottomLevelASCreationDescription& blasDescription = description.m_pBottomLevelAS->GetDescription();
+  XII_ASSERT_DEV(description.m_Triangles.GetCount() == blasDescription.m_Triangles.GetCount(), "BuildBLAS command arguments are invalid. Triangle build input count ({}) must match BLAS triangle geometry count ({}).", description.m_Triangles.GetCount(), blasDescription.m_Triangles.GetCount());
+  XII_ASSERT_DEV(description.m_BoundingBoxes.GetCount() == blasDescription.m_BoundingBoxes.GetCount(), "BuildBLAS command arguments are invalid. Bounding box build input count ({}) must match BLAS AABB geometry count ({}).", description.m_BoundingBoxes.GetCount(), blasDescription.m_BoundingBoxes.GetCount());
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildBLAS;
+
+  BuildBLASPlatform(description);
+}
+
+void xiiGALCommandList::BuildTLAS(const xiiGALBuildTLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BuildTLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "BuildTLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "BuildTLAS command arguments are invalid. BuildTLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pTopLevelAS != nullptr, "BuildTLAS command arguments are invalid. TLAS handle is invalid.");
+  XII_ASSERT_DEV(description.m_pInstanceBuffer != nullptr, "BuildTLAS command arguments are invalid. Instance buffer handle is invalid.");
+  XII_ASSERT_DEV(description.m_pScratchBuffer != nullptr, "BuildTLAS command arguments are invalid. Scratch buffer handle is invalid.");
+  XII_ASSERT_DEV(description.m_uiInstanceCount > 0U, "BuildTLAS command arguments are invalid. InstanceCount must be non-zero.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildTLAS;
+
+  BuildTLASPlatform(description);
+}
+
+void xiiGALCommandList::CopyBLAS(const xiiGALCopyBLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyBLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "CopyBLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "CopyBLAS command arguments are invalid. CopyBLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pSourceBottomLevelAS != nullptr, "CopyBLAS command arguments are invalid. Source BLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationBottomLevelAS != nullptr, "CopyBLAS command arguments are invalid. Destination BLAS is invalid.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyBLAS;
+
+  CopyBLASPlatform(description);
+}
+
+void xiiGALCommandList::CopyTLAS(const xiiGALCopyTLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyTLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "CopyTLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "CopyTLAS command arguments are invalid. CopyTLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pSourceTopLevelAS != nullptr, "CopyTLAS command arguments are invalid. Source TLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationTopLevelAS != nullptr, "CopyTLAS command arguments are invalid. Destination TLAS is invalid.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyTLAS;
+
+  CopyTLASPlatform(description);
 }
 
 void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
