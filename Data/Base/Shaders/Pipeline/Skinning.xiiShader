@@ -1,0 +1,40 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4> SkinningInput;
+StructuredBuffer<float4> BonePalette;
+StructuredBuffer<float4> MorphWeights;
+RWStructuredBuffer<float4> SkinnedVertices;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint index = dispatchThreadId.x;
+
+  if (index >= SkinningInput.Length || index >= SkinnedVertices.Length)
+  {
+    return;
+  }
+
+  float4 baseVertex = SkinningInput[index];
+
+  float4 poseDelta = 0.0f;
+  if (BonePalette.Length > 0)
+  {
+    // Placeholder skeletal influence until full bone-index/weight streams are wired.
+    poseDelta = BonePalette[index % BonePalette.Length] * 0.05f;
+  }
+
+  float4 morphDelta = 0.0f;
+  if (MorphWeights.Length > 0)
+  {
+    // Placeholder morph contribution until morph-target delta streams are wired.
+    morphDelta = MorphWeights[index % MorphWeights.Length] * 0.1f;
+  }
+
+  SkinnedVertices[index] = baseVertex + poseDelta + morphDelta;
+}

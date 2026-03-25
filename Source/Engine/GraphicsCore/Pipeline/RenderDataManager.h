@@ -19,6 +19,7 @@ class xiiRenderGraphRuntime;
 class xiiRenderGraphFrameSetupPass;
 class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphDynamicResolutionPass;
+class xiiRenderGraphSkinningPass;
 class xiiRenderGraphPerFrameBufferUploadPass;
 class xiiRenderGraphRayTracedShadowsPass;
 
@@ -214,6 +215,9 @@ public:
   /// \brief Registers the dynamic-resolution pass and required resources into the provided render graph runtime.
   void AddDynamicResolutionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = true) const;
 
+  /// \brief Registers the skinning+morph compute pass for early async deformer evaluation.
+  void AddSkinningAndMorphPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the per-frame upload pass for camera, light and global buffers.
   void AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableUploads = true) const;
 
@@ -222,6 +226,12 @@ public:
 
   /// \brief Updates the camera velocity sample consumed by the dynamic-resolution shader.
   void SetDynamicResolutionCameraVelocitySample(const xiiVec4& vCameraVelocitySample) const;
+
+  /// \brief Updates a representative skinning-input sample consumed by the skinning+morph pass.
+  void SetSkinningInputSample(const xiiVec4& vSkinningInputSample) const;
+
+  /// \brief Updates a representative morph-weights sample consumed by the skinning+morph pass.
+  void SetMorphWeightsSample(const xiiVec4& vMorphWeightsSample) const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -267,10 +277,12 @@ private:
 
   void EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const;
+  void EnsureSkinningAndMorphResources(xiiUInt32 uiElementCount) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -293,8 +305,10 @@ private:
   mutable xiiDynamicArray<xiiUInt32>                        m_GpuDrivenVisibleInstanceIndices;
   mutable xiiShaderResourceHandle                           m_hGpuDrivenVisibilityShader;
   mutable xiiShaderResourceHandle                           m_hDynamicResolutionShader;
+  mutable xiiShaderResourceHandle                           m_hSkinningShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pDynamicResolutionPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pSkinningPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountBuffer;
@@ -304,6 +318,10 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionFrameTimingBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionCameraVelocityBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pSkinningInputBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pSkinningBonePaletteBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pMorphWeightsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pSkinnedVerticesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pPreviousFrameStatsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pFrameConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pFrameTimestampRangesBuffer;
@@ -318,6 +336,8 @@ private:
   mutable bool                                              m_bGpuVisibilityUseInternalIndirectDispatch = false;
   mutable xiiVec4                                           m_vDynamicResolutionFrameTimingSample       = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
   mutable xiiVec4                                           m_vDynamicResolutionCameraVelocitySample    = xiiVec4::MakeZero();
+  mutable xiiVec4                                           m_vSkinningInputSample                      = xiiVec4::MakeZero();
+  mutable xiiVec4                                           m_vMorphWeightsSample                       = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
   mutable xiiPreviousFrameStats                             m_PreviousFrameStatsSample;
   mutable xiiPerFrameCameraUploadData                       m_PerFrameCameraConstantsSample = {};
   mutable xiiPerFrameLightUploadData                        m_PerFrameLightDataSample       = {};
@@ -325,6 +345,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphFrameSetupPass>        m_pFrameSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
+  mutable xiiUniquePtr<xiiRenderGraphSkinningPass>          m_pSkinningPass;
   mutable xiiUniquePtr<xiiRenderGraphPerFrameBufferUploadPass> m_pPerFrameBufferUploadPass;
   mutable xiiUniquePtr<xiiRenderGraphRayTracedShadowsPass>  m_pRayTracedShadowsPass;
 };

@@ -10,6 +10,7 @@ xiiRenderGraphSkinningPass::xiiRenderGraphSkinningPass()
 
   m_sSkinningInputResourceName       = xiiMakeHashedString("SkinningInput");
   m_sBonePaletteResourceName         = xiiMakeHashedString("BonePalette");
+  m_sMorphWeightsResourceName        = xiiMakeHashedString("MorphWeights");
   m_sSkinnedVertexOutputResourceName = xiiMakeHashedString("SkinnedVertices");
 
   RebuildResourceLayout();
@@ -36,6 +37,12 @@ void xiiRenderGraphSkinningPass::SetSkinningInputResourceName(xiiHashedString sR
 void xiiRenderGraphSkinningPass::SetBonePaletteResourceName(xiiHashedString sResourceName)
 {
   m_sBonePaletteResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphSkinningPass::SetMorphWeightsResourceName(xiiHashedString sResourceName)
+{
+  m_sMorphWeightsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -115,6 +122,13 @@ void xiiRenderGraphSkinningPass::RebuildResourceLayout()
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
     input.m_sResourceName              = m_sBonePaletteResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sMorphWeightsResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }

@@ -19,6 +19,7 @@ public:
 
   void SetSkinningInputResourceName(xiiHashedString sResourceName);
   void SetBonePaletteResourceName(xiiHashedString sResourceName);
+  void SetMorphWeightsResourceName(xiiHashedString sResourceName);
   void SetSkinnedVertexOutputResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
@@ -37,6 +38,7 @@ private:
 
   xiiHashedString m_sSkinningInputResourceName;
   xiiHashedString m_sBonePaletteResourceName;
+  xiiHashedString m_sMorphWeightsResourceName;
   xiiHashedString m_sSkinnedVertexOutputResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;

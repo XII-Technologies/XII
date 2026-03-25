@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
+#include <GraphicsCore/Pipeline/Passes/SkinningPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
@@ -58,6 +59,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pDynamicResolutionPass = XII_DEFAULT_NEW(xiiRenderGraphDynamicResolutionPass);
   m_pDynamicResolutionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDynamicResolutionCommandList, this));
   m_pDynamicResolutionPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+
+  m_pSkinningPass = XII_DEFAULT_NEW(xiiRenderGraphSkinningPass);
+  m_pSkinningPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSkinningAndMorphCommandList, this));
+  m_pSkinningPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pPerFrameBufferUploadPass = XII_DEFAULT_NEW(xiiRenderGraphPerFrameBufferUploadPass);
   m_pPerFrameBufferUploadPass->SetUploadCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::UploadPerFrameBufferDataCommandList, this));
@@ -458,6 +463,55 @@ void xiiRenderDataManager::AddDynamicResolutionPass(xiiRenderGraphRuntime& inout
   inout_runtime.AddPass(m_pDynamicResolutionPass.Borrow());
 }
 
+void xiiRenderDataManager::AddSkinningAndMorphPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pSkinningPass != nullptr, "Skinning pass must be initialized.");
+
+  const xiiUInt32 uiDeformerElementCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureSkinningAndMorphResources(uiDeformerElementCount);
+
+  if (m_pSkinningInputBuffer != nullptr || m_pMorphWeightsBuffer != nullptr)
+  {
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddSkinningAndMorphPass");
+    if (m_pSkinningInputBuffer != nullptr)
+    {
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pSkinningInputBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vSkinningInputSample), sizeof(m_vSkinningInputSample))).AssertSuccess();
+    }
+
+    if (m_pMorphWeightsBuffer != nullptr)
+    {
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pMorphWeightsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vMorphWeightsSample), sizeof(m_vMorphWeightsSample))).AssertSuccess();
+    }
+  }
+
+  m_pSkinningPass->SetEnabled(bEnableDispatch);
+  m_pSkinningPass->SetDispatchThreadGroupCount(uiDeformerElementCount, 1U, 1U);
+
+  if (m_pSkinningInputBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SkinningInput"), m_pSkinningInputBuffer);
+  }
+
+  if (m_pSkinningBonePaletteBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("BonePalette"), m_pSkinningBonePaletteBuffer);
+  }
+
+  if (m_pMorphWeightsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("MorphWeights"), m_pMorphWeightsBuffer);
+  }
+
+  if (m_pSkinnedVerticesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SkinnedVertices"), m_pSkinnedVerticesBuffer);
+  }
+
+  inout_runtime.AddPass(m_pSkinningPass.Borrow());
+}
+
 void xiiRenderDataManager::AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableUploads /*= true*/) const
 {
   XII_LOCK(m_Mutex);
@@ -503,6 +557,20 @@ void xiiRenderDataManager::SetDynamicResolutionCameraVelocitySample(const xiiVec
   XII_LOCK(m_Mutex);
 
   m_vDynamicResolutionCameraVelocitySample = vCameraVelocitySample;
+}
+
+void xiiRenderDataManager::SetSkinningInputSample(const xiiVec4& vSkinningInputSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vSkinningInputSample = vSkinningInputSample;
+}
+
+void xiiRenderDataManager::SetMorphWeightsSample(const xiiVec4& vMorphWeightsSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vMorphWeightsSample = vMorphWeightsSample;
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -802,6 +870,86 @@ void xiiRenderDataManager::EnsureDynamicResolutionResources(xiiUInt32 uiElementC
   }
 }
 
+void xiiRenderDataManager::EnsureSkinningAndMorphResources(xiiUInt32 uiElementCount) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt32 uiResolvedElementCount = xiiMath::Max(1U, uiElementCount);
+
+  const xiiUInt64 uiInputSize = static_cast<xiiUInt64>(uiResolvedElementCount) * sizeof(xiiVec4);
+  if (m_pSkinningInputBuffer == nullptr || m_pSkinningInputBuffer->GetDescription().m_uiSize < uiInputSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiInputSize;
+
+    m_pSkinningInputBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pSkinningInputBuffer != nullptr)
+    {
+      m_pSkinningInputBuffer->SetDebugName("RenderDataManager::SkinningInput");
+    }
+  }
+
+  const xiiUInt64 uiBonePaletteSize = static_cast<xiiUInt64>(uiResolvedElementCount) * sizeof(xiiShaderTransform);
+  if (m_pSkinningBonePaletteBuffer == nullptr || m_pSkinningBonePaletteBuffer->GetDescription().m_uiSize < uiBonePaletteSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiShaderTransform);
+    bufferDescription.m_uiSize              = uiBonePaletteSize;
+
+    m_pSkinningBonePaletteBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pSkinningBonePaletteBuffer != nullptr)
+    {
+      m_pSkinningBonePaletteBuffer->SetDebugName("RenderDataManager::BonePalette");
+    }
+  }
+
+  const xiiUInt64 uiMorphWeightsSize = static_cast<xiiUInt64>(uiResolvedElementCount) * sizeof(xiiVec4);
+  if (m_pMorphWeightsBuffer == nullptr || m_pMorphWeightsBuffer->GetDescription().m_uiSize < uiMorphWeightsSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiMorphWeightsSize;
+
+    m_pMorphWeightsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pMorphWeightsBuffer != nullptr)
+    {
+      m_pMorphWeightsBuffer->SetDebugName("RenderDataManager::MorphWeights");
+    }
+  }
+
+  const xiiUInt64 uiSkinnedVerticesSize = static_cast<xiiUInt64>(uiResolvedElementCount) * sizeof(xiiVec4);
+  if (m_pSkinnedVerticesBuffer == nullptr || m_pSkinnedVerticesBuffer->GetDescription().m_uiSize < uiSkinnedVerticesSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiSkinnedVerticesSize;
+
+    m_pSkinnedVerticesBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pSkinnedVerticesBuffer != nullptr)
+    {
+      m_pSkinnedVerticesBuffer->SetDebugName("RenderDataManager::SkinnedVertices");
+    }
+  }
+}
+
 void xiiRenderDataManager::EnsureFrameSetupResources() const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -1010,6 +1158,71 @@ void xiiRenderDataManager::SetupDynamicResolutionCommandList(xiiGALCommandList& 
   if (m_pDynamicResolutionBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("DynamicResolutionData"), m_pDynamicResolutionBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureSkinningAndMorphResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  if (m_hSkinningShader.IsValid() == false)
+  {
+    m_hSkinningShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Skinning.xiiShader");
+  }
+
+  if (m_pSkinningPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hSkinningShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pSkinningPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pSkinningPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pSkinningPipelineState);
+
+  if (m_pSkinningInputBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("SkinningInput"), m_pSkinningInputBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pSkinningBonePaletteBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("BonePalette"), m_pSkinningBonePaletteBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pMorphWeightsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("MorphWeights"), m_pMorphWeightsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pSkinnedVerticesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("SkinnedVertices"), m_pSkinnedVerticesBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 
