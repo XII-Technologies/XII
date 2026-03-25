@@ -9,8 +9,9 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphFrameSetupPass final : public xiiRenderGraphPassBase
 {
 public:
-  using SetupCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
-  using ExecuteCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using SetupCommandListFunc       = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using ExecuteCommandListFunc     = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using PostExecuteCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphFrameSetupPass();
 
@@ -20,8 +21,10 @@ public:
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetExecuteCommandListFunc(ExecuteCommandListFunc executeCommandListFunc);
+  void SetPostExecuteCommandListFunc(PostExecuteCommandListFunc postExecuteCommandListFunc);
   void ClearSetupCommandListFunc();
   void ClearExecuteCommandListFunc();
+  void ClearPostExecuteCommandListFunc();
 
   [[nodiscard]] virtual const xiiRenderGraphPassDescription& GetDescription() const override;
   virtual void                                               RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
@@ -33,8 +36,9 @@ private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sFrameConstantsResourceName;
 
-  SetupCommandListFunc   m_SetupCommandListFunc;
-  ExecuteCommandListFunc m_ExecuteCommandListFunc;
+  SetupCommandListFunc       m_SetupCommandListFunc;
+  ExecuteCommandListFunc     m_ExecuteCommandListFunc;
+  PostExecuteCommandListFunc m_PostExecuteCommandListFunc;
 
   bool m_bEnabled = false;
 };

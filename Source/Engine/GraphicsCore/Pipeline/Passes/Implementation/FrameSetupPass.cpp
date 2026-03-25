@@ -39,6 +39,11 @@ void xiiRenderGraphFrameSetupPass::SetExecuteCommandListFunc(ExecuteCommandListF
   m_ExecuteCommandListFunc = executeCommandListFunc;
 }
 
+void xiiRenderGraphFrameSetupPass::SetPostExecuteCommandListFunc(PostExecuteCommandListFunc postExecuteCommandListFunc)
+{
+  m_PostExecuteCommandListFunc = postExecuteCommandListFunc;
+}
+
 void xiiRenderGraphFrameSetupPass::ClearSetupCommandListFunc()
 {
   m_SetupCommandListFunc = {};
@@ -47,6 +52,11 @@ void xiiRenderGraphFrameSetupPass::ClearSetupCommandListFunc()
 void xiiRenderGraphFrameSetupPass::ClearExecuteCommandListFunc()
 {
   m_ExecuteCommandListFunc = {};
+}
+
+void xiiRenderGraphFrameSetupPass::ClearPostExecuteCommandListFunc()
+{
+  m_PostExecuteCommandListFunc = {};
 }
 
 const xiiRenderGraphPassDescription& xiiRenderGraphFrameSetupPass::GetDescription() const
@@ -69,6 +79,11 @@ void xiiRenderGraphFrameSetupPass::RecordCommands(const xiiRenderGraphPassExecut
   if (m_ExecuteCommandListFunc.IsValid())
   {
     m_ExecuteCommandListFunc(*executionContext.m_pCommandList, executionContext);
+  }
+
+  if (m_PostExecuteCommandListFunc.IsValid())
+  {
+    m_PostExecuteCommandListFunc(*executionContext.m_pCommandList, executionContext);
   }
 }
 
