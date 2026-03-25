@@ -8,8 +8,8 @@ xiiRenderGraphTaaResolvePass::xiiRenderGraphTaaResolvePass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sSceneColorInputResourceName = xiiMakeHashedString("SceneColor");
-  m_sMotionVectorsResourceName   = xiiMakeHashedString("MotionVectors");
+  m_sSceneColorInputResourceName  = xiiMakeHashedString("SceneColor");
+  m_sMotionVectorsResourceName    = xiiMakeHashedString("MotionVectors");
   m_sTaaHistoryOutputResourceName = xiiMakeHashedString("TaaHistory");
 
   RebuildResourceLayout();

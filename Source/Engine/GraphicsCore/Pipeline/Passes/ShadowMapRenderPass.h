@@ -9,8 +9,8 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphShadowMapRenderPass final : public xiiRenderGraphPassBase
 {
 public:
-  using SetupCommandListFunc      = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
-  using ExecuteCommandListFunc    = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using SetupCommandListFunc       = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using ExecuteCommandListFunc     = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
   using PostExecuteCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphShadowMapRenderPass();

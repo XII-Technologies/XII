@@ -8,7 +8,7 @@ xiiRenderGraphSsrResolvePass::xiiRenderGraphSsrResolvePass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sSsrTraceOutputResourceName = xiiMakeHashedString("SsrTraceOutput");
+  m_sSsrTraceOutputResourceName  = xiiMakeHashedString("SsrTraceOutput");
   m_sReflectionColorResourceName = xiiMakeHashedString("ReflectionColor");
 
   RebuildResourceLayout();

@@ -10,9 +10,9 @@ xiiRenderGraphFrameSetupPass::xiiRenderGraphFrameSetupPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
   m_PassDescription.m_bHasSideEffects = true;
 
-  m_sPreviousFrameStatsResourceName = xiiMakeHashedString("PreviousFrameStats");
-  m_sFrameConstantsResourceName = xiiMakeHashedString("FrameConstants");
-  m_sFrameTimingResourceName    = xiiMakeHashedString("FrameTimingData");
+  m_sPreviousFrameStatsResourceName   = xiiMakeHashedString("PreviousFrameStats");
+  m_sFrameConstantsResourceName       = xiiMakeHashedString("FrameConstants");
+  m_sFrameTimingResourceName          = xiiMakeHashedString("FrameTimingData");
   m_sFrameTimestampRangesResourceName = xiiMakeHashedString("FrameTimestampRanges");
 
   RebuildResourceLayout();

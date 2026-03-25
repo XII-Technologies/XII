@@ -8,7 +8,7 @@ xiiRenderGraphReactiveMaskPass::xiiRenderGraphReactiveMaskPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sColorInputResourceName        = xiiMakeHashedString("DistortionOutput");
+  m_sColorInputResourceName         = xiiMakeHashedString("DistortionOutput");
   m_sReactiveMaskOutputResourceName = xiiMakeHashedString("ReactiveMask");
 
   RebuildResourceLayout();

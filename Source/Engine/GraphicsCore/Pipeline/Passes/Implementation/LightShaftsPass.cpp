@@ -8,8 +8,8 @@ xiiRenderGraphLightShaftsPass::xiiRenderGraphLightShaftsPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sLightingInputResourceName      = xiiMakeHashedString("SssOutput");
-  m_sLightShaftsOutputResourceName  = xiiMakeHashedString("LightShaftsOutput");
+  m_sLightingInputResourceName     = xiiMakeHashedString("SssOutput");
+  m_sLightShaftsOutputResourceName = xiiMakeHashedString("LightShaftsOutput");
 
   RebuildResourceLayout();
 }

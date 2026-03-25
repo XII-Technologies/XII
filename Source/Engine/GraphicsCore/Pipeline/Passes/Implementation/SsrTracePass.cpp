@@ -8,9 +8,9 @@ xiiRenderGraphSsrTracePass::xiiRenderGraphSsrTracePass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sSceneDepthResourceName      = xiiMakeHashedString("SceneDepth");
-  m_sSceneNormalResourceName     = xiiMakeHashedString("GBufferNormal");
-  m_sSsrTraceOutputResourceName  = xiiMakeHashedString("SsrTraceOutput");
+  m_sSceneDepthResourceName     = xiiMakeHashedString("SceneDepth");
+  m_sSceneNormalResourceName    = xiiMakeHashedString("GBufferNormal");
+  m_sSsrTraceOutputResourceName = xiiMakeHashedString("SsrTraceOutput");
 
   RebuildResourceLayout();
 }

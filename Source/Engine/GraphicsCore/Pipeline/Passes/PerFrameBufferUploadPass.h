@@ -9,8 +9,8 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphPerFrameBufferUploadPass final : public xiiRenderGraphPassBase
 {
 public:
-  using SetupCommandListFunc  = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
-  using UploadCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using SetupCommandListFunc      = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using UploadCommandListFunc     = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
   using PostUploadCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphPerFrameBufferUploadPass();

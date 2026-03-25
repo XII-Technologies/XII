@@ -8,8 +8,8 @@ xiiRenderGraphExposureHistogramPass::xiiRenderGraphExposureHistogramPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sHdrColorInputResourceName      = xiiMakeHashedString("MotionBlurOutput");
-  m_sExposureHistogramResourceName  = xiiMakeHashedString("ExposureHistogram");
+  m_sHdrColorInputResourceName     = xiiMakeHashedString("MotionBlurOutput");
+  m_sExposureHistogramResourceName = xiiMakeHashedString("ExposureHistogram");
 
   RebuildResourceLayout();
 }

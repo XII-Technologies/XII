@@ -8,9 +8,9 @@ xiiRenderGraphUpscalePass::xiiRenderGraphUpscalePass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sColorInputResourceName             = xiiMakeHashedString("TemporalStabilizedOutput");
-  m_sDynamicResolutionDataResourceName  = xiiMakeHashedString("DynamicResolutionData");
-  m_sUpscaledOutputResourceName         = xiiMakeHashedString("UpscaledOutput");
+  m_sColorInputResourceName            = xiiMakeHashedString("TemporalStabilizedOutput");
+  m_sDynamicResolutionDataResourceName = xiiMakeHashedString("DynamicResolutionData");
+  m_sUpscaledOutputResourceName        = xiiMakeHashedString("UpscaledOutput");
 
   RebuildResourceLayout();
 }

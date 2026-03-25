@@ -3,12 +3,12 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
-#include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
-#include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
-#include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/DepthPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
+#include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
+#include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
@@ -831,9 +831,9 @@ void xiiRenderDataManager::AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_
   const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
   EnsureMainDepthPrepassResources(uiInstanceCount);
 
-  xiiSharedPtr<xiiGALBuffer> pIndirectCommands = m_pGpuIndirectDrawCommandsBuffer;
-  xiiSharedPtr<xiiGALBuffer> pIndirectCounts   = m_pGpuIndirectDrawCountsBuffer;
-  xiiSharedPtr<xiiGALResource> pSceneDepth     = m_pMainDepthPrepassDepthResource != nullptr ? m_pMainDepthPrepassDepthResource : m_pOccluderDepthResource;
+  xiiSharedPtr<xiiGALBuffer>   pIndirectCommands = m_pGpuIndirectDrawCommandsBuffer;
+  xiiSharedPtr<xiiGALBuffer>   pIndirectCounts   = m_pGpuIndirectDrawCountsBuffer;
+  xiiSharedPtr<xiiGALResource> pSceneDepth       = m_pMainDepthPrepassDepthResource != nullptr ? m_pMainDepthPrepassDepthResource : m_pOccluderDepthResource;
 
   m_pMainDepthPrepassPass->SetEnabled(bEnablePass);
 
@@ -1761,8 +1761,7 @@ void xiiRenderDataManager::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) c
 
   const xiiUInt32 uiResolvedRingSize = xiiMath::Max(1U, uiRingSize);
 
-  auto EnsureUploadBuffer = [&](xiiSharedPtr<xiiGALBuffer>& inout_pBuffer, xiiStringView sDebugName, xiiUInt32 uiStructSize)
-  {
+  auto EnsureUploadBuffer = [&](xiiSharedPtr<xiiGALBuffer>& inout_pBuffer, xiiStringView sDebugName, xiiUInt32 uiStructSize) {
     const xiiUInt64 uiRequiredSize = static_cast<xiiUInt64>(uiResolvedRingSize) * uiStructSize;
 
     if (inout_pBuffer != nullptr && inout_pBuffer->GetDescription().m_uiSize >= uiRequiredSize)

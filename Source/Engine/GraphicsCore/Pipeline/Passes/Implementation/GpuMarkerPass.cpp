@@ -2,8 +2,7 @@
 
 #include <GraphicsCore/Pipeline/Passes/GpuMarkerPass.h>
 
-xiiRenderGraphGpuMarkerPass::xiiRenderGraphGpuMarkerPass()
-  : m_MarkerColor(xiiColor::White)
+xiiRenderGraphGpuMarkerPass::xiiRenderGraphGpuMarkerPass() : m_MarkerColor(xiiColor::White)
 {
   m_PassDescription.m_sPassName       = xiiMakeHashedString("GpuMarker");
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;

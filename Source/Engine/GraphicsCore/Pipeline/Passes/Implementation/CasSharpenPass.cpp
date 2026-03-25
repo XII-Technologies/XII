@@ -8,7 +8,7 @@ xiiRenderGraphCasSharpenPass::xiiRenderGraphCasSharpenPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sColorInputResourceName   = xiiMakeHashedString("DepthOfFieldComposite");
+  m_sColorInputResourceName    = xiiMakeHashedString("DepthOfFieldComposite");
   m_sSharpenOutputResourceName = xiiMakeHashedString("CasSharpenOutput");
 
   RebuildResourceLayout();

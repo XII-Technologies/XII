@@ -8,9 +8,9 @@ xiiRenderGraphCoarseFrustumCullingPass::xiiRenderGraphCoarseFrustumCullingPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sSceneBoundsResourceName         = xiiMakeHashedString("GpuSceneBounds");
-  m_sCameraFrustumPlanesResourceName = xiiMakeHashedString("CameraFrustumPlanes");
-  m_sVisibleInstancesResourceName    = xiiMakeHashedString("GpuVisibleInstances");
+  m_sSceneBoundsResourceName          = xiiMakeHashedString("GpuSceneBounds");
+  m_sCameraFrustumPlanesResourceName  = xiiMakeHashedString("CameraFrustumPlanes");
+  m_sVisibleInstancesResourceName     = xiiMakeHashedString("GpuVisibleInstances");
   m_sVisibleInstanceCountResourceName = xiiMakeHashedString("GpuVisibleInstanceCount");
 
   RebuildResourceLayout();

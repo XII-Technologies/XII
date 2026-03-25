@@ -8,7 +8,7 @@ xiiRenderGraphInstanceUpdatePass::xiiRenderGraphInstanceUpdatePass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sSceneTransformsResourceName    = xiiMakeHashedString("SceneTransforms");
+  m_sSceneTransformsResourceName   = xiiMakeHashedString("SceneTransforms");
   m_sSkinnedVerticesResourceName   = xiiMakeHashedString("SkinnedVertices");
   m_sGpuSceneInstancesResourceName = xiiMakeHashedString("GpuSceneInstances");
   m_sGpuSceneBoundsResourceName    = xiiMakeHashedString("GpuSceneBounds");

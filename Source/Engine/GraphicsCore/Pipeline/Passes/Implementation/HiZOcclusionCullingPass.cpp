@@ -8,11 +8,11 @@ xiiRenderGraphHiZOcclusionCullingPass::xiiRenderGraphHiZOcclusionCullingPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sCandidateInstancesResourceName = xiiMakeHashedString("GpuSceneInstances");
+  m_sCandidateInstancesResourceName     = xiiMakeHashedString("GpuSceneInstances");
   m_sCandidateInstanceCountResourceName = xiiMakeHashedString("GpuVisibleCandidateCount");
-  m_sDepthPyramidResourceName       = xiiMakeHashedString("SceneDepthPyramid");
-  m_sVisibleInstancesResourceName   = xiiMakeHashedString("GpuVisibleInstances");
-  m_sVisibleInstanceCountResourceName = xiiMakeHashedString("GpuVisibleInstanceCount");
+  m_sDepthPyramidResourceName           = xiiMakeHashedString("SceneDepthPyramid");
+  m_sVisibleInstancesResourceName       = xiiMakeHashedString("GpuVisibleInstances");
+  m_sVisibleInstanceCountResourceName   = xiiMakeHashedString("GpuVisibleInstanceCount");
 
   RebuildResourceLayout();
 }
