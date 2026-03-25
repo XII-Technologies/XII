@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
+#include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
@@ -20,6 +21,7 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Fence.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/FrameConstants.h>
@@ -67,6 +69,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pOccluderDepthPass = XII_DEFAULT_NEW(xiiRenderGraphOccluderDepthPass);
   m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupOccluderDepthPrepassCommandList, this));
   m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawOccluderDepthPrepassCommandList, this));
+
+  m_pHiZBuildPass = XII_DEFAULT_NEW(xiiRenderGraphHiZBuildPass);
+  m_pHiZBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupHiZPyramidBuildCommandList, this));
+  m_pHiZBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -645,6 +651,30 @@ void xiiRenderDataManager::AddOccluderDepthPrepassPass(xiiRenderGraphRuntime& in
   inout_runtime.AddPass(m_pOccluderDepthPass.Borrow());
 }
 
+void xiiRenderDataManager::AddHiZPyramidBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pHiZBuildPass != nullptr, "Hi-Z build pass must be initialized.");
+
+  xiiSharedPtr<xiiGALResource> pDepthResource = m_pHiZDepthSourceResource != nullptr ? m_pHiZDepthSourceResource : m_pOccluderDepthResource;
+
+  m_pHiZBuildPass->SetEnabled(bEnableDispatch);
+  m_pHiZBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+
+  if (pDepthResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepth"), pDepthResource);
+  }
+
+  if (m_pHiZDepthPyramidResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepthPyramid"), m_pHiZDepthPyramidResource);
+  }
+
+  inout_runtime.AddPass(m_pHiZBuildPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -780,6 +810,20 @@ void xiiRenderDataManager::SetOccluderDepthPrepassInstanceListResource(xiiShared
   XII_LOCK(m_Mutex);
 
   m_pOccluderInstanceListBuffer = pInstanceListResource;
+}
+
+void xiiRenderDataManager::SetHiZDepthSourceResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pHiZDepthSourceResource = pDepthResource;
+}
+
+void xiiRenderDataManager::SetHiZDepthPyramidResource(xiiSharedPtr<xiiGALResource> pDepthPyramidResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pHiZDepthPyramidResource = pDepthPyramidResource;
 }
 
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
@@ -1749,6 +1793,66 @@ void xiiRenderDataManager::DrawOccluderDepthPrepassCommandList(xiiGALCommandList
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
+}
+
+void xiiRenderDataManager::SetupHiZPyramidBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  if (m_hHiZBuildShader.IsValid() == false)
+  {
+    m_hHiZBuildShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/HiZBuild.xiiShader");
+  }
+
+  if (m_pHiZBuildPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hHiZBuildShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pHiZBuildPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pHiZBuildPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pHiZBuildPipelineState);
+
+  xiiSharedPtr<xiiGALResource> pDepthResource = m_pHiZDepthSourceResource != nullptr ? m_pHiZDepthSourceResource : m_pOccluderDepthResource;
+  if (pDepthResource != nullptr)
+  {
+    if (xiiGALTexture* pDepthTexture = xiiDynamicCast<xiiGALTexture*>(pDepthResource.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("SceneDepth"), pDepthTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+  }
+
+  if (m_pHiZDepthPyramidResource != nullptr)
+  {
+    if (xiiGALTexture* pDepthPyramidTexture = xiiDynamicCast<xiiGALTexture*>(m_pHiZDepthPyramidResource.Borrow()))
+    {
+      commandList.ResolveAndSetUnorderedAccessTextureView(xiiTempHashedString("SceneDepthPyramid"), pDepthPyramidTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    }
+  }
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
