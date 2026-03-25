@@ -17,6 +17,7 @@ public:
   void SetEnabled(bool bEnabled);
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
+  void SetSceneTransformsResourceName(xiiHashedString sResourceName);
   void SetSkinnedVerticesResourceName(xiiHashedString sResourceName);
   void SetGpuSceneInstancesResourceName(xiiHashedString sResourceName);
   void SetGpuSceneBoundsResourceName(xiiHashedString sResourceName);
@@ -35,6 +36,7 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
 
+  xiiHashedString m_sSceneTransformsResourceName;
   xiiHashedString m_sSkinnedVerticesResourceName;
   xiiHashedString m_sGpuSceneInstancesResourceName;
   xiiHashedString m_sGpuSceneBoundsResourceName;

@@ -8,6 +8,7 @@ xiiRenderGraphInstanceUpdatePass::xiiRenderGraphInstanceUpdatePass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
+  m_sSceneTransformsResourceName    = xiiMakeHashedString("SceneTransforms");
   m_sSkinnedVerticesResourceName   = xiiMakeHashedString("SkinnedVertices");
   m_sGpuSceneInstancesResourceName = xiiMakeHashedString("GpuSceneInstances");
   m_sGpuSceneBoundsResourceName    = xiiMakeHashedString("GpuSceneBounds");
@@ -25,6 +26,12 @@ void xiiRenderGraphInstanceUpdatePass::SetDispatchThreadGroupCount(xiiUInt32 uiT
   m_uiDispatchThreadGroupsX = uiThreadGroupCountX;
   m_uiDispatchThreadGroupsY = xiiMath::Max(1U, uiThreadGroupCountY);
   m_uiDispatchThreadGroupsZ = xiiMath::Max(1U, uiThreadGroupCountZ);
+}
+
+void xiiRenderGraphInstanceUpdatePass::SetSceneTransformsResourceName(xiiHashedString sResourceName)
+{
+  m_sSceneTransformsResourceName = sResourceName;
+  RebuildResourceLayout();
 }
 
 void xiiRenderGraphInstanceUpdatePass::SetSkinnedVerticesResourceName(xiiHashedString sResourceName)
@@ -104,6 +111,13 @@ void xiiRenderGraphInstanceUpdatePass::RebuildResourceLayout()
 {
   m_PassDescription.m_Inputs.Clear();
   m_PassDescription.m_Outputs.Clear();
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sSceneTransformsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
