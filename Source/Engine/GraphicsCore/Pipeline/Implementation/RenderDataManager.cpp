@@ -17,6 +17,7 @@
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
+#include <GraphicsCore/Pipeline/Passes/ShadowCasterCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/ShadowCascadeSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/SkinningPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
@@ -122,6 +123,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pShadowCascadeSetupPass->SetCameraDataResourceName(xiiMakeHashedString("FrameConstants"));
   m_pShadowCascadeSetupPass->SetCascadeParamsResourceName(xiiMakeHashedString("ShadowCascadeParams"));
   m_pShadowCascadeSetupPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
+
+  m_pShadowCasterCullingPass = XII_DEFAULT_NEW(xiiRenderGraphShadowCasterCullingPass);
+  m_pShadowCasterCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowCullingCommandList, this));
+  m_pShadowCasterCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pShadowCasterCullingPass->SetInstanceDataResourceName(xiiMakeHashedString("GpuSceneBounds"));
+  m_pShadowCasterCullingPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
+  m_pShadowCasterCullingPass->SetShadowVisibleListResourceName(xiiMakeHashedString("ShadowVisibleList"));
+  m_pShadowCasterCullingPass->SetShadowVisibleCountResourceName(xiiMakeHashedString("ShadowVisibleCount"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -945,6 +954,44 @@ void xiiRenderDataManager::AddDirectionalCascadeSetupPass(xiiRenderGraphRuntime&
   inout_runtime.AddPass(m_pShadowCascadeSetupPass.Borrow());
 }
 
+void xiiRenderDataManager::AddDirectionalShadowCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pShadowCasterCullingPass != nullptr, "Directional shadow culling pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureDirectionalShadowCullingResources(uiInstanceCount);
+
+  m_pShadowCasterCullingPass->SetEnabled(bEnableDispatch);
+  m_pShadowCasterCullingPass->SetDispatchThreadGroupCount(uiInstanceCount, 1U, 1U);
+
+  xiiSharedPtr<xiiGALBuffer> pSceneBounds = m_pShadowCasterCullingSceneBoundsBuffer != nullptr ? m_pShadowCasterCullingSceneBoundsBuffer : m_pGpuSceneBoundsBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCascadeData = m_pShadowCasterCullingCascadeDataBuffer != nullptr ? m_pShadowCasterCullingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
+
+  if (pSceneBounds != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuSceneBounds"), pSceneBounds);
+  }
+
+  if (pCascadeData != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowCascadeData"), pCascadeData);
+  }
+
+  if (m_pShadowCasterVisibleListBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowVisibleList"), m_pShadowCasterVisibleListBuffer);
+  }
+
+  if (m_pShadowCasterVisibleCountBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ShadowVisibleCount"), m_pShadowCasterVisibleCountBuffer);
+  }
+
+  inout_runtime.AddPass(m_pShadowCasterCullingPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1183,6 +1230,34 @@ void xiiRenderDataManager::SetNormalRoughnessPrepassOutputResource(xiiSharedPtr<
   XII_LOCK(m_Mutex);
 
   m_pNormalRoughnessPrepassOutputResource = pNormalRoughnessResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowCullingSceneBoundsResource(xiiSharedPtr<xiiGALBuffer> pSceneBoundsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pShadowCasterCullingSceneBoundsBuffer = pSceneBoundsResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowCullingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pShadowCasterCullingCascadeDataBuffer = pCascadeDataResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowCullingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pShadowCasterVisibleListBuffer = pVisibleListResource;
+}
+
+void xiiRenderDataManager::SetDirectionalShadowCullingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pShadowCasterVisibleCountBuffer = pVisibleCountResource;
 }
 
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
@@ -1898,6 +1973,60 @@ void xiiRenderDataManager::EnsureDirectionalCascadeSetupResources() const
     if (m_pShadowCascadeDataBuffer != nullptr)
     {
       m_pShadowCascadeDataBuffer->SetDebugName("RenderDataManager::ShadowCascadeData");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureDirectionalShadowCullingResources(xiiUInt32 uiInstanceCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt32 uiResolvedInstanceCapacity = xiiMath::Max(1U, uiInstanceCapacity);
+
+  if (m_pShadowCasterCullingSceneBoundsBuffer == nullptr)
+  {
+    EnsureInstanceUpdateResources(uiResolvedInstanceCapacity);
+  }
+
+  if (m_pShadowCasterCullingCascadeDataBuffer == nullptr)
+  {
+    EnsureDirectionalCascadeSetupResources();
+  }
+
+  const xiiUInt64 uiVisibleListSize = static_cast<xiiUInt64>(uiResolvedInstanceCapacity) * 4ULL * sizeof(xiiUInt32);
+  if (m_pShadowCasterVisibleListBuffer == nullptr || m_pShadowCasterVisibleListBuffer->GetDescription().m_uiSize < uiVisibleListSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiVisibleListSize;
+
+    m_pShadowCasterVisibleListBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pShadowCasterVisibleListBuffer != nullptr)
+    {
+      m_pShadowCasterVisibleListBuffer->SetDebugName("RenderDataManager::ShadowVisibleList");
+    }
+  }
+
+  const xiiUInt64 uiVisibleCountSize = 4ULL * sizeof(xiiUInt32);
+  if (m_pShadowCasterVisibleCountBuffer == nullptr || m_pShadowCasterVisibleCountBuffer->GetDescription().m_uiSize < uiVisibleCountSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiVisibleCountSize;
+
+    m_pShadowCasterVisibleCountBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pShadowCasterVisibleCountBuffer != nullptr)
+    {
+      m_pShadowCasterVisibleCountBuffer->SetDebugName("RenderDataManager::ShadowVisibleCount");
     }
   }
 }
@@ -2656,6 +2785,74 @@ void xiiRenderDataManager::SetupDirectionalCascadeSetupCommandList(xiiGALCommand
   if (m_pShadowCascadeDataBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ShadowCascadeData"), m_pShadowCascadeDataBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupDirectionalShadowCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureDirectionalShadowCullingResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  if (m_hShadowCasterCullingShader.IsValid() == false)
+  {
+    m_hShadowCasterCullingShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ShadowCasterCulling.xiiShader");
+  }
+
+  if (m_pShadowCasterCullingPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hShadowCasterCullingShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pShadowCasterCullingPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pShadowCasterCullingPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pShadowCasterCullingPipelineState);
+
+  xiiSharedPtr<xiiGALBuffer> pSceneBounds = m_pShadowCasterCullingSceneBoundsBuffer != nullptr ? m_pShadowCasterCullingSceneBoundsBuffer : m_pGpuSceneBoundsBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCascadeData = m_pShadowCasterCullingCascadeDataBuffer != nullptr ? m_pShadowCasterCullingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
+
+  if (pSceneBounds != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuSceneBounds"), pSceneBounds->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (pCascadeData != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ShadowCascadeData"), pCascadeData->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pShadowCasterVisibleListBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ShadowVisibleList"), m_pShadowCasterVisibleListBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+
+  if (m_pShadowCasterVisibleCountBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ShadowVisibleCount"), m_pShadowCasterVisibleCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 

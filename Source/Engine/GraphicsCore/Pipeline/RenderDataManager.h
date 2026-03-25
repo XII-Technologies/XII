@@ -27,6 +27,7 @@ class xiiRenderGraphHiZOcclusionCullingPass;
 class xiiRenderGraphLodSelectionPass;
 class xiiRenderGraphNormalRoughnessPrepassPass;
 class xiiRenderGraphOccluderDepthPass;
+class xiiRenderGraphShadowCasterCullingPass;
 class xiiRenderGraphShadowCascadeSetupPass;
 class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphSkinningPass;
@@ -255,6 +256,9 @@ public:
   /// \brief Registers directional cascade setup, producing stable cascade matrices and split data.
   void AddDirectionalCascadeSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers async per-cascade shadow caster culling from scene bounds and cascade data.
+  void AddDirectionalShadowCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -326,6 +330,18 @@ public:
 
   /// \brief Supplies compact normal-roughness render target written by the optional prepass.
   void SetNormalRoughnessPrepassOutputResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const;
+
+  /// \brief Supplies scene bounds consumed by directional shadow culling.
+  void SetDirectionalShadowCullingSceneBoundsResource(xiiSharedPtr<xiiGALBuffer> pSceneBoundsResource) const;
+
+  /// \brief Supplies cascade setup data consumed by directional shadow culling.
+  void SetDirectionalShadowCullingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const;
+
+  /// \brief Supplies output list buffer written by directional shadow culling.
+  void SetDirectionalShadowCullingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const;
+
+  /// \brief Supplies per-cascade visible-count buffer written by directional shadow culling.
+  void SetDirectionalShadowCullingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const;
 
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
@@ -415,6 +431,7 @@ private:
   void EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureNormalRoughnessPrepassResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureDirectionalCascadeSetupResources() const;
+  void EnsureDirectionalShadowCullingResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -432,6 +449,7 @@ private:
   void SetupNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void DrawNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDirectionalCascadeSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupDirectionalShadowCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -462,6 +480,7 @@ private:
   mutable xiiShaderResourceHandle                                m_hHiZOcclusionCullingShader;
   mutable xiiShaderResourceHandle                                m_hDrawCommandBuildShader;
   mutable xiiShaderResourceHandle                                m_hShadowCascadeSetupShader;
+  mutable xiiShaderResourceHandle                                m_hShadowCasterCullingShader;
   mutable xiiShaderResourceHandle                                m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDynamicResolutionPipelineState;
@@ -472,6 +491,7 @@ private:
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pHiZOcclusionCullingPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDrawCommandBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pShadowCascadeSetupPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pShadowCasterCullingPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuVisibleInstancesBuffer;
@@ -511,6 +531,10 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pFrameTimestampRangesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pShadowCascadeParamsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pShadowCascadeDataBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pShadowCasterCullingSceneBoundsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pShadowCasterCullingCascadeDataBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pShadowCasterVisibleListBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pShadowCasterVisibleCountBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameGlobalParamsBuffer;
@@ -543,6 +567,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphDepthPrepassPass>           m_pMainDepthPrepassPass;
   mutable xiiUniquePtr<xiiRenderGraphNormalRoughnessPrepassPass> m_pNormalRoughnessPrepassPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowCascadeSetupPass>     m_pShadowCascadeSetupPass;
+  mutable xiiUniquePtr<xiiRenderGraphShadowCasterCullingPass>    m_pShadowCasterCullingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>           m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass>      m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>               m_pSkinningPass;

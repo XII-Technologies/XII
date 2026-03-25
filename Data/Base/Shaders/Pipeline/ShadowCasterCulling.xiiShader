@@ -1,0 +1,67 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4> GpuSceneBounds;
+StructuredBuffer<float4> ShadowCascadeData;
+RWStructuredBuffer<uint> ShadowVisibleList;
+RWStructuredBuffer<uint> ShadowVisibleCount;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint instanceIndex = dispatchThreadId.x;
+
+  if (instanceIndex == 0)
+  {
+    [unroll]
+    for (uint cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex)
+    {
+      if (cascadeIndex < ShadowVisibleCount.Length)
+      {
+        ShadowVisibleCount[cascadeIndex] = 0;
+      }
+    }
+  }
+
+  const uint instanceCount = GpuSceneBounds.Length;
+
+  if (instanceIndex >= instanceCount || ShadowVisibleList.Length == 0 || ShadowVisibleCount.Length < 4 || ShadowCascadeData.Length < 8)
+  {
+    return;
+  }
+
+  const float4 bounds = GpuSceneBounds[instanceIndex];
+  const float3 center = bounds.xyz;
+  const float  radius = max(bounds.w, 0.001f);
+  const float  centerDistance = length(center);
+
+  [unroll]
+  for (uint cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex)
+  {
+    const float4 cascadeSplit = ShadowCascadeData[cascadeIndex * 2 + 0];
+
+    const float splitNear = max(cascadeSplit.x, 0.0f);
+    const float splitFar  = max(cascadeSplit.y, splitNear + 0.001f);
+
+    const bool intersectsCascade = (centerDistance + radius) >= splitNear && (centerDistance - radius) <= splitFar;
+    if (!intersectsCascade)
+    {
+      continue;
+    }
+
+    uint visibleWriteIndex = 0;
+    InterlockedAdd(ShadowVisibleCount[cascadeIndex], 1, visibleWriteIndex);
+
+    const uint cascadeBaseIndex = cascadeIndex * instanceCount;
+    const uint listIndex        = cascadeBaseIndex + visibleWriteIndex;
+
+    if (listIndex < ShadowVisibleList.Length)
+    {
+      ShadowVisibleList[listIndex] = (cascadeIndex << 24) | (instanceIndex & 0x00FFFFFFu);
+    }
+  }
+}

@@ -18,8 +18,9 @@ public:
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
   void SetInstanceDataResourceName(xiiHashedString sResourceName);
-  void SetShadowCullDataResourceName(xiiHashedString sResourceName);
+  void SetShadowCascadeDataResourceName(xiiHashedString sResourceName);
   void SetShadowVisibleListResourceName(xiiHashedString sResourceName);
+  void SetShadowVisibleCountResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -35,8 +36,9 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sInstanceDataResourceName;
-  xiiHashedString               m_sShadowCullDataResourceName;
+  xiiHashedString               m_sShadowCascadeDataResourceName;
   xiiHashedString               m_sShadowVisibleListResourceName;
+  xiiHashedString               m_sShadowVisibleCountResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;

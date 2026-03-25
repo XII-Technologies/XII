@@ -8,9 +8,10 @@ xiiRenderGraphShadowCasterCullingPass::xiiRenderGraphShadowCasterCullingPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sInstanceDataResourceName      = xiiMakeHashedString("GpuInstanceData");
-  m_sShadowCullDataResourceName    = xiiMakeHashedString("ShadowCullData");
+  m_sInstanceDataResourceName      = xiiMakeHashedString("GpuSceneBounds");
+  m_sShadowCascadeDataResourceName = xiiMakeHashedString("ShadowCascadeData");
   m_sShadowVisibleListResourceName = xiiMakeHashedString("ShadowVisibleList");
+  m_sShadowVisibleCountResourceName = xiiMakeHashedString("ShadowVisibleCount");
 
   RebuildResourceLayout();
 }
@@ -33,15 +34,21 @@ void xiiRenderGraphShadowCasterCullingPass::SetInstanceDataResourceName(xiiHashe
   RebuildResourceLayout();
 }
 
-void xiiRenderGraphShadowCasterCullingPass::SetShadowCullDataResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphShadowCasterCullingPass::SetShadowCascadeDataResourceName(xiiHashedString sResourceName)
 {
-  m_sShadowCullDataResourceName = sResourceName;
+  m_sShadowCascadeDataResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
 void xiiRenderGraphShadowCasterCullingPass::SetShadowVisibleListResourceName(xiiHashedString sResourceName)
 {
   m_sShadowVisibleListResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphShadowCasterCullingPass::SetShadowVisibleCountResourceName(xiiHashedString sResourceName)
+{
+  m_sShadowVisibleCountResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -109,14 +116,21 @@ void xiiRenderGraphShadowCasterCullingPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sShadowCullDataResourceName;
+    input.m_sResourceName              = m_sShadowCascadeDataResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
-    input.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sShadowVisibleListResourceName;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
+    output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
+    output.m_sResourceName              = m_sShadowVisibleCountResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }
