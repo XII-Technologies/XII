@@ -14,6 +14,7 @@ class xiiGALCommandList;
 class xiiGALFence;
 class xiiRenderGraphRuntime;
 class xiiRenderGraphGpuVisibilityPass;
+class xiiRenderGraphRayTracedShadowsPass;
 
 struct XII_GRAPHICSCORE_DLL xiiInstanceDataOffset
 {
@@ -198,6 +199,33 @@ public:
   /// \brief Clears the optional visibility setup callback.
   void ClearGpuDrivenVisibilitySetupFunc() const;
 
+  /// \brief Registers the ray-traced shadows pass into the provided render graph runtime.
+  void AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
+  /// \brief Enables or disables denoiser-history IO resources for ray-traced shadows.
+  void SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const;
+
+  /// \brief Sets render-graph resource names used by the ray-traced shadows pass.
+  void SetRayTracedShadowsSceneTlasResourceName(xiiHashedString sResourceName) const;
+  void SetRayTracedShadowsDepthResourceName(xiiHashedString sResourceName) const;
+  void SetRayTracedShadowsNormalResourceName(xiiHashedString sResourceName) const;
+  void SetRayTracedShadowsLightDataResourceName(xiiHashedString sResourceName) const;
+  void SetRayTracedShadowsShadowMaskResourceName(xiiHashedString sResourceName) const;
+  void SetRayTracedShadowsHistoryInputResourceName(xiiHashedString sResourceName) const;
+  void SetRayTracedShadowsHistoryOutputResourceName(xiiHashedString sResourceName) const;
+
+  /// \brief Sets a callback that can bind RT PSO/resources before shadow ray dispatch.
+  void SetRayTracedShadowsSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Sets a callback that records the actual ray tracing dispatch command.
+  void SetRayTracedShadowsDispatchFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> dispatchFunc) const;
+
+  /// \brief Clears the optional ray-traced shadows setup callback.
+  void ClearRayTracedShadowsSetupFunc() const;
+
+  /// \brief Clears the optional ray-traced shadows dispatch callback.
+  void ClearRayTracedShadowsDispatchFunc() const;
+
 private:
   xiiByteArrayPtr GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiStructByteSize, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount) const;
 
@@ -207,6 +235,8 @@ private:
   void EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void DispatchRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
 
   mutable xiiMutex m_Mutex;
 
@@ -235,6 +265,7 @@ private:
   mutable xiiUInt32                                m_uiGpuVisibilityThreadGroupSize = 64U;
   mutable bool                                     m_bGpuVisibilityUseInternalIndirectDispatch = false;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass> m_pGpuDrivenVisibilityPass;
+  mutable xiiUniquePtr<xiiRenderGraphRayTracedShadowsPass> m_pRayTracedShadowsPass;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderDataManager_inl.h>

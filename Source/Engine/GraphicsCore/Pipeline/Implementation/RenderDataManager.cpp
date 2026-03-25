@@ -4,6 +4,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
+#include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
@@ -42,6 +43,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld)
   m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList, this));
   m_pGpuDrivenVisibilityPass->SetPostDispatchCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch, this));
   m_bGpuVisibilityUseInternalIndirectDispatch = true;
+
+  m_pRayTracedShadowsPass = XII_DEFAULT_NEW(xiiRenderGraphRayTracedShadowsPass);
+  m_pRayTracedShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupRayTracedShadowsCommandList, this));
+  m_pRayTracedShadowsPass->SetDispatchRayTracingFunc(xiiMakeDelegate(&xiiRenderDataManager::DispatchRayTracedShadowsCommandList, this));
 
   // Keep indices stable for callers that expect static/dynamic/skinning slots.
   m_Buffers.SetCount(3);
@@ -352,6 +357,111 @@ void xiiRenderDataManager::ClearGpuDrivenVisibilitySetupFunc() const
   m_pGpuDrivenVisibilityPass->ClearSetupCommandListFunc();
 }
 
+void xiiRenderDataManager::AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetEnabled(bEnableDispatch);
+  inout_runtime.AddPass(m_pRayTracedShadowsPass.Borrow());
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetDenoiserHistoryEnabled(bEnable);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsSceneTlasResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetSceneTlasResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsDepthResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetDepthResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsNormalResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetNormalResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsLightDataResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetLightDataResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsShadowMaskResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetShadowMaskResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsHistoryInputResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetHistoryInputResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsHistoryOutputResourceName(xiiHashedString sResourceName) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetHistoryOutputResourceName(sResourceName);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::SetRayTracedShadowsDispatchFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> dispatchFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->SetDispatchRayTracingFunc(dispatchFunc);
+}
+
+void xiiRenderDataManager::ClearRayTracedShadowsSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->ClearSetupCommandListFunc();
+}
+
+void xiiRenderDataManager::ClearRayTracedShadowsDispatchFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pRayTracedShadowsPass != nullptr, "Ray-traced shadows pass must be initialized.");
+  m_pRayTracedShadowsPass->ClearDispatchRayTracingFunc();
+}
+
 void xiiRenderDataManager::CompactSkinningDataBuffer(const UpdateContext& context)
 {
   XII_IGNORE_UNUSED(context);
@@ -538,6 +648,18 @@ void xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& 
   const xiiUInt64 uiFenceValue = m_uiGpuVisibilityReadbackFenceValue + 1U;
   commandList.EnqueueSignal(m_pGpuVisibilityReadbackFence, uiFenceValue);
   m_uiGpuVisibilityReadbackFenceValue = uiFenceValue;
+}
+
+void xiiRenderDataManager::SetupRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
+}
+
+void xiiRenderDataManager::DispatchRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(commandList);
+  XII_IGNORE_UNUSED(executionContext);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderDataManager);
