@@ -8,6 +8,7 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Shader/Types.h>
 #include <GraphicsFoundation/Tools/DynamicBuffer.h>
+#include <Shaders/Pipeline/Orchestration/PerFrameUploadData.h>
 
 struct xiiPerInstanceData;
 struct xiiRenderWorldExtractionEvent;
@@ -87,39 +88,6 @@ struct XII_GRAPHICSCORE_DLL xiiFrameTimestampRange
   xiiUInt64 m_uiEndTimestamp   = 0U;
 };
 
-struct XII_GRAPHICSCORE_DLL xiiPerFrameCameraUploadData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiShaderMat4 m_ViewProjectionMatrix;
-  xiiShaderMat4 m_InverseViewProjectionMatrix;
-  xiiVec4       m_CameraPositionAndNearPlane = xiiVec4::MakeZero();
-  xiiVec4       m_CameraForwardAndFarPlane   = xiiVec4::MakeZero();
-};
-
-struct XII_GRAPHICSCORE_DLL xiiPerFrameLightUploadData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiVec4   m_MainLightDirectionAndIntensity = xiiVec4::MakeZero();
-  xiiVec4   m_MainLightColor                 = xiiVec4::MakeZero();
-  xiiVec4   m_AmbientLightColor              = xiiVec4::MakeZero();
-  xiiUInt32 m_uiActiveLightCount             = 0U;
-  xiiUInt32 m_uiReserved0                    = 0U;
-  xiiUInt32 m_uiReserved1                    = 0U;
-  xiiUInt32 m_uiReserved2                    = 0U;
-};
-
-struct XII_GRAPHICSCORE_DLL xiiPerFrameGlobalUploadData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiFrameIndex      = 0U;
-  float     m_fDeltaTimeMs      = 0.0f;
-  float     m_fGlobalTime       = 0.0f;
-  float     m_fWorldTime        = 0.0f;
-  xiiVec4   m_RenderScaleJitter = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
-};
 
 /// \brief Manager for render data and instance data buffers.
 ///
@@ -374,9 +342,9 @@ private:
   mutable xiiVec4                                           m_vDynamicResolutionFrameTimingSample       = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
   mutable xiiVec4                                           m_vDynamicResolutionCameraVelocitySample    = xiiVec4::MakeZero();
   mutable xiiPreviousFrameStats                             m_PreviousFrameStatsSample;
-  mutable xiiPerFrameCameraUploadData                       m_PerFrameCameraConstantsSample;
-  mutable xiiPerFrameLightUploadData                        m_PerFrameLightDataSample;
-  mutable xiiPerFrameGlobalUploadData                       m_PerFrameGlobalParamsSample;
+  mutable xiiPerFrameCameraUploadData                       m_PerFrameCameraConstantsSample = {};
+  mutable xiiPerFrameLightUploadData                        m_PerFrameLightDataSample       = {};
+  mutable xiiPerFrameGlobalUploadData                       m_PerFrameGlobalParamsSample    = {};
   mutable xiiUniquePtr<xiiRenderGraphFrameSetupPass>        m_pFrameSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
