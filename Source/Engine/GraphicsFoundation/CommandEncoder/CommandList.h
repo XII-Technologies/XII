@@ -641,6 +641,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysIndirectDescription
   xiiEnum<xiiGALStateTransitionMode> m_ArgumentBufferTransitionMode      = xiiGALStateTransitionMode::None; ///< Indirect argument buffer state transition mode.
 };
 
+/// \brief Describes parameters for updating shader binding table records from a ray tracing pipeline.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALUpdateSBTDescription
+{
+  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pPipelineState;       ///< Optional pipeline source. If null, currently bound ray tracing pipeline is used.
+  xiiSharedPtr<xiiGALBuffer>                  m_pShaderBindingTable;   ///< Destination SBT buffer.
+
+  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;           ///< Ray generation SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_MissTable;                    ///< Miss SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_HitTable;                     ///< Hit SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_CallableTable;                ///< Callable SBT region to update.
+
+  xiiUInt32 m_uiRayGenerationShaderStartIndex = 0U;                    ///< Start index into ray generation shader groups.
+  xiiUInt32 m_uiMissShaderStartIndex          = 0U;                    ///< Start index into miss shader groups.
+  xiiUInt32 m_uiHitGroupStartIndex            = 0U;                    ///< Start index into hit shader groups.
+  xiiUInt32 m_uiCallableShaderStartIndex      = 0U;                    ///< Start index into callable shader groups.
+
+  xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::Transition; ///< SBT buffer state transition mode.
+};
+
 /// \brief BLAS triangle build input data for one geometry description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleBuildDescription
 {
@@ -1250,6 +1269,9 @@ public:
   /// \brief Dispatches rays indirectly using dimensions sourced from a GPU buffer.
   void TraceRaysIndirect(const xiiGALTraceRaysIndirectDescription& description);
 
+  /// \brief Updates SBT records from ray tracing shader group handles.
+  void UpdateSBT(const xiiGALUpdateSBTDescription& description);
+
   /// \brief Builds or updates a BLAS.
   void BuildBLAS(const xiiGALBuildBLASDescription& description);
 
@@ -1552,6 +1574,7 @@ protected:
   virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) = 0;
   virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description)                             = 0;
   virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)             = 0;
+  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description) = 0;
   virtual void BuildBLASPlatform(const xiiGALBuildBLASDescription& description)                             = 0;
   virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description)                             = 0;
   virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description)                               = 0;

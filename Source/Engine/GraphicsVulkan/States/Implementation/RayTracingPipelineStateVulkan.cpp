@@ -88,6 +88,21 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     vkShaderGroupCreateInfo.intersectionShader                     = VK_SHADER_UNUSED_KHR;
 
     vkShaderGroups.PushBack(vkShaderGroupCreateInfo);
+
+    const xiiUInt32 uiGroupIndex = vkShaderGroups.GetCount() - 1U;
+    const auto      shaderType   = groupDescription.m_pShader->GetDescription().m_ShaderType;
+    if (shaderType.IsSet(xiiGALShaderType::RayGeneration))
+    {
+      m_RayGenerationGroupIndices.PushBack(uiGroupIndex);
+    }
+    else if (shaderType.IsSet(xiiGALShaderType::RayMiss))
+    {
+      m_MissGroupIndices.PushBack(uiGroupIndex);
+    }
+    else
+    {
+      m_CallableGroupIndices.PushBack(uiGroupIndex);
+    }
   }
 
   for (const xiiGALRayTracingTriangleHitShaderGroupDescription& groupDescription : m_Description.m_TriangleHitShaders)
@@ -109,6 +124,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     vkShaderGroupCreateInfo.intersectionShader                     = VK_SHADER_UNUSED_KHR;
 
     vkShaderGroups.PushBack(vkShaderGroupCreateInfo);
+    m_HitGroupIndices.PushBack(vkShaderGroups.GetCount() - 1U);
   }
 
   for (const xiiGALRayTracingProceduralHitShaderGroupDescription& groupDescription : m_Description.m_ProceduralHitShaders)
@@ -131,6 +147,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     vkShaderGroupCreateInfo.intersectionShader                     = uiIntersectionIndex;
 
     vkShaderGroups.PushBack(vkShaderGroupCreateInfo);
+    m_HitGroupIndices.PushBack(vkShaderGroups.GetCount() - 1U);
   }
 
   if (vkShaderStages.IsEmpty() || vkShaderGroups.IsEmpty())
@@ -200,6 +217,14 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
   }
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createRayTracingPipelinesKHR(VK_NULL_HANDLE, m_vkPipelineCache, 1U, &vkRayTracingPipelineCreateInfo, nullptr, &m_vkPipeline, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+  const xiiUInt32 uiShaderGroupHandleSize = pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiShaderGroupHandleSize;
+  if (uiShaderGroupHandleSize > 0U)
+  {
+    m_ShaderGroupHandles.SetCountUninitialized(vkShaderGroups.GetCount() * uiShaderGroupHandleSize);
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getRayTracingShaderGroupHandlesKHR(m_vkPipeline, 0U, vkShaderGroups.GetCount(), m_ShaderGroupHandles.GetCount(), m_ShaderGroupHandles.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  }
 
   return XII_SUCCESS;
 }

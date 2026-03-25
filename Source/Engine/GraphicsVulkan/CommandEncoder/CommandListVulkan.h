@@ -171,6 +171,7 @@ protected:
   virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
   virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description) override final;
   virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description) override final;
+  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description) override final;
   virtual void BuildBLASPlatform(const xiiGALBuildBLASDescription& description) override final;
   virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description) override final;
   virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description) override final;

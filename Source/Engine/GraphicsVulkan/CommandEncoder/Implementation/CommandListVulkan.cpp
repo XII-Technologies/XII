@@ -2004,6 +2004,108 @@ void xiiGALCommandListVulkan::TraceRaysIndirectPlatform(const xiiGALTraceRaysInd
   m_vkCommandBuffer.traceRaysIndirectKHR(&vkRayGenerationRegion, &vkMissRegion, &vkHitRegion, &vkCallableRegion, vkIndirectAddress, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
+void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description)
+{
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
+
+  xiiSharedPtr<xiiGALRayTracingPipelineState> pPipelineState = description.m_pPipelineState;
+  if (pPipelineState == nullptr)
+  {
+    pPipelineState = m_pPipelineState.Downcast<xiiGALRayTracingPipelineState>();
+  }
+
+  XII_ASSERT_DEV(pPipelineState != nullptr, "UpdateSBT requires a valid ray tracing pipeline state.");
+
+  xiiSharedPtr<xiiGALRayTracingPipelineStateVulkan> pRayTracingPipelineStateVulkan = pPipelineState.Downcast<xiiGALRayTracingPipelineStateVulkan>();
+  XII_ASSERT_DEV(pRayTracingPipelineStateVulkan != nullptr, "UpdateSBT requires a Vulkan ray tracing pipeline state.");
+
+  const xiiGALRayTracingProperties& rtProperties = pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties;
+  const xiiUInt32                   uiHandleSize = rtProperties.m_uiShaderGroupHandleSize;
+  XII_ASSERT_DEV(uiHandleSize > 0U, "UpdateSBT failed: shader group handle size is zero.");
+
+  xiiArrayPtr<const xiiUInt8> shaderGroupHandles = pRayTracingPipelineStateVulkan->GetShaderGroupHandles();
+  XII_ASSERT_DEV(!shaderGroupHandles.IsEmpty(), "UpdateSBT failed: pipeline does not have cached shader group handles.");
+
+  const xiiUInt32 uiGroupCount = static_cast<xiiUInt32>(shaderGroupHandles.GetCount() / uiHandleSize);
+
+  struct RecordWrite
+  {
+    xiiUInt64 m_uiDestinationOffset = 0U;
+    xiiUInt32 m_uiGroupIndex        = 0U;
+  };
+
+  xiiDynamicArray<RecordWrite> recordWrites(pDeviceVulkan->GetAllocator());
+
+  auto CollectRecordWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride >= uiHandleSize, "UpdateSBT {} region stride ({}) must be at least shader group handle size ({}).", szRegionName, region.m_uiStride, uiHandleSize);
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "UpdateSBT {} region stride must be non-zero.", szRegionName);
+
+    const xiiUInt32 uiRecordCount = static_cast<xiiUInt32>(region.m_uiSize / region.m_uiStride);
+    XII_ASSERT_DEV((uiStartIndex + uiRecordCount) <= groupIndices.GetCount(), "UpdateSBT {} region requested {} records starting at {}, but only {} shader groups are available.", szRegionName, uiRecordCount, uiStartIndex, groupIndices.GetCount());
+
+    for (xiiUInt32 i = 0U; i < uiRecordCount; ++i)
+    {
+      const xiiUInt32 uiGroupIndex = groupIndices[uiStartIndex + i];
+      XII_ASSERT_DEV(uiGroupIndex < uiGroupCount, "UpdateSBT {} region resolved an invalid shader group index {} (group count {}).", szRegionName, uiGroupIndex, uiGroupCount);
+
+      RecordWrite& write         = recordWrites.ExpandAndGetRef();
+      write.m_uiDestinationOffset = region.m_uiOffset + static_cast<xiiUInt64>(i) * region.m_uiStride;
+      write.m_uiGroupIndex        = uiGroupIndex;
+    }
+  };
+
+  CollectRecordWrites(description.m_RayGenerationTable, pRayTracingPipelineStateVulkan->GetRayGenerationGroupIndices(), description.m_uiRayGenerationShaderStartIndex, "RayGeneration");
+  CollectRecordWrites(description.m_MissTable, pRayTracingPipelineStateVulkan->GetMissGroupIndices(), description.m_uiMissShaderStartIndex, "Miss");
+  CollectRecordWrites(description.m_HitTable, pRayTracingPipelineStateVulkan->GetHitGroupIndices(), description.m_uiHitGroupStartIndex, "Hit");
+  CollectRecordWrites(description.m_CallableTable, pRayTracingPipelineStateVulkan->GetCallableGroupIndices(), description.m_uiCallableShaderStartIndex, "Callable");
+
+  if (recordWrites.IsEmpty())
+    return;
+
+  const xiiUInt64 uiUploadSize = static_cast<xiiUInt64>(recordWrites.GetCount()) * uiHandleSize;
+
+  xiiVulkanMemoryAllocator* pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(uiUploadSize);
+
+  void* pMappedMemory = nullptr;
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, uiUploadSize));
+
+  pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
+
+  xiiDynamicArray<vk::BufferCopy> vkCopyRegions(pDeviceVulkan->GetAllocator());
+  vkCopyRegions.SetCountUninitialized(recordWrites.GetCount());
+
+  for (xiiUInt32 i = 0U; i < recordWrites.GetCount(); ++i)
+  {
+    const RecordWrite& write = recordWrites[i];
+
+    const xiiUInt64 uiSourceOffset = static_cast<xiiUInt64>(write.m_uiGroupIndex) * uiHandleSize;
+    XII_ASSERT_DEV((uiSourceOffset + uiHandleSize) <= shaderGroupHandles.GetCount(), "UpdateSBT resolved shader group handle range out of bounds.");
+
+    xiiMemoryUtils::RawByteCopy(xiiMemoryUtils::AddByteOffset(pMappedMemory, static_cast<xiiUInt64>(i) * uiHandleSize), shaderGroupHandles.GetPtr() + uiSourceOffset, uiHandleSize);
+
+    vk::BufferCopy& vkCopyRegion = vkCopyRegions[i];
+    vkCopyRegion.srcOffset       = stagingBufferAllocation.m_uiOffset + static_cast<xiiUInt64>(i) * uiHandleSize;
+    vkCopyRegion.dstOffset       = write.m_uiDestinationOffset;
+    vkCopyRegion.size            = uiHandleSize;
+  }
+
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, uiUploadSize));
+  pVulkanMemoryAllocator->UnmapMemory(stagingBufferAllocation.m_VulkanAllocation);
+
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
+  TransitionOrVerifyBufferState(pSBTBufferVulkan, description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Updating shader binding table");
+
+  FlushBarriers();
+
+  m_vkCommandBuffer.copyBuffer(stagingBufferAllocation.m_vkBuffer, pSBTBufferVulkan->GetVulkanBuffer(), vkCopyRegions.GetCount(), vkCopyRegions.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
 void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription& description)
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdBuildAccelerationStructuresKHR() must be called outside of render pass.");

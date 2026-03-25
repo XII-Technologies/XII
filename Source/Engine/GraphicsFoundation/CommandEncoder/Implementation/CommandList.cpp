@@ -1344,6 +1344,46 @@ void xiiGALCommandList::TraceRaysIndirect(const xiiGALTraceRaysIndirectDescripti
   TraceRaysIndirectPlatform(description);
 }
 
+void xiiGALCommandList::UpdateSBT(const xiiGALUpdateSBTDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UpdateSBT must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "UpdateSBT arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "UpdateSBT command arguments are invalid. UpdateSBT must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "UpdateSBT command arguments are invalid. Shader binding table buffer must not be null.");
+
+  xiiSharedPtr<xiiGALPipelineState> pPipelineState = description.m_pPipelineState;
+  if (pPipelineState == nullptr)
+  {
+    pPipelineState = m_pPipelineState;
+  }
+
+  XII_ASSERT_DEV(pPipelineState != nullptr, "UpdateSBT command arguments are invalid. No ray tracing pipeline was provided or currently bound.");
+  XII_ASSERT_DEV(pPipelineState->GetDescription().IsRayTracingPipeline(), "UpdateSBT command arguments are invalid. Provided pipeline must be a ray tracing pipeline.");
+
+  const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "UpdateSBT command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "UpdateSBT command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "UpdateSBT command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+  };
+
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
+  VerifyRegion(description.m_MissTable, "Miss");
+  VerifyRegion(description.m_HitTable, "Hit");
+  VerifyRegion(description.m_CallableTable, "Callable");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateSBT;
+
+  UpdateSBTPlatform(description);
+}
+
 void xiiGALCommandList::BuildBLAS(const xiiGALBuildBLASDescription& description)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BuildBLAS must be called while recording.");
