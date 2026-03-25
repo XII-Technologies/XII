@@ -54,9 +54,9 @@ void xiiRenderGraphGpuVisibilityPass::SetDirectDispatchThreadGroupCount(xiiUInt3
 
 void xiiRenderGraphGpuVisibilityPass::SetIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
-  m_pIndirectDispatchArguments      = pIndirectDispatchArguments;
+  m_pIndirectDispatchArguments       = pIndirectDispatchArguments;
   m_uiIndirectDispatchArgumentOffset = uiDispatchArgumentOffset;
-  m_IndirectBufferTransitionMode    = bufferTransitionMode;
+  m_IndirectBufferTransitionMode     = bufferTransitionMode;
 }
 
 void xiiRenderGraphGpuVisibilityPass::SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc)

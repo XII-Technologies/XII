@@ -43,7 +43,7 @@ namespace
 
     return vk::Format::eUndefined;
   }
-}
+} // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -73,7 +73,7 @@ xiiGALBottomLevelASVulkan::~xiiGALBottomLevelASVulkan()
 
 xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   const auto& extensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
@@ -109,9 +109,9 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
       geometryData.triangles                                = triangleData;
 
       vk::AccelerationStructureGeometryKHR geometry = {};
-      geometry.geometryType                           = vk::GeometryTypeKHR::eTriangles;
-      geometry.geometry                               = geometryData;
-      geometry.flags                                  = vk::GeometryFlagBitsKHR::eOpaque;
+      geometry.geometryType                         = vk::GeometryTypeKHR::eTriangles;
+      geometry.geometry                             = geometryData;
+      geometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
 
       vkGeometries.PushBack(geometry);
       primitiveCounts.PushBack(triangle.m_uiMaxPrimitiveCount);
@@ -120,16 +120,16 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
     for (const xiiGALBLASBoundingBoxDescription& boundingBox : m_Description.m_BoundingBoxes)
     {
       vk::AccelerationStructureGeometryAabbsDataKHR aabbData = {};
-      aabbData.data.deviceAddress                             = 0U;
-      aabbData.stride                                         = sizeof(float) * 6U;
+      aabbData.data.deviceAddress                            = 0U;
+      aabbData.stride                                        = sizeof(float) * 6U;
 
       vk::AccelerationStructureGeometryDataKHR geometryData = {};
       geometryData.aabbs                                    = aabbData;
 
       vk::AccelerationStructureGeometryKHR geometry = {};
-      geometry.geometryType                           = vk::GeometryTypeKHR::eAabbs;
-      geometry.geometry                               = geometryData;
-      geometry.flags                                  = vk::GeometryFlagBitsKHR::eOpaque;
+      geometry.geometryType                         = vk::GeometryTypeKHR::eAabbs;
+      geometry.geometry                             = geometryData;
+      geometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
 
       vkGeometries.PushBack(geometry);
       primitiveCounts.PushBack(boundingBox.m_uiMaxBoxCount);
@@ -145,7 +145,7 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
     vk::AccelerationStructureBuildSizesInfoKHR sizeInfo = {};
     vkLogicalDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, &buildInfo, primitiveCounts.GetData(), &sizeInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
-    uiAccelerationStructureSize            = sizeInfo.accelerationStructureSize;
+    uiAccelerationStructureSize               = sizeInfo.accelerationStructureSize;
     m_ScratchBufferSizeDescription.m_uiBuild  = sizeInfo.buildScratchSize;
     m_ScratchBufferSizeDescription.m_uiUpdate = sizeInfo.updateScratchSize;
   }
@@ -200,7 +200,7 @@ vk::DeviceAddress xiiGALBottomLevelASVulkan::GetVulkanDeviceAddress() const
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   vk::AccelerationStructureDeviceAddressInfoKHR vkAddressInfo = {};
-  vkAddressInfo.accelerationStructure                          = m_vkAccelerationStructure;
+  vkAddressInfo.accelerationStructure                         = m_vkAccelerationStructure;
 
   return pDeviceVulkan->GetVulkanLogicalDevice().getAccelerationStructureAddressKHR(&vkAddressInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }

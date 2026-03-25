@@ -33,11 +33,10 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     return XII_FAILURE;
   }
 
-  xiiDynamicArray<vk::PipelineShaderStageCreateInfo> vkShaderStages(pDeviceVulkan->GetAllocator());
+  xiiDynamicArray<vk::PipelineShaderStageCreateInfo>      vkShaderStages(pDeviceVulkan->GetAllocator());
   xiiDynamicArray<vk::RayTracingShaderGroupCreateInfoKHR> vkShaderGroups(pDeviceVulkan->GetAllocator());
 
-  auto AddShaderStage = [&](xiiSharedPtr<xiiGALShader> pShader, xiiBitflags<xiiGALShaderType> expectedShaderType) -> xiiUInt32
-  {
+  auto AddShaderStage = [&](xiiSharedPtr<xiiGALShader> pShader, xiiBitflags<xiiGALShaderType> expectedShaderType) -> xiiUInt32 {
     if (pShader == nullptr)
     {
       return VK_SHADER_UNUSED_KHR;

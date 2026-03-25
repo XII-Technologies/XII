@@ -599,7 +599,7 @@ xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraph
   {
     stateTransitions.Clear();
 
-    const xiiRenderGraphPassDescription& passDescription = compiledPass.m_pPass->GetDescription();
+    const xiiRenderGraphPassDescription&       passDescription       = compiledPass.m_pPass->GetDescription();
     const xiiBitflags<xiiGALCommandQueueFlags> commandListQueueFlags = executionContext.m_pCommandList->GetDescription().m_QueueFlags;
     if (!commandListQueueFlags.IsAnySet(passDescription.m_QueueFlags))
     {

@@ -1,18 +1,18 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/World/World.h>
 #include <Core/ResourceManager/ResourceManager.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
+#include <Core/World/World.h>
+#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Resources/Fence.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 constexpr xiiUInt32 s_uiSkinningBufferIndex = 2;
 
@@ -24,7 +24,7 @@ namespace
     xiiUInt32 m_uiThreadGroupCountY = 1U;
     xiiUInt32 m_uiThreadGroupCountZ = 1U;
   };
-}
+} // namespace
 
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderDataManager);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderDataManager, 1, xiiRTTINoAllocator)
@@ -34,8 +34,7 @@ XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgCustomInstanceDataOffsetChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgCustomInstanceDataOffsetChanged, 1, xiiRTTIDefaultAllocator<xiiMsgCustomInstanceDataOffsetChanged>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld)
-  : xiiWorldModule(pWorld)
+xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pWorld)
 {
   xiiRenderWorld::GetExtractionEvent().AddEventHandler(xiiMakeDelegate(&xiiRenderDataManager::OnExtractionEvent, this));
 
@@ -69,7 +68,7 @@ xiiArrayPtr<xiiPerInstanceData> xiiRenderDataManager::GetOrCreateInstanceData(co
   static thread_local xiiDynamicArray<xiiPerInstanceData> s_InstanceData;
   s_InstanceData.SetCount(uiCount);
 
-  out_pBuffer = nullptr;
+  out_pBuffer                         = nullptr;
   inout_instanceDataOffset.m_uiOffset = 0;
 
   return s_InstanceData;
@@ -107,7 +106,7 @@ xiiByteArrayPtr xiiRenderDataManager::GetOrCreateCustomInstanceData(xiiUInt32 ui
   static thread_local xiiDynamicArray<xiiUInt8> s_CustomData;
   s_CustomData.SetCountUninitialized(uiStructByteSize * uiCount);
 
-  out_pBuffer = nullptr;
+  out_pBuffer                         = nullptr;
   inout_instanceDataOffset.m_uiOffset = 0;
 
   return xiiByteArrayPtr(s_CustomData.GetData(), s_CustomData.GetCount());
@@ -189,7 +188,7 @@ void xiiRenderDataManager::EndGpuDrivenBuild()
   GpuDrivenDispatchArguments dispatchArguments;
   if (!m_GpuDrivenInstances.IsEmpty())
   {
-    const xiiUInt32 uiThreadGroupSize = xiiMath::Max(1U, m_uiGpuVisibilityThreadGroupSize);
+    const xiiUInt32 uiThreadGroupSize       = xiiMath::Max(1U, m_uiGpuVisibilityThreadGroupSize);
     dispatchArguments.m_uiThreadGroupCountX = (m_GpuDrivenInstances.GetCount() + (uiThreadGroupSize - 1U)) / uiThreadGroupSize;
   }
 
@@ -567,7 +566,7 @@ void xiiRenderDataManager::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstan
   if (m_pGpuVisibilityReadbackFence == nullptr)
   {
     xiiGALFenceCreationDescription fenceDescription;
-    fenceDescription.m_Type = xiiGALFenceType::CpuWaitOnly;
+    fenceDescription.m_Type       = xiiGALFenceType::CpuWaitOnly;
     m_pGpuVisibilityReadbackFence = pDevice->CreateFence(fenceDescription);
     if (m_pGpuVisibilityReadbackFence != nullptr)
     {
@@ -591,7 +590,7 @@ void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList
   {
     static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
 
-    const xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hGpuDrivenVisibilityShader, s_PermutationVars, true);
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hGpuDrivenVisibilityShader, s_PermutationVars, true);
     xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
     {
@@ -606,7 +605,7 @@ void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList
 
     xiiGALComputePipelineStateCreationDescription pipelineDescription;
     pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
-    pipelineDescription.m_pComputeShader            = pComputeShader;
+    pipelineDescription.m_pComputeShader             = pComputeShader;
 
     m_pGpuDrivenVisibilityPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
   }

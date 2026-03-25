@@ -12,7 +12,7 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphGpuVisibilityPass final : public xiiRenderGraphPassBase
 {
 public:
-  using SetupCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using SetupCommandListFunc        = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
   using PostDispatchCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphGpuVisibilityPass();
@@ -31,7 +31,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE bool      IsDispatchEnabled() const { return m_bDispatchEnabled; }
 
   [[nodiscard]] virtual const xiiRenderGraphPassDescription& GetDescription() const override;
-  virtual void RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
+  virtual void                                               RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;
@@ -42,11 +42,11 @@ private:
   xiiUInt32 m_uiDirectThreadGroupCountY = 1U;
   xiiUInt32 m_uiDirectThreadGroupCountZ = 1U;
 
-  xiiSharedPtr<xiiGALBuffer>         m_pIndirectDispatchArguments      = nullptr;
-  xiiEnum<xiiGALStateTransitionMode> m_IndirectBufferTransitionMode    = xiiGALStateTransitionMode::Transition;
+  xiiSharedPtr<xiiGALBuffer>         m_pIndirectDispatchArguments       = nullptr;
+  xiiEnum<xiiGALStateTransitionMode> m_IndirectBufferTransitionMode     = xiiGALStateTransitionMode::Transition;
   xiiUInt64                          m_uiIndirectDispatchArgumentOffset = 0U;
 
-  SetupCommandListFunc m_SetupCommandListFunc;
+  SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;
-  bool                 m_bDispatchEnabled = false;
+  bool                        m_bDispatchEnabled = false;
 };

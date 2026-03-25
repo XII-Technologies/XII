@@ -27,10 +27,10 @@ namespace
   [[nodiscard]] vk::QueryPool CreateCompactedSizeQueryPool(xiiGALDeviceVulkan* pDeviceVulkan)
   {
     vk::QueryPoolCreateInfo vkQueryPoolCreateInfo = {};
-    vkQueryPoolCreateInfo.queryType                = vk::QueryType::eAccelerationStructureCompactedSizeKHR;
-    vkQueryPoolCreateInfo.queryCount               = 1U;
+    vkQueryPoolCreateInfo.queryType               = vk::QueryType::eAccelerationStructureCompactedSizeKHR;
+    vkQueryPoolCreateInfo.queryCount              = 1U;
 
-    vk::QueryPool vkQueryPool = VK_NULL_HANDLE;
+    vk::QueryPool vkQueryPool     = VK_NULL_HANDLE;
     vk::Device    vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
     VK_ASSERT_DEV(vkLogicalDevice.createQueryPool(&vkQueryPoolCreateInfo, nullptr, &vkQueryPool, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -1029,9 +1029,9 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
           vkWriteDescriptorSet.pBufferInfo            = nullptr;
           vkWriteDescriptorSet.pTexelBufferView       = nullptr;
 
-          vk::DescriptorImageInfo  vkDescriptorImageInfo;
-          vk::DescriptorBufferInfo vkDescriptorBufferInfo;
-          vk::BufferView           vkDescriptorBufferView;
+          vk::DescriptorImageInfo                        vkDescriptorImageInfo;
+          vk::DescriptorBufferInfo                       vkDescriptorBufferInfo;
+          vk::BufferView                                 vkDescriptorBufferView;
           vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
 
           switch (resourceLayout.m_DescriptorType)
@@ -1367,16 +1367,16 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
                   return XII_FAILURE;
                 }
 
-                vkDescriptorAccelStructInfo = {};
-                vkDescriptorAccelStructInfo.pNext = nullptr;
+                vkDescriptorAccelStructInfo                            = {};
+                vkDescriptorAccelStructInfo.pNext                      = nullptr;
                 vkDescriptorAccelStructInfo.accelerationStructureCount = 1U;
-                vkDescriptorAccelStructInfo.pAccelerationStructures = &vkAccelerationStructure;
+                vkDescriptorAccelStructInfo.pAccelerationStructures    = &vkAccelerationStructure;
 
                 vkWriteDescriptorSet.pNext = &vkDescriptorAccelStructInfo;
 
                 if (mode == xiiGALStateTransitionMode::Transition)
                 {
-                  xiiBitflags<xiiGALResourceStateFlags> oldState = pTopLevelASVulkan->GetResourceState();
+                  xiiBitflags<xiiGALResourceStateFlags>       oldState = pTopLevelASVulkan->GetResourceState();
                   const xiiBitflags<xiiGALResourceStateFlags> newState = xiiGALResourceStateFlags::RayTracing;
 
                   if (oldState == xiiGALResourceStateFlags::Unknown)
@@ -1937,7 +1937,7 @@ void xiiGALCommandListVulkan::TraceRaysPlatform(const xiiGALTraceRaysDescription
 
   PrepareForRayTracing();
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
 
   TransitionOrVerifyBufferState(pSBTBufferVulkan, description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::RayTracing, vk::AccessFlagBits::eShaderRead, "Binding shader binding table for ray tracing dispatch");
@@ -1974,8 +1974,8 @@ void xiiGALCommandListVulkan::TraceRaysIndirectPlatform(const xiiGALTraceRaysInd
 
   PrepareForRayTracing();
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan         = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan      = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan> pArgumentBufferVulkan = description.m_pArgumentBuffer.Downcast<xiiGALBufferVulkan>();
 
   TransitionOrVerifyBufferState(pSBTBufferVulkan, description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::RayTracing, vk::AccessFlagBits::eShaderRead, "Binding shader binding table for indirect ray tracing dispatch");
@@ -2006,7 +2006,7 @@ void xiiGALCommandListVulkan::TraceRaysIndirectPlatform(const xiiGALTraceRaysInd
 
 void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
 
   xiiSharedPtr<xiiGALRayTracingPipelineState> pPipelineState = description.m_pPipelineState;
@@ -2052,7 +2052,7 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
       const xiiUInt32 uiGroupIndex = groupIndices[uiStartIndex + i];
       XII_ASSERT_DEV(uiGroupIndex < uiGroupCount, "UpdateSBT {} region resolved an invalid shader group index {} (group count {}).", szRegionName, uiGroupIndex, uiGroupCount);
 
-      RecordWrite& write         = recordWrites.ExpandAndGetRef();
+      RecordWrite& write          = recordWrites.ExpandAndGetRef();
       write.m_uiDestinationOffset = region.m_uiOffset + static_cast<xiiUInt64>(i) * region.m_uiStride;
       write.m_uiGroupIndex        = uiGroupIndex;
     }
@@ -2068,7 +2068,7 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
 
   const xiiUInt64 uiUploadSize = static_cast<xiiUInt64>(recordWrites.GetCount()) * uiHandleSize;
 
-  xiiVulkanMemoryAllocator* pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiVulkanMemoryAllocator*           pVulkanMemoryAllocator  = pDeviceVulkan->GetVulkanMemoryAllocator();
   xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(uiUploadSize);
 
   void* pMappedMemory = nullptr;
@@ -2110,15 +2110,15 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdBuildAccelerationStructuresKHR() must be called outside of render pass.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>            pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBottomLevelASVulkan>     pBottomLevelASVulkan = description.m_pBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
-  xiiSharedPtr<xiiGALBufferVulkan>            pScratchBufferVulkan = description.m_pScratchBuffer.Downcast<xiiGALBufferVulkan>();
-  const xiiGALBottomLevelASCreationDescription& blasDescription     = description.m_pBottomLevelAS->GetDescription();
+  xiiSharedPtr<xiiGALDeviceVulkan>              pDeviceVulkan        = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBottomLevelASVulkan>       pBottomLevelASVulkan = description.m_pBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan>              pScratchBufferVulkan = description.m_pScratchBuffer.Downcast<xiiGALBufferVulkan>();
+  const xiiGALBottomLevelASCreationDescription& blasDescription      = description.m_pBottomLevelAS->GetDescription();
 
   TransitionOrVerifyBufferState(pScratchBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, vk::AccessFlagBits::eAccelerationStructureWriteKHR, "Using scratch buffer for BLAS build");
 
-  xiiDynamicArray<vk::AccelerationStructureGeometryKHR>        vkGeometries(pDeviceVulkan->GetAllocator());
-  xiiDynamicArray<vk::AccelerationStructureBuildRangeInfoKHR>  vkBuildRanges(pDeviceVulkan->GetAllocator());
+  xiiDynamicArray<vk::AccelerationStructureGeometryKHR>              vkGeometries(pDeviceVulkan->GetAllocator());
+  xiiDynamicArray<vk::AccelerationStructureBuildRangeInfoKHR>        vkBuildRanges(pDeviceVulkan->GetAllocator());
   xiiDynamicArray<const vk::AccelerationStructureBuildRangeInfoKHR*> vkBuildRangePointers(pDeviceVulkan->GetAllocator());
 
   const xiiUInt32 uiTotalGeometryCount = blasDescription.m_Triangles.GetCount() + blasDescription.m_BoundingBoxes.GetCount();
@@ -2131,8 +2131,8 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     const xiiGALBLASTriangleDescription&      triangleDescription = blasDescription.m_Triangles[i];
     const xiiGALBLASTriangleBuildDescription& triangleBuildData   = description.m_Triangles[i];
 
-    xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan = triangleBuildData.m_pVertexBuffer.Downcast<xiiGALBufferVulkan>();
-    xiiSharedPtr<xiiGALBufferVulkan> pIndexBufferVulkan  = triangleBuildData.m_pIndexBuffer.Downcast<xiiGALBufferVulkan>();
+    xiiSharedPtr<xiiGALBufferVulkan> pVertexBufferVulkan    = triangleBuildData.m_pVertexBuffer.Downcast<xiiGALBufferVulkan>();
+    xiiSharedPtr<xiiGALBufferVulkan> pIndexBufferVulkan     = triangleBuildData.m_pIndexBuffer.Downcast<xiiGALBufferVulkan>();
     xiiSharedPtr<xiiGALBufferVulkan> pTransformBufferVulkan = triangleBuildData.m_pTransformBuffer.Downcast<xiiGALBufferVulkan>();
 
     TransitionOrVerifyBufferState(pVertexBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using vertex buffer for BLAS build");
@@ -2158,17 +2158,17 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     vkGeometryData.triangles                                = vkTriangleData;
 
     vk::AccelerationStructureGeometryKHR vkGeometry = {};
-    vkGeometry.geometryType                           = vk::GeometryTypeKHR::eTriangles;
-    vkGeometry.geometry                               = vkGeometryData;
-    vkGeometry.flags                                  = vk::GeometryFlagBitsKHR::eOpaque;
+    vkGeometry.geometryType                         = vk::GeometryTypeKHR::eTriangles;
+    vkGeometry.geometry                             = vkGeometryData;
+    vkGeometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
 
     vkGeometries.PushBack(vkGeometry);
 
     vk::AccelerationStructureBuildRangeInfoKHR vkBuildRange = {};
-    vkBuildRange.primitiveCount = triangleBuildData.m_uiPrimitiveCount != 0U ? triangleBuildData.m_uiPrimitiveCount : triangleDescription.m_uiMaxPrimitiveCount;
-    vkBuildRange.primitiveOffset = 0U;
-    vkBuildRange.firstVertex = 0U;
-    vkBuildRange.transformOffset = 0U;
+    vkBuildRange.primitiveCount                             = triangleBuildData.m_uiPrimitiveCount != 0U ? triangleBuildData.m_uiPrimitiveCount : triangleDescription.m_uiMaxPrimitiveCount;
+    vkBuildRange.primitiveOffset                            = 0U;
+    vkBuildRange.firstVertex                                = 0U;
+    vkBuildRange.transformOffset                            = 0U;
 
     vkBuildRanges.PushBack(vkBuildRange);
   }
@@ -2182,24 +2182,24 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
     TransitionOrVerifyBufferState(pBoundingBoxBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, vk::AccessFlagBits::eAccelerationStructureReadKHR, "Using AABB buffer for BLAS build");
 
     vk::AccelerationStructureGeometryAabbsDataKHR vkAABBsData = {};
-    vkAABBsData.data.deviceAddress                             = pBoundingBoxBufferVulkan->GetVulkanBufferDeviceAddress() + boxBuildData.m_uiBoundingBoxOffset;
-    vkAABBsData.stride                                         = boxBuildData.m_uiBoundingBoxStride;
+    vkAABBsData.data.deviceAddress                            = pBoundingBoxBufferVulkan->GetVulkanBufferDeviceAddress() + boxBuildData.m_uiBoundingBoxOffset;
+    vkAABBsData.stride                                        = boxBuildData.m_uiBoundingBoxStride;
 
     vk::AccelerationStructureGeometryDataKHR vkGeometryData = {};
     vkGeometryData.aabbs                                    = vkAABBsData;
 
     vk::AccelerationStructureGeometryKHR vkGeometry = {};
-    vkGeometry.geometryType                           = vk::GeometryTypeKHR::eAabbs;
-    vkGeometry.geometry                               = vkGeometryData;
-    vkGeometry.flags                                  = vk::GeometryFlagBitsKHR::eOpaque;
+    vkGeometry.geometryType                         = vk::GeometryTypeKHR::eAabbs;
+    vkGeometry.geometry                             = vkGeometryData;
+    vkGeometry.flags                                = vk::GeometryFlagBitsKHR::eOpaque;
 
     vkGeometries.PushBack(vkGeometry);
 
     vk::AccelerationStructureBuildRangeInfoKHR vkBuildRange = {};
-    vkBuildRange.primitiveCount = boxBuildData.m_uiBoxCount != 0U ? boxBuildData.m_uiBoxCount : boxDescription.m_uiMaxBoxCount;
-    vkBuildRange.primitiveOffset = 0U;
-    vkBuildRange.firstVertex = 0U;
-    vkBuildRange.transformOffset = 0U;
+    vkBuildRange.primitiveCount                             = boxBuildData.m_uiBoxCount != 0U ? boxBuildData.m_uiBoxCount : boxDescription.m_uiMaxBoxCount;
+    vkBuildRange.primitiveOffset                            = 0U;
+    vkBuildRange.firstVertex                                = 0U;
+    vkBuildRange.transformOffset                            = 0U;
 
     vkBuildRanges.PushBack(vkBuildRange);
   }
@@ -2236,8 +2236,8 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdBuildAccelerationStructuresKHR() must be called outside of render pass.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>           pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALTopLevelASVulkan>       pTopLevelASVulkan  = description.m_pTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>           pDeviceVulkan         = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALTopLevelASVulkan>       pTopLevelASVulkan     = description.m_pTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan>           pInstanceBufferVulkan = description.m_pInstanceBuffer.Downcast<xiiGALBufferVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan>           pScratchBufferVulkan  = description.m_pScratchBuffer.Downcast<xiiGALBufferVulkan>();
   const xiiGALTopLevelASCreationDescription& tlasDescription       = description.m_pTopLevelAS->GetDescription();
@@ -2250,14 +2250,14 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
   vkInstancesData.data.deviceAddress                                = pInstanceBufferVulkan->GetVulkanBufferDeviceAddress() + description.m_uiInstanceBufferOffset;
 
   vk::AccelerationStructureGeometryDataKHR vkGeometryData = {};
-  vkGeometryData.instances                                 = vkInstancesData;
+  vkGeometryData.instances                                = vkInstancesData;
 
   vk::AccelerationStructureGeometryKHR vkGeometry = {};
-  vkGeometry.geometryType                           = vk::GeometryTypeKHR::eInstances;
-  vkGeometry.geometry                               = vkGeometryData;
+  vkGeometry.geometryType                         = vk::GeometryTypeKHR::eInstances;
+  vkGeometry.geometry                             = vkGeometryData;
 
   vk::AccelerationStructureBuildRangeInfoKHR vkBuildRange = {};
-  vkBuildRange.primitiveCount                           = description.m_uiInstanceCount;
+  vkBuildRange.primitiveCount                             = description.m_uiInstanceCount;
 
   vk::AccelerationStructureBuildGeometryInfoKHR vkBuildInfo = {};
   vkBuildInfo.type                                          = vk::AccelerationStructureTypeKHR::eTopLevel;
@@ -2287,8 +2287,8 @@ void xiiGALCommandListVulkan::CopyBLASPlatform(const xiiGALCopyBLASDescription& 
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdCopyAccelerationStructureKHR() must be called outside of render pass.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBottomLevelASVulkan> pSourceBottomLevelASVulkan = description.m_pSourceBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan                   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBottomLevelASVulkan> pSourceBottomLevelASVulkan      = description.m_pSourceBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
   xiiSharedPtr<xiiGALBottomLevelASVulkan> pDestinationBottomLevelASVulkan = description.m_pDestinationBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
 
   xiiBitflags<xiiGALResourceStateFlags> sourceOldState = pSourceBottomLevelASVulkan->GetResourceState();
@@ -2306,9 +2306,9 @@ void xiiGALCommandListVulkan::CopyBLASPlatform(const xiiGALCopyBLASDescription& 
   pDestinationBottomLevelASVulkan->SetResourceState(xiiGALResourceStateFlags::BuildASWrite);
 
   vk::CopyAccelerationStructureInfoKHR vkCopyInfo = {};
-  vkCopyInfo.src = pSourceBottomLevelASVulkan->GetVulkanAccelerationStructure();
-  vkCopyInfo.dst = pDestinationBottomLevelASVulkan->GetVulkanAccelerationStructure();
-  vkCopyInfo.mode = description.m_Mode == xiiGALASCopyMode::Compact ? vk::CopyAccelerationStructureModeKHR::eCompact : vk::CopyAccelerationStructureModeKHR::eClone;
+  vkCopyInfo.src                                  = pSourceBottomLevelASVulkan->GetVulkanAccelerationStructure();
+  vkCopyInfo.dst                                  = pDestinationBottomLevelASVulkan->GetVulkanAccelerationStructure();
+  vkCopyInfo.mode                                 = description.m_Mode == xiiGALASCopyMode::Compact ? vk::CopyAccelerationStructureModeKHR::eCompact : vk::CopyAccelerationStructureModeKHR::eClone;
 
   FlushBarriers();
 
@@ -2319,8 +2319,8 @@ void xiiGALCommandListVulkan::CopyTLASPlatform(const xiiGALCopyTLASDescription& 
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdCopyAccelerationStructureKHR() must be called outside of render pass.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>     pDeviceVulkan     = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALTopLevelASVulkan> pSourceTopLevelASVulkan = description.m_pSourceTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>     pDeviceVulkan                = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALTopLevelASVulkan> pSourceTopLevelASVulkan      = description.m_pSourceTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
   xiiSharedPtr<xiiGALTopLevelASVulkan> pDestinationTopLevelASVulkan = description.m_pDestinationTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
 
   xiiBitflags<xiiGALResourceStateFlags> sourceOldState = pSourceTopLevelASVulkan->GetResourceState();
@@ -2338,9 +2338,9 @@ void xiiGALCommandListVulkan::CopyTLASPlatform(const xiiGALCopyTLASDescription& 
   pDestinationTopLevelASVulkan->SetResourceState(xiiGALResourceStateFlags::BuildASWrite);
 
   vk::CopyAccelerationStructureInfoKHR vkCopyInfo = {};
-  vkCopyInfo.src = pSourceTopLevelASVulkan->GetVulkanAccelerationStructure();
-  vkCopyInfo.dst = pDestinationTopLevelASVulkan->GetVulkanAccelerationStructure();
-  vkCopyInfo.mode = description.m_Mode == xiiGALASCopyMode::Compact ? vk::CopyAccelerationStructureModeKHR::eCompact : vk::CopyAccelerationStructureModeKHR::eClone;
+  vkCopyInfo.src                                  = pSourceTopLevelASVulkan->GetVulkanAccelerationStructure();
+  vkCopyInfo.dst                                  = pDestinationTopLevelASVulkan->GetVulkanAccelerationStructure();
+  vkCopyInfo.mode                                 = description.m_Mode == xiiGALASCopyMode::Compact ? vk::CopyAccelerationStructureModeKHR::eCompact : vk::CopyAccelerationStructureModeKHR::eClone;
 
   FlushBarriers();
 
@@ -2351,8 +2351,8 @@ void xiiGALCommandListVulkan::WriteBLASCompactedSizePlatform(const xiiGALWriteBL
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdWriteAccelerationStructuresPropertiesKHR() must be called outside of render pass.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALBottomLevelASVulkan> pBottomLevelASVulkan   = description.m_pBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>        pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBottomLevelASVulkan> pBottomLevelASVulkan     = description.m_pBottomLevelAS.Downcast<xiiGALBottomLevelASVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan>        pDestinationBufferVulkan = description.m_pDestinationBuffer.Downcast<xiiGALBufferVulkan>();
 
   TransitionOrVerifyBufferState(pDestinationBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using compacted size destination buffer");
@@ -2387,8 +2387,8 @@ void xiiGALCommandListVulkan::WriteTLASCompactedSizePlatform(const xiiGALWriteTL
 {
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdWriteAccelerationStructuresPropertiesKHR() must be called outside of render pass.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan>     pDeviceVulkan         = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiSharedPtr<xiiGALTopLevelASVulkan> pTopLevelASVulkan     = description.m_pTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan>     pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALTopLevelASVulkan> pTopLevelASVulkan        = description.m_pTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
   xiiSharedPtr<xiiGALBufferVulkan>     pDestinationBufferVulkan = description.m_pDestinationBuffer.Downcast<xiiGALBufferVulkan>();
 
   TransitionOrVerifyBufferState(pDestinationBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Using compacted size destination buffer");

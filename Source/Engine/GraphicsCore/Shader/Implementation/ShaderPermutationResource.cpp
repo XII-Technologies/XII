@@ -196,7 +196,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
             linearClampSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Clamp;
             linearClampSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Clamp;
             linearClampSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Clamp;
-
           }
           else if (resourceSignature.m_sName == sPointSampler)
           {
@@ -215,7 +214,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
             pointSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Wrap;
             pointSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Wrap;
             pointSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Wrap;
-
           }
           else if (resourceSignature.m_sName == sPointClampSampler)
           {

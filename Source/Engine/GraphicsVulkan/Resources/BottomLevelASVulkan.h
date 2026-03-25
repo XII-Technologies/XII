@@ -11,7 +11,7 @@ class XII_GRAPHICSVULKAN_DLL xiiGALBottomLevelASVulkan final : public xiiGALBott
 public:
   [[nodiscard]] XII_ALWAYS_INLINE vk::AccelerationStructureKHR GetVulkanAccelerationStructure() const { return m_vkAccelerationStructure; }
   [[nodiscard]] XII_ALWAYS_INLINE vk::Buffer GetVulkanBuffer() const { return m_vkBuffer; }
-  [[nodiscard]] vk::DeviceAddress GetVulkanDeviceAddress() const;
+  [[nodiscard]] vk::DeviceAddress            GetVulkanDeviceAddress() const;
 
 protected:
   friend class xiiGALDeviceVulkan;

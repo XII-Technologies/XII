@@ -11,8 +11,8 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphRayTracedShadowsPass final : public xiiRenderGraphPassBase
 {
 public:
-  using SetupCommandListFunc = xiiRenderGraphRayTracingPass::SetupCommandListFunc;
-  using DispatchRayTracingFunc = xiiRenderGraphRayTracingPass::DispatchRayTracingFunc;
+  using SetupCommandListFunc        = xiiRenderGraphRayTracingPass::SetupCommandListFunc;
+  using DispatchRayTracingFunc      = xiiRenderGraphRayTracingPass::DispatchRayTracingFunc;
   using PostDispatchCommandListFunc = xiiRenderGraphRayTracingPass::PostDispatchCommandListFunc;
 
   xiiRenderGraphRayTracedShadowsPass();
@@ -36,7 +36,7 @@ public:
   void ClearPostDispatchCommandListFunc();
 
   [[nodiscard]] virtual const xiiRenderGraphPassDescription& GetDescription() const override;
-  virtual void RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
+  virtual void                                               RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
 
 private:
   void RebuildResourceLayout();

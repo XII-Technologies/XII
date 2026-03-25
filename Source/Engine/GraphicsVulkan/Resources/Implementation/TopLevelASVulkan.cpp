@@ -23,7 +23,7 @@ namespace
 
     return vkFlags;
   }
-}
+} // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -53,7 +53,7 @@ xiiGALTopLevelASVulkan::~xiiGALTopLevelASVulkan()
 
 xiiResult xiiGALTopLevelASVulkan::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
 
   const auto& extensionFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
@@ -76,8 +76,8 @@ xiiResult xiiGALTopLevelASVulkan::InitPlatform()
     geometryData.instances                                = instancesData;
 
     vk::AccelerationStructureGeometryKHR geometry = {};
-    geometry.geometryType                           = vk::GeometryTypeKHR::eInstances;
-    geometry.geometry                               = geometryData;
+    geometry.geometryType                         = vk::GeometryTypeKHR::eInstances;
+    geometry.geometry                             = geometryData;
 
     const xiiUInt32 uiPrimitiveCount = m_Description.m_uiMaxInstanceCount;
 
@@ -91,7 +91,7 @@ xiiResult xiiGALTopLevelASVulkan::InitPlatform()
     vk::AccelerationStructureBuildSizesInfoKHR sizeInfo = {};
     vkLogicalDevice.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice, &buildInfo, &uiPrimitiveCount, &sizeInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
-    uiAccelerationStructureSize            = sizeInfo.accelerationStructureSize;
+    uiAccelerationStructureSize               = sizeInfo.accelerationStructureSize;
     m_ScratchBufferSizeDescription.m_uiBuild  = sizeInfo.buildScratchSize;
     m_ScratchBufferSizeDescription.m_uiUpdate = sizeInfo.updateScratchSize;
   }
@@ -169,7 +169,7 @@ vk::DeviceAddress xiiGALTopLevelASVulkan::GetVulkanDeviceAddress() const
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   vk::AccelerationStructureDeviceAddressInfoKHR vkAddressInfo = {};
-  vkAddressInfo.accelerationStructure                          = m_vkAccelerationStructure;
+  vkAddressInfo.accelerationStructure                         = m_vkAccelerationStructure;
 
   return pDeviceVulkan->GetVulkanLogicalDevice().getAccelerationStructureAddressKHR(&vkAddressInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }

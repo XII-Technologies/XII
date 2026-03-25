@@ -609,15 +609,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysDescription
   {
   }
 
-  xiiSharedPtr<xiiGALBuffer>         m_pShaderBindingTable                = nullptr;                         ///< SBT source buffer.
-  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;                                                  ///< Ray generation table region.
-  xiiGALRayTracingSBTRegionDescription m_MissTable;                                                           ///< Miss table region.
-  xiiGALRayTracingSBTRegionDescription m_HitTable;                                                            ///< Hit table region.
-  xiiGALRayTracingSBTRegionDescription m_CallableTable;                                                       ///< Callable table region.
-  xiiUInt32                          m_uiWidth                           = 1U;                              ///< Dispatch width.
-  xiiUInt32                          m_uiHeight                          = 1U;                              ///< Dispatch height.
-  xiiUInt32                          m_uiDepth                           = 1U;                              ///< Dispatch depth.
-  xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
+  xiiSharedPtr<xiiGALBuffer>           m_pShaderBindingTable = nullptr;                                      ///< SBT source buffer.
+  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;                                                 ///< Ray generation table region.
+  xiiGALRayTracingSBTRegionDescription m_MissTable;                                                          ///< Miss table region.
+  xiiGALRayTracingSBTRegionDescription m_HitTable;                                                           ///< Hit table region.
+  xiiGALRayTracingSBTRegionDescription m_CallableTable;                                                      ///< Callable table region.
+  xiiUInt32                            m_uiWidth                          = 1U;                              ///< Dispatch width.
+  xiiUInt32                            m_uiHeight                         = 1U;                              ///< Dispatch height.
+  xiiUInt32                            m_uiDepth                          = 1U;                              ///< Dispatch depth.
+  xiiEnum<xiiGALStateTransitionMode>   m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
 };
 
 /// \brief Describes parameters for issuing an indirect ray tracing dispatch.
@@ -630,32 +630,32 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysIndirectDescription
   {
   }
 
-  xiiSharedPtr<xiiGALBuffer>         m_pShaderBindingTable                = nullptr;                         ///< SBT source buffer.
-  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;                                                  ///< Ray generation table region.
-  xiiGALRayTracingSBTRegionDescription m_MissTable;                                                           ///< Miss table region.
-  xiiGALRayTracingSBTRegionDescription m_HitTable;                                                            ///< Hit table region.
-  xiiGALRayTracingSBTRegionDescription m_CallableTable;                                                       ///< Callable table region.
-  xiiSharedPtr<xiiGALBuffer>         m_pArgumentBuffer                    = nullptr;                         ///< Indirect dispatch arguments buffer (3 x uint32: width, height, depth).
-  xiiUInt64                          m_uiArgumentOffset                   = 0U;                              ///< Byte offset into the indirect arguments buffer.
-  xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
-  xiiEnum<xiiGALStateTransitionMode> m_ArgumentBufferTransitionMode      = xiiGALStateTransitionMode::None; ///< Indirect argument buffer state transition mode.
+  xiiSharedPtr<xiiGALBuffer>           m_pShaderBindingTable = nullptr;                                      ///< SBT source buffer.
+  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;                                                 ///< Ray generation table region.
+  xiiGALRayTracingSBTRegionDescription m_MissTable;                                                          ///< Miss table region.
+  xiiGALRayTracingSBTRegionDescription m_HitTable;                                                           ///< Hit table region.
+  xiiGALRayTracingSBTRegionDescription m_CallableTable;                                                      ///< Callable table region.
+  xiiSharedPtr<xiiGALBuffer>           m_pArgumentBuffer                  = nullptr;                         ///< Indirect dispatch arguments buffer (3 x uint32: width, height, depth).
+  xiiUInt64                            m_uiArgumentOffset                 = 0U;                              ///< Byte offset into the indirect arguments buffer.
+  xiiEnum<xiiGALStateTransitionMode>   m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
+  xiiEnum<xiiGALStateTransitionMode>   m_ArgumentBufferTransitionMode     = xiiGALStateTransitionMode::None; ///< Indirect argument buffer state transition mode.
 };
 
 /// \brief Describes parameters for updating shader binding table records from a ray tracing pipeline.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALUpdateSBTDescription
 {
-  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pPipelineState;       ///< Optional pipeline source. If null, currently bound ray tracing pipeline is used.
-  xiiSharedPtr<xiiGALBuffer>                  m_pShaderBindingTable;   ///< Destination SBT buffer.
+  xiiSharedPtr<xiiGALRayTracingPipelineState> m_pPipelineState;      ///< Optional pipeline source. If null, currently bound ray tracing pipeline is used.
+  xiiSharedPtr<xiiGALBuffer>                  m_pShaderBindingTable; ///< Destination SBT buffer.
 
-  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;           ///< Ray generation SBT region to update.
-  xiiGALRayTracingSBTRegionDescription m_MissTable;                    ///< Miss SBT region to update.
-  xiiGALRayTracingSBTRegionDescription m_HitTable;                     ///< Hit SBT region to update.
-  xiiGALRayTracingSBTRegionDescription m_CallableTable;                ///< Callable SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable; ///< Ray generation SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_MissTable;          ///< Miss SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_HitTable;           ///< Hit SBT region to update.
+  xiiGALRayTracingSBTRegionDescription m_CallableTable;      ///< Callable SBT region to update.
 
-  xiiUInt32 m_uiRayGenerationShaderStartIndex = 0U;                    ///< Start index into ray generation shader groups.
-  xiiUInt32 m_uiMissShaderStartIndex          = 0U;                    ///< Start index into miss shader groups.
-  xiiUInt32 m_uiHitGroupStartIndex            = 0U;                    ///< Start index into hit shader groups.
-  xiiUInt32 m_uiCallableShaderStartIndex      = 0U;                    ///< Start index into callable shader groups.
+  xiiUInt32 m_uiRayGenerationShaderStartIndex = 0U; ///< Start index into ray generation shader groups.
+  xiiUInt32 m_uiMissShaderStartIndex          = 0U; ///< Start index into miss shader groups.
+  xiiUInt32 m_uiHitGroupStartIndex            = 0U; ///< Start index into hit shader groups.
+  xiiUInt32 m_uiCallableShaderStartIndex      = 0U; ///< Start index into callable shader groups.
 
   xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::Transition; ///< SBT buffer state transition mode.
 };
@@ -665,14 +665,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleBuildDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiSharedPtr<xiiGALBuffer> m_pVertexBuffer;                 ///< Vertex buffer for this geometry.
-  xiiUInt64                  m_uiVertexBufferOffset = 0U;     ///< Byte offset into the vertex buffer.
-  xiiUInt64                  m_uiVertexStride       = 0U;     ///< Vertex stride in bytes.
-  xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;                  ///< Optional index buffer. If null, non-indexed geometry is used.
-  xiiUInt64                  m_uiIndexBufferOffset  = 0U;     ///< Byte offset into the index buffer.
-  xiiSharedPtr<xiiGALBuffer> m_pTransformBuffer;              ///< Optional transform buffer.
-  xiiUInt64                  m_uiTransformOffset    = 0U;     ///< Byte offset to a 3x4 transform matrix.
-  xiiUInt32                  m_uiPrimitiveCount     = 0U;     ///< Primitive count for this build; if zero, the BLAS max primitive count is used.
+  xiiSharedPtr<xiiGALBuffer> m_pVertexBuffer;             ///< Vertex buffer for this geometry.
+  xiiUInt64                  m_uiVertexBufferOffset = 0U; ///< Byte offset into the vertex buffer.
+  xiiUInt64                  m_uiVertexStride       = 0U; ///< Vertex stride in bytes.
+  xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;              ///< Optional index buffer. If null, non-indexed geometry is used.
+  xiiUInt64                  m_uiIndexBufferOffset = 0U;  ///< Byte offset into the index buffer.
+  xiiSharedPtr<xiiGALBuffer> m_pTransformBuffer;          ///< Optional transform buffer.
+  xiiUInt64                  m_uiTransformOffset = 0U;    ///< Byte offset to a 3x4 transform matrix.
+  xiiUInt32                  m_uiPrimitiveCount  = 0U;    ///< Primitive count for this build; if zero, the BLAS max primitive count is used.
 };
 
 /// \brief BLAS axis-aligned bounding-box build input data for one geometry description.
@@ -680,37 +680,37 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxBuildDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiSharedPtr<xiiGALBuffer> m_pBoundingBoxBuffer;            ///< Buffer containing AABB data.
-  xiiUInt64                  m_uiBoundingBoxOffset = 0U;      ///< Byte offset into the AABB buffer.
-  xiiUInt64                  m_uiBoundingBoxStride = 0U;      ///< Byte stride between AABB records.
-  xiiUInt32                  m_uiBoxCount          = 0U;      ///< Number of boxes for this build; if zero, the BLAS max box count is used.
+  xiiSharedPtr<xiiGALBuffer> m_pBoundingBoxBuffer;       ///< Buffer containing AABB data.
+  xiiUInt64                  m_uiBoundingBoxOffset = 0U; ///< Byte offset into the AABB buffer.
+  xiiUInt64                  m_uiBoundingBoxStride = 0U; ///< Byte stride between AABB records.
+  xiiUInt32                  m_uiBoxCount          = 0U; ///< Number of boxes for this build; if zero, the BLAS max box count is used.
 };
 
 /// \brief Describes parameters for building or updating a bottom-level acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildBLASDescription
 {
-  xiiSharedPtr<xiiGALBottomLevelAS>                           m_pBottomLevelAS;                     ///< BLAS target.
-  xiiSharedPtr<xiiGALBuffer>                                  m_pScratchBuffer;                     ///< Scratch buffer used during build.
-  xiiUInt64                                                   m_uiScratchBufferOffset = 0U;         ///< Byte offset into scratch buffer.
-  xiiDynamicArray<xiiGALBLASTriangleBuildDescription>         m_Triangles;                          ///< Build data for triangle geometries.
-  xiiDynamicArray<xiiGALBLASBoundingBoxBuildDescription>      m_BoundingBoxes;                      ///< Build data for AABB geometries.
-  xiiBitflags<xiiGALRayTracingBuildASFlags>                   m_BuildFlags = xiiGALRayTracingBuildASFlags::None; ///< Runtime build flags.
-  bool                                                        m_bUpdate = false;                    ///< Update existing AS instead of full rebuild.
-  xiiEnum<xiiGALStateTransitionMode>                          m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
+  xiiSharedPtr<xiiGALBottomLevelAS>                      m_pBottomLevelAS;                                                      ///< BLAS target.
+  xiiSharedPtr<xiiGALBuffer>                             m_pScratchBuffer;                                                      ///< Scratch buffer used during build.
+  xiiUInt64                                              m_uiScratchBufferOffset = 0U;                                          ///< Byte offset into scratch buffer.
+  xiiDynamicArray<xiiGALBLASTriangleBuildDescription>    m_Triangles;                                                           ///< Build data for triangle geometries.
+  xiiDynamicArray<xiiGALBLASBoundingBoxBuildDescription> m_BoundingBoxes;                                                       ///< Build data for AABB geometries.
+  xiiBitflags<xiiGALRayTracingBuildASFlags>              m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Runtime build flags.
+  bool                                                   m_bUpdate                     = false;                                 ///< Update existing AS instead of full rebuild.
+  xiiEnum<xiiGALStateTransitionMode>                     m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
 
 /// \brief Describes parameters for building or updating a top-level acceleration structure.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBuildTLASDescription
 {
-  xiiSharedPtr<xiiGALTopLevelAS>              m_pTopLevelAS;                        ///< TLAS target.
-  xiiSharedPtr<xiiGALBuffer>                   m_pInstanceBuffer;                    ///< Instance description buffer.
-  xiiUInt64                                    m_uiInstanceBufferOffset = 0U;        ///< Byte offset into instance buffer.
-  xiiUInt32                                    m_uiInstanceCount        = 0U;        ///< Number of instances.
-  xiiSharedPtr<xiiGALBuffer>                   m_pScratchBuffer;                     ///< Scratch buffer used during build.
-  xiiUInt64                                    m_uiScratchBufferOffset  = 0U;        ///< Byte offset into scratch buffer.
-  xiiBitflags<xiiGALRayTracingBuildASFlags>    m_BuildFlags = xiiGALRayTracingBuildASFlags::None; ///< Runtime build flags.
-  bool                                         m_bUpdate = false;                    ///< Update existing AS instead of full rebuild.
-  xiiEnum<xiiGALStateTransitionMode>           m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
+  xiiSharedPtr<xiiGALTopLevelAS>            m_pTopLevelAS;                                                         ///< TLAS target.
+  xiiSharedPtr<xiiGALBuffer>                m_pInstanceBuffer;                                                     ///< Instance description buffer.
+  xiiUInt64                                 m_uiInstanceBufferOffset = 0U;                                         ///< Byte offset into instance buffer.
+  xiiUInt32                                 m_uiInstanceCount        = 0U;                                         ///< Number of instances.
+  xiiSharedPtr<xiiGALBuffer>                m_pScratchBuffer;                                                      ///< Scratch buffer used during build.
+  xiiUInt64                                 m_uiScratchBufferOffset       = 0U;                                    ///< Byte offset into scratch buffer.
+  xiiBitflags<xiiGALRayTracingBuildASFlags> m_BuildFlags                  = xiiGALRayTracingBuildASFlags::None;    ///< Runtime build flags.
+  bool                                      m_bUpdate                     = false;                                 ///< Update existing AS instead of full rebuild.
+  xiiEnum<xiiGALStateTransitionMode>        m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for all referenced resources.
 };
 
 /// \brief AS copy mode for BLAS and TLAS copy commands.
@@ -734,36 +734,36 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALASCopyMode);
 /// \brief Describes parameters for copying a BLAS.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyBLASDescription
 {
-  xiiSharedPtr<xiiGALBottomLevelAS> m_pSourceBottomLevelAS;   ///< Source BLAS.
-  xiiSharedPtr<xiiGALBottomLevelAS> m_pDestinationBottomLevelAS; ///< Destination BLAS.
-  xiiEnum<xiiGALASCopyMode>         m_Mode = xiiGALASCopyMode::Clone; ///< Copy mode.
+  xiiSharedPtr<xiiGALBottomLevelAS>  m_pSourceBottomLevelAS;                                                ///< Source BLAS.
+  xiiSharedPtr<xiiGALBottomLevelAS>  m_pDestinationBottomLevelAS;                                           ///< Destination BLAS.
+  xiiEnum<xiiGALASCopyMode>          m_Mode                        = xiiGALASCopyMode::Clone;               ///< Copy mode.
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for both source and destination AS.
 };
 
 /// \brief Describes parameters for copying a TLAS.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCopyTLASDescription
 {
-  xiiSharedPtr<xiiGALTopLevelAS>    m_pSourceTopLevelAS;      ///< Source TLAS.
-  xiiSharedPtr<xiiGALTopLevelAS>    m_pDestinationTopLevelAS; ///< Destination TLAS.
-  xiiEnum<xiiGALASCopyMode>         m_Mode = xiiGALASCopyMode::Clone; ///< Copy mode.
+  xiiSharedPtr<xiiGALTopLevelAS>     m_pSourceTopLevelAS;                                                   ///< Source TLAS.
+  xiiSharedPtr<xiiGALTopLevelAS>     m_pDestinationTopLevelAS;                                              ///< Destination TLAS.
+  xiiEnum<xiiGALASCopyMode>          m_Mode                        = xiiGALASCopyMode::Clone;               ///< Copy mode.
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for both source and destination AS.
 };
 
 /// \brief Describes parameters for writing BLAS compacted size into a buffer.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteBLASCompactedSizeDescription
 {
-  xiiSharedPtr<xiiGALBottomLevelAS> m_pBottomLevelAS;              ///< Source BLAS whose compacted size is queried.
-  xiiSharedPtr<xiiGALBuffer>        m_pDestinationBuffer;          ///< Destination buffer receiving one 64-bit compacted size.
-  xiiUInt64                         m_uiDestinationBufferOffset = 0U; ///< Byte offset into destination buffer.
+  xiiSharedPtr<xiiGALBottomLevelAS>  m_pBottomLevelAS;                                                      ///< Source BLAS whose compacted size is queried.
+  xiiSharedPtr<xiiGALBuffer>         m_pDestinationBuffer;                                                  ///< Destination buffer receiving one 64-bit compacted size.
+  xiiUInt64                          m_uiDestinationBufferOffset   = 0U;                                    ///< Byte offset into destination buffer.
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for source AS and destination buffer.
 };
 
 /// \brief Describes parameters for writing TLAS compacted size into a buffer.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALWriteTLASCompactedSizeDescription
 {
-  xiiSharedPtr<xiiGALTopLevelAS>    m_pTopLevelAS;                 ///< Source TLAS whose compacted size is queried.
-  xiiSharedPtr<xiiGALBuffer>        m_pDestinationBuffer;          ///< Destination buffer receiving one 64-bit compacted size.
-  xiiUInt64                         m_uiDestinationBufferOffset = 0U; ///< Byte offset into destination buffer.
+  xiiSharedPtr<xiiGALTopLevelAS>     m_pTopLevelAS;                                                         ///< Source TLAS whose compacted size is queried.
+  xiiSharedPtr<xiiGALBuffer>         m_pDestinationBuffer;                                                  ///< Destination buffer receiving one 64-bit compacted size.
+  xiiUInt64                          m_uiDestinationBufferOffset   = 0U;                                    ///< Byte offset into destination buffer.
   xiiEnum<xiiGALStateTransitionMode> m_ResourceStateTransitionMode = xiiGALStateTransitionMode::Transition; ///< State transition mode used for source AS and destination buffer.
 };
 
@@ -1574,7 +1574,7 @@ protected:
   virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) = 0;
   virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description)                             = 0;
   virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)             = 0;
-  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description) = 0;
+  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description)                             = 0;
   virtual void BuildBLASPlatform(const xiiGALBuildBLASDescription& description)                             = 0;
   virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description)                             = 0;
   virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description)                               = 0;

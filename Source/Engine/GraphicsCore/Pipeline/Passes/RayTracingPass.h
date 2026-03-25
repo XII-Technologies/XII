@@ -13,8 +13,8 @@
 class XII_GRAPHICSCORE_DLL xiiRenderGraphRayTracingPass final : public xiiRenderGraphPassBase
 {
 public:
-  using SetupCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
-  using DispatchRayTracingFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using SetupCommandListFunc        = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using DispatchRayTracingFunc      = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
   using PostDispatchCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphRayTracingPass();
@@ -43,7 +43,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE bool IsEnabled() const { return m_bEnabled; }
 
   [[nodiscard]] virtual const xiiRenderGraphPassDescription& GetDescription() const override;
-  virtual void RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
+  virtual void                                               RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;

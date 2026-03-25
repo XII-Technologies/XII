@@ -162,9 +162,9 @@ private:
 
   xiiRenderPipelineResourceHandle m_hRenderPipeline;
   xiiUInt32                       m_uiRenderPipelineResourceDescriptionCounter = 0;
-  xiiCamera*                      m_pCamera        = nullptr;
-  const xiiCamera*                m_pCullingCamera = nullptr;
-  const xiiCamera*                m_pLodCamera     = nullptr;
+  xiiCamera*                      m_pCamera                                    = nullptr;
+  const xiiCamera*                m_pCullingCamera                             = nullptr;
+  const xiiCamera*                m_pLodCamera                                 = nullptr;
 
 
 private:

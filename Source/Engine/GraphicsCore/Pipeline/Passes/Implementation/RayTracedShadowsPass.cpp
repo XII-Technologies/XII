@@ -8,12 +8,12 @@ xiiRenderGraphRayTracedShadowsPass::xiiRenderGraphRayTracedShadowsPass()
   m_RayTracingPass.SetQueueFlags(xiiGALCommandQueueFlags::Compute);
   m_RayTracingPass.SetHasSideEffects(false);
 
-  m_sSceneTlasResourceName = xiiMakeHashedString("SceneTLAS");
-  m_sDepthResourceName = xiiMakeHashedString("SceneDepth");
-  m_sNormalResourceName = xiiMakeHashedString("SceneNormals");
-  m_sLightDataResourceName = xiiMakeHashedString("ShadowLights");
-  m_sShadowMaskResourceName = xiiMakeHashedString("RayTracedShadowMask");
-  m_sHistoryInputResourceName = xiiMakeHashedString("RayTracedShadowHistoryIn");
+  m_sSceneTlasResourceName     = xiiMakeHashedString("SceneTLAS");
+  m_sDepthResourceName         = xiiMakeHashedString("SceneDepth");
+  m_sNormalResourceName        = xiiMakeHashedString("SceneNormals");
+  m_sLightDataResourceName     = xiiMakeHashedString("ShadowLights");
+  m_sShadowMaskResourceName    = xiiMakeHashedString("RayTracedShadowMask");
+  m_sHistoryInputResourceName  = xiiMakeHashedString("RayTracedShadowHistoryIn");
   m_sHistoryOutputResourceName = xiiMakeHashedString("RayTracedShadowHistoryOut");
 
   RebuildResourceLayout();

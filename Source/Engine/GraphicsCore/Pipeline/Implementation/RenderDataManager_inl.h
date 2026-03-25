@@ -28,7 +28,7 @@ T* xiiRenderDataManager::CreateRenderDataForThisFrame(const xiiGameObject* pOwne
 // static
 XII_FORCE_INLINE void xiiRenderDataManager::FillPerInstanceData(xiiPerInstanceData& out_perInstanceData, const xiiGameObject* pObject, const xiiTransform& globalTransform, xiiUInt32 uiUniqueID /*= 0*/, const xiiColor& color /*= xiiColor::White*/, float fBoundingSphereRadius /*= 1.0f*/, xiiUInt32 uiRandomSeed /*= 0*/)
 {
-  xiiMat4 objectToWorld = globalTransform.GetAsMat4();
+  xiiMat4 objectToWorld             = globalTransform.GetAsMat4();
   out_perInstanceData.ObjectToWorld = objectToWorld;
 
   if (globalTransform.ContainsUniformScale())
@@ -55,7 +55,7 @@ XII_FORCE_INLINE void xiiRenderDataManager::FillPerInstanceData(xiiPerInstanceDa
   }
 
   out_perInstanceData.GameObjectID = uiUniqueID;
-  out_perInstanceData.Reserved = 0;
+  out_perInstanceData.Reserved     = 0;
 
   out_perInstanceData.Color = color;
 }
@@ -63,7 +63,7 @@ XII_FORCE_INLINE void xiiRenderDataManager::FillPerInstanceData(xiiPerInstanceDa
 XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetOrCreateInstanceDataAndFill(const xiiComponent& ownerComponent, bool bDynamic, const xiiTransform& globalTransform, xiiInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiUniqueID /*= 0*/, const xiiColor& color /*= xiiColor::White*/) const
 {
   xiiSharedPtr<xiiGALDynamicBuffer> pInstanceDataBuffer;
-  auto pInstanceData = GetOrCreateInstanceData(&ownerComponent, bDynamic, pInstanceDataBuffer, inout_instanceDataOffset);
+  auto                              pInstanceData = GetOrCreateInstanceData(&ownerComponent, bDynamic, pInstanceDataBuffer, inout_instanceDataOffset);
   FillPerInstanceData(pInstanceData[0], ownerComponent.GetOwner(), globalTransform, uiUniqueID, color);
 
   return pInstanceDataBuffer;
@@ -80,8 +80,8 @@ template <typename T>
 XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetOrCreateCustomInstanceDataAndFill(xiiUInt32 uiCustomDataIndex, const xiiComponent& ownerComponent, xiiCustomInstanceDataOffset& inout_instanceDataOffset, const T& data) const
 {
   xiiSharedPtr<xiiGALDynamicBuffer> pInstanceDataBuffer;
-  auto pInstanceData = GetOrCreateCustomInstanceData<T>(uiCustomDataIndex, &ownerComponent, pInstanceDataBuffer, inout_instanceDataOffset);
-  pInstanceData[0] = data;
+  auto                              pInstanceData = GetOrCreateCustomInstanceData<T>(uiCustomDataIndex, &ownerComponent, pInstanceDataBuffer, inout_instanceDataOffset);
+  pInstanceData[0]                                = data;
 
   return pInstanceDataBuffer;
 }

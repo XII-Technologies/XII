@@ -250,21 +250,21 @@ private:
 
   ExtractionData m_ExtractionData;
 
-  mutable xiiDynamicArray<xiiGpuDrivenInstance> m_GpuDrivenInstances;
-  mutable xiiDynamicArray<xiiUInt32>            m_GpuDrivenVisibleInstanceIndices;
-  mutable xiiShaderResourceHandle               m_hGpuDrivenVisibilityShader;
-  mutable xiiSharedPtr<xiiGALComputePipelineState> m_pGpuDrivenVisibilityPipelineState;
-  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuSceneInstancesBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstancesBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstanceCountBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibleInstanceCountReadbackBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>               m_pGpuVisibilityDispatchArgumentsBuffer;
-  mutable xiiSharedPtr<xiiGALFence>                m_pGpuVisibilityReadbackFence;
-  mutable xiiUInt64                                 m_uiGpuVisibilityReadbackFenceValue  = 0U;
-  mutable xiiUInt64                                 m_uiGpuVisibilityReadbackCompletedValue = 0U;
-  mutable xiiUInt32                                m_uiGpuVisibilityThreadGroupSize = 64U;
-  mutable bool                                     m_bGpuVisibilityUseInternalIndirectDispatch = false;
-  mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass> m_pGpuDrivenVisibilityPass;
+  mutable xiiDynamicArray<xiiGpuDrivenInstance>            m_GpuDrivenInstances;
+  mutable xiiDynamicArray<xiiUInt32>                       m_GpuDrivenVisibleInstanceIndices;
+  mutable xiiShaderResourceHandle                          m_hGpuDrivenVisibilityShader;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>         m_pGpuDrivenVisibilityPipelineState;
+  mutable xiiSharedPtr<xiiGALBuffer>                       m_pGpuSceneInstancesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                       m_pGpuVisibleInstancesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                       m_pGpuVisibleInstanceCountBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                       m_pGpuVisibleInstanceCountReadbackBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                       m_pGpuVisibilityDispatchArgumentsBuffer;
+  mutable xiiSharedPtr<xiiGALFence>                        m_pGpuVisibilityReadbackFence;
+  mutable xiiUInt64                                        m_uiGpuVisibilityReadbackFenceValue         = 0U;
+  mutable xiiUInt64                                        m_uiGpuVisibilityReadbackCompletedValue     = 0U;
+  mutable xiiUInt32                                        m_uiGpuVisibilityThreadGroupSize            = 64U;
+  mutable bool                                             m_bGpuVisibilityUseInternalIndirectDispatch = false;
+  mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>    m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphRayTracedShadowsPass> m_pRayTracedShadowsPass;
 };
 

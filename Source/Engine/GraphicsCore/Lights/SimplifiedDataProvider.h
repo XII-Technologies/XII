@@ -3,8 +3,8 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
 
 class XII_GRAPHICSCORE_DLL xiiSimplifiedDataCPU : public xiiRenderData
 {
