@@ -5,7 +5,7 @@
 #include <Foundation/Types/Delegate.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
-/// \brief Compute scaffold for building clustered-lighting tile/cluster metadata.
+/// \brief Compute scaffold for building clustered-lighting descriptors from frustum and depth ranges.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphClusterGridBuildPass final : public xiiRenderGraphPassBase
 {
 public:
@@ -17,8 +17,9 @@ public:
   void SetEnabled(bool bEnabled);
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
-  void SetCameraDataResourceName(xiiHashedString sResourceName);
-  void SetClusterGridResourceName(xiiHashedString sResourceName);
+  void SetCameraFrustumResourceName(xiiHashedString sResourceName);
+  void SetDepthRangeResourceName(xiiHashedString sResourceName);
+  void SetClusterDescriptorsResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -33,8 +34,9 @@ private:
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;
-  xiiHashedString               m_sCameraDataResourceName;
-  xiiHashedString               m_sClusterGridResourceName;
+  xiiHashedString               m_sCameraFrustumResourceName;
+  xiiHashedString               m_sDepthRangeResourceName;
+  xiiHashedString               m_sClusterDescriptorsResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;

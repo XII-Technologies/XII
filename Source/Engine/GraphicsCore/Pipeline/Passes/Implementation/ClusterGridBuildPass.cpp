@@ -8,8 +8,9 @@ xiiRenderGraphClusterGridBuildPass::xiiRenderGraphClusterGridBuildPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sCameraDataResourceName  = xiiMakeHashedString("FrameConstants");
-  m_sClusterGridResourceName = xiiMakeHashedString("ClusterGrid");
+  m_sCameraFrustumResourceName    = xiiMakeHashedString("ClusterCameraFrustum");
+  m_sDepthRangeResourceName       = xiiMakeHashedString("ClusterDepthRange");
+  m_sClusterDescriptorsResourceName = xiiMakeHashedString("ClusterDescriptors");
 
   RebuildResourceLayout();
 }
@@ -26,15 +27,21 @@ void xiiRenderGraphClusterGridBuildPass::SetDispatchThreadGroupCount(xiiUInt32 u
   m_uiDispatchThreadGroupsZ = xiiMath::Max(1U, uiThreadGroupCountZ);
 }
 
-void xiiRenderGraphClusterGridBuildPass::SetCameraDataResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphClusterGridBuildPass::SetCameraFrustumResourceName(xiiHashedString sResourceName)
 {
-  m_sCameraDataResourceName = sResourceName;
+  m_sCameraFrustumResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
-void xiiRenderGraphClusterGridBuildPass::SetClusterGridResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphClusterGridBuildPass::SetDepthRangeResourceName(xiiHashedString sResourceName)
 {
-  m_sClusterGridResourceName = sResourceName;
+  m_sDepthRangeResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphClusterGridBuildPass::SetClusterDescriptorsResourceName(xiiHashedString sResourceName)
+{
+  m_sClusterDescriptorsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -95,14 +102,21 @@ void xiiRenderGraphClusterGridBuildPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sCameraDataResourceName;
+    input.m_sResourceName              = m_sCameraFrustumResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
-    input.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sDepthRangeResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
-    output.m_sResourceName              = m_sClusterGridResourceName;
+    output.m_sResourceName              = m_sClusterDescriptorsResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }

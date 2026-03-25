@@ -3,6 +3,7 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
+#include <GraphicsCore/Pipeline/Passes/ClusterGridBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/ContactShadowsPass.h>
 #include <GraphicsCore/Pipeline/Passes/DepthPrepassPass.h>
@@ -161,6 +162,13 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pContactShadowsPass->SetSceneNormalRoughnessResourceName(xiiMakeHashedString("SceneNormalRoughness"));
   m_pContactShadowsPass->SetLightParamsResourceName(xiiMakeHashedString("ContactShadowLightParams"));
   m_pContactShadowsPass->SetContactShadowTermResourceName(xiiMakeHashedString("ScreenSpaceContactShadowTerm"));
+
+  m_pClusterGridBuildPass = XII_DEFAULT_NEW(xiiRenderGraphClusterGridBuildPass);
+  m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupClusterGridBuildCommandList, this));
+  m_pClusterGridBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pClusterGridBuildPass->SetCameraFrustumResourceName(xiiMakeHashedString("ClusterCameraFrustum"));
+  m_pClusterGridBuildPass->SetDepthRangeResourceName(xiiMakeHashedString("ClusterDepthRange"));
+  m_pClusterGridBuildPass->SetClusterDescriptorsResourceName(xiiMakeHashedString("ClusterDescriptors"));
 
   m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
   m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
@@ -1175,6 +1183,38 @@ void xiiRenderDataManager::AddContactShadowPass(xiiRenderGraphRuntime& inout_run
   inout_runtime.AddPass(m_pContactShadowsPass.Borrow());
 }
 
+void xiiRenderDataManager::AddClusterGridBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pClusterGridBuildPass != nullptr, "Cluster-grid build pass must be initialized.");
+
+  const xiiUInt32 uiClusterCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureClusterGridBuildResources(uiClusterCount);
+
+  m_pClusterGridBuildPass->SetEnabled(bEnableDispatch);
+  m_pClusterGridBuildPass->SetDispatchThreadGroupCount(uiClusterCount, 1U, 1U);
+
+  xiiSharedPtr<xiiGALBuffer> pCameraFrustum = m_pClusterCameraFrustumBuffer != nullptr ? m_pClusterCameraFrustumBuffer : m_pCameraFrustumPlanesBuffer;
+
+  if (pCameraFrustum != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterCameraFrustum"), pCameraFrustum);
+  }
+
+  if (m_pClusterDepthRangeBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterDepthRange"), m_pClusterDepthRangeBuffer);
+  }
+
+  if (m_pClusterDescriptorsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterDescriptors"), m_pClusterDescriptorsBuffer);
+  }
+
+  inout_runtime.AddPass(m_pClusterGridBuildPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1343,6 +1383,13 @@ void xiiRenderDataManager::SetContactShadowLightParamsSample(const xiiVec4& vLig
   XII_LOCK(m_Mutex);
 
   m_vContactShadowLightParamsSample = vLightParamsSample;
+}
+
+void xiiRenderDataManager::SetClusterDepthRangeSample(const xiiVec4& vDepthRangeSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vClusterDepthRangeSample = vDepthRangeSample;
 }
 
 void xiiRenderDataManager::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
@@ -1569,6 +1616,27 @@ void xiiRenderDataManager::SetContactShadowOutputResource(xiiSharedPtr<xiiGALRes
   m_pContactShadowTermResource = pContactShadowTermResource;
 }
 
+void xiiRenderDataManager::SetClusterCameraFrustumResource(xiiSharedPtr<xiiGALBuffer> pCameraFrustumResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pClusterCameraFrustumBuffer = pCameraFrustumResource;
+}
+
+void xiiRenderDataManager::SetClusterDepthRangeResource(xiiSharedPtr<xiiGALBuffer> pDepthRangeResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pClusterDepthRangeBuffer = pDepthRangeResource;
+}
+
+void xiiRenderDataManager::SetClusterDescriptorsResource(xiiSharedPtr<xiiGALBuffer> pClusterDescriptorsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pClusterDescriptorsBuffer = pClusterDescriptorsResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1759,6 +1827,22 @@ void xiiRenderDataManager::ClearContactShadowSetupFunc() const
 
   XII_ASSERT_DEV(m_pContactShadowsPass != nullptr, "Contact shadow pass must be initialized.");
   m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupContactShadowCommandList, this));
+}
+
+void xiiRenderDataManager::SetClusterGridBuildSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pClusterGridBuildPass != nullptr, "Cluster-grid build pass must be initialized.");
+  m_pClusterGridBuildPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearClusterGridBuildSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pClusterGridBuildPass != nullptr, "Cluster-grid build pass must be initialized.");
+  m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupClusterGridBuildCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2632,6 +2716,56 @@ void xiiRenderDataManager::EnsureContactShadowResources() const
     if (m_pContactShadowLightParamsBuffer != nullptr)
     {
       m_pContactShadowLightParamsBuffer->SetDebugName("RenderDataManager::ContactShadowLightParams");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureClusterGridBuildResources(xiiUInt32 uiClusterCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  EnsureCoarseFrustumCullingResources(uiClusterCapacity);
+
+  if (m_pClusterCameraFrustumBuffer == nullptr)
+  {
+    m_pClusterCameraFrustumBuffer = m_pCameraFrustumPlanesBuffer;
+  }
+
+  if (m_pClusterDepthRangeBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = sizeof(xiiVec4);
+
+    m_pClusterDepthRangeBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pClusterDepthRangeBuffer != nullptr)
+    {
+      m_pClusterDepthRangeBuffer->SetDebugName("RenderDataManager::ClusterDepthRange");
+    }
+  }
+
+  const xiiUInt32 uiResolvedClusterCapacity = xiiMath::Max(1U, uiClusterCapacity);
+  const xiiUInt64 uiDescriptorBufferSize    = static_cast<xiiUInt64>(uiResolvedClusterCapacity) * sizeof(xiiVec4);
+
+  if (m_pClusterDescriptorsBuffer == nullptr || m_pClusterDescriptorsBuffer->GetDescription().m_uiSize < uiDescriptorBufferSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiDescriptorBufferSize;
+
+    m_pClusterDescriptorsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pClusterDescriptorsBuffer != nullptr)
+    {
+      m_pClusterDescriptorsBuffer->SetDebugName("RenderDataManager::ClusterDescriptors");
     }
   }
 }
@@ -3684,6 +3818,78 @@ void xiiRenderDataManager::SetupContactShadowCommandList(xiiGALCommandList& comm
     {
       commandList.ResolveAndSetUnorderedAccessTextureView(xiiTempHashedString("ScreenSpaceContactShadowTerm"), pContactTermTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     }
+  }
+}
+
+void xiiRenderDataManager::SetupClusterGridBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiClusterCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureClusterGridBuildResources(uiClusterCount);
+
+  if (m_hClusterGridBuildShader.IsValid() == false)
+  {
+    m_hClusterGridBuildShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ClusterGridBuild.xiiShader");
+  }
+
+  if (m_pClusterGridBuildPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hClusterGridBuildShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pClusterGridBuildPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pClusterGridBuildPipelineState == nullptr)
+  {
+    return;
+  }
+
+  xiiSharedPtr<xiiGALBuffer> pCameraFrustum = m_pClusterCameraFrustumBuffer != nullptr ? m_pClusterCameraFrustumBuffer : m_pCameraFrustumPlanesBuffer;
+  if (m_pClusterCameraFrustumBuffer == nullptr && pCameraFrustum != nullptr)
+  {
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, pCameraFrustum, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(m_vCoarseFrustumPlaneSamples), sizeof(m_vCoarseFrustumPlaneSamples))).AssertSuccess();
+  }
+
+  if (m_pClusterDepthRangeBuffer != nullptr)
+  {
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pClusterDepthRangeBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vClusterDepthRangeSample), sizeof(m_vClusterDepthRangeSample))).AssertSuccess();
+  }
+
+  commandList.SetPipelineState(m_pClusterGridBuildPipelineState);
+
+  if (pCameraFrustum != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ClusterCameraFrustum"), pCameraFrustum->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pClusterDepthRangeBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ClusterDepthRange"), m_pClusterDepthRangeBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pClusterDescriptorsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ClusterDescriptors"), m_pClusterDescriptorsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 
