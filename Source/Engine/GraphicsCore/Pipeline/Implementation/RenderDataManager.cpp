@@ -14,6 +14,7 @@
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
+#include <GraphicsCore/Pipeline/Passes/LightListBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/LocalLightShadowRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/LocalLightShadowSetupPass.h>
@@ -169,6 +170,15 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pClusterGridBuildPass->SetCameraFrustumResourceName(xiiMakeHashedString("ClusterCameraFrustum"));
   m_pClusterGridBuildPass->SetDepthRangeResourceName(xiiMakeHashedString("ClusterDepthRange"));
   m_pClusterGridBuildPass->SetClusterDescriptorsResourceName(xiiMakeHashedString("ClusterDescriptors"));
+
+  m_pLightListBuildPass = XII_DEFAULT_NEW(xiiRenderGraphLightListBuildPass);
+  m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLightListConstructionCommandList, this));
+  m_pLightListBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pLightListBuildPass->SetVisibleLightsResourceName(xiiMakeHashedString("VisibleLightList"));
+  m_pLightListBuildPass->SetClusterGridResourceName(xiiMakeHashedString("ClusterDescriptors"));
+  m_pLightListBuildPass->SetClusterDepthInfoResourceName(xiiMakeHashedString("ClusterDepthRange"));
+  m_pLightListBuildPass->SetClusterLightIndicesResourceName(xiiMakeHashedString("ClusterLightIndices"));
+  m_pLightListBuildPass->SetClusterLightPrefixSumsResourceName(xiiMakeHashedString("ClusterLightPrefixSums"));
 
   m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
   m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
@@ -1215,6 +1225,47 @@ void xiiRenderDataManager::AddClusterGridBuildPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pClusterGridBuildPass.Borrow());
 }
 
+void xiiRenderDataManager::AddLightListConstructionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLightListBuildPass != nullptr, "Light-list construction pass must be initialized.");
+
+  const xiiUInt32 uiClusterCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  const xiiUInt32 uiLightCount   = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureLightListConstructionResources(uiClusterCount, uiLightCount);
+
+  m_pLightListBuildPass->SetEnabled(bEnableDispatch);
+  m_pLightListBuildPass->SetDispatchThreadGroupCount(uiClusterCount, 1U, 1U);
+
+  if (m_pVisibleLightListBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("VisibleLightList"), m_pVisibleLightListBuffer);
+  }
+
+  if (m_pClusterDescriptorsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterDescriptors"), m_pClusterDescriptorsBuffer);
+  }
+
+  if (m_pClusterDepthRangeBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterDepthRange"), m_pClusterDepthRangeBuffer);
+  }
+
+  if (m_pClusterLightIndicesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterLightIndices"), m_pClusterLightIndicesBuffer);
+  }
+
+  if (m_pClusterLightPrefixSumsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ClusterLightPrefixSums"), m_pClusterLightPrefixSumsBuffer);
+  }
+
+  inout_runtime.AddPass(m_pLightListBuildPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1637,6 +1688,34 @@ void xiiRenderDataManager::SetClusterDescriptorsResource(xiiSharedPtr<xiiGALBuff
   m_pClusterDescriptorsBuffer = pClusterDescriptorsResource;
 }
 
+void xiiRenderDataManager::SetVisibleLightListResource(xiiSharedPtr<xiiGALBuffer> pVisibleLightListResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pVisibleLightListBuffer = pVisibleLightListResource;
+}
+
+void xiiRenderDataManager::SetClusterDepthInfoResource(xiiSharedPtr<xiiGALBuffer> pDepthInfoResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pClusterDepthRangeBuffer = pDepthInfoResource;
+}
+
+void xiiRenderDataManager::SetClusterLightIndicesResource(xiiSharedPtr<xiiGALBuffer> pClusterLightIndicesResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pClusterLightIndicesBuffer = pClusterLightIndicesResource;
+}
+
+void xiiRenderDataManager::SetClusterLightPrefixSumsResource(xiiSharedPtr<xiiGALBuffer> pClusterLightPrefixSumsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pClusterLightPrefixSumsBuffer = pClusterLightPrefixSumsResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1843,6 +1922,22 @@ void xiiRenderDataManager::ClearClusterGridBuildSetupFunc() const
 
   XII_ASSERT_DEV(m_pClusterGridBuildPass != nullptr, "Cluster-grid build pass must be initialized.");
   m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupClusterGridBuildCommandList, this));
+}
+
+void xiiRenderDataManager::SetLightListConstructionSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLightListBuildPass != nullptr, "Light-list construction pass must be initialized.");
+  m_pLightListBuildPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearLightListConstructionSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLightListBuildPass != nullptr, "Light-list construction pass must be initialized.");
+  m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLightListConstructionCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2766,6 +2861,61 @@ void xiiRenderDataManager::EnsureClusterGridBuildResources(xiiUInt32 uiClusterCa
     if (m_pClusterDescriptorsBuffer != nullptr)
     {
       m_pClusterDescriptorsBuffer->SetDebugName("RenderDataManager::ClusterDescriptors");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureLightListConstructionResources(xiiUInt32 uiClusterCapacity, xiiUInt32 uiLightCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  EnsureClusterGridBuildResources(uiClusterCapacity);
+  EnsurePerFrameUploadResources(m_uiPerFrameUploadRingSize);
+
+  if (m_pVisibleLightListBuffer == nullptr)
+  {
+    m_pVisibleLightListBuffer = m_pPerFrameLightDataBuffer;
+  }
+
+  const xiiUInt32 uiResolvedClusterCapacity = xiiMath::Max(1U, uiClusterCapacity);
+  const xiiUInt32 uiResolvedLightCapacity   = xiiMath::Max(1U, uiLightCapacity);
+
+  const xiiUInt64 uiCompactIndexCapacity = static_cast<xiiUInt64>(uiResolvedClusterCapacity) * static_cast<xiiUInt64>(xiiMath::Min(64U, uiResolvedLightCapacity));
+  const xiiUInt64 uiCompactIndicesSize   = xiiMath::Max<xiiUInt64>(1ULL, uiCompactIndexCapacity) * sizeof(xiiUInt32);
+
+  if (m_pClusterLightIndicesBuffer == nullptr || m_pClusterLightIndicesBuffer->GetDescription().m_uiSize < uiCompactIndicesSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiCompactIndicesSize;
+
+    m_pClusterLightIndicesBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pClusterLightIndicesBuffer != nullptr)
+    {
+      m_pClusterLightIndicesBuffer->SetDebugName("RenderDataManager::ClusterLightIndices");
+    }
+  }
+
+  const xiiUInt64 uiPrefixSumsSize = static_cast<xiiUInt64>(uiResolvedClusterCapacity) * sizeof(xiiUInt32);
+  if (m_pClusterLightPrefixSumsBuffer == nullptr || m_pClusterLightPrefixSumsBuffer->GetDescription().m_uiSize < uiPrefixSumsSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiUInt32);
+    bufferDescription.m_uiSize              = uiPrefixSumsSize;
+
+    m_pClusterLightPrefixSumsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pClusterLightPrefixSumsBuffer != nullptr)
+    {
+      m_pClusterLightPrefixSumsBuffer->SetDebugName("RenderDataManager::ClusterLightPrefixSums");
     }
   }
 }
@@ -3890,6 +4040,78 @@ void xiiRenderDataManager::SetupClusterGridBuildCommandList(xiiGALCommandList& c
   if (m_pClusterDescriptorsBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ClusterDescriptors"), m_pClusterDescriptorsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupLightListConstructionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiClusterCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  const xiiUInt32 uiLightCount   = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureLightListConstructionResources(uiClusterCount, uiLightCount);
+
+  if (m_hLightListBuildShader.IsValid() == false)
+  {
+    m_hLightListBuildShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/LightListBuild.xiiShader");
+  }
+
+  if (m_pLightListBuildPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hLightListBuildShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pLightListBuildPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pLightListBuildPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pLightListBuildPipelineState);
+
+  if (m_pVisibleLightListBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("VisibleLightList"), m_pVisibleLightListBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pClusterDescriptorsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ClusterDescriptors"), m_pClusterDescriptorsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pClusterDepthRangeBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ClusterDepthRange"), m_pClusterDepthRangeBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pClusterLightIndicesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ClusterLightIndices"), m_pClusterLightIndicesBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+
+  if (m_pClusterLightPrefixSumsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("ClusterLightPrefixSums"), m_pClusterLightPrefixSumsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 

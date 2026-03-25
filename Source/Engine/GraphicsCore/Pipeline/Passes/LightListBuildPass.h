@@ -19,7 +19,10 @@ public:
 
   void SetVisibleLightsResourceName(xiiHashedString sResourceName);
   void SetClusterGridResourceName(xiiHashedString sResourceName);
+  void SetClusterDepthInfoResourceName(xiiHashedString sResourceName);
   void SetClusterLightListResourceName(xiiHashedString sResourceName);
+  void SetClusterLightIndicesResourceName(xiiHashedString sResourceName);
+  void SetClusterLightPrefixSumsResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -35,8 +38,10 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sVisibleLightsResourceName;
-  xiiHashedString               m_sClusterGridResourceName;
-  xiiHashedString               m_sClusterLightListResourceName;
+  xiiHashedString               m_sClusterDescriptorsResourceName;
+  xiiHashedString               m_sClusterDepthInfoResourceName;
+  xiiHashedString               m_sClusterLightIndicesResourceName;
+  xiiHashedString               m_sClusterLightPrefixSumsResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;

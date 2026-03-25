@@ -29,6 +29,7 @@ class xiiRenderGraphNormalRoughnessPrepassPass;
 class xiiRenderGraphOccluderDepthPass;
 class xiiRenderGraphContactShadowsPass;
 class xiiRenderGraphClusterGridBuildPass;
+class xiiRenderGraphLightListBuildPass;
 class xiiRenderGraphLocalLightShadowRenderPass;
 class xiiRenderGraphLocalLightShadowSetupPass;
 class xiiRenderGraphShadowMapRenderPass;
@@ -279,6 +280,9 @@ public:
   /// \brief Registers async cluster-grid descriptor generation from frustum and depth range.
   void AddClusterGridBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers async per-cluster light-list construction using compact indices and prefix sums.
+  void AddLightListConstructionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -429,6 +433,18 @@ public:
   /// \brief Supplies cluster descriptor output buffer written by cluster-grid build.
   void SetClusterDescriptorsResource(xiiSharedPtr<xiiGALBuffer> pClusterDescriptorsResource) const;
 
+  /// \brief Supplies visible light list consumed by light-list construction.
+  void SetVisibleLightListResource(xiiSharedPtr<xiiGALBuffer> pVisibleLightListResource) const;
+
+  /// \brief Supplies depth-info resource consumed by light-list construction.
+  void SetClusterDepthInfoResource(xiiSharedPtr<xiiGALBuffer> pDepthInfoResource) const;
+
+  /// \brief Supplies compact cluster light index output buffer written by light-list construction.
+  void SetClusterLightIndicesResource(xiiSharedPtr<xiiGALBuffer> pClusterLightIndicesResource) const;
+
+  /// \brief Supplies per-cluster prefix-sum offset buffer written by light-list construction.
+  void SetClusterLightPrefixSumsResource(xiiSharedPtr<xiiGALBuffer> pClusterLightPrefixSumsResource) const;
+
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -507,6 +523,12 @@ public:
   /// \brief Clears the optional cluster-grid setup callback.
   void ClearClusterGridBuildSetupFunc() const;
 
+  /// \brief Sets an optional callback for compute state setup before light-list construction dispatch.
+  void SetLightListConstructionSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Clears the optional light-list construction setup callback.
+  void ClearLightListConstructionSetupFunc() const;
+
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
 
@@ -565,6 +587,7 @@ private:
   void EnsureSpotAndPointShadowRenderingResources(xiiUInt32 uiCasterCapacity) const;
   void EnsureContactShadowResources() const;
   void EnsureClusterGridBuildResources(xiiUInt32 uiClusterCapacity) const;
+  void EnsureLightListConstructionResources(xiiUInt32 uiClusterCapacity, xiiUInt32 uiLightCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -590,6 +613,7 @@ private:
   void DrawSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupContactShadowCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupClusterGridBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupLightListConstructionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -624,6 +648,7 @@ private:
   mutable xiiShaderResourceHandle                                m_hLocalLightShadowSetupShader;
   mutable xiiShaderResourceHandle                                m_hContactShadowsShader;
   mutable xiiShaderResourceHandle                                m_hClusterGridBuildShader;
+  mutable xiiShaderResourceHandle                                m_hLightListBuildShader;
   mutable xiiShaderResourceHandle                                m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDynamicResolutionPipelineState;
@@ -638,6 +663,7 @@ private:
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLocalLightShadowSetupPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pContactShadowsPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pClusterGridBuildPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLightListBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuVisibleInstancesBuffer;
@@ -700,6 +726,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pClusterCameraFrustumBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pClusterDepthRangeBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pClusterDescriptorsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pVisibleLightListBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pClusterLightIndicesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pClusterLightPrefixSumsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameGlobalParamsBuffer;
@@ -741,6 +770,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowSetupPass>  m_pLocalLightShadowSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphContactShadowsPass>         m_pContactShadowsPass;
   mutable xiiUniquePtr<xiiRenderGraphClusterGridBuildPass>       m_pClusterGridBuildPass;
+  mutable xiiUniquePtr<xiiRenderGraphLightListBuildPass>         m_pLightListBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowRenderPass> m_pLocalLightShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowMapRenderPass>        m_pDirectionalShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>           m_pLodSelectionPass;

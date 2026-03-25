@@ -8,9 +8,11 @@ xiiRenderGraphLightListBuildPass::xiiRenderGraphLightListBuildPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sVisibleLightsResourceName    = xiiMakeHashedString("VisibleLightList");
-  m_sClusterGridResourceName      = xiiMakeHashedString("ClusterGrid");
-  m_sClusterLightListResourceName = xiiMakeHashedString("ClusterLightList");
+  m_sVisibleLightsResourceName         = xiiMakeHashedString("VisibleLightList");
+  m_sClusterDescriptorsResourceName    = xiiMakeHashedString("ClusterDescriptors");
+  m_sClusterDepthInfoResourceName      = xiiMakeHashedString("ClusterDepthRange");
+  m_sClusterLightIndicesResourceName   = xiiMakeHashedString("ClusterLightIndices");
+  m_sClusterLightPrefixSumsResourceName = xiiMakeHashedString("ClusterLightPrefixSums");
 
   RebuildResourceLayout();
 }
@@ -35,13 +37,31 @@ void xiiRenderGraphLightListBuildPass::SetVisibleLightsResourceName(xiiHashedStr
 
 void xiiRenderGraphLightListBuildPass::SetClusterGridResourceName(xiiHashedString sResourceName)
 {
-  m_sClusterGridResourceName = sResourceName;
+  m_sClusterDescriptorsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLightListBuildPass::SetClusterDepthInfoResourceName(xiiHashedString sResourceName)
+{
+  m_sClusterDepthInfoResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
 void xiiRenderGraphLightListBuildPass::SetClusterLightListResourceName(xiiHashedString sResourceName)
 {
-  m_sClusterLightListResourceName = sResourceName;
+  m_sClusterLightIndicesResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLightListBuildPass::SetClusterLightIndicesResourceName(xiiHashedString sResourceName)
+{
+  m_sClusterLightIndicesResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLightListBuildPass::SetClusterLightPrefixSumsResourceName(xiiHashedString sResourceName)
+{
+  m_sClusterLightPrefixSumsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -109,14 +129,28 @@ void xiiRenderGraphLightListBuildPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sClusterGridResourceName;
+    input.m_sResourceName              = m_sClusterDescriptorsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sClusterDepthInfoResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
-    output.m_sResourceName              = m_sClusterLightListResourceName;
+    output.m_sResourceName              = m_sClusterLightIndicesResourceName;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
+    output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
+    output.m_sResourceName              = m_sClusterLightPrefixSumsResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }
