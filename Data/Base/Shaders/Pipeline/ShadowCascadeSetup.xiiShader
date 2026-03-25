@@ -1,0 +1,44 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4>   ShadowCascadeParams;
+RWStructuredBuffer<float4> ShadowCascadeData;
+
+[numthreads(1, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (dispatchThreadId.x != 0)
+  {
+    return;
+  }
+
+  if (ShadowCascadeParams.Length < 2 || ShadowCascadeData.Length < 8)
+  {
+    return;
+  }
+
+  const float3 sunDir = normalize(ShadowCascadeParams[0].xyz);
+  const float4 splits = ShadowCascadeParams[1];
+
+  float splitNear = 0.0f;
+
+  [unroll]
+  for (uint cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex)
+  {
+    float splitFar = splits[cascadeIndex];
+
+    // Enforce monotonic stable splits to reduce temporal shimmer.
+    splitFar = max(splitFar, splitNear + 0.001f);
+
+    const float cascadeRadius = splitFar - splitNear;
+
+    ShadowCascadeData[cascadeIndex * 2 + 0] = float4(splitNear, splitFar, cascadeRadius, 0.0f);
+    ShadowCascadeData[cascadeIndex * 2 + 1] = float4(sunDir, (float)cascadeIndex);
+
+    splitNear = splitFar;
+  }
+}

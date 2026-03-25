@@ -9,6 +9,7 @@ xiiRenderGraphShadowCascadeSetupPass::xiiRenderGraphShadowCascadeSetupPass()
   m_PassDescription.m_bHasSideEffects = false;
 
   m_sCameraDataResourceName        = xiiMakeHashedString("FrameConstants");
+  m_sCascadeParamsResourceName     = xiiMakeHashedString("ShadowCascadeParams");
   m_sShadowCascadeDataResourceName = xiiMakeHashedString("ShadowCascadeData");
 
   RebuildResourceLayout();
@@ -29,6 +30,12 @@ void xiiRenderGraphShadowCascadeSetupPass::SetDispatchThreadGroupCount(xiiUInt32
 void xiiRenderGraphShadowCascadeSetupPass::SetCameraDataResourceName(xiiHashedString sResourceName)
 {
   m_sCameraDataResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphShadowCascadeSetupPass::SetCascadeParamsResourceName(xiiHashedString sResourceName)
+{
+  m_sCascadeParamsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -98,6 +105,13 @@ void xiiRenderGraphShadowCascadeSetupPass::RebuildResourceLayout()
     input.m_sResourceName              = m_sCameraDataResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sCascadeParamsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {

@@ -18,6 +18,7 @@ public:
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
   void SetCameraDataResourceName(xiiHashedString sResourceName);
+  void SetCascadeParamsResourceName(xiiHashedString sResourceName);
   void SetShadowCascadeDataResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
@@ -34,6 +35,7 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sCameraDataResourceName;
+  xiiHashedString               m_sCascadeParamsResourceName;
   xiiHashedString               m_sShadowCascadeDataResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
