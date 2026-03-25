@@ -1,0 +1,34 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+#include <Shaders/Pipeline/FrameConstants.h>
+
+StructuredBuffer<float4> FrameTimingData;
+RWStructuredBuffer<float4> DynamicResolutionData;
+
+[numthreads(1, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (dispatchThreadId.x != 0)
+  {
+    return;
+  }
+
+  float measuredFrameMs = FrameDeltaTimeMs;
+  if (FrameTimingData.Length > 0)
+  {
+    measuredFrameMs = max(FrameTimingData[0].x, 0.001f);
+  }
+
+  float targetFrameMs = max(TargetFrameTimeMs, 0.001f);
+  float ratio         = targetFrameMs / measuredFrameMs;
+  float scale         = saturate(ratio);
+  scale               = clamp(scale, MinDynamicResolutionScale, MaxDynamicResolutionScale);
+
+  // x = scale, y = measured frame ms, z = target frame ms, w = reserved.
+  DynamicResolutionData[0] = float4(scale, measuredFrameMs, targetFrameMs, 0.0f);
+}

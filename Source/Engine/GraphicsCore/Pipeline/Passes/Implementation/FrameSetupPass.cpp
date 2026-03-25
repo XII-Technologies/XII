@@ -2,6 +2,8 @@
 
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 
+#include <Foundation/Math/Color.h>
+
 xiiRenderGraphFrameSetupPass::xiiRenderGraphFrameSetupPass()
 {
   m_PassDescription.m_sPassName       = xiiMakeHashedString("FrameSetup");
@@ -9,6 +11,7 @@ xiiRenderGraphFrameSetupPass::xiiRenderGraphFrameSetupPass()
   m_PassDescription.m_bHasSideEffects = true;
 
   m_sFrameConstantsResourceName = xiiMakeHashedString("FrameConstants");
+  m_sFrameTimingResourceName    = xiiMakeHashedString("FrameTimingData");
 
   RebuildResourceLayout();
 }
@@ -26,6 +29,12 @@ void xiiRenderGraphFrameSetupPass::SetHasSideEffects(bool bHasSideEffects)
 void xiiRenderGraphFrameSetupPass::SetFrameConstantsResourceName(xiiHashedString sResourceName)
 {
   m_sFrameConstantsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphFrameSetupPass::SetFrameTimingResourceName(xiiHashedString sResourceName)
+{
+  m_sFrameTimingResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -71,9 +80,17 @@ void xiiRenderGraphFrameSetupPass::RecordCommands(const xiiRenderGraphPassExecut
     return;
   }
 
+  executionContext.m_pCommandList->BeginDebugGroup("FrameSetup", xiiColor::SteelBlue);
+
   if (m_SetupCommandListFunc.IsValid())
   {
     m_SetupCommandListFunc(*executionContext.m_pCommandList, executionContext);
+  }
+
+  if (executionContext.m_pCommandList->CommitShaderResources().Failed())
+  {
+    executionContext.m_pCommandList->EndDebugGroup();
+    return;
   }
 
   if (m_ExecuteCommandListFunc.IsValid())
@@ -85,6 +102,8 @@ void xiiRenderGraphFrameSetupPass::RecordCommands(const xiiRenderGraphPassExecut
   {
     m_PostExecuteCommandListFunc(*executionContext.m_pCommandList, executionContext);
   }
+
+  executionContext.m_pCommandList->EndDebugGroup();
 }
 
 void xiiRenderGraphFrameSetupPass::RebuildResourceLayout()
@@ -95,6 +114,13 @@ void xiiRenderGraphFrameSetupPass::RebuildResourceLayout()
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sFrameConstantsResourceName;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write;
+    output.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
+    output.m_sResourceName              = m_sFrameTimingResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write;
     output.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
   }

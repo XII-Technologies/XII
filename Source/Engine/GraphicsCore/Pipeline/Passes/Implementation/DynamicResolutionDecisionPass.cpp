@@ -5,8 +5,8 @@
 xiiRenderGraphDynamicResolutionDecisionPass::xiiRenderGraphDynamicResolutionDecisionPass()
 {
   m_PassDescription.m_sPassName       = xiiMakeHashedString("DynamicResolutionDecision");
-  m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
-  m_PassDescription.m_bHasSideEffects = true;
+  m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
+  m_PassDescription.m_bHasSideEffects = false;
 
   m_sFrameTimingResourceName              = xiiMakeHashedString("FrameTimingData");
   m_sDynamicResolutionDecisionResourceName = xiiMakeHashedString("DynamicResolutionData");
@@ -22,6 +22,13 @@ void xiiRenderGraphDynamicResolutionDecisionPass::SetEnabled(bool bEnabled)
 void xiiRenderGraphDynamicResolutionDecisionPass::SetHasSideEffects(bool bHasSideEffects)
 {
   m_PassDescription.m_bHasSideEffects = bHasSideEffects;
+}
+
+void xiiRenderGraphDynamicResolutionDecisionPass::SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY /*= 1U*/, xiiUInt32 uiThreadGroupCountZ /*= 1U*/)
+{
+  m_uiDispatchThreadGroupsX = xiiMath::Max(1U, uiThreadGroupCountX);
+  m_uiDispatchThreadGroupsY = xiiMath::Max(1U, uiThreadGroupCountY);
+  m_uiDispatchThreadGroupsZ = xiiMath::Max(1U, uiThreadGroupCountZ);
 }
 
 void xiiRenderGraphDynamicResolutionDecisionPass::SetFrameTimingResourceName(xiiHashedString sResourceName)
@@ -46,9 +53,9 @@ void xiiRenderGraphDynamicResolutionDecisionPass::SetExecuteCommandListFunc(Exec
   m_ExecuteCommandListFunc = executeCommandListFunc;
 }
 
-void xiiRenderGraphDynamicResolutionDecisionPass::SetPostExecuteCommandListFunc(PostExecuteCommandListFunc postExecuteCommandListFunc)
+void xiiRenderGraphDynamicResolutionDecisionPass::SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc)
 {
-  m_PostExecuteCommandListFunc = postExecuteCommandListFunc;
+  m_PostDispatchCommandListFunc = postDispatchCommandListFunc;
 }
 
 void xiiRenderGraphDynamicResolutionDecisionPass::ClearSetupCommandListFunc()
@@ -61,9 +68,9 @@ void xiiRenderGraphDynamicResolutionDecisionPass::ClearExecuteCommandListFunc()
   m_ExecuteCommandListFunc = {};
 }
 
-void xiiRenderGraphDynamicResolutionDecisionPass::ClearPostExecuteCommandListFunc()
+void xiiRenderGraphDynamicResolutionDecisionPass::ClearPostDispatchCommandListFunc()
 {
-  m_PostExecuteCommandListFunc = {};
+  m_PostDispatchCommandListFunc = {};
 }
 
 const xiiRenderGraphPassDescription& xiiRenderGraphDynamicResolutionDecisionPass::GetDescription() const
@@ -88,9 +95,16 @@ void xiiRenderGraphDynamicResolutionDecisionPass::RecordCommands(const xiiRender
     m_ExecuteCommandListFunc(*executionContext.m_pCommandList, executionContext);
   }
 
-  if (m_PostExecuteCommandListFunc.IsValid())
+  if (executionContext.m_pCommandList->CommitShaderResources().Failed())
   {
-    m_PostExecuteCommandListFunc(*executionContext.m_pCommandList, executionContext);
+    return;
+  }
+
+  executionContext.m_pCommandList->DispatchCompute(xiiGALDispatchComputeDescription(m_uiDispatchThreadGroupsX, m_uiDispatchThreadGroupsY, m_uiDispatchThreadGroupsZ));
+
+  if (m_PostDispatchCommandListFunc.IsValid())
+  {
+    m_PostDispatchCommandListFunc(*executionContext.m_pCommandList, executionContext);
   }
 }
 
@@ -103,14 +117,14 @@ void xiiRenderGraphDynamicResolutionDecisionPass::RebuildResourceLayout()
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
     input.m_sResourceName              = m_sFrameTimingResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
-    input.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sDynamicResolutionDecisionResourceName;
-    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write;
-    output.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
+    output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }
 }
 

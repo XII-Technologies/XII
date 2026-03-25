@@ -18,6 +18,7 @@ public:
   void SetEnabled(bool bEnabled);
   void SetHasSideEffects(bool bHasSideEffects);
   void SetFrameConstantsResourceName(xiiHashedString sResourceName);
+  void SetFrameTimingResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetExecuteCommandListFunc(ExecuteCommandListFunc executeCommandListFunc);
@@ -35,6 +36,7 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sFrameConstantsResourceName;
+  xiiHashedString               m_sFrameTimingResourceName;
 
   SetupCommandListFunc       m_SetupCommandListFunc;
   ExecuteCommandListFunc     m_ExecuteCommandListFunc;
