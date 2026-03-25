@@ -18,7 +18,9 @@ public:
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
   void SetSceneDepthResourceName(xiiHashedString sResourceName);
-  void SetContactShadowMaskResourceName(xiiHashedString sResourceName);
+  void SetSceneNormalRoughnessResourceName(xiiHashedString sResourceName);
+  void SetLightParamsResourceName(xiiHashedString sResourceName);
+  void SetContactShadowTermResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -34,7 +36,9 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sSceneDepthResourceName;
-  xiiHashedString               m_sContactShadowMaskResourceName;
+  xiiHashedString               m_sSceneNormalRoughnessResourceName;
+  xiiHashedString               m_sLightParamsResourceName;
+  xiiHashedString               m_sContactShadowTermResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;

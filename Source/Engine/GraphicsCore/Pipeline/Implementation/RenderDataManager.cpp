@@ -4,6 +4,7 @@
 #include <Core/World/World.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
+#include <GraphicsCore/Pipeline/Passes/ContactShadowsPass.h>
 #include <GraphicsCore/Pipeline/Passes/DepthPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
@@ -152,6 +153,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pLocalLightShadowSetupPass->SetLocalShadowRequestsResourceName(xiiMakeHashedString("LocalShadowRequests"));
   m_pLocalLightShadowSetupPass->SetLocalShadowAllocatorParamsResourceName(xiiMakeHashedString("LocalShadowAllocatorParams"));
   m_pLocalLightShadowSetupPass->SetLocalShadowAtlasPlacementsResourceName(xiiMakeHashedString("LocalShadowAtlasPlacements"));
+
+  m_pContactShadowsPass = XII_DEFAULT_NEW(xiiRenderGraphContactShadowsPass);
+  m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupContactShadowCommandList, this));
+  m_pContactShadowsPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pContactShadowsPass->SetSceneDepthResourceName(xiiMakeHashedString("SceneDepth"));
+  m_pContactShadowsPass->SetSceneNormalRoughnessResourceName(xiiMakeHashedString("SceneNormalRoughness"));
+  m_pContactShadowsPass->SetLightParamsResourceName(xiiMakeHashedString("ContactShadowLightParams"));
+  m_pContactShadowsPass->SetContactShadowTermResourceName(xiiMakeHashedString("ScreenSpaceContactShadowTerm"));
 
   m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
   m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
@@ -1131,6 +1140,41 @@ void xiiRenderDataManager::AddSpotAndPointShadowRenderingPass(xiiRenderGraphRunt
   inout_runtime.AddPass(m_pLocalLightShadowRenderingPass.Borrow());
 }
 
+void xiiRenderDataManager::AddContactShadowPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pContactShadowsPass != nullptr, "Contact shadow pass must be initialized.");
+
+  EnsureContactShadowResources();
+
+  const xiiUInt32 uiDispatchCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  m_pContactShadowsPass->SetEnabled(bEnableDispatch);
+  m_pContactShadowsPass->SetDispatchThreadGroupCount(uiDispatchCount, 1U, 1U);
+
+  if (m_pContactShadowDepthResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneDepth"), m_pContactShadowDepthResource);
+  }
+
+  if (m_pContactShadowNormalRoughnessResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("SceneNormalRoughness"), m_pContactShadowNormalRoughnessResource);
+  }
+
+  if (m_pContactShadowLightParamsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ContactShadowLightParams"), m_pContactShadowLightParamsBuffer);
+  }
+
+  if (m_pContactShadowTermResource != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("ScreenSpaceContactShadowTerm"), m_pContactShadowTermResource);
+  }
+
+  inout_runtime.AddPass(m_pContactShadowsPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1292,6 +1336,13 @@ void xiiRenderDataManager::SetLocalLightShadowAllocatorDeterministicSample(const
   XII_LOCK(m_Mutex);
 
   m_vLocalLightShadowAllocatorDeterministicSample = vDeterministicSample;
+}
+
+void xiiRenderDataManager::SetContactShadowLightParamsSample(const xiiVec4& vLightParamsSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vContactShadowLightParamsSample = vLightParamsSample;
 }
 
 void xiiRenderDataManager::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
@@ -1490,6 +1541,34 @@ void xiiRenderDataManager::SetLocalLightShadowAtlasPagesResource(xiiSharedPtr<xi
   m_pLocalShadowAtlasPagesResource = pAtlasPagesResource;
 }
 
+void xiiRenderDataManager::SetContactShadowDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pContactShadowDepthResource = pDepthResource;
+}
+
+void xiiRenderDataManager::SetContactShadowNormalRoughnessResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pContactShadowNormalRoughnessResource = pNormalRoughnessResource;
+}
+
+void xiiRenderDataManager::SetContactShadowLightParamsResource(xiiSharedPtr<xiiGALBuffer> pLightParamsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pContactShadowLightParamsBuffer = pLightParamsResource;
+}
+
+void xiiRenderDataManager::SetContactShadowOutputResource(xiiSharedPtr<xiiGALResource> pContactShadowTermResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pContactShadowTermResource = pContactShadowTermResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1664,6 +1743,22 @@ void xiiRenderDataManager::ClearSpotAndPointShadowRenderingDrawFunc() const
 
   XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
   m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList, this));
+}
+
+void xiiRenderDataManager::SetContactShadowSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pContactShadowsPass != nullptr, "Contact shadow pass must be initialized.");
+  m_pContactShadowsPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearContactShadowSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pContactShadowsPass != nullptr, "Contact shadow pass must be initialized.");
+  m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupContactShadowCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2504,6 +2599,39 @@ void xiiRenderDataManager::EnsureSpotAndPointShadowRenderingResources(xiiUInt32 
     if (m_pLocalLightShadowModeBinsBuffer != nullptr)
     {
       m_pLocalLightShadowModeBinsBuffer->SetDebugName("RenderDataManager::LocalShadowModeBins");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureContactShadowResources() const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  if (m_pContactShadowDepthResource == nullptr)
+  {
+    m_pContactShadowDepthResource = m_pMainDepthPrepassDepthResource != nullptr ? m_pMainDepthPrepassDepthResource : m_pOccluderDepthResource;
+  }
+
+  if (m_pContactShadowNormalRoughnessResource == nullptr)
+  {
+    m_pContactShadowNormalRoughnessResource = m_pNormalRoughnessPrepassOutputResource;
+  }
+
+  if (m_pContactShadowLightParamsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = sizeof(xiiVec4);
+
+    m_pContactShadowLightParamsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pContactShadowLightParamsBuffer != nullptr)
+    {
+      m_pContactShadowLightParamsBuffer->SetDebugName("RenderDataManager::ContactShadowLightParams");
     }
   }
 }
@@ -3478,6 +3606,85 @@ void xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList(xiiGALComm
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
+}
+
+void xiiRenderDataManager::SetupContactShadowCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureContactShadowResources();
+
+  if (m_hContactShadowsShader.IsValid() == false)
+  {
+    m_hContactShadowsShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/ContactShadows.xiiShader");
+  }
+
+  if (m_pContactShadowsPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hContactShadowsShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pContactShadowsPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pContactShadowsPipelineState == nullptr)
+  {
+    return;
+  }
+
+  if (m_pContactShadowLightParamsBuffer != nullptr)
+  {
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pContactShadowLightParamsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vContactShadowLightParamsSample), sizeof(m_vContactShadowLightParamsSample))).AssertSuccess();
+  }
+
+  commandList.SetPipelineState(m_pContactShadowsPipelineState);
+
+  if (m_pContactShadowDepthResource != nullptr)
+  {
+    if (xiiGALTexture* pDepthTexture = xiiDynamicCast<xiiGALTexture*>(m_pContactShadowDepthResource.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("SceneDepth"), pDepthTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+  }
+
+  if (m_pContactShadowNormalRoughnessResource != nullptr)
+  {
+    if (xiiGALTexture* pNormalTexture = xiiDynamicCast<xiiGALTexture*>(m_pContactShadowNormalRoughnessResource.Borrow()))
+    {
+      commandList.ResolveAndSetShaderResourceTextureView(xiiTempHashedString("SceneNormalRoughness"), pNormalTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+  }
+
+  if (m_pContactShadowLightParamsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("ContactShadowLightParams"), m_pContactShadowLightParamsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pContactShadowTermResource != nullptr)
+  {
+    if (xiiGALTexture* pContactTermTexture = xiiDynamicCast<xiiGALTexture*>(m_pContactShadowTermResource.Borrow()))
+    {
+      commandList.ResolveAndSetUnorderedAccessTextureView(xiiTempHashedString("ScreenSpaceContactShadowTerm"), pContactTermTexture->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    }
+  }
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
