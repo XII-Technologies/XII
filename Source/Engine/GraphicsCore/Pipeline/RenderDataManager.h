@@ -27,6 +27,7 @@ class xiiRenderGraphHiZOcclusionCullingPass;
 class xiiRenderGraphLodSelectionPass;
 class xiiRenderGraphNormalRoughnessPrepassPass;
 class xiiRenderGraphOccluderDepthPass;
+class xiiRenderGraphLocalLightShadowSetupPass;
 class xiiRenderGraphShadowMapRenderPass;
 class xiiRenderGraphShadowCasterCullingPass;
 class xiiRenderGraphShadowCascadeSetupPass;
@@ -263,6 +264,9 @@ public:
   /// \brief Registers graphics rendering of cascaded directional shadows into the atlas.
   void AddDirectionalShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = false) const;
 
+  /// \brief Registers deterministic local-light shadow atlas allocation from spot/point requests.
+  void AddLocalLightShadowAtlasAllocationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -298,6 +302,9 @@ public:
 
   /// \brief Updates staged texel-snapping sample consumed by directional shadow rendering.
   void SetDirectionalShadowTexelSnapSample(const xiiVec4& vTexelSnapSample) const;
+
+  /// \brief Updates staged deterministic local-light shadow allocator sample.
+  void SetLocalLightShadowAllocatorDeterministicSample(const xiiVec4& vDeterministicSample) const;
 
   /// \brief Supplies the depth resource written by the occluder depth prepass.
   void SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const;
@@ -365,6 +372,12 @@ public:
   /// \brief Supplies cascade data buffer consumed by directional shadow rendering.
   void SetDirectionalShadowRenderingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const;
 
+  /// \brief Supplies spot/point shadow request list consumed by local atlas allocation.
+  void SetLocalLightShadowRequestsResource(xiiSharedPtr<xiiGALBuffer> pRequestsResource) const;
+
+  /// \brief Supplies local-light shadow atlas placement list written by local atlas allocation.
+  void SetLocalLightShadowAtlasPlacementsResource(xiiSharedPtr<xiiGALBuffer> pPlacementsResource) const;
+
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
 
@@ -412,6 +425,12 @@ public:
 
   /// \brief Clears the optional directional shadow rendering draw callback.
   void ClearDirectionalShadowRenderingDrawFunc() const;
+
+  /// \brief Sets an optional callback for compute state setup before local atlas allocation dispatch.
+  void SetLocalLightShadowAtlasAllocationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
+
+  /// \brief Clears the optional local atlas allocation setup callback.
+  void ClearLocalLightShadowAtlasAllocationSetupFunc() const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
   void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
@@ -467,6 +486,7 @@ private:
   void EnsureDirectionalCascadeSetupResources() const;
   void EnsureDirectionalShadowCullingResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureDirectionalShadowRenderingResources(xiiUInt32 uiInstanceCapacity) const;
+  void EnsureLocalLightShadowAtlasAllocationResources(xiiUInt32 uiRequestCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -487,6 +507,7 @@ private:
   void SetupDirectionalShadowCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void DrawDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupLocalLightShadowAtlasAllocationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -518,6 +539,7 @@ private:
   mutable xiiShaderResourceHandle                                m_hDrawCommandBuildShader;
   mutable xiiShaderResourceHandle                                m_hShadowCascadeSetupShader;
   mutable xiiShaderResourceHandle                                m_hShadowCasterCullingShader;
+  mutable xiiShaderResourceHandle                                m_hLocalLightShadowSetupShader;
   mutable xiiShaderResourceHandle                                m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDynamicResolutionPipelineState;
@@ -529,6 +551,7 @@ private:
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pDrawCommandBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pShadowCascadeSetupPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pShadowCasterCullingPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLocalLightShadowSetupPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>               m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pGpuVisibleInstancesBuffer;
@@ -577,6 +600,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pDirectionalShadowRenderingVisibleCountBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pDirectionalShadowRenderingCascadeDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pDirectionalShadowAtlasParamsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowRequestsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowAtlasPlacementsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                             m_pLocalLightShadowAllocatorParamsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameGlobalParamsBuffer;
@@ -596,6 +622,7 @@ private:
   mutable float                                                  m_fShadowCascadeSplitDistances[4]           = {10.0f, 30.0f, 80.0f, 200.0f};
   mutable xiiVec4                                                m_vDirectionalShadowAtlasPackingSample      = xiiVec4(0.5f, 0.5f, 0.0f, 0.0f);
   mutable xiiVec4                                                m_vDirectionalShadowTexelSnapSample         = xiiVec4(1.0f, 1.0f, 1.0f, 0.0f);
+  mutable xiiVec4                                                m_vLocalLightShadowAllocatorDeterministicSample = xiiVec4(0.0f, 1.0f, 1024.0f, 1024.0f);
   mutable xiiPreviousFrameStats                                  m_PreviousFrameStatsSample;
   mutable xiiPerFrameCameraUploadData                            m_PerFrameCameraConstantsSample = {};
   mutable xiiPerFrameLightUploadData                             m_PerFrameLightDataSample       = {};
@@ -612,6 +639,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphNormalRoughnessPrepassPass> m_pNormalRoughnessPrepassPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowCascadeSetupPass>     m_pShadowCascadeSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowCasterCullingPass>    m_pShadowCasterCullingPass;
+  mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowSetupPass>  m_pLocalLightShadowSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowMapRenderPass>        m_pDirectionalShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>           m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass>      m_pDynamicResolutionPass;

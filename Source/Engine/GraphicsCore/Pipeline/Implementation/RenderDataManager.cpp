@@ -13,6 +13,7 @@
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
+#include <GraphicsCore/Pipeline/Passes/LocalLightShadowSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/NormalRoughnessPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
@@ -54,6 +55,11 @@ namespace
   {
     xiiVec4 m_vAtlasPacking = xiiVec4(0.5f, 0.5f, 0.0f, 0.0f);
     xiiVec4 m_vTexelSnap    = xiiVec4(1.0f, 1.0f, 1.0f, 0.0f);
+  };
+
+  struct LocalLightShadowAllocatorParams
+  {
+    xiiVec4 m_vDeterministic = xiiVec4(0.0f, 1.0f, 1024.0f, 1024.0f);
   };
 } // namespace
 
@@ -138,6 +144,13 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pShadowCasterCullingPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
   m_pShadowCasterCullingPass->SetShadowVisibleListResourceName(xiiMakeHashedString("ShadowVisibleList"));
   m_pShadowCasterCullingPass->SetShadowVisibleCountResourceName(xiiMakeHashedString("ShadowVisibleCount"));
+
+  m_pLocalLightShadowSetupPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowSetupPass);
+  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList, this));
+  m_pLocalLightShadowSetupPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pLocalLightShadowSetupPass->SetLocalShadowRequestsResourceName(xiiMakeHashedString("LocalShadowRequests"));
+  m_pLocalLightShadowSetupPass->SetLocalShadowAllocatorParamsResourceName(xiiMakeHashedString("LocalShadowAllocatorParams"));
+  m_pLocalLightShadowSetupPass->SetLocalShadowAtlasPlacementsResourceName(xiiMakeHashedString("LocalShadowAtlasPlacements"));
 
   m_pDirectionalShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphShadowMapRenderPass);
   m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList, this));
@@ -1045,6 +1058,36 @@ void xiiRenderDataManager::AddDirectionalShadowRenderingPass(xiiRenderGraphRunti
   inout_runtime.AddPass(m_pDirectionalShadowRenderingPass.Borrow());
 }
 
+void xiiRenderDataManager::AddLocalLightShadowAtlasAllocationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowSetupPass != nullptr, "Local-light shadow atlas allocation pass must be initialized.");
+
+  const xiiUInt32 uiRequestCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureLocalLightShadowAtlasAllocationResources(uiRequestCount);
+
+  m_pLocalLightShadowSetupPass->SetEnabled(bEnableDispatch);
+  m_pLocalLightShadowSetupPass->SetDispatchThreadGroupCount(uiRequestCount, 1U, 1U);
+
+  if (m_pLocalLightShadowRequestsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowRequests"), m_pLocalLightShadowRequestsBuffer);
+  }
+
+  if (m_pLocalLightShadowAllocatorParamsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowAllocatorParams"), m_pLocalLightShadowAllocatorParamsBuffer);
+  }
+
+  if (m_pLocalLightShadowAtlasPlacementsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("LocalShadowAtlasPlacements"), m_pLocalLightShadowAtlasPlacementsBuffer);
+  }
+
+  inout_runtime.AddPass(m_pLocalLightShadowSetupPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -1201,6 +1244,13 @@ void xiiRenderDataManager::SetDirectionalShadowTexelSnapSample(const xiiVec4& vT
   m_vDirectionalShadowTexelSnapSample = vTexelSnapSample;
 }
 
+void xiiRenderDataManager::SetLocalLightShadowAllocatorDeterministicSample(const xiiVec4& vDeterministicSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_vLocalLightShadowAllocatorDeterministicSample = vDeterministicSample;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
@@ -1355,6 +1405,20 @@ void xiiRenderDataManager::SetDirectionalShadowRenderingCascadeDataResource(xiiS
   m_pDirectionalShadowRenderingCascadeDataBuffer = pCascadeDataResource;
 }
 
+void xiiRenderDataManager::SetLocalLightShadowRequestsResource(xiiSharedPtr<xiiGALBuffer> pRequestsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pLocalLightShadowRequestsBuffer = pRequestsResource;
+}
+
+void xiiRenderDataManager::SetLocalLightShadowAtlasPlacementsResource(xiiSharedPtr<xiiGALBuffer> pPlacementsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pLocalLightShadowAtlasPlacementsBuffer = pPlacementsResource;
+}
+
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
@@ -1481,6 +1545,22 @@ void xiiRenderDataManager::ClearDirectionalShadowRenderingDrawFunc() const
 
   XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
   m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList, this));
+}
+
+void xiiRenderDataManager::SetLocalLightShadowAtlasAllocationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowSetupPass != nullptr, "Local-light shadow atlas allocation pass must be initialized.");
+  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(setupFunc);
+}
+
+void xiiRenderDataManager::ClearLocalLightShadowAtlasAllocationSetupFunc() const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLocalLightShadowSetupPass != nullptr, "Local-light shadow atlas allocation pass must be initialized.");
+  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList, this));
 }
 
 void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
@@ -2194,6 +2274,82 @@ void xiiRenderDataManager::EnsureDirectionalShadowRenderingResources(xiiUInt32 u
     if (m_pDirectionalShadowAtlasParamsBuffer != nullptr)
     {
       m_pDirectionalShadowAtlasParamsBuffer->SetDebugName("RenderDataManager::DirectionalShadowAtlasParams");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureLocalLightShadowAtlasAllocationResources(xiiUInt32 uiRequestCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt32 uiResolvedRequestCapacity = xiiMath::Max(1U, uiRequestCapacity);
+
+  if (m_pLocalLightShadowRequestsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiResolvedRequestCapacity) * sizeof(xiiVec4);
+
+    m_pLocalLightShadowRequestsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pLocalLightShadowRequestsBuffer != nullptr)
+    {
+      m_pLocalLightShadowRequestsBuffer->SetDebugName("RenderDataManager::LocalShadowRequests");
+    }
+  }
+  else if (m_pLocalLightShadowRequestsBuffer->GetDescription().m_uiSize < static_cast<xiiUInt64>(uiResolvedRequestCapacity) * sizeof(xiiVec4))
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = static_cast<xiiUInt64>(uiResolvedRequestCapacity) * sizeof(xiiVec4);
+
+    m_pLocalLightShadowRequestsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pLocalLightShadowRequestsBuffer != nullptr)
+    {
+      m_pLocalLightShadowRequestsBuffer->SetDebugName("RenderDataManager::LocalShadowRequests");
+    }
+  }
+
+  const xiiUInt64 uiPlacementsSize = static_cast<xiiUInt64>(uiResolvedRequestCapacity) * sizeof(xiiVec4);
+  if (m_pLocalLightShadowAtlasPlacementsBuffer == nullptr || m_pLocalLightShadowAtlasPlacementsBuffer->GetDescription().m_uiSize < uiPlacementsSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiPlacementsSize;
+
+    m_pLocalLightShadowAtlasPlacementsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pLocalLightShadowAtlasPlacementsBuffer != nullptr)
+    {
+      m_pLocalLightShadowAtlasPlacementsBuffer->SetDebugName("RenderDataManager::LocalShadowAtlasPlacements");
+    }
+  }
+
+  if (m_pLocalLightShadowAllocatorParamsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = sizeof(xiiVec4);
+
+    m_pLocalLightShadowAllocatorParamsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pLocalLightShadowAllocatorParamsBuffer != nullptr)
+    {
+      m_pLocalLightShadowAllocatorParamsBuffer->SetDebugName("RenderDataManager::LocalShadowAllocatorParams");
     }
   }
 }
@@ -3069,6 +3225,75 @@ void xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList(xiiGALComma
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
+}
+
+void xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiRequestCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureLocalLightShadowAtlasAllocationResources(uiRequestCount);
+
+  if (m_hLocalLightShadowSetupShader.IsValid() == false)
+  {
+    m_hLocalLightShadowSetupShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/LocalLightShadowAtlasAllocation.xiiShader");
+  }
+
+  if (m_pLocalLightShadowSetupPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hLocalLightShadowSetupShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pLocalLightShadowSetupPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pLocalLightShadowSetupPipelineState == nullptr)
+  {
+    return;
+  }
+
+  LocalLightShadowAllocatorParams allocatorParams;
+  allocatorParams.m_vDeterministic = m_vLocalLightShadowAllocatorDeterministicSample;
+
+  if (m_pLocalLightShadowAllocatorParamsBuffer != nullptr)
+  {
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pLocalLightShadowAllocatorParamsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&allocatorParams), sizeof(allocatorParams))).AssertSuccess();
+  }
+
+  commandList.SetPipelineState(m_pLocalLightShadowSetupPipelineState);
+
+  if (m_pLocalLightShadowRequestsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("LocalShadowRequests"), m_pLocalLightShadowRequestsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pLocalLightShadowAllocatorParamsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("LocalShadowAllocatorParams"), m_pLocalLightShadowAllocatorParamsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pLocalLightShadowAtlasPlacementsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("LocalShadowAtlasPlacements"), m_pLocalLightShadowAtlasPlacementsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
 }
 
 void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const

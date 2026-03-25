@@ -8,8 +8,9 @@ xiiRenderGraphLocalLightShadowSetupPass::xiiRenderGraphLocalLightShadowSetupPass
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sVisibleLightsResourceName   = xiiMakeHashedString("VisibleLightList");
-  m_sLocalShadowDataResourceName = xiiMakeHashedString("LocalShadowData");
+  m_sLocalShadowRequestsResourceName        = xiiMakeHashedString("LocalShadowRequests");
+  m_sLocalShadowAllocatorParamsResourceName = xiiMakeHashedString("LocalShadowAllocatorParams");
+  m_sLocalShadowAtlasPlacementsResourceName = xiiMakeHashedString("LocalShadowAtlasPlacements");
 
   RebuildResourceLayout();
 }
@@ -26,15 +27,21 @@ void xiiRenderGraphLocalLightShadowSetupPass::SetDispatchThreadGroupCount(xiiUIn
   m_uiDispatchThreadGroupsZ = xiiMath::Max(1U, uiThreadGroupCountZ);
 }
 
-void xiiRenderGraphLocalLightShadowSetupPass::SetVisibleLightsResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphLocalLightShadowSetupPass::SetLocalShadowRequestsResourceName(xiiHashedString sResourceName)
 {
-  m_sVisibleLightsResourceName = sResourceName;
+  m_sLocalShadowRequestsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
-void xiiRenderGraphLocalLightShadowSetupPass::SetLocalShadowDataResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphLocalLightShadowSetupPass::SetLocalShadowAllocatorParamsResourceName(xiiHashedString sResourceName)
 {
-  m_sLocalShadowDataResourceName = sResourceName;
+  m_sLocalShadowAllocatorParamsResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLocalLightShadowSetupPass::SetLocalShadowAtlasPlacementsResourceName(xiiHashedString sResourceName)
+{
+  m_sLocalShadowAtlasPlacementsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -95,14 +102,21 @@ void xiiRenderGraphLocalLightShadowSetupPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sVisibleLightsResourceName;
+    input.m_sResourceName              = m_sLocalShadowRequestsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sLocalShadowAllocatorParamsResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
-    output.m_sResourceName              = m_sLocalShadowDataResourceName;
+    output.m_sResourceName              = m_sLocalShadowAtlasPlacementsResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }

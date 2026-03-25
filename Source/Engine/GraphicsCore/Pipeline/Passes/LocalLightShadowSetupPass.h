@@ -17,8 +17,9 @@ public:
   void SetEnabled(bool bEnabled);
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
-  void SetVisibleLightsResourceName(xiiHashedString sResourceName);
-  void SetLocalShadowDataResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowRequestsResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowAllocatorParamsResourceName(xiiHashedString sResourceName);
+  void SetLocalShadowAtlasPlacementsResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -33,8 +34,9 @@ private:
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;
-  xiiHashedString               m_sVisibleLightsResourceName;
-  xiiHashedString               m_sLocalShadowDataResourceName;
+  xiiHashedString               m_sLocalShadowRequestsResourceName;
+  xiiHashedString               m_sLocalShadowAllocatorParamsResourceName;
+  xiiHashedString               m_sLocalShadowAtlasPlacementsResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;
