@@ -8,9 +8,11 @@ xiiRenderGraphLodSelectionPass::xiiRenderGraphLodSelectionPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
+  m_sGpuSceneBoundsResourceName    = xiiMakeHashedString("GpuSceneBounds");
   m_sGpuSceneInstancesResourceName = xiiMakeHashedString("GpuSceneInstances");
   m_sCameraDataResourceName        = xiiMakeHashedString("FrameConstants");
   m_sLodSelectionResourceName      = xiiMakeHashedString("GpuLodSelections");
+  m_sDrawMetadataResourceName      = xiiMakeHashedString("GpuDrawMetadata");
 
   RebuildResourceLayout();
 }
@@ -25,6 +27,12 @@ void xiiRenderGraphLodSelectionPass::SetDispatchThreadGroupCount(xiiUInt32 uiThr
   m_uiDispatchThreadGroupsX = uiThreadGroupCountX;
   m_uiDispatchThreadGroupsY = xiiMath::Max(1U, uiThreadGroupCountY);
   m_uiDispatchThreadGroupsZ = xiiMath::Max(1U, uiThreadGroupCountZ);
+}
+
+void xiiRenderGraphLodSelectionPass::SetGpuSceneBoundsResourceName(xiiHashedString sResourceName)
+{
+  m_sGpuSceneBoundsResourceName = sResourceName;
+  RebuildResourceLayout();
 }
 
 void xiiRenderGraphLodSelectionPass::SetGpuSceneInstancesResourceName(xiiHashedString sResourceName)
@@ -42,6 +50,12 @@ void xiiRenderGraphLodSelectionPass::SetCameraDataResourceName(xiiHashedString s
 void xiiRenderGraphLodSelectionPass::SetLodSelectionResourceName(xiiHashedString sResourceName)
 {
   m_sLodSelectionResourceName = sResourceName;
+  RebuildResourceLayout();
+}
+
+void xiiRenderGraphLodSelectionPass::SetDrawMetadataResourceName(xiiHashedString sResourceName)
+{
+  m_sDrawMetadataResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -107,6 +121,13 @@ void xiiRenderGraphLodSelectionPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
+    input.m_sResourceName              = m_sGpuSceneBoundsResourceName;
+    input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
+    input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
     input.m_sResourceName              = m_sGpuSceneInstancesResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
@@ -122,6 +143,13 @@ void xiiRenderGraphLodSelectionPass::RebuildResourceLayout()
   {
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sLodSelectionResourceName;
+    output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
+    output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
+  }
+
+  {
+    xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
+    output.m_sResourceName              = m_sDrawMetadataResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess;
     output.m_RequiredState              = xiiGALResourceStateFlags::UnorderedAccess;
   }

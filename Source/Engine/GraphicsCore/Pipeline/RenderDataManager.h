@@ -19,6 +19,7 @@ class xiiRenderGraphRuntime;
 class xiiRenderGraphFrameSetupPass;
 class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphInstanceUpdatePass;
+class xiiRenderGraphLodSelectionPass;
 class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphSkinningPass;
 class xiiRenderGraphPerFrameBufferUploadPass;
@@ -222,6 +223,9 @@ public:
   /// \brief Registers the async instance transform and bounds update pass.
   void AddInstanceTransformAndBoundsUpdatePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers the async LOD selection and meshlet classification pass.
+  void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the per-frame upload pass for camera, light and global buffers.
   void AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableUploads = true) const;
 
@@ -286,12 +290,14 @@ private:
   void EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const;
   void EnsureSkinningAndMorphResources(xiiUInt32 uiElementCount) const;
   void EnsureInstanceUpdateResources(xiiUInt32 uiElementCount) const;
+  void EnsureLodSelectionResources(xiiUInt32 uiElementCount) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupInstanceUpdateCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -316,10 +322,12 @@ private:
   mutable xiiShaderResourceHandle                           m_hDynamicResolutionShader;
   mutable xiiShaderResourceHandle                           m_hSkinningShader;
   mutable xiiShaderResourceHandle                           m_hInstanceUpdateShader;
+  mutable xiiShaderResourceHandle                           m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pDynamicResolutionPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pSkinningPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pInstanceUpdatePipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountBuffer;
@@ -336,6 +344,8 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pSceneTransformsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pUpdatedGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneBoundsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuLodSelectionsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuDrawMetadataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pPreviousFrameStatsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pFrameConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pFrameTimestampRangesBuffer;
@@ -360,6 +370,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphFrameSetupPass>        m_pFrameSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphInstanceUpdatePass>    m_pInstanceUpdatePass;
+  mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>      m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>          m_pSkinningPass;
   mutable xiiUniquePtr<xiiRenderGraphPerFrameBufferUploadPass> m_pPerFrameBufferUploadPass;

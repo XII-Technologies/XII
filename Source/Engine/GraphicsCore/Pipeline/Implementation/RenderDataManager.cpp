@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
+#include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
 #include <GraphicsCore/Pipeline/Passes/SkinningPass.h>
@@ -56,6 +57,10 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pInstanceUpdatePass = XII_DEFAULT_NEW(xiiRenderGraphInstanceUpdatePass);
   m_pInstanceUpdatePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupInstanceUpdateCommandList, this));
   m_pInstanceUpdatePass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+
+  m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
+  m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
+  m_pLodSelectionPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pRayTracedShadowsPass = XII_DEFAULT_NEW(xiiRenderGraphRayTracedShadowsPass);
   m_pRayTracedShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupRayTracedShadowsCommandList, this));
@@ -557,6 +562,49 @@ void xiiRenderDataManager::AddInstanceTransformAndBoundsUpdatePass(xiiRenderGrap
   }
 
   inout_runtime.AddPass(m_pInstanceUpdatePass.Borrow());
+}
+
+void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pLodSelectionPass != nullptr, "LOD selection pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureFrameSetupResources();
+  EnsureInstanceUpdateResources(uiInstanceCount);
+  EnsureLodSelectionResources(uiInstanceCount);
+
+  m_pLodSelectionPass->SetEnabled(bEnableDispatch);
+  m_pLodSelectionPass->SetDispatchThreadGroupCount(uiInstanceCount, 1U, 1U);
+
+  xiiSharedPtr<xiiGALBuffer> pSceneInstancesBuffer = m_pUpdatedGpuSceneInstancesBuffer != nullptr ? m_pUpdatedGpuSceneInstancesBuffer : m_pGpuSceneInstancesBuffer;
+  if (pSceneInstancesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuSceneInstances"), pSceneInstancesBuffer);
+  }
+
+  if (m_pGpuSceneBoundsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuSceneBounds"), m_pGpuSceneBoundsBuffer);
+  }
+
+  if (m_pFrameConstantsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("FrameConstants"), m_pFrameConstantsBuffer);
+  }
+
+  if (m_pGpuLodSelectionsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuLodSelections"), m_pGpuLodSelectionsBuffer);
+  }
+
+  if (m_pGpuDrawMetadataBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuDrawMetadata"), m_pGpuDrawMetadataBuffer);
+  }
+
+  inout_runtime.AddPass(m_pLodSelectionPass.Borrow());
 }
 
 void xiiRenderDataManager::AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableUploads /*= true*/) const
@@ -1066,6 +1114,50 @@ void xiiRenderDataManager::EnsureInstanceUpdateResources(xiiUInt32 uiElementCoun
   }
 }
 
+void xiiRenderDataManager::EnsureLodSelectionResources(xiiUInt32 uiElementCount) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  const xiiUInt32 uiResolvedElementCount = xiiMath::Max(1U, uiElementCount);
+
+  const xiiUInt64 uiLodSelectionSize = static_cast<xiiUInt64>(uiResolvedElementCount) * sizeof(xiiVec4);
+  if (m_pGpuLodSelectionsBuffer == nullptr || m_pGpuLodSelectionsBuffer->GetDescription().m_uiSize < uiLodSelectionSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiLodSelectionSize;
+
+    m_pGpuLodSelectionsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pGpuLodSelectionsBuffer != nullptr)
+    {
+      m_pGpuLodSelectionsBuffer->SetDebugName("RenderDataManager::GpuLodSelections");
+    }
+  }
+
+  const xiiUInt64 uiDrawMetadataSize = static_cast<xiiUInt64>(uiResolvedElementCount) * sizeof(xiiVec4);
+  if (m_pGpuDrawMetadataBuffer == nullptr || m_pGpuDrawMetadataBuffer->GetDescription().m_uiSize < uiDrawMetadataSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiSize              = uiDrawMetadataSize;
+
+    m_pGpuDrawMetadataBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pGpuDrawMetadataBuffer != nullptr)
+    {
+      m_pGpuDrawMetadataBuffer->SetDebugName("RenderDataManager::GpuDrawMetadata");
+    }
+  }
+}
+
 void xiiRenderDataManager::EnsureFrameSetupResources() const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
@@ -1405,6 +1497,80 @@ void xiiRenderDataManager::SetupInstanceUpdateCommandList(xiiGALCommandList& com
   if (m_pGpuSceneBoundsBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuSceneBounds"), m_pGpuSceneBoundsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureFrameSetupResources();
+  EnsureInstanceUpdateResources(uiInstanceCount);
+  EnsureLodSelectionResources(uiInstanceCount);
+
+  if (m_hLodSelectionShader.IsValid() == false)
+  {
+    m_hLodSelectionShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/LodSelection.xiiShader");
+  }
+
+  if (m_pLodSelectionPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hLodSelectionShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pLodSelectionPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pLodSelectionPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pLodSelectionPipelineState);
+
+  if (m_pGpuSceneBoundsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuSceneBounds"), m_pGpuSceneBoundsBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  xiiSharedPtr<xiiGALBuffer> pSceneInstancesBuffer = m_pUpdatedGpuSceneInstancesBuffer != nullptr ? m_pUpdatedGpuSceneInstancesBuffer : m_pGpuSceneInstancesBuffer;
+  if (pSceneInstancesBuffer != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuSceneInstances"), pSceneInstancesBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pFrameConstantsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetConstantBuffer(xiiTempHashedString("xiiFrameConstants"), m_pFrameConstantsBuffer);
+  }
+
+  if (m_pGpuLodSelectionsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuLodSelections"), m_pGpuLodSelectionsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+
+  if (m_pGpuDrawMetadataBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuDrawMetadata"), m_pGpuDrawMetadataBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 

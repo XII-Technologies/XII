@@ -17,9 +17,11 @@ public:
   void SetEnabled(bool bEnabled);
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
+  void SetGpuSceneBoundsResourceName(xiiHashedString sResourceName);
   void SetGpuSceneInstancesResourceName(xiiHashedString sResourceName);
   void SetCameraDataResourceName(xiiHashedString sResourceName);
   void SetLodSelectionResourceName(xiiHashedString sResourceName);
+  void SetDrawMetadataResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
@@ -35,9 +37,11 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
 
+  xiiHashedString m_sGpuSceneBoundsResourceName;
   xiiHashedString m_sGpuSceneInstancesResourceName;
   xiiHashedString m_sCameraDataResourceName;
   xiiHashedString m_sLodSelectionResourceName;
+  xiiHashedString m_sDrawMetadataResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;
