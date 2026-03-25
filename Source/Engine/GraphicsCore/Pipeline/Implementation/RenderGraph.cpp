@@ -15,6 +15,37 @@ namespace
     return XII_FAILURE;
   }
 
+  static xiiResult ValidateRayTracingAccessFlags(const xiiRenderGraphPassDescription& passDescription, const xiiRenderGraphResourceUsage& usage, bool bIsInput, xiiStringBuilder* out_pErrorMessage)
+  {
+    const xiiBitflags<xiiRenderGraphResourceAccessFlags> accessFlags = usage.m_AccessFlags;
+
+    if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::RayTracing) && accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::Write))
+    {
+      xiiStringBuilder sError;
+      sError.SetFormat("Render graph pass '{0}' {1} resource '{2}' cannot combine RayTracing with Write access.",
+                       passDescription.m_sPassName.GetView(), bIsInput ? "input" : "output", usage.m_sResourceName.GetView());
+      return BuildError(out_pErrorMessage, sError.GetView());
+    }
+
+    if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::BuildASRead) && accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::Write))
+    {
+      xiiStringBuilder sError;
+      sError.SetFormat("Render graph pass '{0}' {1} resource '{2}' cannot combine BuildASRead with Write access.",
+                       passDescription.m_sPassName.GetView(), bIsInput ? "input" : "output", usage.m_sResourceName.GetView());
+      return BuildError(out_pErrorMessage, sError.GetView());
+    }
+
+    if (accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::BuildASWrite) && !accessFlags.IsAnySet(xiiRenderGraphResourceAccessFlags::Write))
+    {
+      xiiStringBuilder sError;
+      sError.SetFormat("Render graph pass '{0}' {1} resource '{2}' uses BuildASWrite but is missing Write access.",
+                       passDescription.m_sPassName.GetView(), bIsInput ? "input" : "output", usage.m_sResourceName.GetView());
+      return BuildError(out_pErrorMessage, sError.GetView());
+    }
+
+    return XII_SUCCESS;
+  }
+
   static xiiBitflags<xiiGALResourceStateFlags> ResolveRequiredState(const xiiRenderGraphResourceUsage& usage)
   {
     if (usage.m_RequiredState.GetValue() != 0U)
@@ -478,6 +509,8 @@ xiiResult xiiRenderGraphCompiler::ValidatePassDescription(const xiiRenderGraphPa
       return BuildError(out_pErrorMessage, sError.GetView());
     }
 
+    XII_SUCCEED_OR_RETURN(ValidateRayTracingAccessFlags(passDescription, input, true, out_pErrorMessage));
+
     const xiiBitflags<xiiGALResourceStateFlags> requiredState = input.m_RequiredState.IsNoFlagSet() ? DeriveRequiredState(input.m_AccessFlags) : input.m_RequiredState;
     if (requiredState.GetValue() == 0U)
     {
@@ -502,6 +535,8 @@ xiiResult xiiRenderGraphCompiler::ValidatePassDescription(const xiiRenderGraphPa
       sError.SetFormat("Render graph pass '{0}' output '{1}' must declare at least one access flag.", passDescription.m_sPassName.GetView(), output.m_sResourceName.GetView());
       return BuildError(out_pErrorMessage, sError.GetView());
     }
+
+    XII_SUCCEED_OR_RETURN(ValidateRayTracingAccessFlags(passDescription, output, false, out_pErrorMessage));
 
     const xiiBitflags<xiiGALResourceStateFlags> requiredState = output.m_RequiredState.IsNoFlagSet() ? DeriveRequiredState(output.m_AccessFlags) : output.m_RequiredState;
     if (requiredState.GetValue() == 0U)
@@ -563,6 +598,16 @@ xiiResult xiiRenderGraphExecutor::Execute(const xiiArrayPtr<const xiiRenderGraph
   for (const xiiRenderGraphCompiledPass& compiledPass : compiledPasses)
   {
     stateTransitions.Clear();
+
+    const xiiRenderGraphPassDescription& passDescription = compiledPass.m_pPass->GetDescription();
+    const xiiBitflags<xiiGALCommandQueueFlags> commandListQueueFlags = executionContext.m_pCommandList->GetDescription().m_QueueFlags;
+    if (!commandListQueueFlags.IsAnySet(passDescription.m_QueueFlags))
+    {
+      xiiStringBuilder sError;
+      sError.SetFormat("Render graph pass '{0}' requires queue flags {1}, but command list only supports {2}.",
+                       passDescription.m_sPassName.GetView(), passDescription.m_QueueFlags.GetValue(), commandListQueueFlags.GetValue());
+      return BuildError(out_pErrorMessage, sError.GetView());
+    }
 
     if (compiledPass.m_uiPassIndex < barriersByTargetPass.GetCount())
     {

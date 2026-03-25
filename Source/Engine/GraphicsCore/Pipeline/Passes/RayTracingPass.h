@@ -26,6 +26,10 @@ public:
 
   void AddInputResource(xiiHashedString sResourceName, xiiBitflags<xiiRenderGraphResourceAccessFlags> accessFlags = xiiRenderGraphResourceAccessFlags::Read, xiiBitflags<xiiGALResourceStateFlags> requiredState = xiiGALResourceStateFlags::Unknown);
   void AddOutputResource(xiiHashedString sResourceName, xiiBitflags<xiiRenderGraphResourceAccessFlags> accessFlags = xiiRenderGraphResourceAccessFlags::Write, xiiBitflags<xiiGALResourceStateFlags> requiredState = xiiGALResourceStateFlags::Unknown);
+  void AddRayTracingSceneInput(xiiHashedString sResourceName);
+  void AddBuildInputResource(xiiHashedString sResourceName);
+  void AddBuildOutputResource(xiiHashedString sResourceName);
+  void AddUnorderedAccessOutput(xiiHashedString sResourceName);
   void ClearInputResources();
   void ClearOutputResources();
 

@@ -47,6 +47,26 @@ void xiiRenderGraphRayTracingPass::AddOutputResource(xiiHashedString sResourceNa
   output.m_RequiredState              = requiredState;
 }
 
+void xiiRenderGraphRayTracingPass::AddRayTracingSceneInput(xiiHashedString sResourceName)
+{
+  AddInputResource(sResourceName, xiiRenderGraphResourceAccessFlags::Read | xiiRenderGraphResourceAccessFlags::RayTracing, xiiGALResourceStateFlags::RayTracing);
+}
+
+void xiiRenderGraphRayTracingPass::AddBuildInputResource(xiiHashedString sResourceName)
+{
+  AddInputResource(sResourceName, xiiRenderGraphResourceAccessFlags::Read | xiiRenderGraphResourceAccessFlags::BuildASRead, xiiGALResourceStateFlags::BuildASRead);
+}
+
+void xiiRenderGraphRayTracingPass::AddBuildOutputResource(xiiHashedString sResourceName)
+{
+  AddOutputResource(sResourceName, xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::BuildASWrite, xiiGALResourceStateFlags::BuildASWrite);
+}
+
+void xiiRenderGraphRayTracingPass::AddUnorderedAccessOutput(xiiHashedString sResourceName)
+{
+  AddOutputResource(sResourceName, xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::UnorderedAccess, xiiGALResourceStateFlags::UnorderedAccess);
+}
+
 void xiiRenderGraphRayTracingPass::ClearInputResources()
 {
   m_PassDescription.m_Inputs.Clear();
