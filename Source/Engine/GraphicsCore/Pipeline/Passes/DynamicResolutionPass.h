@@ -5,24 +5,28 @@
 #include <Foundation/Types/Delegate.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 
-/// \brief Compute scaffold for dynamic-resolution evaluation and metadata output.
+/// \brief Orchestration scaffold for deciding dynamic resolution scale after frame kickoff.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphDynamicResolutionPass final : public xiiRenderGraphPassBase
 {
 public:
   using SetupCommandListFunc        = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using ExecuteCommandListFunc      = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
   using PostDispatchCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
 
   xiiRenderGraphDynamicResolutionPass();
 
   void SetEnabled(bool bEnabled);
+  void SetHasSideEffects(bool bHasSideEffects);
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
-  void SetFrameTimingInputResourceName(xiiHashedString sResourceName);
-  void SetDynamicResolutionDataResourceName(xiiHashedString sResourceName);
+  void SetFrameTimingResourceName(xiiHashedString sResourceName);
+  void SetDynamicResolutionResourceName(xiiHashedString sResourceName);
 
   void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
+  void SetExecuteCommandListFunc(ExecuteCommandListFunc executeCommandListFunc);
   void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
   void ClearSetupCommandListFunc();
+  void ClearExecuteCommandListFunc();
   void ClearPostDispatchCommandListFunc();
 
   [[nodiscard]] virtual const xiiRenderGraphPassDescription& GetDescription() const override;
@@ -33,10 +37,11 @@ private:
 
 private:
   xiiRenderGraphPassDescription m_PassDescription;
-  xiiHashedString               m_sFrameTimingInputResourceName;
-  xiiHashedString               m_sDynamicResolutionDataResourceName;
+  xiiHashedString               m_sFrameTimingResourceName;
+  xiiHashedString               m_sDynamicResolutionResourceName;
 
   SetupCommandListFunc        m_SetupCommandListFunc;
+  ExecuteCommandListFunc      m_ExecuteCommandListFunc;
   PostDispatchCommandListFunc m_PostDispatchCommandListFunc;
 
   xiiUInt32 m_uiDispatchThreadGroupsX = 1U;

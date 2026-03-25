@@ -16,7 +16,7 @@ class xiiGALCommandList;
 class xiiGALFence;
 class xiiRenderGraphRuntime;
 class xiiRenderGraphGpuVisibilityPass;
-class xiiRenderGraphDynamicResolutionDecisionPass;
+class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphRayTracedShadowsPass;
 
 struct XII_GRAPHICSCORE_DLL xiiInstanceDataOffset
@@ -205,10 +205,10 @@ public:
   /// \brief Registers the ray-traced shadows pass into the provided render graph runtime.
   void AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
-  /// \brief Registers the dynamic-resolution decision pass and required resources into the provided render graph runtime.
-  void AddDynamicResolutionDecisionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = true) const;
+  /// \brief Registers the dynamic-resolution pass and required resources into the provided render graph runtime.
+  void AddDynamicResolutionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = true) const;
 
-  /// \brief Updates the frame timing sample consumed by the dynamic-resolution decision shader.
+  /// \brief Updates the frame timing sample consumed by the dynamic-resolution shader.
   void SetDynamicResolutionFrameTimingSample(const xiiVec4& vFrameTimingSample) const;
 
   /// \brief Enables or disables denoiser-history IO resources for ray-traced shadows.
@@ -242,9 +242,9 @@ private:
   void OnExtractionEvent(const xiiRenderWorldExtractionEvent& e);
 
   void EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const;
-  void EnsureDynamicResolutionDecisionResources(xiiUInt32 uiElementCount) const;
+  void EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
-  void SetupDynamicResolutionDecisionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void DispatchRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -261,28 +261,28 @@ private:
 
   ExtractionData m_ExtractionData;
 
-  mutable xiiDynamicArray<xiiGpuDrivenInstance>                     m_GpuDrivenInstances;
-  mutable xiiDynamicArray<xiiUInt32>                                m_GpuDrivenVisibleInstanceIndices;
-  mutable xiiShaderResourceHandle                                   m_hGpuDrivenVisibilityShader;
-  mutable xiiShaderResourceHandle                                   m_hDynamicResolutionDecisionShader;
-  mutable xiiSharedPtr<xiiGALComputePipelineState>                  m_pGpuDrivenVisibilityPipelineState;
-  mutable xiiSharedPtr<xiiGALComputePipelineState>                  m_pDynamicResolutionDecisionPipelineState;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pGpuSceneInstancesBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pGpuVisibleInstancesBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pGpuVisibleInstanceCountBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pGpuVisibleInstanceCountReadbackBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pGpuVisibilityDispatchArgumentsBuffer;
-  mutable xiiSharedPtr<xiiGALFence>                                 m_pGpuVisibilityReadbackFence;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pDynamicResolutionFrameTimingBuffer;
-  mutable xiiSharedPtr<xiiGALBuffer>                                m_pDynamicResolutionDecisionBuffer;
-  mutable xiiUInt64                                                 m_uiGpuVisibilityReadbackFenceValue         = 0U;
-  mutable xiiUInt64                                                 m_uiGpuVisibilityReadbackCompletedValue     = 0U;
-  mutable xiiUInt32                                                 m_uiGpuVisibilityThreadGroupSize            = 64U;
-  mutable bool                                                      m_bGpuVisibilityUseInternalIndirectDispatch = false;
-  mutable xiiVec4                                                   m_vDynamicResolutionFrameTimingSample       = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
-  mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>             m_pGpuDrivenVisibilityPass;
-  mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionDecisionPass> m_pDynamicResolutionDecisionPass;
-  mutable xiiUniquePtr<xiiRenderGraphRayTracedShadowsPass>          m_pRayTracedShadowsPass;
+  mutable xiiDynamicArray<xiiGpuDrivenInstance>             m_GpuDrivenInstances;
+  mutable xiiDynamicArray<xiiUInt32>                        m_GpuDrivenVisibleInstanceIndices;
+  mutable xiiShaderResourceHandle                           m_hGpuDrivenVisibilityShader;
+  mutable xiiShaderResourceHandle                           m_hDynamicResolutionShader;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pGpuDrivenVisibilityPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pDynamicResolutionPipelineState;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneInstancesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstancesBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountReadbackBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibilityDispatchArgumentsBuffer;
+  mutable xiiSharedPtr<xiiGALFence>                         m_pGpuVisibilityReadbackFence;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionFrameTimingBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionBuffer;
+  mutable xiiUInt64                                         m_uiGpuVisibilityReadbackFenceValue         = 0U;
+  mutable xiiUInt64                                         m_uiGpuVisibilityReadbackCompletedValue     = 0U;
+  mutable xiiUInt32                                         m_uiGpuVisibilityThreadGroupSize            = 64U;
+  mutable bool                                              m_bGpuVisibilityUseInternalIndirectDispatch = false;
+  mutable xiiVec4                                           m_vDynamicResolutionFrameTimingSample       = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
+  mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
+  mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
+  mutable xiiUniquePtr<xiiRenderGraphRayTracedShadowsPass>  m_pRayTracedShadowsPass;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderDataManager_inl.h>

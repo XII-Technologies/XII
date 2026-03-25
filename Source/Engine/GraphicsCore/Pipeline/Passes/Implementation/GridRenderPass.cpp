@@ -103,7 +103,7 @@ void xiiRenderGraphGridRenderPass::RebuildResourceLayout()
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
     input.m_sResourceName              = m_sSceneDepthResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
-    input.m_RequiredState              = xiiGALResourceStateFlags::DepthStencilRead;
+    input.m_RequiredState              = xiiGALResourceStateFlags::DepthRead;
   }
 
   {

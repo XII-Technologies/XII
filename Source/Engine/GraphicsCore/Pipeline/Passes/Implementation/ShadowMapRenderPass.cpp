@@ -110,7 +110,7 @@ void xiiRenderGraphShadowMapRenderPass::RebuildResourceLayout()
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sShadowDepthAtlasResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write | xiiRenderGraphResourceAccessFlags::RenderTarget;
-    output.m_RequiredState              = xiiGALResourceStateFlags::DepthStencilWrite;
+    output.m_RequiredState              = xiiGALResourceStateFlags::DepthWrite;
   }
 }
 

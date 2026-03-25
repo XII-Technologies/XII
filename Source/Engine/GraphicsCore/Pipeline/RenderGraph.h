@@ -31,7 +31,9 @@ struct XII_GRAPHICSCORE_DLL xiiRenderGraphResourceAccessFlags
     BuildASRead          = XII_BIT(7),
     BuildASWrite         = XII_BIT(8),
 
-    Default = None
+    Default = None,
+
+    ReadWrite = Read | Write
   };
 
   struct Bits
