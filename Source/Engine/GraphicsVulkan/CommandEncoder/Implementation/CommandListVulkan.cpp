@@ -1878,6 +1878,80 @@ void xiiGALCommandListVulkan::DispatchComputeIndirectPlatform(const xiiGALDispat
   m_vkCommandBuffer.dispatchIndirect(pBufferVulkan->GetVulkanBuffer(), description.m_uiDispatchArgumentOffset, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 }
 
+void xiiGALCommandListVulkan::TraceRaysPlatform(const xiiGALTraceRaysDescription& description)
+{
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdTraceRaysKHR() must be called outside of render pass.");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRayTracingPipeline != VK_NULL_HANDLE, "No ray tracing pipeline bound.");
+
+  PrepareForRayTracing();
+
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
+
+  TransitionOrVerifyBufferState(pSBTBufferVulkan, description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::RayTracing, vk::AccessFlagBits::eShaderRead, "Binding shader binding table for ray tracing dispatch");
+
+  auto BuildRegion = [&](const xiiGALRayTracingSBTRegionDescription& region) -> vk::StridedDeviceAddressRegionKHR {
+    vk::StridedDeviceAddressRegionKHR vkRegion = {};
+
+    if (region.m_uiSize == 0U)
+      return vkRegion;
+
+    vkRegion.deviceAddress = pSBTBufferVulkan->GetVulkanBufferDeviceAddress() + region.m_uiOffset;
+    vkRegion.size          = region.m_uiSize;
+    vkRegion.stride        = region.m_uiStride;
+    return vkRegion;
+  };
+
+  vk::StridedDeviceAddressRegionKHR vkRayGenerationRegion = BuildRegion(description.m_RayGenerationTable);
+  vk::StridedDeviceAddressRegionKHR vkMissRegion          = BuildRegion(description.m_MissTable);
+  vk::StridedDeviceAddressRegionKHR vkHitRegion           = BuildRegion(description.m_HitTable);
+  vk::StridedDeviceAddressRegionKHR vkCallableRegion      = BuildRegion(description.m_CallableTable);
+
+  FlushBarriers();
+
+  if (description.m_uiWidth > 0U && description.m_uiHeight > 0U && description.m_uiDepth > 0U)
+  {
+    m_vkCommandBuffer.traceRaysKHR(&vkRayGenerationRegion, &vkMissRegion, &vkHitRegion, &vkCallableRegion, description.m_uiWidth, description.m_uiHeight, description.m_uiDepth, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+}
+
+void xiiGALCommandListVulkan::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)
+{
+  XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "vkCmdTraceRaysIndirectKHR() must be called outside of render pass.");
+  XII_ASSERT_DEV(m_CommandListState.m_vkRayTracingPipeline != VK_NULL_HANDLE, "No ray tracing pipeline bound.");
+
+  PrepareForRayTracing();
+
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan> pSBTBufferVulkan = description.m_pShaderBindingTable.Downcast<xiiGALBufferVulkan>();
+  xiiSharedPtr<xiiGALBufferVulkan> pArgumentBufferVulkan = description.m_pArgumentBuffer.Downcast<xiiGALBufferVulkan>();
+
+  TransitionOrVerifyBufferState(pSBTBufferVulkan, description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::RayTracing, vk::AccessFlagBits::eShaderRead, "Binding shader binding table for indirect ray tracing dispatch");
+  TransitionOrVerifyBufferState(pArgumentBufferVulkan, description.m_ArgumentBufferTransitionMode, xiiGALResourceStateFlags::IndirectArgument, vk::AccessFlagBits::eIndirectCommandRead, "Binding indirect ray tracing argument buffer");
+
+  auto BuildRegion = [&](const xiiGALRayTracingSBTRegionDescription& region) -> vk::StridedDeviceAddressRegionKHR {
+    vk::StridedDeviceAddressRegionKHR vkRegion = {};
+
+    if (region.m_uiSize == 0U)
+      return vkRegion;
+
+    vkRegion.deviceAddress = pSBTBufferVulkan->GetVulkanBufferDeviceAddress() + region.m_uiOffset;
+    vkRegion.size          = region.m_uiSize;
+    vkRegion.stride        = region.m_uiStride;
+    return vkRegion;
+  };
+
+  vk::StridedDeviceAddressRegionKHR vkRayGenerationRegion = BuildRegion(description.m_RayGenerationTable);
+  vk::StridedDeviceAddressRegionKHR vkMissRegion          = BuildRegion(description.m_MissTable);
+  vk::StridedDeviceAddressRegionKHR vkHitRegion           = BuildRegion(description.m_HitTable);
+  vk::StridedDeviceAddressRegionKHR vkCallableRegion      = BuildRegion(description.m_CallableTable);
+
+  FlushBarriers();
+
+  const vk::DeviceAddress vkIndirectAddress = pArgumentBufferVulkan->GetVulkanBufferDeviceAddress() + description.m_uiArgumentOffset;
+  m_vkCommandBuffer.traceRaysIndirectKHR(&vkRayGenerationRegion, &vkMissRegion, &vkHitRegion, &vkCallableRegion, vkIndirectAddress, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+}
+
 void xiiGALCommandListVulkan::BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();

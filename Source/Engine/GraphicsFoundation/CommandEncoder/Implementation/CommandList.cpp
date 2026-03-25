@@ -1261,6 +1261,84 @@ void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndir
   DispatchComputeIndirectPlatform(description);
 }
 
+void xiiGALCommandList::TraceRays(const xiiGALTraceRaysDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "TraceRays must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "TraceRays arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "TraceRays command arguments are invalid. No pipeline state is set.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::RayTracing, "TraceRays command arguments are invalid. Pipeline state {0} is not a ray tracing pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "TraceRays command arguments are invalid. TraceRays command must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "TraceRays command arguments are invalid. Shader binding table buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRays command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "TraceRays command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "TraceRays command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+  };
+
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
+  VerifyRegion(description.m_MissTable, "Miss");
+  VerifyRegion(description.m_HitTable, "Hit");
+  VerifyRegion(description.m_CallableTable, "Callable");
+
+  if (description.m_uiWidth == 0U || description.m_uiHeight == 0U || description.m_uiDepth == 0U)
+  {
+    xiiLog::Info("TraceRays dimensions contain 0. This is acceptable but the trace command will be ignored, and may be unintentional.");
+  }
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiTraceRays;
+
+  TraceRaysPlatform(description);
+}
+
+void xiiGALCommandList::TraceRaysIndirect(const xiiGALTraceRaysIndirectDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "TraceRaysIndirect must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "TraceRaysIndirect arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "TraceRaysIndirect command arguments are invalid. No pipeline state is set.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::RayTracing, "TraceRaysIndirect command arguments are invalid. Pipeline state {0} is not a ray tracing pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "TraceRaysIndirect command arguments are invalid. TraceRaysIndirect command must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "TraceRaysIndirect command arguments are invalid. Shader binding table buffer must not be null.");
+  XII_ASSERT_DEV(description.m_pArgumentBuffer != nullptr, "TraceRaysIndirect command arguments are invalid. Indirect argument buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRaysIndirect command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+
+  const xiiGALBufferCreationDescription& argumentBufferDescription = description.m_pArgumentBuffer->GetDescription();
+  XII_ASSERT_DEV(argumentBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRaysIndirect command arguments are invalid. Argument buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pArgumentBuffer->GetDebugName());
+
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "TraceRaysIndirect command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "TraceRaysIndirect command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+  };
+
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
+  VerifyRegion(description.m_MissTable, "Miss");
+  VerifyRegion(description.m_HitTable, "Hit");
+  VerifyRegion(description.m_CallableTable, "Callable");
+
+  constexpr xiiUInt64 uiIndirectArgumentSize = sizeof(xiiUInt32) * 3U;
+  XII_ASSERT_DEV((description.m_uiArgumentOffset + uiIndirectArgumentSize) <= argumentBufferDescription.m_uiSize, "TraceRaysIndirect command arguments are invalid. Argument buffer offset and size exceed the indirect argument buffer bounds.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiTraceRaysIndirect;
+
+  TraceRaysIndirectPlatform(description);
+}
+
 void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BeginQuery must be called while recording.");

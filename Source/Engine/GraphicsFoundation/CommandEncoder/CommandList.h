@@ -589,6 +589,58 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDispatchComputeIndirectDescription
   xiiUInt32 m_uiMtlThreadGroupSizeZ = 0U; ///< Metal-specific override for threads per group (Z).
 };
 
+/// \brief Describes one shader binding table (SBT) region.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingSBTRegionDescription
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64 m_uiOffset = 0U; ///< Byte offset into the SBT buffer.
+  xiiUInt64 m_uiSize   = 0U; ///< Byte size of this SBT region.
+  xiiUInt64 m_uiStride = 0U; ///< Byte stride between SBT records in this region.
+};
+
+/// \brief Describes parameters for issuing a ray tracing dispatch.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysDescription
+{
+  XII_ALWAYS_INLINE xiiGALTraceRaysDescription() = default;
+
+  XII_ALWAYS_INLINE xiiGALTraceRaysDescription(xiiSharedPtr<xiiGALBuffer> pShaderBindingTable, xiiUInt32 uiWidth, xiiUInt32 uiHeight = 1U, xiiUInt32 uiDepth = 1U, xiiEnum<xiiGALStateTransitionMode> sbtTransitionMode = xiiGALStateTransitionMode::Transition) :
+    m_pShaderBindingTable(pShaderBindingTable), m_uiWidth(uiWidth), m_uiHeight(uiHeight), m_uiDepth(uiDepth), m_ShaderBindingTableTransitionMode(sbtTransitionMode)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pShaderBindingTable                = nullptr;                         ///< SBT source buffer.
+  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;                                                  ///< Ray generation table region.
+  xiiGALRayTracingSBTRegionDescription m_MissTable;                                                           ///< Miss table region.
+  xiiGALRayTracingSBTRegionDescription m_HitTable;                                                            ///< Hit table region.
+  xiiGALRayTracingSBTRegionDescription m_CallableTable;                                                       ///< Callable table region.
+  xiiUInt32                          m_uiWidth                           = 1U;                              ///< Dispatch width.
+  xiiUInt32                          m_uiHeight                          = 1U;                              ///< Dispatch height.
+  xiiUInt32                          m_uiDepth                           = 1U;                              ///< Dispatch depth.
+  xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
+};
+
+/// \brief Describes parameters for issuing an indirect ray tracing dispatch.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTraceRaysIndirectDescription
+{
+  XII_ALWAYS_INLINE xiiGALTraceRaysIndirectDescription() = default;
+
+  XII_ALWAYS_INLINE xiiGALTraceRaysIndirectDescription(xiiSharedPtr<xiiGALBuffer> pShaderBindingTable, xiiSharedPtr<xiiGALBuffer> pArgumentBuffer, xiiUInt64 uiArgumentOffset = 0U, xiiEnum<xiiGALStateTransitionMode> sbtTransitionMode = xiiGALStateTransitionMode::Transition, xiiEnum<xiiGALStateTransitionMode> argumentTransitionMode = xiiGALStateTransitionMode::Transition) :
+    m_pShaderBindingTable(pShaderBindingTable), m_pArgumentBuffer(pArgumentBuffer), m_uiArgumentOffset(uiArgumentOffset), m_ShaderBindingTableTransitionMode(sbtTransitionMode), m_ArgumentBufferTransitionMode(argumentTransitionMode)
+  {
+  }
+
+  xiiSharedPtr<xiiGALBuffer>         m_pShaderBindingTable                = nullptr;                         ///< SBT source buffer.
+  xiiGALRayTracingSBTRegionDescription m_RayGenerationTable;                                                  ///< Ray generation table region.
+  xiiGALRayTracingSBTRegionDescription m_MissTable;                                                           ///< Miss table region.
+  xiiGALRayTracingSBTRegionDescription m_HitTable;                                                            ///< Hit table region.
+  xiiGALRayTracingSBTRegionDescription m_CallableTable;                                                       ///< Callable table region.
+  xiiSharedPtr<xiiGALBuffer>         m_pArgumentBuffer                    = nullptr;                         ///< Indirect dispatch arguments buffer (3 x uint32: width, height, depth).
+  xiiUInt64                          m_uiArgumentOffset                   = 0U;                              ///< Byte offset into the indirect arguments buffer.
+  xiiEnum<xiiGALStateTransitionMode> m_ShaderBindingTableTransitionMode = xiiGALStateTransitionMode::None; ///< SBT buffer state transition mode.
+  xiiEnum<xiiGALStateTransitionMode> m_ArgumentBufferTransitionMode      = xiiGALStateTransitionMode::None; ///< Indirect argument buffer state transition mode.
+};
+
 /// \brief Describes parameters for issuing a tile-based compute dispatch.
 ///
 /// Used for tile shaders or compute workloads that operate on screen-space tiles.
@@ -1085,6 +1137,12 @@ public:
   /// \see xiiGALDispatchComputeIndirectDescription
   void DispatchComputeIndirect(const xiiGALDispatchComputeIndirectDescription& description);
 
+  /// \brief Dispatches rays using the currently bound ray tracing pipeline.
+  void TraceRays(const xiiGALTraceRaysDescription& description);
+
+  /// \brief Dispatches rays indirectly using dimensions sourced from a GPU buffer.
+  void TraceRaysIndirect(const xiiGALTraceRaysIndirectDescription& description);
+
   // Query functions.
 
   /// \brief Begins a query.
@@ -1367,6 +1425,8 @@ protected:
 
   virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)                 = 0;
   virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) = 0;
+  virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description)                             = 0;
+  virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)             = 0;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) = 0;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery)   = 0;

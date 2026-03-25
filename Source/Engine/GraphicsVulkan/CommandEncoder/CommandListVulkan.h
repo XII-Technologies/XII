@@ -169,6 +169,8 @@ protected:
 
   virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description) override final;
   virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
+  virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description) override final;
+  virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description) override final;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
