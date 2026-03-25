@@ -15,6 +15,7 @@ struct xiiRenderGraphPassExecutionContext;
 class xiiGALCommandList;
 class xiiGALFence;
 class xiiRenderGraphRuntime;
+class xiiRenderGraphFrameSetupPass;
 class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphDynamicResolutionPass;
 class xiiRenderGraphPerFrameBufferUploadPass;
@@ -62,6 +63,62 @@ struct XII_GRAPHICSCORE_DLL xiiGpuDrivenInstance
   xiiUInt32         m_uiMeshId      = 0U;
   xiiUInt32         m_uiMaterialId  = 0U;
   xiiUInt32         m_uiFlags       = 0U;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiPreviousFrameStats
+{
+  XII_DECLARE_POD_TYPE();
+
+  float m_fGpuFrameTimeMs         = 16.666f;
+  float m_fGpuSetupTimeMs         = 0.0f;
+  float m_fGpuUploadTimeMs        = 0.0f;
+  float m_fGpuPostProcessTimeMs   = 0.0f;
+  float m_fCpuFrameTimeMs         = 16.666f;
+  float m_fRenderScale            = 1.0f;
+  float m_fJitterX                = 0.0f;
+  float m_fJitterY                = 0.0f;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiFrameTimestampRange
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64 m_uiBeginTimestamp = 0U;
+  xiiUInt64 m_uiEndTimestamp   = 0U;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiPerFrameCameraUploadData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiShaderMat4 m_ViewProjectionMatrix;
+  xiiShaderMat4 m_InverseViewProjectionMatrix;
+  xiiVec4       m_CameraPositionAndNearPlane = xiiVec4::MakeZero();
+  xiiVec4       m_CameraForwardAndFarPlane   = xiiVec4::MakeZero();
+};
+
+struct XII_GRAPHICSCORE_DLL xiiPerFrameLightUploadData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiVec4   m_MainLightDirectionAndIntensity = xiiVec4::MakeZero();
+  xiiVec4   m_MainLightColor                 = xiiVec4::MakeZero();
+  xiiVec4   m_AmbientLightColor              = xiiVec4::MakeZero();
+  xiiUInt32 m_uiActiveLightCount             = 0U;
+  xiiUInt32 m_uiReserved0                    = 0U;
+  xiiUInt32 m_uiReserved1                    = 0U;
+  xiiUInt32 m_uiReserved2                    = 0U;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiPerFrameGlobalUploadData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiFrameIndex      = 0U;
+  float     m_fDeltaTimeMs      = 0.0f;
+  float     m_fGlobalTime       = 0.0f;
+  float     m_fWorldTime        = 0.0f;
+  xiiVec4   m_RenderScaleJitter = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
 };
 
 /// \brief Manager for render data and instance data buffers.
@@ -206,6 +263,9 @@ public:
   /// \brief Registers the ray-traced shadows pass into the provided render graph runtime.
   void AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers the frame-setup pass and required frame-level orchestration resources.
+  void AddFrameSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass = true) const;
+
   /// \brief Registers the dynamic-resolution pass and required resources into the provided render graph runtime.
   void AddDynamicResolutionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = true) const;
 
@@ -219,13 +279,16 @@ public:
   void SetDynamicResolutionCameraVelocitySample(const xiiVec4& vCameraVelocitySample) const;
 
   /// \brief Updates staged camera constants payload uploaded by the per-frame upload pass.
-  void SetPerFrameUploadCameraConstantsSample(const xiiVec4& vCameraConstantsSample) const;
+  void SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const;
 
   /// \brief Updates staged light-data payload uploaded by the per-frame upload pass.
-  void SetPerFrameUploadLightDataSample(const xiiVec4& vLightDataSample) const;
+  void SetPerFrameUploadLightDataSample(const xiiPerFrameLightUploadData& lightDataSample) const;
 
   /// \brief Updates staged global-params payload uploaded by the per-frame upload pass.
-  void SetPerFrameUploadGlobalParamsSample(const xiiVec4& vGlobalParamsSample) const;
+  void SetPerFrameUploadGlobalParamsSample(const xiiPerFrameGlobalUploadData& globalParamsSample) const;
+
+  /// \brief Updates the previous-frame stats sampled by the frame-setup kickoff pass.
+  void SetPreviousFrameStatsSample(const xiiPreviousFrameStats& previousFrameStatsSample) const;
 
   /// \brief Enables or disables denoiser-history IO resources for ray-traced shadows.
   void SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const;
@@ -260,8 +323,10 @@ private:
   void EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const;
   void EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
+  void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -294,6 +359,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionFrameTimingBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionCameraVelocityBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pDynamicResolutionBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pPreviousFrameStatsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pFrameConstantsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pFrameTimestampRangesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pPerFrameGlobalParamsBuffer;
@@ -305,9 +373,11 @@ private:
   mutable bool                                              m_bGpuVisibilityUseInternalIndirectDispatch = false;
   mutable xiiVec4                                           m_vDynamicResolutionFrameTimingSample       = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
   mutable xiiVec4                                           m_vDynamicResolutionCameraVelocitySample    = xiiVec4::MakeZero();
-  mutable xiiVec4                                           m_vPerFrameCameraConstantsSample            = xiiVec4::MakeZero();
-  mutable xiiVec4                                           m_vPerFrameLightDataSample                  = xiiVec4::MakeZero();
-  mutable xiiVec4                                           m_vPerFrameGlobalParamsSample               = xiiVec4::MakeZero();
+  mutable xiiPreviousFrameStats                             m_PreviousFrameStatsSample;
+  mutable xiiPerFrameCameraUploadData                       m_PerFrameCameraConstantsSample;
+  mutable xiiPerFrameLightUploadData                        m_PerFrameLightDataSample;
+  mutable xiiPerFrameGlobalUploadData                       m_PerFrameGlobalParamsSample;
+  mutable xiiUniquePtr<xiiRenderGraphFrameSetupPass>        m_pFrameSetupPass;
   mutable xiiUniquePtr<xiiRenderGraphGpuVisibilityPass>     m_pGpuDrivenVisibilityPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphPerFrameBufferUploadPass> m_pPerFrameBufferUploadPass;

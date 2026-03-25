@@ -4,6 +4,7 @@
 #include <Core/World/World.h>
 #include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
+#include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
@@ -15,6 +16,8 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+
+#include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/FrameConstants.h>
 
 constexpr xiiUInt32 s_uiSkinningBufferIndex = 2;
 
@@ -39,6 +42,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pWorld)
 {
   xiiRenderWorld::GetExtractionEvent().AddEventHandler(xiiMakeDelegate(&xiiRenderDataManager::OnExtractionEvent, this));
+
+  m_pFrameSetupPass = XII_DEFAULT_NEW(xiiRenderGraphFrameSetupPass);
+  m_pFrameSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupFrameSetupCommandList, this));
 
   m_pGpuDrivenVisibilityPass = XII_DEFAULT_NEW(xiiRenderGraphGpuVisibilityPass);
   m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList, this));
@@ -374,6 +380,45 @@ void xiiRenderDataManager::AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pRayTracedShadowsPass.Borrow());
 }
 
+void xiiRenderDataManager::AddFrameSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= true*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pFrameSetupPass != nullptr, "Frame-setup pass must be initialized.");
+
+  EnsureFrameSetupResources();
+
+  if (m_pPreviousFrameStatsBuffer != nullptr)
+  {
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("xiiRenderDataManager::AddFrameSetupPass");
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pPreviousFrameStatsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_PreviousFrameStatsSample), sizeof(m_PreviousFrameStatsSample))).AssertSuccess();
+  }
+
+  m_pFrameSetupPass->SetEnabled(bEnablePass);
+
+  if (m_pPreviousFrameStatsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("PreviousFrameStats"), m_pPreviousFrameStatsBuffer);
+  }
+
+  if (m_pFrameConstantsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("FrameConstants"), m_pFrameConstantsBuffer);
+  }
+
+  if (m_pDynamicResolutionFrameTimingBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("FrameTimingData"), m_pDynamicResolutionFrameTimingBuffer);
+  }
+
+  if (m_pFrameTimestampRangesBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("FrameTimestampRanges"), m_pFrameTimestampRangesBuffer);
+  }
+
+  inout_runtime.AddPass(m_pFrameSetupPass.Borrow());
+}
+
 void xiiRenderDataManager::AddDynamicResolutionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= true*/) const
 {
   XII_LOCK(m_Mutex);
@@ -460,25 +505,32 @@ void xiiRenderDataManager::SetDynamicResolutionCameraVelocitySample(const xiiVec
   m_vDynamicResolutionCameraVelocitySample = vCameraVelocitySample;
 }
 
-void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiVec4& vCameraConstantsSample) const
+void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
 {
   XII_LOCK(m_Mutex);
 
-  m_vPerFrameCameraConstantsSample = vCameraConstantsSample;
+  m_PerFrameCameraConstantsSample = cameraConstantsSample;
 }
 
-void xiiRenderDataManager::SetPerFrameUploadLightDataSample(const xiiVec4& vLightDataSample) const
+void xiiRenderDataManager::SetPerFrameUploadLightDataSample(const xiiPerFrameLightUploadData& lightDataSample) const
 {
   XII_LOCK(m_Mutex);
 
-  m_vPerFrameLightDataSample = vLightDataSample;
+  m_PerFrameLightDataSample = lightDataSample;
 }
 
-void xiiRenderDataManager::SetPerFrameUploadGlobalParamsSample(const xiiVec4& vGlobalParamsSample) const
+void xiiRenderDataManager::SetPerFrameUploadGlobalParamsSample(const xiiPerFrameGlobalUploadData& globalParamsSample) const
 {
   XII_LOCK(m_Mutex);
 
-  m_vPerFrameGlobalParamsSample = vGlobalParamsSample;
+  m_PerFrameGlobalParamsSample = globalParamsSample;
+}
+
+void xiiRenderDataManager::SetPreviousFrameStatsSample(const xiiPreviousFrameStats& previousFrameStatsSample) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_PreviousFrameStatsSample = previousFrameStatsSample;
 }
 
 void xiiRenderDataManager::SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const
@@ -750,16 +802,76 @@ void xiiRenderDataManager::EnsureDynamicResolutionResources(xiiUInt32 uiElementC
   }
 }
 
+void xiiRenderDataManager::EnsureFrameSetupResources() const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  EnsureDynamicResolutionResources(1U);
+
+  if (m_pPreviousFrameStatsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiPreviousFrameStats);
+    bufferDescription.m_uiSize              = sizeof(xiiPreviousFrameStats);
+
+    m_pPreviousFrameStatsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pPreviousFrameStatsBuffer != nullptr)
+    {
+      m_pPreviousFrameStatsBuffer->SetDebugName("RenderDataManager::PreviousFrameStats");
+    }
+  }
+
+  if (m_pFrameConstantsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    bufferDescription.m_uiElementByteStride = 0U;
+    bufferDescription.m_uiSize              = sizeof(xiiFrameConstants);
+
+    m_pFrameConstantsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pFrameConstantsBuffer != nullptr)
+    {
+      m_pFrameConstantsBuffer->SetDebugName("RenderDataManager::FrameConstants");
+    }
+  }
+
+  if (m_pFrameTimestampRangesBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = sizeof(xiiFrameTimestampRange);
+    bufferDescription.m_uiSize              = 8U * sizeof(xiiFrameTimestampRange);
+
+    m_pFrameTimestampRangesBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pFrameTimestampRangesBuffer != nullptr)
+    {
+      m_pFrameTimestampRangesBuffer->SetDebugName("RenderDataManager::FrameTimestampRanges");
+    }
+  }
+}
+
 void xiiRenderDataManager::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
 
   const xiiUInt32 uiResolvedRingSize = xiiMath::Max(1U, uiRingSize);
-  const xiiUInt64 uiRequiredSize     = static_cast<xiiUInt64>(uiResolvedRingSize) * sizeof(xiiVec4);
 
-  auto EnsureUploadBuffer = [&](xiiSharedPtr<xiiGALBuffer>& inout_pBuffer, xiiStringView sDebugName)
+  auto EnsureUploadBuffer = [&](xiiSharedPtr<xiiGALBuffer>& inout_pBuffer, xiiStringView sDebugName, xiiUInt32 uiStructSize)
   {
+    const xiiUInt64 uiRequiredSize = static_cast<xiiUInt64>(uiResolvedRingSize) * uiStructSize;
+
     if (inout_pBuffer != nullptr && inout_pBuffer->GetDescription().m_uiSize >= uiRequiredSize)
     {
       return;
@@ -770,7 +882,7 @@ void xiiRenderDataManager::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) c
     bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
     bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-    bufferDescription.m_uiElementByteStride = sizeof(xiiVec4);
+    bufferDescription.m_uiElementByteStride = uiStructSize;
     bufferDescription.m_uiSize              = uiRequiredSize;
 
     inout_pBuffer = pDevice->CreateBuffer(bufferDescription);
@@ -780,9 +892,9 @@ void xiiRenderDataManager::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) c
     }
   };
 
-  EnsureUploadBuffer(m_pPerFrameCameraConstantsBuffer, "RenderDataManager::PerFrameCameraConstants");
-  EnsureUploadBuffer(m_pPerFrameLightDataBuffer, "RenderDataManager::PerFrameLightData");
-  EnsureUploadBuffer(m_pPerFrameGlobalParamsBuffer, "RenderDataManager::PerFrameGlobalParams");
+  EnsureUploadBuffer(m_pPerFrameCameraConstantsBuffer, "RenderDataManager::PerFrameCameraConstants", sizeof(xiiPerFrameCameraUploadData));
+  EnsureUploadBuffer(m_pPerFrameLightDataBuffer, "RenderDataManager::PerFrameLightData", sizeof(xiiPerFrameLightUploadData));
+  EnsureUploadBuffer(m_pPerFrameGlobalParamsBuffer, "RenderDataManager::PerFrameGlobalParams", sizeof(xiiPerFrameGlobalUploadData));
 }
 
 void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
@@ -901,27 +1013,43 @@ void xiiRenderDataManager::SetupDynamicResolutionCommandList(xiiGALCommandList& 
   }
 }
 
+void xiiRenderDataManager::SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  if (m_pFrameConstantsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetConstantBuffer(xiiTempHashedString("xiiFrameConstants"), m_pFrameConstantsBuffer);
+  }
+}
+
 void xiiRenderDataManager::UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
   XII_LOCK(m_Mutex);
 
-  const xiiUInt64 uiWriteOffset = static_cast<xiiUInt64>(m_uiPerFrameUploadWriteIndex) * sizeof(xiiVec4);
+  const xiiUInt32 uiRingWriteIndex = m_uiPerFrameUploadWriteIndex;
+
+  const xiiUInt64 uiCameraWriteOffset = static_cast<xiiUInt64>(uiRingWriteIndex) * sizeof(xiiPerFrameCameraUploadData);
+  const xiiUInt64 uiLightWriteOffset  = static_cast<xiiUInt64>(uiRingWriteIndex) * sizeof(xiiPerFrameLightUploadData);
+  const xiiUInt64 uiGlobalWriteOffset = static_cast<xiiUInt64>(uiRingWriteIndex) * sizeof(xiiPerFrameGlobalUploadData);
 
   if (m_pPerFrameCameraConstantsBuffer != nullptr)
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pPerFrameCameraConstantsBuffer, uiWriteOffset, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vPerFrameCameraConstantsSample), sizeof(m_vPerFrameCameraConstantsSample))).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pPerFrameCameraConstantsBuffer, uiCameraWriteOffset, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_PerFrameCameraConstantsSample), sizeof(m_PerFrameCameraConstantsSample))).AssertSuccess();
   }
 
   if (m_pPerFrameLightDataBuffer != nullptr)
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pPerFrameLightDataBuffer, uiWriteOffset, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vPerFrameLightDataSample), sizeof(m_vPerFrameLightDataSample))).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pPerFrameLightDataBuffer, uiLightWriteOffset, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_PerFrameLightDataSample), sizeof(m_PerFrameLightDataSample))).AssertSuccess();
   }
 
   if (m_pPerFrameGlobalParamsBuffer != nullptr)
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pPerFrameGlobalParamsBuffer, uiWriteOffset, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vPerFrameGlobalParamsSample), sizeof(m_vPerFrameGlobalParamsSample))).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pPerFrameGlobalParamsBuffer, uiGlobalWriteOffset, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_PerFrameGlobalParamsSample), sizeof(m_PerFrameGlobalParamsSample))).AssertSuccess();
   }
 }
 

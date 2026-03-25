@@ -143,7 +143,7 @@ void xiiRenderGraphFrameSetupPass::RebuildResourceLayout()
     xiiRenderGraphResourceUsage& output = m_PassDescription.m_Outputs.ExpandAndGetRef();
     output.m_sResourceName              = m_sFrameTimingResourceName;
     output.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Write;
-    output.m_RequiredState              = xiiGALResourceStateFlags::ConstantBuffer;
+    output.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
 
   {
