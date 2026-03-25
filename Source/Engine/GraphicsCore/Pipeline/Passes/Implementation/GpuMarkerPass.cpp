@@ -9,7 +9,7 @@ xiiRenderGraphGpuMarkerPass::xiiRenderGraphGpuMarkerPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Graphics;
   m_PassDescription.m_bHasSideEffects = true;
 
-  m_sMarkerName.Assign("GpuMarker");
+  m_sMarkerName = "GpuMarker";
 }
 
 void xiiRenderGraphGpuMarkerPass::SetEnabled(bool bEnabled)
@@ -34,7 +34,7 @@ void xiiRenderGraphGpuMarkerPass::SetMarkerMode(MarkerMode markerMode)
 
 void xiiRenderGraphGpuMarkerPass::SetMarkerName(xiiStringView sMarkerName)
 {
-  m_sMarkerName.Assign(sMarkerName);
+  m_sMarkerName = sMarkerName;
 }
 
 void xiiRenderGraphGpuMarkerPass::SetMarkerColor(const xiiColor& markerColor)
