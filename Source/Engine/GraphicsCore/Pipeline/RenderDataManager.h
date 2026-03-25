@@ -20,6 +20,7 @@ class xiiRenderGraphFrameSetupPass;
 class xiiRenderGraphGpuVisibilityPass;
 class xiiRenderGraphInstanceUpdatePass;
 class xiiRenderGraphCoarseFrustumCullingPass;
+class xiiRenderGraphDrawCommandBuildPass;
 class xiiRenderGraphHiZBuildPass;
 class xiiRenderGraphHiZOcclusionCullingPass;
 class xiiRenderGraphLodSelectionPass;
@@ -239,6 +240,9 @@ public:
   /// \brief Registers the async Hi-Z occlusion culling pass from candidates + depth pyramid.
   void AddHiZOcclusionCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
+  /// \brief Registers the async draw-indirect build and compaction pass from visible instances + material bins.
+  void AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
+
   /// \brief Registers the async LOD selection and meshlet classification pass.
   void AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch = false) const;
 
@@ -280,6 +284,15 @@ public:
 
   /// \brief Supplies candidate instance count consumed by Hi-Z occlusion culling.
   void SetHiZOcclusionCandidateInstanceCountResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstanceCountResource) const;
+
+  /// \brief Supplies material-bin metadata consumed by draw-indirect command build.
+  void SetDrawIndirectMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const;
+
+  /// \brief Supplies external indirect-draw command output buffer used by draw command compaction.
+  void SetDrawIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const;
+
+  /// \brief Supplies external indirect-draw count output buffer used by draw command compaction.
+  void SetDrawIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const;
 
   /// \brief Sets an optional callback for lightweight graphics state setup before occluder drawing.
   void SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const;
@@ -341,6 +354,7 @@ private:
   void EnsureInstanceUpdateResources(xiiUInt32 uiElementCount) const;
   void EnsureCoarseFrustumCullingResources(xiiUInt32 uiElementCount) const;
   void EnsureLodSelectionResources(xiiUInt32 uiElementCount) const;
+  void EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiDrawCapacity) const;
   void EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const;
   void EnsureFrameSetupResources() const;
   void SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -352,6 +366,7 @@ private:
   void DrawOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupHiZPyramidBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupHiZOcclusionCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
+  void SetupDrawIndirectCommandBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
   void UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const;
@@ -380,6 +395,7 @@ private:
   mutable xiiShaderResourceHandle                           m_hCoarseFrustumCullingShader;
   mutable xiiShaderResourceHandle                           m_hHiZBuildShader;
   mutable xiiShaderResourceHandle                           m_hHiZOcclusionCullingShader;
+  mutable xiiShaderResourceHandle                           m_hDrawCommandBuildShader;
   mutable xiiShaderResourceHandle                           m_hLodSelectionShader;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pGpuDrivenVisibilityPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pDynamicResolutionPipelineState;
@@ -388,6 +404,7 @@ private:
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pCoarseFrustumCullingPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pHiZBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pHiZOcclusionCullingPipelineState;
+  mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pDrawCommandBuildPipelineState;
   mutable xiiSharedPtr<xiiGALComputePipelineState>          m_pLodSelectionPipelineState;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuSceneInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstancesBuffer;
@@ -397,6 +414,9 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pOccluderInstanceListBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pHiZOcclusionCandidateInstancesBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pHiZOcclusionCandidateInstanceCountBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuMaterialBinsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuIndirectDrawCommandsBuffer;
+  mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuIndirectDrawCountsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                        m_pGpuVisibleInstanceCountReadbackBuffer;
   mutable xiiSharedPtr<xiiGALResource>                      m_pOccluderDepthResource;
   mutable xiiSharedPtr<xiiGALResource>                      m_pHiZDepthSourceResource;
@@ -445,6 +465,7 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphOccluderDepthPass>     m_pOccluderDepthPass;
   mutable xiiUniquePtr<xiiRenderGraphHiZBuildPass>          m_pHiZBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphHiZOcclusionCullingPass> m_pHiZOcclusionCullingPass;
+  mutable xiiUniquePtr<xiiRenderGraphDrawCommandBuildPass>  m_pDrawCommandBuildPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>      m_pLodSelectionPass;
   mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass> m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>          m_pSkinningPass;

@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
+#include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
@@ -82,6 +83,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pHiZOcclusionCullingPass->SetCandidateInstanceCountResourceName(xiiMakeHashedString("GpuVisibleCandidateCount"));
   m_pHiZOcclusionCullingPass->SetVisibleInstancesResourceName(xiiMakeHashedString("GpuVisibleInstances"));
   m_pHiZOcclusionCullingPass->SetVisibleInstanceCountResourceName(xiiMakeHashedString("GpuVisibleInstanceCount"));
+
+  m_pDrawCommandBuildPass = XII_DEFAULT_NEW(xiiRenderGraphDrawCommandBuildPass);
+  m_pDrawCommandBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDrawIndirectCommandBuildCommandList, this));
+  m_pDrawCommandBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
+  m_pDrawCommandBuildPass->SetVisibleInstancesResourceName(xiiMakeHashedString("GpuVisibleInstances"));
+  m_pDrawCommandBuildPass->SetMaterialBinsResourceName(xiiMakeHashedString("GpuMaterialBins"));
+  m_pDrawCommandBuildPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
+  m_pDrawCommandBuildPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
   m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
@@ -767,6 +776,44 @@ void xiiRenderDataManager::AddHiZOcclusionCullingPass(xiiRenderGraphRuntime& ino
   inout_runtime.AddPass(m_pHiZOcclusionCullingPass.Borrow());
 }
 
+void xiiRenderDataManager::AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+{
+  XII_LOCK(m_Mutex);
+
+  XII_ASSERT_DEV(m_pDrawCommandBuildPass != nullptr, "Draw command build pass must be initialized.");
+
+  const xiiUInt32 uiInstanceCount = xiiMath::Max(1U, m_GpuDrivenInstances.GetCount());
+  EnsureDrawIndirectCommandBuildResources(uiInstanceCount);
+
+  xiiSharedPtr<xiiGALBuffer> pVisibleInstances = m_pHiZOcclusionVisibleInstancesBuffer != nullptr ? m_pHiZOcclusionVisibleInstancesBuffer : m_pGpuVisibleInstancesBuffer;
+  xiiSharedPtr<xiiGALBuffer> pMaterialBins     = m_pGpuMaterialBinsBuffer != nullptr ? m_pGpuMaterialBinsBuffer : m_pGpuDrawMetadataBuffer;
+
+  m_pDrawCommandBuildPass->SetEnabled(bEnableDispatch);
+  m_pDrawCommandBuildPass->SetDispatchThreadGroupCount(uiInstanceCount, 1U, 1U);
+
+  if (pVisibleInstances != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuVisibleInstances"), pVisibleInstances);
+  }
+
+  if (pMaterialBins != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuMaterialBins"), pMaterialBins);
+  }
+
+  if (m_pGpuIndirectDrawCommandsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuIndirectDrawCommands"), m_pGpuIndirectDrawCommandsBuffer);
+  }
+
+  if (m_pGpuIndirectDrawCountsBuffer != nullptr)
+  {
+    inout_runtime.SetResource(xiiMakeHashedString("GpuIndirectDrawCounts"), m_pGpuIndirectDrawCountsBuffer);
+  }
+
+  inout_runtime.AddPass(m_pDrawCommandBuildPass.Borrow());
+}
+
 void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
@@ -930,6 +977,27 @@ void xiiRenderDataManager::SetHiZOcclusionCandidateInstanceCountResource(xiiShar
   XII_LOCK(m_Mutex);
 
   m_pHiZOcclusionCandidateInstanceCountBuffer = pCandidateInstanceCountResource;
+}
+
+void xiiRenderDataManager::SetDrawIndirectMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pGpuMaterialBinsBuffer = pMaterialBinsResource;
+}
+
+void xiiRenderDataManager::SetDrawIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pGpuIndirectDrawCommandsBuffer = pIndirectCommandBufferResource;
+}
+
+void xiiRenderDataManager::SetDrawIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const
+{
+  XII_LOCK(m_Mutex);
+
+  m_pGpuIndirectDrawCountsBuffer = pIndirectCountBufferResource;
 }
 
 void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
@@ -1469,6 +1537,56 @@ void xiiRenderDataManager::EnsureLodSelectionResources(xiiUInt32 uiElementCount)
     if (m_pGpuDrawMetadataBuffer != nullptr)
     {
       m_pGpuDrawMetadataBuffer->SetDebugName("RenderDataManager::GpuDrawMetadata");
+    }
+  }
+}
+
+void xiiRenderDataManager::EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiDrawCapacity) const
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
+
+  EnsureLodSelectionResources(xiiMath::Max(1U, uiDrawCapacity));
+
+  if (m_pGpuMaterialBinsBuffer == nullptr)
+  {
+    m_pGpuMaterialBinsBuffer = m_pGpuDrawMetadataBuffer;
+  }
+
+  const xiiUInt32 uiResolvedDrawCapacity = xiiMath::Max(1U, uiDrawCapacity);
+  const xiiUInt64 uiCommandBufferSize    = static_cast<xiiUInt64>(uiResolvedDrawCapacity) * sizeof(xiiUInt32) * 4ULL;
+
+  if (m_pGpuIndirectDrawCommandsBuffer == nullptr || m_pGpuIndirectDrawCommandsBuffer->GetDescription().m_uiSize < uiCommandBufferSize)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = 0U;
+    bufferDescription.m_uiSize              = uiCommandBufferSize;
+
+    m_pGpuIndirectDrawCommandsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pGpuIndirectDrawCommandsBuffer != nullptr)
+    {
+      m_pGpuIndirectDrawCommandsBuffer->SetDebugName("RenderDataManager::GpuIndirectDrawCommands");
+    }
+  }
+
+  if (m_pGpuIndirectDrawCountsBuffer == nullptr)
+  {
+    xiiGALBufferCreationDescription bufferDescription;
+    bufferDescription.m_Mode                = xiiGALBufferMode::Undefined;
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+    bufferDescription.m_Usage               = xiiGALResourceUsage::Mutable;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+    bufferDescription.m_uiElementByteStride = 0U;
+    bufferDescription.m_uiSize              = sizeof(xiiUInt32);
+
+    m_pGpuIndirectDrawCountsBuffer = pDevice->CreateBuffer(bufferDescription);
+    if (m_pGpuIndirectDrawCountsBuffer != nullptr)
+    {
+      m_pGpuIndirectDrawCountsBuffer->SetDebugName("RenderDataManager::GpuIndirectDrawCounts");
     }
   }
 }
@@ -2032,6 +2150,74 @@ void xiiRenderDataManager::SetupHiZOcclusionCullingCommandList(xiiGALCommandList
   if (m_pHiZOcclusionVisibleInstanceCountBuffer != nullptr)
   {
     commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuVisibleInstanceCount"), m_pHiZOcclusionVisibleInstanceCountBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+}
+
+void xiiRenderDataManager::SetupDrawIndirectCommandBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+{
+  XII_IGNORE_UNUSED(executionContext);
+
+  XII_LOCK(m_Mutex);
+
+  EnsureDrawIndirectCommandBuildResources(xiiMath::Max(1U, m_GpuDrivenInstances.GetCount()));
+
+  if (m_hDrawCommandBuildShader.IsValid() == false)
+  {
+    m_hDrawCommandBuildShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/DrawCommandBuild.xiiShader");
+  }
+
+  if (m_pDrawCommandBuildPipelineState == nullptr)
+  {
+    static const xiiHashTable<xiiHashedString, xiiHashedString> s_PermutationVars;
+
+    const xiiShaderPermutationResourceHandle      hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(m_hDrawCommandBuildShader, s_PermutationVars, true);
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (!pPermutation || pPermutation.GetAcquireResult() != xiiResourceAcquireResult::Final || !pPermutation->IsShaderValid())
+    {
+      return;
+    }
+
+    xiiSharedPtr<xiiGALShader> pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    if (pComputeShader == nullptr)
+    {
+      return;
+    }
+
+    xiiGALComputePipelineStateCreationDescription pipelineDescription;
+    pipelineDescription.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pComputeShader             = pComputeShader;
+
+    m_pDrawCommandBuildPipelineState = xiiGALPipelineCache::GetPipeline(pipelineDescription);
+  }
+
+  if (m_pDrawCommandBuildPipelineState == nullptr)
+  {
+    return;
+  }
+
+  commandList.SetPipelineState(m_pDrawCommandBuildPipelineState);
+
+  xiiSharedPtr<xiiGALBuffer> pVisibleInstances = m_pHiZOcclusionVisibleInstancesBuffer != nullptr ? m_pHiZOcclusionVisibleInstancesBuffer : m_pGpuVisibleInstancesBuffer;
+  xiiSharedPtr<xiiGALBuffer> pMaterialBins     = m_pGpuMaterialBinsBuffer != nullptr ? m_pGpuMaterialBinsBuffer : m_pGpuDrawMetadataBuffer;
+
+  if (pVisibleInstances != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuVisibleInstances"), pVisibleInstances->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (pMaterialBins != nullptr)
+  {
+    commandList.ResolveAndSetShaderResourceBufferView(xiiTempHashedString("GpuMaterialBins"), pMaterialBins->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  }
+
+  if (m_pGpuIndirectDrawCommandsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuIndirectDrawCommands"), m_pGpuIndirectDrawCommandsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  }
+
+  if (m_pGpuIndirectDrawCountsBuffer != nullptr)
+  {
+    commandList.ResolveAndSetUnorderedAccessBufferView(xiiTempHashedString("GpuIndirectDrawCounts"), m_pGpuIndirectDrawCountsBuffer->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   }
 }
 

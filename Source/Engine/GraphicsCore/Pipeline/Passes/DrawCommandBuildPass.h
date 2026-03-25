@@ -18,7 +18,7 @@ public:
   void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
 
   void SetVisibleInstancesResourceName(xiiHashedString sResourceName);
-  void SetLodSelectionResourceName(xiiHashedString sResourceName);
+  void SetMaterialBinsResourceName(xiiHashedString sResourceName);
   void SetIndirectCommandBufferResourceName(xiiHashedString sResourceName);
   void SetIndirectCountBufferResourceName(xiiHashedString sResourceName);
 
@@ -36,7 +36,7 @@ private:
 private:
   xiiRenderGraphPassDescription m_PassDescription;
   xiiHashedString               m_sVisibleInstancesResourceName;
-  xiiHashedString               m_sLodSelectionResourceName;
+  xiiHashedString               m_sMaterialBinsResourceName;
   xiiHashedString               m_sIndirectCommandBufferResourceName;
   xiiHashedString               m_sIndirectCountBufferResourceName;
 

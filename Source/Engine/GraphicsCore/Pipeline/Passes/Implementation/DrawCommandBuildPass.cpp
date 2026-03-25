@@ -9,7 +9,7 @@ xiiRenderGraphDrawCommandBuildPass::xiiRenderGraphDrawCommandBuildPass()
   m_PassDescription.m_bHasSideEffects = false;
 
   m_sVisibleInstancesResourceName      = xiiMakeHashedString("GpuVisibleInstances");
-  m_sLodSelectionResourceName          = xiiMakeHashedString("GpuLodSelections");
+  m_sMaterialBinsResourceName          = xiiMakeHashedString("GpuMaterialBins");
   m_sIndirectCommandBufferResourceName = xiiMakeHashedString("GpuIndirectDrawCommands");
   m_sIndirectCountBufferResourceName   = xiiMakeHashedString("GpuIndirectDrawCounts");
 
@@ -34,9 +34,9 @@ void xiiRenderGraphDrawCommandBuildPass::SetVisibleInstancesResourceName(xiiHash
   RebuildResourceLayout();
 }
 
-void xiiRenderGraphDrawCommandBuildPass::SetLodSelectionResourceName(xiiHashedString sResourceName)
+void xiiRenderGraphDrawCommandBuildPass::SetMaterialBinsResourceName(xiiHashedString sResourceName)
 {
-  m_sLodSelectionResourceName = sResourceName;
+  m_sMaterialBinsResourceName = sResourceName;
   RebuildResourceLayout();
 }
 
@@ -121,7 +121,7 @@ void xiiRenderGraphDrawCommandBuildPass::RebuildResourceLayout()
 
   {
     xiiRenderGraphResourceUsage& input = m_PassDescription.m_Inputs.ExpandAndGetRef();
-    input.m_sResourceName              = m_sLodSelectionResourceName;
+    input.m_sResourceName              = m_sMaterialBinsResourceName;
     input.m_AccessFlags                = xiiRenderGraphResourceAccessFlags::Read;
     input.m_RequiredState              = xiiGALResourceStateFlags::ShaderResource;
   }
