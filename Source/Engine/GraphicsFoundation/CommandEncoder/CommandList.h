@@ -8,6 +8,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
 /// \brief Specifies flags for configuring the behavior of a GAL command list.
@@ -890,6 +891,12 @@ public:
   /// \param pSampler           - The handle to the sampler object to set.
   void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler);
 
+  /// \brief Binds a top-level acceleration structure to a shader resource slot.
+  ///
+  /// \param bindingInformation - Resource binding metadata from pipeline resource signature.
+  /// \param pTopLevelAS        - The top-level acceleration structure to bind.
+  void SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS);
+
   /// \brief Resolves and sets a constant buffer for the given resource name.
   ///
   /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
@@ -943,6 +950,15 @@ public:
   /// \param pSampler      - Shared pointer to the sampler to set.
   /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
   void ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALSampler> pSampler, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
+
+  /// \brief Resolves and sets a top-level acceleration structure for the given resource name.
+  ///
+  /// If \p shaderStages is left as `xiiGALShaderType::Unknown`, the function resolves the resource based on whatever shader stage is found. Otherwise, it attempts to find a resource description that includes all the specified shader stages.
+  ///
+  /// \param sResourceName - The hashed name of the resource to resolve.
+  /// \param pTopLevelAS   - Shared pointer to the top-level acceleration structure to set.
+  /// \param shaderStages  - Bitflags specifying applicable shader stages (defaults to unknown).
+  void ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages = xiiGALShaderType::Unknown);
 
   /// \brief This commits the pipeline shader resources to the GPU, and ensures that all necessary state transitions are performed.
   ///
@@ -1330,6 +1346,7 @@ protected:
   virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)    = 0;
   virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView) = 0;
   virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)                            = 0;
+  virtual void      SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS)        = 0;
   virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)                                                                           = 0;
 
   virtual void ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)                                                       = 0;

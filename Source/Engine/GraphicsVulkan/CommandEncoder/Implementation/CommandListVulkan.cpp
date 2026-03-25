@@ -889,6 +889,20 @@ void xiiGALCommandListVulkan::SetSamplerPlatform(const xiiGALPipelineResourceDes
   m_CommandListData.m_bDescriptorsModified = true;
 }
 
+void xiiGALCommandListVulkan::SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS)
+{
+  xiiSharedPtr<xiiGALTopLevelASVulkan> pTopLevelASVulkan = pTopLevelAS.Downcast<xiiGALTopLevelASVulkan>();
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1);
+
+  auto& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundAccelerationStructures.EnsureCount(bindingInformation.m_uiBindSlot + 1);
+  bindSetResources.m_pBoundAccelerationStructures[bindingInformation.m_uiBindSlot] = pTopLevelASVulkan != nullptr ? pTopLevelASVulkan : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
+}
+
 xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
@@ -966,7 +980,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
           vk::DescriptorImageInfo  vkDescriptorImageInfo;
           vk::DescriptorBufferInfo vkDescriptorBufferInfo;
           vk::BufferView           vkDescriptorBufferView;
-          // vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
+          vk::WriteDescriptorSetAccelerationStructureKHR vkDescriptorAccelStructInfo;
 
           switch (resourceLayout.m_DescriptorType)
           {
@@ -1286,6 +1300,47 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
               else
               {
                 xiiLog::Error("No sampler bound at '{}'.", resourceLayout.m_sName.GetView());
+                return XII_FAILURE;
+              }
+            }
+            break;
+            case xiiGALDescriporTypeVulkan::AccelerationStructure:
+            {
+              if (const xiiSharedPtr<xiiGALTopLevelASVulkan> pTopLevelASVulkan = (resourceLayout.m_uiBindingIndex < resources.m_pBoundAccelerationStructures.GetCount() ? resources.m_pBoundAccelerationStructures[resourceLayout.m_uiBindingIndex] : nullptr))
+              {
+                vk::AccelerationStructureKHR vkAccelerationStructure = pTopLevelASVulkan->GetVulkanAccelerationStructure();
+                if (vkAccelerationStructure == VK_NULL_HANDLE)
+                {
+                  xiiLog::Error("Invalid acceleration structure bound at '{}'.", resourceLayout.m_sName.GetView());
+                  return XII_FAILURE;
+                }
+
+                vkDescriptorAccelStructInfo = {};
+                vkDescriptorAccelStructInfo.pNext = nullptr;
+                vkDescriptorAccelStructInfo.accelerationStructureCount = 1U;
+                vkDescriptorAccelStructInfo.pAccelerationStructures = &vkAccelerationStructure;
+
+                vkWriteDescriptorSet.pNext = &vkDescriptorAccelStructInfo;
+
+                if (mode == xiiGALStateTransitionMode::Transition)
+                {
+                  xiiBitflags<xiiGALResourceStateFlags> oldState = pTopLevelASVulkan->GetResourceState();
+                  const xiiBitflags<xiiGALResourceStateFlags> newState = xiiGALResourceStateFlags::RayTracing;
+
+                  if (oldState == xiiGALResourceStateFlags::Unknown)
+                  {
+                    oldState = xiiGALResourceStateFlags::BuildASWrite;
+                  }
+
+                  MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(newState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(newState));
+                  pTopLevelASVulkan->SetResourceState(newState);
+
+                  FlushBarriers();
+                }
+              }
+              else
+              {
+                xiiLog::Error("No acceleration structure bound at '{}'.", resourceLayout.m_sName.GetView());
                 return XII_FAILURE;
               }
             }
@@ -2732,15 +2787,45 @@ void xiiGALCommandListVulkan::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGA
       }
       else if (xiiGALBottomLevelASVulkan* pBottomLevelASVulkan = xiiDynamicCast<xiiGALBottomLevelASVulkan*>(barrier.m_pResource.Borrow()))
       {
-        XII_IGNORE_UNUSED(pBottomLevelASVulkan);
+        xiiBitflags<xiiGALResourceStateFlags> oldState = barrier.m_OldState;
+        if (oldState == xiiGALResourceStateFlags::Unknown)
+        {
+          oldState = pBottomLevelASVulkan->GetResourceState();
+        }
 
-        XII_ASSERT_NOT_IMPLEMENTED;
+        if (oldState == xiiGALResourceStateFlags::Unknown)
+        {
+          xiiLog::Error("Failed to transition BLAS '{}' because old state is unknown.", pBottomLevelASVulkan->GetDebugName());
+          continue;
+        }
+
+        MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(barrier.m_NewState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(barrier.m_NewState));
+
+        if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+        {
+          pBottomLevelASVulkan->SetResourceState(barrier.m_NewState);
+        }
       }
       else if (xiiGALTopLevelASVulkan* pTopLevelASVulkan = xiiDynamicCast<xiiGALTopLevelASVulkan*>(barrier.m_pResource.Borrow()))
       {
-        XII_IGNORE_UNUSED(pTopLevelASVulkan);
+        xiiBitflags<xiiGALResourceStateFlags> oldState = barrier.m_OldState;
+        if (oldState == xiiGALResourceStateFlags::Unknown)
+        {
+          oldState = pTopLevelASVulkan->GetResourceState();
+        }
 
-        XII_ASSERT_NOT_IMPLEMENTED;
+        if (oldState == xiiGALResourceStateFlags::Unknown)
+        {
+          xiiLog::Error("Failed to transition TLAS '{}' because old state is unknown.", pTopLevelASVulkan->GetDebugName());
+          continue;
+        }
+
+        MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(barrier.m_NewState), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(barrier.m_NewState));
+
+        if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+        {
+          pTopLevelASVulkan->SetResourceState(barrier.m_NewState);
+        }
       }
       else
       {

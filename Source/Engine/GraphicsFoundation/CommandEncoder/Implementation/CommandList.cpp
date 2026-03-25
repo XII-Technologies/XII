@@ -648,6 +648,34 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   SetSamplerPlatform(bindingInformation, pSampler);
 }
 
+void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetAccelerationStructure must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetAccelerationStructure arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetAccelerationStructure requires a pipeline state to be set.");
+
+  bool bResourceFound = false;
+  {
+    const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+    for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+    {
+      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      {
+        bResourceFound = true;
+        break;
+      }
+    }
+  }
+
+  XII_ASSERT_DEV(bResourceFound, "The acceleration structure resource '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
+#endif
+
+  SetAccelerationStructurePlatform(bindingInformation, pTopLevelAS);
+}
+
 void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
@@ -740,6 +768,22 @@ void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourc
     if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
       return SetSampler(resource, pSampler);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetAccelerationStructure arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetAccelerationStructure requires a pipeline state to be set.");
+
+  const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+  for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetAccelerationStructure(resource, pTopLevelAS);
     }
   }
 }
