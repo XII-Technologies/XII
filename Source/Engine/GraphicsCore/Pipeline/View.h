@@ -7,21 +7,18 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/Pipeline/RenderPipelineNode.h>
-#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
 class xiiFrustum;
 class xiiWorld;
-class xiiRenderPipeline;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
-class XII_GRAPHICSCORE_DLL xiiView : public xiiRenderPipelineNode
+class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiRenderPipelineNode);
+  XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiReflectedClass);
 
 private:
   /// \brief Use xiiRenderLoop::CreateView to create a view.
@@ -136,10 +133,8 @@ public:
   void SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue);
 
   void SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-  void SetExtractorProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
 
   void ResetRenderPassProperties();
-  void ResetExtractorProperties();
 
   void       SetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
   xiiVariant GetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName);
@@ -167,22 +162,10 @@ private:
 
   xiiRenderPipelineResourceHandle m_hRenderPipeline;
   xiiUInt32                       m_uiRenderPipelineResourceDescriptionCounter = 0;
-  xiiSharedPtr<xiiRenderPipeline> m_pRenderPipeline;
-  xiiCamera*                      m_pCamera        = nullptr;
-  const xiiCamera*                m_pCullingCamera = nullptr;
-  const xiiCamera*                m_pLodCamera     = nullptr;
+  xiiCamera*                      m_pCamera                                    = nullptr;
+  const xiiCamera*                m_pCullingCamera                             = nullptr;
+  const xiiCamera*                m_pLodCamera                                 = nullptr;
 
-
-private:
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget0;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget1;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget2;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget3;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget4;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget5;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget6;
-  xiiRenderPipelineNodeInputColourAttachmentPin m_PinRenderTarget7;
-  xiiRenderPipelineNodeInputDepthAttachmentPin  m_PinDepthStencil;
 
 private:
   void UpdateCachedMatrices() const;
@@ -221,13 +204,11 @@ private:
   void ResetAllPropertyStates(xiiMap<xiiString, PropertyValue>& map);
 
   void ApplyRenderPassProperties();
-  void ApplyExtractorProperties();
 
   void ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, xiiStringView sTypeName);
 
   xiiMap<xiiString, PropertyValue> m_PassProperties;
   xiiMap<xiiString, PropertyValue> m_PassReadBackProperties;
-  xiiMap<xiiString, PropertyValue> m_ExtractorProperties;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

@@ -325,13 +325,8 @@ xiiResult xiiShaderCompilerSPIRV::Initialize()
   if (m_InputLayoutMapping.IsEmpty())
   {
     m_InputLayoutMapping["in.var.POSITION"]  = xiiGALInputLayoutSemantic::Position;
-    m_InputLayoutMapping["in.var.POSITION0"] = xiiGALInputLayoutSemantic::Position;
-
     m_InputLayoutMapping["in.var.TANGENT"]  = xiiGALInputLayoutSemantic::Tangent;
-    m_InputLayoutMapping["in.var.TANGENT0"] = xiiGALInputLayoutSemantic::Tangent;
-
     m_InputLayoutMapping["in.var.NORMAL"]  = xiiGALInputLayoutSemantic::Normal;
-    m_InputLayoutMapping["in.var.NORMAL0"] = xiiGALInputLayoutSemantic::Normal;
 
     m_InputLayoutMapping["in.var.COLOR0"] = xiiGALInputLayoutSemantic::Color0;
     m_InputLayoutMapping["in.var.COLOR1"] = xiiGALInputLayoutSemantic::Color1;
@@ -354,13 +349,14 @@ xiiResult xiiShaderCompilerSPIRV::Initialize()
     m_InputLayoutMapping["in.var.TEXCOORD9"] = xiiGALInputLayoutSemantic::TexCoord9;
 
     m_InputLayoutMapping["in.var.BITANGENT"]  = xiiGALInputLayoutSemantic::BiTangent;
-    m_InputLayoutMapping["in.var.BITANGENT0"] = xiiGALInputLayoutSemantic::BiTangent;
 
     m_InputLayoutMapping["in.var.BONEINDICES0"] = xiiGALInputLayoutSemantic::BoneIndices0;
     m_InputLayoutMapping["in.var.BONEINDICES1"] = xiiGALInputLayoutSemantic::BoneIndices1;
 
     m_InputLayoutMapping["in.var.BONEWEIGHTS0"] = xiiGALInputLayoutSemantic::BoneWeights0;
     m_InputLayoutMapping["in.var.BONEWEIGHTS1"] = xiiGALInputLayoutSemantic::BoneWeights1;
+
+    m_InputLayoutMapping["in.var.DATAOFFSETS"] = xiiGALInputLayoutSemantic::DataOffsets;
   }
 
   XII_ASSERT_DEV(g_pDxcUtils != nullptr && g_pDxcCompiler != nullptr, "ShaderCompiler SubSystem init should have initialized library pointers.");

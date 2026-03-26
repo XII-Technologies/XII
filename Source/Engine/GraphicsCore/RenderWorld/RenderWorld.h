@@ -51,15 +51,6 @@ public:
   static xiiArrayPtr<xiiViewHandle> GetMainViews();
   static bool                       IsRenderingScheduled();
 
-  static void CacheRenderData(const xiiView& view, const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent, xiiUInt16 uiComponentVersion, xiiArrayPtr<xiiInternal::RenderDataCacheEntry> cacheEntries);
-
-  static void                                                 DeleteAllCachedRenderData();
-  static void                                                 DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent);
-  static void                                                 DeleteCachedRenderDataForObject(const xiiGameObject* pOwnerObject);
-  static void                                                 DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject);
-  static void                                                 ResetRenderDataCache(xiiView& ref_view);
-  static xiiArrayPtr<const xiiInternal::RenderDataCacheEntry> GetCachedRenderData(const xiiView& view, const xiiGameObjectHandle& hOwner, xiiUInt16 uiComponentVersion);
-
   static void AddViewToRender(const xiiViewHandle& hView);
 
   static void ExtractMainViews();
@@ -115,6 +106,16 @@ private:
 
   friend class xiiView;
   friend class xiiRenderPipeline;
+  friend class xiiRenderWorldModule;
+
+  static void CacheRenderData(const xiiView& view, const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent, xiiUInt16 uiComponentVersion, xiiArrayPtr<xiiInternal::RenderDataCacheEntry> cacheEntries);
+
+  static void                                                 DeleteAllCachedRenderData();
+  static void                                                 DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent);
+  static void                                                 DeleteCachedRenderDataForObject(const xiiGameObject* pOwnerObject);
+  static void                                                 DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject);
+  static void                                                 ResetRenderDataCache(xiiView& ref_view);
+  static xiiArrayPtr<const xiiInternal::RenderDataCacheEntry> GetCachedRenderData(const xiiView& view, const xiiGameObjectHandle& hOwner, xiiUInt16 uiComponentVersion);
 
   static void DeleteCachedRenderDataInternal(const xiiGameObjectHandle& hOwnerObject);
   static void ClearRenderDataCache();

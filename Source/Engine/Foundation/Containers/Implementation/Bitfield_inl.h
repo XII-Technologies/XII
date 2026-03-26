@@ -65,7 +65,7 @@ bool xiiBitfield<Container>::IsAnyBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 
-  const xiiUInt32 uiLastBit = xiiMath::Min<xiiUInt32>(uiFirstBit + uiNumBits, m_uiCount - 1);
+  const xiiUInt32 uiLastBit = xiiMath::Min<xiiUInt32>(uiFirstBit + uiNumBits, m_uiCount) - 1;
 
   const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
   const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);

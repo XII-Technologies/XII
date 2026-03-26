@@ -141,7 +141,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(*pComponent, 0);
 
       pRenderData->FillSortingKey();
-      ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
+      ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Opaque, xiiRenderData::Caching::Never);
     }
   }
 #endif

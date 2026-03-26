@@ -1,0 +1,50 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<uint>   GpuVisibleInstances;
+StructuredBuffer<uint4>  GpuMaterialBins;
+RWStructuredBuffer<uint> GpuIndirectDrawCommands;
+RWStructuredBuffer<uint> GpuIndirectDrawCounts;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (dispatchThreadId.x == 0 && GpuIndirectDrawCounts.Length > 0)
+  {
+    GpuIndirectDrawCounts[0] = 0;
+  }
+
+  if (GpuVisibleInstances.Length == 0 || GpuIndirectDrawCommands.Length < 4 || GpuIndirectDrawCounts.Length == 0)
+  {
+    return;
+  }
+
+  if (dispatchThreadId.x >= GpuVisibleInstances.Length)
+  {
+    return;
+  }
+
+  const uint visibleInstance = GpuVisibleInstances[dispatchThreadId.x];
+
+  const uint materialBinCount = GpuMaterialBins.Length;
+  const uint4 materialBin      = materialBinCount > 0 ? GpuMaterialBins[visibleInstance % materialBinCount] : uint4(0, 0, 0, 0);
+
+  uint commandIndex = 0;
+  InterlockedAdd(GpuIndirectDrawCounts[0], 1, commandIndex);
+
+  const uint commandOffset = commandIndex * 4;
+  if (commandOffset + 3 >= GpuIndirectDrawCommands.Length)
+  {
+    return;
+  }
+
+  // Packed non-indexed indirect command layout: vertexCount, instanceCount, firstVertex, firstInstance.
+  GpuIndirectDrawCommands[commandOffset + 0] = max(materialBin.x, 3u);
+  GpuIndirectDrawCommands[commandOffset + 1] = 1u;
+  GpuIndirectDrawCommands[commandOffset + 2] = materialBin.y;
+  GpuIndirectDrawCommands[commandOffset + 3] = visibleInstance;
+}

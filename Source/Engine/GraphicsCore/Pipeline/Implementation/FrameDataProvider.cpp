@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFrameDataProviderBase, 1, xiiRTTINoAllocator)
@@ -13,7 +13,8 @@ void* xiiFrameDataProviderBase::GetData(const xiiRenderViewContext& renderViewCo
 {
   if (m_pData == nullptr || m_uiLastUpdateFrame != xiiRenderWorld::GetFrameCounter())
   {
-    m_pData = UpdateData(renderViewContext, m_pOwnerPipeline->GetRenderData());
+    static xiiExtractedRenderData s_EmptyExtractedData;
+    m_pData = UpdateData(renderViewContext, s_EmptyExtractedData);
 
     m_uiLastUpdateFrame = xiiRenderWorld::GetFrameCounter();
   }

@@ -4,6 +4,7 @@
 #include <EnginePluginAssets/MaterialAsset/MaterialView.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
@@ -37,7 +38,10 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
     if (pMsg2->m_sWhatToDo == "InvalidateCache")
     {
       // make sure all scenes etc rebuild their render cache
-      xiiRenderWorld::DeleteAllCachedRenderData();
+      if (m_pWorld != nullptr)
+      {
+        m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
+      }
     }
     else if (pMsg2->m_sWhatToDo == "PreviewModel" && m_PreviewModel != (PreviewModel)pMsg2->m_iValue)
     {

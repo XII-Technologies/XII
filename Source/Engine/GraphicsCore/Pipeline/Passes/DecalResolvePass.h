@@ -1,0 +1,58 @@
+#pragma once
+
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Types/Delegate.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+
+/// \brief Compute scaffold for classifying decal volumes into depth-aware decal tile lists.
+class XII_GRAPHICSCORE_DLL xiiRenderGraphDecalResolvePass final : public xiiRenderGraphPassBase
+{
+public:
+  using SetupCommandListFunc        = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+  using PostDispatchCommandListFunc = xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)>;
+
+  xiiRenderGraphDecalResolvePass();
+
+  void SetEnabled(bool bEnabled);
+  void SetDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY = 1U, xiiUInt32 uiThreadGroupCountZ = 1U);
+
+  void SetDecalVolumesResourceName(xiiHashedString sResourceName);
+  void SetSceneDepthResourceName(xiiHashedString sResourceName);
+  void SetDecalTileListsResourceName(xiiHashedString sResourceName);
+
+  // Stage-24 aliases for compute decal resolve wiring.
+  void SetGBufferTargetsResourceName(xiiHashedString sResourceName);
+  void SetDecalTileListsInputResourceName(xiiHashedString sResourceName);
+  void SetUpdatedMaterialAttributesResourceName(xiiHashedString sResourceName);
+
+  // Compatibility wrappers for legacy naming.
+  void SetGBufferInputResourceName(xiiHashedString sResourceName);
+  void SetDecalOutputResourceName(xiiHashedString sResourceName);
+
+  void SetSetupCommandListFunc(SetupCommandListFunc setupCommandListFunc);
+  void SetPostDispatchCommandListFunc(PostDispatchCommandListFunc postDispatchCommandListFunc);
+  void ClearSetupCommandListFunc();
+  void ClearPostDispatchCommandListFunc();
+
+  [[nodiscard]] virtual const xiiRenderGraphPassDescription& GetDescription() const override;
+  virtual void                                               RecordCommands(const xiiRenderGraphPassExecutionContext& executionContext) const override;
+
+private:
+  void RebuildResourceLayout();
+
+private:
+  xiiRenderGraphPassDescription m_PassDescription;
+  xiiHashedString               m_sDecalVolumesResourceName;
+  xiiHashedString               m_sSceneDepthResourceName;
+  xiiHashedString               m_sDecalTileListsResourceName;
+
+  SetupCommandListFunc        m_SetupCommandListFunc;
+  PostDispatchCommandListFunc m_PostDispatchCommandListFunc;
+
+  xiiUInt32 m_uiDispatchThreadGroupsX = 1U;
+  xiiUInt32 m_uiDispatchThreadGroupsY = 1U;
+  xiiUInt32 m_uiDispatchThreadGroupsZ = 1U;
+
+  bool m_bEnabled = false;
+};

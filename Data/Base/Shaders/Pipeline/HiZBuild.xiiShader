@@ -1,0 +1,43 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+Texture2D<float> SceneDepth;
+RWTexture2D<float> SceneDepthPyramid;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint outWidth = 0;
+  uint outHeight = 0;
+  SceneDepthPyramid.GetDimensions(outWidth, outHeight);
+
+  if (dispatchThreadId.x >= outWidth || dispatchThreadId.y >= outHeight)
+  {
+    return;
+  }
+
+  // Build the first reduced mip level from a 2x2 max-depth neighborhood.
+  // Additional mip-chain reduction is expected to run in subsequent passes.
+  uint2 srcBase = uint2(dispatchThreadId.xy) * 2;
+
+  uint srcWidth = 0;
+  uint srcHeight = 0;
+  uint srcMipCount = 0;
+  SceneDepth.GetDimensions(0, srcWidth, srcHeight, srcMipCount);
+
+  uint2 s0 = min(srcBase + uint2(0, 0), uint2(srcWidth - 1, srcHeight - 1));
+  uint2 s1 = min(srcBase + uint2(1, 0), uint2(srcWidth - 1, srcHeight - 1));
+  uint2 s2 = min(srcBase + uint2(0, 1), uint2(srcWidth - 1, srcHeight - 1));
+  uint2 s3 = min(srcBase + uint2(1, 1), uint2(srcWidth - 1, srcHeight - 1));
+
+  float d0 = SceneDepth.Load(int3(s0, 0));
+  float d1 = SceneDepth.Load(int3(s1, 0));
+  float d2 = SceneDepth.Load(int3(s2, 0));
+  float d3 = SceneDepth.Load(int3(s3, 0));
+
+  SceneDepthPyramid[dispatchThreadId.xy] = max(max(d0, d1), max(d2, d3));
+}

@@ -233,6 +233,14 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
 
       if (inFlightCommandBuffer.m_uiFenceValue <= uiCompletedFenceValue)
       {
+        for (vk::QueryPool vkQueryPool : inFlightCommandBuffer.m_CommandListData.m_TemporaryQueryPools)
+        {
+          if (vkQueryPool != VK_NULL_HANDLE)
+          {
+            vkLogicalDevice.destroyQueryPool(vkQueryPool, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+          }
+        }
+
         if (inFlightCommandBuffer.m_bIsSecondary)
         {
           threadPool.m_SecondaryFreeCommandBuffers.PushBack(inFlightCommandBuffer.m_vkCommandBuffer);

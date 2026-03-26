@@ -87,7 +87,7 @@ XII_ALWAYS_INLINE const xiiViewData& xiiView::GetData() const
 
 XII_FORCE_INLINE bool xiiView::IsValid() const
 {
-  return m_pWorld != nullptr && m_pRenderPipeline != nullptr && m_pCamera != nullptr && m_Data.m_ViewPortRect.HasNonZeroArea();
+  return m_pWorld != nullptr && m_pCamera != nullptr && m_Data.m_ViewPortRect.HasNonZeroArea();
 }
 
 XII_ALWAYS_INLINE const xiiSharedPtr<xiiTask>& xiiView::GetExtractTask()

@@ -10,6 +10,7 @@
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
+#include <GraphicsVulkan/Resources/TopLevelASVulkan.h>
 
 namespace vk
 {
@@ -20,6 +21,7 @@ namespace vk
   class Buffer;
   class Image;
   class DescriptorSet;
+  class QueryPool;
   struct DescriptorBufferInfo;
 } // namespace vk
 
@@ -34,6 +36,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
       m_pBoundConstantBuffers                     = std::move(other.m_pBoundConstantBuffers);
       m_pBoundBufferResourceViews                 = std::move(other.m_pBoundBufferResourceViews);
       m_pBoundTextureResourceViews                = std::move(other.m_pBoundTextureResourceViews);
+      m_pBoundAccelerationStructures              = std::move(other.m_pBoundAccelerationStructures);
       m_pBoundUnorderedAccessBufferResourceViews  = std::move(other.m_pBoundUnorderedAccessBufferResourceViews);
       m_pBoundUnorderedAccessTextureResourceViews = std::move(other.m_pBoundUnorderedAccessTextureResourceViews);
       m_pBoundSamplerStates                       = std::move(other.m_pBoundSamplerStates);
@@ -42,6 +45,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     xiiDynamicArray<xiiSharedPtr<xiiGALBufferVulkan>>      m_pBoundConstantBuffers;
     xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>  m_pBoundBufferResourceViews;
     xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundTextureResourceViews;
+    xiiDynamicArray<xiiSharedPtr<xiiGALTopLevelASVulkan>>  m_pBoundAccelerationStructures;
     xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>  m_pBoundUnorderedAccessBufferResourceViews;
     xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundUnorderedAccessTextureResourceViews;
     xiiDynamicArray<xiiSharedPtr<xiiGALSamplerVulkan>>     m_pBoundSamplerStates;
@@ -66,6 +70,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_pUploadStagingBufferPool    = std::move(other.m_pUploadStagingBufferPool);
     m_pDescriptorSetPoolVulkan    = std::move(other.m_pDescriptorSetPoolVulkan);
     m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
+    m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
   }
 
@@ -86,6 +91,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
     m_pUploadStagingBufferPool    = std::move(other.m_pUploadStagingBufferPool);
     m_pDescriptorSetPoolVulkan    = std::move(other.m_pDescriptorSetPoolVulkan);
     m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
+    m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
 
     return *this;
@@ -98,6 +104,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
       setBindings.m_pBoundConstantBuffers.Clear();
       setBindings.m_pBoundBufferResourceViews.Clear();
       setBindings.m_pBoundTextureResourceViews.Clear();
+      setBindings.m_pBoundAccelerationStructures.Clear();
       setBindings.m_pBoundUnorderedAccessBufferResourceViews.Clear();
       setBindings.m_pBoundUnorderedAccessTextureResourceViews.Clear();
       setBindings.m_pBoundSamplerStates.Clear();
@@ -151,6 +158,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiGALCommandListDataVulkan
   xiiUniquePtr<xiiGALDescriptorSetPoolVulkan> m_pDescriptorSetPoolVulkan;
 
   xiiSharedPtr<xiiGALBufferVulkan> m_pNullVertexBuffer; ///< In Vulkan, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
+
+  xiiDynamicArray<vk::QueryPool> m_TemporaryQueryPools; ///< Query pools created while recording and destroyed after GPU execution completes.
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

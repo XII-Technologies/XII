@@ -1,0 +1,64 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+struct GpuSceneInstanceData
+{
+  float4x4 ObjectToWorld;
+  float4   Bounds;
+  uint     MeshId;
+  uint     MaterialId;
+  uint     Flags;
+  uint     Reserved;
+};
+
+StructuredBuffer<float4> SceneTransforms;
+StructuredBuffer<float4> SkinnedVertices;
+RWStructuredBuffer<GpuSceneInstanceData> GpuSceneInstances;
+RWStructuredBuffer<float4> GpuSceneBounds;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint index = dispatchThreadId.x;
+
+  if (index >= GpuSceneInstances.Length || index >= GpuSceneBounds.Length)
+  {
+    return;
+  }
+
+  GpuSceneInstanceData instanceData;
+
+  uint transformBase = index * 3;
+  bool hasSceneTransform = (transformBase + 2) < SceneTransforms.Length;
+
+  if (hasSceneTransform)
+  {
+    instanceData.ObjectToWorld[0] = SceneTransforms[transformBase + 0];
+    instanceData.ObjectToWorld[1] = SceneTransforms[transformBase + 1];
+    instanceData.ObjectToWorld[2] = SceneTransforms[transformBase + 2];
+  }
+  else
+  {
+    instanceData.ObjectToWorld[0] = float4(1, 0, 0, 0);
+    instanceData.ObjectToWorld[1] = float4(0, 1, 0, 0);
+    instanceData.ObjectToWorld[2] = float4(0, 0, 1, 0);
+  }
+
+  instanceData.ObjectToWorld[3] = float4(0, 0, 0, 1);
+
+  float4 skinnedSample = (index < SkinnedVertices.Length) ? SkinnedVertices[index] : float4(0, 0, 0, 1);
+  float  radius = max(abs(skinnedSample.w), 0.001f);
+
+  instanceData.Bounds = float4(skinnedSample.xyz, radius);
+  instanceData.MeshId = 0;
+  instanceData.MaterialId = 0;
+  instanceData.Flags = 0;
+  instanceData.Reserved = 0;
+
+  GpuSceneInstances[index] = instanceData;
+  GpuSceneBounds[index] = instanceData.Bounds;
+}

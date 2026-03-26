@@ -5,6 +5,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Lights/AmbientLightComponent.h>
 #include <GraphicsCore/Lights/Implementation/ReflectionPool.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
@@ -36,7 +37,7 @@ xiiAmbientLightComponent::~xiiAmbientLightComponent() = default;
 
 void xiiAmbientLightComponent::Deinitialize()
 {
-  xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
 
   SUPER::Deinitialize();
 }

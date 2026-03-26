@@ -4,7 +4,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/SpriteComponent.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
@@ -116,10 +116,10 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
   }
 
   // Determine render data category.
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitTransparent;
+  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Transparent;
   if (m_BlendMode == xiiSpriteBlendMode::Masked)
   {
-    category = xiiDefaultRenderDataCategories::LitMasked;
+    category = xiiDefaultRenderDataCategories::Masked;
   }
 
   msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);

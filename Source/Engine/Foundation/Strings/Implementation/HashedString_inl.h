@@ -134,9 +134,9 @@ XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString()
 }
 
 template <size_t N>
-XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(const char (&string)[N])
+XII_ALWAYS_INLINE constexpr xiiTempHashedString::xiiTempHashedString(const char (&string)[N]) :
+  m_uiHash(xiiHashingUtils::StringHash<N>(string))
 {
-  m_uiHash = xiiHashingUtils::StringHash<N>(string);
 }
 
 XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(xiiStringView sString)

@@ -1,0 +1,51 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4> VisibleLightList;
+StructuredBuffer<float4> ClusterDescriptors;
+StructuredBuffer<float4> ClusterDepthRange;
+RWStructuredBuffer<uint> ClusterLightIndices;
+RWStructuredBuffer<uint> ClusterLightPrefixSums;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint clusterIndex = dispatchThreadId.x;
+
+  if (clusterIndex >= ClusterLightPrefixSums.Length)
+  {
+    return;
+  }
+
+  const uint lightCount = max(VisibleLightList.Length, 1u);
+  const uint compactLightsPerCluster = min(16u, lightCount);
+
+  // Prefix sums store compact ranges in ClusterLightIndices for each cluster.
+  const uint startOffset = clusterIndex * compactLightsPerCluster;
+  ClusterLightPrefixSums[clusterIndex] = startOffset;
+
+  const uint descriptorHash = ClusterDescriptors.Length > clusterIndex ? asuint(ClusterDescriptors[clusterIndex].z * 1024.0f) : clusterIndex;
+  const uint depthHash = ClusterDepthRange.Length > 0 ? asuint(ClusterDepthRange[0].x * 1000.0f) : 0u;
+
+  [unroll]
+  for (uint i = 0u; i < 16u; ++i)
+  {
+    if (i >= compactLightsPerCluster)
+    {
+      break;
+    }
+
+    const uint dstIndex = startOffset + i;
+    if (dstIndex >= ClusterLightIndices.Length)
+    {
+      break;
+    }
+
+    const uint candidate = (descriptorHash + depthHash + clusterIndex * 131u + i * 17u) % lightCount;
+    ClusterLightIndices[dstIndex] = candidate;
+  }
+}

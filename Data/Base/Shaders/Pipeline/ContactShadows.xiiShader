@@ -1,0 +1,38 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+Texture2D<float>    SceneDepth;
+Texture2D<float4>   SceneNormalRoughness;
+StructuredBuffer<float4> ContactShadowLightParams;
+RWTexture2D<float>  ScreenSpaceContactShadowTerm;
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint width = 0;
+  uint height = 0;
+  ScreenSpaceContactShadowTerm.GetDimensions(width, height);
+
+  if (dispatchThreadId.x >= width || dispatchThreadId.y >= height)
+  {
+    return;
+  }
+
+  const int3 sampleCoord = int3(dispatchThreadId.xy, 0);
+
+  const float depth = SceneDepth.Load(sampleCoord);
+  const float3 normal = normalize(SceneNormalRoughness.Load(sampleCoord).xyz * 2.0f - 1.0f);
+
+  const float4 lightParams = ContactShadowLightParams.Length > 0 ? ContactShadowLightParams[0] : float4(1.0f, 0.5f, 0.01f, 0.0f);
+  const float3 lightDir = normalize(float3(lightParams.x, lightParams.y, max(lightParams.z, 0.001f)));
+
+  const float ndotl = saturate(dot(normal, -lightDir));
+  const float depthOcclusion = saturate((1.0f - depth) * max(lightParams.w, 1.0f));
+  const float contactTerm = ndotl * depthOcclusion;
+
+  ScreenSpaceContactShadowTerm[dispatchThreadId.xy] = contactTerm;
+}

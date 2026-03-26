@@ -148,6 +148,7 @@ protected:
   virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView) override final;
   virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
   virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler) override final;
+  virtual void      SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS) override final;
   virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode) override final;
 
   virtual void ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor) override final;
@@ -168,6 +169,15 @@ protected:
 
   virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description) override final;
   virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
+  virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description) override final;
+  virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description) override final;
+  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description) override final;
+  virtual void BuildBLASPlatform(const xiiGALBuildBLASDescription& description) override final;
+  virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description) override final;
+  virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description) override final;
+  virtual void CopyTLASPlatform(const xiiGALCopyTLASDescription& description) override final;
+  virtual void WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description) override final;
+  virtual void WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description) override final;
 
   virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
   virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;

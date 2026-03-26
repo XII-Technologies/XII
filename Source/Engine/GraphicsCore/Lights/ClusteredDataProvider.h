@@ -4,6 +4,42 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
+
+struct xiiPerLightData;
+struct xiiPerDecalData;
+struct xiiPerReflectionProbeData;
+struct xiiPerClusterData;
+
+class XII_GRAPHICSCORE_DLL xiiClusteredDataCPU : public xiiRenderData
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiClusteredDataCPU, xiiRenderData);
+
+public:
+  xiiClusteredDataCPU();
+  ~xiiClusteredDataCPU();
+
+  static constexpr xiiUInt32 MAX_LIGHT_DATA            = 1024U;
+  static constexpr xiiUInt32 MAX_DECAL_DATA            = 1024U;
+  static constexpr xiiUInt32 MAX_REFLECTION_PROBE_DATA = 1024U;
+  static constexpr xiiUInt32 MAX_ITEMS_PER_CLUSTER     = 256U;
+
+  xiiArrayPtr<xiiPerLightData>           m_LightData;
+  xiiArrayPtr<xiiPerDecalData>           m_DecalData;
+  xiiArrayPtr<xiiPerReflectionProbeData> m_ReflectionProbeData;
+  xiiArrayPtr<xiiPerClusterData>         m_ClusterData;
+  xiiArrayPtr<xiiUInt32>                 m_ClusterItemList;
+
+  xiiUInt32                   m_uiSkyIrradianceIndex = 0;
+  xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
+
+  float    m_fFogHeight             = 0.0f;
+  float    m_fFogHeightFalloff      = 0.0f;
+  float    m_fFogDensityAtCameraPos = 0.0f;
+  float    m_fFogDensity            = 0.0f;
+  float    m_fFogInvSkyDistance     = 0.0f;
+  xiiColor m_FogColor               = xiiColor::Black;
+};
 
 struct XII_GRAPHICSCORE_DLL xiiClusteredDataGPU
 {

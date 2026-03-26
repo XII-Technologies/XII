@@ -5,7 +5,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/OccluderComponent.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/OccluderRenderData.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiOccluderComponent, 1, xiiComponentMode::Static)
@@ -56,9 +56,13 @@ void xiiOccluderComponent::SetExtents(const xiiVec3& vExtents)
 void xiiOccluderComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
 {
   if (GetOwner()->IsStatic())
+  {
     msg.AddBounds(xiiBoundingBoxSphere(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiDefaultSpatialDataCategories::OcclusionStatic);
+  }
   else
+  {
     msg.AddBounds(xiiBoundingBoxSphere(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiDefaultSpatialDataCategories::OcclusionDynamic);
+  }
 }
 
 void xiiOccluderComponent::OnMsgExtractOccluderData(xiiMsgExtractOccluderData& msg) const

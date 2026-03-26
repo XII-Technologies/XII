@@ -1,0 +1,53 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+#include <Shaders/Pipeline/FrameConstants.h>
+
+struct GpuSceneInstanceData
+{
+  float4x4 ObjectToWorld;
+  float4   Bounds;
+  uint     MeshId;
+  uint     MaterialId;
+  uint     Flags;
+  uint     Reserved;
+};
+
+StructuredBuffer<float4>               GpuSceneBounds;
+StructuredBuffer<GpuSceneInstanceData> GpuSceneInstances;
+RWStructuredBuffer<float4>             GpuLodSelections;
+RWStructuredBuffer<float4>             GpuDrawMetadata;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint index = dispatchThreadId.x;
+
+  if (index >= GpuSceneBounds.Length || index >= GpuSceneInstances.Length || index >= GpuLodSelections.Length || index >= GpuDrawMetadata.Length)
+  {
+    return;
+  }
+
+  const GpuSceneInstanceData instanceData = GpuSceneInstances[index];
+  const float4               boundsData   = GpuSceneBounds[index];
+
+  const float frameBudgetScale = saturate(TargetFrameTimeMs / max(FrameDeltaTimeMs, 0.001f));
+  const float radius           = max(boundsData.w, 0.001f);
+  const float lodMetric        = radius * frameBudgetScale;
+
+  // Branchless 3-tier LOD partitioning from a compact metric.
+  const float lodIs0 = step(1.75f, lodMetric);
+  const float lodIs1 = (1.0f - lodIs0) * step(0.90f, lodMetric);
+  const float lodIs2 = 1.0f - lodIs0 - lodIs1;
+  const float lodIndex = lodIs1 + (2.0f * lodIs2);
+
+  // Simple meshlet class hint: x=lod, y=radius, z=priority, w=instance flags.
+  const float meshletPriority = saturate(radius * 0.25f) * (1.0f - 0.5f * lodIndex);
+  GpuLodSelections[index]      = float4(lodIndex, radius, lodMetric, meshletPriority);
+
+  GpuDrawMetadata[index] = float4((float)instanceData.MeshId, (float)instanceData.MaterialId, meshletPriority, (float)instanceData.Flags);
+}

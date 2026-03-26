@@ -39,6 +39,11 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStateTransitionMode, 1)
   XII_ENUM_CONSTANT(xiiGALStateTransitionMode::Verify),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALASCopyMode, 1)
+  XII_ENUM_CONSTANT(xiiGALASCopyMode::Clone),
+  XII_ENUM_CONSTANT(xiiGALASCopyMode::Compact),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -648,6 +653,34 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   SetSamplerPlatform(bindingInformation, pSampler);
 }
 
+void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetAccelerationStructure must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetAccelerationStructure arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetAccelerationStructure requires a pipeline state to be set.");
+
+  bool bResourceFound = false;
+  {
+    const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+    for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+    {
+      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      {
+        bResourceFound = true;
+        break;
+      }
+    }
+  }
+
+  XII_ASSERT_DEV(bResourceFound, "The acceleration structure resource '{}' with the required shader stages does not exist in the pipeline resource signature.", bindingInformation.m_sName);
+#endif
+
+  SetAccelerationStructurePlatform(bindingInformation, pTopLevelAS);
+}
+
 void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
@@ -740,6 +773,22 @@ void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourc
     if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
       return SetSampler(resource, pSampler);
+    }
+  }
+}
+
+void xiiGALCommandList::ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+{
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetAccelerationStructure arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetAccelerationStructure requires a pipeline state to be set.");
+
+  const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+  for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+  {
+    if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
+    {
+      return SetAccelerationStructure(resource, pTopLevelAS);
     }
   }
 }
@@ -1215,6 +1264,232 @@ void xiiGALCommandList::DispatchComputeIndirect(const xiiGALDispatchComputeIndir
   ++m_CommandListStatistics.m_CommandListCounters.m_uiDispatchComputeIndirect;
 
   DispatchComputeIndirectPlatform(description);
+}
+
+void xiiGALCommandList::TraceRays(const xiiGALTraceRaysDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "TraceRays must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "TraceRays arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "TraceRays command arguments are invalid. No pipeline state is set.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::RayTracing, "TraceRays command arguments are invalid. Pipeline state {0} is not a ray tracing pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "TraceRays command arguments are invalid. TraceRays command must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "TraceRays command arguments are invalid. Shader binding table buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRays command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "TraceRays command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "TraceRays command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+  };
+
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
+  VerifyRegion(description.m_MissTable, "Miss");
+  VerifyRegion(description.m_HitTable, "Hit");
+  VerifyRegion(description.m_CallableTable, "Callable");
+
+  if (description.m_uiWidth == 0U || description.m_uiHeight == 0U || description.m_uiDepth == 0U)
+  {
+    xiiLog::Info("TraceRays dimensions contain 0. This is acceptable but the trace command will be ignored, and may be unintentional.");
+  }
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiTraceRays;
+
+  TraceRaysPlatform(description);
+}
+
+void xiiGALCommandList::TraceRaysIndirect(const xiiGALTraceRaysIndirectDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "TraceRaysIndirect must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "TraceRaysIndirect arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pPipelineState != nullptr, "TraceRaysIndirect command arguments are invalid. No pipeline state is set.");
+  XII_ASSERT_DEV(m_pPipelineState->GetDescription().m_PipelineType == xiiGALPipelineType::RayTracing, "TraceRaysIndirect command arguments are invalid. Pipeline state {0} is not a ray tracing pipeline.", m_pPipelineState->GetDebugName());
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "TraceRaysIndirect command arguments are invalid. TraceRaysIndirect command must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "TraceRaysIndirect command arguments are invalid. Shader binding table buffer must not be null.");
+  XII_ASSERT_DEV(description.m_pArgumentBuffer != nullptr, "TraceRaysIndirect command arguments are invalid. Indirect argument buffer must not be null.");
+
+  const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRaysIndirect command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+
+  const xiiGALBufferCreationDescription& argumentBufferDescription = description.m_pArgumentBuffer->GetDescription();
+  XII_ASSERT_DEV(argumentBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "TraceRaysIndirect command arguments are invalid. Argument buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pArgumentBuffer->GetDebugName());
+
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "TraceRaysIndirect command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "TraceRaysIndirect command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+  };
+
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
+  VerifyRegion(description.m_MissTable, "Miss");
+  VerifyRegion(description.m_HitTable, "Hit");
+  VerifyRegion(description.m_CallableTable, "Callable");
+
+  constexpr xiiUInt64 uiIndirectArgumentSize = sizeof(xiiUInt32) * 3U;
+  XII_ASSERT_DEV((description.m_uiArgumentOffset + uiIndirectArgumentSize) <= argumentBufferDescription.m_uiSize, "TraceRaysIndirect command arguments are invalid. Argument buffer offset and size exceed the indirect argument buffer bounds.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiTraceRaysIndirect;
+
+  TraceRaysIndirectPlatform(description);
+}
+
+void xiiGALCommandList::UpdateSBT(const xiiGALUpdateSBTDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UpdateSBT must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "UpdateSBT arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "UpdateSBT command arguments are invalid. UpdateSBT must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "UpdateSBT command arguments are invalid. Shader binding table buffer must not be null.");
+
+  xiiSharedPtr<xiiGALPipelineState> pPipelineState = description.m_pPipelineState;
+  if (pPipelineState == nullptr)
+  {
+    pPipelineState = m_pPipelineState;
+  }
+
+  XII_ASSERT_DEV(pPipelineState != nullptr, "UpdateSBT command arguments are invalid. No ray tracing pipeline was provided or currently bound.");
+  XII_ASSERT_DEV(pPipelineState->GetDescription().IsRayTracingPipeline(), "UpdateSBT command arguments are invalid. Provided pipeline must be a ray tracing pipeline.");
+
+  const xiiGALBufferCreationDescription& sbtBufferDescription = description.m_pShaderBindingTable->GetDescription();
+  XII_ASSERT_DEV(sbtBufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing), "UpdateSBT command arguments are invalid. Shader binding table buffer ({}) must be created with xiiGALBindFlags::RayTracing.", description.m_pShaderBindingTable->GetDebugName());
+
+  auto VerifyRegion = [&](const xiiGALRayTracingSBTRegionDescription& region, const char* szRegionName) {
+    if (region.m_uiSize == 0U)
+      return;
+
+    XII_ASSERT_DEV(region.m_uiStride > 0U, "UpdateSBT command arguments are invalid. {} region stride must be non-zero when size is non-zero.", szRegionName);
+    XII_ASSERT_DEV((region.m_uiOffset + region.m_uiSize) <= sbtBufferDescription.m_uiSize, "UpdateSBT command arguments are invalid. {} region exceeds shader binding table buffer size.", szRegionName);
+  };
+
+  VerifyRegion(description.m_RayGenerationTable, "RayGeneration");
+  VerifyRegion(description.m_MissTable, "Miss");
+  VerifyRegion(description.m_HitTable, "Hit");
+  VerifyRegion(description.m_CallableTable, "Callable");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiUpdateSBT;
+
+  UpdateSBTPlatform(description);
+}
+
+void xiiGALCommandList::BuildBLAS(const xiiGALBuildBLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BuildBLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "BuildBLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "BuildBLAS command arguments are invalid. BuildBLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pBottomLevelAS != nullptr, "BuildBLAS command arguments are invalid. BLAS handle is invalid.");
+  XII_ASSERT_DEV(description.m_pScratchBuffer != nullptr, "BuildBLAS command arguments are invalid. Scratch buffer handle is invalid.");
+
+  const xiiGALBottomLevelASCreationDescription& blasDescription = description.m_pBottomLevelAS->GetDescription();
+  XII_ASSERT_DEV(description.m_Triangles.GetCount() == blasDescription.m_Triangles.GetCount(), "BuildBLAS command arguments are invalid. Triangle build input count ({}) must match BLAS triangle geometry count ({}).", description.m_Triangles.GetCount(), blasDescription.m_Triangles.GetCount());
+  XII_ASSERT_DEV(description.m_BoundingBoxes.GetCount() == blasDescription.m_BoundingBoxes.GetCount(), "BuildBLAS command arguments are invalid. Bounding box build input count ({}) must match BLAS AABB geometry count ({}).", description.m_BoundingBoxes.GetCount(), blasDescription.m_BoundingBoxes.GetCount());
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildBLAS;
+
+  BuildBLASPlatform(description);
+}
+
+void xiiGALCommandList::BuildTLAS(const xiiGALBuildTLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BuildTLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "BuildTLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "BuildTLAS command arguments are invalid. BuildTLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pTopLevelAS != nullptr, "BuildTLAS command arguments are invalid. TLAS handle is invalid.");
+  XII_ASSERT_DEV(description.m_pInstanceBuffer != nullptr, "BuildTLAS command arguments are invalid. Instance buffer handle is invalid.");
+  XII_ASSERT_DEV(description.m_pScratchBuffer != nullptr, "BuildTLAS command arguments are invalid. Scratch buffer handle is invalid.");
+  XII_ASSERT_DEV(description.m_uiInstanceCount > 0U, "BuildTLAS command arguments are invalid. InstanceCount must be non-zero.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiBuildTLAS;
+
+  BuildTLASPlatform(description);
+}
+
+void xiiGALCommandList::CopyBLAS(const xiiGALCopyBLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyBLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "CopyBLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "CopyBLAS command arguments are invalid. CopyBLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pSourceBottomLevelAS != nullptr, "CopyBLAS command arguments are invalid. Source BLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationBottomLevelAS != nullptr, "CopyBLAS command arguments are invalid. Destination BLAS is invalid.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyBLAS;
+
+  CopyBLASPlatform(description);
+}
+
+void xiiGALCommandList::CopyTLAS(const xiiGALCopyTLASDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyTLAS must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "CopyTLAS arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "CopyTLAS command arguments are invalid. CopyTLAS must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pSourceTopLevelAS != nullptr, "CopyTLAS command arguments are invalid. Source TLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationTopLevelAS != nullptr, "CopyTLAS command arguments are invalid. Destination TLAS is invalid.");
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiCopyTLAS;
+
+  CopyTLASPlatform(description);
+}
+
+void xiiGALCommandList::WriteBLASCompactedSize(const xiiGALWriteBLASCompactedSizeDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "WriteBLASCompactedSize must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "WriteBLASCompactedSize arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "WriteBLASCompactedSize command arguments are invalid. The operation must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pBottomLevelAS != nullptr, "WriteBLASCompactedSize command arguments are invalid. Source BLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationBuffer != nullptr, "WriteBLASCompactedSize command arguments are invalid. Destination buffer is invalid.");
+
+  const xiiGALBufferCreationDescription& destinationBufferDescription = description.m_pDestinationBuffer->GetDescription();
+  XII_ASSERT_DEV((description.m_uiDestinationBufferOffset + sizeof(xiiUInt64)) <= destinationBufferDescription.m_uiSize, "WriteBLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiWriteBLASCompactedSize;
+
+  WriteBLASCompactedSizePlatform(description);
+}
+
+void xiiGALCommandList::WriteTLASCompactedSize(const xiiGALWriteTLASCompactedSizeDescription& description)
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "WriteTLASCompactedSize must be called while recording.");
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "WriteTLASCompactedSize arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
+  XII_ASSERT_DEV(m_pRenderPass == nullptr, "WriteTLASCompactedSize command arguments are invalid. The operation must be performed outside of render pass.");
+  XII_ASSERT_DEV(description.m_pTopLevelAS != nullptr, "WriteTLASCompactedSize command arguments are invalid. Source TLAS is invalid.");
+  XII_ASSERT_DEV(description.m_pDestinationBuffer != nullptr, "WriteTLASCompactedSize command arguments are invalid. Destination buffer is invalid.");
+
+  const xiiGALBufferCreationDescription& destinationBufferDescription = description.m_pDestinationBuffer->GetDescription();
+  XII_ASSERT_DEV((description.m_uiDestinationBufferOffset + sizeof(xiiUInt64)) <= destinationBufferDescription.m_uiSize, "WriteTLASCompactedSize command arguments are invalid. Destination offset ({}) exceeds destination buffer size ({}).", description.m_uiDestinationBufferOffset, destinationBufferDescription.m_uiSize);
+#endif
+
+  ++m_CommandListStatistics.m_CommandListCounters.m_uiWriteTLASCompactedSize;
+
+  WriteTLASCompactedSizePlatform(description);
 }
 
 void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)

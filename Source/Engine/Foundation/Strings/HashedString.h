@@ -163,7 +163,7 @@ public:
 
   /// \brief Creates a xiiTempHashedString object from the given string constant. The hash can be computed at compile time.
   template <size_t N>
-  xiiTempHashedString(const char (&string)[N]); // [tested]
+  constexpr xiiTempHashedString(const char (&string)[N]); // [tested]
 
   template <size_t N>
   xiiTempHashedString(char (&string)[N]) = delete;

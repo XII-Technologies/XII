@@ -1008,20 +1008,20 @@ xiiMaterialResource::CachedValues* xiiMaterialResource::GetOrUpdateCachedValues(
     {
       if (sBlendModeValue == xiiTempHashedString("BLEND_MODE_OPAQUE"))
       {
-        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitOpaque;
+        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::Opaque;
       }
       else if (sBlendModeValue == xiiTempHashedString("BLEND_MODE_MASKED"))
       {
-        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitMasked;
+        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::Masked;
       }
       else
       {
-        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitTransparent;
+        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::Transparent;
       }
     }
     else
     {
-      m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitOpaque;
+      m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::Opaque;
     }
   }
 

@@ -12,12 +12,14 @@
 
 #include <Core/Console/QuakeConsole.h>
 #include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/World.h>
 #include <EditorEngineProcess/EngineProcGameApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoRenderer.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
@@ -404,7 +406,13 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       Init_PlatformProfile_LoadForRuntime();
 
       xiiResourceManager::ReloadAllResources(false);
-      xiiRenderWorld::DeleteAllCachedRenderData();
+      for (xiiUInt32 uiWorldIndex = 0; uiWorldIndex < xiiWorld::GetWorldCount(); ++uiWorldIndex)
+      {
+        if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
+        {
+          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
+        }
+      }
     }
     else if (pMsg1->m_sWhatToDo == "ReloadAssetLUT")
     {
@@ -429,7 +437,13 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         xiiResourceManager::ReloadAllResources(false);
       }
-      xiiRenderWorld::DeleteAllCachedRenderData();
+      for (xiiUInt32 uiWorldIndex = 0; uiWorldIndex < xiiWorld::GetWorldCount(); ++uiWorldIndex)
+      {
+        if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
+        {
+          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
+        }
+      }
     }
     else if (pMsg1->m_sWhatToDo == "SaveProfiling")
     {

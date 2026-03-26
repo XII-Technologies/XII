@@ -1,0 +1,45 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+#include <Shaders/Pipeline/FrameConstants.h>
+
+StructuredBuffer<float4> FrameTimingData;
+StructuredBuffer<float4> CameraVelocityData;
+RWStructuredBuffer<float4> DynamicResolutionData;
+
+[numthreads(1, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  if (dispatchThreadId.x != 0)
+  {
+    return;
+  }
+
+  float measuredFrameMs = FrameDeltaTimeMs;
+  if (FrameTimingData.Length > 0)
+  {
+    measuredFrameMs = max(FrameTimingData[0].x, 0.001f);
+  }
+
+  float targetFrameMs = max(TargetFrameTimeMs, 0.001f);
+  float ratio         = targetFrameMs / measuredFrameMs;
+  float scale         = saturate(ratio);
+
+  float velocityMagnitude = 0.0f;
+  if (CameraVelocityData.Length > 0)
+  {
+    velocityMagnitude = length(CameraVelocityData[0].xyz);
+  }
+
+  // Preserve extra resolution during fast camera motion to reduce temporal instability.
+  float velocityStabilityBoost = saturate(velocityMagnitude * 0.1f) * 0.15f;
+  scale                        = min(scale + velocityStabilityBoost, 1.0f);
+  scale               = clamp(scale, MinDynamicResolutionScale, MaxDynamicResolutionScale);
+
+  // x = scale, y = measured frame ms, z = target frame ms, w = reserved.
+  DynamicResolutionData[0] = float4(scale, measuredFrameMs, targetFrameMs, 0.0f);
+}
