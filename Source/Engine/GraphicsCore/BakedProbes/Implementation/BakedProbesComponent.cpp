@@ -12,6 +12,7 @@
 #include <GraphicsCore/BakedProbes/ProbeTreeSectorResource.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -251,7 +252,7 @@ void xiiBakedProbesComponent::SetShowDebugProbes(bool bShow)
 
     if (IsActiveAndInitialized())
     {
-      xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+      GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
     }
   }
 }
@@ -264,7 +265,7 @@ void xiiBakedProbesComponent::SetUseTestPosition(bool bUse)
 
     if (IsActiveAndInitialized())
     {
-      xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+      GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
     }
   }
 }
@@ -275,7 +276,7 @@ void xiiBakedProbesComponent::SetTestPosition(const xiiVec3& vPos)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 

@@ -7,6 +7,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
@@ -174,7 +175,7 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
       xiiGameObject* pObject = static_cast<xiiGameObject*>(target.m_pObject);
       if (pObject != nullptr && pObject->IsStatic())
       {
-        xiiRenderWorld::DeleteCachedRenderDataForObjectRecursive(pObject);
+        pObject->GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderDataForObjectRecursive(pObject);
       }
     }
     else if (target.m_pType->IsDerivedFrom<xiiComponent>())
@@ -182,7 +183,7 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
       xiiComponent* pComponent = static_cast<xiiComponent*>(target.m_pObject);
       if (pComponent != nullptr && pComponent->GetOwner()->IsStatic())
       {
-        xiiRenderWorld::DeleteCachedRenderData(pComponent->GetOwner()->GetHandle(), pComponent->GetHandle());
+        pComponent->GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(pComponent->GetOwner()->GetHandle(), pComponent->GetHandle());
       }
     }
   }

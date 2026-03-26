@@ -13,6 +13,7 @@
 struct xiiPerInstanceData;
 struct xiiRenderWorldExtractionEvent;
 struct xiiRenderGraphPassExecutionContext;
+class xiiView;
 class xiiGALCommandList;
 class xiiGALFence;
 class xiiRenderGraphRuntime;
@@ -102,6 +103,18 @@ public:
   virtual ~xiiRenderDataManager();
 
   virtual void Initialize() override;
+
+  /// \brief Invalidates all cached render data across all views in this module's world.
+  void DeleteAllCachedRenderData();
+
+  /// \brief Invalidates cached render data for a specific static component.
+  void DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent);
+
+  /// \brief Invalidates cached render data for an object and all of its children.
+  void DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject);
+
+  /// \brief Resets cached render data state for a view when it changes world association.
+  void ResetRenderDataCache(xiiView& ref_view);
 
   /// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
   template <typename T>

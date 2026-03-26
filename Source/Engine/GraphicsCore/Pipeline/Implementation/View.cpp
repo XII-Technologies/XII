@@ -2,6 +2,7 @@
 
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -43,7 +44,10 @@ void xiiView::SetWorld(xiiWorld* pWorld)
   {
     m_pWorld = pWorld;
 
-    xiiRenderWorld::ResetRenderDataCache(*this);
+    if (m_pWorld != nullptr)
+    {
+      m_pWorld->GetOrCreateModule<xiiRenderDataManager>()->ResetRenderDataCache(*this);
+    }
   }
 }
 

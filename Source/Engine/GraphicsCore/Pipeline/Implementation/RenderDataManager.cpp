@@ -243,6 +243,26 @@ void xiiRenderDataManager::Initialize()
 {
 }
 
+void xiiRenderDataManager::DeleteAllCachedRenderData()
+{
+  xiiRenderWorld::DeleteAllCachedRenderData();
+}
+
+void xiiRenderDataManager::DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent)
+{
+  xiiRenderWorld::DeleteCachedRenderData(hOwnerObject, hOwnerComponent);
+}
+
+void xiiRenderDataManager::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject)
+{
+  xiiRenderWorld::DeleteCachedRenderDataForObjectRecursive(pOwnerObject);
+}
+
+void xiiRenderDataManager::ResetRenderDataCache(xiiView& ref_view)
+{
+  xiiRenderWorld::ResetRenderDataCache(ref_view);
+}
+
 xiiArrayPtr<xiiPerInstanceData> xiiRenderDataManager::GetOrCreateInstanceData(const xiiComponent* pOwnerComponent, bool bDynamic, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount /*= 1*/) const
 {
   XII_IGNORE_UNUSED(pOwnerComponent);

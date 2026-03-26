@@ -155,7 +155,7 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
   xiiRenderData::Category m_OverrideCategory = xiiInvalidRenderDataCategory;
 
   /// \brief Adds render data for the current view. This data can be cached depending on the specified caching behavior.
-  /// Non-cached data is only valid for this frame. Cached data must be manually deleted using the xiiRenderWorld::DeleteCachedRenderData
+  /// Non-cached data is only valid for this frame. Cached data must be manually deleted using xiiRenderDataManager::DeleteCachedRenderData on the owning world's module instance
   /// function.
   void AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category, xiiRenderData::Caching::Enum cachingBehavior);
 

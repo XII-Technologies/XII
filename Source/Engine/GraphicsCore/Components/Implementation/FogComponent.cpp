@@ -4,6 +4,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/FogComponent.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
@@ -41,7 +42,7 @@ xiiFogComponent::~xiiFogComponent() = default;
 
 void xiiFogComponent::Deinitialize()
 {
-  xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
 
   SUPER::Deinitialize();
 }
@@ -62,7 +63,7 @@ void xiiFogComponent::SetColor(xiiColor color)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 
@@ -77,7 +78,7 @@ void xiiFogComponent::SetDensity(float fDensity)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 
@@ -92,7 +93,7 @@ void xiiFogComponent::SetHeightFalloff(float fHeightFalloff)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 
@@ -107,7 +108,7 @@ void xiiFogComponent::SetModulateWithSkyColor(bool bModulate)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 
@@ -122,7 +123,7 @@ void xiiFogComponent::SetSkyDistance(float fDistance)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 
