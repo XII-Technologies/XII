@@ -2,7 +2,7 @@
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/ObjectConstants.h>
 
 template <typename T>
-T* xiiRenderDataManager::CreateRenderDataForThisFrame(const xiiGameObject* pOwner) const
+T* xiiRenderWorldModule::CreateRenderDataForThisFrame(const xiiGameObject* pOwner) const
 {
   static_assert(XII_IS_DERIVED_FROM_STATIC(xiiRenderData, T));
 
@@ -26,7 +26,7 @@ T* xiiRenderDataManager::CreateRenderDataForThisFrame(const xiiGameObject* pOwne
 }
 
 // static
-XII_FORCE_INLINE void xiiRenderDataManager::FillPerInstanceData(xiiPerInstanceData& out_perInstanceData, const xiiGameObject* pObject, const xiiTransform& globalTransform, xiiUInt32 uiUniqueID /*= 0*/, const xiiColor& color /*= xiiColor::White*/, float fBoundingSphereRadius /*= 1.0f*/, xiiUInt32 uiRandomSeed /*= 0*/)
+XII_FORCE_INLINE void xiiRenderWorldModule::FillPerInstanceData(xiiPerInstanceData& out_perInstanceData, const xiiGameObject* pObject, const xiiTransform& globalTransform, xiiUInt32 uiUniqueID /*= 0*/, const xiiColor& color /*= xiiColor::White*/, float fBoundingSphereRadius /*= 1.0f*/, xiiUInt32 uiRandomSeed /*= 0*/)
 {
   xiiMat4 objectToWorld             = globalTransform.GetAsMat4();
   out_perInstanceData.ObjectToWorld = objectToWorld;
@@ -60,7 +60,7 @@ XII_FORCE_INLINE void xiiRenderDataManager::FillPerInstanceData(xiiPerInstanceDa
   out_perInstanceData.Color = color;
 }
 
-XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetOrCreateInstanceDataAndFill(const xiiComponent& ownerComponent, bool bDynamic, const xiiTransform& globalTransform, xiiInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiUniqueID /*= 0*/, const xiiColor& color /*= xiiColor::White*/) const
+XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderWorldModule::GetOrCreateInstanceDataAndFill(const xiiComponent& ownerComponent, bool bDynamic, const xiiTransform& globalTransform, xiiInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiUniqueID /*= 0*/, const xiiColor& color /*= xiiColor::White*/) const
 {
   xiiSharedPtr<xiiGALDynamicBuffer> pInstanceDataBuffer;
   auto                              pInstanceData = GetOrCreateInstanceData(&ownerComponent, bDynamic, pInstanceDataBuffer, inout_instanceDataOffset);
@@ -70,14 +70,14 @@ XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetOrCr
 }
 
 template <typename T>
-XII_ALWAYS_INLINE xiiArrayPtr<T> xiiRenderDataManager::GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_hBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount /*= 1*/) const
+XII_ALWAYS_INLINE xiiArrayPtr<T> xiiRenderWorldModule::GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_hBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount /*= 1*/) const
 {
   xiiByteArrayPtr pData = GetOrCreateCustomInstanceData(uiCustomDataIndex, sizeof(T), pOwnerComponent, out_hBuffer, inout_instanceDataOffset, uiCount);
   return xiiArrayPtr<T>(reinterpret_cast<T*>(pData.GetPtr()), pData.GetCount() / sizeof(T));
 }
 
 template <typename T>
-XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetOrCreateCustomInstanceDataAndFill(xiiUInt32 uiCustomDataIndex, const xiiComponent& ownerComponent, xiiCustomInstanceDataOffset& inout_instanceDataOffset, const T& data) const
+XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderWorldModule::GetOrCreateCustomInstanceDataAndFill(xiiUInt32 uiCustomDataIndex, const xiiComponent& ownerComponent, xiiCustomInstanceDataOffset& inout_instanceDataOffset, const T& data) const
 {
   xiiSharedPtr<xiiGALDynamicBuffer> pInstanceDataBuffer;
   auto                              pInstanceData = GetOrCreateCustomInstanceData<T>(uiCustomDataIndex, &ownerComponent, pInstanceDataBuffer, inout_instanceDataOffset);
@@ -86,7 +86,7 @@ XII_FORCE_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetOrCr
   return pInstanceDataBuffer;
 }
 
-XII_ALWAYS_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetCustomInstanceDataBuffer(xiiUInt32 uiCustomDataIndex) const
+XII_ALWAYS_INLINE xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderWorldModule::GetCustomInstanceDataBuffer(xiiUInt32 uiCustomDataIndex) const
 {
   return m_Buffers[uiCustomDataIndex];
 }

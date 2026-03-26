@@ -8,9 +8,9 @@ xiiRenderGraphShadowCasterCullingPass::xiiRenderGraphShadowCasterCullingPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sInstanceDataResourceName      = xiiMakeHashedString("GpuSceneBounds");
-  m_sShadowCascadeDataResourceName = xiiMakeHashedString("ShadowCascadeData");
-  m_sShadowVisibleListResourceName = xiiMakeHashedString("ShadowVisibleList");
+  m_sInstanceDataResourceName       = xiiMakeHashedString("GpuSceneBounds");
+  m_sShadowCascadeDataResourceName  = xiiMakeHashedString("ShadowCascadeData");
+  m_sShadowVisibleListResourceName  = xiiMakeHashedString("ShadowVisibleList");
   m_sShadowVisibleCountResourceName = xiiMakeHashedString("ShadowVisibleCount");
 
   RebuildResourceLayout();

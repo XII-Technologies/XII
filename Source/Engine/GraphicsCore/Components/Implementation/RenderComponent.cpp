@@ -26,7 +26,7 @@ xiiRenderComponent::~xiiRenderComponent() = default;
 
 void xiiRenderComponent::Deinitialize()
 {
-  GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
 
   SUPER::Deinitialize();
 }
@@ -68,7 +68,7 @@ void xiiRenderComponent::InvalidateCachedRenderData()
 {
   if (IsActiveAndInitialized())
   {
-    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 

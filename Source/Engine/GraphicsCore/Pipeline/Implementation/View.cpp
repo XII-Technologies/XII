@@ -46,7 +46,7 @@ void xiiView::SetWorld(xiiWorld* pWorld)
 
     if (m_pWorld != nullptr)
     {
-      m_pWorld->GetOrCreateModule<xiiRenderDataManager>()->ResetRenderDataCache(*this);
+      m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->ResetRenderDataCache(*this);
     }
   }
 }

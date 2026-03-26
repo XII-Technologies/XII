@@ -410,7 +410,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
         {
-          pWorld->GetOrCreateModule<xiiRenderDataManager>()->DeleteAllCachedRenderData();
+          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
         }
       }
     }
@@ -441,7 +441,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         if (xiiWorld* pWorld = xiiWorld::GetWorld(uiWorldIndex))
         {
-          pWorld->GetOrCreateModule<xiiRenderDataManager>()->DeleteAllCachedRenderData();
+          pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
         }
       }
     }

@@ -40,7 +40,7 @@ void xiiMaterialContext::HandleMessage(const xiiEditorEngineDocumentMsg* pMsg)
       // make sure all scenes etc rebuild their render cache
       if (m_pWorld != nullptr)
       {
-        m_pWorld->GetOrCreateModule<xiiRenderDataManager>()->DeleteAllCachedRenderData();
+        m_pWorld->GetOrCreateModule<xiiRenderWorldModule>()->DeleteAllCachedRenderData();
       }
     }
     else if (pMsg2->m_sWhatToDo == "PreviewModel" && m_PreviewModel != (PreviewModel)pMsg2->m_iValue)

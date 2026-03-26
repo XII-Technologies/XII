@@ -37,7 +37,7 @@ xiiAmbientLightComponent::~xiiAmbientLightComponent() = default;
 
 void xiiAmbientLightComponent::Deinitialize()
 {
-  GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
 
   SUPER::Deinitialize();
 }

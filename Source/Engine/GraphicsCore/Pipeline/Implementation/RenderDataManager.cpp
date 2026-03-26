@@ -6,25 +6,25 @@
 #include <GraphicsCore/Pipeline/Passes/ClusterGridBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/ContactShadowsPass.h>
+#include <GraphicsCore/Pipeline/Passes/DecalResolvePass.h>
 #include <GraphicsCore/Pipeline/Passes/DepthPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
-#include <GraphicsCore/Pipeline/Passes/DecalResolvePass.h>
 #include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
 #include <GraphicsCore/Pipeline/Passes/GpuDrivenVisibilityPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/InstanceUpdatePass.h>
 #include <GraphicsCore/Pipeline/Passes/LightListBuildPass.h>
-#include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/LocalLightShadowRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/LocalLightShadowSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/LodSelectionPass.h>
 #include <GraphicsCore/Pipeline/Passes/NormalRoughnessPrepassPass.h>
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPass.h>
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/Passes/RayTracedShadowsPass.h>
-#include <GraphicsCore/Pipeline/Passes/ShadowCasterCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/ShadowCascadeSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/ShadowCasterCullingPass.h>
 #include <GraphicsCore/Pipeline/Passes/ShadowMapRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/SkinningPass.h>
 #include <GraphicsCore/Pipeline/RenderDataManager.h>
@@ -68,44 +68,44 @@ namespace
   };
 } // namespace
 
-XII_IMPLEMENT_WORLD_MODULE(xiiRenderDataManager);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderDataManager, 1, xiiRTTINoAllocator)
+XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgCustomInstanceDataOffsetChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgCustomInstanceDataOffsetChanged, 1, xiiRTTIDefaultAllocator<xiiMsgCustomInstanceDataOffsetChanged>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pWorld)
+xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) : xiiWorldModule(pWorld)
 {
-  xiiRenderWorld::GetExtractionEvent().AddEventHandler(xiiMakeDelegate(&xiiRenderDataManager::OnExtractionEvent, this));
+  xiiRenderWorld::GetExtractionEvent().AddEventHandler(xiiMakeDelegate(&xiiRenderWorldModule::OnExtractionEvent, this));
 
   m_pFrameSetupPass = XII_DEFAULT_NEW(xiiRenderGraphFrameSetupPass);
-  m_pFrameSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupFrameSetupCommandList, this));
+  m_pFrameSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupFrameSetupCommandList, this));
 
   m_pGpuDrivenVisibilityPass = XII_DEFAULT_NEW(xiiRenderGraphGpuVisibilityPass);
-  m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList, this));
-  m_pGpuDrivenVisibilityPass->SetPostDispatchCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch, this));
+  m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupGpuDrivenVisibilityCommandList, this));
+  m_pGpuDrivenVisibilityPass->SetPostDispatchCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::OnGpuDrivenVisibilityPostDispatch, this));
   m_bGpuVisibilityUseInternalIndirectDispatch = true;
 
   m_pInstanceUpdatePass = XII_DEFAULT_NEW(xiiRenderGraphInstanceUpdatePass);
-  m_pInstanceUpdatePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupInstanceUpdateCommandList, this));
+  m_pInstanceUpdatePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupInstanceUpdateCommandList, this));
   m_pInstanceUpdatePass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pCoarseFrustumCullingPass = XII_DEFAULT_NEW(xiiRenderGraphCoarseFrustumCullingPass);
-  m_pCoarseFrustumCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupCoarseFrustumCullingCommandList, this));
+  m_pCoarseFrustumCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupCoarseFrustumCullingCommandList, this));
   m_pCoarseFrustumCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pOccluderDepthPass = XII_DEFAULT_NEW(xiiRenderGraphOccluderDepthPass);
-  m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupOccluderDepthPrepassCommandList, this));
-  m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawOccluderDepthPrepassCommandList, this));
+  m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupOccluderDepthPrepassCommandList, this));
+  m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawOccluderDepthPrepassCommandList, this));
 
   m_pHiZBuildPass = XII_DEFAULT_NEW(xiiRenderGraphHiZBuildPass);
-  m_pHiZBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupHiZPyramidBuildCommandList, this));
+  m_pHiZBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupHiZPyramidBuildCommandList, this));
   m_pHiZBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pHiZOcclusionCullingPass = XII_DEFAULT_NEW(xiiRenderGraphHiZOcclusionCullingPass);
-  m_pHiZOcclusionCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupHiZOcclusionCullingCommandList, this));
+  m_pHiZOcclusionCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupHiZOcclusionCullingCommandList, this));
   m_pHiZOcclusionCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pHiZOcclusionCullingPass->SetCandidateInstancesResourceName(xiiMakeHashedString("GpuVisibleCandidates"));
   m_pHiZOcclusionCullingPass->SetCandidateInstanceCountResourceName(xiiMakeHashedString("GpuVisibleCandidateCount"));
@@ -113,7 +113,7 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pHiZOcclusionCullingPass->SetVisibleInstanceCountResourceName(xiiMakeHashedString("GpuVisibleInstanceCount"));
 
   m_pDrawCommandBuildPass = XII_DEFAULT_NEW(xiiRenderGraphDrawCommandBuildPass);
-  m_pDrawCommandBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDrawIndirectCommandBuildCommandList, this));
+  m_pDrawCommandBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDrawIndirectCommandBuildCommandList, this));
   m_pDrawCommandBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pDrawCommandBuildPass->SetVisibleInstancesResourceName(xiiMakeHashedString("GpuVisibleInstances"));
   m_pDrawCommandBuildPass->SetMaterialBinsResourceName(xiiMakeHashedString("GpuMaterialBins"));
@@ -121,29 +121,29 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pDrawCommandBuildPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
 
   m_pMainDepthPrepassPass = XII_DEFAULT_NEW(xiiRenderGraphDepthPrepassPass);
-  m_pMainDepthPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupMainDepthPrepassCommandList, this));
-  m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawMainDepthPrepassCommandList, this));
+  m_pMainDepthPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupMainDepthPrepassCommandList, this));
+  m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawMainDepthPrepassCommandList, this));
   m_pMainDepthPrepassPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
   m_pMainDepthPrepassPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
   m_pMainDepthPrepassPass->SetDepthBufferResourceName(xiiMakeHashedString("SceneDepth"));
 
   m_pNormalRoughnessPrepassPass = XII_DEFAULT_NEW(xiiRenderGraphNormalRoughnessPrepassPass);
-  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList, this));
-  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList, this));
+  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupNormalRoughnessPrepassCommandList, this));
+  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawNormalRoughnessPrepassCommandList, this));
   m_pNormalRoughnessPrepassPass->SetIndirectCommandBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCommands"));
   m_pNormalRoughnessPrepassPass->SetIndirectCountBufferResourceName(xiiMakeHashedString("GpuIndirectDrawCounts"));
   m_pNormalRoughnessPrepassPass->SetDepthResourceName(xiiMakeHashedString("SceneDepth"));
   m_pNormalRoughnessPrepassPass->SetNormalRoughnessResourceName(xiiMakeHashedString("SceneNormalRoughness"));
 
   m_pShadowCascadeSetupPass = XII_DEFAULT_NEW(xiiRenderGraphShadowCascadeSetupPass);
-  m_pShadowCascadeSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalCascadeSetupCommandList, this));
+  m_pShadowCascadeSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDirectionalCascadeSetupCommandList, this));
   m_pShadowCascadeSetupPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pShadowCascadeSetupPass->SetCameraDataResourceName(xiiMakeHashedString("FrameConstants"));
   m_pShadowCascadeSetupPass->SetCascadeParamsResourceName(xiiMakeHashedString("ShadowCascadeParams"));
   m_pShadowCascadeSetupPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
 
   m_pShadowCasterCullingPass = XII_DEFAULT_NEW(xiiRenderGraphShadowCasterCullingPass);
-  m_pShadowCasterCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowCullingCommandList, this));
+  m_pShadowCasterCullingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDirectionalShadowCullingCommandList, this));
   m_pShadowCasterCullingPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pShadowCasterCullingPass->SetInstanceDataResourceName(xiiMakeHashedString("GpuSceneBounds"));
   m_pShadowCasterCullingPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
@@ -151,14 +151,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pShadowCasterCullingPass->SetShadowVisibleCountResourceName(xiiMakeHashedString("ShadowVisibleCount"));
 
   m_pLocalLightShadowSetupPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowSetupPass);
-  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList, this));
+  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupLocalLightShadowAtlasAllocationCommandList, this));
   m_pLocalLightShadowSetupPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pLocalLightShadowSetupPass->SetLocalShadowRequestsResourceName(xiiMakeHashedString("LocalShadowRequests"));
   m_pLocalLightShadowSetupPass->SetLocalShadowAllocatorParamsResourceName(xiiMakeHashedString("LocalShadowAllocatorParams"));
   m_pLocalLightShadowSetupPass->SetLocalShadowAtlasPlacementsResourceName(xiiMakeHashedString("LocalShadowAtlasPlacements"));
 
   m_pContactShadowsPass = XII_DEFAULT_NEW(xiiRenderGraphContactShadowsPass);
-  m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupContactShadowCommandList, this));
+  m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupContactShadowCommandList, this));
   m_pContactShadowsPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pContactShadowsPass->SetSceneDepthResourceName(xiiMakeHashedString("SceneDepth"));
   m_pContactShadowsPass->SetSceneNormalRoughnessResourceName(xiiMakeHashedString("SceneNormalRoughness"));
@@ -166,14 +166,14 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pContactShadowsPass->SetContactShadowTermResourceName(xiiMakeHashedString("ScreenSpaceContactShadowTerm"));
 
   m_pClusterGridBuildPass = XII_DEFAULT_NEW(xiiRenderGraphClusterGridBuildPass);
-  m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupClusterGridBuildCommandList, this));
+  m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupClusterGridBuildCommandList, this));
   m_pClusterGridBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pClusterGridBuildPass->SetCameraFrustumResourceName(xiiMakeHashedString("ClusterCameraFrustum"));
   m_pClusterGridBuildPass->SetDepthRangeResourceName(xiiMakeHashedString("ClusterDepthRange"));
   m_pClusterGridBuildPass->SetClusterDescriptorsResourceName(xiiMakeHashedString("ClusterDescriptors"));
 
   m_pLightListBuildPass = XII_DEFAULT_NEW(xiiRenderGraphLightListBuildPass);
-  m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLightListConstructionCommandList, this));
+  m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupLightListConstructionCommandList, this));
   m_pLightListBuildPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pLightListBuildPass->SetVisibleLightsResourceName(xiiMakeHashedString("VisibleLightList"));
   m_pLightListBuildPass->SetClusterGridResourceName(xiiMakeHashedString("ClusterDescriptors"));
@@ -182,88 +182,88 @@ xiiRenderDataManager::xiiRenderDataManager(xiiWorld* pWorld) : xiiWorldModule(pW
   m_pLightListBuildPass->SetClusterLightPrefixSumsResourceName(xiiMakeHashedString("ClusterLightPrefixSums"));
 
   m_pDecalClassificationPass = XII_DEFAULT_NEW(xiiRenderGraphDecalResolvePass);
-  m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalClassificationCommandList, this));
+  m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDecalClassificationCommandList, this));
   m_pDecalClassificationPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pDecalClassificationPass->SetDecalVolumesResourceName(xiiMakeHashedString("DecalVolumes"));
   m_pDecalClassificationPass->SetSceneDepthResourceName(xiiMakeHashedString("SceneDepth"));
   m_pDecalClassificationPass->SetDecalTileListsResourceName(xiiMakeHashedString("DecalTileLists"));
 
   m_pDecalResolvePass = XII_DEFAULT_NEW(xiiRenderGraphDecalResolvePass);
-  m_pDecalResolvePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalResolveCommandList, this));
+  m_pDecalResolvePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDecalResolveCommandList, this));
   m_pDecalResolvePass->SetDispatchThreadGroupCount(1U, 1U, 1U);
   m_pDecalResolvePass->SetGBufferTargetsResourceName(xiiMakeHashedString("GBufferTargets"));
   m_pDecalResolvePass->SetDecalTileListsInputResourceName(xiiMakeHashedString("DecalTileLists"));
   m_pDecalResolvePass->SetUpdatedMaterialAttributesResourceName(xiiMakeHashedString("UpdatedMaterialAttributes"));
 
   m_pLocalLightShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphLocalLightShadowRenderPass);
-  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
-  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList, this));
+  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupSpotAndPointShadowRenderingCommandList, this));
+  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawSpotAndPointShadowRenderingCommandList, this));
   m_pLocalLightShadowRenderingPass->SetLocalShadowCastersResourceName(xiiMakeHashedString("LocalShadowCasters"));
   m_pLocalLightShadowRenderingPass->SetLocalShadowMaterialBinsResourceName(xiiMakeHashedString("LocalShadowMaterialBins"));
   m_pLocalLightShadowRenderingPass->SetLocalShadowModeBinsResourceName(xiiMakeHashedString("LocalShadowModeBins"));
   m_pLocalLightShadowRenderingPass->SetLocalShadowAtlasPagesResourceName(xiiMakeHashedString("LocalShadowAtlasPages"));
 
   m_pDirectionalShadowRenderingPass = XII_DEFAULT_NEW(xiiRenderGraphShadowMapRenderPass);
-  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList, this));
-  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList, this));
+  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDirectionalShadowRenderingCommandList, this));
+  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawDirectionalShadowRenderingCommandList, this));
   m_pDirectionalShadowRenderingPass->SetShadowVisibleListResourceName(xiiMakeHashedString("ShadowVisibleList"));
   m_pDirectionalShadowRenderingPass->SetShadowVisibleCountResourceName(xiiMakeHashedString("ShadowVisibleCount"));
   m_pDirectionalShadowRenderingPass->SetShadowCascadeDataResourceName(xiiMakeHashedString("ShadowCascadeData"));
   m_pDirectionalShadowRenderingPass->SetShadowDepthAtlasResourceName(xiiMakeHashedString("ShadowDepthAtlas"));
 
   m_pLodSelectionPass = XII_DEFAULT_NEW(xiiRenderGraphLodSelectionPass);
-  m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLodSelectionCommandList, this));
+  m_pLodSelectionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupLodSelectionCommandList, this));
   m_pLodSelectionPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pRayTracedShadowsPass = XII_DEFAULT_NEW(xiiRenderGraphRayTracedShadowsPass);
-  m_pRayTracedShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupRayTracedShadowsCommandList, this));
-  m_pRayTracedShadowsPass->SetDispatchRayTracingFunc(xiiMakeDelegate(&xiiRenderDataManager::DispatchRayTracedShadowsCommandList, this));
+  m_pRayTracedShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupRayTracedShadowsCommandList, this));
+  m_pRayTracedShadowsPass->SetDispatchRayTracingFunc(xiiMakeDelegate(&xiiRenderWorldModule::DispatchRayTracedShadowsCommandList, this));
 
   m_pDynamicResolutionPass = XII_DEFAULT_NEW(xiiRenderGraphDynamicResolutionPass);
-  m_pDynamicResolutionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDynamicResolutionCommandList, this));
+  m_pDynamicResolutionPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDynamicResolutionCommandList, this));
   m_pDynamicResolutionPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pSkinningPass = XII_DEFAULT_NEW(xiiRenderGraphSkinningPass);
-  m_pSkinningPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSkinningAndMorphCommandList, this));
+  m_pSkinningPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupSkinningAndMorphCommandList, this));
   m_pSkinningPass->SetDispatchThreadGroupCount(1U, 1U, 1U);
 
   m_pPerFrameBufferUploadPass = XII_DEFAULT_NEW(xiiRenderGraphPerFrameBufferUploadPass);
-  m_pPerFrameBufferUploadPass->SetUploadCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::UploadPerFrameBufferDataCommandList, this));
+  m_pPerFrameBufferUploadPass->SetUploadCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::UploadPerFrameBufferDataCommandList, this));
 
   // Keep indices stable for callers that expect static/dynamic/skinning slots.
   m_Buffers.SetCount(3);
 }
 
-xiiRenderDataManager::~xiiRenderDataManager()
+xiiRenderWorldModule::~xiiRenderWorldModule()
 {
-  xiiRenderWorld::GetExtractionEvent().RemoveEventHandler(xiiMakeDelegate(&xiiRenderDataManager::OnExtractionEvent, this));
+  xiiRenderWorld::GetExtractionEvent().RemoveEventHandler(xiiMakeDelegate(&xiiRenderWorldModule::OnExtractionEvent, this));
 }
 
-void xiiRenderDataManager::Initialize()
+void xiiRenderWorldModule::Initialize()
 {
 }
 
-void xiiRenderDataManager::DeleteAllCachedRenderData()
+void xiiRenderWorldModule::DeleteAllCachedRenderData()
 {
   xiiRenderWorld::DeleteAllCachedRenderData();
 }
 
-void xiiRenderDataManager::DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent)
+void xiiRenderWorldModule::DeleteCachedRenderData(const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent)
 {
   xiiRenderWorld::DeleteCachedRenderData(hOwnerObject, hOwnerComponent);
 }
 
-void xiiRenderDataManager::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject)
+void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pOwnerObject)
 {
   xiiRenderWorld::DeleteCachedRenderDataForObjectRecursive(pOwnerObject);
 }
 
-void xiiRenderDataManager::ResetRenderDataCache(xiiView& ref_view)
+void xiiRenderWorldModule::ResetRenderDataCache(xiiView& ref_view)
 {
   xiiRenderWorld::ResetRenderDataCache(ref_view);
 }
 
-xiiArrayPtr<xiiPerInstanceData> xiiRenderDataManager::GetOrCreateInstanceData(const xiiComponent* pOwnerComponent, bool bDynamic, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount /*= 1*/) const
+xiiArrayPtr<xiiPerInstanceData> xiiRenderWorldModule::GetOrCreateInstanceData(const xiiComponent* pOwnerComponent, bool bDynamic, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount /*= 1*/) const
 {
   XII_IGNORE_UNUSED(pOwnerComponent);
   XII_IGNORE_UNUSED(bDynamic);
@@ -277,12 +277,12 @@ xiiArrayPtr<xiiPerInstanceData> xiiRenderDataManager::GetOrCreateInstanceData(co
   return s_InstanceData;
 }
 
-void xiiRenderDataManager::DeleteInstanceData(xiiInstanceDataOffset& inout_instanceDataOffset) const
+void xiiRenderWorldModule::DeleteInstanceData(xiiInstanceDataOffset& inout_instanceDataOffset) const
 {
   inout_instanceDataOffset = {};
 }
 
-xiiUInt32 xiiRenderDataManager::RegisterCustomInstanceData(const xiiGALBufferCreationDescription& desc, xiiStringView sDebugName, xiiDelegate<void()> beforeUploadCallback /*= {}*/)
+xiiUInt32 xiiRenderWorldModule::RegisterCustomInstanceData(const xiiGALBufferCreationDescription& desc, xiiStringView sDebugName, xiiDelegate<void()> beforeUploadCallback /*= {}*/)
 {
   XII_IGNORE_UNUSED(desc);
   XII_IGNORE_UNUSED(sDebugName);
@@ -301,7 +301,7 @@ xiiUInt32 xiiRenderDataManager::RegisterCustomInstanceData(const xiiGALBufferCre
   return uiBufferIndex;
 }
 
-xiiByteArrayPtr xiiRenderDataManager::GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiStructByteSize, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount) const
+xiiByteArrayPtr xiiRenderWorldModule::GetOrCreateCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiStructByteSize, const xiiComponent* pOwnerComponent, xiiSharedPtr<xiiGALDynamicBuffer>& out_pBuffer, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiCount) const
 {
   XII_IGNORE_UNUSED(uiCustomDataIndex);
   XII_IGNORE_UNUSED(pOwnerComponent);
@@ -315,19 +315,19 @@ xiiByteArrayPtr xiiRenderDataManager::GetOrCreateCustomInstanceData(xiiUInt32 ui
   return xiiByteArrayPtr(s_CustomData.GetData(), s_CustomData.GetCount());
 }
 
-void xiiRenderDataManager::DeleteCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiCustomInstanceDataOffset& inout_instanceDataOffset) const
+void xiiRenderWorldModule::DeleteCustomInstanceData(xiiUInt32 uiCustomDataIndex, xiiCustomInstanceDataOffset& inout_instanceDataOffset) const
 {
   XII_IGNORE_UNUSED(uiCustomDataIndex);
   inout_instanceDataOffset = {};
 }
 
-void xiiRenderDataManager::CompactCustomInstanceDataBuffer(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiMaxSteps)
+void xiiRenderWorldModule::CompactCustomInstanceDataBuffer(xiiUInt32 uiCustomDataIndex, xiiUInt32 uiMaxSteps)
 {
   XII_IGNORE_UNUSED(uiCustomDataIndex);
   XII_IGNORE_UNUSED(uiMaxSteps);
 }
 
-xiiArrayPtr<xiiShaderTransform> xiiRenderDataManager::GetOrCreateSkinningData(const xiiComponent* pOwnerComponent, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiNumTransforms) const
+xiiArrayPtr<xiiShaderTransform> xiiRenderWorldModule::GetOrCreateSkinningData(const xiiComponent* pOwnerComponent, xiiCustomInstanceDataOffset& inout_instanceDataOffset, xiiUInt32 uiNumTransforms) const
 {
   XII_IGNORE_UNUSED(pOwnerComponent);
 
@@ -338,7 +338,7 @@ xiiArrayPtr<xiiShaderTransform> xiiRenderDataManager::GetOrCreateSkinningData(co
   return s_SkinningData;
 }
 
-xiiArrayPtr<const xiiShaderTransform> xiiRenderDataManager::GetSkinningData(const xiiCustomInstanceDataOffset& instanceDataOffset) const
+xiiArrayPtr<const xiiShaderTransform> xiiRenderWorldModule::GetSkinningData(const xiiCustomInstanceDataOffset& instanceDataOffset) const
 {
   XII_IGNORE_UNUSED(instanceDataOffset);
 
@@ -346,12 +346,12 @@ xiiArrayPtr<const xiiShaderTransform> xiiRenderDataManager::GetSkinningData(cons
   return s_Empty;
 }
 
-void xiiRenderDataManager::DeleteSkinningData(xiiCustomInstanceDataOffset& inout_instanceDataOffset) const
+void xiiRenderWorldModule::DeleteSkinningData(xiiCustomInstanceDataOffset& inout_instanceDataOffset) const
 {
   inout_instanceDataOffset = {};
 }
 
-xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetSkinningDataBuffer() const
+xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderWorldModule::GetSkinningDataBuffer() const
 {
   if (m_Buffers.GetCount() > s_uiSkinningBufferIndex)
   {
@@ -361,7 +361,7 @@ xiiSharedPtr<xiiGALDynamicBuffer> xiiRenderDataManager::GetSkinningDataBuffer() 
   return nullptr;
 }
 
-void xiiRenderDataManager::BeginGpuDrivenBuild()
+void xiiRenderWorldModule::BeginGpuDrivenBuild()
 {
   XII_LOCK(m_Mutex);
 
@@ -369,7 +369,7 @@ void xiiRenderDataManager::BeginGpuDrivenBuild()
   m_GpuDrivenVisibleInstanceIndices.Clear();
 }
 
-void xiiRenderDataManager::AddGpuDrivenInstance(const xiiTransform& globalTransform, const xiiBoundingSphere& bounds, xiiUInt32 uiMeshId, xiiUInt32 uiMaterialId, xiiUInt32 uiFlags /*= 0U*/)
+void xiiRenderWorldModule::AddGpuDrivenInstance(const xiiTransform& globalTransform, const xiiBoundingSphere& bounds, xiiUInt32 uiMeshId, xiiUInt32 uiMaterialId, xiiUInt32 uiFlags /*= 0U*/)
 {
   XII_LOCK(m_Mutex);
 
@@ -381,7 +381,7 @@ void xiiRenderDataManager::AddGpuDrivenInstance(const xiiTransform& globalTransf
   instance.m_uiFlags             = uiFlags;
 }
 
-void xiiRenderDataManager::EndGpuDrivenBuild()
+void xiiRenderWorldModule::EndGpuDrivenBuild()
 {
   XII_LOCK(m_Mutex);
 
@@ -395,7 +395,7 @@ void xiiRenderDataManager::EndGpuDrivenBuild()
     dispatchArguments.m_uiThreadGroupCountX = (m_GpuDrivenInstances.GetCount() + (uiThreadGroupSize - 1U)) / uiThreadGroupSize;
   }
 
-  auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::EndGpuDrivenBuild");
+  auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderWorldModule::EndGpuDrivenBuild");
   if (!m_GpuDrivenInstances.IsEmpty())
   {
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pGpuSceneInstancesBuffer, 0U, xiiMakeArrayPtr(m_GpuDrivenInstances.GetData(), m_GpuDrivenInstances.GetCount()).ToByteArray()).AssertSuccess();
@@ -407,7 +407,7 @@ void xiiRenderDataManager::EndGpuDrivenBuild()
   }
 }
 
-xiiArrayPtr<const xiiGpuDrivenInstance> xiiRenderDataManager::GetGpuDrivenInstances() const
+xiiArrayPtr<const xiiGpuDrivenInstance> xiiRenderWorldModule::GetGpuDrivenInstances() const
 {
   XII_LOCK(m_Mutex);
 
@@ -416,7 +416,7 @@ xiiArrayPtr<const xiiGpuDrivenInstance> xiiRenderDataManager::GetGpuDrivenInstan
   return s_GpuDrivenInstancesSnapshot;
 }
 
-void xiiRenderDataManager::SetGpuDrivenVisibleInstanceIndices(xiiArrayPtr<const xiiUInt32> visibleInstanceIndices)
+void xiiRenderWorldModule::SetGpuDrivenVisibleInstanceIndices(xiiArrayPtr<const xiiUInt32> visibleInstanceIndices)
 {
   XII_LOCK(m_Mutex);
 
@@ -427,7 +427,7 @@ void xiiRenderDataManager::SetGpuDrivenVisibleInstanceIndices(xiiArrayPtr<const 
   }
 }
 
-xiiArrayPtr<const xiiUInt32> xiiRenderDataManager::GetGpuDrivenVisibleInstanceIndices() const
+xiiArrayPtr<const xiiUInt32> xiiRenderWorldModule::GetGpuDrivenVisibleInstanceIndices() const
 {
   XII_LOCK(m_Mutex);
 
@@ -436,25 +436,25 @@ xiiArrayPtr<const xiiUInt32> xiiRenderDataManager::GetGpuDrivenVisibleInstanceIn
   return s_GpuDrivenVisibleInstanceIndicesSnapshot;
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiRenderDataManager::GetGpuDrivenSceneInstancesBuffer() const
+xiiSharedPtr<xiiGALBuffer> xiiRenderWorldModule::GetGpuDrivenSceneInstancesBuffer() const
 {
   XII_LOCK(m_Mutex);
   return m_pGpuSceneInstancesBuffer;
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiRenderDataManager::GetGpuDrivenVisibleInstancesBuffer() const
+xiiSharedPtr<xiiGALBuffer> xiiRenderWorldModule::GetGpuDrivenVisibleInstancesBuffer() const
 {
   XII_LOCK(m_Mutex);
   return m_pGpuVisibleInstancesBuffer;
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiRenderDataManager::GetGpuDrivenVisibleInstanceCountBuffer() const
+xiiSharedPtr<xiiGALBuffer> xiiRenderWorldModule::GetGpuDrivenVisibleInstanceCountBuffer() const
 {
   XII_LOCK(m_Mutex);
   return m_pGpuVisibleInstanceCountBuffer;
 }
 
-bool xiiRenderDataManager::TryGetGpuDrivenVisibleInstanceCountReadback(xiiUInt32& out_uiVisibleInstanceCount, bool bWaitForCompletion /*= false*/) const
+bool xiiRenderWorldModule::TryGetGpuDrivenVisibleInstanceCountReadback(xiiUInt32& out_uiVisibleInstanceCount, bool bWaitForCompletion /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -474,7 +474,7 @@ bool xiiRenderDataManager::TryGetGpuDrivenVisibleInstanceCountReadback(xiiUInt32
     return false;
   }
 
-  auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Transfer>("xiiRenderDataManager::TryGetGpuDrivenVisibleInstanceCountReadback");
+  auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Transfer>("xiiRenderWorldModule::TryGetGpuDrivenVisibleInstanceCountReadback");
 
   void* pMappedData = nullptr;
   if (pCommandListScope->MapBuffer(m_pGpuVisibleInstanceCountReadbackBuffer, xiiGALMapType::Read, xiiGALMapFlags::None, pMappedData).Failed())
@@ -489,7 +489,7 @@ bool xiiRenderDataManager::TryGetGpuDrivenVisibleInstanceCountReadback(xiiUInt32
   return true;
 }
 
-void xiiRenderDataManager::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -510,7 +510,7 @@ void xiiRenderDataManager::AddGpuDrivenVisibilityPass(xiiRenderGraphRuntime& ino
   inout_runtime.AddPass(m_pGpuDrivenVisibilityPass.Borrow());
 }
 
-void xiiRenderDataManager::SetGpuDrivenVisibilityThreadGroupSize(xiiUInt32 uiThreadGroupSize) const
+void xiiRenderWorldModule::SetGpuDrivenVisibilityThreadGroupSize(xiiUInt32 uiThreadGroupSize) const
 {
   XII_LOCK(m_Mutex);
 
@@ -519,7 +519,7 @@ void xiiRenderDataManager::SetGpuDrivenVisibilityThreadGroupSize(xiiUInt32 uiThr
   m_pGpuDrivenVisibilityPass->SetThreadGroupSize(m_uiGpuVisibilityThreadGroupSize);
 }
 
-void xiiRenderDataManager::SetGpuDrivenVisibilityDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY /*= 1U*/, xiiUInt32 uiThreadGroupCountZ /*= 1U*/) const
+void xiiRenderWorldModule::SetGpuDrivenVisibilityDirectDispatchThreadGroupCount(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY /*= 1U*/, xiiUInt32 uiThreadGroupCountZ /*= 1U*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -527,7 +527,7 @@ void xiiRenderDataManager::SetGpuDrivenVisibilityDirectDispatchThreadGroupCount(
   m_pGpuDrivenVisibilityPass->SetDirectDispatchThreadGroupCount(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
-void xiiRenderDataManager::SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode /*= xiiGALStateTransitionMode::Transition*/) const
+void xiiRenderWorldModule::SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSharedPtr<xiiGALBuffer> pIndirectDispatchArguments, xiiUInt64 uiDispatchArgumentOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> bufferTransitionMode /*= xiiGALStateTransitionMode::Transition*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -536,14 +536,14 @@ void xiiRenderDataManager::SetGpuDrivenVisibilityIndirectDispatchArguments(xiiSh
   m_pGpuDrivenVisibilityPass->SetIndirectDispatchArguments(pIndirectDispatchArguments, uiDispatchArgumentOffset, bufferTransitionMode);
 }
 
-void xiiRenderDataManager::SetGpuDrivenVisibilityUseInternalIndirectDispatch(bool bEnable) const
+void xiiRenderWorldModule::SetGpuDrivenVisibilityUseInternalIndirectDispatch(bool bEnable) const
 {
   XII_LOCK(m_Mutex);
 
   m_bGpuVisibilityUseInternalIndirectDispatch = bEnable;
 }
 
-void xiiRenderDataManager::SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -551,7 +551,7 @@ void xiiRenderDataManager::SetGpuDrivenVisibilitySetupFunc(xiiDelegate<void(xiiG
   m_pGpuDrivenVisibilityPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearGpuDrivenVisibilitySetupFunc() const
+void xiiRenderWorldModule::ClearGpuDrivenVisibilitySetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
@@ -559,7 +559,7 @@ void xiiRenderDataManager::ClearGpuDrivenVisibilitySetupFunc() const
   m_pGpuDrivenVisibilityPass->ClearSetupCommandListFunc();
 }
 
-void xiiRenderDataManager::AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -568,7 +568,7 @@ void xiiRenderDataManager::AddRayTracedShadowsPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pRayTracedShadowsPass.Borrow());
 }
 
-void xiiRenderDataManager::AddFrameSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= true*/) const
+void xiiRenderWorldModule::AddFrameSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= true*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -578,7 +578,7 @@ void xiiRenderDataManager::AddFrameSetupPass(xiiRenderGraphRuntime& inout_runtim
 
   if (m_pPreviousFrameStatsBuffer != nullptr)
   {
-    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("xiiRenderDataManager::AddFrameSetupPass");
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Graphics>("xiiRenderWorldModule::AddFrameSetupPass");
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pPreviousFrameStatsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_PreviousFrameStatsSample), sizeof(m_PreviousFrameStatsSample))).AssertSuccess();
   }
 
@@ -607,7 +607,7 @@ void xiiRenderDataManager::AddFrameSetupPass(xiiRenderGraphRuntime& inout_runtim
   inout_runtime.AddPass(m_pFrameSetupPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDynamicResolutionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= true*/) const
+void xiiRenderWorldModule::AddDynamicResolutionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= true*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -617,7 +617,7 @@ void xiiRenderDataManager::AddDynamicResolutionPass(xiiRenderGraphRuntime& inout
 
   if (m_pDynamicResolutionFrameTimingBuffer != nullptr)
   {
-    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddDynamicResolutionPass");
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderWorldModule::AddDynamicResolutionPass");
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pDynamicResolutionFrameTimingBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vDynamicResolutionFrameTimingSample), sizeof(m_vDynamicResolutionFrameTimingSample))).AssertSuccess();
 
     if (m_pDynamicResolutionCameraVelocityBuffer != nullptr)
@@ -646,7 +646,7 @@ void xiiRenderDataManager::AddDynamicResolutionPass(xiiRenderGraphRuntime& inout
   inout_runtime.AddPass(m_pDynamicResolutionPass.Borrow());
 }
 
-void xiiRenderDataManager::AddSkinningAndMorphPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddSkinningAndMorphPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -657,7 +657,7 @@ void xiiRenderDataManager::AddSkinningAndMorphPass(xiiRenderGraphRuntime& inout_
 
   if (m_pSkinningInputBuffer != nullptr || m_pMorphWeightsBuffer != nullptr)
   {
-    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddSkinningAndMorphPass");
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderWorldModule::AddSkinningAndMorphPass");
     if (m_pSkinningInputBuffer != nullptr)
     {
       xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pSkinningInputBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_vSkinningInputSample), sizeof(m_vSkinningInputSample))).AssertSuccess();
@@ -695,7 +695,7 @@ void xiiRenderDataManager::AddSkinningAndMorphPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pSkinningPass.Borrow());
 }
 
-void xiiRenderDataManager::AddInstanceTransformAndBoundsUpdatePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddInstanceTransformAndBoundsUpdatePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -707,7 +707,7 @@ void xiiRenderDataManager::AddInstanceTransformAndBoundsUpdatePass(xiiRenderGrap
 
   if (m_pSceneTransformsBuffer != nullptr)
   {
-    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddInstanceTransformAndBoundsUpdatePass");
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderWorldModule::AddInstanceTransformAndBoundsUpdatePass");
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pSceneTransformsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&m_SceneTransformsSample), sizeof(m_SceneTransformsSample))).AssertSuccess();
   }
 
@@ -737,7 +737,7 @@ void xiiRenderDataManager::AddInstanceTransformAndBoundsUpdatePass(xiiRenderGrap
   inout_runtime.AddPass(m_pInstanceUpdatePass.Borrow());
 }
 
-void xiiRenderDataManager::AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -749,7 +749,7 @@ void xiiRenderDataManager::AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& in
 
   if (m_pCameraFrustumPlanesBuffer != nullptr)
   {
-    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderDataManager::AddCoarseFrustumCullingPass");
+    auto pCommandListScope = xiiRenderContext::BeginCommandListScope<xiiRenderContext::CommandListType::Compute>("xiiRenderWorldModule::AddCoarseFrustumCullingPass");
     xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandListScope.GetCommandList().Borrow(), m_pCameraFrustumPlanesBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(m_vCoarseFrustumPlaneSamples), sizeof(m_vCoarseFrustumPlaneSamples))).AssertSuccess();
   }
 
@@ -779,7 +779,7 @@ void xiiRenderDataManager::AddCoarseFrustumCullingPass(xiiRenderGraphRuntime& in
   inout_runtime.AddPass(m_pCoarseFrustumCullingPass.Borrow());
 }
 
-void xiiRenderDataManager::AddOccluderDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+void xiiRenderWorldModule::AddOccluderDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -808,7 +808,7 @@ void xiiRenderDataManager::AddOccluderDepthPrepassPass(xiiRenderGraphRuntime& in
   inout_runtime.AddPass(m_pOccluderDepthPass.Borrow());
 }
 
-void xiiRenderDataManager::AddHiZPyramidBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddHiZPyramidBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -832,7 +832,7 @@ void xiiRenderDataManager::AddHiZPyramidBuildPass(xiiRenderGraphRuntime& inout_r
   inout_runtime.AddPass(m_pHiZBuildPass.Borrow());
 }
 
-void xiiRenderDataManager::AddHiZOcclusionCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddHiZOcclusionCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -915,7 +915,7 @@ void xiiRenderDataManager::AddHiZOcclusionCullingPass(xiiRenderGraphRuntime& ino
   inout_runtime.AddPass(m_pHiZOcclusionCullingPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -953,7 +953,7 @@ void xiiRenderDataManager::AddDrawIndirectCommandBuildPass(xiiRenderGraphRuntime
   inout_runtime.AddPass(m_pDrawCommandBuildPass.Borrow());
 }
 
-void xiiRenderDataManager::AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+void xiiRenderWorldModule::AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -986,7 +986,7 @@ void xiiRenderDataManager::AddMainDepthPrepassPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pMainDepthPrepassPass.Borrow());
 }
 
-void xiiRenderDataManager::AddOptionalNormalRoughnessPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+void xiiRenderWorldModule::AddOptionalNormalRoughnessPrepassPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1024,7 +1024,7 @@ void xiiRenderDataManager::AddOptionalNormalRoughnessPrepassPass(xiiRenderGraphR
   inout_runtime.AddPass(m_pNormalRoughnessPrepassPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDirectionalCascadeSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddDirectionalCascadeSetupPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1053,7 +1053,7 @@ void xiiRenderDataManager::AddDirectionalCascadeSetupPass(xiiRenderGraphRuntime&
   inout_runtime.AddPass(m_pShadowCascadeSetupPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDirectionalShadowCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddDirectionalShadowCullingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1091,7 +1091,7 @@ void xiiRenderDataManager::AddDirectionalShadowCullingPass(xiiRenderGraphRuntime
   inout_runtime.AddPass(m_pShadowCasterCullingPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDirectionalShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+void xiiRenderWorldModule::AddDirectionalShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1102,9 +1102,9 @@ void xiiRenderDataManager::AddDirectionalShadowRenderingPass(xiiRenderGraphRunti
 
   m_pDirectionalShadowRenderingPass->SetEnabled(bEnablePass);
 
-  xiiSharedPtr<xiiGALBuffer> pVisibleList = m_pDirectionalShadowRenderingVisibleListBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleListBuffer : m_pShadowCasterVisibleListBuffer;
+  xiiSharedPtr<xiiGALBuffer> pVisibleList  = m_pDirectionalShadowRenderingVisibleListBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleListBuffer : m_pShadowCasterVisibleListBuffer;
   xiiSharedPtr<xiiGALBuffer> pVisibleCount = m_pDirectionalShadowRenderingVisibleCountBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleCountBuffer : m_pShadowCasterVisibleCountBuffer;
-  xiiSharedPtr<xiiGALBuffer> pCascadeData = m_pDirectionalShadowRenderingCascadeDataBuffer != nullptr ? m_pDirectionalShadowRenderingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCascadeData  = m_pDirectionalShadowRenderingCascadeDataBuffer != nullptr ? m_pDirectionalShadowRenderingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
 
   if (pVisibleList != nullptr)
   {
@@ -1129,7 +1129,7 @@ void xiiRenderDataManager::AddDirectionalShadowRenderingPass(xiiRenderGraphRunti
   inout_runtime.AddPass(m_pDirectionalShadowRenderingPass.Borrow());
 }
 
-void xiiRenderDataManager::AddLocalLightShadowAtlasAllocationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddLocalLightShadowAtlasAllocationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1159,7 +1159,7 @@ void xiiRenderDataManager::AddLocalLightShadowAtlasAllocationPass(xiiRenderGraph
   inout_runtime.AddPass(m_pLocalLightShadowSetupPass.Borrow());
 }
 
-void xiiRenderDataManager::AddSpotAndPointShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
+void xiiRenderWorldModule::AddSpotAndPointShadowRenderingPass(xiiRenderGraphRuntime& inout_runtime, bool bEnablePass /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1193,7 +1193,7 @@ void xiiRenderDataManager::AddSpotAndPointShadowRenderingPass(xiiRenderGraphRunt
   inout_runtime.AddPass(m_pLocalLightShadowRenderingPass.Borrow());
 }
 
-void xiiRenderDataManager::AddContactShadowPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddContactShadowPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1228,7 +1228,7 @@ void xiiRenderDataManager::AddContactShadowPass(xiiRenderGraphRuntime& inout_run
   inout_runtime.AddPass(m_pContactShadowsPass.Borrow());
 }
 
-void xiiRenderDataManager::AddClusterGridBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddClusterGridBuildPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1260,7 +1260,7 @@ void xiiRenderDataManager::AddClusterGridBuildPass(xiiRenderGraphRuntime& inout_
   inout_runtime.AddPass(m_pClusterGridBuildPass.Borrow());
 }
 
-void xiiRenderDataManager::AddLightListConstructionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddLightListConstructionPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1301,7 +1301,7 @@ void xiiRenderDataManager::AddLightListConstructionPass(xiiRenderGraphRuntime& i
   inout_runtime.AddPass(m_pLightListBuildPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDecalClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddDecalClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1332,7 +1332,7 @@ void xiiRenderDataManager::AddDecalClassificationPass(xiiRenderGraphRuntime& ino
   inout_runtime.AddPass(m_pDecalClassificationPass.Borrow());
 }
 
-void xiiRenderDataManager::AddDecalResolvePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddDecalResolvePass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1362,7 +1362,7 @@ void xiiRenderDataManager::AddDecalResolvePass(xiiRenderGraphRuntime& inout_runt
   inout_runtime.AddPass(m_pDecalResolvePass.Borrow());
 }
 
-void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
+void xiiRenderWorldModule::AddLodSelectionAndMeshletClassificationPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableDispatch /*= false*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1405,7 +1405,7 @@ void xiiRenderDataManager::AddLodSelectionAndMeshletClassificationPass(xiiRender
   inout_runtime.AddPass(m_pLodSelectionPass.Borrow());
 }
 
-void xiiRenderDataManager::AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableUploads /*= true*/) const
+void xiiRenderWorldModule::AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& inout_runtime, bool bEnableUploads /*= true*/) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1438,42 +1438,42 @@ void xiiRenderDataManager::AddPerFrameBufferUploadPass(xiiRenderGraphRuntime& in
   }
 }
 
-void xiiRenderDataManager::SetDynamicResolutionFrameTimingSample(const xiiVec4& vFrameTimingSample) const
+void xiiRenderWorldModule::SetDynamicResolutionFrameTimingSample(const xiiVec4& vFrameTimingSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vDynamicResolutionFrameTimingSample = vFrameTimingSample;
 }
 
-void xiiRenderDataManager::SetDynamicResolutionCameraVelocitySample(const xiiVec4& vCameraVelocitySample) const
+void xiiRenderWorldModule::SetDynamicResolutionCameraVelocitySample(const xiiVec4& vCameraVelocitySample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vDynamicResolutionCameraVelocitySample = vCameraVelocitySample;
 }
 
-void xiiRenderDataManager::SetSkinningInputSample(const xiiVec4& vSkinningInputSample) const
+void xiiRenderWorldModule::SetSkinningInputSample(const xiiVec4& vSkinningInputSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vSkinningInputSample = vSkinningInputSample;
 }
 
-void xiiRenderDataManager::SetMorphWeightsSample(const xiiVec4& vMorphWeightsSample) const
+void xiiRenderWorldModule::SetMorphWeightsSample(const xiiVec4& vMorphWeightsSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vMorphWeightsSample = vMorphWeightsSample;
 }
 
-void xiiRenderDataManager::SetSceneTransformsSample(const xiiShaderTransform& sceneTransformSample) const
+void xiiRenderWorldModule::SetSceneTransformsSample(const xiiShaderTransform& sceneTransformSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_SceneTransformsSample = sceneTransformSample;
 }
 
-void xiiRenderDataManager::SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, const xiiVec4& vPlane) const
+void xiiRenderWorldModule::SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, const xiiVec4& vPlane) const
 {
   if (uiPlaneIndex >= XII_ARRAY_SIZE(m_vCoarseFrustumPlaneSamples))
   {
@@ -1485,14 +1485,14 @@ void xiiRenderDataManager::SetCoarseFrustumPlaneSample(xiiUInt32 uiPlaneIndex, c
   m_vCoarseFrustumPlaneSamples[uiPlaneIndex] = vPlane;
 }
 
-void xiiRenderDataManager::SetShadowCascadeSunDirectionSample(const xiiVec4& vSunDirection) const
+void xiiRenderWorldModule::SetShadowCascadeSunDirectionSample(const xiiVec4& vSunDirection) const
 {
   XII_LOCK(m_Mutex);
 
   m_vShadowCascadeSunDirectionSample = vSunDirection;
 }
 
-void xiiRenderDataManager::SetShadowCascadeSplitDistanceSample(xiiUInt32 uiSplitIndex, float fSplitDistance) const
+void xiiRenderWorldModule::SetShadowCascadeSplitDistanceSample(xiiUInt32 uiSplitIndex, float fSplitDistance) const
 {
   if (uiSplitIndex >= XII_ARRAY_SIZE(m_fShadowCascadeSplitDistances))
   {
@@ -1504,357 +1504,357 @@ void xiiRenderDataManager::SetShadowCascadeSplitDistanceSample(xiiUInt32 uiSplit
   m_fShadowCascadeSplitDistances[uiSplitIndex] = xiiMath::Max(0.0f, fSplitDistance);
 }
 
-void xiiRenderDataManager::SetDirectionalShadowAtlasPackingSample(const xiiVec4& vAtlasPackingSample) const
+void xiiRenderWorldModule::SetDirectionalShadowAtlasPackingSample(const xiiVec4& vAtlasPackingSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vDirectionalShadowAtlasPackingSample = vAtlasPackingSample;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowTexelSnapSample(const xiiVec4& vTexelSnapSample) const
+void xiiRenderWorldModule::SetDirectionalShadowTexelSnapSample(const xiiVec4& vTexelSnapSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vDirectionalShadowTexelSnapSample = vTexelSnapSample;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowAllocatorDeterministicSample(const xiiVec4& vDeterministicSample) const
+void xiiRenderWorldModule::SetLocalLightShadowAllocatorDeterministicSample(const xiiVec4& vDeterministicSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vLocalLightShadowAllocatorDeterministicSample = vDeterministicSample;
 }
 
-void xiiRenderDataManager::SetContactShadowLightParamsSample(const xiiVec4& vLightParamsSample) const
+void xiiRenderWorldModule::SetContactShadowLightParamsSample(const xiiVec4& vLightParamsSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vContactShadowLightParamsSample = vLightParamsSample;
 }
 
-void xiiRenderDataManager::SetClusterDepthRangeSample(const xiiVec4& vDepthRangeSample) const
+void xiiRenderWorldModule::SetClusterDepthRangeSample(const xiiVec4& vDepthRangeSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_vClusterDepthRangeSample = vDepthRangeSample;
 }
 
-void xiiRenderDataManager::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+void xiiRenderWorldModule::SetOccluderDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pOccluderDepthResource = pDepthResource;
 }
 
-void xiiRenderDataManager::SetOccluderDepthPrepassInstanceListResource(xiiSharedPtr<xiiGALBuffer> pInstanceListResource) const
+void xiiRenderWorldModule::SetOccluderDepthPrepassInstanceListResource(xiiSharedPtr<xiiGALBuffer> pInstanceListResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pOccluderInstanceListBuffer = pInstanceListResource;
 }
 
-void xiiRenderDataManager::SetHiZDepthSourceResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+void xiiRenderWorldModule::SetHiZDepthSourceResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pHiZDepthSourceResource = pDepthResource;
 }
 
-void xiiRenderDataManager::SetHiZDepthPyramidResource(xiiSharedPtr<xiiGALResource> pDepthPyramidResource) const
+void xiiRenderWorldModule::SetHiZDepthPyramidResource(xiiSharedPtr<xiiGALResource> pDepthPyramidResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pHiZDepthPyramidResource = pDepthPyramidResource;
 }
 
-void xiiRenderDataManager::SetHiZOcclusionCandidateInstancesResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstancesResource) const
+void xiiRenderWorldModule::SetHiZOcclusionCandidateInstancesResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstancesResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pHiZOcclusionCandidateInstancesBuffer = pCandidateInstancesResource;
 }
 
-void xiiRenderDataManager::SetHiZOcclusionCandidateInstanceCountResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstanceCountResource) const
+void xiiRenderWorldModule::SetHiZOcclusionCandidateInstanceCountResource(xiiSharedPtr<xiiGALBuffer> pCandidateInstanceCountResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pHiZOcclusionCandidateInstanceCountBuffer = pCandidateInstanceCountResource;
 }
 
-void xiiRenderDataManager::SetDrawIndirectMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const
+void xiiRenderWorldModule::SetDrawIndirectMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pGpuMaterialBinsBuffer = pMaterialBinsResource;
 }
 
-void xiiRenderDataManager::SetDrawIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const
+void xiiRenderWorldModule::SetDrawIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pGpuIndirectDrawCommandsBuffer = pIndirectCommandBufferResource;
 }
 
-void xiiRenderDataManager::SetDrawIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const
+void xiiRenderWorldModule::SetDrawIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pGpuIndirectDrawCountsBuffer = pIndirectCountBufferResource;
 }
 
-void xiiRenderDataManager::SetMainDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+void xiiRenderWorldModule::SetMainDepthPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pMainDepthPrepassDepthResource = pDepthResource;
 }
 
-void xiiRenderDataManager::SetMainDepthPrepassIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const
+void xiiRenderWorldModule::SetMainDepthPrepassIndirectCommandBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCommandBufferResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pGpuIndirectDrawCommandsBuffer = pIndirectCommandBufferResource;
 }
 
-void xiiRenderDataManager::SetMainDepthPrepassIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const
+void xiiRenderWorldModule::SetMainDepthPrepassIndirectCountBufferResource(xiiSharedPtr<xiiGALBuffer> pIndirectCountBufferResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pGpuIndirectDrawCountsBuffer = pIndirectCountBufferResource;
 }
 
-void xiiRenderDataManager::SetNormalRoughnessPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+void xiiRenderWorldModule::SetNormalRoughnessPrepassDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pNormalRoughnessPrepassDepthResource = pDepthResource;
 }
 
-void xiiRenderDataManager::SetNormalRoughnessPrepassOutputResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const
+void xiiRenderWorldModule::SetNormalRoughnessPrepassOutputResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pNormalRoughnessPrepassOutputResource = pNormalRoughnessResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowCullingSceneBoundsResource(xiiSharedPtr<xiiGALBuffer> pSceneBoundsResource) const
+void xiiRenderWorldModule::SetDirectionalShadowCullingSceneBoundsResource(xiiSharedPtr<xiiGALBuffer> pSceneBoundsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pShadowCasterCullingSceneBoundsBuffer = pSceneBoundsResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowCullingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const
+void xiiRenderWorldModule::SetDirectionalShadowCullingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pShadowCasterCullingCascadeDataBuffer = pCascadeDataResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowCullingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const
+void xiiRenderWorldModule::SetDirectionalShadowCullingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pShadowCasterVisibleListBuffer = pVisibleListResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowCullingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const
+void xiiRenderWorldModule::SetDirectionalShadowCullingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pShadowCasterVisibleCountBuffer = pVisibleCountResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowDepthAtlasResource(xiiSharedPtr<xiiGALResource> pDepthAtlasResource) const
+void xiiRenderWorldModule::SetDirectionalShadowDepthAtlasResource(xiiSharedPtr<xiiGALResource> pDepthAtlasResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDirectionalShadowDepthAtlasResource = pDepthAtlasResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowRenderingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const
+void xiiRenderWorldModule::SetDirectionalShadowRenderingVisibleListResource(xiiSharedPtr<xiiGALBuffer> pVisibleListResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDirectionalShadowRenderingVisibleListBuffer = pVisibleListResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowRenderingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const
+void xiiRenderWorldModule::SetDirectionalShadowRenderingVisibleCountResource(xiiSharedPtr<xiiGALBuffer> pVisibleCountResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDirectionalShadowRenderingVisibleCountBuffer = pVisibleCountResource;
 }
 
-void xiiRenderDataManager::SetDirectionalShadowRenderingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const
+void xiiRenderWorldModule::SetDirectionalShadowRenderingCascadeDataResource(xiiSharedPtr<xiiGALBuffer> pCascadeDataResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDirectionalShadowRenderingCascadeDataBuffer = pCascadeDataResource;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowRequestsResource(xiiSharedPtr<xiiGALBuffer> pRequestsResource) const
+void xiiRenderWorldModule::SetLocalLightShadowRequestsResource(xiiSharedPtr<xiiGALBuffer> pRequestsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pLocalLightShadowRequestsBuffer = pRequestsResource;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowAtlasPlacementsResource(xiiSharedPtr<xiiGALBuffer> pPlacementsResource) const
+void xiiRenderWorldModule::SetLocalLightShadowAtlasPlacementsResource(xiiSharedPtr<xiiGALBuffer> pPlacementsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pLocalLightShadowAtlasPlacementsBuffer = pPlacementsResource;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowCastersResource(xiiSharedPtr<xiiGALBuffer> pCastersResource) const
+void xiiRenderWorldModule::SetLocalLightShadowCastersResource(xiiSharedPtr<xiiGALBuffer> pCastersResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pLocalLightShadowCastersBuffer = pCastersResource;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const
+void xiiRenderWorldModule::SetLocalLightShadowMaterialBinsResource(xiiSharedPtr<xiiGALBuffer> pMaterialBinsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pLocalLightShadowMaterialBinsBuffer = pMaterialBinsResource;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowModeBinsResource(xiiSharedPtr<xiiGALBuffer> pModeBinsResource) const
+void xiiRenderWorldModule::SetLocalLightShadowModeBinsResource(xiiSharedPtr<xiiGALBuffer> pModeBinsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pLocalLightShadowModeBinsBuffer = pModeBinsResource;
 }
 
-void xiiRenderDataManager::SetLocalLightShadowAtlasPagesResource(xiiSharedPtr<xiiGALResource> pAtlasPagesResource) const
+void xiiRenderWorldModule::SetLocalLightShadowAtlasPagesResource(xiiSharedPtr<xiiGALResource> pAtlasPagesResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pLocalShadowAtlasPagesResource = pAtlasPagesResource;
 }
 
-void xiiRenderDataManager::SetContactShadowDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+void xiiRenderWorldModule::SetContactShadowDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pContactShadowDepthResource = pDepthResource;
 }
 
-void xiiRenderDataManager::SetContactShadowNormalRoughnessResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const
+void xiiRenderWorldModule::SetContactShadowNormalRoughnessResource(xiiSharedPtr<xiiGALResource> pNormalRoughnessResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pContactShadowNormalRoughnessResource = pNormalRoughnessResource;
 }
 
-void xiiRenderDataManager::SetContactShadowLightParamsResource(xiiSharedPtr<xiiGALBuffer> pLightParamsResource) const
+void xiiRenderWorldModule::SetContactShadowLightParamsResource(xiiSharedPtr<xiiGALBuffer> pLightParamsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pContactShadowLightParamsBuffer = pLightParamsResource;
 }
 
-void xiiRenderDataManager::SetContactShadowOutputResource(xiiSharedPtr<xiiGALResource> pContactShadowTermResource) const
+void xiiRenderWorldModule::SetContactShadowOutputResource(xiiSharedPtr<xiiGALResource> pContactShadowTermResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pContactShadowTermResource = pContactShadowTermResource;
 }
 
-void xiiRenderDataManager::SetClusterCameraFrustumResource(xiiSharedPtr<xiiGALBuffer> pCameraFrustumResource) const
+void xiiRenderWorldModule::SetClusterCameraFrustumResource(xiiSharedPtr<xiiGALBuffer> pCameraFrustumResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pClusterCameraFrustumBuffer = pCameraFrustumResource;
 }
 
-void xiiRenderDataManager::SetClusterDepthRangeResource(xiiSharedPtr<xiiGALBuffer> pDepthRangeResource) const
+void xiiRenderWorldModule::SetClusterDepthRangeResource(xiiSharedPtr<xiiGALBuffer> pDepthRangeResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pClusterDepthRangeBuffer = pDepthRangeResource;
 }
 
-void xiiRenderDataManager::SetClusterDescriptorsResource(xiiSharedPtr<xiiGALBuffer> pClusterDescriptorsResource) const
+void xiiRenderWorldModule::SetClusterDescriptorsResource(xiiSharedPtr<xiiGALBuffer> pClusterDescriptorsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pClusterDescriptorsBuffer = pClusterDescriptorsResource;
 }
 
-void xiiRenderDataManager::SetVisibleLightListResource(xiiSharedPtr<xiiGALBuffer> pVisibleLightListResource) const
+void xiiRenderWorldModule::SetVisibleLightListResource(xiiSharedPtr<xiiGALBuffer> pVisibleLightListResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pVisibleLightListBuffer = pVisibleLightListResource;
 }
 
-void xiiRenderDataManager::SetClusterDepthInfoResource(xiiSharedPtr<xiiGALBuffer> pDepthInfoResource) const
+void xiiRenderWorldModule::SetClusterDepthInfoResource(xiiSharedPtr<xiiGALBuffer> pDepthInfoResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pClusterDepthRangeBuffer = pDepthInfoResource;
 }
 
-void xiiRenderDataManager::SetClusterLightIndicesResource(xiiSharedPtr<xiiGALBuffer> pClusterLightIndicesResource) const
+void xiiRenderWorldModule::SetClusterLightIndicesResource(xiiSharedPtr<xiiGALBuffer> pClusterLightIndicesResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pClusterLightIndicesBuffer = pClusterLightIndicesResource;
 }
 
-void xiiRenderDataManager::SetClusterLightPrefixSumsResource(xiiSharedPtr<xiiGALBuffer> pClusterLightPrefixSumsResource) const
+void xiiRenderWorldModule::SetClusterLightPrefixSumsResource(xiiSharedPtr<xiiGALBuffer> pClusterLightPrefixSumsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pClusterLightPrefixSumsBuffer = pClusterLightPrefixSumsResource;
 }
 
-void xiiRenderDataManager::SetDecalVolumesResource(xiiSharedPtr<xiiGALBuffer> pDecalVolumesResource) const
+void xiiRenderWorldModule::SetDecalVolumesResource(xiiSharedPtr<xiiGALBuffer> pDecalVolumesResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDecalVolumesBuffer = pDecalVolumesResource;
 }
 
-void xiiRenderDataManager::SetDecalClassificationDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
+void xiiRenderWorldModule::SetDecalClassificationDepthResource(xiiSharedPtr<xiiGALResource> pDepthResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDecalClassificationDepthResource = pDepthResource;
 }
 
-void xiiRenderDataManager::SetDecalTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const
+void xiiRenderWorldModule::SetDecalTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDecalTileListsBuffer = pDecalTileListsResource;
 }
 
-void xiiRenderDataManager::SetDecalResolveGBufferResource(xiiSharedPtr<xiiGALResource> pGBufferResource) const
+void xiiRenderWorldModule::SetDecalResolveGBufferResource(xiiSharedPtr<xiiGALResource> pGBufferResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDecalResolveGBufferResource = pGBufferResource;
 }
 
-void xiiRenderDataManager::SetDecalResolveTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const
+void xiiRenderWorldModule::SetDecalResolveTileListsResource(xiiSharedPtr<xiiGALBuffer> pDecalTileListsResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDecalResolveTileListsBuffer = pDecalTileListsResource;
 }
 
-void xiiRenderDataManager::SetDecalResolveOutputResource(xiiSharedPtr<xiiGALResource> pUpdatedMaterialAttributesResource) const
+void xiiRenderWorldModule::SetDecalResolveOutputResource(xiiSharedPtr<xiiGALResource> pUpdatedMaterialAttributesResource) const
 {
   XII_LOCK(m_Mutex);
 
   m_pDecalResolveOutputResource = pUpdatedMaterialAttributesResource;
 }
 
-void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1862,7 +1862,7 @@ void xiiRenderDataManager::SetOccluderDepthPrepassSetupFunc(xiiDelegate<void(xii
   m_pOccluderDepthPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::SetOccluderDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+void xiiRenderWorldModule::SetOccluderDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1870,23 +1870,23 @@ void xiiRenderDataManager::SetOccluderDepthPrepassDrawFunc(xiiDelegate<void(xiiG
   m_pOccluderDepthPass->SetDrawCommandListFunc(drawFunc);
 }
 
-void xiiRenderDataManager::ClearOccluderDepthPrepassSetupFunc() const
+void xiiRenderWorldModule::ClearOccluderDepthPrepassSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
-  m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupOccluderDepthPrepassCommandList, this));
+  m_pOccluderDepthPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupOccluderDepthPrepassCommandList, this));
 }
 
-void xiiRenderDataManager::ClearOccluderDepthPrepassDrawFunc() const
+void xiiRenderWorldModule::ClearOccluderDepthPrepassDrawFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pOccluderDepthPass != nullptr, "Occluder depth pass must be initialized.");
-  m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawOccluderDepthPrepassCommandList, this));
+  m_pOccluderDepthPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawOccluderDepthPrepassCommandList, this));
 }
 
-void xiiRenderDataManager::SetMainDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetMainDepthPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1894,7 +1894,7 @@ void xiiRenderDataManager::SetMainDepthPrepassSetupFunc(xiiDelegate<void(xiiGALC
   m_pMainDepthPrepassPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::SetMainDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+void xiiRenderWorldModule::SetMainDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1902,23 +1902,23 @@ void xiiRenderDataManager::SetMainDepthPrepassDrawFunc(xiiDelegate<void(xiiGALCo
   m_pMainDepthPrepassPass->SetDrawCommandListFunc(drawFunc);
 }
 
-void xiiRenderDataManager::ClearMainDepthPrepassSetupFunc() const
+void xiiRenderWorldModule::ClearMainDepthPrepassSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
-  m_pMainDepthPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupMainDepthPrepassCommandList, this));
+  m_pMainDepthPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupMainDepthPrepassCommandList, this));
 }
 
-void xiiRenderDataManager::ClearMainDepthPrepassDrawFunc() const
+void xiiRenderWorldModule::ClearMainDepthPrepassDrawFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pMainDepthPrepassPass != nullptr, "Main depth prepass pass must be initialized.");
-  m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawMainDepthPrepassCommandList, this));
+  m_pMainDepthPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawMainDepthPrepassCommandList, this));
 }
 
-void xiiRenderDataManager::SetNormalRoughnessPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetNormalRoughnessPrepassSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1926,7 +1926,7 @@ void xiiRenderDataManager::SetNormalRoughnessPrepassSetupFunc(xiiDelegate<void(x
   m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::SetNormalRoughnessPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+void xiiRenderWorldModule::SetNormalRoughnessPrepassDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1934,23 +1934,23 @@ void xiiRenderDataManager::SetNormalRoughnessPrepassDrawFunc(xiiDelegate<void(xi
   m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(drawFunc);
 }
 
-void xiiRenderDataManager::ClearNormalRoughnessPrepassSetupFunc() const
+void xiiRenderWorldModule::ClearNormalRoughnessPrepassSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
-  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList, this));
+  m_pNormalRoughnessPrepassPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupNormalRoughnessPrepassCommandList, this));
 }
 
-void xiiRenderDataManager::ClearNormalRoughnessPrepassDrawFunc() const
+void xiiRenderWorldModule::ClearNormalRoughnessPrepassDrawFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pNormalRoughnessPrepassPass != nullptr, "Normal-roughness prepass must be initialized.");
-  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList, this));
+  m_pNormalRoughnessPrepassPass->SetDrawCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawNormalRoughnessPrepassCommandList, this));
 }
 
-void xiiRenderDataManager::SetDirectionalShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetDirectionalShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1958,7 +1958,7 @@ void xiiRenderDataManager::SetDirectionalShadowRenderingSetupFunc(xiiDelegate<vo
   m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::SetDirectionalShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+void xiiRenderWorldModule::SetDirectionalShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1966,23 +1966,23 @@ void xiiRenderDataManager::SetDirectionalShadowRenderingDrawFunc(xiiDelegate<voi
   m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(drawFunc);
 }
 
-void xiiRenderDataManager::ClearDirectionalShadowRenderingSetupFunc() const
+void xiiRenderWorldModule::ClearDirectionalShadowRenderingSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
-  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList, this));
+  m_pDirectionalShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDirectionalShadowRenderingCommandList, this));
 }
 
-void xiiRenderDataManager::ClearDirectionalShadowRenderingDrawFunc() const
+void xiiRenderWorldModule::ClearDirectionalShadowRenderingDrawFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pDirectionalShadowRenderingPass != nullptr, "Directional shadow rendering pass must be initialized.");
-  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList, this));
+  m_pDirectionalShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawDirectionalShadowRenderingCommandList, this));
 }
 
-void xiiRenderDataManager::SetLocalLightShadowAtlasAllocationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetLocalLightShadowAtlasAllocationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -1990,15 +1990,15 @@ void xiiRenderDataManager::SetLocalLightShadowAtlasAllocationSetupFunc(xiiDelega
   m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearLocalLightShadowAtlasAllocationSetupFunc() const
+void xiiRenderWorldModule::ClearLocalLightShadowAtlasAllocationSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pLocalLightShadowSetupPass != nullptr, "Local-light shadow atlas allocation pass must be initialized.");
-  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList, this));
+  m_pLocalLightShadowSetupPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupLocalLightShadowAtlasAllocationCommandList, this));
 }
 
-void xiiRenderDataManager::SetSpotAndPointShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetSpotAndPointShadowRenderingSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2006,7 +2006,7 @@ void xiiRenderDataManager::SetSpotAndPointShadowRenderingSetupFunc(xiiDelegate<v
   m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::SetSpotAndPointShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
+void xiiRenderWorldModule::SetSpotAndPointShadowRenderingDrawFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> drawFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2014,23 +2014,23 @@ void xiiRenderDataManager::SetSpotAndPointShadowRenderingDrawFunc(xiiDelegate<vo
   m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(drawFunc);
 }
 
-void xiiRenderDataManager::ClearSpotAndPointShadowRenderingSetupFunc() const
+void xiiRenderWorldModule::ClearSpotAndPointShadowRenderingSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
-  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList, this));
+  m_pLocalLightShadowRenderingPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupSpotAndPointShadowRenderingCommandList, this));
 }
 
-void xiiRenderDataManager::ClearSpotAndPointShadowRenderingDrawFunc() const
+void xiiRenderWorldModule::ClearSpotAndPointShadowRenderingDrawFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pLocalLightShadowRenderingPass != nullptr, "Spot/point shadow rendering pass must be initialized.");
-  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList, this));
+  m_pLocalLightShadowRenderingPass->SetExecuteCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::DrawSpotAndPointShadowRenderingCommandList, this));
 }
 
-void xiiRenderDataManager::SetContactShadowSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetContactShadowSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2038,15 +2038,15 @@ void xiiRenderDataManager::SetContactShadowSetupFunc(xiiDelegate<void(xiiGALComm
   m_pContactShadowsPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearContactShadowSetupFunc() const
+void xiiRenderWorldModule::ClearContactShadowSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pContactShadowsPass != nullptr, "Contact shadow pass must be initialized.");
-  m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupContactShadowCommandList, this));
+  m_pContactShadowsPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupContactShadowCommandList, this));
 }
 
-void xiiRenderDataManager::SetClusterGridBuildSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetClusterGridBuildSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2054,15 +2054,15 @@ void xiiRenderDataManager::SetClusterGridBuildSetupFunc(xiiDelegate<void(xiiGALC
   m_pClusterGridBuildPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearClusterGridBuildSetupFunc() const
+void xiiRenderWorldModule::ClearClusterGridBuildSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pClusterGridBuildPass != nullptr, "Cluster-grid build pass must be initialized.");
-  m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupClusterGridBuildCommandList, this));
+  m_pClusterGridBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupClusterGridBuildCommandList, this));
 }
 
-void xiiRenderDataManager::SetLightListConstructionSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetLightListConstructionSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2070,15 +2070,15 @@ void xiiRenderDataManager::SetLightListConstructionSetupFunc(xiiDelegate<void(xi
   m_pLightListBuildPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearLightListConstructionSetupFunc() const
+void xiiRenderWorldModule::ClearLightListConstructionSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pLightListBuildPass != nullptr, "Light-list construction pass must be initialized.");
-  m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupLightListConstructionCommandList, this));
+  m_pLightListBuildPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupLightListConstructionCommandList, this));
 }
 
-void xiiRenderDataManager::SetDecalClassificationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetDecalClassificationSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2086,15 +2086,15 @@ void xiiRenderDataManager::SetDecalClassificationSetupFunc(xiiDelegate<void(xiiG
   m_pDecalClassificationPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearDecalClassificationSetupFunc() const
+void xiiRenderWorldModule::ClearDecalClassificationSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pDecalClassificationPass != nullptr, "Decal classification pass must be initialized.");
-  m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalClassificationCommandList, this));
+  m_pDecalClassificationPass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDecalClassificationCommandList, this));
 }
 
-void xiiRenderDataManager::SetDecalResolveSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetDecalResolveSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2102,43 +2102,43 @@ void xiiRenderDataManager::SetDecalResolveSetupFunc(xiiDelegate<void(xiiGALComma
   m_pDecalResolvePass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::ClearDecalResolveSetupFunc() const
+void xiiRenderWorldModule::ClearDecalResolveSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
   XII_ASSERT_DEV(m_pDecalResolvePass != nullptr, "Decal resolve pass must be initialized.");
-  m_pDecalResolvePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderDataManager::SetupDecalResolveCommandList, this));
+  m_pDecalResolvePass->SetSetupCommandListFunc(xiiMakeDelegate(&xiiRenderWorldModule::SetupDecalResolveCommandList, this));
 }
 
-void xiiRenderDataManager::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
+void xiiRenderWorldModule::SetPerFrameUploadCameraConstantsSample(const xiiPerFrameCameraUploadData& cameraConstantsSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_PerFrameCameraConstantsSample = cameraConstantsSample;
 }
 
-void xiiRenderDataManager::SetPerFrameUploadLightDataSample(const xiiPerFrameLightUploadData& lightDataSample) const
+void xiiRenderWorldModule::SetPerFrameUploadLightDataSample(const xiiPerFrameLightUploadData& lightDataSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_PerFrameLightDataSample = lightDataSample;
 }
 
-void xiiRenderDataManager::SetPerFrameUploadGlobalParamsSample(const xiiPerFrameGlobalUploadData& globalParamsSample) const
+void xiiRenderWorldModule::SetPerFrameUploadGlobalParamsSample(const xiiPerFrameGlobalUploadData& globalParamsSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_PerFrameGlobalParamsSample = globalParamsSample;
 }
 
-void xiiRenderDataManager::SetPreviousFrameStatsSample(const xiiPreviousFrameStats& previousFrameStatsSample) const
+void xiiRenderWorldModule::SetPreviousFrameStatsSample(const xiiPreviousFrameStats& previousFrameStatsSample) const
 {
   XII_LOCK(m_Mutex);
 
   m_PreviousFrameStatsSample = previousFrameStatsSample;
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const
+void xiiRenderWorldModule::SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnable) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2146,7 +2146,7 @@ void xiiRenderDataManager::SetRayTracedShadowsDenoiserHistoryEnabled(bool bEnabl
   m_pRayTracedShadowsPass->SetDenoiserHistoryEnabled(bEnable);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsSceneTlasResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsSceneTlasResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2154,7 +2154,7 @@ void xiiRenderDataManager::SetRayTracedShadowsSceneTlasResourceName(xiiHashedStr
   m_pRayTracedShadowsPass->SetSceneTlasResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsDepthResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsDepthResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2162,7 +2162,7 @@ void xiiRenderDataManager::SetRayTracedShadowsDepthResourceName(xiiHashedString 
   m_pRayTracedShadowsPass->SetDepthResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsNormalResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsNormalResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2170,7 +2170,7 @@ void xiiRenderDataManager::SetRayTracedShadowsNormalResourceName(xiiHashedString
   m_pRayTracedShadowsPass->SetNormalResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsLightDataResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsLightDataResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2178,7 +2178,7 @@ void xiiRenderDataManager::SetRayTracedShadowsLightDataResourceName(xiiHashedStr
   m_pRayTracedShadowsPass->SetLightDataResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsShadowMaskResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsShadowMaskResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2186,7 +2186,7 @@ void xiiRenderDataManager::SetRayTracedShadowsShadowMaskResourceName(xiiHashedSt
   m_pRayTracedShadowsPass->SetShadowMaskResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsHistoryInputResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsHistoryInputResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2194,7 +2194,7 @@ void xiiRenderDataManager::SetRayTracedShadowsHistoryInputResourceName(xiiHashed
   m_pRayTracedShadowsPass->SetHistoryInputResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsHistoryOutputResourceName(xiiHashedString sResourceName) const
+void xiiRenderWorldModule::SetRayTracedShadowsHistoryOutputResourceName(xiiHashedString sResourceName) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2202,7 +2202,7 @@ void xiiRenderDataManager::SetRayTracedShadowsHistoryOutputResourceName(xiiHashe
   m_pRayTracedShadowsPass->SetHistoryOutputResourceName(sResourceName);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
+void xiiRenderWorldModule::SetRayTracedShadowsSetupFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> setupFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2210,7 +2210,7 @@ void xiiRenderDataManager::SetRayTracedShadowsSetupFunc(xiiDelegate<void(xiiGALC
   m_pRayTracedShadowsPass->SetSetupCommandListFunc(setupFunc);
 }
 
-void xiiRenderDataManager::SetRayTracedShadowsDispatchFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> dispatchFunc) const
+void xiiRenderWorldModule::SetRayTracedShadowsDispatchFunc(xiiDelegate<void(xiiGALCommandList&, const xiiRenderGraphPassExecutionContext&)> dispatchFunc) const
 {
   XII_LOCK(m_Mutex);
 
@@ -2218,7 +2218,7 @@ void xiiRenderDataManager::SetRayTracedShadowsDispatchFunc(xiiDelegate<void(xiiG
   m_pRayTracedShadowsPass->SetDispatchRayTracingFunc(dispatchFunc);
 }
 
-void xiiRenderDataManager::ClearRayTracedShadowsSetupFunc() const
+void xiiRenderWorldModule::ClearRayTracedShadowsSetupFunc() const
 {
   XII_LOCK(m_Mutex);
 
@@ -2226,7 +2226,7 @@ void xiiRenderDataManager::ClearRayTracedShadowsSetupFunc() const
   m_pRayTracedShadowsPass->ClearSetupCommandListFunc();
 }
 
-void xiiRenderDataManager::ClearRayTracedShadowsDispatchFunc() const
+void xiiRenderWorldModule::ClearRayTracedShadowsDispatchFunc() const
 {
   XII_LOCK(m_Mutex);
 
@@ -2234,17 +2234,17 @@ void xiiRenderDataManager::ClearRayTracedShadowsDispatchFunc() const
   m_pRayTracedShadowsPass->ClearDispatchRayTracingFunc();
 }
 
-void xiiRenderDataManager::CompactSkinningDataBuffer(const UpdateContext& context)
+void xiiRenderWorldModule::CompactSkinningDataBuffer(const UpdateContext& context)
 {
   XII_IGNORE_UNUSED(context);
 }
 
-void xiiRenderDataManager::OnExtractionEvent(const xiiRenderWorldExtractionEvent& e)
+void xiiRenderWorldModule::OnExtractionEvent(const xiiRenderWorldExtractionEvent& e)
 {
   XII_IGNORE_UNUSED(e);
 }
 
-void xiiRenderDataManager::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const
+void xiiRenderWorldModule::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstanceCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2348,7 +2348,7 @@ void xiiRenderDataManager::EnsureGpuDrivenVisibilityResources(xiiUInt32 uiInstan
   }
 }
 
-void xiiRenderDataManager::EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const
+void xiiRenderWorldModule::EnsureDynamicResolutionResources(xiiUInt32 uiElementCount) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2407,7 +2407,7 @@ void xiiRenderDataManager::EnsureDynamicResolutionResources(xiiUInt32 uiElementC
   }
 }
 
-void xiiRenderDataManager::EnsureSkinningAndMorphResources(xiiUInt32 uiElementCount) const
+void xiiRenderWorldModule::EnsureSkinningAndMorphResources(xiiUInt32 uiElementCount) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2487,7 +2487,7 @@ void xiiRenderDataManager::EnsureSkinningAndMorphResources(xiiUInt32 uiElementCo
   }
 }
 
-void xiiRenderDataManager::EnsureInstanceUpdateResources(xiiUInt32 uiElementCount) const
+void xiiRenderWorldModule::EnsureInstanceUpdateResources(xiiUInt32 uiElementCount) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2549,7 +2549,7 @@ void xiiRenderDataManager::EnsureInstanceUpdateResources(xiiUInt32 uiElementCoun
   }
 }
 
-void xiiRenderDataManager::EnsureCoarseFrustumCullingResources(xiiUInt32 uiElementCount) const
+void xiiRenderWorldModule::EnsureCoarseFrustumCullingResources(xiiUInt32 uiElementCount) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2575,7 +2575,7 @@ void xiiRenderDataManager::EnsureCoarseFrustumCullingResources(xiiUInt32 uiEleme
   }
 }
 
-void xiiRenderDataManager::EnsureLodSelectionResources(xiiUInt32 uiElementCount) const
+void xiiRenderWorldModule::EnsureLodSelectionResources(xiiUInt32 uiElementCount) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2619,7 +2619,7 @@ void xiiRenderDataManager::EnsureLodSelectionResources(xiiUInt32 uiElementCount)
   }
 }
 
-void xiiRenderDataManager::EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiDrawCapacity) const
+void xiiRenderWorldModule::EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiDrawCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2669,7 +2669,7 @@ void xiiRenderDataManager::EnsureDrawIndirectCommandBuildResources(xiiUInt32 uiD
   }
 }
 
-void xiiRenderDataManager::EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceCapacity) const
+void xiiRenderWorldModule::EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceCapacity) const
 {
   EnsureDrawIndirectCommandBuildResources(xiiMath::Max(1U, uiInstanceCapacity));
 
@@ -2679,7 +2679,7 @@ void xiiRenderDataManager::EnsureMainDepthPrepassResources(xiiUInt32 uiInstanceC
   }
 }
 
-void xiiRenderDataManager::EnsureNormalRoughnessPrepassResources(xiiUInt32 uiInstanceCapacity) const
+void xiiRenderWorldModule::EnsureNormalRoughnessPrepassResources(xiiUInt32 uiInstanceCapacity) const
 {
   EnsureMainDepthPrepassResources(xiiMath::Max(1U, uiInstanceCapacity));
 
@@ -2689,7 +2689,7 @@ void xiiRenderDataManager::EnsureNormalRoughnessPrepassResources(xiiUInt32 uiIns
   }
 }
 
-void xiiRenderDataManager::EnsureDirectionalCascadeSetupResources() const
+void xiiRenderWorldModule::EnsureDirectionalCascadeSetupResources() const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2731,7 +2731,7 @@ void xiiRenderDataManager::EnsureDirectionalCascadeSetupResources() const
   }
 }
 
-void xiiRenderDataManager::EnsureDirectionalShadowCullingResources(xiiUInt32 uiInstanceCapacity) const
+void xiiRenderWorldModule::EnsureDirectionalShadowCullingResources(xiiUInt32 uiInstanceCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2785,7 +2785,7 @@ void xiiRenderDataManager::EnsureDirectionalShadowCullingResources(xiiUInt32 uiI
   }
 }
 
-void xiiRenderDataManager::EnsureDirectionalShadowRenderingResources(xiiUInt32 uiInstanceCapacity) const
+void xiiRenderWorldModule::EnsureDirectionalShadowRenderingResources(xiiUInt32 uiInstanceCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2825,7 +2825,7 @@ void xiiRenderDataManager::EnsureDirectionalShadowRenderingResources(xiiUInt32 u
   }
 }
 
-void xiiRenderDataManager::EnsureLocalLightShadowAtlasAllocationResources(xiiUInt32 uiRequestCapacity) const
+void xiiRenderWorldModule::EnsureLocalLightShadowAtlasAllocationResources(xiiUInt32 uiRequestCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2901,7 +2901,7 @@ void xiiRenderDataManager::EnsureLocalLightShadowAtlasAllocationResources(xiiUIn
   }
 }
 
-void xiiRenderDataManager::EnsureSpotAndPointShadowRenderingResources(xiiUInt32 uiCasterCapacity) const
+void xiiRenderWorldModule::EnsureSpotAndPointShadowRenderingResources(xiiUInt32 uiCasterCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2952,7 +2952,7 @@ void xiiRenderDataManager::EnsureSpotAndPointShadowRenderingResources(xiiUInt32 
   }
 }
 
-void xiiRenderDataManager::EnsureContactShadowResources() const
+void xiiRenderWorldModule::EnsureContactShadowResources() const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -2985,7 +2985,7 @@ void xiiRenderDataManager::EnsureContactShadowResources() const
   }
 }
 
-void xiiRenderDataManager::EnsureClusterGridBuildResources(xiiUInt32 uiClusterCapacity) const
+void xiiRenderWorldModule::EnsureClusterGridBuildResources(xiiUInt32 uiClusterCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -3035,7 +3035,7 @@ void xiiRenderDataManager::EnsureClusterGridBuildResources(xiiUInt32 uiClusterCa
   }
 }
 
-void xiiRenderDataManager::EnsureLightListConstructionResources(xiiUInt32 uiClusterCapacity, xiiUInt32 uiLightCapacity) const
+void xiiRenderWorldModule::EnsureLightListConstructionResources(xiiUInt32 uiClusterCapacity, xiiUInt32 uiLightCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -3090,7 +3090,7 @@ void xiiRenderDataManager::EnsureLightListConstructionResources(xiiUInt32 uiClus
   }
 }
 
-void xiiRenderDataManager::EnsureDecalClassificationResources(xiiUInt32 uiTileCapacity, xiiUInt32 uiDecalCapacity) const
+void xiiRenderWorldModule::EnsureDecalClassificationResources(xiiUInt32 uiTileCapacity, xiiUInt32 uiDecalCapacity) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -3140,7 +3140,7 @@ void xiiRenderDataManager::EnsureDecalClassificationResources(xiiUInt32 uiTileCa
   }
 }
 
-void xiiRenderDataManager::EnsureDecalResolveResources() const
+void xiiRenderWorldModule::EnsureDecalResolveResources() const
 {
   if (m_pDecalResolveGBufferResource == nullptr)
   {
@@ -3158,7 +3158,7 @@ void xiiRenderDataManager::EnsureDecalResolveResources() const
   }
 }
 
-void xiiRenderDataManager::EnsureFrameSetupResources() const
+void xiiRenderWorldModule::EnsureFrameSetupResources() const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -3217,7 +3217,7 @@ void xiiRenderDataManager::EnsureFrameSetupResources() const
   }
 }
 
-void xiiRenderDataManager::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const
+void xiiRenderWorldModule::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) const
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "Default GAL device must be available.");
@@ -3252,7 +3252,7 @@ void xiiRenderDataManager::EnsurePerFrameUploadResources(xiiUInt32 uiRingSize) c
   EnsureUploadBuffer(m_pPerFrameGlobalParamsBuffer, "RenderDataManager::PerFrameGlobalParams", sizeof(xiiPerFrameGlobalUploadData));
 }
 
-void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3309,7 +3309,7 @@ void xiiRenderDataManager::SetupGpuDrivenVisibilityCommandList(xiiGALCommandList
   }
 }
 
-void xiiRenderDataManager::SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDynamicResolutionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3369,7 +3369,7 @@ void xiiRenderDataManager::SetupDynamicResolutionCommandList(xiiGALCommandList& 
   }
 }
 
-void xiiRenderDataManager::SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupSkinningAndMorphCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3434,7 +3434,7 @@ void xiiRenderDataManager::SetupSkinningAndMorphCommandList(xiiGALCommandList& c
   }
 }
 
-void xiiRenderDataManager::SetupInstanceUpdateCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupInstanceUpdateCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3499,7 +3499,7 @@ void xiiRenderDataManager::SetupInstanceUpdateCommandList(xiiGALCommandList& com
   }
 }
 
-void xiiRenderDataManager::SetupCoarseFrustumCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupCoarseFrustumCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3566,7 +3566,7 @@ void xiiRenderDataManager::SetupCoarseFrustumCullingCommandList(xiiGALCommandLis
   }
 }
 
-void xiiRenderDataManager::SetupOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3579,13 +3579,13 @@ void xiiRenderDataManager::SetupOccluderDepthPrepassCommandList(xiiGALCommandLis
   }
 }
 
-void xiiRenderDataManager::DrawOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::DrawOccluderDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
 }
 
-void xiiRenderDataManager::SetupHiZPyramidBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupHiZPyramidBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3645,7 +3645,7 @@ void xiiRenderDataManager::SetupHiZPyramidBuildCommandList(xiiGALCommandList& co
   }
 }
 
-void xiiRenderDataManager::SetupHiZOcclusionCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupHiZOcclusionCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3719,7 +3719,7 @@ void xiiRenderDataManager::SetupHiZOcclusionCullingCommandList(xiiGALCommandList
   }
 }
 
-void xiiRenderDataManager::SetupDrawIndirectCommandBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDrawIndirectCommandBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3787,7 +3787,7 @@ void xiiRenderDataManager::SetupDrawIndirectCommandBuildCommandList(xiiGALComman
   }
 }
 
-void xiiRenderDataManager::SetupMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3806,13 +3806,13 @@ void xiiRenderDataManager::SetupMainDepthPrepassCommandList(xiiGALCommandList& c
   }
 }
 
-void xiiRenderDataManager::DrawMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::DrawMainDepthPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
 }
 
-void xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3840,13 +3840,13 @@ void xiiRenderDataManager::SetupNormalRoughnessPrepassCommandList(xiiGALCommandL
   }
 }
 
-void xiiRenderDataManager::DrawNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::DrawNormalRoughnessPrepassCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
 }
 
-void xiiRenderDataManager::SetupDirectionalCascadeSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDirectionalCascadeSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3915,7 +3915,7 @@ void xiiRenderDataManager::SetupDirectionalCascadeSetupCommandList(xiiGALCommand
   }
 }
 
-void xiiRenderDataManager::SetupDirectionalShadowCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDirectionalShadowCullingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -3983,7 +3983,7 @@ void xiiRenderDataManager::SetupDirectionalShadowCullingCommandList(xiiGALComman
   }
 }
 
-void xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4000,9 +4000,9 @@ void xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList(xiiGALComm
     xiiGALDeviceUtilities::MapAndUpdateBuffer(&commandList, m_pDirectionalShadowAtlasParamsBuffer, 0U, xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(&atlasParams), sizeof(atlasParams))).AssertSuccess();
   }
 
-  xiiSharedPtr<xiiGALBuffer> pVisibleList = m_pDirectionalShadowRenderingVisibleListBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleListBuffer : m_pShadowCasterVisibleListBuffer;
+  xiiSharedPtr<xiiGALBuffer> pVisibleList  = m_pDirectionalShadowRenderingVisibleListBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleListBuffer : m_pShadowCasterVisibleListBuffer;
   xiiSharedPtr<xiiGALBuffer> pVisibleCount = m_pDirectionalShadowRenderingVisibleCountBuffer != nullptr ? m_pDirectionalShadowRenderingVisibleCountBuffer : m_pShadowCasterVisibleCountBuffer;
-  xiiSharedPtr<xiiGALBuffer> pCascadeData = m_pDirectionalShadowRenderingCascadeDataBuffer != nullptr ? m_pDirectionalShadowRenderingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
+  xiiSharedPtr<xiiGALBuffer> pCascadeData  = m_pDirectionalShadowRenderingCascadeDataBuffer != nullptr ? m_pDirectionalShadowRenderingCascadeDataBuffer : m_pShadowCascadeDataBuffer;
 
   if (pVisibleList != nullptr)
   {
@@ -4025,13 +4025,13 @@ void xiiRenderDataManager::SetupDirectionalShadowRenderingCommandList(xiiGALComm
   }
 }
 
-void xiiRenderDataManager::DrawDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::DrawDirectionalShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
 }
 
-void xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupLocalLightShadowAtlasAllocationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4100,7 +4100,7 @@ void xiiRenderDataManager::SetupLocalLightShadowAtlasAllocationCommandList(xiiGA
   }
 }
 
-void xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4124,13 +4124,13 @@ void xiiRenderDataManager::SetupSpotAndPointShadowRenderingCommandList(xiiGALCom
   }
 }
 
-void xiiRenderDataManager::DrawSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::DrawSpotAndPointShadowRenderingCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
 }
 
-void xiiRenderDataManager::SetupContactShadowCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupContactShadowCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4209,7 +4209,7 @@ void xiiRenderDataManager::SetupContactShadowCommandList(xiiGALCommandList& comm
   }
 }
 
-void xiiRenderDataManager::SetupClusterGridBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupClusterGridBuildCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4281,7 +4281,7 @@ void xiiRenderDataManager::SetupClusterGridBuildCommandList(xiiGALCommandList& c
   }
 }
 
-void xiiRenderDataManager::SetupLightListConstructionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupLightListConstructionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4353,7 +4353,7 @@ void xiiRenderDataManager::SetupLightListConstructionCommandList(xiiGALCommandLi
   }
 }
 
-void xiiRenderDataManager::SetupDecalClassificationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDecalClassificationCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4418,7 +4418,7 @@ void xiiRenderDataManager::SetupDecalClassificationCommandList(xiiGALCommandList
   }
 }
 
-void xiiRenderDataManager::SetupDecalResolveCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupDecalResolveCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4484,7 +4484,7 @@ void xiiRenderDataManager::SetupDecalResolveCommandList(xiiGALCommandList& comma
   }
 }
 
-void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupLodSelectionCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4558,7 +4558,7 @@ void xiiRenderDataManager::SetupLodSelectionCommandList(xiiGALCommandList& comma
   }
 }
 
-void xiiRenderDataManager::SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupFrameSetupCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4570,7 +4570,7 @@ void xiiRenderDataManager::SetupFrameSetupCommandList(xiiGALCommandList& command
   }
 }
 
-void xiiRenderDataManager::UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::UploadPerFrameBufferDataCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4598,7 +4598,7 @@ void xiiRenderDataManager::UploadPerFrameBufferDataCommandList(xiiGALCommandList
   }
 }
 
-void xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(executionContext);
 
@@ -4616,13 +4616,13 @@ void xiiRenderDataManager::OnGpuDrivenVisibilityPostDispatch(xiiGALCommandList& 
   m_uiGpuVisibilityReadbackFenceValue = uiFenceValue;
 }
 
-void xiiRenderDataManager::SetupRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::SetupRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);
 }
 
-void xiiRenderDataManager::DispatchRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
+void xiiRenderWorldModule::DispatchRayTracedShadowsCommandList(xiiGALCommandList& commandList, const xiiRenderGraphPassExecutionContext& executionContext) const
 {
   XII_IGNORE_UNUSED(commandList);
   XII_IGNORE_UNUSED(executionContext);

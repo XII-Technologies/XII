@@ -252,7 +252,7 @@ void xiiBakedProbesComponent::SetShowDebugProbes(bool bShow)
 
     if (IsActiveAndInitialized())
     {
-      GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+      GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
     }
   }
 }
@@ -265,7 +265,7 @@ void xiiBakedProbesComponent::SetUseTestPosition(bool bUse)
 
     if (IsActiveAndInitialized())
     {
-      GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+      GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
     }
   }
 }
@@ -276,7 +276,7 @@ void xiiBakedProbesComponent::SetTestPosition(const xiiVec3& vPos)
 
   if (IsActiveAndInitialized())
   {
-    GetWorld()->GetOrCreateModule<xiiRenderDataManager>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 

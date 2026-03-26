@@ -8,10 +8,10 @@ xiiRenderGraphLightListBuildPass::xiiRenderGraphLightListBuildPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sVisibleLightsResourceName         = xiiMakeHashedString("VisibleLightList");
-  m_sClusterDescriptorsResourceName    = xiiMakeHashedString("ClusterDescriptors");
-  m_sClusterDepthInfoResourceName      = xiiMakeHashedString("ClusterDepthRange");
-  m_sClusterLightIndicesResourceName   = xiiMakeHashedString("ClusterLightIndices");
+  m_sVisibleLightsResourceName          = xiiMakeHashedString("VisibleLightList");
+  m_sClusterDescriptorsResourceName     = xiiMakeHashedString("ClusterDescriptors");
+  m_sClusterDepthInfoResourceName       = xiiMakeHashedString("ClusterDepthRange");
+  m_sClusterLightIndicesResourceName    = xiiMakeHashedString("ClusterLightIndices");
   m_sClusterLightPrefixSumsResourceName = xiiMakeHashedString("ClusterLightPrefixSums");
 
   RebuildResourceLayout();

@@ -92,15 +92,15 @@ struct XII_GRAPHICSCORE_DLL xiiGpuDrivenInstance
 /// If many objects should be rendered with one instanced draw call, instance data buffers are used to hold the per-instance information.
 /// For that the render data should derive from xiiInstanceableRenderData. See xiiPerInstanceData what data is supported by default for each instance.
 /// When more per instance data is needed it is possible to register a custom instance data buffer and attach that to the render data as well.
-class XII_GRAPHICSCORE_DLL xiiRenderDataManager : public xiiWorldModule
+class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
 
-  XII_ADD_DYNAMIC_REFLECTION(xiiRenderDataManager, xiiWorldModule);
+  XII_ADD_DYNAMIC_REFLECTION(xiiRenderWorldModule, xiiWorldModule);
 
 public:
-  xiiRenderDataManager(xiiWorld* pWorld);
-  virtual ~xiiRenderDataManager();
+  xiiRenderWorldModule(xiiWorld* pWorld);
+  virtual ~xiiRenderWorldModule();
 
   virtual void Initialize() override;
 
@@ -796,25 +796,25 @@ private:
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameCameraConstantsBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameLightDataBuffer;
   mutable xiiSharedPtr<xiiGALBuffer>                             m_pPerFrameGlobalParamsBuffer;
-  mutable xiiUInt64                                              m_uiGpuVisibilityReadbackFenceValue         = 0U;
-  mutable xiiUInt64                                              m_uiGpuVisibilityReadbackCompletedValue     = 0U;
-  mutable xiiUInt32                                              m_uiGpuVisibilityThreadGroupSize            = 64U;
-  mutable xiiUInt32                                              m_uiPerFrameUploadRingSize                  = 3U;
-  mutable xiiUInt32                                              m_uiPerFrameUploadWriteIndex                = 0U;
-  mutable bool                                                   m_bGpuVisibilityUseInternalIndirectDispatch = false;
-  mutable xiiVec4                                                m_vDynamicResolutionFrameTimingSample       = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
-  mutable xiiVec4                                                m_vDynamicResolutionCameraVelocitySample    = xiiVec4::MakeZero();
-  mutable xiiVec4                                                m_vSkinningInputSample                      = xiiVec4::MakeZero();
-  mutable xiiVec4                                                m_vMorphWeightsSample                       = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
-  mutable xiiShaderTransform                                     m_SceneTransformsSample                     = {};
-  mutable xiiVec4                                                m_vCoarseFrustumPlaneSamples[6]             = {xiiVec4(1.0f, 0.0f, 0.0f, 1.0f), xiiVec4(-1.0f, 0.0f, 0.0f, 1.0f), xiiVec4(0.0f, 1.0f, 0.0f, 1.0f), xiiVec4(0.0f, -1.0f, 0.0f, 1.0f), xiiVec4(0.0f, 0.0f, 1.0f, 0.0f), xiiVec4(0.0f, 0.0f, -1.0f, 1.0f)};
-  mutable xiiVec4                                                m_vShadowCascadeSunDirectionSample          = xiiVec4(0.0f, -1.0f, 0.0f, 0.0f);
-  mutable float                                                  m_fShadowCascadeSplitDistances[4]           = {10.0f, 30.0f, 80.0f, 200.0f};
-  mutable xiiVec4                                                m_vDirectionalShadowAtlasPackingSample      = xiiVec4(0.5f, 0.5f, 0.0f, 0.0f);
-  mutable xiiVec4                                                m_vDirectionalShadowTexelSnapSample         = xiiVec4(1.0f, 1.0f, 1.0f, 0.0f);
+  mutable xiiUInt64                                              m_uiGpuVisibilityReadbackFenceValue             = 0U;
+  mutable xiiUInt64                                              m_uiGpuVisibilityReadbackCompletedValue         = 0U;
+  mutable xiiUInt32                                              m_uiGpuVisibilityThreadGroupSize                = 64U;
+  mutable xiiUInt32                                              m_uiPerFrameUploadRingSize                      = 3U;
+  mutable xiiUInt32                                              m_uiPerFrameUploadWriteIndex                    = 0U;
+  mutable bool                                                   m_bGpuVisibilityUseInternalIndirectDispatch     = false;
+  mutable xiiVec4                                                m_vDynamicResolutionFrameTimingSample           = xiiVec4(16.666f, 0.0f, 0.0f, 0.0f);
+  mutable xiiVec4                                                m_vDynamicResolutionCameraVelocitySample        = xiiVec4::MakeZero();
+  mutable xiiVec4                                                m_vSkinningInputSample                          = xiiVec4::MakeZero();
+  mutable xiiVec4                                                m_vMorphWeightsSample                           = xiiVec4(1.0f, 0.0f, 0.0f, 0.0f);
+  mutable xiiShaderTransform                                     m_SceneTransformsSample                         = {};
+  mutable xiiVec4                                                m_vCoarseFrustumPlaneSamples[6]                 = {xiiVec4(1.0f, 0.0f, 0.0f, 1.0f), xiiVec4(-1.0f, 0.0f, 0.0f, 1.0f), xiiVec4(0.0f, 1.0f, 0.0f, 1.0f), xiiVec4(0.0f, -1.0f, 0.0f, 1.0f), xiiVec4(0.0f, 0.0f, 1.0f, 0.0f), xiiVec4(0.0f, 0.0f, -1.0f, 1.0f)};
+  mutable xiiVec4                                                m_vShadowCascadeSunDirectionSample              = xiiVec4(0.0f, -1.0f, 0.0f, 0.0f);
+  mutable float                                                  m_fShadowCascadeSplitDistances[4]               = {10.0f, 30.0f, 80.0f, 200.0f};
+  mutable xiiVec4                                                m_vDirectionalShadowAtlasPackingSample          = xiiVec4(0.5f, 0.5f, 0.0f, 0.0f);
+  mutable xiiVec4                                                m_vDirectionalShadowTexelSnapSample             = xiiVec4(1.0f, 1.0f, 1.0f, 0.0f);
   mutable xiiVec4                                                m_vLocalLightShadowAllocatorDeterministicSample = xiiVec4(0.0f, 1.0f, 1024.0f, 1024.0f);
-  mutable xiiVec4                                                m_vContactShadowLightParamsSample           = xiiVec4(1.0f, 0.5f, 0.01f, 0.0f);
-  mutable xiiVec4                                                m_vClusterDepthRangeSample                  = xiiVec4(0.1f, 1000.0f, 24.0f, 0.0f);
+  mutable xiiVec4                                                m_vContactShadowLightParamsSample               = xiiVec4(1.0f, 0.5f, 0.01f, 0.0f);
+  mutable xiiVec4                                                m_vClusterDepthRangeSample                      = xiiVec4(0.1f, 1000.0f, 24.0f, 0.0f);
   mutable xiiPreviousFrameStats                                  m_PreviousFrameStatsSample;
   mutable xiiPerFrameCameraUploadData                            m_PerFrameCameraConstantsSample = {};
   mutable xiiPerFrameLightUploadData                             m_PerFrameLightDataSample       = {};

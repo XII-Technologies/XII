@@ -106,7 +106,7 @@ private:
 
   friend class xiiView;
   friend class xiiRenderPipeline;
-  friend class xiiRenderDataManager;
+  friend class xiiRenderWorldModule;
 
   static void CacheRenderData(const xiiView& view, const xiiGameObjectHandle& hOwnerObject, const xiiComponentHandle& hOwnerComponent, xiiUInt16 uiComponentVersion, xiiArrayPtr<xiiInternal::RenderDataCacheEntry> cacheEntries);
 

@@ -8,8 +8,8 @@ xiiRenderGraphClusterGridBuildPass::xiiRenderGraphClusterGridBuildPass()
   m_PassDescription.m_QueueFlags      = xiiGALCommandQueueFlags::Compute;
   m_PassDescription.m_bHasSideEffects = false;
 
-  m_sCameraFrustumResourceName    = xiiMakeHashedString("ClusterCameraFrustum");
-  m_sDepthRangeResourceName       = xiiMakeHashedString("ClusterDepthRange");
+  m_sCameraFrustumResourceName      = xiiMakeHashedString("ClusterCameraFrustum");
+  m_sDepthRangeResourceName         = xiiMakeHashedString("ClusterDepthRange");
   m_sClusterDescriptorsResourceName = xiiMakeHashedString("ClusterDescriptors");
 
   RebuildResourceLayout();
