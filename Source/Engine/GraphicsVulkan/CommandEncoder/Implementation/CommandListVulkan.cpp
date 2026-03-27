@@ -2031,6 +2031,8 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
 
   struct RecordWrite
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiUInt64 m_uiDestinationOffset = 0U;
     xiiUInt32 m_uiGroupIndex        = 0U;
   };
@@ -2271,7 +2273,9 @@ void xiiGALCommandListVulkan::BuildTLASPlatform(const xiiGALBuildTLASDescription
 
   xiiBitflags<xiiGALResourceStateFlags> oldState = pTopLevelASVulkan->GetResourceState();
   if (oldState == xiiGALResourceStateFlags::Unknown)
+  {
     oldState = xiiGALResourceStateFlags::BuildASWrite;
+  }
 
   MemoryBarrier(xiiVulkanTypeConversions::GetAccessFlags(oldState), xiiVulkanTypeConversions::GetAccessFlags(xiiGALResourceStateFlags::BuildASWrite), xiiVulkanTypeConversions::GetPipelineStageFlags(oldState), xiiVulkanTypeConversions::GetPipelineStageFlags(xiiGALResourceStateFlags::BuildASWrite));
   pTopLevelASVulkan->SetResourceState(xiiGALResourceStateFlags::BuildASWrite);

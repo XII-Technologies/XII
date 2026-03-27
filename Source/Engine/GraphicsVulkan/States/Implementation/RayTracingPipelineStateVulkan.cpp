@@ -36,7 +36,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
   xiiDynamicArray<vk::PipelineShaderStageCreateInfo>      vkShaderStages(pDeviceVulkan->GetAllocator());
   xiiDynamicArray<vk::RayTracingShaderGroupCreateInfoKHR> vkShaderGroups(pDeviceVulkan->GetAllocator());
 
-  auto AddShaderStage = [&](xiiSharedPtr<xiiGALShader> pShader, xiiBitflags<xiiGALShaderType> expectedShaderType) -> xiiUInt32 {
+  auto AddShaderStage = [&](xiiSharedPtr<xiiGALShader> pShader, xiiGALShaderType::Enum expectedShaderType) -> xiiUInt32 {
     if (pShader == nullptr)
     {
       return VK_SHADER_UNUSED_KHR;
@@ -56,7 +56,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     vk::PipelineShaderStageCreateInfo vkPipelineShaderStageCreateInfo = {};
     vkPipelineShaderStageCreateInfo.pNext                             = nullptr;
     vkPipelineShaderStageCreateInfo.flags                             = {};
-    vkPipelineShaderStageCreateInfo.stage                             = xiiVulkanTypeConversions::GetShaderStageFlags(expectedShaderType);
+    vkPipelineShaderStageCreateInfo.stage                             = xiiVulkanTypeConversions::GetShaderStageFlagBits(expectedShaderType);
     vkPipelineShaderStageCreateInfo.pName                             = "main";
     vkPipelineShaderStageCreateInfo.module                            = pShaderVulkan->GetVulkanShaderModule();
     vkPipelineShaderStageCreateInfo.pSpecializationInfo               = nullptr;

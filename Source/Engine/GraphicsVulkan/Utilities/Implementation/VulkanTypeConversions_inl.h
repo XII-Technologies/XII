@@ -636,6 +636,44 @@ XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageF
   return shaderStage;
 }
 
+XII_ALWAYS_INLINE vk::ShaderStageFlagBits xiiVulkanTypeConversions::GetShaderStageFlagBits(xiiGALShaderType::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALShaderType::Vertex:
+      return vk::ShaderStageFlagBits::eVertex;
+    case xiiGALShaderType::Pixel:
+      return vk::ShaderStageFlagBits::eFragment;
+    case xiiGALShaderType::Geometry:
+      return vk::ShaderStageFlagBits::eGeometry;
+    case xiiGALShaderType::Hull:
+      return vk::ShaderStageFlagBits::eTessellationControl;
+    case xiiGALShaderType::Domain:
+      return vk::ShaderStageFlagBits::eTessellationEvaluation;
+    case xiiGALShaderType::Compute:
+      return vk::ShaderStageFlagBits::eCompute;
+    case xiiGALShaderType::Amplification:
+      return vk::ShaderStageFlagBits::eTaskEXT;
+    case xiiGALShaderType::Mesh:
+      return vk::ShaderStageFlagBits::eMeshEXT;
+    case xiiGALShaderType::RayGeneration:
+      return vk::ShaderStageFlagBits::eRaygenKHR;
+    case xiiGALShaderType::RayMiss:
+      return vk::ShaderStageFlagBits::eMissKHR;
+    case xiiGALShaderType::RayClosestHit:
+      return vk::ShaderStageFlagBits::eClosestHitKHR;
+    case xiiGALShaderType::RayAnyHit:
+      return vk::ShaderStageFlagBits::eAnyHitKHR;
+    case xiiGALShaderType::RayIntersection:
+      return vk::ShaderStageFlagBits::eIntersectionKHR;
+    case xiiGALShaderType::Callable:
+      return vk::ShaderStageFlagBits::eCallableKHR;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ShaderStageFlagBits();
+}
+
 XII_ALWAYS_INLINE xiiBitflags<xiiGALShaderType> xiiVulkanTypeConversions::GetGALShaderStageFlags(vk::ShaderStageFlags e)
 {
   if (e == vk::ShaderStageFlagBits::eAllGraphics)
@@ -1628,4 +1666,39 @@ XII_ALWAYS_INLINE vk::FragmentShadingRateCombinerOpKHR xiiVulkanTypeConversions:
       XII_REPORT_FAILURE("Unknown shading rate combiner flag.");
       return vk::FragmentShadingRateCombinerOpKHR();
   }
+}
+
+XII_ALWAYS_INLINE vk::BuildAccelerationStructureFlagsKHR xiiVulkanTypeConversions::GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
+{
+  vk::BuildAccelerationStructureFlagsKHR vkFlags = {};
+
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastBuild;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eLowMemory;
+
+  return vkFlags;
+}
+
+XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
+{
+  if (triangle.m_VertexValueType == xiiGALValueType::Float32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sfloat : vk::Format::eR32G32B32Sfloat;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Float16)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Sfloat : vk::Format::eR16G16B16Sfloat;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Int32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sint : vk::Format::eR32G32B32Sint;
+  }
+  return vk::Format::eUndefined;
 }

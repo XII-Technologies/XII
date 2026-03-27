@@ -4,27 +4,6 @@
 #include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Resources/TopLevelASVulkan.h>
 
-namespace
-{
-  [[nodiscard]] static vk::BuildAccelerationStructureFlagsKHR ConvertBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
-  {
-    vk::BuildAccelerationStructureFlagsKHR vkFlags = {};
-
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastBuild;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eLowMemory;
-
-    return vkFlags;
-  }
-} // namespace
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -83,7 +62,7 @@ xiiResult xiiGALTopLevelASVulkan::InitPlatform()
 
     vk::AccelerationStructureBuildGeometryInfoKHR buildInfo = {};
     buildInfo.type                                          = vk::AccelerationStructureTypeKHR::eTopLevel;
-    buildInfo.flags                                         = ConvertBuildFlags(m_Description.m_Flags);
+    buildInfo.flags                                         = xiiVulkanTypeConversions::GetAccelerationStructureFlags(m_Description.m_Flags);
     buildInfo.mode                                          = vk::BuildAccelerationStructureModeKHR::eBuild;
     buildInfo.geometryCount                                 = 1U;
     buildInfo.pGeometries                                   = &geometry;
