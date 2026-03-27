@@ -83,9 +83,9 @@ private:
   void ReadbackFrame(FrameData& frameData);
 
 private:
-  xiiSharedPtr<xiiGALDevice>                  m_pDevice;
-  FrameData                                   m_FrameRing[RingFrameCount];
-  xiiUInt32                                   m_uiCurrentRingSlot = 0U;
-  xiiHashTable<xiiHashedString, float>        m_ResolvedDurationsMs;
-  mutable xiiMutex                            m_ResultMutex;
+  xiiSharedPtr<xiiGALDevice>           m_pDevice;
+  FrameData                            m_FrameRing[RingFrameCount];
+  xiiUInt32                            m_uiCurrentRingSlot = 0U;
+  xiiHashTable<xiiHashedString, float> m_ResolvedDurationsMs;
+  mutable xiiMutex                     m_ResultMutex;
 };

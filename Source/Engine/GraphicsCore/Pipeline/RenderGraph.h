@@ -39,11 +39,10 @@ struct xiiRGTextureHandle
   static constexpr xiiUInt32 InvalidIndex = xiiInvalidIndex;
 
   xiiUInt32 m_uiIndex   = InvalidIndex; ///< Index into the graph's resource table.
-  xiiUInt16 m_uiVersion = 0U;           ///< Write version — read dependencies track this.
+  xiiUInt16 m_uiVersion = 0U;           ///< Write version - read dependencies track this.
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != InvalidIndex; }
   [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRGTextureHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiVersion == rhs.m_uiVersion; }
-  [[nodiscard]] XII_ALWAYS_INLINE bool operator!=(const xiiRGTextureHandle& rhs) const { return !(*this == rhs); }
 };
 
 /// \brief Opaque handle to a virtual buffer resource declared in the render graph.
@@ -56,7 +55,6 @@ struct xiiRGBufferHandle
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsValid() const { return m_uiIndex != InvalidIndex; }
   [[nodiscard]] XII_ALWAYS_INLINE bool operator==(const xiiRGBufferHandle& rhs) const { return m_uiIndex == rhs.m_uiIndex && m_uiVersion == rhs.m_uiVersion; }
-  [[nodiscard]] XII_ALWAYS_INLINE bool operator!=(const xiiRGBufferHandle& rhs) const { return !(*this == rhs); }
 };
 
 /// \brief Opaque handle to a registered render pass.
@@ -76,8 +74,8 @@ struct xiiRGPassHandle
 /// \brief Describes a resource state barrier synthesized during compilation.
 struct XII_GRAPHICSCORE_DLL xiiRGBarrierDesc
 {
-  xiiUInt32                             m_uiResourceIndex = xiiInvalidIndex; ///< Index into the resource table.
-  bool                                  m_bIsTexture      = true;
+  xiiUInt32 m_uiResourceIndex = xiiInvalidIndex; ///< Index into the resource table.
+  bool      m_bIsTexture      = true;
 
   // Sub-resource range (textures only; for buffers these are ignored)
   xiiUInt32 m_uiFirstMipLevel   = 0U;
@@ -88,8 +86,8 @@ struct XII_GRAPHICSCORE_DLL xiiRGBarrierDesc
   xiiBitflags<xiiGALResourceStateFlags> m_BeforeState = xiiGALResourceStateFlags::Unknown;
   xiiBitflags<xiiGALResourceStateFlags> m_AfterState  = xiiGALResourceStateFlags::Unknown;
 
-  xiiEnum<xiiGALStateTransitionType>   m_TransitionType  = xiiGALStateTransitionType::Immediate;
-  xiiEnum<xiiGALStateTransitionFlags>  m_TransitionFlags = xiiGALStateTransitionFlags::None;
+  xiiEnum<xiiGALStateTransitionType>  m_TransitionType  = xiiGALStateTransitionType::Immediate;
+  xiiEnum<xiiGALStateTransitionFlags> m_TransitionFlags = xiiGALStateTransitionFlags::None;
 };
 
 /// \brief Represents a group of consecutive passes merged into a single native render pass.
@@ -99,8 +97,8 @@ struct XII_GRAPHICSCORE_DLL xiiRGBarrierDesc
 /// on tile-based architectures. All passes must be on the same queue index.
 struct XII_GRAPHICSCORE_DLL xiiRGMergeGroup
 {
-  xiiHybridArray<xiiUInt32, 8>   m_PassIndices;             ///< Ordered pass indices belonging to this group.
-  xiiSharedPtr<xiiGALRenderPass> m_pNativeRenderPass;
+  xiiHybridArray<xiiUInt32, 8>    m_PassIndices; ///< Ordered pass indices belonging to this group.
+  xiiSharedPtr<xiiGALRenderPass>  m_pNativeRenderPass;
   xiiSharedPtr<xiiGALFramebuffer> m_pFramebuffer;
 };
 
@@ -111,13 +109,13 @@ struct XII_GRAPHICSCORE_DLL xiiRGMergeGroup
 /// and device-side waits inlined into the command list before the first consuming pass.
 struct XII_GRAPHICSCORE_DLL xiiRGQueueSubmission
 {
-  xiiUInt32                             m_uiQueueIndex; ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
-  xiiBitflags<xiiGALCommandQueueFlags>  m_QueueFlags;
-  xiiDynamicArray<xiiUInt32>            m_PassOrder;    ///< Ordered pass indices to execute.
+  xiiUInt32                            m_uiQueueIndex; ///< 0=Graphics, 1=AsyncCompute, 2=AsyncTransfer.
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueueFlags;
+  xiiDynamicArray<xiiUInt32>           m_PassOrder; ///< Ordered pass indices to execute.
 
   /// Fence this submission signals after all its work (for downstream queues to DeviceWaitForFence).
-  xiiSharedPtr<xiiGALFence>            m_pSignalFence;
-  xiiUInt64                            m_uiSignalValue = 0ULL;
+  xiiSharedPtr<xiiGALFence> m_pSignalFence;
+  xiiUInt64                 m_uiSignalValue = 0ULL;
 
   /// Fences this submission must DeviceWaitForFence on before recording any commands.
   xiiHybridArray<xiiSharedPtr<xiiGALFence>, 2> m_WaitFences;
@@ -127,10 +125,10 @@ struct XII_GRAPHICSCORE_DLL xiiRGQueueSubmission
 /// \brief A fully compiled render pass ready for execution.
 struct XII_GRAPHICSCORE_DLL xiiRGCompiledPass
 {
-  xiiHashedString                      m_sName;
-  xiiUInt32                            m_uiPassIndex      = xiiInvalidIndex;
-  xiiUInt32                            m_uiQueueIndex     = 0U;
-  xiiUInt32                            m_uiMergeGroupIndex = xiiInvalidIndex; ///< xiiInvalidIndex = not merged.
+  xiiHashedString m_sName;
+  xiiUInt32       m_uiPassIndex       = xiiInvalidIndex;
+  xiiUInt32       m_uiQueueIndex      = 0U;
+  xiiUInt32       m_uiMergeGroupIndex = xiiInvalidIndex; ///< xiiInvalidIndex = not merged.
 
   bool m_bHasSideEffects = false;
   bool m_bAllowMerge     = true;
@@ -150,7 +148,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGCompiledPass
   xiiHybridArray<xiiUInt32, 4> m_DependencyPassIndices;
 
   /// Type-erased pointer to the pass data struct. Owned by the graph.
-  void*                                m_pPassData = nullptr;
+  void* m_pPassData = nullptr;
   /// Type-erased execute callback.
   xiiDelegate<void(xiiRGPassContext&)> m_ExecuteFunc;
 };
@@ -174,7 +172,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGCompileSettings
 struct XII_GRAPHICSCORE_DLL xiiRGStatistics
 {
   xiiUInt32 m_uiRegisteredPassCount   = 0U;
-  xiiUInt32 m_uiCompiledPassCount     = 0U;  ///< Passes retained after culling.
+  xiiUInt32 m_uiCompiledPassCount     = 0U; ///< Passes retained after culling.
   xiiUInt32 m_uiCulledPassCount       = 0U;
   xiiUInt32 m_uiTotalBarrierCount     = 0U;
   xiiUInt32 m_uiSplitBarrierCount     = 0U;
@@ -198,7 +196,7 @@ class XII_GRAPHICSCORE_DLL xiiRGPassContext
 {
 public:
   // Non-copyable — created per-pass by the executor.
-  xiiRGPassContext(const xiiRGPassContext&) = delete;
+  xiiRGPassContext(const xiiRGPassContext&)            = delete;
   xiiRGPassContext& operator=(const xiiRGPassContext&) = delete;
 
   /// \brief Returns the command list for this pass to record GPU commands into.
@@ -242,12 +240,12 @@ private:
 
   xiiRGPassContext() = default;
 
-  xiiGALCommandList*         m_pCommandList  = nullptr;
-  xiiRenderGraphBlackboard*  m_pBlackboard   = nullptr;
+  xiiGALCommandList*           m_pCommandList   = nullptr;
+  xiiRenderGraphBlackboard*    m_pBlackboard    = nullptr;
   xiiRenderGraphResourceCache* m_pResourceCache = nullptr;
-  const xiiView*             m_pView         = nullptr;
-  xiiUInt64                  m_uiFrameIndex  = 0ULL;
-  xiiHashedString            m_sPassName;
+  const xiiView*               m_pView          = nullptr;
+  xiiUInt64                    m_uiFrameIndex   = 0ULL;
+  xiiHashedString              m_sPassName;
 
   // Resource resolution tables — owned by the graph, borrowed for pass duration.
   xiiArrayPtr<xiiSharedPtr<xiiGALTexture>> m_ResolvedTextures;
@@ -267,7 +265,7 @@ class XII_GRAPHICSCORE_DLL xiiRGBuilder
 {
 public:
   // Non-copyable — tied to a specific graph and pass index.
-  xiiRGBuilder(const xiiRGBuilder&) = delete;
+  xiiRGBuilder(const xiiRGBuilder&)            = delete;
   xiiRGBuilder& operator=(const xiiRGBuilder&) = delete;
 
   // ── Texture declarations ────────────────────────────────────────────────
@@ -279,7 +277,7 @@ public:
 
   /// \brief Imports an externally-owned texture as a read-only graph resource.
   [[nodiscard]] xiiRGTextureHandle ImportTexture(xiiHashedString sName, xiiSharedPtr<xiiGALTexture> pTexture,
-    xiiBitflags<xiiGALResourceStateFlags> currentState);
+                                                 xiiBitflags<xiiGALResourceStateFlags> currentState);
 
   /// \brief Declares a read dependency on the given texture at its current version.
   ///        Creates a dependency edge: this pass depends on the last writer.
@@ -291,7 +289,7 @@ public:
 
   /// \brief Shorthand: declare transient texture AND register first write in one call.
   [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiHashedString sName, const xiiGALTextureCreationDescription& desc,
-    xiiBitflags<xiiGALResourceStateFlags> requiredState);
+                                                xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
   // ── Buffer declarations ─────────────────────────────────────────────────
 
@@ -300,7 +298,7 @@ public:
 
   /// \brief Imports an externally-owned buffer into the graph.
   [[nodiscard]] xiiRGBufferHandle ImportBuffer(xiiHashedString sName, xiiSharedPtr<xiiGALBuffer> pBuffer,
-    xiiBitflags<xiiGALResourceStateFlags> currentState);
+                                               xiiBitflags<xiiGALResourceStateFlags> currentState);
 
   /// \brief Declares a read dependency on the buffer.
   [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiRGBufferHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState);
@@ -310,7 +308,7 @@ public:
 
   /// \brief Shorthand: declare transient buffer AND register first write.
   [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiHashedString sName, const xiiGALBufferCreationDescription& desc,
-    xiiBitflags<xiiGALResourceStateFlags> requiredState);
+                                              xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
   // ── Pass-level flags ────────────────────────────────────────────────────
 
@@ -373,7 +371,7 @@ public:
   xiiRenderGraph();
   ~xiiRenderGraph();
 
-  xiiRenderGraph(const xiiRenderGraph&) = delete;
+  xiiRenderGraph(const xiiRenderGraph&)            = delete;
   xiiRenderGraph& operator=(const xiiRenderGraph&) = delete;
 
   // ── Setup phase ─────────────────────────────────────────────────────────
@@ -397,11 +395,11 @@ public:
   ///          The pointer is stable for the lifetime of this frame's graph.
   template <typename TPassData>
   std::pair<TPassData*, xiiRGPassHandle> AddPass(
-    xiiHashedString                                          sName,
-    xiiBitflags<xiiGALCommandQueueFlags>                     queueFlags,
-    xiiDelegate<void(TPassData&, xiiRGBuilder&)>             setupFunc,
-    xiiDelegate<void(const TPassData&, xiiRGPassContext&)>   executeFunc,
-    bool                                                     bHasSideEffects = false);
+    xiiHashedString                                        sName,
+    xiiBitflags<xiiGALCommandQueueFlags>                   queueFlags,
+    xiiDelegate<void(TPassData&, xiiRGBuilder&)>           setupFunc,
+    xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeFunc,
+    bool                                                   bHasSideEffects = false);
 
   /// \brief Finalizes the setup phase. Must be called after all AddPass calls.
   void EndSetup();
@@ -465,10 +463,10 @@ public:
 
   [[nodiscard]] const xiiRGStatistics& GetStatistics() const { return m_Statistics; }
 
-  [[nodiscard]] const xiiDynamicArray<xiiRGCompiledPass>&    GetCompiledPasses()     const { return m_CompiledPasses; }
-  [[nodiscard]] const xiiDynamicArray<xiiRGBarrierDesc>&     GetBarriers()           const { return m_Barriers; }
-  [[nodiscard]] const xiiDynamicArray<xiiRGMergeGroup>&      GetMergeGroups()        const { return m_MergeGroups; }
-  [[nodiscard]] const xiiDynamicArray<xiiRGQueueSubmission>& GetQueueSubmissions()   const { return m_QueueSubmissions; }
+  [[nodiscard]] const xiiDynamicArray<xiiRGCompiledPass>&    GetCompiledPasses() const { return m_CompiledPasses; }
+  [[nodiscard]] const xiiDynamicArray<xiiRGBarrierDesc>&     GetBarriers() const { return m_Barriers; }
+  [[nodiscard]] const xiiDynamicArray<xiiRGMergeGroup>&      GetMergeGroups() const { return m_MergeGroups; }
+  [[nodiscard]] const xiiDynamicArray<xiiRGQueueSubmission>& GetQueueSubmissions() const { return m_QueueSubmissions; }
 
   /// \brief Serialises the compiled graph to a DOT string for Graphviz visualisation.
   [[nodiscard]] xiiResult DumpToDot(xiiStringBuilder& out_sDot) const;
@@ -481,40 +479,40 @@ private:
 
   struct ResourceEntry
   {
-    xiiHashedString                          m_sName;
-    bool                                     m_bIsTexture      = true;
-    bool                                     m_bIsImported     = false;
-    bool                                     m_bIsTransient    = false; ///< True = graph-owned, allocated via ResourceCache.
+    xiiHashedString m_sName;
+    bool            m_bIsTexture   = true;
+    bool            m_bIsImported  = false;
+    bool            m_bIsTransient = false; ///< True = graph-owned, allocated via ResourceCache.
 
-    xiiGALTextureCreationDescription         m_TextureDesc;
-    xiiGALBufferCreationDescription          m_BufferDesc;
+    xiiGALTextureCreationDescription m_TextureDesc;
+    xiiGALBufferCreationDescription  m_BufferDesc;
 
     // Imported external resources (non-transient).
-    xiiSharedPtr<xiiGALTexture>              m_pImportedTexture;
-    xiiSharedPtr<xiiGALBuffer>              m_pImportedBuffer;
-    xiiBitflags<xiiGALResourceStateFlags>    m_ImportedInitialState = xiiGALResourceStateFlags::Unknown;
+    xiiSharedPtr<xiiGALTexture>           m_pImportedTexture;
+    xiiSharedPtr<xiiGALBuffer>            m_pImportedBuffer;
+    xiiBitflags<xiiGALResourceStateFlags> m_ImportedInitialState = xiiGALResourceStateFlags::Unknown;
 
     // Resolved for current frame execution (filled by executor).
-    xiiSharedPtr<xiiGALTexture>              m_pResolvedTexture;
-    xiiSharedPtr<xiiGALBuffer>              m_pResolvedBuffer;
+    xiiSharedPtr<xiiGALTexture> m_pResolvedTexture;
+    xiiSharedPtr<xiiGALBuffer>  m_pResolvedBuffer;
 
     // Current write version (bumped on each write during setup).
-    xiiUInt16                                m_uiCurrentVersion         = 0U;
-    xiiUInt32                                m_uiCurrentProducerPassIdx = xiiInvalidIndex;
+    xiiUInt16 m_uiCurrentVersion         = 0U;
+    xiiUInt32 m_uiCurrentProducerPassIdx = xiiInvalidIndex;
 
     // Lifetime (populated during Phase C).
-    xiiUInt32                                m_uiFirstUsePassIdx = xiiInvalidIndex;
-    xiiUInt32                                m_uiLastUsePassIdx  = xiiInvalidIndex;
+    xiiUInt32 m_uiFirstUsePassIdx = xiiInvalidIndex;
+    xiiUInt32 m_uiLastUsePassIdx  = xiiInvalidIndex;
 
     // Current state known at compile time (used for barrier synthesis).
-    xiiBitflags<xiiGALResourceStateFlags>    m_CurrentState = xiiGALResourceStateFlags::Unknown;
+    xiiBitflags<xiiGALResourceStateFlags> m_CurrentState = xiiGALResourceStateFlags::Unknown;
   };
 
   struct ResourceUsage
   {
     xiiUInt32                             m_uiResourceIndex;
     bool                                  m_bIsTexture;
-    xiiUInt16                             m_uiVersion;    ///< Version being read or written.
+    xiiUInt16                             m_uiVersion; ///< Version being read or written.
     xiiBitflags<xiiGALResourceStateFlags> m_RequiredState;
     bool                                  m_bIsWrite;
   };
@@ -526,12 +524,12 @@ private:
     bool                                 m_bHasSideEffects = false;
     bool                                 m_bAllowMerge     = true;
 
-    xiiHybridArray<ResourceUsage, 8>     m_Reads;
-    xiiHybridArray<ResourceUsage, 8>     m_Writes;
+    xiiHybridArray<ResourceUsage, 8> m_Reads;
+    xiiHybridArray<ResourceUsage, 8> m_Writes;
 
     // Type-erased pass data + execute func (owned by this entry).
-    void*                                m_pPassData          = nullptr;
-    void (*m_pfnDestroyPassData)(void*)  = nullptr;
+    void* m_pPassData                   = nullptr;
+    void (*m_pfnDestroyPassData)(void*) = nullptr;
     xiiDelegate<void(xiiRGPassContext&)> m_ExecuteFunc;
   };
 
@@ -545,17 +543,17 @@ private:
   void PhaseG_SignatureAndCache(const xiiRGCompileSettings& settings);
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture,
-    xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier,
-    xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS,
-    xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
+                   xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier,
+                   xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS,
+                   xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
   [[nodiscard]] static xiiBitflags<xiiGALResourceStateFlags> InferStateFromUsage(const ResourceUsage& usage);
-  [[nodiscard]] static xiiUInt64 ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
+  [[nodiscard]] static xiiUInt64                             ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
   // ── Private data ──────────────────────────────────────────────────────────
 
-  xiiDynamicArray<PassEntry>     m_Passes;       ///< Setup-phase pass list, cleared each BeginSetup().
-  xiiDynamicArray<ResourceEntry> m_Resources;    ///< Virtual resource table, cleared each BeginSetup().
+  xiiDynamicArray<PassEntry>               m_Passes;            ///< Setup-phase pass list, cleared each BeginSetup().
+  xiiDynamicArray<ResourceEntry>           m_Resources;         ///< Virtual resource table, cleared each BeginSetup().
   xiiHashTable<xiiHashedString, xiiUInt32> m_ResourceNameIndex; ///< Fast name → resource index lookup.
 
   // Compiled outputs
@@ -564,12 +562,12 @@ private:
   xiiDynamicArray<xiiRGMergeGroup>      m_MergeGroups;
   xiiDynamicArray<xiiRGQueueSubmission> m_QueueSubmissions;
 
-  xiiRGStatistics    m_Statistics;
+  xiiRGStatistics      m_Statistics;
   xiiRGCompileSettings m_LastCompileSettings;
-  xiiUInt64          m_uiLastSignature = 0ULL;
-  xiiUInt64          m_uiFrameIndex   = 0ULL;
-  bool               m_bIsSetupOpen   = false;
-  bool               m_bIsCompiled    = false;
+  xiiUInt64            m_uiLastSignature = 0ULL;
+  xiiUInt64            m_uiFrameIndex    = 0ULL;
+  bool                 m_bIsSetupOpen    = false;
+  bool                 m_bIsCompiled     = false;
 };
 
 // ============================================================================
@@ -578,11 +576,11 @@ private:
 
 template <typename TPassData>
 std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(
-  xiiHashedString                                          sName,
-  xiiBitflags<xiiGALCommandQueueFlags>                     queueFlags,
-  xiiDelegate<void(TPassData&, xiiRGBuilder&)>             setupFunc,
-  xiiDelegate<void(const TPassData&, xiiRGPassContext&)>   executeFunc,
-  bool                                                     bHasSideEffects)
+  xiiHashedString                                        sName,
+  xiiBitflags<xiiGALCommandQueueFlags>                   queueFlags,
+  xiiDelegate<void(TPassData&, xiiRGBuilder&)>           setupFunc,
+  xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeFunc,
+  bool                                                   bHasSideEffects)
 {
   XII_ASSERT_DEV(m_bIsSetupOpen, "AddPass must be called between BeginSetup() and EndSetup().");
   XII_ASSERT_DEV(setupFunc.IsValid(), "Setup function must be valid.");
@@ -590,19 +588,23 @@ std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(
 
   const xiiUInt32 uiPassIndex = m_Passes.GetCount();
 
-  PassEntry& entry           = m_Passes.ExpandAndGetRef();
-  entry.m_sName              = sName;
-  entry.m_QueueFlags         = queueFlags;
-  entry.m_bHasSideEffects    = bHasSideEffects;
-  entry.m_bAllowMerge        = true;
+  PassEntry& entry        = m_Passes.ExpandAndGetRef();
+  entry.m_sName           = sName;
+  entry.m_QueueFlags      = queueFlags;
+  entry.m_bHasSideEffects = bHasSideEffects;
+  entry.m_bAllowMerge     = true;
 
   // Allocate pass data on the heap for pointer stability.
-  TPassData* pData            = new TPassData();
-  entry.m_pPassData           = pData;
-  entry.m_pfnDestroyPassData  = [](void* p) { delete static_cast<TPassData*>(p); };
+  TPassData* pData           = new TPassData();
+  entry.m_pPassData          = pData;
+  entry.m_pfnDestroyPassData = [](void* p) {
+    delete static_cast<TPassData*>(p);
+  };
 
   // Wrap typed execute func in a type-erased delegate.
-  entry.m_ExecuteFunc = [executeFunc, pData](xiiRGPassContext& ctx) { executeFunc(*pData, ctx); };
+  entry.m_ExecuteFunc = [executeFunc, pData](xiiRGPassContext& ctx) {
+    executeFunc(*pData, ctx);
+  };
 
   // Call setup func immediately — this populates m_Reads / m_Writes via the builder.
   xiiRGBuilder builder(*this, uiPassIndex);

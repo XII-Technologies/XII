@@ -5,17 +5,15 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 
 // ============================================================================
 //  xiiRGBuilder
 // ============================================================================
 
-xiiRGBuilder::xiiRGBuilder(xiiRenderGraph& graph, xiiUInt32 uiPassIndex)
-  : m_Graph(graph)
-  , m_uiPassIndex(uiPassIndex)
+xiiRGBuilder::xiiRGBuilder(xiiRenderGraph& graph, xiiUInt32 uiPassIndex) : m_Graph(graph), m_uiPassIndex(uiPassIndex)
 {
 }
 
@@ -25,20 +23,20 @@ xiiRGTextureHandle xiiRGBuilder::DeclareTexture(xiiHashedString sName, const xii
   if (m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiIdx))
   {
     XII_ASSERT_DEV(m_Graph.m_Resources[uiIdx].m_bIsTexture,
-      "Resource '{}' was already declared as a buffer.", sName.GetView());
+                   "Resource '{}' was already declared as a buffer.", sName.GetView());
     xiiRGTextureHandle handle;
     handle.m_uiIndex   = uiIdx;
     handle.m_uiVersion = m_Graph.m_Resources[uiIdx].m_uiCurrentVersion;
     return handle;
   }
 
-  uiIdx = m_Graph.m_Resources.GetCount();
+  uiIdx                                = m_Graph.m_Resources.GetCount();
   xiiRenderGraph::ResourceEntry& entry = m_Graph.m_Resources.ExpandAndGetRef();
-  entry.m_sName       = sName;
-  entry.m_bIsTexture  = true;
-  entry.m_bIsImported = false;
-  entry.m_bIsTransient = true;
-  entry.m_TextureDesc = desc;
+  entry.m_sName                        = sName;
+  entry.m_bIsTexture                   = true;
+  entry.m_bIsImported                  = false;
+  entry.m_bIsTransient                 = true;
+  entry.m_TextureDesc                  = desc;
   m_Graph.m_ResourceNameIndex.Insert(sName, uiIdx);
 
   xiiRGTextureHandle handle;
@@ -48,22 +46,22 @@ xiiRGTextureHandle xiiRGBuilder::DeclareTexture(xiiHashedString sName, const xii
 }
 
 xiiRGTextureHandle xiiRGBuilder::ImportTexture(xiiHashedString sName, xiiSharedPtr<xiiGALTexture> pTexture,
-  xiiBitflags<xiiGALResourceStateFlags> currentState)
+                                               xiiBitflags<xiiGALResourceStateFlags> currentState)
 {
   XII_ASSERT_DEV(pTexture != nullptr, "Cannot import a null texture.");
 
   xiiUInt32 uiIdx = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiIdx))
   {
-    uiIdx = m_Graph.m_Resources.GetCount();
+    uiIdx                                = m_Graph.m_Resources.GetCount();
     xiiRenderGraph::ResourceEntry& entry = m_Graph.m_Resources.ExpandAndGetRef();
-    entry.m_sName                = sName;
-    entry.m_bIsTexture           = true;
-    entry.m_bIsImported          = true;
-    entry.m_bIsTransient         = false;
-    entry.m_pImportedTexture     = pTexture;
-    entry.m_ImportedInitialState = currentState;
-    entry.m_CurrentState         = currentState;
+    entry.m_sName                        = sName;
+    entry.m_bIsTexture                   = true;
+    entry.m_bIsImported                  = true;
+    entry.m_bIsTransient                 = false;
+    entry.m_pImportedTexture             = pTexture;
+    entry.m_ImportedInitialState         = currentState;
+    entry.m_CurrentState                 = currentState;
     m_Graph.m_ResourceNameIndex.Insert(sName, uiIdx);
   }
 
@@ -113,7 +111,7 @@ xiiRGTextureHandle xiiRGBuilder::WriteTexture(xiiRGTextureHandle handle, xiiBitf
 }
 
 xiiRGTextureHandle xiiRGBuilder::WriteTexture(xiiHashedString sName, const xiiGALTextureCreationDescription& desc,
-  xiiBitflags<xiiGALResourceStateFlags> requiredState)
+                                              xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
   return WriteTexture(DeclareTexture(sName, desc), requiredState);
 }
@@ -124,20 +122,20 @@ xiiRGBufferHandle xiiRGBuilder::DeclareBuffer(xiiHashedString sName, const xiiGA
   if (m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiIdx))
   {
     XII_ASSERT_DEV(!m_Graph.m_Resources[uiIdx].m_bIsTexture,
-      "Resource '{}' was already declared as a texture.", sName.GetView());
+                   "Resource '{}' was already declared as a texture.", sName.GetView());
     xiiRGBufferHandle handle;
     handle.m_uiIndex   = uiIdx;
     handle.m_uiVersion = m_Graph.m_Resources[uiIdx].m_uiCurrentVersion;
     return handle;
   }
 
-  uiIdx = m_Graph.m_Resources.GetCount();
+  uiIdx                                = m_Graph.m_Resources.GetCount();
   xiiRenderGraph::ResourceEntry& entry = m_Graph.m_Resources.ExpandAndGetRef();
-  entry.m_sName        = sName;
-  entry.m_bIsTexture   = false;
-  entry.m_bIsImported  = false;
-  entry.m_bIsTransient = true;
-  entry.m_BufferDesc   = desc;
+  entry.m_sName                        = sName;
+  entry.m_bIsTexture                   = false;
+  entry.m_bIsImported                  = false;
+  entry.m_bIsTransient                 = true;
+  entry.m_BufferDesc                   = desc;
   m_Graph.m_ResourceNameIndex.Insert(sName, uiIdx);
 
   xiiRGBufferHandle handle;
@@ -147,22 +145,22 @@ xiiRGBufferHandle xiiRGBuilder::DeclareBuffer(xiiHashedString sName, const xiiGA
 }
 
 xiiRGBufferHandle xiiRGBuilder::ImportBuffer(xiiHashedString sName, xiiSharedPtr<xiiGALBuffer> pBuffer,
-  xiiBitflags<xiiGALResourceStateFlags> currentState)
+                                             xiiBitflags<xiiGALResourceStateFlags> currentState)
 {
   XII_ASSERT_DEV(pBuffer != nullptr, "Cannot import a null buffer.");
 
   xiiUInt32 uiIdx = xiiInvalidIndex;
   if (!m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiIdx))
   {
-    uiIdx = m_Graph.m_Resources.GetCount();
+    uiIdx                                = m_Graph.m_Resources.GetCount();
     xiiRenderGraph::ResourceEntry& entry = m_Graph.m_Resources.ExpandAndGetRef();
-    entry.m_sName                = sName;
-    entry.m_bIsTexture           = false;
-    entry.m_bIsImported          = true;
-    entry.m_bIsTransient         = false;
-    entry.m_pImportedBuffer      = pBuffer;
-    entry.m_ImportedInitialState = currentState;
-    entry.m_CurrentState         = currentState;
+    entry.m_sName                        = sName;
+    entry.m_bIsTexture                   = false;
+    entry.m_bIsImported                  = true;
+    entry.m_bIsTransient                 = false;
+    entry.m_pImportedBuffer              = pBuffer;
+    entry.m_ImportedInitialState         = currentState;
+    entry.m_CurrentState                 = currentState;
     m_Graph.m_ResourceNameIndex.Insert(sName, uiIdx);
   }
 
@@ -209,7 +207,7 @@ xiiRGBufferHandle xiiRGBuilder::WriteBuffer(xiiRGBufferHandle handle, xiiBitflag
 }
 
 xiiRGBufferHandle xiiRGBuilder::WriteBuffer(xiiHashedString sName, const xiiGALBufferCreationDescription& desc,
-  xiiBitflags<xiiGALResourceStateFlags> requiredState)
+                                            xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
   return WriteBuffer(DeclareBuffer(sName, desc), requiredState);
 }
@@ -258,9 +256,9 @@ void xiiRenderGraph::BeginSetup(xiiUInt64 uiFrameIndex)
   m_Resources.Clear();
   m_ResourceNameIndex.Clear();
 
-  m_uiFrameIndex  = uiFrameIndex;
-  m_bIsSetupOpen  = true;
-  m_bIsCompiled   = false;
+  m_uiFrameIndex = uiFrameIndex;
+  m_bIsSetupOpen = true;
+  m_bIsCompiled  = false;
 }
 
 void xiiRenderGraph::EndSetup()
@@ -281,7 +279,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
   m_Barriers.Clear();
   m_MergeGroups.Clear();
   m_QueueSubmissions.Clear();
-  m_Statistics = {};
+  m_Statistics                         = {};
   m_Statistics.m_uiRegisteredPassCount = m_Passes.GetCount();
 
   // Phase G pre-check: compute signature; if unchanged and cache enabled → skip recompile.
@@ -313,7 +311,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
   //          deferred to Execute for the first frame, then cached).
   // Merging is completed during Execute once a device is available.
 
-  m_bIsCompiled = true;
+  m_bIsCompiled                         = true;
   m_Statistics.m_uiCompiledPassCount    = m_CompiledPasses.GetCount();
   m_Statistics.m_uiTotalBarrierCount    = m_Barriers.GetCount();
   m_Statistics.m_uiQueueSubmissionCount = m_QueueSubmissions.GetCount();
@@ -326,7 +324,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
   {
     if (!res.m_bIsTransient) continue;
     if (res.m_bIsTexture) ++m_Statistics.m_uiTransientTextureCount;
-    else                  ++m_Statistics.m_uiTransientBufferCount;
+    else
+      ++m_Statistics.m_uiTransientBufferCount;
   }
 
   return XII_SUCCESS;
@@ -337,7 +336,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
 // ----------------------------------------------------------------------------
 
 void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& settings,
-  xiiDynamicArray<xiiUInt32>&                                                     out_sortedIndices)
+                                                   xiiDynamicArray<xiiUInt32>& out_sortedIndices)
 {
   const xiiUInt32 uiPassCount = m_Passes.GetCount();
   if (uiPassCount == 0U)
@@ -360,8 +359,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   {
     for (const ResourceUsage& write : m_Passes[p].m_Writes)
     {
-      const xiiUInt64 key = static_cast<xiiUInt64>(write.m_uiResourceIndex)
-        | (static_cast<xiiUInt64>(write.m_uiVersion) << 32ULL);
+      const xiiUInt64 key = static_cast<xiiUInt64>(write.m_uiResourceIndex) | (static_cast<xiiUInt64>(write.m_uiVersion) << 32ULL);
       producerMap.Insert(key, p);
     }
   }
@@ -370,9 +368,8 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   {
     for (const ResourceUsage& read : m_Passes[p].m_Reads)
     {
-      const xiiUInt64 key = static_cast<xiiUInt64>(read.m_uiResourceIndex)
-        | (static_cast<xiiUInt64>(read.m_uiVersion) << 32ULL);
-      xiiUInt32 producerPassIdx = xiiInvalidIndex;
+      const xiiUInt64 key             = static_cast<xiiUInt64>(read.m_uiResourceIndex) | (static_cast<xiiUInt64>(read.m_uiVersion) << 32ULL);
+      xiiUInt32       producerPassIdx = xiiInvalidIndex;
       if (producerMap.TryGetValue(key, producerPassIdx) && producerPassIdx != p)
       {
         adjacency[producerPassIdx].PushBack(p);
@@ -401,23 +398,23 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   }
 
   XII_ASSERT_DEV(out_sortedIndices.GetCount() == uiPassCount,
-    "Render graph has a dependency cycle ({} of {} passes sorted).",
-    out_sortedIndices.GetCount(), uiPassCount);
+                 "Render graph has a dependency cycle ({} of {} passes sorted).",
+                 out_sortedIndices.GetCount(), uiPassCount);
 
   if (!settings.m_bEnablePassCulling)
   {
     // Build CompiledPasses without culling.
     for (xiiUInt32 idx : out_sortedIndices)
     {
-      xiiRGCompiledPass& cp  = m_CompiledPasses.ExpandAndGetRef();
-      cp.m_sName             = m_Passes[idx].m_sName;
-      cp.m_uiPassIndex       = idx;
-      cp.m_uiQueueIndex      = 0U;
-      cp.m_bHasSideEffects   = m_Passes[idx].m_bHasSideEffects;
-      cp.m_bAllowMerge       = m_Passes[idx].m_bAllowMerge;
-      cp.m_bIsCulled         = false;
-      cp.m_pPassData         = m_Passes[idx].m_pPassData;
-      cp.m_ExecuteFunc       = m_Passes[idx].m_ExecuteFunc;
+      xiiRGCompiledPass& cp = m_CompiledPasses.ExpandAndGetRef();
+      cp.m_sName            = m_Passes[idx].m_sName;
+      cp.m_uiPassIndex      = idx;
+      cp.m_uiQueueIndex     = 0U;
+      cp.m_bHasSideEffects  = m_Passes[idx].m_bHasSideEffects;
+      cp.m_bAllowMerge      = m_Passes[idx].m_bAllowMerge;
+      cp.m_bIsCulled        = false;
+      cp.m_pPassData        = m_Passes[idx].m_pPassData;
+      cp.m_ExecuteFunc      = m_Passes[idx].m_ExecuteFunc;
     }
     m_Statistics.m_uiCulledPassCount = 0U;
     return;
@@ -437,7 +434,10 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   xiiDeque<xiiUInt32> workList;
   for (xiiUInt32 p = 0U; p < uiPassCount; ++p)
     if (m_Passes[p].m_bHasSideEffects)
-    { isLive[p] = true; workList.PushBack(p); }
+    {
+      isLive[p] = true;
+      workList.PushBack(p);
+    }
 
   while (!workList.IsEmpty())
   {
@@ -446,22 +446,25 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
     for (xiiUInt32 pred : revAdj[cur])
     {
       if (!isLive[pred])
-      { isLive[pred] = true; workList.PushBack(pred); }
+      {
+        isLive[pred] = true;
+        workList.PushBack(pred);
+      }
     }
   }
 
   xiiUInt32 uiCulled = 0U;
   for (xiiUInt32 idx : out_sortedIndices)
   {
-    xiiRGCompiledPass& cp  = m_CompiledPasses.ExpandAndGetRef();
-    cp.m_sName             = m_Passes[idx].m_sName;
-    cp.m_uiPassIndex       = idx;
-    cp.m_uiQueueIndex      = 0U;
-    cp.m_bHasSideEffects   = m_Passes[idx].m_bHasSideEffects;
-    cp.m_bAllowMerge       = m_Passes[idx].m_bAllowMerge;
-    cp.m_bIsCulled         = !isLive[idx];
-    cp.m_pPassData         = m_Passes[idx].m_pPassData;
-    cp.m_ExecuteFunc       = m_Passes[idx].m_ExecuteFunc;
+    xiiRGCompiledPass& cp = m_CompiledPasses.ExpandAndGetRef();
+    cp.m_sName            = m_Passes[idx].m_sName;
+    cp.m_uiPassIndex      = idx;
+    cp.m_uiQueueIndex     = 0U;
+    cp.m_bHasSideEffects  = m_Passes[idx].m_bHasSideEffects;
+    cp.m_bAllowMerge      = m_Passes[idx].m_bAllowMerge;
+    cp.m_bIsCulled        = !isLive[idx];
+    cp.m_pPassData        = m_Passes[idx].m_pPassData;
+    cp.m_ExecuteFunc      = m_Passes[idx].m_ExecuteFunc;
     if (cp.m_bIsCulled) ++uiCulled;
   }
   m_Statistics.m_uiCulledPassCount = uiCulled;
@@ -475,20 +478,19 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
 {
   for (xiiUInt32 sortedPos = 0U; sortedPos < sortedIndices.GetCount(); ++sortedPos)
   {
-    const xiiUInt32 passIdx = sortedIndices[sortedPos];
-    const PassEntry& pass  = m_Passes[passIdx];
-    const xiiRGCompiledPass& cp = m_CompiledPasses[sortedPos];
+    const xiiUInt32          passIdx = sortedIndices[sortedPos];
+    const PassEntry&         pass    = m_Passes[passIdx];
+    const xiiRGCompiledPass& cp      = m_CompiledPasses[sortedPos];
     if (cp.m_bIsCulled) continue;
 
-    auto UpdateLifetime = [&](xiiUInt32 resIdx)
-    {
+    auto UpdateLifetime = [&](xiiUInt32 resIdx) {
       ResourceEntry& res = m_Resources[resIdx];
       if (res.m_uiFirstUsePassIdx == xiiInvalidIndex)
         res.m_uiFirstUsePassIdx = sortedPos;
       res.m_uiLastUsePassIdx = sortedPos;
     };
 
-    for (const ResourceUsage& r : pass.m_Reads)  UpdateLifetime(r.m_uiResourceIndex);
+    for (const ResourceUsage& r : pass.m_Reads) UpdateLifetime(r.m_uiResourceIndex);
     for (const ResourceUsage& w : pass.m_Writes) UpdateLifetime(w.m_uiResourceIndex);
   }
 
@@ -516,11 +518,11 @@ xiiBitflags<xiiGALResourceStateFlags> xiiRenderGraph::InferStateFromUsage(const 
 }
 
 void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture,
-  xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier,
-  xiiUInt32 uiFirstMip, xiiUInt32 uiMipCount,
-  xiiUInt32 uiFirstSlice, xiiUInt32 uiSliceCount)
+                                 xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier,
+                                 xiiUInt32 uiFirstMip, xiiUInt32 uiMipCount,
+                                 xiiUInt32 uiFirstSlice, xiiUInt32 uiSliceCount)
 {
-  ResourceEntry& res = m_Resources[uiResourceIdx];
+  ResourceEntry&                              res         = m_Resources[uiResourceIdx];
   const xiiBitflags<xiiGALResourceStateFlags> beforeState = res.m_CurrentState;
 
   // Don't emit a no-op barrier.
@@ -528,15 +530,15 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
     return;
 
   xiiRGBarrierDesc barrier;
-  barrier.m_uiResourceIndex  = uiResourceIdx;
-  barrier.m_bIsTexture       = bIsTexture;
-  barrier.m_uiFirstMipLevel  = uiFirstMip;
-  barrier.m_uiMipLevelCount  = uiMipCount;
+  barrier.m_uiResourceIndex   = uiResourceIdx;
+  barrier.m_bIsTexture        = bIsTexture;
+  barrier.m_uiFirstMipLevel   = uiFirstMip;
+  barrier.m_uiMipLevelCount   = uiMipCount;
   barrier.m_uiFirstArraySlice = uiFirstSlice;
   barrier.m_uiArraySliceCount = uiSliceCount;
-  barrier.m_BeforeState      = beforeState;
-  barrier.m_AfterState       = afterState;
-  barrier.m_TransitionFlags  = xiiGALStateTransitionFlags::UpdateState;
+  barrier.m_BeforeState       = beforeState;
+  barrier.m_AfterState        = afterState;
+  barrier.m_TransitionFlags   = xiiGALStateTransitionFlags::UpdateState;
 
   const xiiUInt32 uiBarrierIdx = m_Barriers.GetCount();
 
@@ -558,8 +560,8 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
     }
 
     // End barrier goes on consumer.
-    xiiRGBarrierDesc endBarrier = barrier;
-    endBarrier.m_TransitionType = xiiGALStateTransitionType::End;
+    xiiRGBarrierDesc endBarrier     = barrier;
+    endBarrier.m_TransitionType     = xiiGALStateTransitionType::End;
     const xiiUInt32 uiEndBarrierIdx = m_Barriers.GetCount();
     m_Barriers.PushBack(endBarrier);
 
@@ -592,7 +594,7 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
 }
 
 void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& sortedIndices,
-  const xiiRGCompileSettings&                                                     settings)
+                                             const xiiRGCompileSettings&       settings)
 {
   // Initialize resource states from imported resources.
   for (ResourceEntry& res : m_Resources)
@@ -605,42 +607,37 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
 
   for (xiiUInt32 sortedPos = 0U; sortedPos < sortedIndices.GetCount(); ++sortedPos)
   {
-    const xiiUInt32 passIdx  = sortedIndices[sortedPos];
-    const xiiRGCompiledPass& cp = m_CompiledPasses[sortedPos];
+    const xiiUInt32          passIdx = sortedIndices[sortedPos];
+    const xiiRGCompiledPass& cp      = m_CompiledPasses[sortedPos];
     if (cp.m_bIsCulled) continue;
 
     const PassEntry& pass = m_Passes[passIdx];
 
     for (const ResourceUsage& usage : pass.m_Reads)
     {
-      const xiiUInt32 resIdx = usage.m_uiResourceIndex;
-      ResourceEntry& res     = m_Resources[resIdx];
+      const xiiUInt32                             resIdx        = usage.m_uiResourceIndex;
+      ResourceEntry&                              res           = m_Resources[resIdx];
       const xiiBitflags<xiiGALResourceStateFlags> requiredState = usage.m_RequiredState;
 
       if (res.m_CurrentState == requiredState) continue;
 
       // UAV barrier: read from unordered access after write to unordered access.
-      const bool bUAVBarrier = (res.m_CurrentState == xiiGALResourceStateFlags::UnorderedAccess
-        && requiredState == xiiGALResourceStateFlags::UnorderedAccess);
+      const bool bUAVBarrier = (res.m_CurrentState == xiiGALResourceStateFlags::UnorderedAccess && requiredState == xiiGALResourceStateFlags::UnorderedAccess);
       // Only emit UAV barriers as Immediate (spec requires it).
-      const bool bSplit = settings.m_bEnableSplitBarriers && !bUAVBarrier
-        && (res.m_uiCurrentProducerPassIdx != xiiInvalidIndex);
+      const bool bSplit = settings.m_bEnableSplitBarriers && !bUAVBarrier && (res.m_uiCurrentProducerPassIdx != xiiInvalidIndex);
 
       EmitBarrier(passIdx, resIdx, usage.m_bIsTexture, requiredState, bSplit);
     }
 
     for (const ResourceUsage& usage : pass.m_Writes)
     {
-      const xiiUInt32 resIdx = usage.m_uiResourceIndex;
-      ResourceEntry& res     = m_Resources[resIdx];
+      const xiiUInt32                             resIdx        = usage.m_uiResourceIndex;
+      ResourceEntry&                              res           = m_Resources[resIdx];
       const xiiBitflags<xiiGALResourceStateFlags> requiredState = usage.m_RequiredState;
 
-      if (res.m_CurrentState == requiredState
-        && requiredState != xiiGALResourceStateFlags::UnorderedAccess) continue;
+      if (res.m_CurrentState == requiredState && requiredState != xiiGALResourceStateFlags::UnorderedAccess) continue;
 
-      const bool bSplit = settings.m_bEnableSplitBarriers
-        && (res.m_uiCurrentProducerPassIdx != xiiInvalidIndex)
-        && (requiredState != xiiGALResourceStateFlags::UnorderedAccess);
+      const bool bSplit = settings.m_bEnableSplitBarriers && (res.m_uiCurrentProducerPassIdx != xiiInvalidIndex) && (requiredState != xiiGALResourceStateFlags::UnorderedAccess);
 
       EmitBarrier(passIdx, resIdx, usage.m_bIsTexture, requiredState, bSplit);
     }
@@ -652,11 +649,10 @@ void xiiRenderGraph::PhaseD_BarrierSynthesis(const xiiDynamicArray<xiiUInt32>& s
 // ----------------------------------------------------------------------------
 
 void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32>& sortedIndices,
-  xiiGALDevice* /*pDevice*/, const xiiRGCompileSettings& settings)
+                                                 xiiGALDevice* /*pDevice*/, const xiiRGCompileSettings& settings)
 {
   // Map queue flags to a queue index (0=Graphics, 1=Compute, 2=Transfer).
-  auto QueueFlagsToIndex = [](xiiBitflags<xiiGALCommandQueueFlags> flags) -> xiiUInt32
-  {
+  auto QueueFlagsToIndex = [](xiiBitflags<xiiGALCommandQueueFlags> flags) -> xiiUInt32 {
     if (flags.IsSet(xiiGALCommandQueueFlags::Transfer) && !flags.IsSet(xiiGALCommandQueueFlags::Graphics))
       return 2U;
     if (flags.IsSet(xiiGALCommandQueueFlags::Compute) && !flags.IsSet(xiiGALCommandQueueFlags::Graphics))
@@ -665,7 +661,7 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
   };
 
   // Identify distinct queue flags in use.
-  static constexpr xiiUInt32 MaxQueues = 3U;
+  static constexpr xiiUInt32                                      MaxQueues = 3U;
   xiiStaticArray<xiiBitflags<xiiGALCommandQueueFlags>, MaxQueues> queueFlags;
   queueFlags[0U] = xiiGALCommandQueueFlags::Graphics;
   queueFlags[1U] = xiiGALCommandQueueFlags::Compute;
@@ -674,17 +670,17 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
   // Assign queue index to each non-culled compiled pass.
   for (xiiUInt32 sortedPos = 0U; sortedPos < sortedIndices.GetCount(); ++sortedPos)
   {
-    const xiiUInt32 passIdx = sortedIndices[sortedPos];
-    xiiRGCompiledPass& cp   = m_CompiledPasses[sortedPos];
+    const xiiUInt32    passIdx = sortedIndices[sortedPos];
+    xiiRGCompiledPass& cp      = m_CompiledPasses[sortedPos];
     if (cp.m_bIsCulled) continue;
 
     const xiiBitflags<xiiGALCommandQueueFlags> pf = m_Passes[passIdx].m_QueueFlags;
-    cp.m_uiQueueIndex = (settings.m_bEnableAsyncQueues) ? QueueFlagsToIndex(pf) : 0U;
+    cp.m_uiQueueIndex                             = (settings.m_bEnableAsyncQueues) ? QueueFlagsToIndex(pf) : 0U;
   }
 
   // Build one xiiRGQueueSubmission per contiguous run of same-queue non-culled passes.
-  xiiUInt32 uiCurrentQueue   = xiiInvalidIndex;
-  xiiRGQueueSubmission* pCur = nullptr;
+  xiiUInt32             uiCurrentQueue = xiiInvalidIndex;
+  xiiRGQueueSubmission* pCur           = nullptr;
 
   for (xiiUInt32 sortedPos = 0U; sortedPos < m_CompiledPasses.GetCount(); ++sortedPos)
   {
@@ -693,7 +689,7 @@ void xiiRenderGraph::PhaseE_MultiQueueScheduling(const xiiDynamicArray<xiiUInt32
 
     if (cp.m_uiQueueIndex != uiCurrentQueue)
     {
-      pCur = &m_QueueSubmissions.ExpandAndGetRef();
+      pCur                 = &m_QueueSubmissions.ExpandAndGetRef();
       pCur->m_uiQueueIndex = cp.m_uiQueueIndex;
       pCur->m_QueueFlags   = queueFlags[cp.m_uiQueueIndex < MaxQueues ? cp.m_uiQueueIndex : 0U];
       uiCurrentQueue       = cp.m_uiQueueIndex;
@@ -715,15 +711,11 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
 
   // Scan compiled passes for consecutive graphics-queue mergeable passes
   // that all write only render-targets / depth-stencil.
-  auto IsRTOrDepth = [](xiiBitflags<xiiGALResourceStateFlags> state) -> bool
-  {
-    return state.IsAnySet(xiiGALResourceStateFlags::RenderTarget
-      | xiiGALResourceStateFlags::DepthWrite
-      | xiiGALResourceStateFlags::DepthRead);
+  auto IsRTOrDepth = [](xiiBitflags<xiiGALResourceStateFlags> state) -> bool {
+    return state.IsAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead);
   };
 
-  auto CanMerge = [&](const xiiRGCompiledPass& cp) -> bool
-  {
+  auto CanMerge = [&](const xiiRGCompiledPass& cp) -> bool {
     if (cp.m_bIsCulled || !cp.m_bAllowMerge || cp.m_uiQueueIndex != 0U) return false;
     const PassEntry& pass = m_Passes[cp.m_uiPassIndex];
     for (const ResourceUsage& w : pass.m_Writes)
@@ -732,14 +724,18 @@ void xiiRenderGraph::PhaseF_RenderPassMerging(xiiGALDevice* pDevice)
   };
 
   const xiiUInt32 uiCount = m_CompiledPasses.GetCount();
-  xiiUInt32 i = 0U;
+  xiiUInt32       i       = 0U;
   while (i < uiCount)
   {
-    if (!CanMerge(m_CompiledPasses[i])) { ++i; continue; }
+    if (!CanMerge(m_CompiledPasses[i]))
+    {
+      ++i;
+      continue;
+    }
 
     // Start a merge group.
-    xiiRGMergeGroup& group = m_MergeGroups.ExpandAndGetRef();
-    const xiiUInt32 uiGroupIdx = m_MergeGroups.GetCount() - 1U;
+    xiiRGMergeGroup& group      = m_MergeGroups.ExpandAndGetRef();
+    const xiiUInt32  uiGroupIdx = m_MergeGroups.GetCount() - 1U;
 
     while (i < uiCount && CanMerge(m_CompiledPasses[i]))
     {
@@ -782,7 +778,7 @@ xiiUInt64 xiiRenderGraph::ComputeSignature(const xiiDynamicArray<PassEntry>& pas
 
 void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRGCompileSettings& settings)
 {
-  const xiiUInt64 uiSig = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
+  const xiiUInt64 uiSig           = ComputeSignature(m_Passes) ^ static_cast<xiiUInt64>(settings.m_uiCacheSalt);
   m_Statistics.m_uiGraphSignature = uiSig;
 
   if (settings.m_bEnableCompileCache && uiSig == m_uiLastSignature && m_bIsCompiled)
@@ -791,7 +787,7 @@ void xiiRenderGraph::PhaseG_SignatureAndCache(const xiiRGCompileSettings& settin
   }
   else
   {
-    m_uiLastSignature = uiSig;
+    m_uiLastSignature                 = uiSig;
     m_Statistics.m_bUsedCachedCompile = false;
   }
 }
@@ -808,9 +804,9 @@ xiiResult xiiRenderGraph::Execute(
   xiiRenderGraphProfiler*      pProfiler,
   xiiStringBuilder*            out_pError)
 {
-  XII_ASSERT_DEV(pDevice != nullptr,       "Device must not be null.");
-  XII_ASSERT_DEV(pBlackboard != nullptr,   "Blackboard must not be null.");
-  XII_ASSERT_DEV(pResourceCache != nullptr,"ResourceCache must not be null.");
+  XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
+  XII_ASSERT_DEV(pBlackboard != nullptr, "Blackboard must not be null.");
+  XII_ASSERT_DEV(pResourceCache != nullptr, "ResourceCache must not be null.");
 
   if (!m_bIsCompiled)
   {
@@ -822,7 +818,7 @@ xiiResult xiiRenderGraph::Execute(
   PhaseF_RenderPassMerging(pDevice);
 
   // Resolve all transient and imported resources for this frame's execution.
-  const xiiUInt32 uiResourceCount = m_Resources.GetCount();
+  const xiiUInt32                              uiResourceCount = m_Resources.GetCount();
   xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> resolvedTextures;
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>  resolvedBuffers;
   resolvedTextures.SetCount(uiResourceCount);
@@ -834,7 +830,8 @@ xiiResult xiiRenderGraph::Execute(
     if (res.m_bIsImported)
     {
       if (res.m_bIsTexture) resolvedTextures[i] = res.m_pImportedTexture;
-      else                  resolvedBuffers[i]  = res.m_pImportedBuffer;
+      else
+        resolvedBuffers[i] = res.m_pImportedBuffer;
     }
   }
 
@@ -851,7 +848,7 @@ xiiResult xiiRenderGraph::Execute(
 
     // Create a command list for this submission.
     xiiGALCommandListCreationDescription clDesc;
-    clDesc.m_QueueFlags = submission.m_QueueFlags;
+    clDesc.m_QueueFlags                          = submission.m_QueueFlags;
     xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(clDesc);
     XII_ASSERT_ALWAYS(pCommandList != nullptr, "Failed to create command list.");
 
@@ -861,8 +858,8 @@ xiiResult xiiRenderGraph::Execute(
     for (xiiUInt32 wi = 0U; wi < submission.m_WaitFences.GetCount(); ++wi)
       pCommandList->DeviceWaitForFence(submission.m_WaitFences[wi], submission.m_WaitValues[wi]);
 
-    xiiUInt32 uiCurrentMergeGroup     = xiiInvalidIndex;
-    bool      bInsideRenderPass       = false;
+    xiiUInt32 uiCurrentMergeGroup = xiiInvalidIndex;
+    bool      bInsideRenderPass   = false;
 
     for (xiiUInt32 sortedPos : submission.m_PassOrder)
     {
@@ -885,7 +882,7 @@ xiiResult xiiRenderGraph::Execute(
         xiiSmallArray<xiiGALStateTransitionDescription, 8> transitions;
         for (xiiUInt32 bIdx : cp.m_PreBarrierIndices)
         {
-          const xiiRGBarrierDesc& b = m_Barriers[bIdx];
+          const xiiRGBarrierDesc&           b  = m_Barriers[bIdx];
           xiiGALStateTransitionDescription& td = transitions.ExpandAndGetRef();
           if (b.m_bIsTexture)
             td.m_pResource = resolvedTextures[b.m_uiResourceIndex];
@@ -925,7 +922,9 @@ xiiResult xiiRenderGraph::Execute(
       }
 
       // Debug group.
-      { XII_SCOPED_DEBUG_GROUP(*pCommandList, cp.m_sName.GetView(), xiiColor::White); }
+      {
+        XII_SCOPED_DEBUG_GROUP(*pCommandList, cp.m_sName.GetView(), xiiColor::White);
+      }
 
       // Profiler begin.
       if (pProfiler && m_LastCompileSettings.m_bEnableGPUProfiling)
@@ -933,14 +932,14 @@ xiiResult xiiRenderGraph::Execute(
 
       // Execute pass.
       xiiRGPassContext ctx;
-      ctx.m_pCommandList   = pCommandList.Borrow();
-      ctx.m_pBlackboard    = pBlackboard;
-      ctx.m_pResourceCache = pResourceCache;
-      ctx.m_pView          = pView;
-      ctx.m_uiFrameIndex   = m_uiFrameIndex;
-      ctx.m_sPassName      = cp.m_sName;
+      ctx.m_pCommandList     = pCommandList.Borrow();
+      ctx.m_pBlackboard      = pBlackboard;
+      ctx.m_pResourceCache   = pResourceCache;
+      ctx.m_pView            = pView;
+      ctx.m_uiFrameIndex     = m_uiFrameIndex;
+      ctx.m_sPassName        = cp.m_sName;
       ctx.m_ResolvedTextures = xiiMakeArrayPtr(resolvedTextures.GetData(), resolvedTextures.GetCount());
-      ctx.m_ResolvedBuffers  = xiiMakeArrayPtr(resolvedBuffers.GetData(),  resolvedBuffers.GetCount());
+      ctx.m_ResolvedBuffers  = xiiMakeArrayPtr(resolvedBuffers.GetData(), resolvedBuffers.GetCount());
 
       cp.m_ExecuteFunc(ctx);
 
@@ -966,7 +965,7 @@ xiiResult xiiRenderGraph::Execute(
         xiiSmallArray<xiiGALStateTransitionDescription, 8> transitions;
         for (xiiUInt32 bIdx : cp.m_PostBarrierBeginIndices)
         {
-          const xiiRGBarrierDesc& b = m_Barriers[bIdx];
+          const xiiRGBarrierDesc&           b  = m_Barriers[bIdx];
           xiiGALStateTransitionDescription& td = transitions.ExpandAndGetRef();
           if (b.m_bIsTexture)
             td.m_pResource = resolvedTextures[b.m_uiResourceIndex];

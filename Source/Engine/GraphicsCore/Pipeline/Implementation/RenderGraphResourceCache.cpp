@@ -49,9 +49,9 @@ void xiiRenderGraphResourceCache::EndFrame()
       pPool = m_TexturePool.GetValue(uiHash);
     }
 
-    PooledTexture& entry      = pPool->ExpandAndGetRef();
-    entry.m_pTexture          = pTexture;
-    entry.m_uiLastUsedFrame   = m_uiCurrentFrame;
+    PooledTexture& entry    = pPool->ExpandAndGetRef();
+    entry.m_pTexture        = pTexture;
+    entry.m_uiLastUsedFrame = m_uiCurrentFrame;
   }
   m_ActiveTextures.Clear();
 
@@ -66,9 +66,9 @@ void xiiRenderGraphResourceCache::EndFrame()
       pPool = m_BufferPool.GetValue(uiHash);
     }
 
-    PooledBuffer& entry      = pPool->ExpandAndGetRef();
-    entry.m_pBuffer          = pBuffer;
-    entry.m_uiLastUsedFrame  = m_uiCurrentFrame;
+    PooledBuffer& entry     = pPool->ExpandAndGetRef();
+    entry.m_pBuffer         = pBuffer;
+    entry.m_uiLastUsedFrame = m_uiCurrentFrame;
   }
   m_ActiveBuffers.Clear();
 }
@@ -158,8 +158,8 @@ void xiiRenderGraphResourceCache::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffe
     pPool = m_BufferPool.GetValue(uiHash);
   }
 
-  PooledBuffer& entry    = pPool->ExpandAndGetRef();
-  entry.m_pBuffer        = pBuffer;
+  PooledBuffer& entry     = pPool->ExpandAndGetRef();
+  entry.m_pBuffer         = pBuffer;
   entry.m_uiLastUsedFrame = m_uiCurrentFrame;
 }
 
