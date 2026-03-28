@@ -14,8 +14,7 @@
 ///
 /// Implement this interface to capture GPU performance data during render graph execution.
 /// The executor calls OnPassBegin / OnPassEnd around each pass's RecordCommands call.
-/// OnFrameEnd is called after all passes have been submitted so implementations can schedule
-/// readback or finalize timing data.
+/// OnFrameEnd is called after all passes have been submitted so implementations can schedule readback or finalize timing data.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphProfiler
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphProfiler);
@@ -43,15 +42,15 @@ public:
 /// \brief A concrete render graph profiler that uses GPU Duration queries.
 ///
 /// Uses xiiGALQueryType::Duration to bracket each pass with BeginQuery / EndQuery.
-/// Results are read back with a configurable number of frames of delay (default: 2) to
-/// avoid GPU stalls. Up to xiiRenderGraphTimestampProfiler::MaxTrackedPasses distinct
-/// pass names can be tracked simultaneously.
+/// Results are read back with a configurable number of frames of delay (default: 2) to avoid GPU stalls.
+/// Up to xiiRenderGraphTimestampProfiler::MaxTrackedPasses distinct pass names can be tracked simultaneously.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphTimestampProfiler final : public xiiRenderGraphProfiler
 {
 public:
-  static constexpr xiiUInt32 RingFrameCount   = 3U; ///< Number of in-flight frames buffered.
-  static constexpr xiiUInt32 MaxTrackedPasses = 128U;
+  static constexpr xiiUInt32 s_uiRingFrameCount   = 3U; ///< Number of in-flight frames buffered.
+  static constexpr xiiUInt32 s_uiMaxTrackedPasses = 128U;
 
+public:
   xiiRenderGraphTimestampProfiler();
   ~xiiRenderGraphTimestampProfiler() override;
 
@@ -86,7 +85,7 @@ private:
 
 private:
   xiiSharedPtr<xiiGALDevice>           m_pDevice;
-  FrameData                            m_FrameRing[RingFrameCount];
+  FrameData                            m_FrameRing[s_uiRingFrameCount];
   xiiUInt32                            m_uiCurrentRingSlot = 0U;
   xiiHashTable<xiiHashedString, float> m_ResolvedDurationsMs;
   mutable xiiMutex                     m_ResultMutex;
