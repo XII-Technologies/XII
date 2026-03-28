@@ -5,7 +5,6 @@
 #include <Foundation/Strings/StringBuilder.h>
 #include <Foundation/Types/ArrayPtr.h>
 
-/// Forward declarations — headers included in the .cpp.
 struct xiiRGCompiledPass;
 struct xiiRGBarrierDesc;
 struct xiiRGMergeGroup;
@@ -13,13 +12,12 @@ struct xiiRGQueueSubmission;
 
 /// \brief Static utility class for render graph debugging and visualization.
 ///
-/// Provides methods to serialize a compiled render graph into human-readable formats
-/// suitable for offline visualization with Graphviz or similar tools.
+/// Provides methods to serialize a compiled render graph into human-readable formats suitable for offline visualization with Graphviz or similar tools.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphDebug
 {
-public:
-  xiiRenderGraphDebug() = delete;
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphDebug);
 
+public:
   /// \brief Generates a DOT-language description of the compiled render graph.
   ///
   /// The output contains:
@@ -29,17 +27,10 @@ public:
   ///  - Cluster sub-graphs by queue (Graphics / AsyncCompute / AsyncTransfer).
   ///  - Edge annotations for barrier type (Immediate / SplitBegin / SplitEnd / UAV).
   ///
-  /// \param compiledPasses    All compiled passes returned by xiiRenderGraph::Compile().
-  /// \param barriers          All barriers from xiiRenderGraph::Compile().
-  /// \param mergeGroups       Merge groups from xiiRenderGraph::Compile().
-  /// \param queueSubmissions  Queue submission ordering from xiiRenderGraph::Compile().
-  /// \param out_sDot          Receives the DOT text on success.
-  ///
-  /// \returns XII_SUCCESS on success, XII_FAILURE if the graph is empty or an error occurs.
-  [[nodiscard]] static xiiResult DumpToDot(
-    xiiArrayPtr<const xiiRGCompiledPass>    compiledPasses,
-    xiiArrayPtr<const xiiRGBarrierDesc>     barriers,
-    xiiArrayPtr<const xiiRGMergeGroup>      mergeGroups,
-    xiiArrayPtr<const xiiRGQueueSubmission> queueSubmissions,
-    xiiStringBuilder&                       out_sDot);
+  /// \param compiledPasses  - All compiled passes returned by xiiRenderGraph::Compile().
+  /// \param barriers        - All barriers from xiiRenderGraph::Compile().
+  /// \param mergeGroups     - Merge groups from xiiRenderGraph::Compile().
+  /// \param queueSubmission - Queue submission ordering from xiiRenderGraph::Compile().
+  /// \param out_sDot        - Receives the DOT text on success.
+  [[nodiscard]] static xiiResult DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDesc> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot);
 };

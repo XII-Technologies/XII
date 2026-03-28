@@ -15,6 +15,8 @@ class XII_GRAPHICSCORE_DLL xiiGALPipelineCache
 {
   XII_DECLARE_SINGLETON(xiiGALPipelineCache);
 
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALPipelineCache);
+
 public:
   /// \brief Creates a pipeline or retrieves it from the cache.
   static xiiSharedPtr<xiiGALGraphicsPipelineState> GetPipeline(const xiiGALGraphicsPipelineStateCreationDescription& description);

@@ -18,6 +18,8 @@
 /// readback or finalize timing data.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphProfiler
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphProfiler);
+
 public:
   virtual ~xiiRenderGraphProfiler() = default;
 
