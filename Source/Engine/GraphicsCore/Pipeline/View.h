@@ -26,8 +26,6 @@ private:
   ~xiiView();
 
 public:
-  xiiViewHandle GetHandle() const;
-
   void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
 
@@ -40,17 +38,6 @@ public:
   /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the render targets.
   void             SetSwapChain(xiiGALSwapChain* pSwapChain);
   xiiGALSwapChain* GetSwapChain() const;
-
-  /// \brief Sets the off-screen render targets. Use SetSwapChain if rendering to a window.
-  /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the swap chain.
-  void                    SetRenderTargets(const xiiRenderTargets& renderTargets);
-  const xiiRenderTargets& GetRenderTargets() const;
-
-  /// \brief Returns the render targets that were either set via the swapchain or via the manually set render targets.
-  const xiiRenderTargets& GetActiveRenderTargets() const;
-
-  void                            SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline);
-  xiiRenderPipelineResourceHandle GetRenderPipelineResource() const;
 
   void             SetCamera(xiiCamera* pCamera);
   xiiCamera*       GetCamera();

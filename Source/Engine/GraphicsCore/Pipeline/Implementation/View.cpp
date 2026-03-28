@@ -2,11 +2,16 @@
 
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
-#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Low),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Medium),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::High),
+  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Ultra),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCameraUsageHint, 1)
   XII_ENUM_CONSTANT(xiiCameraUsageHint::None),
   XII_ENUM_CONSTANT(xiiCameraUsageHint::MainView),
@@ -16,9 +21,57 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCameraUsageHint, 1)
   XII_ENUM_CONSTANT(xiiCameraUsageHint::Thumbnail),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewRenderMode, 1)
+  XII_ENUM_CONSTANT(xiiViewRenderMode::None)->AddAttributes(new xiiGroupAttribute("Default")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Wireframe)->AddAttributes(new xiiGroupAttribute("Geometry")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Overdraw),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::TriangleSize),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexNormals),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexTangents),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexBitangents),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexColors),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::UV0),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::UV1),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::UVDensity),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::LODLevel),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::StaticVsDynamic),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::VisibilityBuffer)->AddAttributes(new xiiGroupAttribute("Culling")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::InstanceID),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::MeshletID),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ClusterID),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::CullingOutcome),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::OcclusionHeatmap),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::BaseColor)->AddAttributes(new xiiGroupAttribute("Material")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Metallic),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Roughness),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Specular),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Emissive),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::AmbientOcclusion),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::NormalMap),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DepthLinear),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DepthNonLinear),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::MotionVectors),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ShadingModelID),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::LightingOnly)->AddAttributes(new xiiGroupAttribute("Lighting")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseOnly),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::SpecularOnly),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::LightComplexity),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ShadowCascadeIndex),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ShadowMask),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::IndirectLighting),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ReflectionContribution),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingRayCount)->AddAttributes(new xiiGroupAttribute("RayTracing")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingBVHTraversal),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingHitDistance),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingMissShaderID),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingInstanceMask),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Exposure)->AddAttributes(new xiiGroupAttribute("PostProcessing")),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::Bloom),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ToneMappingCurve),
+  XII_ENUM_CONSTANT(xiiViewRenderMode::ColorGradingLUT),
+XII_END_STATIC_REFLECTED_ENUM;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
-{
-}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 

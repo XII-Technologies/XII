@@ -3,8 +3,136 @@
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
-#include <GraphicsCore/Pipeline/ViewRenderMode.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+
+/// \brief Defines the shading quality levels used in rendering operations.
+///
+/// This enumeration allows rendering systems or materials to selectively enable or disable visual features depending on the desired quality level.
+/// Lower settings may omit expensive effects (e.g., shadows, complex lighting), while higher levels offer more realistic and detailed shading.
+///
+/// The quality level can be globally configured or overridden per-pass/material depending on engine support.
+///
+/// Typical usage:
+/// - Low: Minimal shading, suitable for previews or constrained hardware.
+/// - Medium: Standard shading with balanced performance and fidelity.
+/// - High: Enhanced shading with advanced lighting or material features.
+/// - Ultra: Maximum visual fidelity; may include ray tracing or physically-based effects.
+struct XII_GRAPHICSCORE_DLL xiiShadingQualityLevel
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Low = 0, ///< Minimal shading features; optimized for speed.
+    Medium,  ///< Balanced shading quality; default setting.
+    High,    ///< Advanced shading features enabled.
+    Ultra,   ///< Maximum-quality shading; highest visual fidelity.
+
+    ENUM_COUNT,
+
+    Default = Medium
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiShadingQualityLevel);
+
+/// \brief Usage hint of a camera/view.
+struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None,
+    MainView,
+    EditorView,
+    RenderTarget,
+    Culling,
+    Shadow,
+    Reflection,
+    Thumbnail,
+
+    ENUM_COUNT,
+
+    Default = None,
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiCameraUsageHint);
+
+struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None = 0U,
+
+    // Geometry / Mesh Debugging
+    Wireframe,
+    Overdraw,
+    TriangleSize,
+    VertexNormals,
+    VertexTangents,
+    VertexBitangents,
+    VertexColors,
+    UV0,
+    UV1,
+    UVDensity,
+    LODLevel,
+    StaticVsDynamic,
+
+    // GPU Culling / Visibility
+    VisibilityBuffer,
+    InstanceID,
+    MeshletID,
+    ClusterID,
+    CullingOutcome, // visible / frustum culled / occlusion culled
+    OcclusionHeatmap,
+
+    // Material / GBuffer
+    BaseColor,
+    Metallic,
+    Roughness,
+    Specular,
+    Emissive,
+    AmbientOcclusion,
+    NormalMap,
+    DepthLinear,
+    DepthNonLinear,
+    MotionVectors,
+    ShadingModelID,
+
+    // Lighting
+    LightingOnly,
+    DiffuseOnly,
+    SpecularOnly,
+    LightComplexity, ///< Number of lights affecting pixel.
+    ShadowCascadeIndex,
+    ShadowMask,
+    IndirectLighting,
+    ReflectionContribution,
+
+    // Ray Tracing
+    RayTracingRayCount,
+    RayTracingBVHTraversal,
+    RayTracingHitDistance,
+    RayTracingMissShaderID,
+    RayTracingInstanceMask,
+
+    // Post‑Processing
+    Exposure,
+    Bloom,
+    ToneMappingCurve,
+    ColorGradingLUT,
+
+    ENUM_COUNT,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderMode);
 
 /// \brief Holds view data like the viewport, view and projection matrices
 struct XII_GRAPHICSCORE_DLL xiiViewData

@@ -17,7 +17,6 @@ using xiiMeshResourceHandle              = xiiTypedResourceHandle<class xiiMeshR
 using xiiMaterialResourceHandle          = xiiTypedResourceHandle<class xiiMaterialResource>;
 using xiiShaderResourceHandle            = xiiTypedResourceHandle<class xiiShaderResource>;
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;
-using xiiRenderPipelineResourceHandle    = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 using xiiDecalResourceHandle             = xiiTypedResourceHandle<class xiiDecalResource>;
 using xiiDecalAtlasResourceHandle        = xiiTypedResourceHandle<class xiiDecalAtlasResource>;
 
