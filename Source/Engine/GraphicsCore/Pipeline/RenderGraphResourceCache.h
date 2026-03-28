@@ -5,11 +5,8 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/SharedPtr.h>
-
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
-
-class xiiGALDevice;
 
 /// \brief Frame-scoped GPU resource pool dedicated to the render graph's transient resource needs.
 ///
@@ -19,10 +16,10 @@ class xiiGALDevice;
 /// reused without re-allocation.
 ///
 /// ## Frame lifecycle
-/// \code
-/// cache.BeginFrame(frameIndex);   // Prepare pool for this frame
+/// \code{.cpp}
+/// cache.BeginFrame(uiFrameIndex); // Prepare pool for this frame.
 /// // ... graph executes, passes call AcquireTexture / ReturnTexture ...
-/// cache.EndFrame();               // Return all still-active resources back to pool
+/// cache.EndFrame();               // Return all still-active resources back to pool.
 /// \endcode
 ///
 /// ## Thread safety
@@ -50,23 +47,23 @@ public:
   /// \brief Called once at the end of a frame after Execute(). Returns all active resources to the pool.
   void EndFrame();
 
-  // ── Texture ──────────────────────────────────────────────────────────────────
+  // Texture
 
   /// \brief Returns a texture matching the given description, creating one if no pool entry exists.
-  [[nodiscard]] xiiSharedPtr<xiiGALTexture> AcquireTexture(const xiiGALTextureCreationDescription& desc);
+  [[nodiscard]] xiiSharedPtr<xiiGALTexture> AcquireTexture(const xiiGALTextureCreationDescription& description);
 
   /// \brief Returns a texture to the pool for potential reuse in subsequent frames.
   void ReturnTexture(xiiSharedPtr<xiiGALTexture> pTexture);
 
-  // ── Buffer ───────────────────────────────────────────────────────────────────
+  // Buffer
 
   /// \brief Returns a buffer matching the given description, creating one if no pool entry exists.
-  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> AcquireBuffer(const xiiGALBufferCreationDescription& desc);
+  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> AcquireBuffer(const xiiGALBufferCreationDescription& description);
 
   /// \brief Returns a buffer to the pool for potential reuse in subsequent frames.
   void ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer);
 
-  // ── Maintenance ──────────────────────────────────────────────────────────────
+  // Maintenance
 
   /// \brief Destroys pooled resources that have not been acquired for more than uiMinAgeFrames frames.
   ///
@@ -92,20 +89,19 @@ private:
     xiiUInt64                  m_uiLastUsedFrame = 0ULL;
   };
 
-  [[nodiscard]] static xiiUInt64 ComputeTextureHash(const xiiGALTextureCreationDescription& desc);
-  [[nodiscard]] static xiiUInt64 ComputeBufferHash(const xiiGALBufferCreationDescription& desc);
-
 private:
   xiiSharedPtr<xiiGALDevice> m_pDevice;
   xiiUInt64                  m_uiCurrentFrame = 0ULL;
 
   /// Idle textures keyed by creation-description hash.
-  xiiHashTable<xiiUInt64, xiiDynamicArray<PooledTexture>> m_TexturePool;
+  xiiHashTable<xiiUInt32, xiiDynamicArray<PooledTexture>> m_TexturePool;
+
   /// Idle buffers keyed by creation-description hash.
-  xiiHashTable<xiiUInt64, xiiDynamicArray<PooledBuffer>> m_BufferPool;
+  xiiHashTable<xiiUInt32, xiiDynamicArray<PooledBuffer>> m_BufferPool;
 
   /// Textures that have been acquired and are in flight this frame.
   xiiDynamicArray<xiiSharedPtr<xiiGALTexture>> m_ActiveTextures;
+
   /// Buffers that have been acquired and are in flight this frame.
   xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>> m_ActiveBuffers;
 

@@ -2,7 +2,7 @@
 
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
-#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 xiiRenderGraphResourceCache::xiiRenderGraphResourceCache() = default;
 
@@ -14,6 +14,7 @@ xiiRenderGraphResourceCache::~xiiRenderGraphResourceCache()
 void xiiRenderGraphResourceCache::Initialize(xiiSharedPtr<xiiGALDevice> pDevice)
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
+
   m_pDevice = pDevice;
 }
 
@@ -31,6 +32,7 @@ void xiiRenderGraphResourceCache::Shutdown()
 void xiiRenderGraphResourceCache::BeginFrame(xiiUInt64 uiFrameIndex)
 {
   XII_LOCK(m_Mutex);
+
   m_uiCurrentFrame = uiFrameIndex;
 }
 
@@ -40,12 +42,13 @@ void xiiRenderGraphResourceCache::EndFrame()
 
   for (const xiiSharedPtr<xiiGALTexture>& pTexture : m_ActiveTextures)
   {
-    const xiiUInt64 uiHash = ComputeTextureHash(pTexture->GetDescription());
+    const xiiUInt32 uiHash = pTexture->GetDescription().CalculateHash();
 
     xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
     if (pPool == nullptr)
     {
       m_TexturePool.Insert(uiHash, xiiDynamicArray<PooledTexture>());
+
       pPool = m_TexturePool.GetValue(uiHash);
     }
 
@@ -57,12 +60,13 @@ void xiiRenderGraphResourceCache::EndFrame()
 
   for (const xiiSharedPtr<xiiGALBuffer>& pBuffer : m_ActiveBuffers)
   {
-    const xiiUInt64 uiHash = ComputeBufferHash(pBuffer->GetDescription());
+    const xiiUInt32 uiHash = pBuffer->GetDescription().CalculateHash();
 
     xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
     if (pPool == nullptr)
     {
       m_BufferPool.Insert(uiHash, xiiDynamicArray<PooledBuffer>());
+
       pPool = m_BufferPool.GetValue(uiHash);
     }
 
@@ -73,25 +77,28 @@ void xiiRenderGraphResourceCache::EndFrame()
   m_ActiveBuffers.Clear();
 }
 
-xiiSharedPtr<xiiGALTexture> xiiRenderGraphResourceCache::AcquireTexture(const xiiGALTextureCreationDescription& desc)
+xiiSharedPtr<xiiGALTexture> xiiRenderGraphResourceCache::AcquireTexture(const xiiGALTextureCreationDescription& description)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "RenderGraphResourceCache has not been initialized.");
   XII_LOCK(m_Mutex);
 
-  const xiiUInt64 uiHash = ComputeTextureHash(desc);
+  const xiiUInt32 uiHash = description.CalculateHash();
 
   xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
   if (pPool != nullptr && !pPool->IsEmpty())
   {
     PooledTexture pooled = pPool->PeekBack();
     pPool->PopBack();
+
     m_ActiveTextures.PushBack(pooled.m_pTexture);
+
     return pooled.m_pTexture;
   }
 
-  xiiSharedPtr<xiiGALTexture> pTexture = m_pDevice->CreateTexture(desc);
+  xiiSharedPtr<xiiGALTexture> pTexture = m_pDevice->CreateTexture(description);
   XII_ASSERT_ALWAYS(pTexture != nullptr, "Failed to create transient texture.");
   m_ActiveTextures.PushBack(pTexture);
+
   return pTexture;
 }
 
@@ -100,16 +107,17 @@ void xiiRenderGraphResourceCache::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTex
   XII_ASSERT_DEV(pTexture != nullptr, "Cannot return a null texture to the resource cache.");
   XII_LOCK(m_Mutex);
 
-  const xiiUInt32 uiIdx = m_ActiveTextures.IndexOf(pTexture);
-  XII_ASSERT_DEV(uiIdx != xiiInvalidIndex, "Returned texture was not acquired from this cache in the current frame.");
-  m_ActiveTextures.RemoveAtAndSwap(uiIdx);
+  const xiiUInt32 uiIndex = m_ActiveTextures.IndexOf(pTexture);
+  XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "Returned texture was not acquired from this cache in the current frame.");
+  m_ActiveTextures.RemoveAtAndSwap(uiIndex);
 
-  const xiiUInt64 uiHash = ComputeTextureHash(pTexture->GetDescription());
+  const xiiUInt32 uiHash = pTexture->GetDescription().CalculateHash();
 
   xiiDynamicArray<PooledTexture>* pPool = m_TexturePool.GetValue(uiHash);
   if (pPool == nullptr)
   {
     m_TexturePool.Insert(uiHash, xiiDynamicArray<PooledTexture>());
+
     pPool = m_TexturePool.GetValue(uiHash);
   }
 
@@ -118,25 +126,28 @@ void xiiRenderGraphResourceCache::ReturnTexture(xiiSharedPtr<xiiGALTexture> pTex
   entry.m_uiLastUsedFrame = m_uiCurrentFrame;
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiRenderGraphResourceCache::AcquireBuffer(const xiiGALBufferCreationDescription& desc)
+xiiSharedPtr<xiiGALBuffer> xiiRenderGraphResourceCache::AcquireBuffer(const xiiGALBufferCreationDescription& description)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "RenderGraphResourceCache has not been initialized.");
   XII_LOCK(m_Mutex);
 
-  const xiiUInt64 uiHash = ComputeBufferHash(desc);
+  const xiiUInt32 uiHash = description.CalculateHash();
 
   xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
   if (pPool != nullptr && !pPool->IsEmpty())
   {
     PooledBuffer pooled = pPool->PeekBack();
     pPool->PopBack();
+
     m_ActiveBuffers.PushBack(pooled.m_pBuffer);
+
     return pooled.m_pBuffer;
   }
 
-  xiiSharedPtr<xiiGALBuffer> pBuffer = m_pDevice->CreateBuffer(desc);
+  xiiSharedPtr<xiiGALBuffer> pBuffer = m_pDevice->CreateBuffer(description);
   XII_ASSERT_ALWAYS(pBuffer != nullptr, "Failed to create transient buffer.");
   m_ActiveBuffers.PushBack(pBuffer);
+
   return pBuffer;
 }
 
@@ -145,16 +156,17 @@ void xiiRenderGraphResourceCache::ReturnBuffer(xiiSharedPtr<xiiGALBuffer> pBuffe
   XII_ASSERT_DEV(pBuffer != nullptr, "Cannot return a null buffer to the resource cache.");
   XII_LOCK(m_Mutex);
 
-  const xiiUInt32 uiIdx = m_ActiveBuffers.IndexOf(pBuffer);
-  XII_ASSERT_DEV(uiIdx != xiiInvalidIndex, "Returned buffer was not acquired from this cache in the current frame.");
-  m_ActiveBuffers.RemoveAtAndSwap(uiIdx);
+  const xiiUInt32 uiIndex = m_ActiveBuffers.IndexOf(pBuffer);
+  XII_ASSERT_DEV(uiIndex != xiiInvalidIndex, "Returned buffer was not acquired from this cache in the current frame.");
+  m_ActiveBuffers.RemoveAtAndSwap(uiIndex);
 
-  const xiiUInt64 uiHash = ComputeBufferHash(pBuffer->GetDescription());
+  const xiiUInt32 uiHash = pBuffer->GetDescription().CalculateHash();
 
   xiiDynamicArray<PooledBuffer>* pPool = m_BufferPool.GetValue(uiHash);
   if (pPool == nullptr)
   {
     m_BufferPool.Insert(uiHash, xiiDynamicArray<PooledBuffer>());
+
     pPool = m_BufferPool.GetValue(uiHash);
   }
 
@@ -175,20 +187,26 @@ void xiiRenderGraphResourceCache::ReleaseStaleResources(xiiUInt32 uiMinAgeFrames
   for (auto it = m_TexturePool.GetIterator(); it.IsValid(); ++it)
   {
     xiiDynamicArray<PooledTexture>& pool = it.Value();
+
     for (xiiUInt32 i = pool.GetCount(); i > 0U; --i)
     {
       if (pool[i - 1U].m_uiLastUsedFrame <= uiStaleThreshold)
+      {
         pool.RemoveAtAndSwap(i - 1U);
+      }
     }
   }
 
   for (auto it = m_BufferPool.GetIterator(); it.IsValid(); ++it)
   {
     xiiDynamicArray<PooledBuffer>& pool = it.Value();
+
     for (xiiUInt32 i = pool.GetCount(); i > 0U; --i)
     {
       if (pool[i - 1U].m_uiLastUsedFrame <= uiStaleThreshold)
+      {
         pool.RemoveAtAndSwap(i - 1U);
+      }
     }
   }
 }
@@ -196,6 +214,7 @@ void xiiRenderGraphResourceCache::ReleaseStaleResources(xiiUInt32 uiMinAgeFrames
 xiiUInt32 xiiRenderGraphResourceCache::GetActiveResourceCount() const
 {
   XII_LOCK(m_Mutex);
+
   return m_ActiveTextures.GetCount() + m_ActiveBuffers.GetCount();
 }
 
@@ -204,21 +223,13 @@ xiiUInt32 xiiRenderGraphResourceCache::GetPooledResourceCount() const
   XII_LOCK(m_Mutex);
 
   xiiUInt32 uiCount = 0U;
-  for (auto it = m_TexturePool.GetConstIterator(); it.IsValid(); ++it)
+  for (auto it = m_TexturePool.GetIterator(); it.IsValid(); ++it)
+  {
     uiCount += it.Value().GetCount();
-  for (auto it = m_BufferPool.GetConstIterator(); it.IsValid(); ++it)
+  }
+  for (auto it = m_BufferPool.GetIterator(); it.IsValid(); ++it)
+  {
     uiCount += it.Value().GetCount();
+  }
   return uiCount;
-}
-
-// static
-xiiUInt64 xiiRenderGraphResourceCache::ComputeTextureHash(const xiiGALTextureCreationDescription& desc)
-{
-  return xiiHashingUtils::xxHash64(&desc, sizeof(xiiGALTextureCreationDescription), 0x17FE9A432DB81C3AULL);
-}
-
-// static
-xiiUInt64 xiiRenderGraphResourceCache::ComputeBufferHash(const xiiGALBufferCreationDescription& desc)
-{
-  return xiiHashingUtils::xxHash64(&desc, sizeof(xiiGALBufferCreationDescription), 0x3C8A7B152F4E6D09ULL);
 }
