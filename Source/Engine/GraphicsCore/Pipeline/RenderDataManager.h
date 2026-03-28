@@ -840,7 +840,6 @@ private:
   mutable xiiUniquePtr<xiiRenderGraphLocalLightShadowRenderPass> m_pLocalLightShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphShadowMapRenderPass>        m_pDirectionalShadowRenderingPass;
   mutable xiiUniquePtr<xiiRenderGraphLodSelectionPass>           m_pLodSelectionPass;
-  mutable xiiUniquePtr<xiiRenderGraphDynamicResolutionPass>      m_pDynamicResolutionPass;
   mutable xiiUniquePtr<xiiRenderGraphSkinningPass>               m_pSkinningPass;
   mutable xiiUniquePtr<xiiRenderGraphPerFrameBufferUploadPass>   m_pPerFrameBufferUploadPass;
   mutable xiiUniquePtr<xiiRenderGraphRayTracedShadowsPass>       m_pRayTracedShadowsPass;
