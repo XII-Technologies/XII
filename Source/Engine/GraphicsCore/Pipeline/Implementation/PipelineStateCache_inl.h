@@ -30,10 +30,10 @@ XII_ALWAYS_INLINE xiiResult xiiGALPipelineCache::TryInsertPipeline(const DescTyp
 
   XII_LOCK(m_Mutex);
 
-  HandleType existingPipeline;
-  if (table.Insert(key, hNewPipeline, &existingPipeline))
+  HandleType hExistingPipeline;
+  if (table.Insert(key, hNewPipeline, &hExistingPipeline))
   {
-    XII_ASSERT_DEBUG(existingPipeline == hNewPipeline, "On collision, both pipelines must be the same (create should have just increased the ref count).");
+    XII_ASSERT_DEBUG(hExistingPipeline == hNewPipeline, "On collision, both pipelines must be the same (create should have just increased the ref count).");
 
     return XII_FAILURE;
   }
