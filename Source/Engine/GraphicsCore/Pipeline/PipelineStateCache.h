@@ -67,4 +67,4 @@ private:
   xiiHashTable<ComputePipelineCacheKey, xiiSharedPtr<xiiGALComputePipelineState>, CacheKeyHasher>   m_ComputePipelines;
 };
 
-#include <GraphicsCore/GPUResourcePool/Implementation/PipelineStateCache_inl.h>
+#include <GraphicsCore/Pipeline/Implementation/PipelineStateCache_inl.h>

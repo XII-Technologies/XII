@@ -1,4 +1,3 @@
-
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 template <typename HandleType, typename DescType, typename KeyType>

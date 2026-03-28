@@ -1,7 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsCore/GPUResourcePool/PipelineStateCache.h>
+#include <GraphicsCore/Pipeline/PipelineStateCache.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, PipelineCache)
@@ -33,10 +33,7 @@ xiiGALPipelineCache::xiiGALPipelineCache() :
 {
 }
 
-xiiGALPipelineCache::~xiiGALPipelineCache()
-{
-  Clear();
-}
+xiiGALPipelineCache::~xiiGALPipelineCache() = default;
 
 void xiiGALPipelineCache::Clear()
 {
