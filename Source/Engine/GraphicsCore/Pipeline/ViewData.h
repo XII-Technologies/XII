@@ -4,7 +4,6 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Pipeline/ViewRenderMode.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 /// \brief Holds view data like the viewport, view and projection matrices
@@ -12,7 +11,6 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
 {
   xiiViewData()
   {
-    m_pSwapChain     = nullptr;
     m_ViewPortRect   = xiiRectFloat(0.0f, 0.0f);
     m_ViewRenderMode = xiiViewRenderMode::None;
 
@@ -27,9 +25,6 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
     }
   }
 
-  xiiRenderTargets            m_RenderTargets;
-  xiiRenderTargets            m_SwapChainRenderTargets;
-  xiiGALSwapChain*            m_pSwapChain;
   xiiRectFloat                m_ViewPortRect;
   xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
   xiiEnum<xiiCameraUsageHint> m_CameraUsageHint;
