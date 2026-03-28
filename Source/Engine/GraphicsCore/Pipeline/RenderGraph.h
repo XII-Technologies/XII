@@ -195,7 +195,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGStatistics
 class XII_GRAPHICSCORE_DLL xiiRGPassContext
 {
 public:
-  // Non-copyable — created per-pass by the executor.
+  // Non-copyable - created per-pass by the executor.
   xiiRGPassContext(const xiiRGPassContext&)            = delete;
   xiiRGPassContext& operator=(const xiiRGPassContext&) = delete;
 
@@ -468,7 +468,7 @@ public:
   [[nodiscard]] const xiiDynamicArray<xiiRGMergeGroup>&      GetMergeGroups() const { return m_MergeGroups; }
   [[nodiscard]] const xiiDynamicArray<xiiRGQueueSubmission>& GetQueueSubmissions() const { return m_QueueSubmissions; }
 
-  /// \brief Serialises the compiled graph to a DOT string for Graphviz visualisation.
+  /// \brief Serializes the compiled graph to a DOT string for Graphviz visualisation.
   [[nodiscard]] xiiResult DumpToDot(xiiStringBuilder& out_sDot) const;
 
   /// \brief True if the graph has been compiled and not yet invalidated.

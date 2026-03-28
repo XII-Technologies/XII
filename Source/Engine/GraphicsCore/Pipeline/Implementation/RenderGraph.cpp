@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
@@ -923,7 +924,7 @@ xiiResult xiiRenderGraph::Execute(
 
       // Debug group.
       {
-        XII_SCOPED_DEBUG_GROUP(*pCommandList, cp.m_sName.GetView(), xiiColor::White);
+        XII_COMMANDLIST_SCOPE_COLOR(pCommandList, cp.m_sName.GetView(), xiiColor::White);
       }
 
       // Profiler begin.
