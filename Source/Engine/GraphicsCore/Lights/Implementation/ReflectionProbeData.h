@@ -3,7 +3,6 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/TagSet.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 
 struct xiiReflectionProbeMode
 {

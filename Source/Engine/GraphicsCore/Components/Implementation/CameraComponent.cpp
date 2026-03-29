@@ -6,7 +6,6 @@
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :

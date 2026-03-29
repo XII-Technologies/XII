@@ -9,8 +9,6 @@
 
 #include <GraphicsFoundation/Resources/Sampler.h>
 
-#include <GraphicsCore/Pipeline/Declarations.h>
-
 class xiiImage;
 
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture3DResource> to create textures from data in memory.

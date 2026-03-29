@@ -4,7 +4,6 @@
 #include <GraphicsCore/Components/RenderComponent.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 
 struct xiiMsgSetColor;
 struct xiiInstanceData;
