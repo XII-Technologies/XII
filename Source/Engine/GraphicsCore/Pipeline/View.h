@@ -9,7 +9,6 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
 class xiiFrustum;
 class xiiWorld;
@@ -147,7 +146,6 @@ private:
 
   xiiWorld* m_pWorld = nullptr;
 
-  xiiRenderPipelineResourceHandle m_hRenderPipeline;
   xiiUInt32                       m_uiRenderPipelineResourceDescriptionCounter = 0;
   xiiCamera*                      m_pCamera                                    = nullptr;
   const xiiCamera*                m_pCullingCamera                             = nullptr;

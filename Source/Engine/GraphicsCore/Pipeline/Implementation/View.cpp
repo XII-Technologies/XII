@@ -13,12 +13,33 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCameraUsageHint, 1)
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::None),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::MainView),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::None)->AddAttributes(new xiiGroupAttribute("Default")),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::MainView)->AddAttributes(new xiiGroupAttribute("Primary")),
   XII_ENUM_CONSTANT(xiiCameraUsageHint::EditorView),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::RenderTarget),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::Culling),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::CinematicView),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::RenderTarget)->AddAttributes(new xiiGroupAttribute("Offscreen")),
   XII_ENUM_CONSTANT(xiiCameraUsageHint::Thumbnail),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::UIOverlay),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::ShadowMap)->AddAttributes(new xiiGroupAttribute("Shadows")),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::ShadowCascade),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::ShadowProbe),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::ReflectionProbe)->AddAttributes(new xiiGroupAttribute("Reflection")),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::IrradianceProbe),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::SpecularProbe),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::SkyCapture),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::CullingOnly)->AddAttributes(new xiiGroupAttribute("Visibility")),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::VisibilityBuffer),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::MeshletCulling),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::RayTracingCulling),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::DebugView)->AddAttributes(new xiiGroupAttribute("Debug")),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::GPUProfilerView),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::LightingDebug),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::MaterialDebug),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::MotionVectorsDebug),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::RayTracingView)->AddAttributes(new xiiGroupAttribute("Special")),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::PathTracingView),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::ComputeView),
+  XII_ENUM_CONSTANT(xiiCameraUsageHint::LowFrequencyView),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewRenderMode, 1)
