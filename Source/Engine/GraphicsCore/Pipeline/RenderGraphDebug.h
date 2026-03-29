@@ -6,7 +6,7 @@
 #include <Foundation/Types/ArrayPtr.h>
 
 struct xiiRGCompiledPass;
-struct xiiRGBarrierDesc;
+struct xiiRGBarrierDescription;
 struct xiiRGMergeGroup;
 struct xiiRGQueueSubmission;
 
@@ -32,5 +32,5 @@ public:
   /// \param mergeGroups     - Merge groups from xiiRenderGraph::Compile().
   /// \param queueSubmission - Queue submission ordering from xiiRenderGraph::Compile().
   /// \param out_sDot        - Receives the DOT text on success.
-  [[nodiscard]] static xiiResult DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDesc> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot);
+  [[nodiscard]] static xiiResult DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDescription> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot);
 };

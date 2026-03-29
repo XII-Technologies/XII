@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/RenderGraphDebug.h>
 
 // static
-xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDesc> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot)
+xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pCompiledPasses, xiiArrayPtr<const xiiRGBarrierDescription> pBarriers, xiiArrayPtr<const xiiRGMergeGroup> pMergeGroups, xiiArrayPtr<const xiiRGQueueSubmission> pQueueSubmissions, xiiStringBuilder& out_sDot)
 {
   if (pCompiledPasses.IsEmpty())
     return XII_FAILURE;
@@ -90,9 +90,9 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
 
     for (xiiUInt32 uiBarrierIndex : compiledPass.m_PreBarrierIndices)
     {
-      const xiiRGBarrierDesc& barrier      = pBarriers[uiBarrierIndex];
-      // const char*          szEdgeLabel  = (barrier.m_TransitionType == xiiGALStateTransitionType::End) ? "SplitEnd" : "Immediate";
-      // const char*          szEdgeColour = (barrier.m_TransitionType == xiiGALStateTransitionType::End) ? "#ffaa00" : "#cc4444";
+      const xiiRGBarrierDescription& barrier = pBarriers[uiBarrierIndex];
+      // const char*            szEdgeLabel  = (barrier.m_TransitionType == xiiGALStateTransitionType::End) ? "SplitEnd" : "Immediate";
+      // const char*            szEdgeColour = (barrier.m_TransitionType == xiiGALStateTransitionType::End) ? "#ffaa00" : "#cc4444";
 
       // Barrier annotations are embedded in node tooltips in DOT, edges come from dependency pass links.
     }

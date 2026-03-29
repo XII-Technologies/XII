@@ -57,3 +57,70 @@ XII_ALWAYS_INLINE xiiGALBuffer* xiiRGPassContext::GetBuffer(xiiRGBufferHandle hB
 
   return pBuffer.Borrow();
 }
+
+template <typename TPassData>
+std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(TPassData&, xiiRGBuilder&)> setupDelegate, xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeDelegate, bool bHasSideEffects)
+{
+  XII_ASSERT_DEV(m_bIsSetupOpen, "AddPass must be called between BeginSetup() and EndSetup().");
+  XII_ASSERT_DEV(setupDelegate.IsValid(), "Setup function must be valid.");
+  XII_ASSERT_DEV(executeDelegate.IsValid(), "Execute function must be valid.");
+
+  const xiiUInt32 uiPassIndex = m_Passes.GetCount();
+
+  PassEntry& passEntry        = m_Passes.ExpandAndGetRef();
+  passEntry.m_QueueFlags      = queueFlags;
+  passEntry.m_bHasSideEffects = bHasSideEffects;
+  passEntry.m_bAllowMerge     = true;
+  passEntry.m_sName.Assign(sName);
+
+  TPassData* pData                    = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), TPassData);
+  passEntry.m_pPassData               = pData;
+  passEntry.m_DestroyPassDataDelegate = [](void* pData) -> void {
+    XII_DELETE(xiiFrameAllocator::GetCurrentAllocator(), static_cast<TPassData*>(pData));
+  };
+
+  // Wrap typed execute function in a type-erased delegate.
+  passEntry.m_ExecuteFunc = [executeDelegate, pData](xiiRGPassContext& context) -> void {
+    executeDelegate(*pData, context);
+  };
+
+  // Call setup delegate immediately, this populates m_Reads / m_Writes via the builder.
+  xiiRGBuilder builder(*this, uiPassIndex);
+  setupDelegate(*pData, builder);
+
+  m_bIsCompiled = false; // Invalidate any previous compile.
+
+  xiiRGPassHandle hPass;
+  hPass.m_uiIndex = uiPassIndex;
+  return {pData, hPass};
+}
+
+XII_ALWAYS_INLINE const xiiRGStatistics& xiiRenderGraph::GetStatistics() const
+{
+  return m_Statistics;
+}
+
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiRGCompiledPass> xiiRenderGraph::GetCompiledPasses() const
+{
+  return m_CompiledPasses;
+}
+
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiRGBarrierDescription> xiiRenderGraph::GetBarriers() const
+{
+  return m_Barriers;
+}
+
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiRGMergeGroup> xiiRenderGraph::GetMergeGroups() const
+{
+  return m_MergeGroups;
+}
+
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiRGQueueSubmission> xiiRenderGraph::GetQueueSubmissions() const
+{
+  return m_QueueSubmissions;
+}
+
+XII_ALWAYS_INLINE bool xiiRenderGraph::IsCompiled() const
+{
+  return m_bIsCompiled;
+}

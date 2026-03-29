@@ -267,26 +267,22 @@ private:
   xiiUInt32       m_uiPassIndex;
 };
 
-// ============================================================================
-//  xiiRenderGraph — main class
-// ============================================================================
-
-/// \brief Advanced high-performance render graph for the XII engine.
+/// \brief Advanced high-performance render graph.
 ///
 /// ## Usage per frame
-/// \code
-/// graph.BeginSetup(frameIndex);
+/// \code{.cpp}
+/// graph.BeginSetup(uiFrameIndex);
 ///
 /// auto [pData, hPass] = graph.AddPass<MyPassData>(
-///   xiiHashedString("DepthPrepass"),
+///   "DepthPrepass",
 ///   xiiGALCommandQueueFlags::Graphics,
 ///   [](MyPassData& data, xiiRGBuilder& builder)
 ///   {
-///     data.hDepth = builder.WriteTexture("SceneDepth", depthDesc, xiiGALResourceStateFlags::DepthWrite);
+///     data.hDepth = builder.WriteTexture("SceneDepth", depthTextureDescription, xiiGALResourceStateFlags::DepthWrite);
 ///   },
-///   [](const MyPassData& data, xiiRGPassContext& ctx)
+///   [](const MyPassData& data, xiiRGPassContext& context)
 ///   {
-///     ctx.GetCommandList().ClearDepthStencilView(...);
+///     context.GetCommandList().ClearDepthStencilView(...);
 ///   },
 ///   /*bHasSideEffects=*/false
 /// );
@@ -294,25 +290,23 @@ private:
 ///
 /// graph.EndSetup();
 /// if (graph.Compile(settings).Succeeded())
-///     graph.Execute(pDevice, pView, pBlackboard, pCache, pProfiler);
+/// {
+///   graph.Execute(pDevice, pView, pBlackboard, pCache, pProfiler);
+/// }
 /// \endcode
 ///
 /// ## Threading
 /// - BeginSetup / AddPass / EndSetup: single-threaded (main thread).
 /// - Compile: single-threaded.
-/// - Execute: command list recording per pass is sequential per queue;
-///   queues run genuinely in parallel on the GPU side.
+/// - Execute: command list recording per pass is sequential per queue. Queues run genuinely in parallel on the GPU side.
 /// - Pass execute callbacks may safely call xiiRenderGraphBlackboard::TryGet concurrently.
 class XII_GRAPHICSCORE_DLL xiiRenderGraph
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraph);
+
 public:
   xiiRenderGraph();
   ~xiiRenderGraph();
-
-  xiiRenderGraph(const xiiRenderGraph&)            = delete;
-  xiiRenderGraph& operator=(const xiiRenderGraph&) = delete;
-
-  // ── Setup phase ─────────────────────────────────────────────────────────
 
   /// \brief Begins graph setup for the given frame index.
   ///        Clears all pass registrations and resource declarations from the previous frame.
@@ -320,29 +314,20 @@ public:
 
   /// \brief Registers a typed pass and immediately invokes its setup callback.
   ///
-  /// \tparam TPassData  Plain data struct holding per-frame data and resource handles.
-  ///                    Must be default-constructible. Lifetime is managed by the graph.
+  /// \tparam TPassData - Plain data struct holding per-frame data and resource handles. Must be default-constructible. Lifetime is managed by the graph.
   ///
-  /// \param sName         Unique name used for debugging, profiling, and the compile cache.
-  /// \param queueFlags    Target queue (Graphics / Compute / Transfer).
-  /// \param setupFunc     Called immediately to declare resource usage via xiiRGBuilder.
-  /// \param executeFunc   Called during Execute() to record GPU commands.
-  /// \param bHasSideEffects  If true, this pass is never culled even if no pass reads its outputs.
+  /// \param sName           - Unique name used for debugging, profiling, and the compile cache.
+  /// \param queueFlags      - Target queue (Graphics / Compute / Transfer).
+  /// \param setupFunc       - Called immediately to declare resource usage via xiiRGBuilder.
+  /// \param executeFunc     - Called during Execute() to record GPU commands.
+  /// \param bHasSideEffects - If true, this pass is never culled even if no pass reads its outputs.
   ///
-  /// \returns A pair of (raw pointer to TPassData, pass handle).
-  ///          The pointer is stable for the lifetime of this frame's graph.
+  /// \returns A pair of (raw pointer to TPassData, pass handle). The pointer is stable for the lifetime of this frame's graph.
   template <typename TPassData>
-  std::pair<TPassData*, xiiRGPassHandle> AddPass(
-    xiiHashedString                                        sName,
-    xiiBitflags<xiiGALCommandQueueFlags>                   queueFlags,
-    xiiDelegate<void(TPassData&, xiiRGBuilder&)>           setupFunc,
-    xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeFunc,
-    bool                                                   bHasSideEffects = false);
+  std::pair<TPassData*, xiiRGPassHandle> AddPass(xiiStringView sName, xiiBitflags<xiiGALCommandQueueFlags> queueFlags, xiiDelegate<void(TPassData&, xiiRGBuilder&)> setupDelegate, xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeDelegate, bool bHasSideEffects = false);
 
   /// \brief Finalizes the setup phase. Must be called after all AddPass calls.
   void EndSetup();
-
-  // ── Compile phase ───────────────────────────────────────────────────────
 
   /// \brief Compiles the render graph.
   ///
@@ -351,17 +336,16 @@ public:
   ///   B. Topological sort + live-pass culling.
   ///   C. Transient resource lifetime analysis.
   ///   D. Advanced barrier synthesis (sub-resource, UAV, split barriers).
-  ///   E. Multi-queue scheduling → xiiRGQueueSubmission list with fence handshakes.
-  ///   F. Render pass group merging → xiiRGMergeGroup list.
+  ///   E. Multi-queue scheduling -> xiiRGQueueSubmission list with fence handshakes.
+  ///   F. Render pass group merging -> xiiRGMergeGroup list.
   ///   G. Signature hash + compile cache (skip if graph is unchanged).
   ///
-  /// \param settings    Optional compile configuration.
-  /// \param out_pError  Optional diagnostics string populated on XII_FAILURE.
+  /// \param settings   - Optional compile configuration.
+  /// \param out_pError - Optional diagnostics string populated on XII_FAILURE.
   ///
   /// \returns XII_SUCCESS on success, XII_FAILURE if a cycle or invalid state is detected.
   [[nodiscard]] xiiResult Compile(const xiiRGCompileSettings& settings = {}, xiiStringBuilder* out_pError = nullptr);
 
-  // ── Execute phase ───────────────────────────────────────────────────────
 
   /// \brief Executes the compiled render graph.
   ///
@@ -381,41 +365,40 @@ public:
   ///  13. EnqueueSignals the cross-queue fence for downstream submissions.
   ///  14. Submits the command list.
   ///
-  /// \param pDevice        Target GAL device (must remain valid for the call duration).
-  /// \param pView          Optional view providing camera / viewport data to passes.
-  /// \param pBlackboard    Per-frame data exchange store.
-  /// \param pResourceCache Transient resource pool for this frame.
-  /// \param pProfiler      Optional GPU timing profiler.
-  /// \param out_pError     Optional diagnostics output.
+  /// \param pDevice        - Target GAL device (must remain valid for the call duration).
+  /// \param pView          - Optional view providing camera / viewport data to passes.
+  /// \param pBlackboard    - Per-frame data exchange store.
+  /// \param pResourceCache - Transient resource pool for this frame.
+  /// \param pProfiler      - Optional GPU timing profiler.
+  /// \param out_pError     - Optional diagnostics output.
   ///
   /// \returns XII_SUCCESS on success.
-  [[nodiscard]] xiiResult Execute(
-    xiiGALDevice*                pDevice,
-    const xiiView*               pView,
-    xiiRenderGraphBlackboard*    pBlackboard,
-    xiiRenderGraphResourceCache* pResourceCache,
-    xiiRenderGraphProfiler*      pProfiler  = nullptr,
-    xiiStringBuilder*            out_pError = nullptr);
+  [[nodiscard]] xiiResult Execute(xiiGALDevice* pDevice, const xiiView* pView, xiiRenderGraphBlackboard* pBlackboard, xiiRenderGraphResourceCache* pResourceCache, xiiRenderGraphProfiler* pProfiler = nullptr, xiiStringBuilder* out_pError = nullptr);
 
-  // ── Query ────────────────────────────────────────────────────────────────
 
-  [[nodiscard]] const xiiRGStatistics& GetStatistics() const { return m_Statistics; }
+  /// \brief Returns the graph's compile-time statistics, populated after Compile() and useful for diagnostics.
+  [[nodiscard]] const xiiRGStatistics& GetStatistics() const;
 
-  [[nodiscard]] const xiiDynamicArray<xiiRGCompiledPass>&    GetCompiledPasses() const { return m_CompiledPasses; }
-  [[nodiscard]] const xiiDynamicArray<xiiRGBarrierDesc>&     GetBarriers() const { return m_Barriers; }
-  [[nodiscard]] const xiiDynamicArray<xiiRGMergeGroup>&      GetMergeGroups() const { return m_MergeGroups; }
-  [[nodiscard]] const xiiDynamicArray<xiiRGQueueSubmission>& GetQueueSubmissions() const { return m_QueueSubmissions; }
+  /// \brief Returns the list of compiled passes, in execution order, with all metadata needed for execution and profiling.
+  [[nodiscard]] xiiArrayPtr<const xiiRGCompiledPass> GetCompiledPasses() const;
 
-  /// \brief Serializes the compiled graph to a DOT string for Graphviz visualisation.
+  /// \brief Returns the list of resource barriers synthesized by the compiler, in the order they are emitted during execution.
+  [[nodiscard]] xiiArrayPtr<const xiiRGBarrierDescription> GetBarriers() const;
+
+  /// \brief Returns the list of render pass merge groups synthesized by the compiler.
+  [[nodiscard]] xiiArrayPtr<const xiiRGMergeGroup> GetMergeGroups() const;
+
+  /// \brief Returns the list of queue submissions synthesized by the compiler, in execution order.
+  [[nodiscard]] xiiArrayPtr<const xiiRGQueueSubmission> GetQueueSubmissions() const;
+
+  /// \brief Serializes the compiled graph to a DOT string for Graphviz visualization.
   [[nodiscard]] xiiResult DumpToDot(xiiStringBuilder& out_sDot) const;
 
   /// \brief True if the graph has been compiled and not yet invalidated.
-  [[nodiscard]] bool IsCompiled() const { return m_bIsCompiled; }
+  [[nodiscard]] bool IsCompiled() const;
 
 private:
   friend class xiiRGBuilder;
-
-  // ── Internal resource / pass entry types ─────────────────────────────────
 
   struct ResourceEntry
   {
@@ -450,6 +433,8 @@ private:
 
   struct ResourceUsage
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiUInt32                             m_uiResourceIndex;
     bool                                  m_bIsTexture;
     xiiUInt16                             m_uiVersion; ///< Version being read or written.
@@ -468,12 +453,10 @@ private:
     xiiHybridArray<ResourceUsage, 8> m_Writes;
 
     // Type-erased pass data + execute func (owned by this entry).
-    void* m_pPassData                   = nullptr;
-    void (*m_pfnDestroyPassData)(void*) = nullptr;
-    xiiDelegate<void(xiiRGPassContext&)> m_ExecuteFunc;
+    void*                                m_pPassData = nullptr;
+    xiiDelegate<void(void*)>             m_DestroyPassDataDelegate;
+    xiiDelegate<void(xiiRGPassContext&)> m_ExecuteDelegate;
   };
-
-  // ── Compiler phase helpers ────────────────────────────────────────────────
 
   void PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& settings, xiiDynamicArray<xiiUInt32>& out_sortedIndices);
   void PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& sortedIndices);
@@ -482,25 +465,21 @@ private:
   void PhaseF_RenderPassMerging(xiiGALDevice* pDevice);
   void PhaseG_SignatureAndCache(const xiiRGCompileSettings& settings);
 
-  void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture,
-                   xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier,
-                   xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS,
-                   xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
+  void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
   [[nodiscard]] static xiiBitflags<xiiGALResourceStateFlags> InferStateFromUsage(const ResourceUsage& usage);
   [[nodiscard]] static xiiUInt64                             ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
-  // ── Private data ──────────────────────────────────────────────────────────
-
+private:
   xiiDynamicArray<PassEntry>               m_Passes;            ///< Setup-phase pass list, cleared each BeginSetup().
   xiiDynamicArray<ResourceEntry>           m_Resources;         ///< Virtual resource table, cleared each BeginSetup().
-  xiiHashTable<xiiHashedString, xiiUInt32> m_ResourceNameIndex; ///< Fast name → resource index lookup.
+  xiiHashTable<xiiHashedString, xiiUInt32> m_ResourceNameIndex; ///< Fast name -> resource index lookup.
 
-  // Compiled outputs
-  xiiDynamicArray<xiiRGCompiledPass>    m_CompiledPasses;
-  xiiDynamicArray<xiiRGBarrierDesc>     m_Barriers;
-  xiiDynamicArray<xiiRGMergeGroup>      m_MergeGroups;
-  xiiDynamicArray<xiiRGQueueSubmission> m_QueueSubmissions;
+  // Compiled outputs.
+  xiiDynamicArray<xiiRGCompiledPass>       m_CompiledPasses;
+  xiiDynamicArray<xiiRGBarrierDescription> m_Barriers;
+  xiiDynamicArray<xiiRGMergeGroup>         m_MergeGroups;
+  xiiDynamicArray<xiiRGQueueSubmission>    m_QueueSubmissions;
 
   xiiRGStatistics      m_Statistics;
   xiiRGCompileSettings m_LastCompileSettings;
@@ -509,52 +488,5 @@ private:
   bool                 m_bIsSetupOpen    = false;
   bool                 m_bIsCompiled     = false;
 };
-
-// ============================================================================
-//  AddPass — template implementation (must be in header)
-// ============================================================================
-
-template <typename TPassData>
-std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(
-  xiiHashedString                                        sName,
-  xiiBitflags<xiiGALCommandQueueFlags>                   queueFlags,
-  xiiDelegate<void(TPassData&, xiiRGBuilder&)>           setupFunc,
-  xiiDelegate<void(const TPassData&, xiiRGPassContext&)> executeFunc,
-  bool                                                   bHasSideEffects)
-{
-  XII_ASSERT_DEV(m_bIsSetupOpen, "AddPass must be called between BeginSetup() and EndSetup().");
-  XII_ASSERT_DEV(setupFunc.IsValid(), "Setup function must be valid.");
-  XII_ASSERT_DEV(executeFunc.IsValid(), "Execute function must be valid.");
-
-  const xiiUInt32 uiPassIndex = m_Passes.GetCount();
-
-  PassEntry& entry        = m_Passes.ExpandAndGetRef();
-  entry.m_sName           = sName;
-  entry.m_QueueFlags      = queueFlags;
-  entry.m_bHasSideEffects = bHasSideEffects;
-  entry.m_bAllowMerge     = true;
-
-  // Allocate pass data on the heap for pointer stability.
-  TPassData* pData           = new TPassData();
-  entry.m_pPassData          = pData;
-  entry.m_pfnDestroyPassData = [](void* p) {
-    delete static_cast<TPassData*>(p);
-  };
-
-  // Wrap typed execute func in a type-erased delegate.
-  entry.m_ExecuteFunc = [executeFunc, pData](xiiRGPassContext& ctx) {
-    executeFunc(*pData, ctx);
-  };
-
-  // Call setup func immediately — this populates m_Reads / m_Writes via the builder.
-  xiiRGBuilder builder(*this, uiPassIndex);
-  setupFunc(*pData, builder);
-
-  m_bIsCompiled = false; // Invalidate any previous compile.
-
-  xiiRGPassHandle handle;
-  handle.m_uiIndex = uiPassIndex;
-  return {pData, handle};
-}
 
 #include <GraphicsCore/Pipeline/Implementation/RenderGraph_inl.h>
