@@ -1,4 +1,6 @@
 
+#include <Foundation/Memory/FrameAllocator.h>
+
 XII_ALWAYS_INLINE xiiGALCommandList& xiiRGPassContext::GetCommandList() const
 {
   XII_ASSERT_DEV(m_pCommandList != nullptr, "Command list is null.");
@@ -80,7 +82,7 @@ std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(xiiStringView sNa
   };
 
   // Wrap typed execute function in a type-erased delegate.
-  passEntry.m_ExecuteFunc = [executeDelegate, pData](xiiRGPassContext& context) -> void {
+  passEntry.m_ExecuteDelegate = [executeDelegate, pData](xiiRGPassContext& context) -> void {
     executeDelegate(*pData, context);
   };
 

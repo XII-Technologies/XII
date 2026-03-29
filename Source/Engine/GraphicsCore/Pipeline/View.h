@@ -19,6 +19,8 @@ class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiReflectedClass);
 
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiView);
+
 private:
   /// \brief Use xiiRenderLoop::CreateView to create a view.
   xiiView();
@@ -27,10 +29,6 @@ private:
 public:
   void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
-
-  void            SetWorld(xiiWorld* pWorld);
-  xiiWorld*       GetWorld();
-  const xiiWorld* GetWorld() const;
 
   /// \brief Sets the swapchain that this view will be rendering into. Can be invalid in case the render target is an off-screen buffer in which case SetRenderTargets needs to be called.
   /// Setting the swap-chain is necessary in order to acquire and present the image to the window.
@@ -60,19 +58,9 @@ public:
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
-  /// \brief Forces the render pipeline to be rebuilt.
-  void ForceUpdate();
-
   const xiiViewData& GetData() const;
 
   bool IsValid() const;
-
-  /// \brief Extracts all relevant data from the world to render the view.
-  void ExtractData();
-
-  /// \brief Returns a task implementation that calls ExtractData on this view.
-  const xiiSharedPtr<xiiTask>& GetExtractTask();
-
 
   /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
@@ -116,22 +104,6 @@ public:
   /// \brief Returns the frustum that should be used for determine visible objects for this view.
   void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
-  void SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue);
-
-  void SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-
-  void ResetRenderPassProperties();
-
-  void       SetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-  xiiVariant GetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName);
-  bool       IsRenderPassReadBackPropertyExisting(xiiStringView sPassName, xiiStringView sPropertyName) const;
-
-  /// \brief Pushes the view and camera data into the extracted data of the pipeline.
-  ///
-  /// Use xiiRenderWorld::GetDataIndexForExtraction() to update the data from the extraction thread. Can't be used if this view is currently extracted.
-  /// Use xiiRenderWorld::GetDataIndexForRendering() to update the data from the render thread.
-  void UpdateViewData(xiiUInt32 uiDataIndex);
-
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
 
@@ -139,61 +111,21 @@ private:
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
 
-  xiiViewId       m_InternalId;
   xiiHashedString m_sName;
-
-  xiiSharedPtr<xiiTask> m_pExtractTask;
-
-  xiiWorld* m_pWorld = nullptr;
 
   xiiUInt32                       m_uiRenderPipelineResourceDescriptionCounter = 0;
   xiiCamera*                      m_pCamera                                    = nullptr;
   const xiiCamera*                m_pCullingCamera                             = nullptr;
   const xiiCamera*                m_pLodCamera                                 = nullptr;
 
-
 private:
   void UpdateCachedMatrices() const;
-
-  /// \brief Rebuilds pipeline if necessary and pushes double-buffered settings into the pipeline.
-  void EnsureUpToDate();
 
   mutable xiiUInt32 m_uiLastCameraSettingsModification    = 0;
   mutable xiiUInt32 m_uiLastCameraOrientationModification = 0;
   mutable float     m_fLastViewportAspectRatio            = 1.0f;
 
   mutable xiiViewData m_Data;
-
-  xiiInternal::RenderDataCache* m_pRenderDataCache = nullptr;
-
-  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
-  bool                                       m_bPermutationVariablesModified = false;
-
-  void ApplyPermutationVariables();
-
-  struct PropertyValue
-  {
-    xiiString  m_sObjectName;
-    xiiString  m_sPropertyName;
-    xiiVariant m_DefaultValue;
-    xiiVariant m_CurrentValue;
-    bool       m_bIsValid;
-    bool       m_bIsDirty;
-  };
-
-  void SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-  void SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-
-  void ReadBackPassProperties();
-
-  void ResetAllPropertyStates(xiiMap<xiiString, PropertyValue>& map);
-
-  void ApplyRenderPassProperties();
-
-  void ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, xiiStringView sTypeName);
-
-  xiiMap<xiiString, PropertyValue> m_PassProperties;
-  xiiMap<xiiString, PropertyValue> m_PassReadBackProperties;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

@@ -8,14 +8,10 @@
 
 #include <GraphicsFoundation/States/PipelineState.h>
 
-class xiiGALDevice;
-
 /// \brief A cache from pipeline descriptor to handle which holds a reference to each pipeline that is never freed until shutdown.
 class XII_GRAPHICSCORE_DLL xiiGALPipelineCache
 {
   XII_DECLARE_SINGLETON(xiiGALPipelineCache);
-
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiGALPipelineCache);
 
 public:
   /// \brief Creates a pipeline or retrieves it from the cache.

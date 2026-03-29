@@ -17,9 +17,8 @@
 /// OnFrameEnd is called after all passes have been submitted so implementations can schedule readback or finalize timing data.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphProfiler
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderGraphProfiler);
-
 public:
+  xiiRenderGraphProfiler()          = default;
   virtual ~xiiRenderGraphProfiler() = default;
 
   /// \brief Called immediately before a pass records its commands. Insert a begin-query here.
@@ -36,8 +35,6 @@ public:
   ///        Returns 0.0f if no data is yet available (warmup frames).
   [[nodiscard]] virtual float GetPassDurationMs(xiiHashedString sPassName) const = 0;
 };
-
-//------------------------------------------------------------------------------
 
 /// \brief A concrete render graph profiler that uses GPU Duration queries.
 ///
