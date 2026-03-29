@@ -415,7 +415,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
       cp.m_bAllowMerge      = m_Passes[idx].m_bAllowMerge;
       cp.m_bIsCulled        = false;
       cp.m_pPassData        = m_Passes[idx].m_pPassData;
-      cp.m_ExecuteFunc      = m_Passes[idx].m_ExecuteFunc;
+      cp.m_ExecuteDelegate  = m_Passes[idx].m_ExecuteDelegate;
     }
     m_Statistics.m_uiCulledPassCount = 0U;
     return;
@@ -465,7 +465,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
     cp.m_bAllowMerge      = m_Passes[idx].m_bAllowMerge;
     cp.m_bIsCulled        = !isLive[idx];
     cp.m_pPassData        = m_Passes[idx].m_pPassData;
-    cp.m_ExecuteFunc      = m_Passes[idx].m_ExecuteFunc;
+    cp.m_ExecuteDelegate  = m_Passes[idx].m_ExecuteDelegate;
     if (cp.m_bIsCulled) ++uiCulled;
   }
   m_Statistics.m_uiCulledPassCount = uiCulled;
@@ -942,7 +942,7 @@ xiiResult xiiRenderGraph::Execute(
       ctx.m_ResolvedTextures = xiiMakeArrayPtr(resolvedTextures.GetData(), resolvedTextures.GetCount());
       ctx.m_ResolvedBuffers  = xiiMakeArrayPtr(resolvedBuffers.GetData(), resolvedBuffers.GetCount());
 
-      cp.m_ExecuteFunc(ctx);
+      cp.m_ExecuteDelegate(ctx);
 
       // Profiler end.
       if (pProfiler && m_LastCompileSettings.m_bEnableGPUProfiling)
