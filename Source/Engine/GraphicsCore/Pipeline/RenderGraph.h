@@ -203,65 +203,52 @@ private:
   xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>>  m_ResolvedBuffers;
 };
 
-// ============================================================================
-//  Builder
-// ============================================================================
-
 /// \brief Declarative API used inside a pass's setup callback to declare resource usage.
 ///
-/// Each call to Read* or Write* records a dependency edge in the graph's dependency
-/// table and advances the resource version on writes. The builder may only be used
-/// within the setup callback passed to xiiRenderGraph::AddPass().
+/// Each call to Read* or Write* records a dependency edge in the graph's dependency table and advances the resource version on writes.
+/// The builder may only be used within the setup callback passed to xiiRenderGraph::AddPass().
 class XII_GRAPHICSCORE_DLL xiiRGBuilder
 {
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRGBuilder);
+
 public:
-  // Non-copyable — tied to a specific graph and pass index.
-  xiiRGBuilder(const xiiRGBuilder&)            = delete;
-  xiiRGBuilder& operator=(const xiiRGBuilder&) = delete;
-
-  // ── Texture declarations ────────────────────────────────────────────────
-
   /// \brief Declares a new transient texture resource owned by the graph.
-  ///        Returns a handle pointing to version 0 (unwritten). Normally
-  ///        followed immediately by WriteTexture() to register the first write.
-  [[nodiscard]] xiiRGTextureHandle DeclareTexture(xiiHashedString sName, const xiiGALTextureCreationDescription& desc);
+  ///        Returns a handle pointing to version 0 (unwritten). Normally followed immediately by WriteTexture() to register the first write.
+  [[nodiscard]] xiiRGTextureHandle DeclareTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description);
 
   /// \brief Imports an externally-owned texture as a read-only graph resource.
-  [[nodiscard]] xiiRGTextureHandle ImportTexture(xiiHashedString sName, xiiSharedPtr<xiiGALTexture> pTexture,
-                                                 xiiBitflags<xiiGALResourceStateFlags> currentState);
+  [[nodiscard]] xiiRGTextureHandle ImportTexture(xiiStringView sName, xiiSharedPtr<xiiGALTexture> pTexture, xiiBitflags<xiiGALResourceStateFlags> currentState);
 
   /// \brief Declares a read dependency on the given texture at its current version.
   ///        Creates a dependency edge: this pass depends on the last writer.
-  [[nodiscard]] xiiRGTextureHandle ReadTexture(xiiRGTextureHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+  [[nodiscard]] xiiRGTextureHandle ReadTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
   /// \brief Declares a write to the given texture, bumping its version.
-  ///        Returns the new versioned handle — store this, not the input handle.
-  [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiRGTextureHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+  ///        Returns the new versioned handle - store this, not the input handle.
+  [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Shorthand: declare transient texture AND register first write in one call.
-  [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiHashedString sName, const xiiGALTextureCreationDescription& desc,
-                                                xiiBitflags<xiiGALResourceStateFlags> requiredState);
+  /// \brief Shorthand: declare transient texture AND register first write.
+  [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  // ── Buffer declarations ─────────────────────────────────────────────────
 
   /// \brief Declares a new transient buffer resource owned by the graph.
-  [[nodiscard]] xiiRGBufferHandle DeclareBuffer(xiiHashedString sName, const xiiGALBufferCreationDescription& desc);
+  ///        Returns a handle pointing to version 0 (unwritten). Normally followed immediately by WriteBuffer() to register the first write.
+  [[nodiscard]] xiiRGBufferHandle DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description);
 
-  /// \brief Imports an externally-owned buffer into the graph.
-  [[nodiscard]] xiiRGBufferHandle ImportBuffer(xiiHashedString sName, xiiSharedPtr<xiiGALBuffer> pBuffer,
-                                               xiiBitflags<xiiGALResourceStateFlags> currentState);
+  /// \brief Imports an externally-owned buffer as a read-only graph resource.
+  [[nodiscard]] xiiRGBufferHandle ImportBuffer(xiiStringView sName, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiBitflags<xiiGALResourceStateFlags> currentState);
 
-  /// \brief Declares a read dependency on the buffer.
-  [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiRGBufferHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+  /// \brief Declares a read dependency on the given buffer at its current version.
+  ///        Creates a dependency edge: this pass depends on the last writer.
+  [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiRGBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Declares a write to the buffer, bumping its version.
-  [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiRGBufferHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+  /// \brief Declares a write to the given buffer, bumping its version.
+  ///        Returns the new versioned handle - store this, not the input handle.
+  [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiRGBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
   /// \brief Shorthand: declare transient buffer AND register first write.
-  [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiHashedString sName, const xiiGALBufferCreationDescription& desc,
-                                              xiiBitflags<xiiGALResourceStateFlags> requiredState);
+  [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  // ── Pass-level flags ────────────────────────────────────────────────────
 
   /// \brief Marks this pass as having side effects that prevent it from being culled.
   ///        Call this for passes that write to swap-chain images, initiate readbacks, etc.
@@ -272,7 +259,7 @@ public:
   void SetPassAllowMerge(bool bAllowMerge);
 
 private:
-  friend class xiiRenderGraph; // Only the graph may construct builders.
+  friend class xiiRenderGraph;
 
   xiiRGBuilder(xiiRenderGraph& graph, xiiUInt32 uiPassIndex);
 
@@ -426,6 +413,8 @@ public:
   [[nodiscard]] bool IsCompiled() const { return m_bIsCompiled; }
 
 private:
+  friend class xiiRGBuilder;
+
   // ── Internal resource / pass entry types ─────────────────────────────────
 
   struct ResourceEntry
@@ -435,8 +424,8 @@ private:
     bool            m_bIsImported  = false;
     bool            m_bIsTransient = false; ///< True = graph-owned, allocated via ResourceCache.
 
-    xiiGALTextureCreationDescription m_TextureDesc;
-    xiiGALBufferCreationDescription  m_BufferDesc;
+    xiiGALTextureCreationDescription m_TextureDescription;
+    xiiGALBufferCreationDescription  m_BufferDescription;
 
     // Imported external resources (non-transient).
     xiiSharedPtr<xiiGALTexture>           m_pImportedTexture;
