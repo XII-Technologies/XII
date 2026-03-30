@@ -18,7 +18,7 @@ public:
   virtual ~xiiRenderPipelinePass();
 
   /// \brief Called each frame when the world module prepares the render graph for a given view.
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph) = 0;
+  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, class xiiRenderGraphBlackboard& blackboard) = 0;
 
   xiiStringView GetName() const { return m_sName; }
 

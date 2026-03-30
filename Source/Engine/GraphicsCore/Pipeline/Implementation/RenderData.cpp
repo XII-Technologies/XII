@@ -1,67 +1,256 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
-
 #include <GraphicsCore/Pipeline/RenderData.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
-
 #include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Threading/Lock.h>
-
-// RenderData
+#include <Foundation/Threading/Mutex.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+static xiiMutex s_CategoryMutex;
+static xiiDynamicArray<xiiStringView> s_CategoryNames;
 
-// ExtractedRenderData
+// ----------------------------------------------------------------------------------------------------------------
+// xiiRenderData
+
+xiiRenderDataCategory xiiRenderData::RegisterCategory(const char* szCategoryName)
+{
+  XII_LOCK(s_CategoryMutex);
+
+  for (xiiUInt32 i = 0; i < s_CategoryNames.GetCount(); ++i)
+  {
+    if (s_CategoryNames[i].IsEqual_NoCase(szCategoryName))
+    {
+      return xiiRenderDataCategory{ static_cast<xiiUInt16>(i) };
+    }
+  }
+
+  // Create new category
+  xiiUInt32 newIdx = s_CategoryNames.GetCount();
+  XII_ASSERT_DEV(newIdx < 0xFFFF, "Maximum number of render data categories reached.");
+
+  // Store persistent string for the view. Easiest way is to just keep it in another array if necessary,
+  // but usually szCategoryName is a static string literal. However, to be safe, we can deep copy or assume it's stable.
+  // Wait, xiiStringView doesn't own memory. If it's a static constant, it's fine.
+  // If we need to own it, we should use xiiHashedString or allocate it.
+  static xiiDynamicArray<xiiString> s_CategoryStringData;
+  s_CategoryStringData.PushBack(szCategoryName);
+  s_CategoryNames.PushBack(s_CategoryStringData.PeekBack());
+
+  return xiiRenderDataCategory{ static_cast<xiiUInt16>(newIdx) };
+}
+
+xiiRenderDataCategory xiiRenderData::FindCategory(const char* szCategoryName)
+{
+  XII_LOCK(s_CategoryMutex);
+
+  for (xiiUInt32 i = 0; i < s_CategoryNames.GetCount(); ++i)
+  {
+    if (s_CategoryNames[i].IsEqual_NoCase(szCategoryName))
+    {
+      return xiiRenderDataCategory{ static_cast<xiiUInt16>(i) };
+    }
+  }
+
+  return xiiRenderDataCategory{ 0xFFFF }; // Invalid
+}
+
+xiiStringView xiiRenderData::GetCategoryName(xiiRenderDataCategory category)
+{
+  XII_LOCK(s_CategoryMutex);
+  if (category.m_uiValue < s_CategoryNames.GetCount())
+  {
+    return s_CategoryNames[category.m_uiValue];
+  }
+  return xiiStringView();
+}
+
+const xiiArrayPtr<xiiStringView> xiiRenderData::GetAllCategoryNames()
+{
+  // Warning: Access is technically not thread-safe if returning raw pointer while array could grow.
+  // But usually categories are registered once at startup.
+  return s_CategoryNames;
+}
+
+void xiiRenderData::ClearAllCategories()
+{
+  XII_LOCK(s_CategoryMutex);
+  s_CategoryNames.Clear();
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+// xiiDefaultRenderDataCategories
+
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Light = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Decal = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::ReflectionProbe = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Sky = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::OpaqueStatic = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::OpaqueDynamic = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Opaque = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::MaskedStatic = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::MaskedDynamic = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Masked = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Transparent = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Foreground = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::ScreenFX = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::SimpleOpaque = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::SimpleTransparent = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Selection = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::GUI = xiiRenderDataCategory{};
+
+void xiiDefaultRenderDataCategories::RegisterDefaultCategories()
+{
+  if (Light.IsValid())
+    return; // Already registered
+
+  Light = xiiRenderData::RegisterCategory("Light");
+  Decal = xiiRenderData::RegisterCategory("Decal");
+  ReflectionProbe = xiiRenderData::RegisterCategory("ReflectionProbe");
+  Sky = xiiRenderData::RegisterCategory("Sky");
+  OpaqueStatic = xiiRenderData::RegisterCategory("OpaqueStatic");
+  OpaqueDynamic = xiiRenderData::RegisterCategory("OpaqueDynamic");
+  Opaque = xiiRenderData::RegisterCategory("Opaque");
+  MaskedStatic = xiiRenderData::RegisterCategory("MaskedStatic");
+  MaskedDynamic = xiiRenderData::RegisterCategory("MaskedDynamic");
+  Masked = xiiRenderData::RegisterCategory("Masked");
+  Transparent = xiiRenderData::RegisterCategory("Transparent");
+  Foreground = xiiRenderData::RegisterCategory("Foreground");
+  ScreenFX = xiiRenderData::RegisterCategory("ScreenFX");
+  SimpleOpaque = xiiRenderData::RegisterCategory("SimpleOpaque");
+  SimpleTransparent = xiiRenderData::RegisterCategory("SimpleTransparent");
+  Selection = xiiRenderData::RegisterCategory("Selection");
+  GUI = xiiRenderData::RegisterCategory("GUI");
+}
+
+// ----------------------------------------------------------------------------------------------------------------
+// xiiExtractedRenderData
+
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 xiiExtractedRenderData::xiiExtractedRenderData()
 {
-  m_BatchesPerCategory.SetCount((xiiUInt32)xiiRenderData::Category::ENUM_COUNT);
 }
 
-xiiExtractedRenderData::~xiiExtractedRenderData() = default;
-
-void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderData::Category category, const xiiRenderDataBatch& batch)
+xiiExtractedRenderData::~xiiExtractedRenderData()
 {
-  if (batch.m_Data.IsEmpty())
-    return;
+}
 
-  xiiLock<xiiMutex> lock(m_Mutex);
-  m_BatchesPerCategory[(xiiUInt32)category].PushBack(batch);
+void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch)
+{
+  XII_LOCK(m_Mutex);
+  if (category.m_uiValue >= m_BatchesPerCategory.GetCount())
+  {
+    m_BatchesPerCategory.SetCount(category.m_uiValue + 1);
+  }
+  m_BatchesPerCategory[category.m_uiValue].PushBack(batch);
 }
 
 void xiiExtractedRenderData::Clear()
 {
+  XII_LOCK(m_Mutex);
   for (auto& batches : m_BatchesPerCategory)
   {
     batches.Clear();
   }
-}
-
-xiiArrayPtr<const xiiRenderDataBatch> xiiExtractedRenderData::GetBatches(xiiRenderData::Category category) const
-{
-  return m_BatchesPerCategory[(xiiUInt32)category].GetArrayPtr();
+  for (auto& sortedData : m_SortedRenderData)
+  {
+    sortedData.Clear();
+  }
 }
 
 void xiiExtractedRenderData::SortAndBatches()
 {
-  // For sorting, we either sort in-place per batch or we flatten, sort, and re-batch here.
-  // In a robust implementation, usually a linear array of pointers is gathered, sorted, and that is what's iterated.
-  // For simplicity right now, we assume batch sorting logic happens either by passes or here via simple sorting.
-  // We'll leave the implementation mostly as a placeholder or perform a simple sort if we flatten.
-}
+  XII_LOCK(m_Mutex);
 
+  // Resize sorted data array to match the maximum category ID we have received batches for
+  m_SortedRenderData.SetCount(m_BatchesPerCategory.GetCount());
 
-// MsgExtractRenderData
-
-XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgExtractRenderData);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgExtractRenderData, 1, xiiRTTIDefaultAllocator<xiiMsgExtractRenderData>)
-{
-  XII_BEGIN_PROPERTIES
+  // Use Radix Sort for sorting 64-bit keys.
+  auto radixSort64 = [](xiiRenderData** pData, xiiUInt32 uiCount)
   {
-    // Normally messages don't deeply reflect their payload for serialization unless needed, this is runtime.
+    if (uiCount < 2) return;
+
+    // We do an 8-pass radix sort over the 64-bit key
+    xiiDynamicArray<xiiRenderData*> tempArray;
+    tempArray.SetCountUninitialized(uiCount);
+    xiiRenderData** pSource = pData;
+    xiiRenderData** pDest = tempArray.GetData();
+
+    for (xiiUInt32 pass = 0; pass < 8; ++pass)
+    {
+      xiiUInt32 counts[256] = { 0 };
+      
+      // Counting
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        xiiUInt8 byteVal = static_cast<xiiUInt8>((pSource[i]->m_uiSortingKey >> (pass * 8)) & 0xFF);
+        counts[byteVal]++;
+      }
+
+      // Prefix sum
+      xiiUInt32 offsets[256];
+      offsets[0] = 0;
+      for (xiiUInt32 i = 1; i < 256; ++i)
+      {
+        offsets[i] = offsets[i - 1] + counts[i - 1];
+      }
+
+      // Placement
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        xiiUInt8 byteVal = static_cast<xiiUInt8>((pSource[i]->m_uiSortingKey >> (pass * 8)) & 0xFF);
+        pDest[offsets[byteVal]++] = pSource[i];
+      }
+
+      // Swap pointers
+      auto* pTemp = pSource;
+      pSource = pDest;
+      pDest = pTemp;
+    }
+
+    // If we ended up with the sorted array in the temp buffer, copy it back
+    if (pSource != pData)
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        pData[i] = pSource[i];
+      }
+    }
+  };
+
+  for (xiiUInt32 i = 0; i < m_BatchesPerCategory.GetCount(); ++i)
+  {
+    auto& batches = m_BatchesPerCategory[i];
+    auto& sortedData = m_SortedRenderData[i];
+
+    sortedData.Clear();
+    
+    // Flatten
+    xiiUInt32 uiTotalElements = 0;
+    for (const auto& batch : batches)
+    {
+      uiTotalElements += batch.m_Data.GetCount();
+    }
+    
+    if (uiTotalElements > 0)
+    {
+      sortedData.Reserve(uiTotalElements);
+      for (const auto& batch : batches)
+      {
+        sortedData.PushBackRange(batch.m_Data);
+      }
+
+      // Sort
+      radixSort64(sortedData.GetData(), sortedData.GetCount());
+    }
   }
-  XII_END_PROPERTIES;
 }
-XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetRenderData(xiiRenderDataCategory category) const
+{
+  if (category.m_uiValue < m_SortedRenderData.GetCount())
+  {
+    return m_SortedRenderData[category.m_uiValue];
+  }
+  return xiiArrayPtr<xiiRenderData* const>();
+}

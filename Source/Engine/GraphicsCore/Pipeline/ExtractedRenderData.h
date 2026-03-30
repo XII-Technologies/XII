@@ -20,18 +20,23 @@ public:
   ~xiiExtractedRenderData();
 
   /// \brief Pushes a batch of extracted data safely to the internal list.
-  void AddRenderDataBatch(xiiRenderData::Category category, const xiiRenderDataBatch& batch);
+  void AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch);
 
   /// \brief Clears the internal arrays entirely. Called at the start of extreme frame extraction.
   void Clear();
 
-  /// \brief Returns all batches aggregated under the given category.
-  xiiArrayPtr<const xiiRenderDataBatch> GetBatches(xiiRenderData::Category category) const;
-
   /// \brief Sorts the underlying render data by sorting key for cache-efficient render execution.
   void SortAndBatches();
 
+  /// \brief Returns the flattened and sorted render data for the given category.
+  xiiArrayPtr<xiiRenderData* const> GetRenderData(xiiRenderDataCategory category) const;
+
 private:
-  xiiMutex                                             m_Mutex;
+  xiiMutex m_Mutex;
+  
+  // Batches submitted concurrently
   xiiDynamicArray<xiiDynamicArray<xiiRenderDataBatch>> m_BatchesPerCategory;
+  
+  // Flattened and sorted array per category, built during SortAndBatches
+  xiiDynamicArray<xiiDynamicArray<xiiRenderData*>> m_SortedRenderData;
 };
