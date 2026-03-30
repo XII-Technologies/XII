@@ -4,6 +4,8 @@
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)
@@ -97,7 +99,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiView::xiiView() = default;
+xiiView::xiiView()
+{
+  m_pRenderGraph   = XII_DEFAULT_NEW(xiiRenderGraph);
+  m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+}
 
 xiiView::~xiiView() = default;
 

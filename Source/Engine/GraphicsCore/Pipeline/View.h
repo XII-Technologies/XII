@@ -12,6 +12,8 @@
 
 class xiiFrustum;
 class xiiWorld;
+class xiiRenderGraph;
+class xiiExtractedRenderData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -107,6 +109,12 @@ public:
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
 
+  xiiRenderGraph*         GetRenderGraph() { return m_pRenderGraph.Borrow(); }
+  const xiiRenderGraph*   GetRenderGraph() const { return m_pRenderGraph.Borrow(); }
+
+  xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData.Borrow(); }
+  const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData.Borrow(); }
+
 private:
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
@@ -126,6 +134,9 @@ private:
   mutable float     m_fLastViewportAspectRatio            = 1.0f;
 
   mutable xiiViewData m_Data;
+
+  xiiUniquePtr<xiiRenderGraph>         m_pRenderGraph;
+  xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>
