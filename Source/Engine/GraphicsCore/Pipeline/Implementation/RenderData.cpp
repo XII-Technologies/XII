@@ -1,5 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
+#include <Foundation/Algorithm/Sorting.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Threading/Mutex.h>
 
@@ -165,58 +166,7 @@ void xiiExtractedRenderData::SortAndBatches()
   // Resize sorted data array to match the maximum category ID we have received batches for
   m_SortedRenderData.SetCount(m_BatchesPerCategory.GetCount());
 
-  // Use Radix Sort for sorting 64-bit keys.
-  auto radixSort64 = [](xiiRenderData** pData, xiiUInt32 uiCount)
-  {
-    if (uiCount < 2) return;
-
-    // We do an 8-pass radix sort over the 64-bit key
-    xiiDynamicArray<xiiRenderData*> tempArray;
-    tempArray.SetCountUninitialized(uiCount);
-    xiiRenderData** pSource = pData;
-    xiiRenderData** pDest = tempArray.GetData();
-
-    for (xiiUInt32 pass = 0; pass < 8; ++pass)
-    {
-      xiiUInt32 counts[256] = { 0 };
-      
-      // Counting
-      for (xiiUInt32 i = 0; i < uiCount; ++i)
-      {
-        xiiUInt8 byteVal = static_cast<xiiUInt8>((pSource[i]->m_uiSortingKey >> (pass * 8)) & 0xFF);
-        counts[byteVal]++;
-      }
-
-      // Prefix sum
-      xiiUInt32 offsets[256];
-      offsets[0] = 0;
-      for (xiiUInt32 i = 1; i < 256; ++i)
-      {
-        offsets[i] = offsets[i - 1] + counts[i - 1];
-      }
-
-      // Placement
-      for (xiiUInt32 i = 0; i < uiCount; ++i)
-      {
-        xiiUInt8 byteVal = static_cast<xiiUInt8>((pSource[i]->m_uiSortingKey >> (pass * 8)) & 0xFF);
-        pDest[offsets[byteVal]++] = pSource[i];
-      }
-
-      // Swap pointers
-      auto* pTemp = pSource;
-      pSource = pDest;
-      pDest = pTemp;
-    }
-
-    // If we ended up with the sorted array in the temp buffer, copy it back
-    if (pSource != pData)
-    {
-      for (xiiUInt32 i = 0; i < uiCount; ++i)
-      {
-        pData[i] = pSource[i];
-      }
-    }
-  };
+  xiiDynamicArray<xiiRenderData*> sortScratchBuffer;
 
   for (xiiUInt32 i = 0; i < m_BatchesPerCategory.GetCount(); ++i)
   {
@@ -224,14 +174,14 @@ void xiiExtractedRenderData::SortAndBatches()
     auto& sortedData = m_SortedRenderData[i];
 
     sortedData.Clear();
-    
+
     // Flatten
     xiiUInt32 uiTotalElements = 0;
     for (const auto& batch : batches)
     {
       uiTotalElements += batch.m_Data.GetCount();
     }
-    
+
     if (uiTotalElements > 0)
     {
       sortedData.Reserve(uiTotalElements);
@@ -241,7 +191,11 @@ void xiiExtractedRenderData::SortAndBatches()
       }
 
       // Sort
-      radixSort64(sortedData.GetData(), sortedData.GetCount());
+      xiiArrayPtr<xiiRenderData*> sortedDataPtr = sortedData;
+      xiiSorting::RadixSort(sortedDataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64
+        {
+          return pRenderData->m_uiSortingKey;
+        });
     }
   }
 }

@@ -107,6 +107,188 @@ void xiiSorting::MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& compare
   MergeSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
+template <typename Container>
+void xiiSorting::RadixSort(Container& ref_container)
+{
+  if (ref_container.GetCount() < 2)
+    return;
+
+  using Element = std::remove_reference_t<decltype(ref_container[0])>;
+
+  xiiDynamicArray<Element> scratchBuffer;
+  RadixSort(ref_container, scratchBuffer, DefaultRadixKeyExtractor<Element>());
+}
+
+template <typename Container, typename KeyFunc>
+void xiiSorting::RadixSort(Container& ref_container, const KeyFunc& keyFunc)
+{
+  if (ref_container.GetCount() < 2)
+    return;
+
+  using Element = std::remove_reference_t<decltype(ref_container[0])>;
+
+  xiiDynamicArray<Element> scratchBuffer;
+  RadixSort(ref_container, scratchBuffer, keyFunc);
+}
+
+template <typename T>
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr)
+{
+  RadixSort(ref_arrayPtr, DefaultRadixKeyExtractor<T>());
+}
+
+template <typename T, typename KeyFunc>
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, const KeyFunc& keyFunc)
+{
+  if (ref_arrayPtr.GetCount() < 2)
+    return;
+
+  xiiDynamicArray<T> scratchBuffer;
+  RadixSort(ref_arrayPtr, scratchBuffer, keyFunc);
+}
+
+template <typename T, typename KeyFunc>
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, xiiDynamicArray<T>& ref_scratchBuffer, const KeyFunc& keyFunc)
+{
+  const xiiUInt32 uiCount = ref_arrayPtr.GetCount();
+  if (uiCount < 2)
+    return;
+
+  if (ref_scratchBuffer.GetCount() < uiCount)
+  {
+    ref_scratchBuffer.SetCountUninitialized(uiCount);
+  }
+
+  T* pPrimary   = ref_arrayPtr.GetPtr();
+  T* pSecondary = ref_scratchBuffer.GetData();
+
+  T* pSource = pPrimary;
+  T* pDest   = pSecondary;
+
+  for (xiiUInt32 pass = 0; pass < 8; ++pass)
+  {
+    xiiUInt32 uiCounts[256] = {0};
+
+    const xiiUInt8 uiFirstByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[0]) >> (pass * 8U)) & 0xFFU);
+    bool            bSingleBucket = true;
+
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
+    {
+      const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[i]) >> (pass * 8U)) & 0xFFU);
+      ++uiCounts[uiByte];
+      bSingleBucket &= (uiByte == uiFirstByte);
+    }
+
+    if (bSingleBucket)
+      continue;
+
+    xiiUInt32 uiOffsets[256];
+    uiOffsets[0] = 0;
+    for (xiiUInt32 i = 1; i < 256; ++i)
+    {
+      uiOffsets[i] = uiOffsets[i - 1] + uiCounts[i - 1];
+    }
+
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
+    {
+      const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[i]) >> (pass * 8U)) & 0xFFU);
+      pDest[uiOffsets[uiByte]++] = std::move(pSource[i]);
+    }
+
+    xiiMath::Swap(pSource, pDest);
+  }
+
+  if (pSource != pPrimary)
+  {
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
+    {
+      pPrimary[i] = std::move(pSource[i]);
+    }
+  }
+}
+
+template <typename Container, typename Element, typename KeyFunc>
+void xiiSorting::RadixSort(Container& container, xiiDynamicArray<Element>& scratchBuffer, const KeyFunc& keyFunc)
+{
+  const xiiUInt32 uiCount = container.GetCount();
+  if (uiCount < 2)
+    return;
+
+  if (scratchBuffer.GetCount() < uiCount)
+  {
+    scratchBuffer.SetCountUninitialized(uiCount);
+  }
+
+  bool bSourceIsContainer = true;
+
+  for (xiiUInt32 pass = 0; pass < 8; ++pass)
+  {
+    xiiUInt32 uiCounts[256] = {0};
+
+    const xiiUInt8 uiFirstByte = bSourceIsContainer ?
+      static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[0]) >> (pass * 8U)) & 0xFFU) :
+      static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[0]) >> (pass * 8U)) & 0xFFU);
+
+    bool bSingleBucket = true;
+
+    if (bSourceIsContainer)
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[i]) >> (pass * 8U)) & 0xFFU);
+        ++uiCounts[uiByte];
+        bSingleBucket &= (uiByte == uiFirstByte);
+      }
+    }
+    else
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[i]) >> (pass * 8U)) & 0xFFU);
+        ++uiCounts[uiByte];
+        bSingleBucket &= (uiByte == uiFirstByte);
+      }
+    }
+
+    if (bSingleBucket)
+      continue;
+
+    xiiUInt32 uiOffsets[256];
+    uiOffsets[0] = 0;
+    for (xiiUInt32 i = 1; i < 256; ++i)
+    {
+      uiOffsets[i] = uiOffsets[i - 1] + uiCounts[i - 1];
+    }
+
+    if (bSourceIsContainer)
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[i]) >> (pass * 8U)) & 0xFFU);
+        scratchBuffer[uiOffsets[uiByte]++] = std::move(container[i]);
+      }
+    }
+    else
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[i]) >> (pass * 8U)) & 0xFFU);
+        container[uiOffsets[uiByte]++] = std::move(scratchBuffer[i]);
+      }
+    }
+
+    bSourceIsContainer = !bSourceIsContainer;
+  }
+
+  if (!bSourceIsContainer)
+  {
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
+    {
+      container[i] = std::move(scratchBuffer[i]);
+    }
+  }
+}
+
 template <typename Container, typename Comparer>
 void xiiSorting::QuickSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {

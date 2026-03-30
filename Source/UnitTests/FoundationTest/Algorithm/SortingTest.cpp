@@ -11,6 +11,55 @@ namespace
     // Comparision via operator. Sorting algorithm should prefer Less operator
     bool operator()(xiiInt32 a, xiiInt32 b) const { return a < b; }
   };
+
+  struct RadixSortTestItem
+  {
+    xiiUInt64 m_uiKey           = 0;
+    xiiUInt32 m_uiOriginalIndex = 0;
+  };
+
+  struct RadixSortTestKeyExtractor
+  {
+    XII_ALWAYS_INLINE xiiUInt64 GetKey(const RadixSortTestItem& value) const { return value.m_uiKey; }
+
+    // Key extraction should prefer GetKey.
+    xiiUInt64 operator()(const RadixSortTestItem& value) const { return ~value.m_uiKey; }
+  };
+
+  xiiDynamicArray<RadixSortTestItem> CreateRadixSortTestItems()
+  {
+    xiiDynamicArray<RadixSortTestItem> items;
+    items.Reserve(4096);
+
+    for (xiiUInt32 i = 0; i < 4096; ++i)
+    {
+      auto& item             = items.ExpandAndGetRef();
+      item.m_uiOriginalIndex = i;
+      item.m_uiKey           = static_cast<xiiUInt64>(((i * 2654435761u) ^ (i >> 3u)) & 0x3FFu);
+    }
+
+    for (xiiUInt32 i = 0; i < items.GetCount(); ++i)
+    {
+      const xiiUInt32 uiSwapIndex = (i * 1103515245u + 12345u) % items.GetCount();
+      xiiMath::Swap(items[i], items[uiSwapIndex]);
+    }
+
+    return items;
+  }
+
+  template <typename Container>
+  void VerifyRadixSortStableOrder(const Container& items)
+  {
+    for (xiiUInt32 i = 1; i < items.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(items[i - 1].m_uiKey <= items[i].m_uiKey);
+
+      if (items[i - 1].m_uiKey == items[i].m_uiKey)
+      {
+        XII_TEST_BOOL(items[i - 1].m_uiOriginalIndex < items[i].m_uiOriginalIndex);
+      }
+    }
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
@@ -187,5 +236,53 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     {
       XII_TEST_BOOL(a2[i - 1] >= a2[i]);
     }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "RadixSort - UInt64")
+  {
+    xiiDynamicArray<xiiUInt64> values;
+    values.Reserve(5000);
+
+    for (xiiUInt32 i = 0; i < 5000; ++i)
+    {
+      const xiiUInt64 uiValue = (static_cast<xiiUInt64>(rand() % 8192) << 32u) | static_cast<xiiUInt64>(rand() % 8192);
+      values.PushBack(uiValue);
+    }
+
+    xiiDynamicArray<xiiUInt64> valuesPtrSort = values;
+
+    xiiSorting::RadixSort(values);
+
+    for (xiiUInt32 i = 1; i < values.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(values[i - 1] <= values[i]);
+    }
+
+    xiiArrayPtr<xiiUInt64> valuesPtr = valuesPtrSort;
+    xiiSorting::RadixSort(valuesPtr);
+
+    for (xiiUInt32 i = 1; i < valuesPtr.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(valuesPtr[i - 1] <= valuesPtr[i]);
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "RadixSort - KeyExtractor")
+  {
+    xiiDynamicArray<RadixSortTestItem> items = CreateRadixSortTestItems();
+
+    xiiSorting::RadixSort(items, RadixSortTestKeyExtractor());
+    VerifyRadixSortStableOrder(items);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "RadixSort - ArrayPtr Scratch")
+  {
+    xiiDynamicArray<RadixSortTestItem> items = CreateRadixSortTestItems();
+    xiiDynamicArray<RadixSortTestItem> scratchBuffer;
+
+    xiiArrayPtr<RadixSortTestItem> itemPtr = items;
+    xiiSorting::RadixSort(itemPtr, scratchBuffer, RadixSortTestKeyExtractor());
+
+    VerifyRadixSortStableOrder(itemPtr);
   }
 }

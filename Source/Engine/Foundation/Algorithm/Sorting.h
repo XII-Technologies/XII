@@ -4,6 +4,7 @@
 #include <Foundation/Basics.h>
 
 #include <Foundation/Algorithm/Comparer.h>
+#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Types/ArrayPtr.h>
 
@@ -64,6 +65,27 @@ public:
   template <typename T, typename Comparer>
   static void MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [untested]
 
+
+  /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable).
+  template <typename Container>
+  static void RadixSort(Container& ref_container); // [tested]
+
+  /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable).
+  template <typename Container, typename KeyFunc>
+  static void RadixSort(Container& ref_container, const KeyFunc& keyFunc); // [tested]
+
+  /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable).
+  template <typename T>
+  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr); // [tested]
+
+  /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable).
+  template <typename T, typename KeyFunc>
+  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, const KeyFunc& keyFunc); // [tested]
+
+  /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable), reusing external scratch memory.
+  template <typename T, typename KeyFunc>
+  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, xiiDynamicArray<T>& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
+
 private:
   enum
   {
@@ -87,6 +109,34 @@ private:
     // Int/Long is used to prefer the Int version if both are available.
     // (Kudos to http://stackoverflow.com/a/9154394/5347927 where I've learned this trick)
     return DoCompare(comparer, a, b, 0);
+  }
+
+
+  template <typename Element>
+  struct DefaultRadixKeyExtractor
+  {
+    XII_ALWAYS_INLINE constexpr xiiUInt64 GetKey(const Element& value) const
+    {
+      return static_cast<xiiUInt64>(value);
+    }
+  };
+
+  template <typename Element, typename KeyFunc>
+  XII_ALWAYS_INLINE constexpr static auto ExtractRadixKey(const KeyFunc& keyFunc, const Element& value, xiiInt32) -> decltype(keyFunc.GetKey(value))
+  {
+    return keyFunc.GetKey(value);
+  }
+
+  template <typename Element, typename KeyFunc>
+  XII_ALWAYS_INLINE constexpr static auto ExtractRadixKey(const KeyFunc& keyFunc, const Element& value, long) -> decltype(keyFunc(value))
+  {
+    return keyFunc(value);
+  }
+
+  template <typename Element, typename KeyFunc>
+  XII_ALWAYS_INLINE constexpr static xiiUInt64 ExtractRadixKey(const KeyFunc& keyFunc, const Element& value)
+  {
+    return static_cast<xiiUInt64>(ExtractRadixKey(keyFunc, value, 0));
   }
 
 
@@ -144,6 +194,10 @@ private:
 
   template <typename T, typename Comparer>
   static void Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+
+
+  template <typename Container, typename Element, typename KeyFunc>
+  static void RadixSort(Container& container, xiiDynamicArray<Element>& scratchBuffer, const KeyFunc& keyFunc);
 };
 
 #include <Foundation/Algorithm/Implementation/Sorting_inl.h>
