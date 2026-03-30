@@ -36,7 +36,7 @@ xiiRGTextureHandle xiiRGBuilder::DeclareTexture(xiiStringView sName, const xiiGA
   entry.m_TextureDescription           = description;
 
   entry.m_sName.Assign(sName);
-  m_Graph.m_ResourceNameIndex.Insert(sName, uiTextureResourceIndex);
+  m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
 
   xiiRGTextureHandle hTexture;
   hTexture.m_uiIndex   = uiTextureResourceIndex;
@@ -49,7 +49,7 @@ xiiRGTextureHandle xiiRGBuilder::ImportTexture(xiiStringView sName, xiiSharedPtr
   XII_ASSERT_DEV(pTexture != nullptr, "Cannot import a null texture.");
 
   xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
-  if (!m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiTextureResourceIndex))
+  if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex))
   {
     uiTextureResourceIndex               = m_Graph.m_Resources.GetCount();
     xiiRenderGraph::ResourceEntry& entry = m_Graph.m_Resources.ExpandAndGetRef();
@@ -61,7 +61,7 @@ xiiRGTextureHandle xiiRGBuilder::ImportTexture(xiiStringView sName, xiiSharedPtr
     entry.m_CurrentState                 = currentState;
 
     entry.m_sName.Assign(sName);
-    m_Graph.m_ResourceNameIndex.Insert(sName, uiTextureResourceIndex);
+    m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiTextureResourceIndex);
   }
 
   xiiRGTextureHandle hTexture;
@@ -117,7 +117,7 @@ xiiRGTextureHandle xiiRGBuilder::WriteTexture(xiiStringView sName, const xiiGALT
 xiiRGBufferHandle xiiRGBuilder::DeclareBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description)
 {
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
-  if (m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiBufferResourceIndex))
+  if (m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex))
   {
     XII_ASSERT_DEV(!m_Graph.m_Resources[uiBufferResourceIndex].m_bIsTexture, "Resource '{}' was already declared as a texture.", sName);
 
@@ -135,7 +135,7 @@ xiiRGBufferHandle xiiRGBuilder::DeclareBuffer(xiiStringView sName, const xiiGALB
   entry.m_BufferDescription            = description;
 
   entry.m_sName.Assign(sName);
-  m_Graph.m_ResourceNameIndex.Insert(sName, uiBufferResourceIndex);
+  m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
 
   xiiRGBufferHandle hBuffer;
   hBuffer.m_uiIndex   = uiBufferResourceIndex;
@@ -148,7 +148,7 @@ xiiRGBufferHandle xiiRGBuilder::ImportBuffer(xiiStringView sName, xiiSharedPtr<x
   XII_ASSERT_DEV(pBuffer != nullptr, "Cannot import a null buffer.");
 
   xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
-  if (!m_Graph.m_ResourceNameIndex.TryGetValue(sName, uiBufferResourceIndex))
+  if (!m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex))
   {
     uiBufferResourceIndex                = m_Graph.m_Resources.GetCount();
     xiiRenderGraph::ResourceEntry& entry = m_Graph.m_Resources.ExpandAndGetRef();
@@ -160,7 +160,7 @@ xiiRGBufferHandle xiiRGBuilder::ImportBuffer(xiiStringView sName, xiiSharedPtr<x
     entry.m_CurrentState                 = currentState;
 
     entry.m_sName.Assign(sName);
-    m_Graph.m_ResourceNameIndex.Insert(sName, uiBufferResourceIndex);
+    m_Graph.m_ResourceNameIndex.Insert(entry.m_sName, uiBufferResourceIndex);
   }
 
   xiiRGBufferHandle hBuffer;
