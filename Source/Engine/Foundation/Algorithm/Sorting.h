@@ -66,27 +66,32 @@ public:
   static void MergeSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [untested]
 
 
-  template <typename Container, typename ScratchContainer>
-  static void RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer)
-  {
-    using T = typename Container::value_type;
-
-    RadixSort(ref_container, ref_scratchBuffer, DefaultRadixKeyExtractor<T>{});
-  }
-
   /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable), reusing external scratch memory.
   template <typename Container, typename ScratchContainer, typename KeyFunc>
   static void RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
 
   /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable), reusing external scratch memory.
   template <typename T, typename ScratchContainer, typename KeyFunc>
-  static void RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc = DefaultRadixKeyExtractor<T>()); // [tested]
+  static void RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
 
 private:
   enum
   {
     INSERTION_THRESHOLD = 16
   };
+
+  template <typename Container>
+  XII_ALWAYS_INLINE constexpr static auto xiiGetPtr(Container& c) -> decltype(c.GetData())
+  {
+    return c.GetData();
+  }
+
+  template <typename T>
+  XII_ALWAYS_INLINE constexpr static T* xiiGetPtr(xiiArrayPtr<T>& p)
+  {
+    return p.GetPtr();
+  }
+
 
   // Perform comparison either with "Less(a,b)" (preferred) or with operator ()(a,b)
   template <typename Element, typename Comparer>

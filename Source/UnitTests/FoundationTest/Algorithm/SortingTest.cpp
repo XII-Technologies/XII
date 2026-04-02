@@ -253,7 +253,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     xiiDynamicArray<xiiUInt64> scratchBuffer;
     scratchBuffer.SetCountUninitialized(values.GetCount());
 
-    xiiSorting::RadixSort(values, scratchBuffer);
+    xiiSorting::RadixSort(values, scratchBuffer, DefaultRadixKeyExtractor<xiiUInt64>());
 
     for (xiiUInt32 i = 1; i < values.GetCount(); ++i)
     {
@@ -261,7 +261,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     }
 
     xiiArrayPtr<xiiUInt64> valuesPtr = valuesPtrSort;
-    xiiSorting::RadixSort(valuesPtr, scratchBuffer);
+    xiiSorting::RadixSort(valuesPtr, scratchBuffer, DefaultRadixKeyExtractor<xiiUInt64>());
 
     for (xiiUInt32 i = 1; i < valuesPtr.GetCount(); ++i)
     {
