@@ -22,7 +22,7 @@ namespace
   struct RadixSortTestKeyExtractor
   {
     XII_ALWAYS_INLINE xiiUInt64 GetKey(const RadixSortTestItem& value) const { return value.m_uiKey; }
-    xiiUInt64                   operator()(const RadixSortTestItem& value) const { return ~value.m_uiKey; }
+    XII_ALWAYS_INLINE xiiUInt64 operator()(const RadixSortTestItem& value) const { return GetKey(value); }
   };
 
   // Helpers and Test Fixtures
@@ -127,42 +127,41 @@ namespace
         {
           // Attempt reinterpret cast for debug printing (best-effort, only for tests in this suite).
           const auto* p = reinterpret_cast<const MaybeRadix*>(&c[i]);
-          xiiLog::Info("%u: (key=%llu, idx=%u)\n", i, static_cast<unsigned long long>(p->m_uiKey), static_cast<unsigned int>(p->m_uiOriginalIndex));
+          xiiLog::Info("{}: (key={}, idx={}).", i, p->m_uiKey, p->m_uiOriginalIndex);
           continue;
         }
       }
       // Fallback: print raw via stream if possible
-      xiiLog::Info("%u: (raw element)\n", i);
+      xiiLog::Info("{}: (raw element).", i);
     }
   }
 
   // Create a deterministic dataset with many duplicates (low entropy)
   template <typename Item>
-  static xiiDynamicArray<Item> CreateDuplicateKeyDataset(xiiUInt32 count, xiiUInt32 keyBits, xiiUInt64 seed)
+  static xiiDynamicArray<Item> CreateDuplicateKeyDataset(xiiUInt32 count, xiiUInt32 keyBits, uint64_t seed)
   {
     xiiDynamicArray<Item> items;
     items.Reserve(count);
-    auto                                     rng = CreateDeterministicRng(seed);
-    std::uniform_int_distribution<xiiUInt64> dist(0, (1ULL << keyBits) - 1ULL);
+
+    std::mt19937_64                         rng(static_cast<uint64_t>(seed));
+    uint64_t                                mask = (keyBits >= 64) ? std::numeric_limits<uint64_t>::max() : ((1ULL << keyBits) - 1ULL);
+    std::uniform_int_distribution<uint64_t> dist(0, mask);
 
     for (xiiUInt32 i = 0; i < count; ++i)
     {
       Item it{};
-      // For test items we expect fields named m_uiKey and m_uiOriginalIndex or key/idx
-      if constexpr (std::is_same_v<Item, RadixSortTestItem>)
+      if constexpr (requires { it.m_uiKey; })
+      {
+        it.m_uiKey = static_cast<xiiUInt64>(dist(rng) & mask);
+      }
+      if constexpr (requires { it.m_uiOriginalIndex; })
       {
         it.m_uiOriginalIndex = i;
-        it.m_uiKey           = static_cast<xiiUInt64>(dist(rng));
-      }
-      else
-      {
-        // Generic fallback: try to set fields if present
-        // This suite uses RadixSortTestItem for duplicate-key tests.
       }
       items.PushBack(it);
     }
 
-    // Shuffle deterministically
+    // Deterministic shuffle.
     for (xiiUInt32 i = 0; i < items.GetCount(); ++i)
     {
       const xiiUInt32 swapIndex = static_cast<xiiUInt32>((i * 1103515245u + 12345u) % items.GetCount());
@@ -180,7 +179,9 @@ namespace
     std::vector<T> tmp;
     tmp.reserve(c.GetCount());
     for (xiiUInt32 i = 0; i < c.GetCount(); ++i)
+    {
       tmp.push_back(c[i]);
+    }
 
     std::stable_sort(tmp.begin(), tmp.end(), [&](const T& a, const T& b) {
       return keyFunc(a) < keyFunc(b);
@@ -189,7 +190,9 @@ namespace
     xiiDynamicArray<T> out;
     out.SetCountUninitialized(static_cast<xiiUInt32>(tmp.size()));
     for (size_t i = 0; i < tmp.size(); ++i)
+    {
       out[static_cast<xiiUInt32>(i)] = tmp[i];
+    }
     return out;
   }
 
@@ -209,12 +212,10 @@ namespace
     return true;
   }
 
-  // -------------------------
   // Test helpers for algorithms
-  // -------------------------
 
   template <typename Container, typename KeyFunc>
-  static void RunAndVerifyAgainstReference(Container& data, Container& scratch, const KeyFunc& keyFunc, const char* algName, void (*sortFunc)(Container&, Container&, const KeyFunc&))
+  static void RunAndVerifyAgainstReference(Container& data, Container& scratch, const KeyFunc& keyFunc, const char* szAlgorithm, void (*sortFunc)(Container&, Container&, const KeyFunc&))
   {
     // Make a copy for reference
     using T                      = typename std::remove_reference<decltype(data[0])>::type;
@@ -230,7 +231,7 @@ namespace
       const auto b = keyFunc(data[i]);
       if (a > b)
       {
-        xiiLog::Error("%s: ORDERING FAIL at %u: prev=%llu curr=%llu\n", algName, i, static_cast<unsigned long long>(a), static_cast<unsigned long long>(b));
+        xiiLog::Error("{}: ORDERING FAIL at {}: prev={} curr={}", szAlgorithm, i, a, b);
         DumpWindow(data, i);
         XII_TEST_BOOL(false);
         return;
@@ -242,7 +243,7 @@ namespace
     {
       if (keyFunc(data[i]) != keyFunc(reference[i]))
       {
-        xiiLog::Error("%s: MISMATCH vs reference at %u: got=%llu ref=%llu\n", algName, i, static_cast<unsigned long long>(keyFunc(data[i])), static_cast<unsigned long long>(keyFunc(reference[i])));
+        xiiLog::Error("{}: MISMATCH vs reference at {}: got={} ref={}", szAlgorithm, i, keyFunc(data[i]), keyFunc(reference[i]));
         DumpWindow(data, i);
         DumpWindow(reference, i);
         XII_TEST_BOOL(false);
@@ -253,21 +254,25 @@ namespace
 
   // Overload for algorithms that accept comparator instead of key extractor
   template <typename Container, typename Compare>
-  static void RunAndVerifyComparator(Container& data, Container& scratch, const Compare& comp, const char* algName, void (*sortFuncComp)(Container&, const Compare&))
+  static void RunAndVerifyComparator(Container& data, Container& scratch, const Compare& comp, const char* szAlgorithm, void (*sortFuncComp)(Container&, const Compare&))
   {
     // Create reference using std::stable_sort with comparator converted to less-than
     using T = typename std::remove_reference<decltype(data[0])>::type;
     std::vector<T> tmp;
     tmp.reserve(data.GetCount());
     for (xiiUInt32 i = 0; i < data.GetCount(); ++i)
+    {
       tmp.push_back(data[i]);
+    }
 
     std::stable_sort(tmp.begin(), tmp.end(), [&](const T& a, const T& b) { return comp(a, b); });
 
     xiiDynamicArray<T> reference;
     reference.SetCountUninitialized(static_cast<xiiUInt32>(tmp.size()));
     for (size_t i = 0; i < tmp.size(); ++i)
+    {
       reference[static_cast<xiiUInt32>(i)] = tmp[i];
+    }
 
     // Run algorithm under test
     sortFuncComp(data, comp);
@@ -277,7 +282,7 @@ namespace
     {
       if (data[i] != reference[i])
       {
-        xiiLog::Error("%s (comp): MISMATCH at %u\n", algName, i);
+        xiiLog::Error("{} (comp): MISMATCH at {}: got={} ref={}", szAlgorithm, i, data[i], reference[i]);
         DumpWindow(data, i);
         DumpWindow(reference, i);
         XII_TEST_BOOL(false);
@@ -286,9 +291,7 @@ namespace
     }
   }
 
-  // -------------------------
   // Small utility wrappers for calling sorting functions with different signatures
-  // -------------------------
 
   // QuickSort wrapper (comparator)
   template <typename Container, typename Compare>
@@ -339,9 +342,7 @@ namespace
     xiiSorting::RadixSort(c, s, keyFunc);
   }
 
-  // -------------------------
   // Diagnostic helpers for fuzz tests
-  // -------------------------
 
   template <typename Item, typename KeyFunc, typename OrigIndexFunc>
   static bool RunRadixAndVerifyFuzz(xiiDynamicArray<Item> items, xiiUInt64 seed, const KeyFunc& keyFunc, const OrigIndexFunc& origIndexFunc)
@@ -359,7 +360,7 @@ namespace
       const auto bKey = keyFunc(items[i]);
       if (aKey > bKey)
       {
-        xiiLog::Error("Fuzz ORDER FAIL seed=%llu at %u: prev=%llu curr=%llu\n", static_cast<unsigned long long>(seed), i, static_cast<unsigned long long>(aKey), static_cast<unsigned long long>(bKey));
+        xiiLog::Error("Fuzz ORDER FAIL seed={} at {}: prev={} curr={}.", seed, i, aKey, bKey);
         DumpWindow(items, i);
         return false;
       }
@@ -367,7 +368,7 @@ namespace
       {
         if (origIndexFunc(items[i - 1]) >= origIndexFunc(items[i]))
         {
-          xiiLog::Error("Fuzz STABILITY FAIL seed=%llu at %u: prevIdx=%u currIdx=%u key=%llu\n", static_cast<unsigned long long>(seed), i, static_cast<unsigned int>(origIndexFunc(items[i - 1])), static_cast<unsigned int>(origIndexFunc(items[i])), static_cast<unsigned long long>(aKey));
+          xiiLog::Error("Fuzz STABILITY FAIL seed={} at {}: prevIdx={} currIdx={} key={}.", seed, i, origIndexFunc(items[i - 1]), origIndexFunc(items[i]), aKey);
           DumpWindow(items, i);
           return false;
         }
@@ -432,8 +433,11 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
       std::vector<int> expected = base;
       std::stable_sort(expected.begin(), expected.end());
       xiiDynamicArray<int> expectedArr = MakeDynamicArrayFromStd(expected);
+
       for (xiiUInt32 i = 0; i < copy.GetCount(); ++i)
+      {
         XII_TEST_BOOL(copy[i] == expectedArr[i]);
+      }
     }
 
     // SelectionSort and BubbleSort (comparator)
@@ -497,7 +501,9 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     for (xiiUInt32 i = 1; i < v2.GetCount(); ++i)
     {
       if (v2[i - 1].key == v2[i].key)
+      {
         XII_TEST_BOOL(v2[i - 1].idx < v2[i].idx);
+      }
     }
   }
 
@@ -529,7 +535,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     {
       if (a[i].m_uiKey != b[i].m_uiKey || a[i].m_uiOriginalIndex != b[i].m_uiOriginalIndex)
       {
-        xiiLog::Error("Container compatibility mismatch at %u\n", i);
+        xiiLog::Error("Container compatibility mismatch at {}.", i);
         DumpWindow(a, i);
         DumpWindow(b, i);
         XII_TEST_BOOL(false);
@@ -604,10 +610,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     }
   }
 
-  // -------------------------
   // Fuzz tests (reproducible seeds) for RadixSort stability and ordering
-  // -------------------------
-
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "RadixSort - Fuzz Stability and Ordering (Reproducible)")
   {
     const xiiUInt32 seedsToRun = 200;
@@ -617,6 +620,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     for (xiiUInt32 seed = 0; seed < seedsToRun; ++seed)
     {
       auto items = CreateDuplicateKeyDataset<RadixSortTestItem>(itemCount, keyBits, static_cast<xiiUInt64>(seed + 1));
+
       // Ensure original indices are set by generator
       xiiDynamicArray<RadixSortTestItem> scratch;
       scratch.SetCount(items.GetCount());
@@ -750,14 +754,14 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
       const auto bKey = items[i].m_uiKey;
       if (aKey > bKey)
       {
-        xiiLog::Error("ORDER FAIL seed=%llu at %u\n", static_cast<unsigned long long>(uiSeed), i);
+        xiiLog::Error("ORDER FAIL seed={} at {}.", uiSeed, i);
         DumpWindow(items, i);
         XII_TEST_BOOL(false);
         break;
       }
       if (aKey == bKey && items[i - 1].m_uiOriginalIndex >= items[i].m_uiOriginalIndex)
       {
-        xiiLog::Error("STABILITY FAIL seed=%llu at %u\n", static_cast<unsigned long long>(uiSeed), i);
+        xiiLog::Error("STABILITY FAIL seed={} at {}.", uiSeed, i);
         DumpWindow(items, i);
         XII_TEST_BOOL(false);
         break;
