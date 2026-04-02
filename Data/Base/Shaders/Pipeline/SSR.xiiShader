@@ -1,0 +1,116 @@
+// XII Engine — SSR.xiiShader  [NEW]
+// Pass 31: Screen-Space Reflections via hierarchical DDA ray march on the Hi-Z pyramid.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer SSRConstants : register(b3)
+{
+    uint   g_MaxSteps;
+    float  g_Thickness;           // depth tolerance for a hit (world units)
+    float  g_MaxRoughnessForSSR;  // skip rougher pixels — they fall back to IBL
+    float  g_StrideZCutoff;       // stride doubles once Z exceeds this
+    float2 g_InvResolution;
+    uint   g_HiZMipCount;
+    float  _pad;
+};
+
+Texture2D<float>  g_SceneDepth  : register(t0);
+Texture2D<float2> g_NRBuffer    : register(t1);
+Texture2D<float4> g_GBufMat     : register(t2); // r=roughness
+Texture2D<float>  g_HiZPyramid  : register(t3);
+RWTexture2D<float4> g_SSROut    : register(u0);
+
+// Intersect ray with screen using a Hi-Z accelerated DDA.
+bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness,
+              uint maxSteps, uint mipCount, out float2 hitUV, out float hitDepth)
+{
+    hitUV    = float2(0,0);
+    hitDepth = 0.0f;
+
+    float3 pos = rayOriginNDC;
+    float step = 0.005f;
+    uint mip   = 0u;
+
+    for (uint i = 0u; i < maxSteps; ++i)
+    {
+        pos += rayDirNDC * step;
+        float2 uv = pos.xy * float2(0.5f, -0.5f) + 0.5f;
+        if (any(uv < 0.0f) || any(uv > 1.0f)) return false;
+
+        // Sample Hi-Z at current mip — reversed-Z min-depth pyramid.
+        float pyramidDepth = g_HiZPyramid.SampleLevel(g_sPointClamp, uv, float(mip));
+
+        // In reversed-Z: larger = closer. Ray hit if ray's depth <= pyramid depth AND within thickness.
+        if (pos.z <= pyramidDepth && pyramidDepth - pos.z < thickness)
+        {
+            hitUV    = uv;
+            hitDepth = pyramidDepth;
+            return true;
+        }
+
+        // Advance mip step size: step at coarser mip if no intersection.
+        if (pos.z > pyramidDepth)
+        {
+            // Behind surface — shrink step, drop mip.
+            step *= 0.5f;
+            if (mip > 0u) mip--;
+        }
+        else
+        {
+            // No intersection — advance and try coarser.
+            step *= 1.5f;
+            mip = min(mip + 1u, mipCount - 1u);
+        }
+    }
+    return false;
+}
+
+[numthreads(8, 8, 1)]
+void CS_SSR(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_SSROut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv        = (float2(tid.xy) + 0.5f) / float2(dims);
+    float  roughness = g_GBufMat.SampleLevel(g_sPointClamp, uv, 0).r;
+
+    g_SSROut[tid.xy] = float4(0,0,0,0);
+    if (roughness > g_MaxRoughnessForSSR) return;
+
+    float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f) return;
+
+    float3 worldPos = ReconstructWorldPos(uv, depth);
+    float3 V        = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
+    float2 octN     = g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0);
+    float3 N        = DecodeOctNormal(octN);
+
+    // Jitter reflection direction based on roughness and frame index (for TAA integration).
+    float  noise    = InterleavedGradientNoise(float2(tid.xy), g_FrameIndex);
+    float  spread   = roughness * roughness * noise * 0.5f;
+    float3 R        = reflect(-V, N);
+    // Perturb in tangent plane by spread.
+    float3 up       = abs(R.y) < 0.999f ? float3(0,1,0) : float3(1,0,0);
+    float3 tangent  = normalize(cross(up, R));
+    R = normalize(R + tangent * spread);
+
+    // Convert to NDC space for Hi-Z traversal.
+    float4 clipOrg  = mul(g_ViewProjectionMatrix, float4(worldPos + R * 0.01f, 1.0f));
+    float4 clipEnd  = mul(g_ViewProjectionMatrix, float4(worldPos + R * 50.0f, 1.0f));
+    float3 ndcOrg   = clipOrg.xyz / clipOrg.w;
+    float3 ndcEnd   = clipEnd.xyz / clipEnd.w;
+    float3 rayDir   = normalize(ndcEnd - ndcOrg);
+
+    float2 hitUV; float hitDepth;
+    bool hit = TraceHiZ(ndcOrg, rayDir, g_Thickness, g_MaxSteps, g_HiZMipCount, hitUV, hitDepth);
+
+    if (hit)
+    {
+        // Fade at screen edges and by roughness.
+        float2 edgeFade = saturate(float2(8,8) * min(hitUV, 1.0f - hitUV));
+        float  conf     = edgeFade.x * edgeFade.y * (1.0f - roughness / g_MaxRoughnessForSSR);
+        // Store UV into the hit colour for the resolve pass (here simplified to confidence).
+        g_SSROut[tid.xy] = float4(hitUV.x, hitUV.y, hitDepth, conf);
+    }
+}

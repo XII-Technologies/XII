@@ -1,0 +1,48 @@
+// XII Engine — FroxelSetup.xiiShader  [NEW]
+// Pass 22a: Write per-froxel bounds + phase constants for volumetric integration.
+// Dispatch: ceil(FroxW/8) × ceil(FroxH/8) × FroxDepth
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer FroxelSetupConstants : register(b3)
+{
+    uint3  g_FroxelCount;    // (X, Y, Z) grid dimensions
+    float  g_NearPlane;
+    float  g_FarPlane;
+    float  g_FogDensity;
+    float  g_HeightFogFalloff; // exponential height falloff coefficient
+    float  g_HeightFogBase;    // world-space height of fog base
+};
+
+// Phase + density per froxel (written here, sampled during integration).
+RWStructuredBuffer<float4> g_FroxelMetadata    : register(u0); // (density, phase, scatter, _)
+RWTexture3D<float4>        g_FroxelScattering  : register(u1); // rgba = scatter xyz + extinction
+
+[numthreads(8, 8, 1)]
+void CS_FroxelSetup(uint3 tid : SV_DispatchThreadID)
+{
+    if (any(tid >= g_FroxelCount)) return;
+
+    // Compute froxel world-space center.
+    float2 ndc  = (float2(tid.xy) / float2(g_FroxelCount.xy)) * 2.0f - 1.0f;
+    float  zFrac = (float(tid.z) + 0.5f) / float(g_FroxelCount.z);
+    float  zView = g_NearPlane * exp(zFrac * log(g_FarPlane / g_NearPlane)); // exponential depth slice
+
+    float4 clipPos  = float4(ndc * zView, zView, 1.0f);
+    float4 worldPos = mul(g_InverseViewProjectionMatrix, clipPos);
+    worldPos.xyz   /= worldPos.w;
+
+    // Height-based exponential fog density.
+    float deltaH  = worldPos.y - g_HeightFogBase;
+    float density = g_FogDensity * exp(-max(deltaH, 0.0f) * g_HeightFogFalloff);
+    density = saturate(density);
+
+    // Phase constant (Henyey-Greenstein g=0.5 for most fog).
+    float phase   = 0.5f;
+    float scatter = density * 0.8f;
+    float extinct = density;
+
+    uint linearIdx = (tid.z * g_FroxelCount.y + tid.y) * g_FroxelCount.x + tid.x;
+    g_FroxelMetadata[linearIdx] = float4(density, phase, scatter, extinct);
+    g_FroxelScattering[tid]     = float4(float3(scatter, scatter, scatter) * float3(0.9f, 0.95f, 1.0f), extinct);
+}

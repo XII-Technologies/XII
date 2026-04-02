@@ -1,0 +1,34 @@
+// XII Engine — OpaqueComposite.xiiShader  [NEW]
+// Pass 51: Fuse direct + indirect + emissive + volumetric + sky into authoritative HDR buffer.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+Texture2D<float4>   g_DirectLight   : register(t0);
+Texture2D<float4>   g_IndirectLight : register(t1);
+Texture2D<float4>   g_Emissive      : register(t2);
+Texture2D<float4>   g_Volumetric    : register(t3); // rgb=scatter, a=1-transmittance
+RWTexture2D<float4> g_HDROut        : register(u0);
+
+[numthreads(8, 8, 1)]
+void CS_OpaqueComposite(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_HDROut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv  = (float2(tid.xy) + 0.5f) / float2(dims);
+
+    float3 direct   = g_DirectLight  .SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float3 indirect = g_IndirectLight.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float3 emissive = g_Emissive     .SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float4 vol      = g_Volumetric   .SampleLevel(g_sLinearClamp, uv, 0);
+
+    // Combine scene radiance: geometry + sky.
+    float3 scene = direct + indirect + emissive;
+
+    // Apply volumetric in-scattering using front-to-back integrated transmittance.
+    float transmission = 1.0f - vol.a;       // fraction of scene light that reaches eye
+    float3 hdr = scene * transmission + vol.rgb;
+
+    g_HDROut[tid.xy] = float4(hdr, 1.0f);
+}

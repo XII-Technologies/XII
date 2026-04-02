@@ -1,0 +1,65 @@
+// XII Engine — ExposureAdaptation.xiiShader  [NEW]
+// Pass 54: Eye adaptation — reads histogram, emits adapted exposure value.
+// Dispatch: 1 × 1 × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer ExposureAdaptConstants : register(b3)
+{
+    float g_MinLogLum;
+    float g_MaxLogLum;
+    float g_LogLumRange;
+    float g_LowPercent;     // lower percentile to clip (e.g. 0.45)
+    float g_HighPercent;    // upper percentile to clip (e.g. 0.95)
+    float g_AdaptationSpeed;// lerp rate per second (e.g. 2.0)
+    float g_DeltaTimeS;
+    float g_MinEV100;
+    float g_MaxEV100;
+    float3 _pad;
+};
+
+StructuredBuffer<uint>     g_Histogram  : register(t0);
+RWStructuredBuffer<float>  g_Exposure   : register(u0); // [0]=exposure, [1]=avgLum
+
+[numthreads(1, 1, 1)]
+void CS_ExposureAdaptation(uint3 tid : SV_DispatchThreadID)
+{
+    // Count total pixels (sum histogram).
+    uint totalPixels = 0u;
+    for (uint i = 0u; i < 256u; ++i) totalPixels += g_Histogram[i];
+    if (totalPixels == 0u) return;
+
+    // Weighted average of log-luminance (clip low/high percentiles).
+    float lowCount  = float(totalPixels) * g_LowPercent;
+    float highCount = float(totalPixels) * g_HighPercent;
+    float count     = 0.0f;
+    float weightedAvg = 0.0f;
+
+    for (uint b = 0u; b < 256u; ++b)
+    {
+        float bCount = float(g_Histogram[b]);
+        float minCount = max(0.0f, lowCount - count);
+        float maxCount = min(bCount, highCount - count);
+        float contribution = max(0.0f, maxCount - minCount);
+        float logLum = g_MinLogLum + (float(b) / 255.0f) * g_LogLumRange;
+        weightedAvg += logLum * contribution;
+        count += bCount;
+        if (count >= highCount) break;
+    }
+
+    float clampedRange = max(highCount - lowCount, 1.0f);
+    float avgLogLum    = weightedAvg / clampedRange;
+    float avgLum       = exp2(avgLogLum);
+
+    float ev100        = log2(avgLum * 100.0f / 12.5f);
+    ev100              = clamp(ev100, g_MinEV100, g_MaxEV100);
+    float targetExp    = 1.0f / (1.2f * exp2(ev100));
+
+    // Temporal smooth.
+    float prevExp      = g_Exposure[0];
+    if (prevExp <= 0.0f) prevExp = targetExp;
+    float newExp       = prevExp + (targetExp - prevExp) * saturate(g_AdaptationSpeed * g_DeltaTimeS);
+
+    g_Exposure[0] = newExp;
+    g_Exposure[1] = avgLum;
+}

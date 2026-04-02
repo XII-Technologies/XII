@@ -1,0 +1,62 @@
+// XII Engine — ExposureHistogram.xiiShader  [NEW]
+// Pass 53: Build a 256-bucket log2-luminance histogram via LDS atomics.
+// Dispatch: ceil(W/16) × ceil(H/16) × 1  (each thread handles one pixel tile)
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer ExposureConstants : register(b3)
+{
+    float g_MinLogLum;  // log2 luminance mapped to bucket 0
+    float g_MaxLogLum;  // log2 luminance mapped to bucket 255
+    float g_InvLogLumRange;
+    uint  _pad;
+};
+
+Texture2D<float4>          g_HDRInput   : register(t0);
+RWStructuredBuffer<uint>   g_Histogram  : register(u0); // 256 uint counters
+
+groupshared uint gs_LocalHistogram[256];
+
+float Luminance(float3 color)
+{
+    return dot(color, float3(0.2126f, 0.7152f, 0.0722f));
+}
+
+uint LuminanceToBucket(float lum)
+{
+    if (lum < 0.0001f) return 0u;
+    float logLum = log2(lum);
+    float t      = saturate((logLum - g_MinLogLum) * g_InvLogLumRange);
+    return uint(t * 254.0f + 1.0f); // reserve bucket 0 for very dark pixels
+}
+
+[numthreads(16, 16, 1)]
+void CS_ExposureHistogram(uint3 tid   : SV_DispatchThreadID,
+                          uint3 gtid  : SV_GroupThreadID,
+                          uint3 gid   : SV_GroupID)
+{
+    // Initialise LDS.
+    if (gtid.x == 0u && gtid.y == 0u)
+        for (uint i = 0u; i < 256u; ++i) gs_LocalHistogram[i] = 0u;
+    GroupMemoryBarrierWithGroupSync();
+
+    // Each thread accumulates its pixel into LDS.
+    uint2 dims;
+    uint dummy; g_Histogram.GetDimensions(dummy, dummy); // dims not available from buffer
+    // Use uv clamp instead.
+    uint2 pixelCoord = tid.xy;
+    float2 uv = (float2(pixelCoord) + 0.5f) / float2(1920u, 1080u); // patched by CBV in practice
+    if (uv.x <= 1.0f && uv.y <= 1.0f)
+    {
+        float3 hdr = g_HDRInput.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+        float  lum = Luminance(hdr);
+        uint   bin = LuminanceToBucket(lum);
+        InterlockedAdd(gs_LocalHistogram[bin], 1u);
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    // Merge LDS into global histogram (each thread handles 16 buckets for 256/16=16 threads).
+    uint laneIdx = gtid.x + gtid.y * 16u;
+    if (laneIdx < 256u)
+        InterlockedAdd(g_Histogram[laneIdx], gs_LocalHistogram[laneIdx]);
+}

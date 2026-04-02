@@ -1,0 +1,51 @@
+// XII Engine — LumaSharpening.xiiShader  [NEW]
+// Pass 62: Luminance-channel unsharp mask sharpening (CAS-inspired single-pass).
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer SharpenConstants : register(b3)
+{
+    float  g_Strength;   // 0=off, 1=full
+    float2 g_InvRes;
+    float  _pad;
+};
+
+Texture2D<float4>   g_Input  : register(t0);
+RWTexture2D<float4> g_Output : register(u0);
+
+// AMD Contrast-Adaptive Sharpening (simplified single-channel luma version).
+[numthreads(8, 8, 1)]
+void CS_LumaSharpening(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_Output.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+
+    // 5-tap cross + center.
+    float3 cC = g_Input.SampleLevel(g_sLinearClamp, uv,                            0).rgb;
+    float3 cN = g_Input.SampleLevel(g_sLinearClamp, uv + float2( 0, -g_InvRes.y),  0).rgb;
+    float3 cS = g_Input.SampleLevel(g_sLinearClamp, uv + float2( 0,  g_InvRes.y),  0).rgb;
+    float3 cE = g_Input.SampleLevel(g_sLinearClamp, uv + float2( g_InvRes.x, 0),   0).rgb;
+    float3 cW = g_Input.SampleLevel(g_sLinearClamp, uv + float2(-g_InvRes.x, 0),   0).rgb;
+
+    // Luminance of neighbours.
+    float lC = dot(cC, float3(0.2126f, 0.7152f, 0.0722f));
+    float lN = dot(cN, float3(0.2126f, 0.7152f, 0.0722f));
+    float lS = dot(cS, float3(0.2126f, 0.7152f, 0.0722f));
+    float lE = dot(cE, float3(0.2126f, 0.7152f, 0.0722f));
+    float lW = dot(cW, float3(0.2126f, 0.7152f, 0.0722f));
+
+    // Min/max for adaptive strength.
+    float lMin = min(lC, min(min(lN, lS), min(lE, lW)));
+    float lMax = max(lC, max(max(lN, lS), max(lE, lW)));
+
+    // CAS weight function: stronger sharpening in medium-contrast regions.
+    float w = -g_Strength * rsqrt(max(lMax, 1e-5f));
+    w = clamp(w, -0.125f, 0.0f);
+    float wSum = 1.0f + 4.0f * w;
+
+    float3 sharpened = (cC + w * (cN + cS + cE + cW)) / wSum;
+    g_Output[tid.xy] = float4(saturate(sharpened), 1.0f);
+}

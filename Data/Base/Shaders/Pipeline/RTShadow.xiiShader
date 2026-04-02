@@ -1,0 +1,83 @@
+// XII Engine — RTShadow.xiiShader  [NEW]
+// Pass 36: DXR ray-generation shader — traces one (or more) shadow rays per pixel.
+// Compiled as a DXR ray-tracing pipeline, not a compute shader.
+
+#include "PipelineCommon.xiiShader"
+
+// ──────────────────────────────────────────────────────────────────────────────
+// DXR resources
+// ──────────────────────────────────────────────────────────────────────────────
+RaytracingAccelerationStructure g_TLAS         : register(t0);
+Texture2D<float>                g_SceneDepth   : register(t1);
+Texture2D<float2>               g_NRBuffer     : register(t2);
+RWTexture2D<float>              g_ShadowOut    : register(u0);
+
+cbuffer RTShadowConstants : register(b3)
+{
+    float3 g_LightDirection; float g_LightRadius;   // sun direction + angular radius
+    uint   g_RaysPerPixel;
+    float3 _pad;
+};
+
+struct ShadowPayload { float visibility; };
+
+// ──────────────────────────────────────────────────────────────────────────────
+[shader("raygeneration")]
+void RGS_RTShadow()
+{
+    uint2 launchIdx  = DispatchRaysIndex().xy;
+    uint2 launchDims = DispatchRaysDimensions().xy;
+    float2 uv        = (float2(launchIdx) + 0.5f) / float2(launchDims);
+
+    float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f) { g_ShadowOut[launchIdx] = 0.0f; return; }
+
+    float3 worldPos = ReconstructWorldPos(uv, depth);
+    float2 octN     = g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0);
+    float3 N        = DecodeOctNormal(octN);
+
+    float totalVis = 0.0f;
+    for (uint r = 0u; r < g_RaysPerPixel; ++r)
+    {
+        // Jitter within the light's solid angle for soft shadow penumbra.
+        float  noise  = InterleavedGradientNoise(float2(launchIdx), g_FrameIndex * g_RaysPerPixel + r);
+        float  angle  = noise * 3.14159265f * 2.0f;
+        float  radius = g_LightRadius * sqrt(noise);
+        float3 up     = abs(g_LightDirection.y) < 0.99f ? float3(0,1,0) : float3(1,0,0);
+        float3 tangent = normalize(cross(up, g_LightDirection));
+        float3 bitan   = cross(g_LightDirection, tangent);
+        float3 lightDir = normalize(g_LightDirection
+                            + tangent * (cos(angle) * radius)
+                            + bitan   * (sin(angle) * radius));
+
+        float NoL = saturate(dot(N, lightDir));
+        if (NoL <= 0.0f) continue;
+
+        RayDesc ray;
+        ray.Origin    = worldPos + N * 0.002f;  // normal bias
+        ray.Direction = lightDir;
+        ray.TMin      = 0.001f;
+        ray.TMax      = 1e6f;
+
+        ShadowPayload payload = { 1.0f };
+        TraceRay(g_TLAS,
+            RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+            0xFFu, 0u, 0u, 0u, ray, payload);
+        totalVis += payload.visibility * NoL;
+    }
+
+    g_ShadowOut[launchIdx] = saturate(1.0f - (totalVis / float(max(g_RaysPerPixel, 1u))));
+}
+
+[shader("miss")]
+void MISS_RTShadow(inout ShadowPayload payload)
+{
+    payload.visibility = 1.0f; // no occluder → fully lit
+}
+
+[shader("anyhit")]
+void AHS_RTShadow(inout ShadowPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+    payload.visibility = 0.0f; // opaque occluder
+    AcceptHitAndEndSearch();
+}
