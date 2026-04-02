@@ -1,53 +1,46 @@
-[PLATFORMS]
-ALL
+// XII Engine — LodSelection.xiiShader  [REWRITTEN]
+// Pass 7: Per-instance LOD selection based on sphere screen-coverage.
+// Dispatch: ceil(InstanceCount/64) × 1 × 1
 
-[PERMUTATIONS]
+#include "PipelineCommon.xiiShader"
 
-[COMPUTESHADER]
-
-#include <Shaders/Pipeline/FrameConstants.h>
-
-struct GpuSceneInstanceData
+cbuffer LODConstants : register(b3)
 {
-  float4x4 ObjectToWorld;
-  float4   Bounds;
-  uint     MeshId;
-  uint     MaterialId;
-  uint     Flags;
-  uint     Reserved;
+    float4 g_LODDistances; // (lod0->1, lod1->2, lod2->3, lod3->cull) thresholds
+    float  g_ScreenHeight;
+    float  g_LODBias;
+    uint2  _pad;
 };
 
-StructuredBuffer<float4>               GpuSceneBounds;
-StructuredBuffer<GpuSceneInstanceData> GpuSceneInstances;
-RWStructuredBuffer<float4>             GpuLodSelections;
-RWStructuredBuffer<float4>             GpuDrawMetadata;
+struct InstanceBounds { float3 Center; float Radius; float3 Extents; float _pad; };
+
+StructuredBuffer<InstanceBounds> g_Bounds      : register(t0);
+RWStructuredBuffer<uint>         g_LODMetadata : register(u0); // packed (lod:8, bin:8, flags:16)
 
 [numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_LodSelection(uint3 tid : SV_DispatchThreadID)
 {
-  uint index = dispatchThreadId.x;
+    if (tid.x >= 65536u) return;
 
-  if (index >= GpuSceneBounds.Length || index >= GpuSceneInstances.Length || index >= GpuLodSelections.Length || index >= GpuDrawMetadata.Length)
-  {
-    return;
-  }
+    InstanceBounds b = g_Bounds[tid.x];
 
-  const GpuSceneInstanceData instanceData = GpuSceneInstances[index];
-  const float4               boundsData   = GpuSceneBounds[index];
+    // Compute world-space distance from camera to sphere surface.
+    float dist = max(length(b.Center - g_CameraPositionAndNearPlane.xyz) - b.Radius, 0.001f);
 
-  const float frameBudgetScale = saturate(TargetFrameTimeMs / max(FrameDeltaTimeMs, 0.001f));
-  const float radius           = max(boundsData.w, 0.001f);
-  const float lodMetric        = radius * frameBudgetScale;
+    // Screen-space radius in pixels for this sphere at this distance (FOV correct).
+    // tan(halfFOV) is embedded in the projection matrix m[1][1].
+    float screenR = (b.Radius / dist) * g_ScreenHeight * g_LODBias;
 
-  // Branchless 3-tier LOD partitioning from a compact metric.
-  const float lodIs0 = step(1.75f, lodMetric);
-  const float lodIs1 = (1.0f - lodIs0) * step(0.90f, lodMetric);
-  const float lodIs2 = 1.0f - lodIs0 - lodIs1;
-  const float lodIndex = lodIs1 + (2.0f * lodIs2);
+    // Map to LOD: higher screen coverage = lower (more detailed) LOD.
+    uint lodLevel;
+    if      (dist < g_LODDistances.x) lodLevel = 0u;
+    else if (dist < g_LODDistances.y) lodLevel = 1u;
+    else if (dist < g_LODDistances.z) lodLevel = 2u;
+    else if (dist < g_LODDistances.w) lodLevel = 3u;
+    else                              lodLevel = 0xFFu; // cull
 
-  // Simple meshlet class hint: x=lod, y=radius, z=priority, w=instance flags.
-  const float meshletPriority = saturate(radius * 0.25f) * (1.0f - 0.5f * lodIndex);
-  GpuLodSelections[index]      = float4(lodIndex, radius, lodMetric, meshletPriority);
+    uint matBin = 0u; // material bin resolved downstream (material index lives in instance data)
+    uint flags  = (lodLevel == 0xFFu) ? 1u : 0u; // bit0 = culled
 
-  GpuDrawMetadata[index] = float4((float)instanceData.MeshId, (float)instanceData.MaterialId, meshletPriority, (float)instanceData.Flags);
+    g_LODMetadata[tid.x] = (lodLevel & 0xFFu) | ((matBin & 0xFFu) << 8u) | ((flags & 0xFFFFu) << 16u);
 }

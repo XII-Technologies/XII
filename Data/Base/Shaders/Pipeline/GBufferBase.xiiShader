@@ -1,0 +1,89 @@
+// XII Engine — GBufferBase.xiiShader  [NEW]
+// Pass 27: G-Buffer MRT base pass — albedo, oct-normal, material (roughness/metallic/AO), emissive.
+// Indirect geometry-driven draw via DrawIndexedIndirect.
+
+#include "PipelineCommon.xiiShader"
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Vertex Input
+// ──────────────────────────────────────────────────────────────────────────────
+struct VS_In
+{
+    float3 Position  : POSITION;
+    float3 Normal    : NORMAL;
+    float4 Tangent   : TANGENT;   // w = bitangent sign
+    float2 UV0       : TEXCOORD0;
+    uint   InstanceID: SV_InstanceID;
+};
+
+struct VS_Out
+{
+    float4 ClipPos   : SV_Position;
+    float3 WorldPos  : TEXCOORD0;
+    float3 WorldNorm : TEXCOORD1;
+    float3 WorldTan  : TEXCOORD2;
+    float  BitangSign: TEXCOORD3;
+    float2 UV0       : TEXCOORD4;
+    uint   MatIndex  : TEXCOORD5;
+};
+
+StructuredBuffer<float4x3> g_WorldMatrices : register(t0); // per-instance world matrix
+
+VS_Out VS_GBufferBase(VS_In In)
+{
+    float4x3 world = g_WorldMatrices[In.InstanceID];
+
+    float3 worldPos = mul(float4(In.Position, 1.0f), world).xyz;
+    float3 worldNor = normalize(mul(float4(In.Normal, 0.0f), world).xyz);
+    float3 worldTan = normalize(mul(float4(In.Tangent.xyz, 0.0f), world).xyz);
+
+    VS_Out o;
+    o.ClipPos    = mul(g_ViewProjectionMatrix, float4(worldPos, 1.0f));
+    o.WorldPos   = worldPos;
+    o.WorldNorm  = worldNor;
+    o.WorldTan   = worldTan;
+    o.BitangSign = In.Tangent.w;
+    o.UV0        = In.UV0;
+    o.MatIndex   = 0u; // material index resolved via indirect instance ID offset table
+    return o;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Pixel / Fragment Output
+// ──────────────────────────────────────────────────────────────────────────────
+struct PS_Out
+{
+    float4 Albedo   : SV_Target0; // rgb=albedo, a=opacity
+    float2 Normal   : SV_Target1; // oct-packed world normal (RG16_SNORM)
+    float4 Material : SV_Target2; // r=roughness, g=metallic, b=AO, a=flags
+    float4 Emissive : SV_Target3; // rgb=emissive HDR
+};
+
+Texture2D<float4> g_AlbedoMap   : register(t1);
+Texture2D<float4> g_NormalMap   : register(t2);
+Texture2D<float4> g_MaterialMap : register(t3); // r=roughness, g=metallic, b=AO
+Texture2D<float4> g_EmissiveMap : register(t4);
+
+PS_Out PS_GBufferBase(VS_Out In)
+{
+    // Material sample.
+    float4 albedo   = g_AlbedoMap   .Sample(g_sAnisotropicWrap, In.UV0);
+    float4 normalTs = g_NormalMap   .Sample(g_sLinearWrap,      In.UV0) * 2.0f - 1.0f;
+    float4 material = g_MaterialMap .Sample(g_sLinearWrap,      In.UV0);
+    float4 emissive = g_EmissiveMap .Sample(g_sLinearWrap,      In.UV0);
+
+    // Clip alpha.
+    clip(albedo.a - 0.1f);
+
+    // Reconstruct TBN.
+    float3 bitangent = cross(In.WorldNorm, In.WorldTan) * In.BitangSign;
+    float3 worldNorm = normalize(
+        normalTs.x * In.WorldTan + normalTs.y * bitangent + normalTs.z * In.WorldNorm);
+
+    PS_Out o;
+    o.Albedo   = float4(albedo.rgb, albedo.a);
+    o.Normal   = EncodeOctNormal(worldNorm);
+    o.Material = float4(material.r, material.g, material.b, 0.0f); // roughness/metallic/AO
+    o.Emissive = float4(emissive.rgb * emissive.a, 1.0f); // emissive intensity packed in alpha
+    return o;
+}

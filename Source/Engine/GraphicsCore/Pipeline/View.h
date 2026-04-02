@@ -8,6 +8,8 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 
 class xiiFrustum;
@@ -115,6 +117,14 @@ public:
   xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData.Borrow(); }
   const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData.Borrow(); }
 
+  /// \brief Returns the per-view, per-frame blackboard. Cleared at the start of every frame by xiiRenderWorldModule.
+  xiiRenderGraphBlackboard&       GetBlackboard() { return m_Blackboard; }
+  const xiiRenderGraphBlackboard& GetBlackboard() const { return m_Blackboard; }
+
+  /// \brief Returns the per-view transient resource cache. Passes acquire and release GPU resources here.
+  xiiRenderGraphResourceCache&       GetResourceCache() { return m_ResourceCache; }
+  const xiiRenderGraphResourceCache& GetResourceCache() const { return m_ResourceCache; }
+
 private:
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
@@ -137,6 +147,11 @@ private:
 
   xiiUniquePtr<xiiRenderGraph>         m_pRenderGraph;
   xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
+
+  // Per-view, per-frame inter-pass data store. Cleared each frame by the render world module.
+  xiiRenderGraphBlackboard    m_Blackboard;
+  // Per-view transient GPU resource pool. Reused across frames by the resource cache eviction policy.
+  xiiRenderGraphResourceCache m_ResourceCache;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

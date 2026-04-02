@@ -1,43 +1,35 @@
-[PLATFORMS]
-ALL
+// XII Engine — HiZBuild.xiiShader
+// Pass 8: Hierarchical-Z max depth pyramid reduction.
+// Dispatch: ceil(W/8) × ceil(H/8) per mip, iterated in C++ per mip level.
 
-[PERMUTATIONS]
+#include "PipelineCommon.xiiShader"
 
-[COMPUTESHADER]
+cbuffer HiZConstants : register(b3)
+{
+    uint2 g_SrcSize;
+    uint2 g_DstSize;
+    uint  g_SrcMip;
+    float3 _pad;
+};
 
-Texture2D<float> SceneDepth;
-RWTexture2D<float> SceneDepthPyramid;
+Texture2D<float>   g_DepthSrc : register(t0);   // source mip (or occluder depth)
+RWTexture2D<float> g_HiZDst   : register(u0);   // destination mip
 
 [numthreads(8, 8, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_HiZBuild(uint3 tid : SV_DispatchThreadID)
 {
-  uint outWidth = 0;
-  uint outHeight = 0;
-  SceneDepthPyramid.GetDimensions(outWidth, outHeight);
+    if (any(tid.xy >= g_DstSize)) return;
 
-  if (dispatchThreadId.x >= outWidth || dispatchThreadId.y >= outHeight)
-  {
-    return;
-  }
+    // Source texel = 2x2 gather (max reduction for reversed-Z: we want the MINIMUM depth value
+    // i.e. the closest surface, which in reversed-Z is the largest float value).
+    uint2 srcBase = tid.xy * 2u;
 
-  // Build the first reduced mip level from a 2x2 max-depth neighborhood.
-  // Additional mip-chain reduction is expected to run in subsequent passes.
-  uint2 srcBase = uint2(dispatchThreadId.xy) * 2;
+    float d00 = g_DepthSrc.Load(int3(srcBase + uint2(0u, 0u), g_SrcMip));
+    float d10 = g_DepthSrc.Load(int3(srcBase + uint2(1u, 0u), g_SrcMip));
+    float d01 = g_DepthSrc.Load(int3(srcBase + uint2(0u, 1u), g_SrcMip));
+    float d11 = g_DepthSrc.Load(int3(srcBase + uint2(1u, 1u), g_SrcMip));
 
-  uint srcWidth = 0;
-  uint srcHeight = 0;
-  uint srcMipCount = 0;
-  SceneDepth.GetDimensions(0, srcWidth, srcHeight, srcMipCount);
-
-  uint2 s0 = min(srcBase + uint2(0, 0), uint2(srcWidth - 1, srcHeight - 1));
-  uint2 s1 = min(srcBase + uint2(1, 0), uint2(srcWidth - 1, srcHeight - 1));
-  uint2 s2 = min(srcBase + uint2(0, 1), uint2(srcWidth - 1, srcHeight - 1));
-  uint2 s3 = min(srcBase + uint2(1, 1), uint2(srcWidth - 1, srcHeight - 1));
-
-  float d0 = SceneDepth.Load(int3(s0, 0));
-  float d1 = SceneDepth.Load(int3(s1, 0));
-  float d2 = SceneDepth.Load(int3(s2, 0));
-  float d3 = SceneDepth.Load(int3(s3, 0));
-
-  SceneDepthPyramid[dispatchThreadId.xy] = max(max(d0, d1), max(d2, d3));
+    // Reversed-Z Hi-Z stores minimum depth (largest float = closest to camera).
+    float minDepth = min(min(d00, d10), min(d01, d11));
+    g_HiZDst[tid.xy] = minDepth;
 }

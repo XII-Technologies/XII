@@ -1,0 +1,113 @@
+// XII Engine — Pipeline Shared Definitions
+// Included by every pipeline shader via PCH or explicit include.
+// Matches the CPU-side PerFrameUploadData.h exactly.
+#pragma once
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Constant Buffer Slots (bound globally by RenderWorldModule pass execution)
+// ──────────────────────────────────────────────────────────────────────────────
+cbuffer PerFrameCamera : register(b0)
+{
+    float4x4 g_ViewProjectionMatrix;
+    float4x4 g_InverseViewProjectionMatrix;
+    float4   g_CameraPositionAndNearPlane; // xyz=pos, w=near
+    float4   g_CameraForwardAndFarPlane;   // xyz=fwd, w=far
+};
+
+cbuffer PerFrameLight : register(b1)
+{
+    float4   g_MainLightDirectionAndIntensity; // xyz=dir (world), w=intensity
+    float4   g_MainLightColor;                 // xyz=rgb, w=unused
+    float4   g_AmbientLightColor;              // xyz=rgb, w=unused
+    uint     g_ActiveLightCount;
+    float3   _pad0;
+};
+
+cbuffer PerFrameGlobal : register(b2)
+{
+    uint     g_FrameIndex;
+    float    g_DeltaTimeMs;
+    float    g_GlobalTime;
+    float    g_WorldTime;
+    float4   g_RenderScaleJitter; // x=scale, yzw=halton jitter (normalized [-0.5,0.5])
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Common samplers (bound globally)
+// ──────────────────────────────────────────────────────────────────────────────
+SamplerState g_sPointClamp    : register(s0);
+SamplerState g_sLinearClamp   : register(s1);
+SamplerState g_sLinearWrap    : register(s2);
+SamplerState g_sAnisotropicWrap: register(s3);
+SamplerComparisonState g_sShadowPCF : register(s4);
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Math helpers
+// ──────────────────────────────────────────────────────────────────────────────
+
+// Reversed-Z NDC → linear view-space depth.
+float LinearizeDepth(float ndcDepth)
+{
+    // Reversed-Z: near=1, far=0.  ndcDepth = near / linearZ  (infinite far plane).
+    return g_CameraPositionAndNearPlane.w / max(ndcDepth, 1e-7f);
+}
+
+// Reconstruct world-space position from reversed-Z depth buffer sample.
+float3 ReconstructWorldPos(float2 uv, float ndcDepth)
+{
+    float4 clipPos = float4(uv * 2.0f - 1.0f, ndcDepth, 1.0f);
+    clipPos.y = -clipPos.y; // DX NDC: y increasing downward in screen space
+    float4 worldPos = mul(g_InverseViewProjectionMatrix, clipPos);
+    return worldPos.xyz / worldPos.w;
+}
+
+// Octahedral normal encoding (Cigolle et al.).
+float2 EncodeOctNormal(float3 n)
+{
+    n /= (abs(n.x) + abs(n.y) + abs(n.z));
+    float2 oct = n.z >= 0.0f ? n.xy : (1.0f - abs(n.yx)) * (n.xy >= 0.0f ? 1.0f : -1.0f);
+    return oct * 0.5f + 0.5f;
+}
+
+float3 DecodeOctNormal(float2 encodedOct)
+{
+    float2 f = encodedOct * 2.0f - 1.0f;
+    float3 n = float3(f.x, f.y, 1.0f - abs(f.x) - abs(f.y));
+    float t = max(-n.z, 0.0f);
+    n.xy += (n.xy >= 0.0f) ? -t : t;
+    return normalize(n);
+}
+
+// Convert luminance to EV100 and back.
+float LuminanceToEV100(float avgLum)
+{
+    return log2(avgLum * 100.0f / 12.5f);
+}
+
+float EV100ToExposure(float ev100)
+{
+    float maxLum = 1.2f * pow(2.0f, ev100);
+    return 1.0f / maxLum;
+}
+
+// Interleaved gradient noise (Jimenez 2014) — great for temporal stability.
+float InterleavedGradientNoise(float2 pos, uint frameIndex)
+{
+    pos += float(frameIndex) * 5.588238f;
+    return frac(52.9829189f * frac(dot(pos, float2(0.06711056f, 0.00583715f))));
+}
+
+// Halton sequence sample for quasi-Monte Carlo.
+float HaltonSample(uint index, uint base)
+{
+    float f = 1.0f;
+    float r = 0.0f;
+    uint i = index;
+    while (i > 0u)
+    {
+        f /= float(base);
+        r += f * float(i % base);
+        i /= base;
+    }
+    return r;
+}

@@ -1,45 +1,59 @@
-[PLATFORMS]
-ALL
+// XII Engine — DynamicResolution.xiiShader
+// Pass 2: Adaptive resolution scaling based on GPU frame time budget.
+// Dispatch: 1 × 1 × 1 (single-thread decision kernel).
 
-[PERMUTATIONS]
+#include "PipelineCommon.xiiShader"
 
-[COMPUTESHADER]
-
-#include <Shaders/Pipeline/FrameConstants.h>
-
-StructuredBuffer<float4> FrameTimingData;
-StructuredBuffer<float4> CameraVelocityData;
-RWStructuredBuffer<float4> DynamicResolutionData;
-
-[numthreads(1, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+// ──────────────────────────────────────────────────────────────────────────────
+cbuffer DynResConstants : register(b3)
 {
-  if (dispatchThreadId.x != 0)
-  {
-    return;
-  }
+    float g_FrameDeltaTimeMs;
+    float g_TargetFrameTimeMs;
+    float g_MinScale;
+    float g_MaxScale;
+};
 
-  float measuredFrameMs = FrameDeltaTimeMs;
-  if (FrameTimingData.Length > 0)
-  {
-    measuredFrameMs = max(FrameTimingData[0].x, 0.001f);
-  }
+StructuredBuffer<float>   g_FrameTimingData   : register(t0); // GPU time from readback ring
+StructuredBuffer<float>   g_CameraVelocityData: register(t1); // camera angular speed
+RWStructuredBuffer<float> g_DynamicResData    : register(u0); // [0]=scale, [1]=reserved
 
-  float targetFrameMs = max(TargetFrameTimeMs, 0.001f);
-  float ratio         = targetFrameMs / measuredFrameMs;
-  float scale         = saturate(ratio);
+// ──────────────────────────────────────────────────────────────────────────────
+// PID-style proportional controller with hysteresis to prevent oscillation.
+// ──────────────────────────────────────────────────────────────────────────────
+[numthreads(1, 1, 1)]
+void CS_DynamicResolution(uint3 tid : SV_DispatchThreadID)
+{
+    float currentScale = g_DynamicResData[0];
+    if (currentScale == 0.0f) currentScale = g_MaxScale; // first frame default
 
-  float velocityMagnitude = 0.0f;
-  if (CameraVelocityData.Length > 0)
-  {
-    velocityMagnitude = length(CameraVelocityData[0].xyz);
-  }
+    float gpuMs         = g_FrameTimingData[0];
+    float targetMs      = g_TargetFrameTimeMs;
+    float cameraVelRad  = g_CameraVelocityData[0];
 
-  // Preserve extra resolution during fast camera motion to reduce temporal instability.
-  float velocityStabilityBoost = saturate(velocityMagnitude * 0.1f) * 0.15f;
-  scale                        = min(scale + velocityStabilityBoost, 1.0f);
-  scale               = clamp(scale, MinDynamicResolutionScale, MaxDynamicResolutionScale);
+    // Budget error: positive = over budget.
+    float error = (gpuMs - targetMs) / max(targetMs, 1.0f);
 
-  // x = scale, y = measured frame ms, z = target frame ms, w = reserved.
-  DynamicResolutionData[0] = float4(scale, measuredFrameMs, targetFrameMs, 0.0f);
+    // Proportional step — aggressive scale-down, gentle scale-up.
+    float kDown = 0.05f;
+    float kUp   = 0.015f;
+    float step  = error > 0.0f ? -kDown * error : kUp * (-error);
+
+    // Extra hysteresis during fast camera motion to avoid flicker.
+    float hysteresis = 0.005f + 0.01f * saturate(cameraVelRad * 4.0f);
+    if (abs(error) < hysteresis) step = 0.0f;
+
+    float newScale = saturate(currentScale + step * (g_TargetFrameTimeMs / 16.667f));
+    newScale = clamp(newScale, g_MinScale, g_MaxScale);
+
+    // Snap to clean fractions to avoid aliasing at scale boundaries.
+    static const float snaps[] = { 0.50f, 0.577f, 0.667f, 0.707f, 0.75f, 0.816f, 0.866f, 1.0f };
+    float snapTolerance = 0.01f;
+    [unroll]
+    for (int s = 0; s < 8; ++s)
+    {
+        if (abs(newScale - snaps[s]) < snapTolerance)
+        { newScale = snaps[s]; break; }
+    }
+
+    g_DynamicResData[0] = newScale;
 }
