@@ -17,7 +17,7 @@ public:
 
   /// \brief Sorts the elements in the array using a in-place quick sort implementation (not stable).
   template <typename T, typename Comparer>
-  static void QuickSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void QuickSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using insertion sort (stable and in-place).
@@ -26,7 +26,7 @@ public:
 
   /// \brief Sorts the elements in the array using insertion sort (stable and in-place).
   template <typename T, typename Comparer>
-  static void InsertionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void InsertionSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using bubble sort (stable and in-place).
@@ -35,7 +35,7 @@ public:
 
   /// \brief Sorts the elements in the array using bubble sort (stable and in-place).
   template <typename T, typename Comparer>
-  static void BubbleSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void BubbleSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using selection sort (unstable and in-place).
@@ -44,7 +44,7 @@ public:
 
   /// \brief Sorts the elements in the array using selection sort (unstable and in-place).
   template <typename T, typename Comparer>
-  static void SelectionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void SelectionSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using selection sort (stable and in-place).
@@ -53,7 +53,7 @@ public:
 
   /// \brief Sorts the elements in the array using selection sort (stable and in-place).
   template <typename T, typename Comparer>
-  static void SelectionSortStable(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [tested]
+  static void SelectionSortStable(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [tested]
 
 
   /// \brief Sorts the elements in container using merge sort (stable and not in-place).
@@ -62,7 +62,7 @@ public:
 
   /// \brief Sorts the elements in the array using merge sort (stable and not in-place).
   template <typename T, typename Comparer>
-  static void MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [untested]
+  static void MergeSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer = Comparer()); // [untested]
 
 
   /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable), reusing external scratch memory.
@@ -75,11 +75,11 @@ public:
 
   /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable), reusing external scratch memory.
   template <typename T, typename ScratchContainer>
-  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer); // [tested]
+  static void RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer); // [tested]
 
   /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable), reusing external scratch memory.
   template <typename T, typename ScratchContainer, typename KeyFunc>
-  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
+  static void RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
 
 private:
   enum
@@ -143,52 +143,52 @@ private:
 
 
   template <typename T, typename Comparer>
-  static void QuickSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void QuickSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static xiiUInt32 Partition(T* ptr, xiiUInt32 uiLeft, xiiUInt32 uiRight, const Comparer& comparer);
+  static xiiUInt32 Partition(T* pPtr, xiiUInt32 uiLeft, xiiUInt32 uiRight, const Comparer& comparer);
 
 
   template <typename Container, typename Comparer>
   static void InsertionSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static void InsertionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void InsertionSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
   template <typename Container, typename Comparer>
   static void BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static void BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void BubbleSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
   template <typename Container, typename Comparer>
   static void SelectionSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static void SelectionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void SelectionSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
   template <typename Container, typename Comparer>
   static void SelectionSortStable(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static void SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void SelectionSortStable(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
   template <typename Container, typename Comparer>
   static void MergeSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static void MergeSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void MergeSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
   template <typename Container, typename Comparer>
   static void Merge(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
   template <typename T, typename Comparer>
-  static void Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
+  static void Merge(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
   template <typename Container, typename ScratchContainer, typename KeyFunc>

@@ -9,12 +9,12 @@ void xiiSorting::QuickSort(Container& ref_container, const Comparer& comparer)
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::QuickSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
+void xiiSorting::QuickSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
-  if (ref_arrayPtr.IsEmpty())
+  if (ref_pArray.IsEmpty())
     return;
 
-  QuickSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
+  QuickSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
@@ -27,12 +27,12 @@ void xiiSorting::InsertionSort(Container& ref_container, const Comparer& compare
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::InsertionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
+void xiiSorting::InsertionSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
-  if (ref_arrayPtr.IsEmpty())
+  if (ref_pArray.IsEmpty())
     return;
 
-  InsertionSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
+  InsertionSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
@@ -45,12 +45,12 @@ void xiiSorting::BubbleSort(Container& ref_container, const Comparer& comparer)
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::BubbleSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
+void xiiSorting::BubbleSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
-  if (ref_arrayPtr.IsEmpty())
+  if (ref_pArray.IsEmpty())
     return;
 
-  BubbleSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
+  BubbleSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
@@ -63,12 +63,12 @@ void xiiSorting::SelectionSort(Container& ref_container, const Comparer& compare
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::SelectionSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
+void xiiSorting::SelectionSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
-  if (ref_arrayPtr.IsEmpty())
+  if (ref_pArray.IsEmpty())
     return;
 
-  SelectionSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
+  SelectionSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
@@ -81,12 +81,12 @@ void xiiSorting::SelectionSortStable(Container& ref_container, const Comparer& c
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
+void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
-  if (ref_arrayPtr.IsEmpty())
+  if (ref_pArray.IsEmpty())
     return;
 
-  SelectionSortStable(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
+  SelectionSortStable(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename Comparer>
@@ -99,12 +99,12 @@ void xiiSorting::MergeSort(Container& ref_container, const Comparer& comparer)
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer)
+void xiiSorting::MergeSort(xiiArrayPtr<T>& ref_pArray, const Comparer& comparer)
 {
-  if (ref_arrayPtr.IsEmpty())
+  if (ref_pArray.IsEmpty())
     return;
 
-  MergeSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
+  MergeSort(ref_pArray, 0, ref_pArray.GetCount() - 1, comparer);
 }
 
 template <typename Container, typename ScratchContainer>
@@ -132,38 +132,39 @@ void xiiSorting::RadixSort(Container& ref_container, ScratchContainer& ref_scrat
 }
 
 template <typename T, typename ScratchContainer>
-void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer)
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer)
 {
-  RadixSort(ref_arrayPtr, ref_scratchBuffer, DefaultRadixKeyExtractor<T>());
+  RadixSort(ref_pArray, ref_scratchBuffer, DefaultRadixKeyExtractor<T>());
 }
 
 template <typename T, typename ScratchContainer, typename KeyFunc>
-void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc)
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_pArray, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc)
 {
-  const xiiUInt32 uiCount = ref_arrayPtr.GetCount();
+  const xiiUInt32 uiCount = ref_pArray.GetCount();
   if (uiCount < 2)
     return;
 
-  xiiArrayPtr<T> scratchBuffer = ref_scratchBuffer;
-  XII_ASSERT_DEV(scratchBuffer.GetCount() >= uiCount, "Radix sort scratch buffer has {0} elements, but {1} are required.", scratchBuffer.GetCount(), uiCount);
+  XII_ASSERT_DEV(ref_scratchBuffer.GetCount() >= uiCount, "Radix sort scratch buffer has {0} elements, but {1} are required.", ref_scratchBuffer.GetCount(), uiCount);
 
-  T* pPrimary   = ref_arrayPtr.GetPtr();
-  T* pSecondary = scratchBuffer.GetPtr();
+  T* pPrimary   = ref_pArray.GetPtr();
+  T* pSecondary = ref_scratchBuffer.GetData();
 
-  T* pSource = pPrimary;
-  T* pDest   = pSecondary;
+  T* pSource      = pPrimary;
+  T* pDestination = pSecondary;
 
-  for (xiiUInt32 pass = 0; pass < 8; ++pass)
+  for (xiiUInt32 uiPass = 0; uiPass < 8; ++uiPass)
   {
     xiiUInt32 uiCounts[256] = {0};
 
-    const xiiUInt8 uiFirstByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[0]) >> (pass * 8U)) & 0xFFU);
-    bool            bSingleBucket = true;
+    const xiiUInt8 uiFirstByte   = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[0]) >> (uiPass * 8U)) & 0xFFU);
+    bool           bSingleBucket = true;
 
     for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
-      const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[i]) >> (pass * 8U)) & 0xFFU);
+      const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[i]) >> (uiPass * 8U)) & 0xFFU);
+
       ++uiCounts[uiByte];
+
       bSingleBucket &= (uiByte == uiFirstByte);
     }
 
@@ -179,11 +180,11 @@ void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_s
 
     for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
-      const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[i]) >> (pass * 8U)) & 0xFFU);
-      pDest[uiOffsets[uiByte]++] = std::move(pSource[i]);
+      const xiiUInt8 uiByte             = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, pSource[i]) >> (uiPass * 8U)) & 0xFFU);
+      pDestination[uiOffsets[uiByte]++] = std::move(pSource[i]);
     }
 
-    xiiMath::Swap(pSource, pDest);
+    xiiMath::Swap(pSource, pDestination);
   }
 
   if (pSource != pPrimary)
@@ -206,13 +207,12 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
 
   bool bSourceIsContainer = true;
 
-  for (xiiUInt32 pass = 0; pass < 8; ++pass)
+  for (xiiUInt32 uiPass = 0; uiPass < 8; ++uiPass)
   {
     xiiUInt32 uiCounts[256] = {0};
 
-    const xiiUInt8 uiFirstByte = bSourceIsContainer ?
-      static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[0]) >> (pass * 8U)) & 0xFFU) :
-      static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[0]) >> (pass * 8U)) & 0xFFU);
+    const xiiUInt8 uiFirstByte = bSourceIsContainer ? static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[0]) >> (uiPass * 8U)) & 0xFFU) :
+                                                      static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[0]) >> (uiPass * 8U)) & 0xFFU);
 
     bool bSingleBucket = true;
 
@@ -220,8 +220,10 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[i]) >> (pass * 8U)) & 0xFFU);
+        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[i]) >> (uiPass * 8U)) & 0xFFU);
+
         ++uiCounts[uiByte];
+
         bSingleBucket &= (uiByte == uiFirstByte);
       }
     }
@@ -229,8 +231,10 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[i]) >> (pass * 8U)) & 0xFFU);
+        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[i]) >> (uiPass * 8U)) & 0xFFU);
+
         ++uiCounts[uiByte];
+
         bSingleBucket &= (uiByte == uiFirstByte);
       }
     }
@@ -249,7 +253,7 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[i]) >> (pass * 8U)) & 0xFFU);
+        const xiiUInt8 uiByte              = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, container[i]) >> (uiPass * 8U)) & 0xFFU);
         scratchBuffer[uiOffsets[uiByte]++] = std::move(container[i]);
       }
     }
@@ -257,7 +261,7 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        const xiiUInt8 uiByte = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[i]) >> (pass * 8U)) & 0xFFU);
+        const xiiUInt8 uiByte          = static_cast<xiiUInt8>((ExtractRadixKey(keyFunc, scratchBuffer[i]) >> (uiPass * 8U)) & 0xFFU);
         container[uiOffsets[uiByte]++] = std::move(scratchBuffer[i]);
       }
     }
@@ -294,17 +298,19 @@ void xiiSorting::QuickSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt
       {
         uiFirstHalfEndIndex--;
       }
-
       while (uiSecondHalfStartIndex <= uiEndIndex && !DoCompare(comparer, container[uiPivotIndex], container[uiSecondHalfStartIndex]))
       {
         uiSecondHalfStartIndex++;
       }
 
       if (uiStartIndex < uiFirstHalfEndIndex)
+      {
         QuickSort(container, uiStartIndex, uiFirstHalfEndIndex, comparer);
-
+      }
       if (uiSecondHalfStartIndex < uiEndIndex)
+      {
         QuickSort(container, uiSecondHalfStartIndex, uiEndIndex, comparer);
+      }
     }
   }
 }
@@ -371,57 +377,61 @@ xiiUInt32 xiiSorting::Partition(Container& container, xiiUInt32 uiLeft, xiiUInt3
 
 
 template <typename T, typename Comparer>
-void xiiSorting::QuickSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::QuickSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T* ptr = arrayPtr.GetPtr();
+  T* pPtr = pArray.GetPtr();
 
   if (uiStartIndex < uiEndIndex)
   {
     if (uiEndIndex - uiStartIndex <= INSERTION_THRESHOLD)
     {
-      InsertionSort(arrayPtr, uiStartIndex, uiEndIndex, comparer);
+      InsertionSort(pArray, uiStartIndex, uiEndIndex, comparer);
     }
     else
     {
-      const xiiUInt32 uiPivotIndex = Partition(ptr, uiStartIndex, uiEndIndex, comparer);
+      const xiiUInt32 uiPivotIndex = Partition(pPtr, uiStartIndex, uiEndIndex, comparer);
 
       xiiUInt32 uiFirstHalfEndIndex    = uiPivotIndex > 0 ? uiPivotIndex - 1 : 0;
       xiiUInt32 uiSecondHalfStartIndex = uiPivotIndex + 1;
 
-      while (uiFirstHalfEndIndex > uiStartIndex && !DoCompare(comparer, ptr[uiFirstHalfEndIndex], ptr[uiPivotIndex]))
+      while (uiFirstHalfEndIndex > uiStartIndex && !DoCompare(comparer, pPtr[uiFirstHalfEndIndex], pPtr[uiPivotIndex]))
       {
         uiFirstHalfEndIndex--;
       }
 
-      while (uiSecondHalfStartIndex <= uiEndIndex && !DoCompare(comparer, ptr[uiPivotIndex], ptr[uiSecondHalfStartIndex]))
+      while (uiSecondHalfStartIndex <= uiEndIndex && !DoCompare(comparer, pPtr[uiPivotIndex], pPtr[uiSecondHalfStartIndex]))
       {
         uiSecondHalfStartIndex++;
       }
 
       if (uiStartIndex < uiFirstHalfEndIndex)
-        QuickSort(arrayPtr, uiStartIndex, uiFirstHalfEndIndex, comparer);
+      {
+        QuickSort(pArray, uiStartIndex, uiFirstHalfEndIndex, comparer);
+      }
 
       if (uiSecondHalfStartIndex < uiEndIndex)
-        QuickSort(arrayPtr, uiSecondHalfStartIndex, uiEndIndex, comparer);
+      {
+        QuickSort(pArray, uiSecondHalfStartIndex, uiEndIndex, comparer);
+      }
     }
   }
 }
 
 template <typename T, typename Comparer>
-xiiUInt32 xiiSorting::Partition(T* ptr, xiiUInt32 uiLeft, xiiUInt32 uiRight, const Comparer& comparer)
+xiiUInt32 xiiSorting::Partition(T* pPtr, xiiUInt32 uiLeft, xiiUInt32 uiRight, const Comparer& comparer)
 {
   xiiUInt32 uiPivotIndex = (uiLeft + uiRight) / 2;
 
-  if (DoCompare(comparer, ptr[uiLeft], ptr[uiRight]))
+  if (DoCompare(comparer, pPtr[uiLeft], pPtr[uiRight]))
   {
     // left < right
 
-    if (DoCompare(comparer, ptr[uiRight], ptr[uiPivotIndex]))
+    if (DoCompare(comparer, pPtr[uiRight], pPtr[uiPivotIndex]))
     {
       // left < right < pivot
       uiPivotIndex = uiRight;
     }
-    else if (DoCompare(comparer, ptr[uiLeft], ptr[uiPivotIndex]))
+    else if (DoCompare(comparer, pPtr[uiLeft], pPtr[uiPivotIndex]))
     {
       // left < pivot < right
     }
@@ -435,11 +445,11 @@ xiiUInt32 xiiSorting::Partition(T* ptr, xiiUInt32 uiLeft, xiiUInt32 uiRight, con
   {
     // right < left
 
-    if (DoCompare(comparer, ptr[uiLeft], ptr[uiPivotIndex]))
+    if (DoCompare(comparer, pPtr[uiLeft], pPtr[uiPivotIndex]))
     {
       uiPivotIndex = uiLeft; // right < left < pivot
     }
-    else if (DoCompare(comparer, ptr[uiRight], ptr[uiPivotIndex]))
+    else if (DoCompare(comparer, pPtr[uiRight], pPtr[uiPivotIndex]))
     {
       // right < pivot < left
     }
@@ -450,19 +460,19 @@ xiiUInt32 xiiSorting::Partition(T* ptr, xiiUInt32 uiLeft, xiiUInt32 uiRight, con
     }
   }
 
-  xiiMath::Swap(ptr[uiPivotIndex], ptr[uiRight]); // move pivot to right
+  xiiMath::Swap(pPtr[uiPivotIndex], pPtr[uiRight]); // move pivot to right
 
   xiiUInt32 uiIndex = uiLeft;
   for (xiiUInt32 i = uiLeft; i < uiRight; ++i)
   {
-    if (DoCompare(comparer, ptr[i], ptr[uiRight]))
+    if (DoCompare(comparer, pPtr[i], pPtr[uiRight]))
     {
-      xiiMath::Swap(ptr[i], ptr[uiIndex]);
+      xiiMath::Swap(pPtr[i], pPtr[uiIndex]);
       ++uiIndex;
     }
   }
 
-  xiiMath::Swap(ptr[uiIndex], ptr[uiRight]); // move pivot back in place
+  xiiMath::Swap(pPtr[uiIndex], pPtr[uiRight]); // move pivot back in place
 
   return uiIndex;
 }
@@ -483,16 +493,16 @@ void xiiSorting::InsertionSort(Container& container, xiiUInt32 uiStartIndex, xii
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::InsertionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::InsertionSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T* ptr = arrayPtr.GetPtr();
+  T* pPtr = pArray.GetPtr();
 
   for (xiiUInt32 i = uiStartIndex + 1; i <= uiEndIndex; ++i)
   {
     xiiUInt32 uiHoleIndex   = i;
-    T         valueToInsert = std::move(ptr[uiHoleIndex]);
+    T         valueToInsert = std::move(pPtr[uiHoleIndex]);
 
-    while (uiHoleIndex > uiStartIndex && DoCompare(comparer, valueToInsert, ptr[uiHoleIndex - 1]))
+    while (uiHoleIndex > uiStartIndex && DoCompare(comparer, valueToInsert, pPtr[uiHoleIndex - 1]))
     {
       --uiHoleIndex;
     }
@@ -500,12 +510,12 @@ void xiiSorting::InsertionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex,
     const xiiUInt32 uiMoveCount = i - uiHoleIndex;
     if (uiMoveCount > 0)
     {
-      xiiMemoryUtils::RelocateOverlapped(ptr + uiHoleIndex + 1, ptr + uiHoleIndex, uiMoveCount);
-      xiiMemoryUtils::MoveConstruct(ptr + uiHoleIndex, std::move(valueToInsert));
+      xiiMemoryUtils::RelocateOverlapped(pPtr + uiHoleIndex + 1, pPtr + uiHoleIndex, uiMoveCount);
+      xiiMemoryUtils::MoveConstruct(pPtr + uiHoleIndex, std::move(valueToInsert));
     }
     else
     {
-      ptr[uiHoleIndex] = std::move(valueToInsert);
+      pPtr[uiHoleIndex] = std::move(valueToInsert);
     }
   }
 }
@@ -532,9 +542,9 @@ void xiiSorting::BubbleSort(Container& container, xiiUInt32 uiStartIndex, xiiUIn
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::BubbleSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T*   ptr       = arrayPtr.GetPtr();
+  T*   pPtr      = pArray.GetPtr();
   bool bIsSorted = false;
 
   while (!bIsSorted)
@@ -544,9 +554,9 @@ void xiiSorting::BubbleSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xi
     for (xiiUInt32 i = uiStartIndex + 1; i <= uiEndIndex; ++i)
     {
       xiiUInt32 uiHoleIndex = i;
-      if (DoCompare(comparer, ptr[uiHoleIndex], ptr[uiHoleIndex - 1]))
+      if (DoCompare(comparer, pPtr[uiHoleIndex], pPtr[uiHoleIndex - 1]))
       {
-        xiiMath::Swap(ptr[uiHoleIndex], ptr[uiHoleIndex - 1]);
+        xiiMath::Swap(pPtr[uiHoleIndex], pPtr[uiHoleIndex - 1]);
         bIsSorted = false;
       }
     }
@@ -577,9 +587,9 @@ void xiiSorting::SelectionSort(Container& container, xiiUInt32 uiStartIndex, xii
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::SelectionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::SelectionSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T* ptr = arrayPtr.GetPtr();
+  T* pPtr = pArray.GetPtr();
 
   for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
   {
@@ -591,13 +601,13 @@ void xiiSorting::SelectionSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex,
     {
       // If Container at j is less than the current minimum, set Container current index (j) as the new minimum.
       xiiUInt32 uiHoleIndexMin = j;
-      if (DoCompare(comparer, ptr[uiHoleIndexMin], ptr[uiMinIndex]))
+      if (DoCompare(comparer, pPtr[uiHoleIndexMin], pPtr[uiMinIndex]))
       {
         uiMinIndex = j;
       }
     }
 
-    xiiMath::Swap(ptr[uiHoleIndex], ptr[uiMinIndex]);
+    xiiMath::Swap(pPtr[uiHoleIndex], pPtr[uiMinIndex]);
   }
 }
 
@@ -632,9 +642,9 @@ void xiiSorting::SelectionSortStable(Container& container, xiiUInt32 uiStartInde
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T* ptr = arrayPtr.GetPtr();
+  T* pPtr = pArray.GetPtr();
 
   for (xiiUInt32 i = uiStartIndex; i <= uiEndIndex; ++i)
   {
@@ -645,7 +655,7 @@ void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStart
     {
       // If Container at j is less than the current minimum, set Container current index (j) as the new minimum.
       xiiUInt32 uiHoleIndexMin = j;
-      if (DoCompare(comparer, ptr[uiHoleIndexMin], ptr[uiMinIndex]))
+      if (DoCompare(comparer, pPtr[uiHoleIndexMin], pPtr[uiMinIndex]))
       {
         uiMinIndex = j;
       }
@@ -653,13 +663,13 @@ void xiiSorting::SelectionSortStable(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStart
 
     // In a stable selection sort, loop through all remaining elements and swap in to preserve order.
     // This essentially 'shifts' the minimum farthest to the left of the container (to the current 'i').
-    auto valueStorage = ptr[uiMinIndex];
+    auto valueStorage = pPtr[uiMinIndex];
     while (uiMinIndex > i)
     {
-      ptr[uiMinIndex] = ptr[uiMinIndex - 1];
+      pPtr[uiMinIndex] = pPtr[uiMinIndex - 1];
       --uiMinIndex;
     }
-    ptr[i] = valueStorage;
+    pPtr[i] = valueStorage;
   }
 }
 
@@ -678,7 +688,7 @@ void xiiSorting::MergeSort(Container& container, xiiUInt32 uiStartIndex, xiiUInt
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::MergeSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::MergeSort(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
   if (uiStartIndex >= uiEndIndex)
     return;
@@ -687,9 +697,9 @@ void xiiSorting::MergeSort(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xii
   xiiUInt32 uiMiddleIndex = (uiStartIndex + uiEndIndex) >> 1;
 
   // Sort first and second halves and merge the result.
-  MergeSort(arrayPtr, uiStartIndex, uiMiddleIndex, comparer);
-  MergeSort(arrayPtr, uiMiddleIndex + 1, uiEndIndex, comparer);
-  Merge(arrayPtr, uiStartIndex, uiMiddleIndex, uiEndIndex, comparer);
+  MergeSort(pArray, uiStartIndex, uiMiddleIndex, comparer);
+  MergeSort(pArray, uiMiddleIndex + 1, uiEndIndex, comparer);
+  Merge(pArray, uiStartIndex, uiMiddleIndex, uiEndIndex, comparer);
 }
 
 template <typename Container, typename Comparer>
@@ -757,9 +767,9 @@ void xiiSorting::Merge(Container& container, xiiUInt32 uiStartIndex, xiiUInt32 u
 }
 
 template <typename T, typename Comparer>
-void xiiSorting::Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
+void xiiSorting::Merge(xiiArrayPtr<T>& pArray, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer)
 {
-  T* ptr = arrayPtr.GetPtr();
+  T* pPtr = pArray.GetPtr();
 
   xiiUInt32 i{}, j{}, k{};
   xiiUInt32 uiRightSideSize = uiEndIndex - uiMiddleIndex;
@@ -772,14 +782,14 @@ void xiiSorting::Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt
   // Copy left side data.
   for (i = 0; i < uiLeftSideSize; ++i)
   {
-    T value              = ptr[uiStartIndex + i];
+    T value              = pPtr[uiStartIndex + i];
     leftSideContainer[i] = value;
   }
 
   // Copy right side data.
   for (j = 0; j < uiRightSideSize; ++j)
   {
-    T value               = ptr[uiMiddleIndex + 1 + j];
+    T value               = pPtr[uiMiddleIndex + 1 + j];
     rightSideContainer[j] = value;
   }
 
@@ -792,12 +802,12 @@ void xiiSorting::Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt
   {
     if (DoCompare(comparer, leftSideContainer[i], rightSideContainer[j]))
     {
-      ptr[k] = leftSideContainer[i];
+      pPtr[k] = leftSideContainer[i];
       ++i;
     }
     else
     {
-      ptr[k] = rightSideContainer[j];
+      pPtr[k] = rightSideContainer[j];
       ++j;
     }
 
@@ -807,7 +817,7 @@ void xiiSorting::Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt
   // Copy the remaining elements of the left side array if any.
   while (i < uiLeftSideSize)
   {
-    ptr[k] = leftSideContainer[i];
+    pPtr[k] = leftSideContainer[i];
     ++i;
     ++k;
   }
@@ -815,7 +825,7 @@ void xiiSorting::Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt
   // Copy the remaining elements of the right side array if any.
   while (j < uiRightSideSize)
   {
-    ptr[k] = rightSideContainer[j];
+    pPtr[k] = rightSideContainer[j];
     ++j;
     ++k;
   }
