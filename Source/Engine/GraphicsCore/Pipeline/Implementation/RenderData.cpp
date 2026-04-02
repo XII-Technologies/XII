@@ -190,6 +190,11 @@ void xiiExtractedRenderData::SortAndBatches()
         sortedData.PushBackRange(batch.m_Data);
       }
 
+      if (sortScratchBuffer.GetCount() < uiTotalElements)
+      {
+        sortScratchBuffer.SetCountUninitialized(uiTotalElements);
+      }
+
       // Sort
       xiiArrayPtr<xiiRenderData*> sortedDataPtr = sortedData;
       xiiSorting::RadixSort(sortedDataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64

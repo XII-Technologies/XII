@@ -107,60 +107,48 @@ void xiiSorting::MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& compare
   MergeSort(ref_arrayPtr, 0, ref_arrayPtr.GetCount() - 1, comparer);
 }
 
-template <typename Container>
-void xiiSorting::RadixSort(Container& ref_container)
+template <typename Container, typename ScratchContainer>
+void xiiSorting::RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer)
 {
   if (ref_container.GetCount() < 2)
     return;
 
   using Element = std::remove_reference_t<decltype(ref_container[0])>;
 
-  xiiDynamicArray<Element> scratchBuffer;
-  RadixSort(ref_container, scratchBuffer, DefaultRadixKeyExtractor<Element>());
+  XII_ASSERT_DEV(ref_scratchBuffer.GetCount() >= ref_container.GetCount(), "Radix sort scratch buffer has {0} elements, but {1} are required.", ref_scratchBuffer.GetCount(), ref_container.GetCount());
+
+  RadixSortInternal(ref_container, ref_scratchBuffer, DefaultRadixKeyExtractor<Element>());
 }
 
-template <typename Container, typename KeyFunc>
-void xiiSorting::RadixSort(Container& ref_container, const KeyFunc& keyFunc)
+template <typename Container, typename ScratchContainer, typename KeyFunc>
+void xiiSorting::RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc)
 {
   if (ref_container.GetCount() < 2)
     return;
 
-  using Element = std::remove_reference_t<decltype(ref_container[0])>;
+  XII_ASSERT_DEV(ref_scratchBuffer.GetCount() >= ref_container.GetCount(), "Radix sort scratch buffer has {0} elements, but {1} are required.", ref_scratchBuffer.GetCount(), ref_container.GetCount());
 
-  xiiDynamicArray<Element> scratchBuffer;
-  RadixSort(ref_container, scratchBuffer, keyFunc);
+  RadixSortInternal(ref_container, ref_scratchBuffer, keyFunc);
 }
 
-template <typename T>
-void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr)
+template <typename T, typename ScratchContainer>
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer)
 {
-  RadixSort(ref_arrayPtr, DefaultRadixKeyExtractor<T>());
+  RadixSort(ref_arrayPtr, ref_scratchBuffer, DefaultRadixKeyExtractor<T>());
 }
 
-template <typename T, typename KeyFunc>
-void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, const KeyFunc& keyFunc)
-{
-  if (ref_arrayPtr.GetCount() < 2)
-    return;
-
-  xiiDynamicArray<T> scratchBuffer;
-  RadixSort(ref_arrayPtr, scratchBuffer, keyFunc);
-}
-
-template <typename T, typename KeyFunc>
-void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, xiiDynamicArray<T>& ref_scratchBuffer, const KeyFunc& keyFunc)
+template <typename T, typename ScratchContainer, typename KeyFunc>
+void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc)
 {
   const xiiUInt32 uiCount = ref_arrayPtr.GetCount();
   if (uiCount < 2)
     return;
 
-  if (ref_scratchBuffer.GetCount() < uiCount)
-  {
-    ref_scratchBuffer.SetCountUninitialized(uiCount);
-  }
+  xiiArrayPtr<T> scratchBuffer = ref_scratchBuffer;
+  XII_ASSERT_DEV(scratchBuffer.GetCount() >= uiCount, "Radix sort scratch buffer has {0} elements, but {1} are required.", scratchBuffer.GetCount(), uiCount);
 
   T* pPrimary   = ref_arrayPtr.GetPtr();
-  T* pSecondary = ref_scratchBuffer.GetData();
+  T* pSecondary = scratchBuffer.GetPtr();
 
   T* pSource = pPrimary;
   T* pDest   = pSecondary;
@@ -207,17 +195,14 @@ void xiiSorting::RadixSort(xiiArrayPtr<T>& ref_arrayPtr, xiiDynamicArray<T>& ref
   }
 }
 
-template <typename Container, typename Element, typename KeyFunc>
-void xiiSorting::RadixSort(Container& container, xiiDynamicArray<Element>& scratchBuffer, const KeyFunc& keyFunc)
+template <typename Container, typename ScratchContainer, typename KeyFunc>
+void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scratchBuffer, const KeyFunc& keyFunc)
 {
   const xiiUInt32 uiCount = container.GetCount();
   if (uiCount < 2)
     return;
 
-  if (scratchBuffer.GetCount() < uiCount)
-  {
-    scratchBuffer.SetCountUninitialized(uiCount);
-  }
+  XII_ASSERT_DEV(scratchBuffer.GetCount() >= uiCount, "Radix sort scratch buffer has {0} elements, but {1} are required.", scratchBuffer.GetCount(), uiCount);
 
   bool bSourceIsContainer = true;
 

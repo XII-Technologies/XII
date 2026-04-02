@@ -4,7 +4,6 @@
 #include <Foundation/Basics.h>
 
 #include <Foundation/Algorithm/Comparer.h>
-#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Types/ArrayPtr.h>
 
@@ -66,25 +65,21 @@ public:
   static void MergeSort(xiiArrayPtr<T>& ref_arrayPtr, const Comparer& comparer = Comparer()); // [untested]
 
 
-  /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable).
-  template <typename Container>
-  static void RadixSort(Container& ref_container); // [tested]
+  /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable), reusing external scratch memory.
+  template <typename Container, typename ScratchContainer>
+  static void RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer); // [tested]
 
-  /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable).
-  template <typename Container, typename KeyFunc>
-  static void RadixSort(Container& ref_container, const KeyFunc& keyFunc); // [tested]
-
-  /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable).
-  template <typename T>
-  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr); // [tested]
-
-  /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable).
-  template <typename T, typename KeyFunc>
-  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, const KeyFunc& keyFunc); // [tested]
+  /// \brief Sorts the elements in container by an unsigned 64-bit radix key (stable), reusing external scratch memory.
+  template <typename Container, typename ScratchContainer, typename KeyFunc>
+  static void RadixSort(Container& ref_container, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
 
   /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable), reusing external scratch memory.
-  template <typename T, typename KeyFunc>
-  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, xiiDynamicArray<T>& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
+  template <typename T, typename ScratchContainer>
+  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer); // [tested]
+
+  /// \brief Sorts the elements in the array by an unsigned 64-bit radix key (stable), reusing external scratch memory.
+  template <typename T, typename ScratchContainer, typename KeyFunc>
+  static void RadixSort(xiiArrayPtr<T>& ref_arrayPtr, ScratchContainer& ref_scratchBuffer, const KeyFunc& keyFunc); // [tested]
 
 private:
   enum
@@ -92,7 +87,7 @@ private:
     INSERTION_THRESHOLD = 16
   };
 
-  // Perform comparison either with "Less(a,b)" (prefered) or with operator ()(a,b)
+  // Perform comparison either with "Less(a,b)" (preferred) or with operator ()(a,b)
   template <typename Element, typename Comparer>
   XII_ALWAYS_INLINE constexpr static auto DoCompare(const Comparer& comparer, const Element& a, const Element& b, xiiInt32) -> decltype(comparer.Less(a, b))
   {
@@ -196,8 +191,8 @@ private:
   static void Merge(xiiArrayPtr<T>& arrayPtr, xiiUInt32 uiStartIndex, xiiUInt32 uiMiddleIndex, xiiUInt32 uiEndIndex, const Comparer& comparer);
 
 
-  template <typename Container, typename Element, typename KeyFunc>
-  static void RadixSort(Container& container, xiiDynamicArray<Element>& scratchBuffer, const KeyFunc& keyFunc);
+  template <typename Container, typename ScratchContainer, typename KeyFunc>
+  static void RadixSortInternal(Container& container, ScratchContainer& scratchBuffer, const KeyFunc& keyFunc);
 };
 
 #include <Foundation/Algorithm/Implementation/Sorting_inl.h>

@@ -250,8 +250,10 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     }
 
     xiiDynamicArray<xiiUInt64> valuesPtrSort = values;
+    xiiDynamicArray<xiiUInt64> scratchBuffer;
+    scratchBuffer.SetCountUninitialized(values.GetCount());
 
-    xiiSorting::RadixSort(values);
+    xiiSorting::RadixSort(values, scratchBuffer);
 
     for (xiiUInt32 i = 1; i < values.GetCount(); ++i)
     {
@@ -259,7 +261,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     }
 
     xiiArrayPtr<xiiUInt64> valuesPtr = valuesPtrSort;
-    xiiSorting::RadixSort(valuesPtr);
+    xiiSorting::RadixSort(valuesPtr, scratchBuffer);
 
     for (xiiUInt32 i = 1; i < valuesPtr.GetCount(); ++i)
     {
@@ -270,8 +272,10 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "RadixSort - KeyExtractor")
   {
     xiiDynamicArray<RadixSortTestItem> items = CreateRadixSortTestItems();
+    xiiDynamicArray<RadixSortTestItem> scratchBuffer;
+    scratchBuffer.SetCount(items.GetCount());
 
-    xiiSorting::RadixSort(items, RadixSortTestKeyExtractor());
+    xiiSorting::RadixSort(items, scratchBuffer, RadixSortTestKeyExtractor());
     VerifyRadixSortStableOrder(items);
   }
 
@@ -281,6 +285,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     xiiDynamicArray<RadixSortTestItem> scratchBuffer;
 
     xiiArrayPtr<RadixSortTestItem> itemPtr = items;
+    scratchBuffer.SetCount(itemPtr.GetCount());
     xiiSorting::RadixSort(itemPtr, scratchBuffer, RadixSortTestKeyExtractor());
 
     VerifyRadixSortStableOrder(itemPtr);
