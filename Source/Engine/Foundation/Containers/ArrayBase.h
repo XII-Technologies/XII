@@ -159,6 +159,7 @@ public:
   /// \brief Returns the reserved number of elements that the array can hold without reallocating.
   xiiUInt32 GetCapacity() const { return m_uiCapacity; }
 
+  using value_type             = T;
   using const_iterator         = const T*;
   using const_reverse_iterator = const_reverse_pointer_iterator<T>;
   using iterator               = T*;
