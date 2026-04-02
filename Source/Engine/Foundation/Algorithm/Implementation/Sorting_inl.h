@@ -697,16 +697,13 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
 
   bool bSourceIsContainer = true;
 
+  // 8 passes for 64-bit keys (8 bits per pass).
   for (xiiUInt32 uiPass = 0; uiPass < 8; ++uiPass)
   {
-    const xiiUInt32 uiShift     = uiPass * 8U;
-    xiiUInt32       counts[256] = {};
+    const xiiUInt32 uiShift = uiPass * 8U;
 
-    // Read first byte to detect single-bucket pass.
-    const xiiUInt64 uiFirstKey    = bSourceIsContainer ? ExtractRadixKey(keyFunc, container[0]) : ExtractRadixKey(keyFunc, scratchBuffer[0]);
-    const xiiUInt8  uiFirstByte   = static_cast<xiiUInt8>((uiFirstKey >> uiShift) & 0xFFU);
-    bool            bSingleBucket = true;
-
+    // Counting phase
+    xiiUInt32 counts[256] = {};
     if (bSourceIsContainer)
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
@@ -715,7 +712,6 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
         const xiiUInt8  uiByte = static_cast<xiiUInt8>((uiKey >> uiShift) & 0xFFU);
 
         ++counts[uiByte];
-        bSingleBucket &= (uiByte == uiFirstByte);
       }
     }
     else
@@ -726,26 +722,38 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
         const xiiUInt8  uiByte = static_cast<xiiUInt8>((uiKey >> uiShift) & 0xFFU);
 
         ++counts[uiByte];
-        bSingleBucket &= (uiByte == uiFirstByte);
       }
     }
 
-    if (bSingleBucket)
+    // Early out if everything fell into a single bucket (no effect this pass)
+    // This is safe and cheap, so if all counts except one are zero, order is unchanged.
+    xiiUInt32 uiNonZeroBuckets = 0U;
+    for (xiiUInt32 i = 0; i < 256; ++i)
+    {
+      if (counts[i] != 0)
+      {
+        ++uiNonZeroBuckets;
+      }
+    }
+
+    if (uiNonZeroBuckets <= 1)
       continue;
 
-    xiiUInt32 offsets[256] = {};
+    // Prefix sum -> offsets.
+    xiiUInt32 offsets[256];
+    offsets[0] = 0;
     for (xiiUInt32 i = 1; i < 256; ++i)
     {
       offsets[i] = offsets[i - 1] + counts[i - 1];
     }
 
+    // Scatter phase (stable).
     if (bSourceIsContainer)
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        const xiiUInt64 uiKey  = ExtractRadixKey(keyFunc, container[i]);
-        const xiiUInt8  uiByte = static_cast<xiiUInt8>((uiKey >> uiShift) & 0xFFU);
-
+        const xiiUInt64 uiKey            = ExtractRadixKey(keyFunc, container[i]);
+        const xiiUInt8  uiByte           = static_cast<xiiUInt8>((uiKey >> uiShift) & 0xFFU);
         scratchBuffer[offsets[uiByte]++] = std::move(container[i]);
       }
     }
@@ -753,9 +761,8 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        const xiiUInt64 uiKey  = ExtractRadixKey(keyFunc, scratchBuffer[i]);
-        const xiiUInt8  uiByte = static_cast<xiiUInt8>((uiKey >> uiShift) & 0xFFU);
-
+        const xiiUInt64 uiKey        = ExtractRadixKey(keyFunc, scratchBuffer[i]);
+        const xiiUInt8  uiByte       = static_cast<xiiUInt8>((uiKey >> uiShift) & 0xFFU);
         container[offsets[uiByte]++] = std::move(scratchBuffer[i]);
       }
     }
@@ -763,6 +770,7 @@ void xiiSorting::RadixSortInternal(Container& container, ScratchContainer& scrat
     bSourceIsContainer = !bSourceIsContainer;
   }
 
+  // If the final result is in the scratch buffer, move it back.
   if (!bSourceIsContainer)
   {
     xiiMemoryUtils::RelocateOverlapped(xiiGetPtr(container), xiiGetPtr(scratchBuffer), uiCount);
