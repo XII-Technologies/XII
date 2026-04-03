@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/EmissiveAuxPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEmissiveAuxPass, 1, xiiRTTIDefaultAllocator<xiiEmissiveAuxPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("EmissiveAuxPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiEmissiveAutoReg { xiiEmissiveAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiEmissiveAuxPass)); } }; static xiiEmissiveAutoReg s_AutoReg; }
-
 xiiEmissiveAuxPass::xiiEmissiveAuxPass() : xiiRenderPipelinePass("EmissiveAuxPass") {}
 xiiEmissiveAuxPass::~xiiEmissiveAuxPass() = default;
 

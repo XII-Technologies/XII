@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/AmbientOcclusionPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAmbientOcclusionPass, 1, xiiRTTIDefaultAllocator<xiiAmbientOcclusionPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("AmbientOcclusionPass")), XII_MEMBER_PROPERTY("SliceCount", m_uiSliceCount)->AddAttributes(new xiiDefaultValueAttribute(3u)), XII_MEMBER_PROPERTY("StepsPerSlice", m_uiStepsPerSlice)->AddAttributes(new xiiDefaultValueAttribute(4u)), XII_MEMBER_PROPERTY("Radius", m_fRadius)->AddAttributes(new xiiDefaultValueAttribute(0.6f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiAOAutoReg { xiiAOAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiAmbientOcclusionPass)); } }; static xiiAOAutoReg s_AutoReg; }
-
 xiiAmbientOcclusionPass::xiiAmbientOcclusionPass() : xiiRenderPipelinePass("AmbientOcclusionPass") {}
 xiiAmbientOcclusionPass::~xiiAmbientOcclusionPass() = default;
 

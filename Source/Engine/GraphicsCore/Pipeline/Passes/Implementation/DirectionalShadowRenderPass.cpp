@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/DirectionalShadowRenderPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalShadowRenderPass, 1, xiiRTTIDefaultAllocator<xiiDirectionalShadowRenderPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("DirectionalShadowRenderPass")), XII_MEMBER_PROPERTY("AtlasSize", m_uiAtlasSize)->AddAttributes(new xiiDefaultValueAttribute(4096u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiDirShadowAutoReg { xiiDirShadowAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiDirectionalShadowRenderPass)); } }; static xiiDirShadowAutoReg s_AutoReg; }
-
 xiiDirectionalShadowRenderPass::xiiDirectionalShadowRenderPass() : xiiRenderPipelinePass("DirectionalShadowRenderPass") {}
 xiiDirectionalShadowRenderPass::~xiiDirectionalShadowRenderPass() = default;
 

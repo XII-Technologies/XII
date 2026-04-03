@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/ClusterGridAndLightListPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiClusterGridAndLightListPass, 1, xiiRTTIDefaultAllocator<xiiClusterGridAndLightListPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ClusterGridAndLightListPass")), XII_MEMBER_PROPERTY("ClusterX", m_uiClusterCountX)->AddAttributes(new xiiDefaultValueAttribute(16u)), XII_MEMBER_PROPERTY("ClusterY", m_uiClusterCountY)->AddAttributes(new xiiDefaultValueAttribute(8u)), XII_MEMBER_PROPERTY("ClusterZ", m_uiClusterCountZ)->AddAttributes(new xiiDefaultValueAttribute(24u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiClusterAutoReg { xiiClusterAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiClusterGridAndLightListPass)); } }; static xiiClusterAutoReg s_AutoReg; }
-
 xiiClusterGridAndLightListPass::xiiClusterGridAndLightListPass() : xiiRenderPipelinePass("ClusterGridAndLightListPass") {}
 xiiClusterGridAndLightListPass::~xiiClusterGridAndLightListPass() = default;
 

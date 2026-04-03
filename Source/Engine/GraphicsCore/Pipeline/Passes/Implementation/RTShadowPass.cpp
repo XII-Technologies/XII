@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/RTShadowPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRTShadowPass, 1, xiiRTTIDefaultAllocator<xiiRTShadowPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("RTShadowPass")), XII_MEMBER_PROPERTY("RaysPerPixel", m_uiRaysPerPixel)->AddAttributes(new xiiDefaultValueAttribute(1u)), XII_MEMBER_PROPERTY("LightRadius", m_fLightRadius)->AddAttributes(new xiiDefaultValueAttribute(0.05f)), XII_MEMBER_PROPERTY("TemporalHistory", m_uiTemporalHistoryLen)->AddAttributes(new xiiDefaultValueAttribute(16u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiRTShadowAutoReg { xiiRTShadowAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiRTShadowPass)); } }; static xiiRTShadowAutoReg s_AutoReg; }
-
 xiiRTShadowPass::xiiRTShadowPass() : xiiRenderPipelinePass("RTShadowPass") {}
 xiiRTShadowPass::~xiiRTShadowPass() = default;
 

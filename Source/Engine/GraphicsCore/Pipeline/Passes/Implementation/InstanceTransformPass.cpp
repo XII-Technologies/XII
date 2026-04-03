@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/InstanceTransformPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiInstanceTransformPass, 1, xiiRTTIDefaultAllocator<xiiInstanceTransformPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("InstanceTransformPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-namespace { struct xiiInstanceTransformAutoReg { xiiInstanceTransformAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiInstanceTransformPass)); } }; static xiiInstanceTransformAutoReg s_AutoReg; }
 
 xiiInstanceTransformPass::xiiInstanceTransformPass() : xiiRenderPipelinePass("InstanceTransformPass") {}
 xiiInstanceTransformPass::~xiiInstanceTransformPass() = default;

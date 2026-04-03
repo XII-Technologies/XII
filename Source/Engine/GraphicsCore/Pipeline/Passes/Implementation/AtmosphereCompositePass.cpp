@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/AtmosphereCompositePass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereCompositePass, 1, xiiRTTIDefaultAllocator<xiiAtmosphereCompositePass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("AtmosphereCompositePass")), XII_MEMBER_PROPERTY("SunSolidAngle", m_fSunSolidAngle)->AddAttributes(new xiiDefaultValueAttribute(6.8e-5f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiAtmCompAutoReg { xiiAtmCompAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiAtmosphereCompositePass)); } }; static xiiAtmCompAutoReg s_AutoReg; }
-
 xiiAtmosphereCompositePass::xiiAtmosphereCompositePass() : xiiRenderPipelinePass("AtmosphereCompositePass") {}
 xiiAtmosphereCompositePass::~xiiAtmosphereCompositePass() = default;
 

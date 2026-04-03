@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/BloomPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBloomPass, 1, xiiRTTIDefaultAllocator<xiiBloomPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("BloomPass")), XII_MEMBER_PROPERTY("Threshold", m_fThreshold)->AddAttributes(new xiiDefaultValueAttribute(1.0f)), XII_MEMBER_PROPERTY("Intensity", m_fIntensity)->AddAttributes(new xiiDefaultValueAttribute(0.04f)), XII_MEMBER_PROPERTY("MipLevels", m_uiMipLevels)->AddAttributes(new xiiDefaultValueAttribute(7u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiBloomAutoReg { xiiBloomAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiBloomPass)); } }; static xiiBloomAutoReg s_AutoReg; }
-
 xiiBloomPass::xiiBloomPass() : xiiRenderPipelinePass("BloomPass") {}
 xiiBloomPass::~xiiBloomPass() = default;
 

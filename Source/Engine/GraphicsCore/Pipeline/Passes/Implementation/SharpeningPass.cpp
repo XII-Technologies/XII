@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/SharpeningPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSharpeningPass, 1, xiiRTTIDefaultAllocator<xiiSharpeningPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("SharpeningPass")), XII_MEMBER_PROPERTY("Strength", m_fStrength)->AddAttributes(new xiiDefaultValueAttribute(0.5f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiSharpeningAutoReg { xiiSharpeningAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiSharpeningPass)); } }; static xiiSharpeningAutoReg s_AutoReg; }
-
 xiiSharpeningPass::xiiSharpeningPass() : xiiRenderPipelinePass("SharpeningPass") {}
 xiiSharpeningPass::~xiiSharpeningPass() = default;
 

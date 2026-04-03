@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/VolumetricFroxelSetupPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVolumetricFroxelSetupPass, 1, xiiRTTIDefaultAllocator<xiiVolumetricFroxelSetupPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("VolumetricFroxelSetupPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiVolFroxAutoReg { xiiVolFroxAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiVolumetricFroxelSetupPass)); } }; static xiiVolFroxAutoReg s_AutoReg; }
-
 xiiVolumetricFroxelSetupPass::xiiVolumetricFroxelSetupPass() : xiiRenderPipelinePass("VolumetricFroxelSetupPass") {}
 xiiVolumetricFroxelSetupPass::~xiiVolumetricFroxelSetupPass() = default;
 

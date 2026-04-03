@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/OccluderDepthPrepass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOccluderDepthPrepass, 1, xiiRTTIDefaultAllocator<xiiOccluderDepthPrepass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("OccluderDepthPrepass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-namespace { struct xiiOccluderDepthAutoReg { xiiOccluderDepthAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiOccluderDepthPrepass)); } }; static xiiOccluderDepthAutoReg s_AutoReg; }
 
 xiiOccluderDepthPrepass::xiiOccluderDepthPrepass() : xiiRenderPipelinePass("OccluderDepthPrepass") {}
 xiiOccluderDepthPrepass::~xiiOccluderDepthPrepass() = default;

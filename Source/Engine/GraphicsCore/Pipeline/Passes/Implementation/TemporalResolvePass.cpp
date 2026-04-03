@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/TemporalResolvePass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTemporalResolvePass, 1, xiiRTTIDefaultAllocator<xiiTemporalResolvePass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("TemporalResolvePass")), XII_MEMBER_PROPERTY("BlendAlpha", m_fBlendAlpha)->AddAttributes(new xiiDefaultValueAttribute(0.1f)), XII_MEMBER_PROPERTY("Sharpness", m_fSharpness)->AddAttributes(new xiiDefaultValueAttribute(0.25f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiTAAAutoReg { xiiTAAAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiTemporalResolvePass)); } }; static xiiTAAAutoReg s_AutoReg; }
-
 xiiTemporalResolvePass::xiiTemporalResolvePass() : xiiRenderPipelinePass("TemporalResolvePass") {}
 xiiTemporalResolvePass::~xiiTemporalResolvePass() = default;
 

@@ -2,7 +2,6 @@
 #include <GraphicsCore/Pipeline/Passes/SkinningAndMorphPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
@@ -10,8 +9,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinningAndMorphPass, 1, xiiRTTIDefaultAlloc
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("SkinningAndMorphPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-namespace { struct xiiSkinningAutoReg { xiiSkinningAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiSkinningAndMorphPass)); } }; static xiiSkinningAutoReg s_AutoReg; }
 
 xiiSkinningAndMorphPass::xiiSkinningAndMorphPass() : xiiRenderPipelinePass("SkinningAndMorphPass") {}
 xiiSkinningAndMorphPass::~xiiSkinningAndMorphPass() = default;

@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/AtmosphereLUTPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAtmosphereLUTPass, 1, xiiRTTIDefaultAllocator<xiiAtmosphereLUTPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("AtmosphereLUTPass")), XII_MEMBER_PROPERTY("PlanetRadius", m_fPlanetRadius)->AddAttributes(new xiiDefaultValueAttribute(6360.0f)), XII_MEMBER_PROPERTY("AtmosphereRadius", m_fAtmosphereRadius)->AddAttributes(new xiiDefaultValueAttribute(6460.0f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiAtmosphereAutoReg { xiiAtmosphereAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiAtmosphereLUTPass)); } }; static xiiAtmosphereAutoReg s_AutoReg; }
-
 xiiAtmosphereLUTPass::xiiAtmosphereLUTPass() : xiiRenderPipelinePass("AtmosphereLUTPass") {}
 xiiAtmosphereLUTPass::~xiiAtmosphereLUTPass() = default;
 

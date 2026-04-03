@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/ReadbackAndTelemetryPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiReadbackAndTelemetryPass, 1, xiiRTTIDefaultAllocator<xiiReadbackAndTelemetryPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ReadbackAndTelemetryPass")), XII_MEMBER_PROPERTY("ReadbackInterval", m_uiReadbackIntervalFrames)->AddAttributes(new xiiDefaultValueAttribute(4u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiReadbackAutoReg { xiiReadbackAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiReadbackAndTelemetryPass)); } }; static xiiReadbackAutoReg s_AutoReg; }
-
 xiiReadbackAndTelemetryPass::xiiReadbackAndTelemetryPass() : xiiRenderPipelinePass("ReadbackAndTelemetryPass") {}
 xiiReadbackAndTelemetryPass::~xiiReadbackAndTelemetryPass() = default;
 

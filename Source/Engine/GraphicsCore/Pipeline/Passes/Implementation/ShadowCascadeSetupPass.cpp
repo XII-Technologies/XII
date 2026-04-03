@@ -2,15 +2,12 @@
 #include <GraphicsCore/Pipeline/Passes/ShadowCascadeSetupPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShadowCascadeSetupPass, 1, xiiRTTIDefaultAllocator<xiiShadowCascadeSetupPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ShadowCascadeSetupPass")), XII_MEMBER_PROPERTY("CascadeCount", m_uiCascadeCount)->AddAttributes(new xiiDefaultValueAttribute(4u)), XII_MEMBER_PROPERTY("SplitLambda", m_fSplitLambda)->AddAttributes(new xiiDefaultValueAttribute(0.85f)), XII_MEMBER_PROPERTY("MaxShadowDistance", m_fMaxShadowDistance)->AddAttributes(new xiiDefaultValueAttribute(300.0f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiShadowCascadeAutoReg { xiiShadowCascadeAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiShadowCascadeSetupPass)); } }; static xiiShadowCascadeAutoReg s_AutoReg; }
-
 xiiShadowCascadeSetupPass::xiiShadowCascadeSetupPass() : xiiRenderPipelinePass("ShadowCascadeSetupPass") {}
 xiiShadowCascadeSetupPass::~xiiShadowCascadeSetupPass() = default;
 

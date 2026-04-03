@@ -3,7 +3,6 @@
 #include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
@@ -22,15 +21,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPerFrameBufferUploadPass, 1, xiiRTTIDefaultA
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-namespace
-{
-  struct xiiPerFrameBufferUploadPassAutoReg
-  {
-    xiiPerFrameBufferUploadPassAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiPerFrameBufferUploadPass)); }
-  };
-  static xiiPerFrameBufferUploadPassAutoReg s_AutoReg;
-}
 
 xiiPerFrameBufferUploadPass::xiiPerFrameBufferUploadPass() : xiiRenderPipelinePass("PerFrameBufferUploadPass") {}
 

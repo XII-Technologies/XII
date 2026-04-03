@@ -2,15 +2,12 @@
 #include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCoarseFrustumCullPass, 1, xiiRTTIDefaultAllocator<xiiCoarseFrustumCullPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("CoarseFrustumCullPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-namespace { struct xiiCoarseFrustumAutoReg { xiiCoarseFrustumAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiCoarseFrustumCullPass)); } }; static xiiCoarseFrustumAutoReg s_AutoReg; }
 
 xiiCoarseFrustumCullPass::xiiCoarseFrustumCullPass() : xiiRenderPipelinePass("CoarseFrustumCullPass") {}
 xiiCoarseFrustumCullPass::~xiiCoarseFrustumCullPass() = default;

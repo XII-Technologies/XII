@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/LocalLightShadowPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLocalLightShadowPass, 1, xiiRTTIDefaultAllocator<xiiLocalLightShadowPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("LocalLightShadowPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiLocalShadowAutoReg { xiiLocalShadowAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiLocalLightShadowPass)); } }; static xiiLocalShadowAutoReg s_AutoReg; }
-
 xiiLocalLightShadowPass::xiiLocalLightShadowPass() : xiiRenderPipelinePass("LocalLightShadowPass") {}
 xiiLocalLightShadowPass::~xiiLocalLightShadowPass() = default;
 

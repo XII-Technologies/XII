@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/VolumetricIntegrationPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVolumetricIntegrationPass, 1, xiiRTTIDefaultAllocator<xiiVolumetricIntegrationPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("VolumetricIntegrationPass")), XII_MEMBER_PROPERTY("ScatterCoeff", m_fScatteringCoefficient)->AddAttributes(new xiiDefaultValueAttribute(0.02f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiVolIntAutoReg { xiiVolIntAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiVolumetricIntegrationPass)); } }; static xiiVolIntAutoReg s_AutoReg; }
-
 xiiVolumetricIntegrationPass::xiiVolumetricIntegrationPass() : xiiRenderPipelinePass("VolumetricIntegrationPass") {}
 xiiVolumetricIntegrationPass::~xiiVolumetricIntegrationPass() = default;
 

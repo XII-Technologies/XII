@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/RTGlobalIlluminationPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRTGlobalIlluminationPass, 1, xiiRTTIDefaultAllocator<xiiRTGlobalIlluminationPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("RTGlobalIlluminationPass")), XII_MEMBER_PROPERTY("RaysPerPixel", m_uiRaysPerPixel)->AddAttributes(new xiiDefaultValueAttribute(1u)), XII_MEMBER_PROPERTY("ReservoirCandidates", m_uiReservoirCandidateCount)->AddAttributes(new xiiDefaultValueAttribute(8u)), XII_MEMBER_PROPERTY("MaxBounces", m_uiMaxBounces)->AddAttributes(new xiiDefaultValueAttribute(1u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiRTGIAutoReg { xiiRTGIAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiRTGlobalIlluminationPass)); } }; static xiiRTGIAutoReg s_AutoReg; }
-
 xiiRTGlobalIlluminationPass::xiiRTGlobalIlluminationPass() : xiiRenderPipelinePass("RTGlobalIlluminationPass") {}
 xiiRTGlobalIlluminationPass::~xiiRTGlobalIlluminationPass() = default;
 

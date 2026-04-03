@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/MotionVectorPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMotionVectorPass, 1, xiiRTTIDefaultAllocator<xiiMotionVectorPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("MotionVectorPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiMotionVecAutoReg { xiiMotionVecAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiMotionVectorPass)); } }; static xiiMotionVecAutoReg s_AutoReg; }
-
 xiiMotionVectorPass::xiiMotionVectorPass() : xiiRenderPipelinePass("MotionVectorPass") {}
 xiiMotionVectorPass::~xiiMotionVectorPass() = default;
 

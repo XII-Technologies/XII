@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/MainDepthPrepassPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMainDepthPrepassPass, 1, xiiRTTIDefaultAllocator<xiiMainDepthPrepassPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("MainDepthPrepassPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiMainDepthAutoReg { xiiMainDepthAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiMainDepthPrepassPass)); } }; static xiiMainDepthAutoReg s_AutoReg; }
-
 xiiMainDepthPrepassPass::xiiMainDepthPrepassPass() : xiiRenderPipelinePass("MainDepthPrepassPass") {}
 xiiMainDepthPrepassPass::~xiiMainDepthPrepassPass() = default;
 

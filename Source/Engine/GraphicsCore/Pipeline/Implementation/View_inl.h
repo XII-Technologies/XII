@@ -54,6 +54,22 @@ XII_ALWAYS_INLINE const xiiRectFloat& xiiView::GetViewport() const
   return m_Data.m_ViewPortRect;
 }
 
+XII_ALWAYS_INLINE void xiiView::SetRenderGraphBuilder(RenderGraphBuilder builder)
+{
+  m_RenderGraphBuilder = std::move(builder);
+  ++m_uiRenderGraphBuilderVersion;
+}
+
+XII_ALWAYS_INLINE const xiiView::RenderGraphBuilder& xiiView::GetRenderGraphBuilder() const
+{
+  return m_RenderGraphBuilder;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiView::GetRenderGraphBuilderVersion() const
+{
+  return m_uiRenderGraphBuilderVersion;
+}
+
 XII_ALWAYS_INLINE const xiiViewData& xiiView::GetData() const
 {
   UpdateCachedMatrices();

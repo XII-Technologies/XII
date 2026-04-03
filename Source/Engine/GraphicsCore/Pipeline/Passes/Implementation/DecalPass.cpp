@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/DecalPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalPass, 1, xiiRTTIDefaultAllocator<xiiDecalPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("DecalPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiDecalAutoReg { xiiDecalAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiDecalPass)); } }; static xiiDecalAutoReg s_AutoReg; }
-
 xiiDecalPass::xiiDecalPass() : xiiRenderPipelinePass("DecalPass") {}
 xiiDecalPass::~xiiDecalPass() = default;
 

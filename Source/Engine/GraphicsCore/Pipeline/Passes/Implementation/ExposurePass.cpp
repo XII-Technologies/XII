@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/ExposurePass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExposurePass, 1, xiiRTTIDefaultAllocator<xiiExposurePass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ExposurePass")), XII_MEMBER_PROPERTY("MinEV100", m_fMinEV100)->AddAttributes(new xiiDefaultValueAttribute(-4.0f)), XII_MEMBER_PROPERTY("MaxEV100", m_fMaxEV100)->AddAttributes(new xiiDefaultValueAttribute(16.0f)), XII_MEMBER_PROPERTY("AdaptationSpeed", m_fAdaptationSpeed)->AddAttributes(new xiiDefaultValueAttribute(2.0f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiExposureAutoReg { xiiExposureAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiExposurePass)); } }; static xiiExposureAutoReg s_AutoReg; }
-
 xiiExposurePass::xiiExposurePass() : xiiRenderPipelinePass("ExposurePass") {}
 xiiExposurePass::~xiiExposurePass() = default;
 

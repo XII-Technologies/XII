@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHiZOcclusionCullPass, 1, xiiRTTIDefaultAllocator<xiiHiZOcclusionCullPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("HiZOcclusionCullPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-namespace { struct xiiHiZOcclAutoReg { xiiHiZOcclAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiHiZOcclusionCullPass)); } }; static xiiHiZOcclAutoReg s_AutoReg; }
 
 xiiHiZOcclusionCullPass::xiiHiZOcclusionCullPass() : xiiRenderPipelinePass("HiZOcclusionCullPass") {}
 xiiHiZOcclusionCullPass::~xiiHiZOcclusionCullPass() = default;

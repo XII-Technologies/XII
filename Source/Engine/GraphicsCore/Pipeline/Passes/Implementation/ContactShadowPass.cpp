@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/ContactShadowPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiContactShadowPass, 1, xiiRTTIDefaultAllocator<xiiContactShadowPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ContactShadowPass")), XII_MEMBER_PROPERTY("RaySteps", m_uiRaySteps)->AddAttributes(new xiiDefaultValueAttribute(16u)), XII_MEMBER_PROPERTY("MaxRayDist", m_fMaxRayDistance)->AddAttributes(new xiiDefaultValueAttribute(0.5f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiContactShadowAutoReg { xiiContactShadowAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiContactShadowPass)); } }; static xiiContactShadowAutoReg s_AutoReg; }
-
 xiiContactShadowPass::xiiContactShadowPass() : xiiRenderPipelinePass("ContactShadowPass") {}
 xiiContactShadowPass::~xiiContactShadowPass() = default;
 

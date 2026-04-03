@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/ParticleVFXPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiParticleVFXPass, 1, xiiRTTIDefaultAllocator<xiiParticleVFXPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ParticleVFXPass")), XII_MEMBER_PROPERTY("MaxParticles", m_uiMaxParticles)->AddAttributes(new xiiDefaultValueAttribute(1u << 20u)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiParticleAutoReg { xiiParticleAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiParticleVFXPass)); } }; static xiiParticleAutoReg s_AutoReg; }
-
 xiiParticleVFXPass::xiiParticleVFXPass() : xiiRenderPipelinePass("ParticleVFXPass") {}
 xiiParticleVFXPass::~xiiParticleVFXPass() = default;
 

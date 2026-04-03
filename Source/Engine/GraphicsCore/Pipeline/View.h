@@ -2,6 +2,7 @@
 
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Threading/DelegateTask.h>
+#include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/TagSet.h>
 
@@ -108,6 +109,19 @@ public:
   /// \brief Returns the frustum that should be used for determine visible objects for this view.
   void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
+  using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
+
+  /// \brief Assigns an optional per-view render graph builder callback.
+  ///
+  /// If set, xiiRenderWorldModule calls this callback instead of the default graph builder.
+  void SetRenderGraphBuilder(RenderGraphBuilder builder);
+
+  /// \brief Returns the optional per-view render graph builder callback.
+  const RenderGraphBuilder& GetRenderGraphBuilder() const;
+
+  /// \brief Returns a monotonically increasing counter whenever the graph builder changes.
+  xiiUInt32 GetRenderGraphBuilderVersion() const;
+
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
 
@@ -126,15 +140,17 @@ public:
   const xiiRenderGraphResourceCache& GetResourceCache() const { return m_ResourceCache; }
 
 private:
+  friend class xiiRenderWorldModule;
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
 
   xiiHashedString m_sName;
 
-  xiiUInt32                       m_uiRenderPipelineResourceDescriptionCounter = 0;
+  xiiUInt32                       m_uiRenderGraphBuilderVersion = 0;
   xiiCamera*                      m_pCamera                                    = nullptr;
   const xiiCamera*                m_pCullingCamera                             = nullptr;
   const xiiCamera*                m_pLodCamera                                 = nullptr;
+  RenderGraphBuilder              m_RenderGraphBuilder;
 
 private:
   void UpdateCachedMatrices() const;

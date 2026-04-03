@@ -1,6 +1,53 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/Passes/AccelerationStructurePass.h>
+#include <GraphicsCore/Pipeline/Passes/AmbientOcclusionPass.h>
+#include <GraphicsCore/Pipeline/Passes/AtmosphereCompositePass.h>
+#include <GraphicsCore/Pipeline/Passes/AtmosphereLUTPass.h>
+#include <GraphicsCore/Pipeline/Passes/BloomPass.h>
+#include <GraphicsCore/Pipeline/Passes/ClusterGridAndLightListPass.h>
+#include <GraphicsCore/Pipeline/Passes/CoarseFrustumCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/ColorGradingPass.h>
+#include <GraphicsCore/Pipeline/Passes/ContactShadowPass.h>
+#include <GraphicsCore/Pipeline/Passes/DecalPass.h>
+#include <GraphicsCore/Pipeline/Passes/DirectionalShadowRenderPass.h>
+#include <GraphicsCore/Pipeline/Passes/DrawCommandBuildPass.h>
+#include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
+#include <GraphicsCore/Pipeline/Passes/EmissiveAuxPass.h>
+#include <GraphicsCore/Pipeline/Passes/ExposurePass.h>
+#include <GraphicsCore/Pipeline/Passes/FrameSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/GBufferBasePass.h>
+#include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
+#include <GraphicsCore/Pipeline/Passes/HiZOcclusionCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/InstanceTransformPass.h>
+#include <GraphicsCore/Pipeline/Passes/LightingCombinePass.h>
+#include <GraphicsCore/Pipeline/Passes/LocalLightShadowPass.h>
+#include <GraphicsCore/Pipeline/Passes/LodAndMeshletPass.h>
+#include <GraphicsCore/Pipeline/Passes/MainDepthPrepassPass.h>
+#include <GraphicsCore/Pipeline/Passes/MotionVectorPass.h>
+#include <GraphicsCore/Pipeline/Passes/NormalRoughnessPrepassPass.h>
+#include <GraphicsCore/Pipeline/Passes/OccluderDepthPrepass.h>
+#include <GraphicsCore/Pipeline/Passes/OpaqueCompositePass.h>
+#include <GraphicsCore/Pipeline/Passes/ParticleVFXPass.h>
+#include <GraphicsCore/Pipeline/Passes/PerFrameBufferUploadPass.h>
+#include <GraphicsCore/Pipeline/Passes/PresentPass.h>
+#include <GraphicsCore/Pipeline/Passes/RTGlobalIlluminationPass.h>
+#include <GraphicsCore/Pipeline/Passes/RTReflectionPass.h>
+#include <GraphicsCore/Pipeline/Passes/RTShadowPass.h>
+#include <GraphicsCore/Pipeline/Passes/ReadbackAndTelemetryPass.h>
+#include <GraphicsCore/Pipeline/Passes/ScreenSpaceReflectionsPass.h>
+#include <GraphicsCore/Pipeline/Passes/ShadowCascadeSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/ShadowCasterCullPass.h>
+#include <GraphicsCore/Pipeline/Passes/SharpeningPass.h>
+#include <GraphicsCore/Pipeline/Passes/SkinningAndMorphPass.h>
+#include <GraphicsCore/Pipeline/Passes/TemporalResolvePass.h>
+#include <GraphicsCore/Pipeline/Passes/ToneMappingPass.h>
+#include <GraphicsCore/Pipeline/Passes/TransparentPass.h>
+#include <GraphicsCore/Pipeline/Passes/UICompositePass.h>
+#include <GraphicsCore/Pipeline/Passes/UpscalingPass.h>
+#include <GraphicsCore/Pipeline/Passes/VolumetricFroxelSetupPass.h>
+#include <GraphicsCore/Pipeline/Passes/VolumetricIntegrationPass.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -14,15 +61,13 @@ XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-// Static pass list — outlives any individual world.
-xiiDynamicArray<xiiUniquePtr<xiiRenderPipelinePass>> xiiRenderWorldModule::s_PipelinePasses;
-
 // -----------------------------------------------------------------------
 // Construction / destruction
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
 {
+  InitializeDefaultPasses();
 }
 
 xiiRenderWorldModule::~xiiRenderWorldModule() = default;
@@ -52,6 +97,8 @@ void xiiRenderWorldModule::Initialize()
 void xiiRenderWorldModule::Deinitialize()
 {
   m_Views.Clear();
+  m_DefaultPasses.Clear();
+  m_uiRenderFrameIndex = 0;
 }
 
 void xiiRenderWorldModule::OnSimulationStarted()
@@ -82,36 +129,71 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
   }
 }
 
-// -----------------------------------------------------------------------
-// Pass registry
-
-void xiiRenderWorldModule::RegisterPass(xiiUniquePtr<xiiRenderPipelinePass> pPass)
+void xiiRenderWorldModule::InitializeDefaultPasses()
 {
-  XII_ASSERT_DEV(pPass != nullptr, "Cannot register a null pipeline pass.");
-  s_PipelinePasses.PushBack(std::move(pPass));
+  if (!m_DefaultPasses.IsEmpty())
+    return;
+
+  m_DefaultPasses.Reserve(47);
+
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiFrameSetupPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDynamicResolutionPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiPerFrameBufferUploadPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiSkinningAndMorphPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiInstanceTransformPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiLodAndMeshletPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiCoarseFrustumCullPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiOccluderDepthPrepass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiHiZBuildPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiHiZOcclusionCullPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDrawCommandBuildPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiMainDepthPrepassPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiMotionVectorPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiNormalRoughnessPrepassPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiShadowCascadeSetupPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiShadowCasterCullPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDirectionalShadowRenderPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiLocalLightShadowPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiClusterGridAndLightListPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiContactShadowPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDecalPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAtmosphereLUTPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiVolumetricFroxelSetupPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiGBufferBasePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiEmissiveAuxPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAmbientOcclusionPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiScreenSpaceReflectionsPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAccelerationStructurePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiRTShadowPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiRTReflectionPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiRTGlobalIlluminationPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiLightingCombinePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiVolumetricIntegrationPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAtmosphereCompositePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiOpaqueCompositePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiTransparentPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiParticleVFXPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiExposurePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiTemporalResolvePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiUpscalingPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiBloomPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiToneMappingPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiColorGradingPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiSharpeningPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiUICompositePass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiReadbackAndTelemetryPass));
+  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiPresentPass));
 }
 
-void xiiRenderWorldModule::UnregisterPass(xiiStringView sName)
+void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  for (xiiUInt32 i = 0; i < s_PipelinePasses.GetCount(); ++i)
+  for (const auto& pPass : m_DefaultPasses)
   {
-    if (s_PipelinePasses[i]->GetName() == sName)
+    if (pPass->IsActive())
     {
-      s_PipelinePasses.RemoveAtAndCopy(i);
-      return;
+      pPass->AddToGraph(view, graph, blackboard);
     }
   }
-}
-
-xiiArrayPtr<xiiRenderPipelinePass* const> xiiRenderWorldModule::GetRegisteredPasses()
-{
-  // Build a temporary raw-pointer view. Callers must not store this across frames.
-  static thread_local xiiDynamicArray<xiiRenderPipelinePass*> s_RawPtrs;
-  s_RawPtrs.Clear();
-  s_RawPtrs.Reserve(s_PipelinePasses.GetCount());
-  for (auto& pPass : s_PipelinePasses)
-    s_RawPtrs.PushBack(pPass.Borrow());
-  return s_RawPtrs;
 }
 
 // -----------------------------------------------------------------------
@@ -131,8 +213,14 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     msg.m_pView                = pView.Borrow();
     msg.m_pExtractedRenderData = pExtractedData;
 
-    // Broadcast to all component managers concurrently (world handles task fan-out).
-    GetWorld()->BroadcastMessage(msg);
+    // Broadcast to all objects; each object routes to matching component message handlers.
+    {
+      XII_LOCK(GetWorld()->GetReadMarker());
+      for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
+      {
+        it->SendMessage(msg);
+      }
+    }
 
     // Flatten concurrent batches, then radix-sort each category by sort key.
     pExtractedData->SortAndBatches();
@@ -148,7 +236,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
   if (!pDevice)
     return;
 
-  const xiiUInt64 uiFrameIndex = GetWorld()->GetClock().GetAccumulatedTime().GetTicks();
+  const xiiUInt64 uiFrameIndex = m_uiRenderFrameIndex++;
 
   for (auto& pView : m_Views)
   {
@@ -162,16 +250,19 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     // Clear the per-view blackboard at the start of each frame so passes start with a clean slate.
     // History data must live inside persistent GPU buffers owned by each pass.
     blackboard.Clear();
+    blackboard.Set(xiiMakeHashedString("FrameIndex"), static_cast<xiiUInt32>(uiFrameIndex));
 
-    // Reconstruct the graph for this frame. Every registered pass adds its nodes in order.
+    // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);
 
-    for (const auto& pPass : s_PipelinePasses)
+    const xiiView::RenderGraphBuilder& graphBuilder = pView->GetRenderGraphBuilder();
+    if (graphBuilder.IsValid())
     {
-      if (pPass->IsActive())
-      {
-        pPass->AddToGraph(*pView, *pGraph, blackboard);
-      }
+      graphBuilder(*pView, *pGraph, blackboard);
+    }
+    else
+    {
+      BuildDefaultRenderGraph(*pView, *pGraph, blackboard);
     }
 
     pGraph->EndSetup();

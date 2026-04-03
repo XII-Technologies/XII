@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/LodAndMeshletPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLodAndMeshletPass, 1, xiiRTTIDefaultAllocator<xiiLodAndMeshletPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("LodAndMeshletPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-namespace { struct xiiLodAutoReg { xiiLodAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiLodAndMeshletPass)); } }; static xiiLodAutoReg s_AutoReg; }
 
 xiiLodAndMeshletPass::xiiLodAndMeshletPass() : xiiRenderPipelinePass("LodAndMeshletPass") {}
 xiiLodAndMeshletPass::~xiiLodAndMeshletPass() = default;

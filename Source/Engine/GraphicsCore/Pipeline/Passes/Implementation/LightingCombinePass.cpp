@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/LightingCombinePass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLightingCombinePass, 1, xiiRTTIDefaultAllocator<xiiLightingCombinePass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("LightingCombinePass")), XII_MEMBER_PROPERTY("RTShadows", m_bEnableRTShadows)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("RTReflections", m_bEnableRTReflections)->AddAttributes(new xiiDefaultValueAttribute(true)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiLightingAutoReg { xiiLightingAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiLightingCombinePass)); } }; static xiiLightingAutoReg s_AutoReg; }
-
 xiiLightingCombinePass::xiiLightingCombinePass() : xiiRenderPipelinePass("LightingCombinePass") {}
 xiiLightingCombinePass::~xiiLightingCombinePass() = default;
 

@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/ScreenSpaceReflectionsPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScreenSpaceReflectionsPass, 1, xiiRTTIDefaultAllocator<xiiScreenSpaceReflectionsPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("ScreenSpaceReflectionsPass")), XII_MEMBER_PROPERTY("MaxSteps", m_uiMaxRaySteps)->AddAttributes(new xiiDefaultValueAttribute(64u)), XII_MEMBER_PROPERTY("RoughnessThreshold", m_fRoughnessThreshold)->AddAttributes(new xiiDefaultValueAttribute(0.5f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiSSRAutoReg { xiiSSRAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiScreenSpaceReflectionsPass)); } }; static xiiSSRAutoReg s_AutoReg; }
-
 xiiScreenSpaceReflectionsPass::xiiScreenSpaceReflectionsPass() : xiiRenderPipelinePass("ScreenSpaceReflectionsPass") {}
 xiiScreenSpaceReflectionsPass::~xiiScreenSpaceReflectionsPass() = default;
 

@@ -3,7 +3,6 @@
 #include <GraphicsCore/Pipeline/Passes/DynamicResolutionPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
@@ -22,15 +21,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicResolutionPass, 1, xiiRTTIDefaultAllo
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
-
-namespace
-{
-  struct xiiDynamicResolutionPassAutoReg
-  {
-    xiiDynamicResolutionPassAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiDynamicResolutionPass)); }
-  };
-  static xiiDynamicResolutionPassAutoReg s_AutoReg;
-}
 
 xiiDynamicResolutionPass::xiiDynamicResolutionPass() : xiiRenderPipelinePass("DynamicResolutionPass") {}
 xiiDynamicResolutionPass::~xiiDynamicResolutionPass() = default;

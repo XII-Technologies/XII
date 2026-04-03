@@ -2,14 +2,11 @@
 #include <GraphicsCore/Pipeline/Passes/RTReflectionPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsFoundation/Device/Device.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRTReflectionPass, 1, xiiRTTIDefaultAllocator<xiiRTReflectionPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("RTReflectionPass")), XII_MEMBER_PROPERTY("MaxRays", m_uiMaxRaysPerPixel)->AddAttributes(new xiiDefaultValueAttribute(2u)), XII_MEMBER_PROPERTY("MaxRoughness", m_fMaxRoughnessForRT)->AddAttributes(new xiiDefaultValueAttribute(0.4f)), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-namespace { struct xiiRTReflAutoReg { xiiRTReflAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiRTReflectionPass)); } }; static xiiRTReflAutoReg s_AutoReg; }
-
 xiiRTReflectionPass::xiiRTReflectionPass() : xiiRenderPipelinePass("RTReflectionPass") {}
 xiiRTReflectionPass::~xiiRTReflectionPass() = default;
 

@@ -2,13 +2,10 @@
 #include <GraphicsCore/Pipeline/Passes/HiZBuildPass.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHiZBuildPass, 1, xiiRTTIDefaultAllocator<xiiHiZBuildPass>)
 { XII_BEGIN_PROPERTIES { XII_MEMBER_PROPERTY("Active", m_bActive)->AddAttributes(new xiiDefaultValueAttribute(true)), XII_MEMBER_PROPERTY("Name", m_sName)->AddAttributes(new xiiDefaultValueAttribute("HiZBuildPass")), } XII_END_PROPERTIES; }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-namespace { struct xiiHiZBuildAutoReg { xiiHiZBuildAutoReg() { xiiRenderWorldModule::RegisterPass(XII_DEFAULT_NEW(xiiHiZBuildPass)); } }; static xiiHiZBuildAutoReg s_AutoReg; }
 
 xiiHiZBuildPass::xiiHiZBuildPass() : xiiRenderPipelinePass("HiZBuildPass") {}
 xiiHiZBuildPass::~xiiHiZBuildPass() = default;
