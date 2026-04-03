@@ -40,7 +40,9 @@ namespace
     xiiDynamicArray<T> out;
     out.SetCountUninitialized(static_cast<xiiUInt32>(v.size()));
     for (size_t i = 0; i < v.size(); ++i)
+    {
       out[static_cast<xiiUInt32>(i)] = v[i];
+    }
     return out;
   }
 
@@ -154,18 +156,24 @@ namespace
       {
         it.m_uiKey = static_cast<xiiUInt64>(dist(rng) & mask);
       }
-      if constexpr (requires { it.m_uiOriginalIndex; })
-      {
-        it.m_uiOriginalIndex = i;
-      }
       items.PushBack(it);
     }
 
-    // Deterministic shuffle.
+    // Fisher-Yates shuffle using the same rng (deterministic given seed)
+    for (xiiUInt32 i = items.GetCount(); i > 1; --i)
+    {
+      std::uniform_int_distribution<xiiUInt32> d(0, i - 1);
+      const xiiUInt32                          j = d(rng);
+      xiiMath::Swap(items[i - 1], items[j]);
+    }
+
+    // NOTE: This must be done after the shuffle to ensure originalIndex reflects the input position, not the sorted position.
     for (xiiUInt32 i = 0; i < items.GetCount(); ++i)
     {
-      const xiiUInt32 swapIndex = static_cast<xiiUInt32>((i * 1103515245u + 12345u) % items.GetCount());
-      xiiMath::Swap(items[i], items[swapIndex]);
+      if constexpr (requires { items[i].m_uiOriginalIndex; })
+      {
+        items[i].m_uiOriginalIndex = i; // now originalIndex == input position
+      }
     }
 
     return items;
@@ -769,8 +777,7 @@ XII_CREATE_SIMPLE_TEST(Algorithm, Sorting)
     }
   }
 
-  // Performance smoke (disabled by default in unit runs)
-  XII_TEST_BLOCK(xiiTestBlock::Disabled, "PerformanceSmoke - Large RadixSort")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "PerformanceSmoke - Large RadixSort")
   {
     const xiiUInt32                          itemCount = 1 << 20; // 1M items - disabled by default.
     auto                                     rng       = CreateDeterministicRng(0xC0FFEE);
