@@ -17,7 +17,7 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereLUTPass : public xiiRenderPipelinePass
 public:
   xiiAtmosphereLUTPass();
   virtual ~xiiAtmosphereLUTPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   // Atmosphere parameters
   float m_fRayleighScaleHeight  = 8.0f;   ///< km

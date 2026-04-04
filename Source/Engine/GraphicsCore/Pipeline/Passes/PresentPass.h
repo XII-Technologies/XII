@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiPresentPass : public xiiRenderPipelinePass
 public:
   xiiPresentPass();
   virtual ~xiiPresentPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   bool m_bEnableVSync = true;
 };

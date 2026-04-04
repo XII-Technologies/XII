@@ -14,5 +14,5 @@ class XII_GRAPHICSCORE_DLL xiiEmissiveAuxPass : public xiiRenderPipelinePass
 public:
   xiiEmissiveAuxPass();
   virtual ~xiiEmissiveAuxPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 };

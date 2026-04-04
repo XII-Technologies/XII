@@ -16,7 +16,7 @@ public:
   xiiHiZOcclusionCullPass();
   virtual ~xiiHiZOcclusionCullPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
 private:
   xiiSharedPtr<xiiGALBuffer> m_pSurvivingInstanceBuffer; ///< RW: instances that passed Hi-Z test.

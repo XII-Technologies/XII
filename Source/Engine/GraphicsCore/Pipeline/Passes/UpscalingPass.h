@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiUpscalingPass : public xiiRenderPipelinePass
 public:
   xiiUpscalingPass();
   virtual ~xiiUpscalingPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fSharpeningStrength = 0.4f; ///< CAS sharpening amount [0=off, 1=maximum].
 };

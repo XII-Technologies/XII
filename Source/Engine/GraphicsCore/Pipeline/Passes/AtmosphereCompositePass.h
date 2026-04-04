@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiAtmosphereCompositePass : public xiiRenderPipeline
 public:
   xiiAtmosphereCompositePass();
   virtual ~xiiAtmosphereCompositePass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fSunSolidAngle = 6.8e-5f; ///< Sun disc solid angle (radians^2). Controls sun disc size.
 };

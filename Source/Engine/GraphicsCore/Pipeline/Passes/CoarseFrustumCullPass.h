@@ -17,7 +17,7 @@ public:
   xiiCoarseFrustumCullPass();
   virtual ~xiiCoarseFrustumCullPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
 private:
   xiiSharedPtr<xiiGALBuffer> m_pVisibleCandidateBuffer; ///< RW: surviving instance indices (uint per instance).

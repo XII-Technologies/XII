@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiClusterGridAndLightListPass : public xiiRenderPipe
 public:
   xiiClusterGridAndLightListPass();
   virtual ~xiiClusterGridAndLightListPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiClusterCountX  = 16u;
   xiiUInt32 m_uiClusterCountY  = 8u;

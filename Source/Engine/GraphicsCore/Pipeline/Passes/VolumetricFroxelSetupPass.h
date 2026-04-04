@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiVolumetricFroxelSetupPass : public xiiRenderPipeli
 public:
   xiiVolumetricFroxelSetupPass();
   virtual ~xiiVolumetricFroxelSetupPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiFroxelCountX   = 160u;
   xiiUInt32 m_uiFroxelCountY   = 90u;

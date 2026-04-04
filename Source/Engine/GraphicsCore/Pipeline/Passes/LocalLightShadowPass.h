@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiLocalLightShadowPass : public xiiRenderPipelinePas
 public:
   xiiLocalLightShadowPass();
   virtual ~xiiLocalLightShadowPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiAtlasSize     = 4096u; ///< Local shadow atlas resolution.
   xiiUInt32 m_uiMaxShadowedLights = 64u;

@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiScreenSpaceReflectionsPass : public xiiRenderPipel
 public:
   xiiScreenSpaceReflectionsPass();
   virtual ~xiiScreenSpaceReflectionsPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiMaxRaySteps     = 64u;
   float     m_fRoughnessThreshold = 0.5f; ///< Pixels rougher than this are skipped.

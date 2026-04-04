@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiBloomPass : public xiiRenderPipelinePass
 public:
   xiiBloomPass();
   virtual ~xiiBloomPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float     m_fThreshold     = 1.0f;   ///< Luminance threshold above which bloom is extracted.
   float     m_fKnee          = 0.5f;   ///< Soft-knee width for smooth threshold rolloff.

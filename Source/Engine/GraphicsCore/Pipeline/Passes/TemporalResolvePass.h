@@ -19,7 +19,7 @@ class XII_GRAPHICSCORE_DLL xiiTemporalResolvePass : public xiiRenderPipelinePass
 public:
   xiiTemporalResolvePass();
   virtual ~xiiTemporalResolvePass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float     m_fBlendAlpha          = 0.1f;  ///< Per-frame blend weight [0=full history, 1=no history].
   float     m_fSharpness           = 0.25f; ///< Mitchell-Netravali sharpness kernel weight.

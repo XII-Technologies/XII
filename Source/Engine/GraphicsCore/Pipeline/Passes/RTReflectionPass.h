@@ -16,7 +16,7 @@ class XII_GRAPHICSCORE_DLL xiiRTReflectionPass : public xiiRenderPipelinePass
 public:
   xiiRTReflectionPass();
   virtual ~xiiRTReflectionPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiMaxRaysPerPixel     = 2u;
   float     m_fMaxRoughnessForRT    = 0.4f; ///< Rougher pixels fall back to SSR.

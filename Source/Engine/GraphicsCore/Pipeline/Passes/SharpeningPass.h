@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiSharpeningPass : public xiiRenderPipelinePass
 public:
   xiiSharpeningPass();
   virtual ~xiiSharpeningPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fBaseStrength = 0.3f; ///< Sharpening strength at 100% render scale.
   float m_fScaleBoost   = 0.5f; ///< Additional strength added per 0.1 render scale reduction.

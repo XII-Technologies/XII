@@ -17,7 +17,7 @@ public:
   xiiLodAndMeshletPass();
   virtual ~xiiLodAndMeshletPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fLOD0Distance = 10.0f;
   float m_fLOD1Distance = 30.0f;

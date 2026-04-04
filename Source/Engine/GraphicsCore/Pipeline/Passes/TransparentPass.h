@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiTransparentPass : public xiiRenderPipelinePass
 public:
   xiiTransparentPass();
   virtual ~xiiTransparentPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   bool m_bUseWeightedBlendedOIT = true; ///< false = depth-sorted back-to-front blending.
 };

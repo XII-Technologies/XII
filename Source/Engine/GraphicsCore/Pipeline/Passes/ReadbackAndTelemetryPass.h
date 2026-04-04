@@ -17,7 +17,7 @@ class XII_GRAPHICSCORE_DLL xiiReadbackAndTelemetryPass : public xiiRenderPipelin
 public:
   xiiReadbackAndTelemetryPass();
   virtual ~xiiReadbackAndTelemetryPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
 private:
   static constexpr xiiUInt32 k_uiRingSize = 3u;

@@ -21,7 +21,7 @@ public:
 
   xiiToneMappingPass();
   virtual ~xiiToneMappingPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   EOperator m_Operator      = EOperator::ACES;
   float     m_fExposureBias = 0.0f; ///< Manual exposure bias in EV stops.

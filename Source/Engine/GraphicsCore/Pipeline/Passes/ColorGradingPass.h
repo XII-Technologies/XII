@@ -17,7 +17,7 @@ class XII_GRAPHICSCORE_DLL xiiColorGradingPass : public xiiRenderPipelinePass
 public:
   xiiColorGradingPass();
   virtual ~xiiColorGradingPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fVignetteStrength  = 0.3f;
   float m_fGrainStrength     = 0.02f;

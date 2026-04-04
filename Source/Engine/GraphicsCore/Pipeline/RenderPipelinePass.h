@@ -6,9 +6,10 @@
 #include <Foundation/Strings/String.h>
 
 class xiiRenderGraph;
+class xiiRenderGraphBlackboard;
 class xiiView;
 
-/// \brief Base class for pipeline passes that are instantiated and register themselves with the render graph.
+/// \brief Shared pass state for concrete render-pass implementations.
 class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePass, xiiReflectedClass);
@@ -27,9 +28,6 @@ public:
   xiiRenderPipelinePass(xiiStringView sName, bool bActive = true);
 
   virtual ~xiiRenderPipelinePass();
-
-  /// \brief Called each frame when the world module prepares the render graph for a given view.
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, class xiiRenderGraphBlackboard& blackboard) = 0;
 
 protected:
   xiiString m_sName;

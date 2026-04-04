@@ -16,7 +16,7 @@ class XII_GRAPHICSCORE_DLL xiiRTShadowPass : public xiiRenderPipelinePass
 public:
   xiiRTShadowPass();
   virtual ~xiiRTShadowPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiRaysPerPixel        = 1u;    ///< Rays per pixel (1 = hard shadows, 4+ = soft).
   float     m_fLightRadius          = 0.05f; ///< Angular radius for soft shadows (radians).

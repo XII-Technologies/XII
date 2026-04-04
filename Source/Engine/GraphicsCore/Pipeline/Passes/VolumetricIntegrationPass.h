@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiVolumetricIntegrationPass : public xiiRenderPipeli
 public:
   xiiVolumetricIntegrationPass();
   virtual ~xiiVolumetricIntegrationPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fScatteringCoefficient = 0.02f;
   float m_fAbsorptionCoefficient = 0.005f;

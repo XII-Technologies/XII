@@ -19,7 +19,7 @@ public:
   xiiDynamicResolutionPass();
   virtual ~xiiDynamicResolutionPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   /// \brief Minimum allowed render scale. Default 0.5 (50 % native).
   float m_fMinScale = 0.50f;

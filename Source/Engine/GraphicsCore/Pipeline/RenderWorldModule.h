@@ -7,7 +7,6 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Types/UniquePtr.h>
 
-class xiiRenderPipelinePass;
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
 class xiiView;
@@ -52,6 +51,8 @@ public:
   void DestroyView(xiiView* pView);
 
 private:
+  struct DefaultPasses;
+
   void InitializeDefaultPasses();
   void BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
@@ -59,6 +60,6 @@ private:
 
 private:
   xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
-  xiiDynamicArray<xiiUniquePtr<xiiRenderPipelinePass>> m_DefaultPasses;
-  xiiUInt32                                            m_uiRenderFrameIndex = 0;
+  xiiUniquePtr<DefaultPasses>          m_pDefaultPasses;
+  xiiUInt32                            m_uiRenderFrameIndex = 0;
 };

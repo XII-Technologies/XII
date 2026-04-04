@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiUICompositePass : public xiiRenderPipelinePass
 public:
   xiiUICompositePass();
   virtual ~xiiUICompositePass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   bool m_bEnableDebugOverlay = false; ///< Enable GPU performance counters / pass timeline overlay.
 };

@@ -15,7 +15,7 @@ class XII_GRAPHICSCORE_DLL xiiDecalPass : public xiiRenderPipelinePass
 public:
   xiiDecalPass();
   virtual ~xiiDecalPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiMaxDecals          = 512u;
   xiiUInt32 m_uiMaxDecalsPerTile   = 32u;

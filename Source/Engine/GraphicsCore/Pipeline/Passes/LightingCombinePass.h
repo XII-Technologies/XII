@@ -16,7 +16,7 @@ class XII_GRAPHICSCORE_DLL xiiLightingCombinePass : public xiiRenderPipelinePass
 public:
   xiiLightingCombinePass();
   virtual ~xiiLightingCombinePass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   bool m_bEnableRTShadows     = true;
   bool m_bEnableContactShadows = true;

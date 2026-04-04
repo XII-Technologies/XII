@@ -16,7 +16,7 @@ public:
   xiiInstanceTransformPass();
   virtual ~xiiInstanceTransformPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
 private:
   xiiSharedPtr<xiiGALBuffer> m_pWorldMatrixBuffer;  ///< RW: float4x3 per-instance world matrices.

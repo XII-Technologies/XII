@@ -18,7 +18,7 @@ public:
   xiiDrawCommandBuildPass();
   virtual ~xiiDrawCommandBuildPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiMaxDrawCommands = 65536u; ///< Maximum DrawIndexedIndirect commands per frame.
   xiiUInt32 m_uiMaxMaterialBins = 256u;   ///< Maximum distinct material bins.

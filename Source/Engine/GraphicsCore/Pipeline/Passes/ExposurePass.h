@@ -17,7 +17,7 @@ class XII_GRAPHICSCORE_DLL xiiExposurePass : public xiiRenderPipelinePass
 public:
   xiiExposurePass();
   virtual ~xiiExposurePass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   float m_fMinEV100           = -4.0f;  ///< Minimum log2 exposure value.
   float m_fMaxEV100           =  16.0f; ///< Maximum log2 exposure value.

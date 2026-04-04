@@ -21,7 +21,7 @@ class XII_GRAPHICSCORE_DLL xiiAccelerationStructurePass : public xiiRenderPipeli
 public:
   xiiAccelerationStructurePass();
   virtual ~xiiAccelerationStructurePass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   bool m_bAllowRefit      = true;  ///< Use refit for dynamic/skinned where quality allows.
   bool m_bEnableCompaction = true; ///< Issue compaction queries on built BLAS.

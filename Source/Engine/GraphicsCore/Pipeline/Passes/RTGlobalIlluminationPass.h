@@ -16,7 +16,7 @@ class XII_GRAPHICSCORE_DLL xiiRTGlobalIlluminationPass : public xiiRenderPipelin
 public:
   xiiRTGlobalIlluminationPass();
   virtual ~xiiRTGlobalIlluminationPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiRaysPerPixel           = 1u;
   xiiUInt32 m_uiReservoirCandidateCount = 8u;  ///< Reservoir initial candidate set size.

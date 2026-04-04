@@ -21,7 +21,7 @@ public:
   xiiFrameSetupPass();
   virtual ~xiiFrameSetupPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
 private:
   static constexpr xiiUInt32 s_uiTimestampRingSize = 3U;                 ///< The number of timestamp query buffers in the ring. Must be at least 3 to cover the 2-frame readback delay and ensure a free slot for the current frame.

@@ -14,5 +14,5 @@ class XII_GRAPHICSCORE_DLL xiiMainDepthPrepassPass : public xiiRenderPipelinePas
 public:
   xiiMainDepthPrepassPass();
   virtual ~xiiMainDepthPrepassPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 };

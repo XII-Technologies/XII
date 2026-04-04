@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiContactShadowPass : public xiiRenderPipelinePass
 public:
   xiiContactShadowPass();
   virtual ~xiiContactShadowPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiRaySteps      = 16u;   ///< Ray march step count (8–32 typical).
   float     m_fMaxRayDistance = 0.5f;  ///< World-space max ray distance.

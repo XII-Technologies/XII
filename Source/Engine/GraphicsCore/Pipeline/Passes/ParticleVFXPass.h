@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiParticleVFXPass : public xiiRenderPipelinePass
 public:
   xiiParticleVFXPass();
   virtual ~xiiParticleVFXPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiMaxParticles = 1u << 20u; ///< 1M particles maximum.
 };

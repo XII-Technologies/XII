@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiDirectionalShadowRenderPass : public xiiRenderPipe
 public:
   xiiDirectionalShadowRenderPass();
   virtual ~xiiDirectionalShadowRenderPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiAtlasSize = 4096u; ///< Shadow atlas resolution (square).
 };

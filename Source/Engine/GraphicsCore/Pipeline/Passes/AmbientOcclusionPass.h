@@ -14,7 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiAmbientOcclusionPass : public xiiRenderPipelinePas
 public:
   xiiAmbientOcclusionPass();
   virtual ~xiiAmbientOcclusionPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiSliceCount     = 3u;   ///< Number of GTAO horizon integration slices.
   xiiUInt32 m_uiStepsPerSlice  = 4u;   ///< Steps per integration slice.

@@ -51,7 +51,6 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 
@@ -60,6 +59,57 @@
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+struct xiiRenderWorldModule::DefaultPasses
+{
+  xiiFrameSetupPass             m_FrameSetup;
+  xiiDynamicResolutionPass      m_DynamicResolution;
+  xiiPerFrameBufferUploadPass   m_PerFrameBufferUpload;
+  xiiSkinningAndMorphPass       m_SkinningAndMorph;
+  xiiInstanceTransformPass      m_InstanceTransform;
+  xiiLodAndMeshletPass          m_LodAndMeshlet;
+  xiiCoarseFrustumCullPass      m_CoarseFrustumCull;
+  xiiOccluderDepthPrepass       m_OccluderDepthPrepass;
+  xiiHiZBuildPass               m_HiZBuild;
+  xiiHiZOcclusionCullPass       m_HiZOcclusionCull;
+  xiiDrawCommandBuildPass       m_DrawCommandBuild;
+  xiiMainDepthPrepassPass       m_MainDepthPrepass;
+  xiiMotionVectorPass           m_MotionVector;
+  xiiNormalRoughnessPrepassPass m_NormalRoughnessPrepass;
+  xiiShadowCascadeSetupPass     m_ShadowCascadeSetup;
+  xiiShadowCasterCullPass       m_ShadowCasterCull;
+  xiiDirectionalShadowRenderPass m_DirectionalShadowRender;
+  xiiLocalLightShadowPass       m_LocalLightShadow;
+  xiiClusterGridAndLightListPass m_ClusterGridAndLightList;
+  xiiContactShadowPass          m_ContactShadow;
+  xiiDecalPass                  m_Decal;
+  xiiAtmosphereLUTPass          m_AtmosphereLUT;
+  xiiVolumetricFroxelSetupPass  m_VolumetricFroxelSetup;
+  xiiGBufferBasePass            m_GBufferBase;
+  xiiEmissiveAuxPass            m_EmissiveAux;
+  xiiAmbientOcclusionPass       m_AmbientOcclusion;
+  xiiScreenSpaceReflectionsPass m_ScreenSpaceReflections;
+  xiiAccelerationStructurePass  m_AccelerationStructure;
+  xiiRTShadowPass               m_RTShadow;
+  xiiRTReflectionPass           m_RTReflection;
+  xiiRTGlobalIlluminationPass   m_RTGlobalIllumination;
+  xiiLightingCombinePass        m_LightingCombine;
+  xiiVolumetricIntegrationPass  m_VolumetricIntegration;
+  xiiAtmosphereCompositePass    m_AtmosphereComposite;
+  xiiOpaqueCompositePass        m_OpaqueComposite;
+  xiiTransparentPass            m_Transparent;
+  xiiParticleVFXPass            m_ParticleVFX;
+  xiiExposurePass               m_Exposure;
+  xiiTemporalResolvePass        m_TemporalResolve;
+  xiiUpscalingPass              m_Upscaling;
+  xiiBloomPass                  m_Bloom;
+  xiiToneMappingPass            m_ToneMapping;
+  xiiColorGradingPass           m_ColorGrading;
+  xiiSharpeningPass             m_Sharpening;
+  xiiUICompositePass            m_UIComposite;
+  xiiReadbackAndTelemetryPass   m_ReadbackAndTelemetry;
+  xiiPresentPass                m_Present;
+};
 
 // -----------------------------------------------------------------------
 // Construction / destruction
@@ -97,7 +147,7 @@ void xiiRenderWorldModule::Initialize()
 void xiiRenderWorldModule::Deinitialize()
 {
   m_Views.Clear();
-  m_DefaultPasses.Clear();
+  m_pDefaultPasses = nullptr;
   m_uiRenderFrameIndex = 0;
 }
 
@@ -131,73 +181,74 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
 
 void xiiRenderWorldModule::InitializeDefaultPasses()
 {
-  if (!m_DefaultPasses.IsEmpty())
+  if (m_pDefaultPasses != nullptr)
     return;
 
-  m_DefaultPasses.Reserve(47);
-
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiFrameSetupPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDynamicResolutionPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiPerFrameBufferUploadPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiSkinningAndMorphPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiInstanceTransformPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiLodAndMeshletPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiCoarseFrustumCullPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiOccluderDepthPrepass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiHiZBuildPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiHiZOcclusionCullPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDrawCommandBuildPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiMainDepthPrepassPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiMotionVectorPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiNormalRoughnessPrepassPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiShadowCascadeSetupPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiShadowCasterCullPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDirectionalShadowRenderPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiLocalLightShadowPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiClusterGridAndLightListPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiContactShadowPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiDecalPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAtmosphereLUTPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiVolumetricFroxelSetupPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiGBufferBasePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiEmissiveAuxPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAmbientOcclusionPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiScreenSpaceReflectionsPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAccelerationStructurePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiRTShadowPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiRTReflectionPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiRTGlobalIlluminationPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiLightingCombinePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiVolumetricIntegrationPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiAtmosphereCompositePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiOpaqueCompositePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiTransparentPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiParticleVFXPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiExposurePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiTemporalResolvePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiUpscalingPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiBloomPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiToneMappingPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiColorGradingPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiSharpeningPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiUICompositePass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiReadbackAndTelemetryPass));
-  m_DefaultPasses.PushBack(XII_DEFAULT_NEW(xiiPresentPass));
+  m_pDefaultPasses = XII_DEFAULT_NEW(DefaultPasses);
 }
 
 void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  for (const auto& pPass : m_DefaultPasses)
-  {
-    if (pPass->IsActive())
+  XII_ASSERT_DEV(m_pDefaultPasses != nullptr, "Default pass set has not been initialized.");
+
+  auto AddIfActive = [&view, &graph, &blackboard](auto& pass) {
+    if (pass.IsActive())
     {
-      pPass->AddToGraph(view, graph, blackboard);
+      pass.AddToGraph(view, graph, blackboard);
     }
-  }
+  };
+
+  AddIfActive(m_pDefaultPasses->m_FrameSetup);
+  AddIfActive(m_pDefaultPasses->m_DynamicResolution);
+  AddIfActive(m_pDefaultPasses->m_PerFrameBufferUpload);
+  AddIfActive(m_pDefaultPasses->m_SkinningAndMorph);
+  AddIfActive(m_pDefaultPasses->m_InstanceTransform);
+  AddIfActive(m_pDefaultPasses->m_LodAndMeshlet);
+  AddIfActive(m_pDefaultPasses->m_CoarseFrustumCull);
+  AddIfActive(m_pDefaultPasses->m_OccluderDepthPrepass);
+  AddIfActive(m_pDefaultPasses->m_HiZBuild);
+  AddIfActive(m_pDefaultPasses->m_HiZOcclusionCull);
+  AddIfActive(m_pDefaultPasses->m_DrawCommandBuild);
+  AddIfActive(m_pDefaultPasses->m_MainDepthPrepass);
+  AddIfActive(m_pDefaultPasses->m_MotionVector);
+  AddIfActive(m_pDefaultPasses->m_NormalRoughnessPrepass);
+  AddIfActive(m_pDefaultPasses->m_ShadowCascadeSetup);
+  AddIfActive(m_pDefaultPasses->m_ShadowCasterCull);
+  AddIfActive(m_pDefaultPasses->m_DirectionalShadowRender);
+  AddIfActive(m_pDefaultPasses->m_LocalLightShadow);
+  AddIfActive(m_pDefaultPasses->m_ClusterGridAndLightList);
+  AddIfActive(m_pDefaultPasses->m_ContactShadow);
+  AddIfActive(m_pDefaultPasses->m_Decal);
+  AddIfActive(m_pDefaultPasses->m_AtmosphereLUT);
+  AddIfActive(m_pDefaultPasses->m_VolumetricFroxelSetup);
+  AddIfActive(m_pDefaultPasses->m_GBufferBase);
+  AddIfActive(m_pDefaultPasses->m_EmissiveAux);
+  AddIfActive(m_pDefaultPasses->m_AmbientOcclusion);
+  AddIfActive(m_pDefaultPasses->m_ScreenSpaceReflections);
+  AddIfActive(m_pDefaultPasses->m_AccelerationStructure);
+  AddIfActive(m_pDefaultPasses->m_RTShadow);
+  AddIfActive(m_pDefaultPasses->m_RTReflection);
+  AddIfActive(m_pDefaultPasses->m_RTGlobalIllumination);
+  AddIfActive(m_pDefaultPasses->m_LightingCombine);
+  AddIfActive(m_pDefaultPasses->m_VolumetricIntegration);
+  AddIfActive(m_pDefaultPasses->m_AtmosphereComposite);
+  AddIfActive(m_pDefaultPasses->m_OpaqueComposite);
+  AddIfActive(m_pDefaultPasses->m_Transparent);
+  AddIfActive(m_pDefaultPasses->m_ParticleVFX);
+  AddIfActive(m_pDefaultPasses->m_Exposure);
+  AddIfActive(m_pDefaultPasses->m_TemporalResolve);
+  AddIfActive(m_pDefaultPasses->m_Upscaling);
+  AddIfActive(m_pDefaultPasses->m_Bloom);
+  AddIfActive(m_pDefaultPasses->m_ToneMapping);
+  AddIfActive(m_pDefaultPasses->m_ColorGrading);
+  AddIfActive(m_pDefaultPasses->m_Sharpening);
+  AddIfActive(m_pDefaultPasses->m_UIComposite);
+  AddIfActive(m_pDefaultPasses->m_ReadbackAndTelemetry);
+  AddIfActive(m_pDefaultPasses->m_Present);
 }
 
 // -----------------------------------------------------------------------
-// Frame update — extraction
+// Frame update - extraction
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
@@ -228,7 +279,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 }
 
 // -----------------------------------------------------------------------
-// Frame update — graph execution
+// Frame update - graph execution
 
 void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context)
 {
@@ -272,7 +323,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
     if (pGraph->Compile(compileSettings).Succeeded())
     {
-      pGraph->Execute(pDevice, pView.Borrow(), &blackboard, &resourceCache);
+      const xiiResult executeResult = pGraph->Execute(pDevice, pView.Borrow(), &blackboard, &resourceCache);
+      XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", pView->GetName());
     }
   }
 }

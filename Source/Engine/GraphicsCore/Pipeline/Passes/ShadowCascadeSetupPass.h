@@ -17,7 +17,7 @@ class XII_GRAPHICSCORE_DLL xiiShadowCascadeSetupPass : public xiiRenderPipelineP
 public:
   xiiShadowCascadeSetupPass();
   virtual ~xiiShadowCascadeSetupPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   xiiUInt32 m_uiCascadeCount     = 4u;     ///< Number of CSM cascades.
   float     m_fSplitLambda       = 0.85f;  ///< PSSM split lambda [0=uniform, 1=logarithmic].

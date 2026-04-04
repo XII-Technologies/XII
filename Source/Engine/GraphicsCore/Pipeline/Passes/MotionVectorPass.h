@@ -14,5 +14,5 @@ class XII_GRAPHICSCORE_DLL xiiMotionVectorPass : public xiiRenderPipelinePass
 public:
   xiiMotionVectorPass();
   virtual ~xiiMotionVectorPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 };

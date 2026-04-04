@@ -17,5 +17,5 @@ public:
   xiiHiZBuildPass();
   virtual ~xiiHiZBuildPass();
 
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 };

@@ -13,7 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiNormalRoughnessPrepassPass : public xiiRenderPipel
 public:
   xiiNormalRoughnessPrepassPass();
   virtual ~xiiNormalRoughnessPrepassPass();
-  virtual void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard) override;
+  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   bool m_bEnabled = true;
 };
