@@ -2,7 +2,6 @@
 
 #include <Core/World/WorldModule.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderWorldModuleData.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
@@ -27,36 +26,76 @@ class xiiView;
 class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
+
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderWorldModule, xiiWorldModule);
+
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderWorldModule);
 
 public:
   xiiRenderWorldModule(xiiWorld* pWorld);
+
   virtual ~xiiRenderWorldModule();
 
   virtual void Initialize() override;
+
   virtual void Deinitialize() override;
+
   virtual void OnSimulationStarted() override;
 
-  // -----------------------------------------------------------------------
-  // View management
-
-  /// \brief Creates a new view and assumes ownership. The view is registered for render-data extraction
-  ///        and render-graph execution from the next frame onward.
+  /// \brief Creates a new view and assumes ownership.
+  ///
+  /// The view is registered for render-data extraction and render-graph execution from the next frame onward.
   xiiView* CreateView(xiiStringView sName);
 
   /// \brief Destroys a view. The view must have been created by this module.
   void DestroyView(xiiView* pView);
 
 private:
-  struct DefaultPasses;
-
-  void InitializeDefaultPasses();
   void BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
+  struct PassData
+  {
+    struct FrameSetupPassData
+    {
+      float                       m_fDeltaTime;
+      float                       m_fGlobalTime;
+      float                       m_fWorldTime;
+      xiiEnum<xiiExposureControl> m_ExposureControl;
+    } m_FrameSetupData;
+
+    struct DynamicResolutionPassData
+    {
+      float             m_fFrameDeltaTimeMs;
+      float             m_fTargetFrameTimeMs;
+      float             m_fMininimumRenderScale;
+      float             m_fMaximumRenderScale;
+      xiiRGBufferHandle m_hTimingInputBuffer;
+      xiiRGBufferHandle m_hVelocityInputBuffer;
+      xiiRGBufferHandle m_hResolutionOutputBuffer;
+    } m_DynamicResolutionData;
+  };
+
+  void SetupFrameSetupPass(PassData::FrameSetupPassData& data, xiiRGBuilder& builder);
+  void ExecuteFrameSetupPass(const PassData::FrameSetupPassData& data, xiiRGPassContext& context);
+
+  void SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder);
+  void ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context);
+
+private:
+  struct PersistentFrameResources
+  {
+    struct DynamicResolution
+    {
+      xiiSharedPtr<xiiGALBuffer> m_pTimingInputBuffer;
+      xiiSharedPtr<xiiGALBuffer> m_pVelocityInputBuffer;
+      xiiSharedPtr<xiiGALBuffer> m_pResolutionOutputBuffer;
+    } m_DynamicResolution;
+  } m_PersistentFrameResources;
+
   xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
-  xiiUniquePtr<DefaultPasses>            m_pDefaultPasses;
+  PassData                               m_PassData;
   xiiUInt32                              m_uiRenderFrameIndex = 0;
 };

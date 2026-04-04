@@ -4,22 +4,11 @@
 
 #include "PipelineCommon.xiiShader"
 
-// ──────────────────────────────────────────────────────────────────────────────
-cbuffer DynResConstants : register(b3)
-{
-    float g_FrameDeltaTimeMs;
-    float g_TargetFrameTimeMs;
-    float g_MinScale;
-    float g_MaxScale;
-};
-
 StructuredBuffer<float>   g_FrameTimingData   : register(t0); // GPU time from readback ring
 StructuredBuffer<float>   g_CameraVelocityData: register(t1); // camera angular speed
 RWStructuredBuffer<float> g_DynamicResData    : register(u0); // [0]=scale, [1]=reserved
 
-// ──────────────────────────────────────────────────────────────────────────────
 // PID-style proportional controller with hysteresis to prevent oscillation.
-// ──────────────────────────────────────────────────────────────────────────────
 [numthreads(1, 1, 1)]
 void CS_DynamicResolution(uint3 tid : SV_DispatchThreadID)
 {

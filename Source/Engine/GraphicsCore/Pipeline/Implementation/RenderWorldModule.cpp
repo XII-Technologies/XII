@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/World/World.h>
+#include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
@@ -8,7 +9,13 @@
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 
+#include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionPass.h>
 
+XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+#if 0
 void xiiPopulateAccelerationStructurePass(xiiAccelerationStructurePass& passData, xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // Check hardware RT support via device feature query.
@@ -2318,99 +2325,38 @@ void xiiPopulateVolumetricIntegrationPass(xiiVolumetricIntegrationPass& passData
 }
 
 // END_MOVED_PIPELINE_PASS_FUNCTIONS
-
-XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
-struct xiiRenderWorldModule::DefaultPasses
-{
-  xiiFrameSetupPass              m_FrameSetup;
-  xiiDynamicResolutionPass       m_DynamicResolution;
-  xiiPerFrameBufferUploadPass    m_PerFrameBufferUpload;
-  xiiSkinningAndMorphPass        m_SkinningAndMorph;
-  xiiInstanceTransformPass       m_InstanceTransform;
-  xiiLodAndMeshletPass           m_LodAndMeshlet;
-  xiiCoarseFrustumCullPass       m_CoarseFrustumCull;
-  xiiOccluderDepthPrepass        m_OccluderDepthPrepass;
-  xiiHiZBuildPass                m_HiZBuild;
-  xiiHiZOcclusionCullPass        m_HiZOcclusionCull;
-  xiiDrawCommandBuildPass        m_DrawCommandBuild;
-  xiiMainDepthPrepassPass        m_MainDepthPrepass;
-  xiiMotionVectorPass            m_MotionVector;
-  xiiNormalRoughnessPrepassPass  m_NormalRoughnessPrepass;
-  xiiShadowCascadeSetupPass      m_ShadowCascadeSetup;
-  xiiShadowCasterCullPass        m_ShadowCasterCull;
-  xiiDirectionalShadowRenderPass m_DirectionalShadowRender;
-  xiiLocalLightShadowPass        m_LocalLightShadow;
-  xiiClusterGridAndLightListPass m_ClusterGridAndLightList;
-  xiiContactShadowPass           m_ContactShadow;
-  xiiDecalPass                   m_Decal;
-  xiiAtmosphereLUTPass           m_AtmosphereLUT;
-  xiiVolumetricFroxelSetupPass   m_VolumetricFroxelSetup;
-  xiiGBufferBasePass             m_GBufferBase;
-  xiiEmissiveAuxPass             m_EmissiveAux;
-  xiiAmbientOcclusionPass        m_AmbientOcclusion;
-  xiiScreenSpaceReflectionsPass  m_ScreenSpaceReflections;
-  xiiAccelerationStructurePass   m_AccelerationStructure;
-  xiiRTShadowPass                m_RTShadow;
-  xiiRTReflectionPass            m_RTReflection;
-  xiiRTGlobalIlluminationPass    m_RTGlobalIllumination;
-  xiiLightingCombinePass         m_LightingCombine;
-  xiiVolumetricIntegrationPass   m_VolumetricIntegration;
-  xiiAtmosphereCompositePass     m_AtmosphereComposite;
-  xiiOpaqueCompositePass         m_OpaqueComposite;
-  xiiTransparentPass             m_Transparent;
-  xiiParticleVFXPass             m_ParticleVFX;
-  xiiExposurePass                m_Exposure;
-  xiiTemporalResolvePass         m_TemporalResolve;
-  xiiUpscalingPass               m_Upscaling;
-  xiiBloomPass                   m_Bloom;
-  xiiToneMappingPass             m_ToneMapping;
-  xiiColorGradingPass            m_ColorGrading;
-  xiiSharpeningPass              m_Sharpening;
-  xiiUICompositePass             m_UIComposite;
-  xiiReadbackAndTelemetryPass    m_ReadbackAndTelemetry;
-  xiiPresentPass                 m_Present;
-};
-
-// -----------------------------------------------------------------------
-// Construction / destruction
+#endif
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
 {
-  InitializeDefaultPasses();
 }
 
 xiiRenderWorldModule::~xiiRenderWorldModule() = default;
 
-// -----------------------------------------------------------------------
-// WorldModule overrides
-
 void xiiRenderWorldModule::Initialize()
 {
-  // Register ExtractRenderData (concurrent, runs on async worker threads per component manager)
+  // Register ExtractRenderData (concurrent, runs on async worker threads per component manager).
   {
-    auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExtractRenderData, this);
-    desc.m_Phase                     = xiiWorldUpdatePhase::Async;
-    desc.m_bOnlyUpdateWhenSimulating = false;
-    RegisterUpdateFunction(desc);
+    auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExtractRenderData, this);
+    description.m_Phase                     = xiiWorldUpdatePhase::Async;
+    description.m_bOnlyUpdateWhenSimulating = false;
+    RegisterUpdateFunction(description);
   }
 
-  // Register ExecuteRenderGraphs (post-async, single-threaded, after all extraction is complete)
+  // Register ExecuteRenderGraphs (post-async, single-threaded, after all extraction is complete).
   {
-    auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExecuteRenderGraphs, this);
-    desc.m_Phase                     = xiiWorldUpdatePhase::PostAsync;
-    desc.m_bOnlyUpdateWhenSimulating = false;
-    RegisterUpdateFunction(desc);
+    auto description                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiRenderWorldModule::ExecuteRenderGraphs, this);
+    description.m_Phase                     = xiiWorldUpdatePhase::PostAsync;
+    description.m_bOnlyUpdateWhenSimulating = false;
+    RegisterUpdateFunction(description);
   }
 }
 
 void xiiRenderWorldModule::Deinitialize()
 {
   m_Views.Clear();
-  m_pDefaultPasses     = nullptr;
+
   m_uiRenderFrameIndex = 0;
 }
 
@@ -2442,25 +2388,17 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
   }
 }
 
-void xiiRenderWorldModule::InitializeDefaultPasses()
-{
-  if (m_pDefaultPasses != nullptr)
-    return;
-
-  m_pDefaultPasses = XII_DEFAULT_NEW(DefaultPasses);
-}
-
 void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  XII_ASSERT_DEV(m_pDefaultPasses != nullptr, "Default pass set has not been initialized.");
+  auto [pFrameSetupData, hFrameSetupPass] = graph.AddPass<PassData::FrameSetupPassData>("FrameSetup", xiiGALCommandQueueFlags::Graphics,
+                                                                                        xiiMakeDelegate(&xiiRenderWorldModule::SetupFrameSetupPass, this),
+                                                                                        xiiMakeDelegate(&xiiRenderWorldModule::ExecuteFrameSetupPass, this));
 
-  auto AddIfActive = [&view, &graph, &blackboard](auto& pass, auto&& populatePass) {
-    if (pass.IsActive())
-    {
-      populatePass(pass, view, graph, blackboard);
-    }
-  };
+  auto [pDynamicResolutionData, hDynamicResolutionPass] = graph.AddPass<PassData::DynamicResolutionPassData>("DynamicResolution", xiiGALCommandQueueFlags::Graphics,
+                                                                                                             xiiMakeDelegate(&xiiRenderWorldModule::SetupDynamicResolutionPass, this),
+                                                                                                             xiiMakeDelegate(&xiiRenderWorldModule::ExecuteDynamicResolutionPass, this));
 
+#if 0
   AddIfActive(m_pDefaultPasses->m_FrameSetup, xiiPopulateFrameSetupPass);
   AddIfActive(m_pDefaultPasses->m_DynamicResolution, xiiPopulateDynamicResolutionPass);
   AddIfActive(m_pDefaultPasses->m_PerFrameBufferUpload, xiiPopulatePerFrameBufferUploadPass);
@@ -2508,10 +2446,8 @@ void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph
   AddIfActive(m_pDefaultPasses->m_UIComposite, xiiPopulateUICompositePass);
   AddIfActive(m_pDefaultPasses->m_ReadbackAndTelemetry, xiiPopulateReadbackAndTelemetryPass);
   AddIfActive(m_pDefaultPasses->m_Present, xiiPopulatePresentPass);
+#endif
 }
-
-// -----------------------------------------------------------------------
-// Frame update - extraction
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
@@ -2540,9 +2476,6 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     pExtractedData->SortAndBatches();
   }
 }
-
-// -----------------------------------------------------------------------
-// Frame update - graph execution
 
 void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context)
 {
@@ -2590,4 +2523,69 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", pView->GetName());
     }
   }
+}
+
+void xiiRenderWorldModule::SetupFrameSetupPass(PassData::FrameSetupPassData& data, xiiRGBuilder& builder)
+{
+  // No resources for this pass, it just updates some global constants.
+  // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
+  constexpr double fWrapAround = 1000.0;
+  data.m_fDeltaTime            = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds());
+  data.m_fGlobalTime           = static_cast<float>(xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), fWrapAround));
+  data.m_fWorldTime            = static_cast<float>(xiiMath::Mod(GetWorld()->GetClock().GetAccumulatedTime().GetSeconds(), fWrapAround));
+  data.m_ExposureControl       = xiiExposureControl::EyeAdaptationTemporal;
+
+  builder.SetPassSideEffects(true); // Ensures this pass runs even if no resources are read/written, since it updates global time constants used by other passes.
+  builder.SetPassAllowMerge(false); // Do not merge with other passes since this is a logical "start" of the frame and we want it to be a distinct point in GPU profiling.
+}
+
+void xiiRenderWorldModule::ExecuteFrameSetupPass(const PassData::FrameSetupPassData& data, xiiRGPassContext& context)
+{
+  XII_IGNORE_UNUSED(data);
+  XII_IGNORE_UNUSED(context);
+}
+
+void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder)
+{
+  if (!m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = sizeof(xiiDynamicResolutionPassData);
+    description.m_uiSize              = description.m_uiElementByteStride * 1U; // Only need one element for the current frame's timing data.
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Mutable;
+
+    m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+  }
+
+  if (!m_PersistentFrameResources.m_DynamicResolution.m_pVelocityInputBuffer)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = sizeof(float) * 4; // Assuming a float4 for velocity input (e.g., average screen velocity).
+    description.m_uiSize              = description.m_uiElementByteStride * 1U; // Only need one element for the current frame's velocity data.
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Mutable;
+
+    m_PersistentFrameResources.m_DynamicResolution.m_pVelocityInputBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+  }
+
+  data.m_fFrameDeltaTimeMs     = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
+  data.m_fTargetFrameTimeMs    = 16.67f; // Target 60 FPS, this would be adjustable and possibly dynamic based on performance metrics.
+  data.m_fMininimumRenderScale = 0.5f;   // Don't go below 50% resolution to maintain some level of visual fidelity.
+  data.m_fMaximumRenderScale   = 1.0f;   // Don't upscale above native resolution to avoid blurriness.
+
+  data.m_hTimingInputBuffer      = builder.ImportBuffer("DynamicResolution_Timing", m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hTimingInputBuffer      = builder.ReadBuffer(data.m_hTimingInputBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocityInputBuffer    = builder.ImportBuffer("DynamicResolution_Velocity", m_PersistentFrameResources.m_DynamicResolution.m_pVelocityInputBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVelocityInputBuffer    = builder.ReadBuffer(data.m_hVelocityInputBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hResolutionOutputBuffer = builder.ImportBuffer("DynamicResolution_Output", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hResolutionOutputBuffer = builder.WriteBuffer(data.m_hResolutionOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+}
+
+void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context)
+{
+  XII_IGNORE_UNUSED(data);
+  XII_IGNORE_UNUSED(context);
 }
