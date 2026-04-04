@@ -1,29 +1,32 @@
 #pragma once
 
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
+class xiiRenderGraph;
+class xiiRenderGraphBlackboard;
+class xiiView;
 #include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 
-/// \brief Pass 11 — Draw Indirect Command Build and Compaction.
+/// \brief Pass 11 â€” Draw Indirect Command Build and Compaction.
 ///
 /// Async Compute. Takes surviving visible instances, bins them by material,
 /// and writes packed DrawIndexedIndirect argument buffers + draw counts.
-/// This is the critical pass enabling GPU-driven rendering — the CPU never
+/// This is the critical pass enabling GPU-driven rendering â€” the CPU never
 /// touches per-draw data after this point.
-class XII_GRAPHICSCORE_DLL xiiDrawCommandBuildPass : public xiiRenderPipelinePass
+struct XII_GRAPHICSCORE_DLL xiiDrawCommandBuildPass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiDrawCommandBuildPass, xiiRenderPipelinePass);
-
-public:
-  xiiDrawCommandBuildPass();
-  virtual ~xiiDrawCommandBuildPass();
-
-  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-
   xiiUInt32 m_uiMaxDrawCommands = 65536u; ///< Maximum DrawIndexedIndirect commands per frame.
   xiiUInt32 m_uiMaxMaterialBins = 256u;   ///< Maximum distinct material bins.
-
-private:
   xiiSharedPtr<xiiGALBuffer> m_pDrawIndirectArgsBuffer; ///< RW: packed DrawIndexedIndirect structs.
   xiiSharedPtr<xiiGALBuffer> m_pDrawCountBuffer;         ///< RW: per-material-bin draw count (uint).
+  XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; }
+  XII_ALWAYS_INLINE void SetActive(bool bActive) { m_bActive = bActive; }
+  XII_ALWAYS_INLINE bool IsActive() const { return m_bActive; }
+
+  xiiString m_sName = "DrawCommandBuildPass";
+  bool      m_bActive = true;
 };
+
+void xiiPopulateDrawCommandBuildPass(xiiDrawCommandBuildPass& passData, xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+

@@ -1,18 +1,25 @@
 #pragma once
 
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
 
-/// \brief Pass 13 — Motion Vector Pass.
+class xiiRenderGraph;
+class xiiRenderGraphBlackboard;
+class xiiView;
+
+/// \brief Pass 13 â€” Motion Vector Pass.
 ///
 /// Graphics queue. Renders per-pixel screen-space velocity from current and
 /// previous-frame transforms. Mandatory for TAA, temporal reprojection, and
 /// most denoising passes.
-class XII_GRAPHICSCORE_DLL xiiMotionVectorPass : public xiiRenderPipelinePass
+struct XII_GRAPHICSCORE_DLL xiiMotionVectorPass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiMotionVectorPass, xiiRenderPipelinePass);
+  XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; }
+  XII_ALWAYS_INLINE void SetActive(bool bActive) { m_bActive = bActive; }
+  XII_ALWAYS_INLINE bool IsActive() const { return m_bActive; }
 
-public:
-  xiiMotionVectorPass();
-  virtual ~xiiMotionVectorPass();
-  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  xiiString m_sName = "MotionVectorPass";
+  bool      m_bActive = true;
 };
+
+void xiiPopulateMotionVectorPass(xiiMotionVectorPass& passData, xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+

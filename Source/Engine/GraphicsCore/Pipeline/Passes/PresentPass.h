@@ -1,20 +1,26 @@
 #pragma once
 
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
 
-/// \brief Pass 65 — Present.
+class xiiRenderGraph;
+class xiiRenderGraphBlackboard;
+class xiiView;
+
+/// \brief Pass 65 â€” Present.
 ///
 /// Graphics queue. Final synchronisation point: transitions the backbuffer to present
 /// layout, acquires the swap-chain image, and enqueues presentation. Has mandatory
-/// side effects — must never be culled by the render graph compiler.
-class XII_GRAPHICSCORE_DLL xiiPresentPass : public xiiRenderPipelinePass
+/// side effects â€” must never be culled by the render graph compiler.
+struct XII_GRAPHICSCORE_DLL xiiPresentPass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPresentPass, xiiRenderPipelinePass);
-
-public:
-  xiiPresentPass();
-  virtual ~xiiPresentPass();
-  void AddToGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-
   bool m_bEnableVSync = true;
+  XII_ALWAYS_INLINE xiiStringView GetName() const { return m_sName; }
+  XII_ALWAYS_INLINE void SetActive(bool bActive) { m_bActive = bActive; }
+  XII_ALWAYS_INLINE bool IsActive() const { return m_bActive; }
+
+  xiiString m_sName = "PresentPass";
+  bool      m_bActive = true;
 };
+
+void xiiPopulatePresentPass(xiiPresentPass& passData, xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+

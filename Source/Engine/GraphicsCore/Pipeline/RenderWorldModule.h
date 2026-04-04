@@ -1,11 +1,8 @@
 #pragma once
 
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <Core/World/WorldModule.h>
 #include <GraphicsCore/Declarations.h>
-
-#include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/Pipeline/RenderWorldModuleData.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
@@ -60,6 +57,6 @@ private:
 
 private:
   xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
-  xiiUniquePtr<DefaultPasses>          m_pDefaultPasses;
-  xiiUInt32                            m_uiRenderFrameIndex = 0;
+  xiiUniquePtr<DefaultPasses>            m_pDefaultPasses;
+  xiiUInt32                              m_uiRenderFrameIndex = 0;
 };
