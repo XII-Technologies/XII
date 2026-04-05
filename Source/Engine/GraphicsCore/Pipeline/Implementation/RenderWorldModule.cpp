@@ -1,14 +1,18 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionConstants.h>
 
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
@@ -182,6 +186,8 @@ void xiiRenderWorldModule::ExecuteFrameSetupPass(const PassData::FrameSetupPassD
 
 void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder)
 {
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer)
   {
     xiiGALBufferCreationDescription description;
@@ -191,7 +197,7 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     description.m_Mode                = xiiGALBufferMode::Structured;
     description.m_Usage               = xiiGALResourceUsage::Mutable;
 
-    m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer = pDevice->CreateBuffer(description);
   }
 
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pCameraVelocityInputBuffer)
@@ -203,7 +209,7 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     description.m_Mode                = xiiGALBufferMode::Structured;
     description.m_Usage               = xiiGALResourceUsage::Mutable;
 
-    m_PersistentFrameResources.m_DynamicResolution.m_pCameraVelocityInputBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    m_PersistentFrameResources.m_DynamicResolution.m_pCameraVelocityInputBuffer = pDevice->CreateBuffer(description);
   }
 
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer)
@@ -215,7 +221,7 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     description.m_Mode                = xiiGALBufferMode::Structured;
     description.m_Usage               = xiiGALResourceUsage::Default;
 
-    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer = pDevice->CreateBuffer(description);
   }
 
   data.m_fFrameDeltaTimeMs     = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
@@ -229,13 +235,68 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
   data.m_hCameraVelocityInputBuffer     = builder.ReadBuffer(data.m_hCameraVelocityInputBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hResolutionScalingOutputBuffer = builder.ImportBuffer("DynamicResolution_Scaling", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hResolutionScalingOutputBuffer = builder.WriteBuffer(data.m_hResolutionScalingOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+
+  if (!m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline)
+  {
+    // Load shader resource and preload a single permutation (no defines).
+    xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Passes/DynamicResolution/DynamicResolution.xiiShader");
+
+    xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables;
+    m_PersistentFrameResources.m_DynamicResolution.m_hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+
+    xiiResourceLock<xiiShaderPermutationResource> pPermutation(m_PersistentFrameResources.m_DynamicResolution.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+    XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load shader permutation for dynamic resolution pass.");
+
+    xiiSharedPtr<xiiGALShader>                    pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+    xiiSharedPtr<xiiGALPipelineResourceSignature> pSignature     = pPermutation->GetPipelineResourceSignature();
+
+    xiiGALComputePipelineStateCreationDescription description;
+    description.m_pComputeShader                                      = pComputeShader;
+    description.m_pPipelineResourceSignature                          = pSignature;
+    m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline = xiiGALPipelineCache::GetPipeline(description);
+  }
+
+  if (!m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer)
+  {
+    m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiDynamicResolutionPassData), XII_PP_STRINGIFY(xiiDynamicResolutionPassData));
+  }
 }
 
 void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
-  cmd.BeginDebugGroup("Dynamic Resolution Scaling");
 
-  cmd.DispatchCompute({1U, 1U, 1U}); // Only one threadgroup is needed since this shader just outputs a single scaling factor for the whole frame.
+  cmd.BeginDebugGroup("Dynamic Resolution Scaling");
+  {
+    {
+      xiiGALMapHelper<xiiDynamicResolutionPassData> pDynamicResolutionConstants(cmd, m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      pDynamicResolutionConstants->FrameDeltaTimeMs     = data.m_fFrameDeltaTimeMs;
+      pDynamicResolutionConstants->TargetFrameTimeMs    = data.m_fTargetFrameTimeMs;
+      pDynamicResolutionConstants->MininimumRenderScale = data.m_fMininimumRenderScale;
+      pDynamicResolutionConstants->MaximumRenderScale   = data.m_fMaximumRenderScale;
+    }
+
+    cmd.SetPipelineState(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline);
+
+    cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiDynamicResolutionPassData), m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer, xiiGALShaderType::Compute);
+
+    if (xiiGALBuffer* pTiming = context.GetBuffer(data.m_hTimingInputBuffer))
+    {
+      cmd.ResolveAndSetShaderResourceBufferView("g_FrameTimingData", pTiming->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+    if (xiiGALBuffer* pVelocity = context.GetBuffer(data.m_hCameraVelocityInputBuffer))
+    {
+      cmd.ResolveAndSetShaderResourceBufferView("g_CameraVelocityData", pVelocity->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    }
+    if (xiiGALBuffer* pScaling = context.GetBuffer(data.m_hResolutionScalingOutputBuffer))
+    {
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_DynamicResolutionScalingData", pScaling->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    }
+
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+    cmd.DispatchCompute({1U, 1U, 1U}); // Only one threadgroup is needed since this shader writes a single scaling factor for the whole frame.
+  }
   cmd.EndDebugGroup();
 }

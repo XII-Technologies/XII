@@ -36,7 +36,15 @@ public:
   /// \param hBuffer      - Handle to the buffer resource.
   /// \param mapType      - Type of mapping operation.
   /// \param mapFlags     - Mapping flags.
-  xiiGALMapHelper(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
+  xiiGALMapHelper(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
+
+  /// \brief Constructs the helper and maps the specified resource.
+  ///
+  /// \param commandList - Reference to the command list.
+  /// \param hBuffer     - Handle to the buffer resource.
+  /// \param mapType     - Type of mapping operation.
+  /// \param mapFlags    - Mapping flags.
+  xiiGALMapHelper(xiiGALCommandList& commandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
   /// \brief Move constructor.
   ///
@@ -61,7 +69,7 @@ public:
   /// \param mapFlags     - Mapping flags.
   ///
   /// \return Result of the operation.
-  xiiResult Map(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
+  xiiResult Map(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags);
 
   /// \brief Unmaps the specified resource.
   ///
@@ -93,11 +101,11 @@ public:
   XII_ALWAYS_INLINE DataType* GetMappedData() const;
 
 private:
-  xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Pointer to the command list.
-  xiiSharedPtr<xiiGALBuffer>      m_pBuffer;      ///< Handle to the buffer resource.
-  DataType*                       m_pMappedData;  ///< Pointer to the mapped data.
-  xiiEnum<xiiGALMapType>          m_MapType;      ///< Type of mapping operation.
-  xiiBitflags<xiiGALMapFlags>     m_MapFlags;     ///< Mapping flags.
+  xiiGALCommandList*          m_pCommandList; ///< Pointer to the command list.
+  xiiSharedPtr<xiiGALBuffer>  m_pBuffer;      ///< Handle to the buffer resource.
+  DataType*                   m_pMappedData;  ///< Pointer to the mapped data.
+  xiiEnum<xiiGALMapType>      m_MapType;      ///< Type of mapping operation.
+  xiiBitflags<xiiGALMapFlags> m_MapFlags;     ///< Mapping flags.
 };
 
 #include <GraphicsFoundation/Tools/Implementation/MapHelper_inl.h>

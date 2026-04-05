@@ -3,6 +3,8 @@
 #include <Core/World/WorldModule.h>
 #include <GraphicsCore/Declarations.h>
 
+class xiiGALComputePipelineState;
+
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
 class xiiView;
@@ -115,6 +117,10 @@ private:
         float m_fScaleVelocity; // g_DynamicResolutionScalingData[3]
       };
       xiiSharedPtr<xiiGALBuffer> m_pResolutionScalingBuffer; ///< GPU buffer storing the calculated dynamic resolution scale for the current frame, read back by the CPU for smoothing and applied in the next frame.
+
+      xiiSharedPtr<xiiGALComputePipelineState> m_pComputePipeline;
+      xiiShaderPermutationResourceHandle       m_hShaderPermutation;
+      xiiSharedPtr<xiiGALBuffer>               m_pPassConstantsBuffer;
     } m_DynamicResolution;
   } m_PersistentFrameResources;
 
