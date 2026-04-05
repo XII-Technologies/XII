@@ -189,7 +189,7 @@ xiiResult xiiShaderCompilerApplication::ExtractPermutationVarValues(xiiStringVie
   xiiHybridArray<xiiGALPermutationVariable, 16> fixedPermutationVariables;
 
   xiiUInt32     uiFirstLine   = 0;
-  xiiStringView sPermutations = shaderTextSections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine);
+  xiiStringView sPermutations = shaderTextSections.GetSectionContent(xiiGALShaderSections::Permutations, uiFirstLine);
   xiiGALShaderParser::ParsePermutationSection(sPermutations, permutationVariables, fixedPermutationVariables);
 
   {

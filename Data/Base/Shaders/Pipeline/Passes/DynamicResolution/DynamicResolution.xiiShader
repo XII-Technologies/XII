@@ -1,8 +1,7 @@
-// XII Engine — DynamicResolution.xiiShader
-// Pass 2: Adaptive resolution scaling based on GPU frame time budget.
-// Dispatch: 1 × 1 × 1 (single-thread decision kernel).
+[PLATFORMS]
+ALL
 
-#include "PipelineCommon.xiiShader"
+[COMPUTE_SHADER]
 
 StructuredBuffer<float>   g_FrameTimingData   : register(t0); // GPU time from readback ring
 StructuredBuffer<float>   g_CameraVelocityData: register(t1); // camera angular speed

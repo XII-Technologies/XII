@@ -473,7 +473,7 @@ void xiiGALShaderParser::ParseMaterialParameterSection(xiiStreamReader& inout_st
   xiiGALShaderSections::GetShaderSections(sContent, sections);
 
   xiiUInt32     uiFirstLine = 0;
-  xiiStringView s           = sections.GetSectionContent(xiiGALShaderSections::MATERIALPARAMETER, uiFirstLine);
+  xiiStringView s           = sections.GetSectionContent(xiiGALShaderSections::MaterialParameter, uiFirstLine);
 
   xiiTokenizer tokenizer;
   tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)s.GetStartPointer(), s.GetElementCount()), xiiLog::GetThreadLocalLogSystem());

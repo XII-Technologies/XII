@@ -77,7 +77,7 @@ namespace
     }
 
     xiiStringBuilder sOutput;
-    XII_SUCCEED_OR_RETURN(xiiGALShaderParser::PreprocessSection(file, xiiGALShaderSections::MATERIALCONFIG, defines, sOutput));
+    XII_SUCCEED_OR_RETURN(xiiGALShaderParser::PreprocessSection(file, xiiGALShaderSections::MaterialConfiguration, defines, sOutput));
 
     xiiHybridArray<xiiStringView, 32> allAssignments;
     sOutput.Split(false, allAssignments, "\n", ";", "\r");

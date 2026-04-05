@@ -37,10 +37,10 @@ xiiQtShaderTemplateDlg::xiiQtShaderTemplateDlg(QWidget* pParent, const xiiDocume
       xiiGALShaderSections::GetShaderSections(content, sec);
 
       xiiUInt32        uiFirstLine = 0;
-      xiiStringBuilder vars        = sec.GetSectionContent(xiiGALShaderSections::TEMPLATE_VARS, uiFirstLine);
+      xiiStringBuilder vars        = sec.GetSectionContent(xiiGALShaderSections::TemplateVariables, uiFirstLine);
 
       content.ReplaceAll(vars, "");
-      content.ReplaceAll("[TEMPLATE_VARS]", "");
+      content.ReplaceAll("[TEMPLATE_VARIABLES]", "");
 
       t.m_sContent = content;
 
