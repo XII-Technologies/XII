@@ -3,45 +3,112 @@ ALL
 
 [COMPUTE_SHADER]
 
-StructuredBuffer<float>   g_FrameTimingData   : register(t0); // GPU time from readback ring
-StructuredBuffer<float>   g_CameraVelocityData: register(t1); // camera angular speed
-RWStructuredBuffer<float> g_DynamicResData    : register(u0); // [0]=scale, [1]=reserved
+#include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionConstants.h>
 
-// PID-style proportional controller with hysteresis to prevent oscillation.
-[numthreads(1, 1, 1)]
-void CS_DynamicResolution(uint3 tid : SV_DispatchThreadID)
+// GPU timing history
+// [0] = LastGpuTimeMs
+// [1] = SmoothedGpuTimeMs
+// [2] = Variance (optional, can be 0)
+// [3] = IntegralTerm (optional, can be 0)
+StructuredBuffer<float> g_FrameTimingData;
+
+// Camera motion history
+// [0] = AngularVelocity
+// [1] = SmoothedAngularVelocity
+// [2] = LinearVelocity
+// [3] = SmoothedLinearVelocity
+StructuredBuffer<float> g_CameraVelocityData;
+
+// Dynamic resolution state
+// [0] = CurrentScale
+// [1] = PreviousScale
+// [2] = SmoothedScale
+// [3] = ScaleVelocity
+RWStructuredBuffer<float> g_DynamicResolutionScalingData;
+
+// Tunables
+static const float kEmaAlphaTime   = 0.15f;  // How fast we react to time changes.
+static const float kEmaAlphaMotion = 0.20f;  // How much motion influences scale.
+static const float kMaxScaleStep   = 0.10f;  // Max scale change per frame.
+static const float kMinScaleStep   = 0.01f;  // Deadzone to avoid micro flicker.
+
+/// \brief Simple helper to clamp and limit step size
+float ClampScaleWithStep(float fDesiredValue, float fCurrentValue, float fMaxStep)
 {
-    float currentScale = g_DynamicResData[0];
-    if (currentScale == 0.0f) currentScale = g_MaxScale; // first frame default
+  float fDelta = fDesiredValue - fCurrentValue;
+  fDelta       = clamp(fDelta, -fMaxStep, fMaxStep);
+  return fCurrentValue + fDelta;
+}
 
-    float gpuMs         = g_FrameTimingData[0];
-    float targetMs      = g_TargetFrameTimeMs;
-    float cameraVelRad  = g_CameraVelocityData[0];
+[numthreads(1, 1, 1)]
+void main(uint3 vDispatchThreadId : SV_DispatchThreadID)
+{
+    // Read timing history.
+    float fLastGpuTimeMs     = g_FrameTimingData[0];
+    float fSmoothedGpuTimeMs = g_FrameTimingData[1];
 
-    // Budget error: positive = over budget.
-    float error = (gpuMs - targetMs) / max(targetMs, 1.0f);
+    // Read motion history.
+    float fAngularVelocity         = g_CameraVelocityData[0];
+    float fSmoothedAngularVelocity = g_CameraVelocityData[1];
+    float fLinearVelocity          = g_CameraVelocityData[2];
+    float fSmoothedLinearVelocity  = g_CameraVelocityData[3];
 
-    // Proportional step — aggressive scale-down, gentle scale-up.
-    float kDown = 0.05f;
-    float kUp   = 0.015f;
-    float step  = error > 0.0f ? -kDown * error : kUp * (-error);
+    // Read previous dynamic resolution state.
+    float fCurrentScale  = g_DynamicResolutionScalingData[0];
+    float fPreviousScale = g_DynamicResolutionScalingData[1];
+    float fSmoothedScale = g_DynamicResolutionScalingData[2];
+    float fScaleVelocity = g_DynamicResolutionScalingData[3];
 
-    // Extra hysteresis during fast camera motion to avoid flicker.
-    float hysteresis = 0.005f + 0.01f * saturate(cameraVelRad * 4.0f);
-    if (abs(error) < hysteresis) step = 0.0f;
 
-    float newScale = saturate(currentScale + step * (g_TargetFrameTimeMs / 16.667f));
-    newScale = clamp(newScale, g_MinScale, g_MaxScale);
+    // 1. Compute time-based scale suggestion.
 
-    // Snap to clean fractions to avoid aliasing at scale boundaries.
-    static const float snaps[] = { 0.50f, 0.577f, 0.667f, 0.707f, 0.75f, 0.816f, 0.866f, 1.0f };
-    float snapTolerance = 0.01f;
-    [unroll]
-    for (int s = 0; s < 8; ++s)
+    // Error: how far we are from target frame time.
+    float fTimeError = (g_TargetFrameTimeMs - fSmoothedGpuTimeMs) / g_TargetFrameTimeMs;
+    // Positive error => we are faster than target => can increase resolution.
+    // Negative error => we are slower than target => must decrease resolution.
+
+    // Map time error to a scale suggestion around current scale.
+    float fTimeScaleSuggestion = fCurrentScale * (1.0f + fTimeError);
+
+
+    // 2. Compute motion-based bias.
+
+    // Combine angular + linear motion into a simple motion metric.
+    float fMotionMetric = abs(fSmoothedAngularVelocity) + 0.5f * abs(fSmoothedLinearVelocity);
+
+    // Normalize motion metric into [0, 1] range (tune threshold as needed).
+    float fNormalizedMotion = saturate(fMotionMetric / 10.0f); // 10 is arbitrary, engine-tunable
+
+    // When motion is high, we can afford lower resolution.
+    float fMotionBias = lerp(1.0f, 0.8f, fNormalizedMotion); // at high motion, bias scale down to 80%
+
+    float fMotionScaleSuggestion = fTimeScaleSuggestion * fMotionBias;
+
+
+    // 3. Smooth and clamp the final scale
+
+    // Clamp to allowed range.
+    float fUnclampedScale = fMotionScaleSuggestion;
+    float fClampedScale   = clamp(fUnclampedScale, MinimumRenderScale, MaximumRenderScale);
+
+    // Limit per-frame change to avoid flicker.
+    float fLimitedScale = ClampScaleWithStep(fClampedScale, fCurrentScale, kMaxScaleStep);
+
+    // Deadzone: if change is tiny, keep previous to avoid micro flicker.
+    if (abs(fLimitedScale - fCurrentScale) < kMinScaleStep)
     {
-        if (abs(newScale - snaps[s]) < snapTolerance)
-        { newScale = snaps[s]; break; }
+      fLimitedScale = fCurrentScale;
     }
 
-    g_DynamicResData[0] = newScale;
+    // Exponential smoothing for final scale.
+    float fNewSmoothedScale = lerp(fSmoothedScale, fLimitedScale, kEmaAlphaTime);
+
+    // Approximate "velocity" of scale change (for future damping if needed)
+    float fNewScaleVelocity = fNewSmoothedScale - fSmoothedScale;
+
+
+    g_DynamicResolutionScalingData[1] = fCurrentScale;     // PreviousScale
+    g_DynamicResolutionScalingData[0] = fLimitedScale;     // CurrentScale
+    g_DynamicResolutionScalingData[2] = fNewSmoothedScale; // SmoothedScale
+    g_DynamicResolutionScalingData[3] = fNewScaleVelocity; // ScaleVelocity
 }

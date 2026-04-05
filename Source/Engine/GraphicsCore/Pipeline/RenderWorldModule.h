@@ -73,8 +73,8 @@ private:
       float             m_fMininimumRenderScale;
       float             m_fMaximumRenderScale;
       xiiRGBufferHandle m_hTimingInputBuffer;
-      xiiRGBufferHandle m_hVelocityInputBuffer;
-      xiiRGBufferHandle m_hResolutionOutputBuffer;
+      xiiRGBufferHandle m_hCameraVelocityInputBuffer;
+      xiiRGBufferHandle m_hResolutionScalingOutputBuffer;
     } m_DynamicResolutionData;
   };
 
@@ -89,9 +89,32 @@ private:
   {
     struct DynamicResolution
     {
-      xiiSharedPtr<xiiGALBuffer> m_pTimingInputBuffer;
-      xiiSharedPtr<xiiGALBuffer> m_pVelocityInputBuffer;
-      xiiSharedPtr<xiiGALBuffer> m_pResolutionOutputBuffer;
+      struct FrameTimingData
+      {
+        float m_fLastGpuTimeMs;     // g_FrameTimingData[0]
+        float m_fSmoothedGpuTimeMs; // g_FrameTimingData[1]
+        float m_fVariance;          // g_FrameTimingData[2]
+        float m_fIntegralTerm;      // g_FrameTimingData[3] (optional PID)
+      };
+      xiiSharedPtr<xiiGALBuffer> m_pTimingInputBuffer; ///< CPU-side staging buffer for GPU timing data readback.
+
+      struct CameraVelocityData
+      {
+        float m_fAngularVelocity;         // g_CameraVelocityData[0]
+        float m_fSmoothedAngularVelocity; // g_CameraVelocityData[1]
+        float m_fLinearVelocity;          // g_CameraVelocityData[2]
+        float m_fSmoothedLinearVelocity;  // g_CameraVelocityData[3]
+      };
+      xiiSharedPtr<xiiGALBuffer> m_pCameraVelocityInputBuffer; ///< CPU-side staging buffer for camera velocity data.
+
+      struct ResolutionScalingData
+      {
+        float m_fCurrentScale;  // g_DynamicResolutionScalingData[0]
+        float m_fPreviousScale; // g_DynamicResolutionScalingData[1]
+        float m_fSmoothedScale; // g_DynamicResolutionScalingData[2]
+        float m_fScaleVelocity; // g_DynamicResolutionScalingData[3]
+      };
+      xiiSharedPtr<xiiGALBuffer> m_pResolutionScalingBuffer; ///< GPU buffer storing the calculated dynamic resolution scale for the current frame, read back by the CPU for smoothing and applied in the next frame.
     } m_DynamicResolution;
   } m_PersistentFrameResources;
 
