@@ -6,14 +6,14 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper() :
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
+XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALCommandList* pCommandList, xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
   xiiGALMapHelper()
 {
   Map(pCommandList, pBuffer, mapType, mapFlags).IgnoreResult();
 }
 
 template <typename DataType>
-XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALCommandList& commandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
+XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper(xiiGALCommandList& commandList, xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags) :
   xiiGALMapHelper()
 {
   Map(&commandList, pBuffer, mapType, mapFlags).IgnoreResult();
@@ -51,7 +51,7 @@ XII_ALWAYS_INLINE xiiGALMapHelper<DataType>& xiiGALMapHelper<DataType>::operator
 }
 
 template <typename DataType>
-XII_FORCE_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiGALCommandList* pCommandList, xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
+XII_FORCE_INLINE xiiResult xiiGALMapHelper<DataType>::Map(xiiGALCommandList* pCommandList, xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
   XII_ASSERT_DEV(!m_pBuffer && !m_pMappedData && !m_pCommandList, "Buffer is already mapped or invalidated.");
 
