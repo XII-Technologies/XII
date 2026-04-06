@@ -89,6 +89,10 @@ void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph
   auto [pDynamicResolutionData, hDynamicResolutionPass] = graph.AddPass<PassData::DynamicResolutionPassData>("DynamicResolution", xiiGALCommandQueueFlags::Compute,
                                                                                                              xiiMakeDelegate(&xiiRenderWorldModule::SetupDynamicResolutionPass, this),
                                                                                                              xiiMakeDelegate(&xiiRenderWorldModule::ExecuteDynamicResolutionPass, this));
+
+  auto [pPerFrameBufferUploadData, hPerFrameBufferUploadPass] = graph.AddPass<PassData::PerFrameBufferUploadPassData>("PerFrameBufferUpload", xiiGALCommandQueueFlags::Graphics,
+                                                                                                                   xiiMakeDelegate(&xiiRenderWorldModule::SetupPerFrameBufferUploadPass, this),
+                                                                                                                   xiiMakeDelegate(&xiiRenderWorldModule::ExecutePerFrameBufferUploadPass, this));
 }
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
@@ -323,6 +327,9 @@ void xiiRenderWorldModule::SetupPerFrameBufferUploadPass(PassData::PerFrameBuffe
   data.m_hCameraConstantsOutputBuffer = builder.WriteBuffer(data.m_hCameraConstantsOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hGlobalConstantsOutputBuffer = builder.ImportBuffer("PerFrame_GlobalConstants", m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_hGlobalConstantsOutputBuffer = builder.WriteBuffer(data.m_hGlobalConstantsOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiRenderWorldModule::ExecutePerFrameBufferUploadPass(const PassData::PerFrameBufferUploadPassData& data, xiiRGPassContext& context)
