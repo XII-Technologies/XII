@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/Utilities/Stats.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
@@ -8,8 +9,6 @@
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
-
-#include <Foundation/Utilities/Stats.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALCommandListFlags, 1)
@@ -92,12 +91,11 @@ namespace
 xiiGALCommandList::xiiGALCommandList(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALDeviceObject(std::move(pDevice)), m_Description(creationDescription), m_bNativeMultiDrawSupported{m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_NativeMultiDraw != xiiGALDeviceFeatureState::Disabled}
 {
-  m_PushConstantStaging.SetCount(256U, 0U); // Default staging capacity.
 }
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
-void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box)
+void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& box) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(uiMipLevel < textureDescription.m_uiMipLevels, "Mip level ({}) is out of permitted range [0, {}].", uiMipLevel, textureDescription.m_uiMipLevels - 1);
@@ -169,7 +167,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 #endif
 }
 
-void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData)
+void xiiGALCommandList::ValidateTextureUpdateRegion(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& subresourceData) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(!subresourceData.m_pData.IsEmpty(), "CPU data pointer must not be empty.");
@@ -249,7 +247,7 @@ void xiiGALCommandList::Reset()
   }
 }
 
-void xiiGALCommandList::Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommandList)
+void xiiGALCommandList::Submit(xiiGALCommandList* pSecondaryCommandList)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(pSecondaryCommandList != nullptr, "xiiGALCommandList::Submit(): secondary list pointer is null.");
@@ -269,7 +267,7 @@ void xiiGALCommandList::Submit(xiiSharedPtr<xiiGALCommandList> pSecondaryCommand
   return SubmitPlatform(pSecondaryCommandList);
 }
 
-void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipelineState)
+void xiiGALCommandList::SetPipelineState(xiiGALPipelineState* pPipelineState)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetPipelineState must be called while recording.");
 
@@ -281,7 +279,7 @@ void xiiGALCommandList::SetPipelineState(xiiSharedPtr<xiiGALPipelineState> pPipe
 
   if (m_pPipelineState != nullptr)
   {
-    m_pPipelineResourceSignature = pPipelineState->GetDescription().m_pPipelineResourceSignature;
+    m_pPipelineResourceSignature = pPipelineState->GetDescription().m_pPipelineResourceSignature.Borrow();
   }
   else
   {
@@ -399,7 +397,7 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<const xiiRectU32> pRects)
   SetScissorRectsPlatform(m_ScissorRects);
 }
 
-void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
+void xiiGALCommandList::SetIndexBuffer(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset /*= 0U*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetIndexBuffer must be called while recording.");
 
@@ -426,7 +424,7 @@ void xiiGALCommandList::SetIndexBuffer(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, 
   SetIndexBufferPlatform(pIndexBuffer, m_uiIndexDataOffset, transitionMode);
 }
 
-void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets /*= {}*/, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
+void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets /*= {}*/, xiiBitflags<xiiGALSetVertexBufferFlags> flags /*= xiiGALSetVertexBufferFlags::None*/, xiiEnum<xiiGALStateTransitionMode> transitionMode /*= xiiGALStateTransitionMode::Transition*/)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetVertexBuffers must be called while recording.");
 
@@ -474,7 +472,7 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiS
   SetVertexBuffersPlatform(uiStartSlot, m_VertexStreams, flags, transitionMode);
 }
 
-void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer)
+void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetConstantBuffer must be called while recording.");
 
@@ -504,7 +502,7 @@ void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescriptio
   SetConstantBufferPlatform(bindingInformation, pConstantBuffer);
 }
 
-void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
+void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetShaderResourceBufferView must be called while recording.");
 
@@ -534,7 +532,7 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
   SetShaderResourceBufferViewPlatform(bindingInformation, pBufferView);
 }
 
-void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
+void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetShaderResourceTextureView must be called while recording.");
 
@@ -564,7 +562,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
   SetShaderResourceTextureViewPlatform(bindingInformation, pTextureView);
 }
 
-void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView)
+void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetUnorderedAccessBufferView must be called while recording.");
 
@@ -594,7 +592,7 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
   SetUnorderedAccessBufferViewPlatform(bindingInformation, pBufferView);
 }
 
-void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView)
+void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetUnorderedAccessTextureView must be called while recording.");
 
@@ -624,7 +622,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
   SetUnorderedAccessTextureViewPlatform(bindingInformation, pTextureView);
 }
 
-void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler)
+void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetSampler must be called while recording.");
 
@@ -653,7 +651,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   SetSamplerPlatform(bindingInformation, pSampler);
 }
 
-void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS)
+void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetAccelerationStructure must be called while recording.");
 
@@ -681,7 +679,7 @@ void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDes
   SetAccelerationStructurePlatform(bindingInformation, pTopLevelAS);
 }
 
-void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBuffer> pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiGALBuffer* pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetConstantBuffer requires a pipeline state to be set.");
@@ -697,7 +695,7 @@ void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& s
   }
 }
 
-void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBusfferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetShaderResourceBufferView requires a pipeline state to be set.");
@@ -708,12 +706,12 @@ void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashe
   {
     if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferSRV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetShaderResourceBufferView(resource, pBusfferView);
+      return SetShaderResourceBufferView(resource, pBufferView);
     }
   }
 }
 
-void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetShaderResourceTextureView requires a pipeline state to be set.");
@@ -729,7 +727,7 @@ void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHash
   }
 }
 
-void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALBufferView> pBufferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHashedString& sResourceName, xiiGALBufferView* pBufferView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetUnorderedAccessBufferView requires a pipeline state to be set.");
@@ -745,7 +743,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHash
   }
 }
 
-void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTextureView> pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHashedString& sResourceName, xiiGALTextureView* pTextureView, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetUnorderedAccessTextureView requires a pipeline state to be set.");
@@ -761,7 +759,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHas
   }
 }
 
-void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALSampler> pSampler, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiGALSampler* pSampler, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetSampler requires a pipeline state to be set.");
@@ -777,7 +775,7 @@ void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourc
   }
 }
 
-void xiiGALCommandList::ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiSharedPtr<xiiGALTopLevelAS> pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
+void xiiGALCommandList::ResolveAndSetAccelerationStructure(const xiiTempHashedString& sResourceName, xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetAccelerationStructure arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetAccelerationStructure requires a pipeline state to be set.");
@@ -802,7 +800,7 @@ xiiResult xiiGALCommandList::CommitShaderResources(xiiEnum<xiiGALStateTransition
   return CommitShaderResourcesPlatform(mode);
 }
 
-void xiiGALCommandList::ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor)
+void xiiGALCommandList::ClearRenderTargetView(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "ClearRenderTargetView must be called while recording.");
 
@@ -820,7 +818,7 @@ void xiiGALCommandList::ClearRenderTargetView(xiiSharedPtr<xiiGALTextureView> pR
   ClearRenderTargetViewPlatform(pRenderTargetView, clearColor);
 }
 
-void xiiGALCommandList::ClearDepthStencilView(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "ClearDepthStencilView must be called while recording.");
 
@@ -929,7 +927,7 @@ void xiiGALCommandList::Draw(const xiiGALDrawDescription& description)
 
   if (m_pPipelineState)
   {
-    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = xiiDynamicCast<xiiGALGraphicsPipelineState*>(m_pPipelineState)->GetDescription();
 
     m_CommandListStatistics.m_PrimitiveCounters[pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology] += GetPrimitiveCount(pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology, description.m_uiVertexCount) * description.m_uiInstanceCount;
   }
@@ -962,7 +960,7 @@ void xiiGALCommandList::DrawIndexed(const xiiGALDrawIndexedDescription& descript
 
   if (m_pPipelineState)
   {
-    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = xiiDynamicCast<xiiGALGraphicsPipelineState*>(m_pPipelineState)->GetDescription();
 
     m_CommandListStatistics.m_PrimitiveCounters[pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology] += GetPrimitiveCount(pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology, description.m_uiIndexCount) * description.m_uiInstanceCount;
   }
@@ -1155,7 +1153,7 @@ void xiiGALCommandList::MultiDraw(const xiiGALMultiDrawDescription& description)
 
   if (m_pPipelineState)
   {
-    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = xiiDynamicCast<xiiGALGraphicsPipelineState*>(m_pPipelineState)->GetDescription();
 
     for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
     {
@@ -1194,7 +1192,7 @@ void xiiGALCommandList::MultiDrawIndexed(const xiiGALMultiDrawIndexedDescription
 
   if (m_pPipelineState)
   {
-    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = m_pPipelineState.Downcast<xiiGALGraphicsPipelineState>()->GetDescription();
+    const xiiGALGraphicsPipelineStateCreationDescription& pipelineDescription = xiiDynamicCast<xiiGALGraphicsPipelineState*>(m_pPipelineState)->GetDescription();
 
     for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
     {
@@ -1353,7 +1351,7 @@ void xiiGALCommandList::UpdateSBT(const xiiGALUpdateSBTDescription& description)
   XII_ASSERT_DEV(m_pRenderPass == nullptr, "UpdateSBT command arguments are invalid. UpdateSBT must be performed outside of render pass.");
   XII_ASSERT_DEV(description.m_pShaderBindingTable != nullptr, "UpdateSBT command arguments are invalid. Shader binding table buffer must not be null.");
 
-  xiiSharedPtr<xiiGALPipelineState> pPipelineState = description.m_pPipelineState;
+  xiiGALPipelineState* pPipelineState = description.m_pPipelineState;
   if (pPipelineState == nullptr)
   {
     pPipelineState = m_pPipelineState;
@@ -1492,14 +1490,14 @@ void xiiGALCommandList::WriteTLASCompactedSize(const xiiGALWriteTLASCompactedSiz
   WriteTLASCompactedSizePlatform(description);
 }
 
-void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
+void xiiGALCommandList::BeginQuery(xiiGALQuery* pQuery)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "BeginQuery must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(pQuery != nullptr, "BeginQuery must not be called on an invalidated query.");
 
-  const auto& queryDescription = pQuery->GetDescription();
+  const xiiGALQueryCreationDescription& queryDescription = pQuery->GetDescription();
 
   XII_ASSERT_DEV(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics), "BeginQuery command arguments are invalid. Invalid command queue of query type.");
@@ -1510,14 +1508,14 @@ void xiiGALCommandList::BeginQuery(xiiSharedPtr<xiiGALQuery> pQuery)
   BeginQueryPlatform(pQuery);
 }
 
-void xiiGALCommandList::EndQuery(xiiSharedPtr<xiiGALQuery> pQuery)
+void xiiGALCommandList::EndQuery(xiiGALQuery* pQuery)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "EndQuery must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(pQuery != nullptr, "EndQuery must not be called on an invalidated query.");
 
-  const auto& queryDescription = pQuery->GetDescription();
+  const xiiGALQueryCreationDescription& queryDescription = pQuery->GetDescription();
 
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(queryDescription.m_Type == xiiGALQueryType::Duration ? xiiGALCommandQueueFlags::Transfer : xiiGALCommandQueueFlags::Graphics), "EndQuery command arguments are invalid. Invalid command queue of query type.");
 #endif
@@ -1570,8 +1568,8 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
         }
       };
 
-      xiiGALResourceDimension::Enum previousDimension = VerifySparseAliasedResource(barrier.m_pPreviousResource.Borrow());
-      xiiGALResourceDimension::Enum currentDimension  = VerifySparseAliasedResource(barrier.m_pResource.Borrow());
+      xiiGALResourceDimension::Enum previousDimension = VerifySparseAliasedResource(barrier.m_pPreviousResource);
+      xiiGALResourceDimension::Enum currentDimension  = VerifySparseAliasedResource(barrier.m_pResource);
       if (previousDimension != xiiGALResourceDimension::Undefined && currentDimension != xiiGALResourceDimension::Undefined)
       {
         XII_ASSERT_DEV((previousDimension == xiiGALResourceDimension::Buffer) == (currentDimension == xiiGALResourceDimension::Buffer), "In pResourceBarriers[{}], both previous- and current-resources must either be buffers or textures. Sparse aliasing between textures and buffers are not permitted.", uiBarrierIndex);
@@ -1588,7 +1586,7 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
 
       xiiBitflags<xiiGALResourceStateFlags> previousState = xiiGALResourceStateFlags::Unknown;
 
-      if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(barrier.m_pResource.Borrow()))
+      if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(barrier.m_pResource))
       {
         const xiiGALTextureCreationDescription& textureDescription = pTexture->GetDescription();
 
@@ -1609,7 +1607,7 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
           XII_ASSERT_DEV(barrier.m_uiFirstArraySlice == 0 && (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_MIP_LEVELS || barrier.m_uiArraySliceCount == textureDescription.GetArraySize()), "Failed to transition texture '{}' in pResourceBarriers[{}], only whole resources can be transitioned on this device.", pTexture->GetDebugName(), uiBarrierIndex);
         }
       }
-      else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(barrier.m_pResource.Borrow()))
+      else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(barrier.m_pResource))
       {
         previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pBuffer->GetResourceState();
 
@@ -1617,7 +1615,7 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
         XII_ASSERT_DEV(VerifyResourceStates(previousState, false), "pResourceBarriers[{}].OldState is invalid for buffer '{}'.", uiBarrierIndex, pBuffer->GetDebugName());
         XII_ASSERT_DEV(VerifyResourceStates(barrier.m_NewState, false), "pResourceBarriers[{}].NewState is invalid for buffer '{}'.", uiBarrierIndex, pBuffer->GetDebugName());
       }
-      else if (xiiGALBottomLevelAS* pBottomLevelAS = xiiDynamicCast<xiiGALBottomLevelAS*>(barrier.m_pResource.Borrow()))
+      else if (xiiGALBottomLevelAS* pBottomLevelAS = xiiDynamicCast<xiiGALBottomLevelAS*>(barrier.m_pResource))
       {
         previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pBottomLevelAS->GetResourceState();
 
@@ -1625,7 +1623,7 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
         XII_ASSERT_DEV(barrier.m_NewState == xiiGALResourceStateFlags::BuildASRead || barrier.m_NewState == xiiGALResourceStateFlags::BuildASWrite || barrier.m_NewState == xiiGALResourceStateFlags::RayTracing, "pResourceBarriers[{}].NewState for BLAS '{}' is invalid.", uiBarrierIndex, pBottomLevelAS->GetDebugName());
         XII_ASSERT_DEV(barrier.m_TransitionType == xiiGALStateTransitionType::Immediate, "pResourceBarriers[{}].TransitionType for BLAS '{}' is invalid. xiiGALStateTransitionType::Immediate must be used as split barriers are not supported for BLAS.", uiBarrierIndex, pBottomLevelAS->GetDebugName());
       }
-      else if (xiiGALTopLevelAS* pTopLevelAS = xiiDynamicCast<xiiGALTopLevelAS*>(barrier.m_pResource.Borrow()))
+      else if (xiiGALTopLevelAS* pTopLevelAS = xiiDynamicCast<xiiGALTopLevelAS*>(barrier.m_pResource))
       {
         previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pTopLevelAS->GetResourceState();
 
@@ -1665,7 +1663,7 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
   TransitionResourceStatesPlatform(pResourceBarriers);
 }
 
-void xiiGALCommandList::EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+void xiiGALCommandList::EnqueueSignal(xiiGALFence* pFence, xiiUInt64 uiValue)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "EnqueueSignal must be called while recording.");
   XII_ASSERT_DEV(pFence != nullptr, "The given fence to signal must not be null.");
@@ -1673,7 +1671,7 @@ void xiiGALCommandList::EnqueueSignal(xiiSharedPtr<xiiGALFence> pFence, xiiUInt6
   EnqueueSignalPlatform(pFence, uiValue);
 }
 
-void xiiGALCommandList::DeviceWaitForFence(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue)
+void xiiGALCommandList::DeviceWaitForFence(xiiGALFence* pFence, xiiUInt64 uiValue)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "DeviceWaitForFence must be called while recording.");
   XII_ASSERT_DEV(pFence != nullptr, "The given fence to wait for must not be null.");
@@ -1716,7 +1714,7 @@ void xiiGALCommandList::InsertDebugLabel(xiiStringView sName, const xiiColor& co
   InsertDebugLabelPlatform(sName, color);
 }
 
-void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
+void xiiGALCommandList::UpdateBuffer(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UpdateBuffer must be called while recording.");
 
@@ -1748,7 +1746,7 @@ void xiiGALCommandList::UpdateBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt
   UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
 }
 
-void xiiGALCommandList::CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer)
+void xiiGALCommandList::CopyBuffer(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyBuffer must be called while recording.");
 
@@ -1769,7 +1767,7 @@ void xiiGALCommandList::CopyBuffer(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xii
   CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
 
-void xiiGALCommandList::CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
+void xiiGALCommandList::CopyBufferRegion(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyBufferRegion must be called while recording.");
 
@@ -1791,7 +1789,7 @@ void xiiGALCommandList::CopyBufferRegion(xiiSharedPtr<xiiGALBuffer> pSourceBuffe
   CopyBufferRegionPlatform(pSourceBuffer, uiSourceOffset, pDestinationBuffer, uiDestinationOffset, uiSize);
 }
 
-xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
+xiiResult xiiGALCommandList::MapBuffer(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "MapBuffer must be called while recording.");
 
@@ -1858,7 +1856,7 @@ xiiResult xiiGALCommandList::MapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEn
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandList::UnmapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType)
+xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UnmapBuffer must be called while recording.");
 
@@ -1873,7 +1871,7 @@ xiiResult xiiGALCommandList::UnmapBuffer(xiiSharedPtr<xiiGALBuffer> pBuffer, xii
   return UnmapBufferPlatform(pBuffer, mapType);
 }
 
-void xiiGALCommandList::UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+void xiiGALCommandList::UpdateTexture(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UpdateTexture must be called while recording.");
 
@@ -1890,7 +1888,7 @@ void xiiGALCommandList::UpdateTexture(xiiSharedPtr<xiiGALTexture> pTexture, cons
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
-void xiiGALCommandList::CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture)
+void xiiGALCommandList::CopyTexture(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyTexture must be called while recording.");
 
@@ -1912,7 +1910,7 @@ void xiiGALCommandList::CopyTexture(xiiSharedPtr<xiiGALTexture> pSourceTexture, 
   CopyTexturePlatform(pSourceTexture, pDestinationTexture);
 }
 
-void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
+void xiiGALCommandList::CopyTextureRegion(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "CopyTextureRegion must be called while recording.");
 
@@ -1934,7 +1932,7 @@ void xiiGALCommandList::CopyTextureRegion(xiiSharedPtr<xiiGALTexture> pSourceTex
   CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
 
-void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
+void xiiGALCommandList::ResolveTextureSubResource(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "ResolveTextureSubresource must be called while recording.");
 
@@ -1980,7 +1978,7 @@ void xiiGALCommandList::ResolveTextureSubResource(xiiSharedPtr<xiiGALTexture> pS
   ResolveTextureSubResourcePlatform(pSourceTexture, pDestinationTexture, description);
 }
 
-void xiiGALCommandList::GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureView)
+void xiiGALCommandList::GenerateMips(xiiGALTextureView* pTextureView)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "GenerateMips must be called while recording.");
 
@@ -2000,7 +1998,7 @@ void xiiGALCommandList::GenerateMips(xiiSharedPtr<xiiGALTextureView> pTextureVie
   GenerateMipsPlatform(pTextureView);
 }
 
-xiiResult xiiGALCommandList::MapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "MapTextureSubresource must be called while recording.");
 
@@ -2031,7 +2029,7 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiSharedPtr<xiiGALTexture> p
   return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }
 
-xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData)
+xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "UnmapTextureSubresource must be called while recording.");
 
@@ -2223,7 +2221,7 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
   return true;
 }
 
-void xiiGALCommandList::VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+void xiiGALCommandList::VerifyBufferState(const xiiGALBuffer* pBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName) const
 {
   if (pBuffer == nullptr)
     return;
@@ -2234,7 +2232,7 @@ void xiiGALCommandList::VerifyBufferState(xiiGALBuffer* pBuffer, xiiBitflags<xii
   }
 }
 
-void xiiGALCommandList::VerifyTextureState(xiiGALTexture* pTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+void xiiGALCommandList::VerifyTextureState(const xiiGALTexture* pTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName) const
 {
   if (pTexture == nullptr)
     return;
@@ -2245,7 +2243,7 @@ void xiiGALCommandList::VerifyTextureState(xiiGALTexture* pTexture, xiiBitflags<
   }
 }
 
-void xiiGALCommandList::VerifyBottomLevelASState(xiiGALBottomLevelAS* pBottomLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+void xiiGALCommandList::VerifyBottomLevelASState(const xiiGALBottomLevelAS* pBottomLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName) const
 {
   if (pBottomLevelAS == nullptr)
     return;
@@ -2256,7 +2254,7 @@ void xiiGALCommandList::VerifyBottomLevelASState(xiiGALBottomLevelAS* pBottomLev
   }
 }
 
-void xiiGALCommandList::VerifyTopLevelASState(xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName)
+void xiiGALCommandList::VerifyTopLevelASState(const xiiGALTopLevelAS* pTopLevelAS, xiiBitflags<xiiGALResourceStateFlags> requiredState, const char* szOperationName) const
 {
   if (pTopLevelAS == nullptr)
     return;
