@@ -69,6 +69,7 @@ private:
       xiiRGBufferHandle m_hTimingInputBuffer;
       xiiRGBufferHandle m_hCameraVelocityInputBuffer;
       xiiRGBufferHandle m_hResolutionScalingOutputBuffer;
+      xiiRGBufferHandle m_hPassConstantsBuffer;
     } m_DynamicResolutionData;
 
     struct PerFrameBufferUploadPassData
@@ -118,7 +119,6 @@ private:
 
       xiiSharedPtr<xiiGALComputePipelineState> m_pComputePipeline;
       xiiShaderPermutationResourceHandle       m_hShaderPermutation;
-      xiiSharedPtr<xiiGALBuffer>               m_pPassConstantsBuffer;
     } m_DynamicResolution;
 
     struct PerFrameBufferUpload

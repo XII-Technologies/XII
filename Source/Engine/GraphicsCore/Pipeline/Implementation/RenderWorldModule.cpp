@@ -171,6 +171,14 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
+  xiiGALBufferCreationDescription bufferDescription;
+  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+  bufferDescription.m_uiElementByteStride = 0U;
+  bufferDescription.m_uiSize              = sizeof(xiiDynamicResolutionPassData);
+  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  data.m_hPassConstantsBuffer             = builder.DeclareBuffer("DynamicResolution_PassConstants", bufferDescription);
+
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer)
   {
     xiiGALBufferCreationDescription description;
@@ -240,11 +248,6 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     XII_ASSERT_DEV(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline, "Failed to create compute pipeline for dynamic resolution pass.");
   }
 
-  if (!m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer)
-  {
-    m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiDynamicResolutionPassData), XII_PP_STRINGIFY(xiiDynamicResolutionPassData));
-  }
-
   builder.SetPassSideEffects(true); // This pass writes to a UAV that may not be read by any other pass, so we need to ensure it runs and isn't culled.
   builder.SetPassAllowMerge(false); // Do not merge with other passes since this is a logical "start" of the frame and we want it to be a distinct point in GPU profiling.
 }
@@ -256,7 +259,7 @@ void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicR
   cmd.BeginDebugGroup("Dynamic Resolution Scaling");
   {
     {
-      xiiGALMapHelper<xiiDynamicResolutionPassData> pDynamicResolutionConstants(cmd, m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      xiiGALMapHelper<xiiDynamicResolutionPassData> pDynamicResolutionConstants(cmd, context.GetBuffer(data.m_hTimingInputBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
       pDynamicResolutionConstants->FrameDeltaTimeMs     = data.m_fFrameDeltaTimeMs;
       pDynamicResolutionConstants->TargetFrameTimeMs    = data.m_fTargetFrameTimeMs;
@@ -266,7 +269,7 @@ void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicR
 
     cmd.SetPipelineState(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline);
 
-    cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiDynamicResolutionPassData), m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiDynamicResolutionPassData), context.GetBuffer(data.m_hPassConstantsBuffer), xiiGALShaderType::Compute);
 
     if (xiiGALBuffer* pTiming = context.GetBuffer(data.m_hTimingInputBuffer))
     {
