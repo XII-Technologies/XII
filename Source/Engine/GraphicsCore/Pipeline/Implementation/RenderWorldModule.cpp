@@ -2,6 +2,7 @@
 
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/World/World.h>
+#include <Foundation/Configuration/CVar.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -16,6 +17,10 @@
 
 #include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionConstants.h>
 #include <Shaders/Pipeline/Passes/PerFrameBufferUpload/PerFrameConstants.h>
+
+xiiCVarFloat cvar_RenderingDynamicResolutionTargetFrameTimeMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "The target frame time in milliseconds for dynamic resolution to aim for. The system will adjust the render resolution each frame to try to match this target time as closely as possible.");
+xiiCVarFloat cvar_RenderingDynamicResolutionMinimumRenderScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "The minimum render scale that dynamic resolution can use. This is a multiplier for the render resolution relative to the native resolution. For example, a value of 0.5 means the render resolution can go down to 50% of the native resolution.");
+xiiCVarFloat cvar_RenderingDynamicResolutionMaximumRenderScale("Rendering.DynamicResolution.MaximumRenderScale", 1.0f, xiiCVarFlags::Default, "The maximum render scale that dynamic resolution can use. This is a multiplier for the render resolution relative to the native resolution. For example, a value of 1.0 means the render resolution can go up to 100% of the native resolution.");
 
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
@@ -203,9 +208,9 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
   }
 
   data.m_fFrameDeltaTimeMs     = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
-  data.m_fTargetFrameTimeMs    = 16.67f; // Target 60 FPS, this would be adjustable and possibly dynamic based on performance metrics.
-  data.m_fMininimumRenderScale = 0.5f;   // Don't go below 50% resolution to maintain some level of visual fidelity.
-  data.m_fMaximumRenderScale   = 1.0f;   // Don't upscale above native resolution to avoid blurriness.
+  data.m_fTargetFrameTimeMs    = cvar_RenderingDynamicResolutionTargetFrameTimeMs;
+  data.m_fMininimumRenderScale = cvar_RenderingDynamicResolutionMinimumRenderScale;
+  data.m_fMaximumRenderScale   = cvar_RenderingDynamicResolutionMaximumRenderScale;
 
   data.m_hTimingInputBuffer             = builder.ImportBuffer("DynamicResolution_Timing", m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hTimingInputBuffer             = builder.ReadBuffer(data.m_hTimingInputBuffer, xiiGALResourceStateFlags::ShaderResource);
