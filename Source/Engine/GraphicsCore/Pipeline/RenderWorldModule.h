@@ -60,14 +60,6 @@ private:
 private:
   struct PassData
   {
-    struct FrameSetupPassData
-    {
-      float                       m_fDeltaTime;
-      float                       m_fGlobalTime;
-      float                       m_fWorldTime;
-      xiiEnum<xiiExposureControl> m_ExposureControl;
-    } m_FrameSetupData;
-
     struct DynamicResolutionPassData
     {
       float             m_fFrameDeltaTimeMs;
@@ -85,9 +77,6 @@ private:
       xiiRGBufferHandle m_hGlobalConstantsOutputBuffer;
     } m_PerFrameBufferUploadData;
   };
-
-  void SetupFrameSetupPass(PassData::FrameSetupPassData& data, xiiRGBuilder& builder);
-  void ExecuteFrameSetupPass(const PassData::FrameSetupPassData& data, xiiRGPassContext& context);
 
   void SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder);
   void ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context);

@@ -81,10 +81,6 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
 
 void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  auto [pFrameSetupData, hFrameSetupPass] = graph.AddPass<PassData::FrameSetupPassData>("FrameSetup", xiiGALCommandQueueFlags::Graphics,
-                                                                                        xiiMakeDelegate(&xiiRenderWorldModule::SetupFrameSetupPass, this),
-                                                                                        xiiMakeDelegate(&xiiRenderWorldModule::ExecuteFrameSetupPass, this));
-
   auto [pDynamicResolutionData, hDynamicResolutionPass] = graph.AddPass<PassData::DynamicResolutionPassData>("DynamicResolution", xiiGALCommandQueueFlags::Compute,
                                                                                                              xiiMakeDelegate(&xiiRenderWorldModule::SetupDynamicResolutionPass, this),
                                                                                                              xiiMakeDelegate(&xiiRenderWorldModule::ExecuteDynamicResolutionPass, this));
@@ -164,26 +160,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", pView->GetName());
     }
   }
-}
-
-void xiiRenderWorldModule::SetupFrameSetupPass(PassData::FrameSetupPassData& data, xiiRGBuilder& builder)
-{
-  // No resources for this pass, it just updates some global constants.
-  // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
-  constexpr double fWrapAround = 1000.0;
-  data.m_fDeltaTime            = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds());
-  data.m_fGlobalTime           = static_cast<float>(xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), fWrapAround));
-  data.m_fWorldTime            = static_cast<float>(xiiMath::Mod(GetWorld()->GetClock().GetAccumulatedTime().GetSeconds(), fWrapAround));
-  data.m_ExposureControl       = xiiExposureControl::EyeAdaptationTemporal;
-
-  builder.SetPassSideEffects(true); // Ensures this pass runs even if no resources are read/written, since it updates global time constants used by other passes.
-  builder.SetPassAllowMerge(false); // Do not merge with other passes since this is a logical "start" of the frame and we want it to be a distinct point in GPU profiling.
-}
-
-void xiiRenderWorldModule::ExecuteFrameSetupPass(const PassData::FrameSetupPassData& data, xiiRGPassContext& context)
-{
-  XII_IGNORE_UNUSED(data);
-  XII_IGNORE_UNUSED(context);
 }
 
 void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder)
