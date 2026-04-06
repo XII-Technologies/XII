@@ -78,6 +78,12 @@ private:
       xiiRGBufferHandle m_hCameraVelocityInputBuffer;
       xiiRGBufferHandle m_hResolutionScalingOutputBuffer;
     } m_DynamicResolutionData;
+
+    struct PerFrameBufferUploadPassData
+    {
+      xiiRGBufferHandle m_hCameraConstantsOutputBuffer;
+      xiiRGBufferHandle m_hGlobalConstantsOutputBuffer;
+    } m_PerFrameBufferUploadData;
   };
 
   void SetupFrameSetupPass(PassData::FrameSetupPassData& data, xiiRGBuilder& builder);
@@ -85,6 +91,9 @@ private:
 
   void SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder);
   void ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context);
+
+  void SetupPerFrameBufferUploadPass(PassData::PerFrameBufferUploadPassData& data, xiiRGBuilder& builder);
+  void ExecutePerFrameBufferUploadPass(const PassData::PerFrameBufferUploadPassData& data, xiiRGPassContext& context);
 
 private:
   struct PersistentFrameResources
@@ -122,6 +131,12 @@ private:
       xiiShaderPermutationResourceHandle       m_hShaderPermutation;
       xiiSharedPtr<xiiGALBuffer>               m_pPassConstantsBuffer;
     } m_DynamicResolution;
+
+    struct PerFrameBufferUpload
+    {
+      xiiSharedPtr<xiiGALBuffer> m_pCameraConstantsBuffer;
+      xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
+    } m_PerFrameBufferUpload;
   } m_PersistentFrameResources;
 
   xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;

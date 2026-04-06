@@ -13,7 +13,9 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+
 #include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionConstants.h>
+#include <Shaders/Pipeline/Passes/PerFrameBufferUpload/PerFrameConstants.h>
 
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
@@ -219,7 +221,7 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     description.m_uiSize              = description.m_uiElementByteStride;
     description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
     description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Default;
+    description.m_Usage               = xiiGALResourceUsage::Mutable;
 
     m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer = pDevice->CreateBuffer(description);
   }
@@ -254,12 +256,16 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     description.m_pComputeShader                                      = pComputeShader;
     description.m_pPipelineResourceSignature                          = pSignature;
     m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline = xiiGALPipelineCache::GetPipeline(description);
+    XII_ASSERT_DEV(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline, "Failed to create compute pipeline for dynamic resolution pass.");
   }
 
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer)
   {
     m_PersistentFrameResources.m_DynamicResolution.m_pPassConstantsBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(pDevice, sizeof(xiiDynamicResolutionPassData), XII_PP_STRINGIFY(xiiDynamicResolutionPassData));
   }
+
+  builder.SetPassSideEffects(true); // This pass writes to a UAV that may not be read by any other pass, so we need to ensure it runs and isn't culled.
+  builder.SetPassAllowMerge(false); // Do not merge with other passes since this is a logical "start" of the frame and we want it to be a distinct point in GPU profiling.
 }
 
 void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context)
@@ -297,6 +303,79 @@ void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicR
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
     cmd.DispatchCompute({1U, 1U, 1U}); // Only one threadgroup is needed since this shader writes a single scaling factor for the whole frame.
+  }
+  cmd.EndDebugGroup();
+}
+
+void xiiRenderWorldModule::SetupPerFrameBufferUploadPass(PassData::PerFrameBufferUploadPassData& data, xiiRGBuilder& builder)
+{
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  if (!m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = sizeof(xiiPerFrameGlobalUploadData);
+    description.m_uiSize              = description.m_uiElementByteStride;
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Mutable;
+
+    m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer = pDevice->CreateBuffer(description);
+  }
+
+  if (!m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride = sizeof(xiiPerFrameCameraUploadData);
+    description.m_uiSize              = description.m_uiElementByteStride;
+    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    description.m_Mode                = xiiGALBufferMode::Structured;
+    description.m_Usage               = xiiGALResourceUsage::Mutable;
+
+    m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer = pDevice->CreateBuffer(description);
+  }
+
+  data.m_hCameraConstantsOutputBuffer = builder.ImportBuffer("PerFrame_CameraConstants", m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hCameraConstantsOutputBuffer = builder.WriteBuffer(data.m_hCameraConstantsOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hGlobalConstantsOutputBuffer = builder.ImportBuffer("PerFrame_GlobalConstants", m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hGlobalConstantsOutputBuffer = builder.WriteBuffer(data.m_hGlobalConstantsOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+}
+
+void xiiRenderWorldModule::ExecutePerFrameBufferUploadPass(const PassData::PerFrameBufferUploadPassData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("Per-Frame Buffer Upload");
+  {
+    // This pass is responsible for uploading per-frame constants that are used by multiple passes throughout the frame, such as camera matrices, light data, and global parameters.
+    // The data is gathered and prepared on the CPU during the Execute phase of this pass, then written to GPU buffers that are accessible to other passes.
+    {
+      xiiGALMapHelper<xiiPerFrameGlobalUploadData> pGlobalConstants(cmd, m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
+      constexpr double fWrapAround        = 1000.0;
+      pGlobalConstants->FrameIndex        = context.GetBlackboard().GetRef<xiiUInt32>("FrameIndex");
+      pGlobalConstants->DeltaTime         = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds());
+      pGlobalConstants->GlobalTime        = static_cast<float>(xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), fWrapAround));
+      pGlobalConstants->WorldTime         = static_cast<float>(xiiMath::Mod(GetWorld()->GetClock().GetAccumulatedTime().GetSeconds(), fWrapAround));
+      pGlobalConstants->RenderScaleJitter = xiiVec4::MakeZero(); // TODO.
+    }
+    {
+      xiiGALMapHelper<xiiPerFrameCameraUploadData> pCameraConstants(cmd, m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      const xiiViewData& viewData = context.GetView()->GetData();
+      const xiiCamera*   pCamera  = context.GetView()->GetCamera();
+
+      pCameraConstants->ViewProjectionMatrix[0]       = viewData.m_ViewProjectionMatrix[0];
+      pCameraConstants->InverseProjectionMatrix[0]    = viewData.m_InverseProjectionMatrix[0];
+      pCameraConstants->CameraDirectionAndFarPlane[0] = xiiVec4(pCamera->GetDirForwards(xiiCameraEye::Left), pCamera->GetFarPlane());
+      pCameraConstants->CameraPositionAndNearPlane[0] = xiiVec4(pCamera->GetPosition(xiiCameraEye::Left), pCamera->GetNearPlane());
+
+      pCameraConstants->ViewProjectionMatrix[1]       = viewData.m_ViewProjectionMatrix[1];
+      pCameraConstants->InverseProjectionMatrix[1]    = viewData.m_InverseProjectionMatrix[1];
+      pCameraConstants->CameraDirectionAndFarPlane[1] = xiiVec4(pCamera->GetDirForwards(xiiCameraEye::Right), pCamera->GetFarPlane());
+      pCameraConstants->CameraPositionAndNearPlane[1] = xiiVec4(pCamera->GetPosition(xiiCameraEye::Right), pCamera->GetNearPlane());
+    }
   }
   cmd.EndDebugGroup();
 }

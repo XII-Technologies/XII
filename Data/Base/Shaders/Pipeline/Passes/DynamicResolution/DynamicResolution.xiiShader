@@ -5,34 +5,34 @@ ALL
 
 #include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionConstants.h>
 
-// GPU timing history
+// GPU timing history.
 // [0] = LastGpuTimeMs
 // [1] = SmoothedGpuTimeMs
 // [2] = Variance (optional, can be 0)
 // [3] = IntegralTerm (optional, can be 0)
 StructuredBuffer<float> g_FrameTimingData;
 
-// Camera motion history
+// Camera motion history.
 // [0] = AngularVelocity
 // [1] = SmoothedAngularVelocity
 // [2] = LinearVelocity
 // [3] = SmoothedLinearVelocity
 StructuredBuffer<float> g_CameraVelocityData;
 
-// Dynamic resolution state
+// Dynamic resolution state.
 // [0] = CurrentScale
 // [1] = PreviousScale
 // [2] = SmoothedScale
 // [3] = ScaleVelocity
 RWStructuredBuffer<float> g_DynamicResolutionScalingData;
 
-// Tunables
+// Tunables.
 static const float kEmaAlphaTime   = 0.15f;  // How fast we react to time changes.
 static const float kEmaAlphaMotion = 0.20f;  // How much motion influences scale.
 static const float kMaxScaleStep   = 0.10f;  // Max scale change per frame.
 static const float kMinScaleStep   = 0.01f;  // Deadzone to avoid micro flicker.
 
-/// \brief Simple helper to clamp and limit step size
+/// \brief Simple helper to clamp and limit step size.
 float ClampScaleWithStep(float fDesiredValue, float fCurrentValue, float fMaxStep)
 {
   float fDelta = fDesiredValue - fCurrentValue;
