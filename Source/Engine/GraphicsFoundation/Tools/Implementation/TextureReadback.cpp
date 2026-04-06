@@ -10,8 +10,8 @@
 #include <GraphicsFoundation/Tools/TextureReadback.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-xiiGALTextureReadback::xiiGALTextureReadback(xiiSharedPtr<xiiGALDevice> pDevice) :
-  m_pDevice(std::move(pDevice))
+xiiGALTextureReadback::xiiGALTextureReadback(xiiGALDevice* pDevice) :
+  m_pDevice(pDevice)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Invalid device provided.");
 
@@ -23,47 +23,15 @@ xiiGALTextureReadback::xiiGALTextureReadback(xiiSharedPtr<xiiGALDevice> pDevice)
 
 xiiGALTextureReadback::~xiiGALTextureReadback() = default;
 
-xiiSharedPtr<xiiGALTexture> xiiGALTextureReadback::AcquireStagingTexture(const xiiGALTextureCreationDescription& description)
-{
-  xiiSharedPtr<xiiGALTexture> pStagingTexture;
-
-  // Try pool first
-  {
-    XII_LOCK(m_PoolMutex);
-
-    // Find last matching to reduce moves; pool is small
-    for (xiiUInt32 i = m_StagingPool.GetCount(); i > 0; --i)
-    {
-      xiiSharedPtr<xiiGALTexture>& pStagingCandidate = m_StagingPool[i - 1];
-
-      if (pStagingCandidate->GetDescription() == description)
-      {
-        pStagingTexture = std::move(pStagingCandidate);
-        m_StagingPool.RemoveAtAndSwap(i - 1);
-        break;
-      }
-    }
-  }
-
-  if (!pStagingTexture)
-  {
-    pStagingTexture = m_pDevice->CreateTexture(description);
-
-    pStagingTexture->SetDebugName("Texture Readback Staging");
-  }
-
-  return pStagingTexture;
-}
-
-void xiiGALTextureReadback::Enqueue(xiiSharedPtr<xiiGALCommandList> pCommandList, const ReadbackRequest& request)
+void xiiGALTextureReadback::Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request)
 {
   XII_ASSERT_DEV(pCommandList != nullptr, "Invalid command list.");
   XII_ASSERT_DEV(request, "Invalid readback request.");
 
-  const xiiGALTextureCreationDescription& srcDesc = request.m_pTexture->GetDescription();
+  const xiiGALTextureCreationDescription& sourceTextureDescription = request.m_pTexture->GetDescription();
 
-  // Resolve subresource dimensions
-  const xiiSizeU32 fullSize    = srcDesc.m_Size;
+  // Resolve subresource dimensions.
+  const xiiSizeU32 fullSize    = sourceTextureDescription.m_Size;
   xiiUInt32        uiMipWidth  = xiiMath::Max(1U, fullSize.width >> request.m_uiMipLevel);
   xiiUInt32        uiMipHeight = xiiMath::Max(1U, fullSize.height >> request.m_uiMipLevel);
 
@@ -83,14 +51,14 @@ void xiiGALTextureReadback::Enqueue(xiiSharedPtr<xiiGALCommandList> pCommandList
   stagingDescription.m_Type               = xiiGALResourceDimension::Texture2D;
   stagingDescription.m_Size               = {box.m_vMax.x - box.m_vMin.x, box.m_vMax.y - box.m_vMin.y};
   stagingDescription.m_uiArraySizeOrDepth = 1U;
-  stagingDescription.m_Format             = srcDesc.m_Format;
+  stagingDescription.m_Format             = sourceTextureDescription.m_Format;
   stagingDescription.m_uiMipLevels        = 1U;
   stagingDescription.m_uiSampleCount      = 1U;
   stagingDescription.m_BindFlags          = xiiGALBindFlags::None;
   stagingDescription.m_Usage              = xiiGALResourceUsage::Staging;
   stagingDescription.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
-  xiiSharedPtr<xiiGALTexture> pStagingTexture = AcquireStagingTexture(stagingDescription);
+  xiiGALTexture* pStagingTexture = AcquireStagingTexture(stagingDescription);
 
   xiiGALTextureMipLevelData sourceMipLevelData;
   sourceMipLevelData.m_uiMipLevel   = request.m_uiMipLevel;
@@ -175,11 +143,59 @@ void xiiGALTextureReadback::WaitForNextCompleted()
   }
 }
 
-void xiiGALTextureReadback::RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture)
+void xiiGALTextureReadback::RecycleStagingTexture(xiiGALTexture* pStagingTexture)
 {
   if (!pStagingTexture)
     return;
 
   XII_LOCK(m_PoolMutex);
-  m_StagingPool.PushBack(std::move(pStagingTexture));
+
+  for (xiiUInt32 i = 0; i < m_StagingPool.GetCount(); ++i)
+  {
+    TextureResource& candidate = m_StagingPool[i];
+
+    if (candidate.m_pTexture == pStagingTexture)
+    {
+      candidate.m_bInUse = false;
+      return;
+    }
+  }
+}
+
+xiiGALTexture* xiiGALTextureReadback::AcquireStagingTexture(const xiiGALTextureCreationDescription& description)
+{
+  xiiGALTexture* pStagingTexture = nullptr;
+
+  // Try pool first.
+  {
+    XII_LOCK(m_PoolMutex);
+
+    // Find a texture that matches the description and is not currently in use.
+    for (xiiUInt32 i = 0; i < m_StagingPool.GetCount(); ++i)
+    {
+      TextureResource& candidate = m_StagingPool[i];
+
+      if (candidate.m_pTexture->GetDescription() == description && candidate.m_bInUse == false)
+      {
+        pStagingTexture    = candidate.m_pTexture;
+        candidate.m_bInUse = true;
+        break;
+      }
+    }
+  }
+
+  if (!pStagingTexture)
+  {
+    TextureResource& resource = m_StagingPool.ExpandAndGetRef();
+    resource.m_pTexture       = m_pDevice->CreateTexture(description);
+    resource.m_bInUse         = true;
+
+    xiiStringBuilder sb;
+    sb.AppendFormat("Texture Readback Staging {}x{} {} {}", description.m_Size.width, description.m_Size.height, description.m_Format.GetValue(), m_StagingPool.GetCount());
+    pStagingTexture->SetDebugName(sb);
+
+    pStagingTexture = resource.m_pTexture;
+  }
+
+  return pStagingTexture;
 }
