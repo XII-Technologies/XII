@@ -1071,7 +1071,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     // Emit cross-queue signal.
     if (submission.m_pSignalFence != nullptr)
     {
-      pCommandList->EnqueueSignal(submission.m_pSignalFence, submission.m_uiSignalValue);
+      pCommandList->EnqueueSignal(submission.m_pSignalFence.Borrow(), submission.m_uiSignalValue);
     }
 
     pCommandList->End();

@@ -24,7 +24,7 @@ public:
 
   XII_ALWAYS_INLINE xiiGALCpuWaitOnlyFenceVulkan* GetWaitOnlyFence() const { return m_pQueueFence.Borrow(); }
 
-  virtual xiiUInt64 SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList) override final;
+  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList) override final;
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;

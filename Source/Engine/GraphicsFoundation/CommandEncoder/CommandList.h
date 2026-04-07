@@ -1656,17 +1656,17 @@ protected:
   RecordingState m_RecordingState = RecordingState::Reset;
   const bool     m_bNativeMultiDrawSupported;
 
-  xiiGALPipelineState*             m_pPipelineState;
-  xiiGALPipelineResourceSignature* m_pPipelineResourceSignature;
+  xiiGALPipelineState*             m_pPipelineState             = nullptr;
+  xiiGALPipelineResourceSignature* m_pPipelineResourceSignature = nullptr;
   xiiStaticArray<xiiUInt8, 256U>   m_PushConstantStaging;
 
   xiiHybridArray<VertexStreamDescription, 2U> m_VertexStreams;
 
-  xiiGALBuffer* m_pIndexBuffer;
+  xiiGALBuffer* m_pIndexBuffer      = nullptr;
   xiiUInt64     m_uiIndexDataOffset = 0ULL;
 
-  xiiGALRenderPass*  m_pRenderPass;
-  xiiGALFramebuffer* m_pFramebuffer;
+  xiiGALRenderPass*  m_pRenderPass  = nullptr;
+  xiiGALFramebuffer* m_pFramebuffer = nullptr;
 
   xiiColor  m_BlendFactors = xiiColor::Black;
   xiiUInt32 m_uiStencilRef = 0U;

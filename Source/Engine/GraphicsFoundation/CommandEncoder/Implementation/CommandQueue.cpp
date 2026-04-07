@@ -14,7 +14,7 @@ xiiGALCommandQueue::xiiGALCommandQueue(xiiGALDevice* pDevice, const xiiGALComman
 
 xiiGALCommandQueue::~xiiGALCommandQueue() = default;
 
-xiiUInt64 xiiGALCommandQueue::Submit(xiiSharedPtr<xiiGALCommandList> pCommandList)
+xiiUInt64 xiiGALCommandQueue::Submit(xiiGALCommandList* pCommandList)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
