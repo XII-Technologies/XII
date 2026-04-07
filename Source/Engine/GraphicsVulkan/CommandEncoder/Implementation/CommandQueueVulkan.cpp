@@ -27,11 +27,11 @@ xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
   return m_pQueueFence->GetCompletedValue();
 }
 
-xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiSharedPtr<xiiGALCommandList> pCommandList)
+xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
-  xiiGALDeviceVulkan*                   pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiSharedPtr<xiiGALCommandListVulkan> pCommandListVulkan     = pCommandList.Downcast<xiiGALCommandListVulkan>();
-  auto                                  pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
+  xiiGALDeviceVulkan*      pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandListVulkan* pCommandListVulkan     = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
+  auto                     pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
 
   bool bTimelineSemaphoreInUse = false;
   if (pDeferredDeletionQueue->HasTimelineSemaphore())
