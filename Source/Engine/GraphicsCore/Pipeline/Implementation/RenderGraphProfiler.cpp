@@ -45,7 +45,7 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   if (pass.m_pDurationQuery == nullptr)
   {
     xiiGALQueryCreationDescription queryDescription;
-    queryDescription.m_Type      = xiiGALQueryType::Duration;
+    queryDescription.m_Type = xiiGALQueryType::Duration;
 
     pass.m_pDurationQuery = m_pDevice->CreateQuery(queryDescription);
   }

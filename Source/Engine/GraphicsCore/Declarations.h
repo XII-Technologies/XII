@@ -47,15 +47,15 @@ struct XII_GRAPHICSCORE_DLL xiiExposureControl
 
   enum Enum : StorageType
   {
-    Unknown = 0,                ///< Unknown mode, fallback to manual with default exposure value.
-    Manual,                     ///< Use a fixed exposure multiplier set by the user.
-    AutoLogAverage,             ///< Compute log‑average luminance (cheap).
-    AutoHistogramPercentile,    ///< Build histogram and pick a percentile (robust to highlights).
-    EyeAdaptationTemporal,      ///< Temporal smoothing (rise/fall rates) to simulate pupil response.
-    PhysicalCamera,             ///< Compute exposure from camera params (aperture, shutter, ISO).
-    MeterSpot,                  ///< Spot metering (small region).
-    MeterCenterWeighted,        ///< Center‑weighted metering.
-    MeterMatrix,                ///< Matrix/multi‑zone metering.
+    Unknown = 0,             ///< Unknown mode, fallback to manual with default exposure value.
+    Manual,                  ///< Use a fixed exposure multiplier set by the user.
+    AutoLogAverage,          ///< Compute log‑average luminance (cheap).
+    AutoHistogramPercentile, ///< Build histogram and pick a percentile (robust to highlights).
+    EyeAdaptationTemporal,   ///< Temporal smoothing (rise/fall rates) to simulate pupil response.
+    PhysicalCamera,          ///< Compute exposure from camera params (aperture, shutter, ISO).
+    MeterSpot,               ///< Spot metering (small region).
+    MeterCenterWeighted,     ///< Center‑weighted metering.
+    MeterMatrix,             ///< Matrix/multi‑zone metering.
 
     ENUM_COUNT,
 

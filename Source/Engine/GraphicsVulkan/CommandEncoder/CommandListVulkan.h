@@ -234,7 +234,7 @@ private:
 
   struct MappedTextureKey
   {
-    xiiGALTextureVulkan* m_pTextureVulkan;
+    xiiGALTextureVulkan*              m_pTextureVulkan;
     xiiUInt32 const                   m_uiMipLevel;
     xiiUInt32 const                   m_uiArraySlice;
 

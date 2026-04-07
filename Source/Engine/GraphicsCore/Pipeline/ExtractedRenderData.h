@@ -33,10 +33,10 @@ public:
 
 private:
   xiiMutex m_Mutex;
-  
+
   // Batches submitted concurrently
   xiiDynamicArray<xiiDynamicArray<xiiRenderDataBatch>> m_BatchesPerCategory;
-  
+
   // Flattened and sorted array per category, built during SortAndBatches
   xiiDynamicArray<xiiDynamicArray<xiiRenderData*>> m_SortedRenderData;
 };

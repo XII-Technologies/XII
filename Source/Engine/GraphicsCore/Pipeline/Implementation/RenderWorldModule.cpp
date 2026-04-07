@@ -91,8 +91,8 @@ void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph
                                                                                                              xiiMakeDelegate(&xiiRenderWorldModule::ExecuteDynamicResolutionPass, this));
 
   auto [pPerFrameBufferUploadData, hPerFrameBufferUploadPass] = graph.AddPass<PassData::PerFrameBufferUploadPassData>("PerFrameBufferUpload", xiiGALCommandQueueFlags::Graphics,
-                                                                                                                   xiiMakeDelegate(&xiiRenderWorldModule::SetupPerFrameBufferUploadPass, this),
-                                                                                                                   xiiMakeDelegate(&xiiRenderWorldModule::ExecutePerFrameBufferUploadPass, this));
+                                                                                                                      xiiMakeDelegate(&xiiRenderWorldModule::SetupPerFrameBufferUploadPass, this),
+                                                                                                                      xiiMakeDelegate(&xiiRenderWorldModule::ExecutePerFrameBufferUploadPass, this));
 }
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)

@@ -2,15 +2,13 @@
 
 /// \brief Checks if KeyFunc provides a GetKey(Element) method.
 template <typename KeyFunc, typename Element>
-concept HasGetKey = requires(const KeyFunc& f, const Element& e)
-{
+concept HasGetKey = requires(const KeyFunc& f, const Element& e) {
   { f.GetKey(e) } -> std::convertible_to<uint64_t>;
 };
 
 /// \brief Checks if KeyFunc can be called with an Element (i.e. provides operator()).
 template <typename KeyFunc, typename Element>
-concept CallableKey = requires(const KeyFunc& f, const Element& e)
-{
+concept CallableKey = requires(const KeyFunc& f, const Element& e) {
   { f(e) } -> std::convertible_to<uint64_t>;
 };
 

@@ -2,10 +2,10 @@
 
 #include <Foundation/Math/Frustum.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)

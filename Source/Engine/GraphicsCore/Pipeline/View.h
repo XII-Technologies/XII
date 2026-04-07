@@ -125,8 +125,8 @@ public:
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
 
-  xiiRenderGraph*         GetRenderGraph() { return m_pRenderGraph.Borrow(); }
-  const xiiRenderGraph*   GetRenderGraph() const { return m_pRenderGraph.Borrow(); }
+  xiiRenderGraph*       GetRenderGraph() { return m_pRenderGraph.Borrow(); }
+  const xiiRenderGraph* GetRenderGraph() const { return m_pRenderGraph.Borrow(); }
 
   xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData.Borrow(); }
   const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData.Borrow(); }
@@ -146,7 +146,7 @@ private:
 
   xiiHashedString m_sName;
 
-  xiiUInt32                       m_uiRenderGraphBuilderVersion = 0;
+  xiiUInt32                       m_uiRenderGraphBuilderVersion                = 0;
   xiiCamera*                      m_pCamera                                    = nullptr;
   const xiiCamera*                m_pCullingCamera                             = nullptr;
   const xiiCamera*                m_pLodCamera                                 = nullptr;
@@ -165,7 +165,7 @@ private:
   xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
 
   // Per-view, per-frame inter-pass data store. Cleared each frame by the render world module.
-  xiiRenderGraphBlackboard    m_Blackboard;
+  xiiRenderGraphBlackboard m_Blackboard;
   // Per-view transient GPU resource pool. Reused across frames by the resource cache eviction policy.
   xiiRenderGraphResourceCache m_ResourceCache;
 };

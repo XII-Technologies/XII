@@ -25,13 +25,13 @@ class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
 public:
   /// \brief Registers a custom category with a given name. Categories are automatically assigned sequential IDs.
   static xiiRenderDataCategory RegisterCategory(const char* szCategoryName);
-  
+
   /// \brief Finds an existing category by name. Note that this requires a string lookup.
   static xiiRenderDataCategory FindCategory(const char* szCategoryName);
-  
+
   /// \brief Returns the name of the given category.
   static xiiStringView GetCategoryName(xiiRenderDataCategory category);
-  
+
   /// \brief Returns an array of all known category names. The index in the array matches the category ID.
   static const xiiArrayPtr<xiiStringView> GetAllCategoryNames();
 

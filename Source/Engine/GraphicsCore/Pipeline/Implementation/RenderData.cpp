@@ -1,13 +1,13 @@
-#include <GraphicsCore/GraphicsCorePCH.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 #include <Foundation/Algorithm/Sorting.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Threading/Mutex.h>
+#include <GraphicsCore/GraphicsCorePCH.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-static xiiMutex s_CategoryMutex;
+static xiiMutex                       s_CategoryMutex;
 static xiiDynamicArray<xiiStringView> s_CategoryNames;
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ xiiRenderDataCategory xiiRenderData::RegisterCategory(const char* szCategoryName
   {
     if (s_CategoryNames[i].IsEqual_NoCase(szCategoryName))
     {
-      return xiiRenderDataCategory{ static_cast<xiiUInt16>(i) };
+      return xiiRenderDataCategory{static_cast<xiiUInt16>(i)};
     }
   }
 
@@ -37,7 +37,7 @@ xiiRenderDataCategory xiiRenderData::RegisterCategory(const char* szCategoryName
   s_CategoryStringData.PushBack(szCategoryName);
   s_CategoryNames.PushBack(s_CategoryStringData.PeekBack());
 
-  return xiiRenderDataCategory{ static_cast<xiiUInt16>(newIdx) };
+  return xiiRenderDataCategory{static_cast<xiiUInt16>(newIdx)};
 }
 
 xiiRenderDataCategory xiiRenderData::FindCategory(const char* szCategoryName)
@@ -48,11 +48,11 @@ xiiRenderDataCategory xiiRenderData::FindCategory(const char* szCategoryName)
   {
     if (s_CategoryNames[i].IsEqual_NoCase(szCategoryName))
     {
-      return xiiRenderDataCategory{ static_cast<xiiUInt16>(i) };
+      return xiiRenderDataCategory{static_cast<xiiUInt16>(i)};
     }
   }
 
-  return xiiRenderDataCategory{ 0xFFFF }; // Invalid
+  return xiiRenderDataCategory{0xFFFF}; // Invalid
 }
 
 xiiStringView xiiRenderData::GetCategoryName(xiiRenderDataCategory category)
@@ -81,46 +81,46 @@ void xiiRenderData::ClearAllCategories()
 // ----------------------------------------------------------------------------------------------------------------
 // xiiDefaultRenderDataCategories
 
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Light = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Decal = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::ReflectionProbe = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Sky = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::OpaqueStatic = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::OpaqueDynamic = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Opaque = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::MaskedStatic = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::MaskedDynamic = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Masked = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Transparent = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Foreground = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::ScreenFX = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::SimpleOpaque = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Light             = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Decal             = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::ReflectionProbe   = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Sky               = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::OpaqueStatic      = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::OpaqueDynamic     = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Opaque            = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::MaskedStatic      = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::MaskedDynamic     = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Masked            = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Transparent       = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Foreground        = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::ScreenFX          = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::SimpleOpaque      = xiiRenderDataCategory{};
 xiiRenderDataCategory xiiDefaultRenderDataCategories::SimpleTransparent = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::Selection = xiiRenderDataCategory{};
-xiiRenderDataCategory xiiDefaultRenderDataCategories::GUI = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::Selection         = xiiRenderDataCategory{};
+xiiRenderDataCategory xiiDefaultRenderDataCategories::GUI               = xiiRenderDataCategory{};
 
 void xiiDefaultRenderDataCategories::RegisterDefaultCategories()
 {
   if (Light.IsValid())
     return; // Already registered
 
-  Light = xiiRenderData::RegisterCategory("Light");
-  Decal = xiiRenderData::RegisterCategory("Decal");
-  ReflectionProbe = xiiRenderData::RegisterCategory("ReflectionProbe");
-  Sky = xiiRenderData::RegisterCategory("Sky");
-  OpaqueStatic = xiiRenderData::RegisterCategory("OpaqueStatic");
-  OpaqueDynamic = xiiRenderData::RegisterCategory("OpaqueDynamic");
-  Opaque = xiiRenderData::RegisterCategory("Opaque");
-  MaskedStatic = xiiRenderData::RegisterCategory("MaskedStatic");
-  MaskedDynamic = xiiRenderData::RegisterCategory("MaskedDynamic");
-  Masked = xiiRenderData::RegisterCategory("Masked");
-  Transparent = xiiRenderData::RegisterCategory("Transparent");
-  Foreground = xiiRenderData::RegisterCategory("Foreground");
-  ScreenFX = xiiRenderData::RegisterCategory("ScreenFX");
-  SimpleOpaque = xiiRenderData::RegisterCategory("SimpleOpaque");
+  Light             = xiiRenderData::RegisterCategory("Light");
+  Decal             = xiiRenderData::RegisterCategory("Decal");
+  ReflectionProbe   = xiiRenderData::RegisterCategory("ReflectionProbe");
+  Sky               = xiiRenderData::RegisterCategory("Sky");
+  OpaqueStatic      = xiiRenderData::RegisterCategory("OpaqueStatic");
+  OpaqueDynamic     = xiiRenderData::RegisterCategory("OpaqueDynamic");
+  Opaque            = xiiRenderData::RegisterCategory("Opaque");
+  MaskedStatic      = xiiRenderData::RegisterCategory("MaskedStatic");
+  MaskedDynamic     = xiiRenderData::RegisterCategory("MaskedDynamic");
+  Masked            = xiiRenderData::RegisterCategory("Masked");
+  Transparent       = xiiRenderData::RegisterCategory("Transparent");
+  Foreground        = xiiRenderData::RegisterCategory("Foreground");
+  ScreenFX          = xiiRenderData::RegisterCategory("ScreenFX");
+  SimpleOpaque      = xiiRenderData::RegisterCategory("SimpleOpaque");
   SimpleTransparent = xiiRenderData::RegisterCategory("SimpleTransparent");
-  Selection = xiiRenderData::RegisterCategory("Selection");
-  GUI = xiiRenderData::RegisterCategory("GUI");
+  Selection         = xiiRenderData::RegisterCategory("Selection");
+  GUI               = xiiRenderData::RegisterCategory("GUI");
 }
 
 // ----------------------------------------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ void xiiExtractedRenderData::SortAndBatches()
 
   for (xiiUInt32 i = 0; i < m_BatchesPerCategory.GetCount(); ++i)
   {
-    auto& batches = m_BatchesPerCategory[i];
+    auto& batches    = m_BatchesPerCategory[i];
     auto& sortedData = m_SortedRenderData[i];
 
     sortedData.Clear();
@@ -197,10 +197,9 @@ void xiiExtractedRenderData::SortAndBatches()
 
       // Sort
       xiiArrayPtr<xiiRenderData*> sortedDataPtr = sortedData;
-      xiiSorting::RadixSort(sortedDataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64
-        {
-          return pRenderData->m_uiSortingKey;
-        });
+      xiiSorting::RadixSort(sortedDataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64 {
+        return pRenderData->m_uiSortingKey;
+      });
     }
   }
 }
