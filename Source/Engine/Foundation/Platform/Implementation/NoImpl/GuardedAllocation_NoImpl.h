@@ -3,7 +3,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 namespace xiiMemoryPolicies
 {
-  xiiAllocPolicyGuarding::xiiAllocPolicyGuarding(xiiAllocator* pParent)
+  xiiAllocationPolicyGuarding::xiiAllocationPolicyGuarding(xiiAllocator* pParent)
   {
     XII_ASSERT_NOT_IMPLEMENTED;
     XII_IGNORE_UNUSED(m_uiPageSize);
@@ -11,13 +11,13 @@ namespace xiiMemoryPolicies
     XII_IGNORE_UNUSED(m_AllocationsToFreeLater);
   }
 
-  void* xiiAllocPolicyGuarding::Allocate(size_t uiSize, size_t uiAlign)
+  void* xiiAllocationPolicyGuarding::Allocate(size_t uiSize, size_t uiAlign)
   {
     XII_ASSERT_NOT_IMPLEMENTED;
     return nullptr;
   }
 
-  void xiiAllocPolicyGuarding::Deallocate(void* ptr)
+  void xiiAllocationPolicyGuarding::Deallocate(void* ptr)
   {
     XII_ASSERT_NOT_IMPLEMENTED;
   }

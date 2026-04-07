@@ -1,6 +1,7 @@
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Memory/EndianHelper.h>
+#include <Foundation/Memory/MemoryUtils.h>
 
 void xiiEndianHelper::SwitchStruct(void* pDataPointer, const char* szFormat)
 {
@@ -62,5 +63,3 @@ void xiiEndianHelper::SwitchStructs(void* pDataPointer, const char* szFormat, xi
     pDataPointer = xiiMemoryUtils::AddByteOffset(pDataPointer, uiStride);
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_EndianHelper);

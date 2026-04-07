@@ -234,9 +234,9 @@ private:
 
   struct MappedTextureKey
   {
-    xiiGALTextureVulkan*              m_pTextureVulkan;
-    xiiUInt32 const                   m_uiMipLevel;
-    xiiUInt32 const                   m_uiArraySlice;
+    xiiGALTextureVulkan* m_pTextureVulkan;
+    xiiUInt32 const      m_uiMipLevel;
+    xiiUInt32 const      m_uiArraySlice;
 
     bool operator==(const MappedTextureKey& rhs) const
     {

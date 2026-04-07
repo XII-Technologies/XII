@@ -5,8 +5,8 @@
 
 enum xiiConstructionMode
 {
-  ConstructAll     = 0U, ///< Default initialize all types, including std::is_trivial types.
-  SkipTrivialTypes = 1U, ///< If the given type to construct is trivial, no additional construction steps are performed.
+  ConstructAll     = 0, ///< Default initialize all types, including std::is_trivial types.
+  SkipTrivialTypes = 1, ///< If the given type to construct is trivial, nothing will be done.
 };
 
 /// \brief This class provides functions to work on raw memory.
@@ -67,7 +67,7 @@ public:
   static void CopyOrMoveConstruct(Destination* pDestination, Source&& source);
 
   /// \brief Constructs \a uiCount objects of type T in a raw buffer at \a pDestination from an existing array of objects at \a pSource by
-  /// using move construction if available, otherwise by copy construction. Calls destructor of source elements in any case (if it is a non
+  /// using move construction if availble, otherwise by copy construction. Calls destructor of source elements in any case (if it is a non
   /// primitive or mem-relocatable type).
   template <typename T>
   static void RelocateConstruct(T* pDestination, T* pSource, size_t uiCount = 1);

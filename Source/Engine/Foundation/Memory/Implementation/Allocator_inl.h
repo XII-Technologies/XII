@@ -1,171 +1,145 @@
+
+XII_ALWAYS_INLINE xiiAllocator::xiiAllocator() = default;
+
+XII_ALWAYS_INLINE xiiAllocator::~xiiAllocator() = default;
+
+
+namespace xiiMath
+{
+  // due to #include order issues, we have to forward declare this function here
+
+  XII_FOUNDATION_DLL xiiUInt64 SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt64 d);
+} // namespace xiiMath
+
 namespace xiiInternal
 {
-  template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode>
-  class xiiAllocatorImpl : public xiiAllocatorBase
+  template <typename T>
+  struct NewInstance
   {
-  public:
-    xiiAllocatorImpl(xiiStringView sName, xiiAllocatorBase* pParent);
-    ~xiiAllocatorImpl();
+    XII_ALWAYS_INLINE NewInstance(T* pInstance, xiiAllocator* pAllocator)
+    {
+      m_pInstance  = pInstance;
+      m_pAllocator = pAllocator;
+    }
 
-    // xiiAllocatorBase implementation
-    virtual void*          Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc = nullptr) override;
-    virtual void           Deallocate(void* pPtr) override;
-    virtual size_t         AllocatedSize(const void* pPtr) override;
-    virtual xiiAllocatorId GetId() const override;
-    virtual Stats          GetStats() const override;
+    template <typename U>
+    XII_ALWAYS_INLINE NewInstance(NewInstance<U>&& other)
+    {
+      m_pInstance  = other.m_pInstance;
+      m_pAllocator = other.m_pAllocator;
 
-    xiiAllocatorBase* GetParent() const;
+      other.m_pInstance  = nullptr;
+      other.m_pAllocator = nullptr;
+    }
 
-  protected:
-    AllocationPolicy m_Allocator;
+    XII_ALWAYS_INLINE NewInstance(std::nullptr_t) {}
 
-    xiiAllocatorId m_Id;
-    xiiThreadID    m_ThreadID;
+    template <typename U>
+    XII_ALWAYS_INLINE NewInstance<U> Cast()
+    {
+      return NewInstance<U>(static_cast<U*>(m_pInstance), m_pAllocator);
+    }
+
+    XII_ALWAYS_INLINE operator T*() { return m_pInstance; }
+
+    XII_ALWAYS_INLINE T* operator->() { return m_pInstance; }
+
+    T*            m_pInstance  = nullptr;
+    xiiAllocator* m_pAllocator = nullptr;
   };
 
-  template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode, bool HasReallocate>
-  class xiiAllocatorMixinReallocate : public xiiAllocatorImpl<AllocationPolicy, TrackingMode>
+  template <typename T>
+  XII_ALWAYS_INLINE bool operator<(const NewInstance<T>& lhs, T* rhs)
   {
-  public:
-    xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent);
-  };
-
-  template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode>
-  class xiiAllocatorMixinReallocate<AllocationPolicy, TrackingMode, true> : public xiiAllocatorImpl<AllocationPolicy, TrackingMode>
-  {
-  public:
-    xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent);
-    virtual void* Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign) override;
-  };
-}; // namespace xiiInternal
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-XII_FORCE_INLINE xiiInternal::xiiAllocatorImpl<A, TrackingMode>::xiiAllocatorImpl(xiiStringView sName, xiiAllocatorBase* pParent /* = nullptr */) :
-  m_Allocator(pParent), m_ThreadID(xiiThreadUtils::GetCurrentThreadID())
-{
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
-  {
-    this->m_Id = xiiMemoryTracker::RegisterAllocator(sName, TrackingMode, pParent != nullptr ? pParent->GetId() : xiiAllocatorId());
-  }
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-xiiInternal::xiiAllocatorImpl<A, TrackingMode>::~xiiAllocatorImpl()
-{
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
-  {
-    xiiMemoryTracker::DeregisterAllocator(this->m_Id);
-  }
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-void* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
-{
-  XII_IGNORE_UNUSED(destructorFunc);
-
-  // zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored)
-  if (uiSize == 0)
-    return nullptr;
-
-  XII_ASSERT_DEBUG(xiiMath::IsPowerOf2((xiiUInt32)uiAlign), "Alignment must be power of two");
-
-  [[maybe_unused]] xiiTime fAllocationTime;
-
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
-  {
-    fAllocationTime = xiiTime::Now();
+    return lhs.m_pInstance < rhs;
   }
 
-  void* ptr = m_Allocator.Allocate(uiSize, uiAlign);
-  XII_ASSERT_DEV(ptr != nullptr, "Could not allocate {0} bytes. Out of memory?", uiSize);
-
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
+  template <typename T>
+  XII_ALWAYS_INLINE bool operator<(T* lhs, const NewInstance<T>& rhs)
   {
-    xiiMemoryTracker::AddAllocation(this->m_Id, TrackingMode, ptr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    return lhs < rhs.m_pInstance;
   }
 
-  return ptr;
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-void xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Deallocate(void* pPtr)
-{
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
+  template <typename T>
+  XII_FORCE_INLINE void Delete(xiiAllocator* pAllocator, T* pPtr)
   {
-    xiiMemoryTracker::RemoveAllocation(this->m_Id, pPtr);
+    if (pPtr != nullptr)
+    {
+      xiiMemoryUtils::Destruct(pPtr, 1);
+      pAllocator->Deallocate(pPtr);
+    }
   }
 
-  m_Allocator.Deallocate(pPtr);
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-size_t xiiInternal::xiiAllocatorImpl<A, TrackingMode>::AllocatedSize(const void* pPtr)
-{
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
+  template <typename T>
+  XII_FORCE_INLINE T* CreateRawBuffer(xiiAllocator* pAllocator, size_t uiCount)
   {
-    return xiiMemoryTracker::GetAllocationInfo(this->m_Id, pPtr).m_uiSize;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-xiiAllocatorId xiiInternal::xiiAllocatorImpl<A, TrackingMode>::GetId() const
-{
-  return this->m_Id;
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-xiiAllocatorBase::Stats xiiInternal::xiiAllocatorImpl<A, TrackingMode>::GetStats() const
-{
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
-  {
-    return xiiMemoryTracker::GetAllocatorStats(this->m_Id);
-  }
-  else
-  {
-    return Stats();
-  }
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::GetParent() const
-{
-  return m_Allocator.GetParent();
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode, bool HasReallocate>
-xiiInternal::xiiAllocatorMixinReallocate<A, TrackingMode, HasReallocate>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
-  xiiAllocatorImpl<A, TrackingMode>(sName, pParent)
-{
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-xiiInternal::xiiAllocatorMixinReallocate<A, TrackingMode, true>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
-  xiiAllocatorImpl<A, TrackingMode>(sName, pParent)
-{
-}
-
-template <typename A, xiiAllocatorTrackingMode TrackingMode>
-void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingMode, true>::Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
-{
-  [[maybe_unused]] xiiTime fAllocationTime;
-
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
-  {
-    xiiMemoryTracker::RemoveAllocation(this->m_Id, pPtr);
-
-    fAllocationTime = xiiTime::Now();
+    xiiUInt64 safeAllocationSize = xiiMath::SafeMultiply64(uiCount, sizeof(T));
+    return static_cast<T*>(pAllocator->Allocate(static_cast<size_t>(safeAllocationSize), alignof(T))); // Down-cast to size_t for 32-bit
   }
 
-  void* pNewMem = this->m_Allocator.Reallocate(pPtr, uiCurrentSize, uiNewSize, uiAlign);
-
-  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
+  XII_FORCE_INLINE void DeleteRawBuffer(xiiAllocator* pAllocator, void* pPtr)
   {
-    xiiMemoryTracker::AddAllocation(this->m_Id, TrackingMode, pNewMem, uiNewSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    if (pPtr != nullptr)
+    {
+      pAllocator->Deallocate(pPtr);
+    }
   }
 
-  return pNewMem;
-}
+  template <typename T>
+  inline xiiArrayPtr<T> CreateArray(xiiAllocator* pAllocator, xiiUInt32 uiCount)
+  {
+    T* buffer = CreateRawBuffer<T>(pAllocator, uiCount);
+    xiiMemoryUtils::Construct<SkipTrivialTypes>(buffer, uiCount);
+
+    return xiiArrayPtr<T>(buffer, uiCount);
+  }
+
+  template <typename T>
+  inline void DeleteArray(xiiAllocator* pAllocator, xiiArrayPtr<T> arrayPtr)
+  {
+    T* buffer = arrayPtr.GetPtr();
+    if (buffer != nullptr)
+    {
+      xiiMemoryUtils::Destruct(buffer, arrayPtr.GetCount());
+      pAllocator->Deallocate(buffer);
+    }
+  }
+
+  template <typename T>
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocator* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsPod)
+  {
+    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), alignof(T));
+  }
+
+  template <typename T>
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocator* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsMemRelocatable)
+  {
+    return (T*)pAllocator->Reallocate(pPtr, uiCurrentCount * sizeof(T), uiNewCount * sizeof(T), alignof(T));
+  }
+
+  template <typename T>
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocator* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsClass)
+  {
+    static_assert(!std::is_trivial<T>::value,
+                  "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
+
+    T* pNewMem = CreateRawBuffer<T>(pAllocator, uiNewCount);
+    xiiMemoryUtils::RelocateConstruct(pNewMem, pPtr, uiCurrentCount);
+    DeleteRawBuffer(pAllocator, pPtr);
+    return pNewMem;
+  }
+
+  template <typename T>
+  XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocator* pAllocator, size_t uiCurrentCount, size_t uiNewCount)
+  {
+    XII_ASSERT_DEV(uiCurrentCount < uiNewCount, "Shrinking of a buffer is not implemented yet");
+    XII_ASSERT_DEV(!(uiCurrentCount == uiNewCount), "Same size passed in twice.");
+    if (pPtr == nullptr)
+    {
+      XII_ASSERT_DEV(uiCurrentCount == 0, "current count must be 0 if ptr is nullptr");
+
+      return CreateRawBuffer<T>(pAllocator, uiNewCount);
+    }
+    return ExtendRawBuffer(pPtr, pAllocator, uiCurrentCount, uiNewCount, xiiGetTypeClass<T>());
+  }
+} // namespace xiiInternal

@@ -43,13 +43,12 @@ XII_FORCE_INLINE T& xiiDataBlock<T, SizeInBytes>::operator[](xiiUInt32 uiIndex) 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <xiiUInt32 BlockSize>
-xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiAllocatorTrackingMode mode) :
+xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocator* pParent, xiiAllocatorTrackingMode mode) :
   m_TrackingMode(mode), m_SuperBlocks(pParent), m_FreeBlocks(pParent)
 {
   static_assert(BlockSize >= 4096, "Block size must be 4096 or bigger");
 
-  m_Id       = xiiMemoryTracker::RegisterAllocator(sName, mode, xiiPageAllocator::GetId());
-  m_ThreadID = xiiThreadUtils::GetCurrentThreadID();
+  m_Id = xiiMemoryTracker::RegisterAllocator(sName, mode, xiiPageAllocator::GetId());
 
   const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();
   XII_IGNORE_UNUSED(uiPageSize);
@@ -60,7 +59,6 @@ xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, x
 template <xiiUInt32 BlockSize>
 xiiLargeBlockAllocator<BlockSize>::~xiiLargeBlockAllocator()
 {
-  XII_ASSERT_RELEASE(m_ThreadID == xiiThreadUtils::GetCurrentThreadID(), "Allocator is deleted from another thread");
   xiiMemoryTracker::DeregisterAllocator(m_Id);
 
   for (xiiUInt32 i = 0; i < m_SuperBlocks.GetCount(); ++i)
@@ -81,7 +79,8 @@ XII_FORCE_INLINE xiiDataBlock<T, BlockSize> xiiLargeBlockAllocator<BlockSize>::A
     };
   };
 
-  static_assert(Helper::BLOCK_CAPACITY >= 1, "Type is too big for block allocation. Consider using regular heap allocation instead or increase the block size.");
+  static_assert(
+    Helper::BLOCK_CAPACITY >= 1, "Type is too big for block allocation. Consider using regular heap allocation instead or increase the block size.");
 
   xiiDataBlock<T, BlockSize> block(static_cast<T*>(Allocate(alignof(T))), 0);
   return block;
@@ -89,11 +88,11 @@ XII_FORCE_INLINE xiiDataBlock<T, BlockSize> xiiLargeBlockAllocator<BlockSize>::A
 
 template <xiiUInt32 BlockSize>
 template <typename T>
-XII_FORCE_INLINE void xiiLargeBlockAllocator<BlockSize>::DeallocateBlock(xiiDataBlock<T, BlockSize>& ref_block)
+XII_FORCE_INLINE void xiiLargeBlockAllocator<BlockSize>::DeallocateBlock(xiiDataBlock<T, BlockSize>& inout_block)
 {
-  Deallocate(ref_block.m_pData);
-  ref_block.m_pData   = nullptr;
-  ref_block.m_uiCount = 0;
+  Deallocate(inout_block.m_pData);
+  inout_block.m_pData   = nullptr;
+  inout_block.m_uiCount = 0;
 }
 
 template <xiiUInt32 BlockSize>
@@ -109,7 +108,7 @@ XII_ALWAYS_INLINE xiiAllocatorId xiiLargeBlockAllocator<BlockSize>::GetId() cons
 }
 
 template <xiiUInt32 BlockSize>
-XII_ALWAYS_INLINE const xiiAllocatorBase::Stats& xiiLargeBlockAllocator<BlockSize>::GetStats() const
+XII_ALWAYS_INLINE const xiiAllocator::Stats& xiiLargeBlockAllocator<BlockSize>::GetStats() const
 {
   return xiiMemoryTracker::GetAllocatorStats(m_Id);
 }

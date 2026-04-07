@@ -1,14 +1,13 @@
 
-#define XII_CHECK_CLASS(T)                  \
-  static_assert(!std::is_trivial<T>::value, \
-                "Trivial POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.")
+#define XII_CHECK_CLASS(T) \
+  static_assert(!std::is_trivial<T>::value, "Trivial POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.")
 
 template <xiiConstructionMode mode, typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Construct(T* pDestination, size_t uiCount)
 {
   if constexpr (mode == SkipTrivialTypes && std::is_trivial<T>::value)
   {
-    // do nothing
+    // Do nothing.
   }
   else
   {
@@ -46,9 +45,10 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
                   "Can't copy POD types that are derived from each other. Are you certain any of these types should be POD?");
 
     const Destination& copyConverted = copy;
+
     for (size_t i = 0; i < uiCount; ++i)
     {
-      memcpy(static_cast<void*>(pDestination + i), static_cast<const void*>(&copyConverted), sizeof(Destination));
+      memcpy(pDestination + i, &copyConverted, sizeof(Destination));
     }
   }
   else
@@ -66,11 +66,11 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstructArray(T* pDestination, const T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using CopyConstruct.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using CopyConstruct.");
 
   if constexpr (xiiIsPodType<T>::value)
   {
-    memcpy(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memcpy(pDestination, pSource, uiCount * sizeof(T));
   }
   else
   {
@@ -108,7 +108,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::MoveConstruct(T* pDestination, T&& source
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::MoveConstruct(T* pDestination, T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using MoveConstruct.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using MoveConstruct.");
 
   // Enforce move construction.
   static_assert(std::is_move_constructible<T>::value, "Type is not move constructible!");
@@ -137,11 +137,11 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOrMoveConstruct(Destination* pDestina
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateConstruct(T* pDestination, T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using RelocateConstruct.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using RelocateConstruct.");
 
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
-    memcpy(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memcpy(pDestination, pSource, uiCount * sizeof(T));
   }
   else // class
   {
@@ -195,7 +195,7 @@ XII_ALWAYS_INLINE xiiMemoryUtils::DestructorFunction xiiMemoryUtils::MakeDestruc
 
 XII_ALWAYS_INLINE void xiiMemoryUtils::RawByteCopy(void* pDestination, const void* pSource, size_t uiNumBytesToCopy)
 {
-  memcpy(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiNumBytesToCopy);
+  memcpy(pDestination, pSource, uiNumBytesToCopy);
 }
 
 template <typename T>
@@ -205,7 +205,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Copy(T* pDestination, const T* pSource, s
 
   if constexpr (xiiIsPodType<T>::value)
   {
-    memcpy(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memcpy(pDestination, pSource, uiCount * sizeof(T));
   }
   else
   {
@@ -223,7 +223,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOverlapped(T* pDestination, const T* 
 {
   if constexpr (xiiIsPodType<T>::value)
   {
-    memmove(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memmove(pDestination, pSource, uiCount * sizeof(T));
   }
   else
   {
@@ -252,11 +252,11 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOverlapped(T* pDestination, const T* 
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Relocate(T* pDestination, T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using Relocate.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using Relocate.");
 
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
-    memcpy(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memcpy(pDestination, pSource, uiCount * sizeof(T));
   }
   else // class
   {
@@ -287,11 +287,11 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateOverlapped(T* pDestination, T* pS
       size_t uiDestructCount = pDestination - pSource;
       Destruct(pSource + uiCount, uiDestructCount);
     }
-    memmove(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memmove(pDestination, pSource, uiCount * sizeof(T));
   }
   else if constexpr (xiiGetTypeClass<T>::value == 1) // POD
   {
-    memmove(static_cast<void*>(pDestination), static_cast<const void*>(pSource), uiCount * sizeof(T));
+    memmove(pDestination, pSource, uiCount * sizeof(T));
   }
   else
   {
@@ -328,7 +328,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Prepend(T* pDestination, const T& source,
 {
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
-    memmove(static_cast<void*>(pDestination + 1), static_cast<const void*>(pDestination), uiCount * sizeof(T));
+    memmove(pDestination + 1, pDestination, uiCount * sizeof(T));
     CopyConstruct(pDestination, source, 1);
   }
   else // class
@@ -358,7 +358,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Prepend(T* pDestination, T&& source, size
 {
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
-    memmove(static_cast<void*>(pDestination + 1), static_cast<const void*>(pDestination), uiCount * sizeof(T));
+    memmove(pDestination + 1, pDestination, uiCount * sizeof(T));
     MoveConstruct(pDestination, std::move(source));
   }
   else // class
@@ -388,7 +388,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Prepend(T* pDestination, const T* pSource
 {
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
-    memmove(static_cast<void*>(pDestination + uiSourceCount), static_cast<const void*>(pDestination), uiCount * sizeof(T));
+    memmove(pDestination + uiSourceCount, pDestination, uiCount * sizeof(T));
     CopyConstructArray(pDestination, pSource, uiSourceCount);
   }
   else // class
@@ -430,7 +430,7 @@ XII_ALWAYS_INLINE bool xiiMemoryUtils::IsEqual(const T* a, const T* b, size_t ui
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::ZeroFill(T* pDestination, size_t uiCount)
 {
-  memset(static_cast<void*>(pDestination), 0, uiCount * sizeof(T));
+  memset(pDestination, 0, uiCount * sizeof(T));
 }
 
 template <typename T, size_t N>

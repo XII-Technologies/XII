@@ -98,7 +98,7 @@ XII_ALWAYS_INLINE xiiBlockStorage<T, BlockSize, StorageType>::Iterator::operator
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
-XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::xiiBlockStorage(xiiLargeBlockAllocator<BlockSize>* pBlockAllocator, xiiAllocatorBase* pAllocator) :
+XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::xiiBlockStorage(xiiLargeBlockAllocator<BlockSize>* pBlockAllocator, xiiAllocator* pAllocator) :
   m_pBlockAllocator(pBlockAllocator), m_Blocks(pAllocator)
 {
 }

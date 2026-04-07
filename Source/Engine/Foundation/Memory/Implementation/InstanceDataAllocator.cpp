@@ -35,7 +35,6 @@ xiiBlob xiiInstanceDataAllocator::AllocateAndConstruct() const
 void xiiInstanceDataAllocator::DestructAndDeallocate(xiiBlob& ref_blob) const
 {
   XII_ASSERT_DEV(ref_blob.GetByteBlobPtr().GetCount() == m_uiTotalDataSize, "Passed blob has not the expected size");
-
   Destruct(ref_blob.GetByteBlobPtr());
 
   ref_blob.Clear();
@@ -72,5 +71,3 @@ void xiiInstanceDataAllocator::Destruct(xiiByteBlobPtr blobPtr) const
     uiOffset += desc.m_uiTypeSize;
   }
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_InstanceDataAllocator);

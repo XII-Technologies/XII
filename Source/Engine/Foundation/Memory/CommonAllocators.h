@@ -2,21 +2,34 @@
 
 /// \file
 
-#include <Foundation/Memory/Allocator.h>
+#include <Foundation/Memory/AllocatorWithPolicy.h>
 
-#include <Foundation/Memory/Policies/AlignedHeapAllocation.h>
-#include <Foundation/Memory/Policies/GuardedAllocation.h>
-#include <Foundation/Memory/Policies/HeapAllocation.h>
-#include <Foundation/Memory/Policies/ProxyAllocation.h>
+#include <Foundation/Memory/Policies/AllocationPolicyAlignedHeap.h>
+#include <Foundation/Memory/Policies/AllocationPolicyGuarding.h>
+#include <Foundation/Memory/Policies/AllocationPolicyHeap.h>
+#include <Foundation/Memory/Policies/AllocationPolicyProxy.h>
 
-/// \brief Default Aligned Heap Allocator.
-using xiiAlignedHeapAllocator = xiiAllocator<xiiMemoryPolicies::xiiAlignedHeapAllocation>;
+/// \brief Default heap allocator with alignment support.
+///
+/// This allocator supports arbitrary alignment requirements.
+/// Uses the system heap with platform-specific alignment functions.
+/// This is mainly needed when allocating GPU resources or SIMD data structures, which require 16 byte alignment.
+using xiiAlignedHeapAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyAlignedHeap>;
 
-/// \brief Default Heap Allocator.
-using xiiHeapAllocator = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation>;
+/// \brief Basic heap allocator without special alignment support.
+///
+/// Faster than xiiAlignedHeapAllocator but only supports natural alignment (alignof(T)).
+/// This is the recommended allocator for general purpose use.
+using xiiHeapAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyHeap>;
 
-/// \brief Guarded Allocator.
-using xiiGuardedAllocator = xiiAllocator<xiiMemoryPolicies::xiiGuardedAllocation>;
+/// \brief Debug allocator that adds guard pages around allocations.
+///
+/// Detects buffer overruns and use-after-free bugs by placing guard pages before and after
+/// each allocation. Significantly slower and uses much more memory, only for debugging.
+/// Will trigger access violations on memory corruption.
+using xiiGuardingAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyGuarding>;
 
-/// \brief Proxy Allocator.
-using xiiProxyAllocator = xiiAllocator<xiiMemoryPolicies::xiiProxyAllocation>;
+/// \brief Proxy allocator that forwards all operations to another allocator.
+///
+/// Useful for implementing statistics collection without modifying the underlying allocator.
+using xiiProxyAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyProxy>;

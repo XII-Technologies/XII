@@ -146,11 +146,11 @@ private:
 
   xiiHashedString m_sName;
 
-  xiiUInt32                       m_uiRenderGraphBuilderVersion                = 0;
-  xiiCamera*                      m_pCamera                                    = nullptr;
-  const xiiCamera*                m_pCullingCamera                             = nullptr;
-  const xiiCamera*                m_pLodCamera                                 = nullptr;
-  RenderGraphBuilder              m_RenderGraphBuilder;
+  xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
+  xiiCamera*         m_pCamera                     = nullptr;
+  const xiiCamera*   m_pCullingCamera              = nullptr;
+  const xiiCamera*   m_pLodCamera                  = nullptr;
+  RenderGraphBuilder m_RenderGraphBuilder;
 
 private:
   void UpdateCachedMatrices() const;

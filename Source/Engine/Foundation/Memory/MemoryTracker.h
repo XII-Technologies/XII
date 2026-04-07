@@ -1,12 +1,14 @@
 #pragma once
 
 #include <Foundation/Basics.h>
+#include <Foundation/Memory/Allocator.h>
 #include <Foundation/Time/Time.h>
+#include <Foundation/Types/ArrayPtr.h>
 #include <Foundation/Types/Bitflags.h>
 
 enum class xiiAllocatorTrackingMode : xiiUInt32
 {
-  DoNotTrack,                    ///< The allocator doesn't track anything. Use this for best performance.
+  Nothing,                       ///< The allocator doesn't track anything. Use this for best performance.
   Basics,                        ///< The allocator will be known to the system, so it can show up in debugging tools, but barely anything more.
   AllocationStats,               ///< The allocator keeps track of how many allocations and deallocations it did and how large its memory usage is.
   AllocationStatsIgnoreLeaks,    ///< Same as AllocationStats, but any remaining allocations at shutdown are not reported as leaks.
@@ -15,7 +17,11 @@ enum class xiiAllocatorTrackingMode : xiiUInt32
   Default = XII_ALLOC_TRACKING_DEFAULT,
 };
 
-/// \brief Memory tracker which keeps track of all allocations and constructions
+/// \brief Global memory tracking system for debugging, profiling, and leak detection.
+///
+/// This singleton provides comprehensive memory allocation tracking across all allocators
+/// in the system. It supports different tracking modes ranging from basic statistics to
+/// full stack trace recording for every allocation.
 class XII_FOUNDATION_DLL xiiMemoryTracker
 {
 public:
@@ -47,10 +53,10 @@ public:
   public:
     ~Iterator();
 
-    xiiAllocatorId                 Id() const;
-    xiiStringView                  Name() const;
-    xiiAllocatorId                 ParentId() const;
-    const xiiAllocatorBase::Stats& Stats() const;
+    xiiAllocatorId             Id() const;
+    xiiStringView              Name() const;
+    xiiAllocatorId             ParentId() const;
+    const xiiAllocator::Stats& Stats() const;
 
     void Next();
     bool IsValid() const;
@@ -74,14 +80,14 @@ public:
   static void AddAllocation(xiiAllocatorId allocatorId, xiiAllocatorTrackingMode mode, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime);
   static void RemoveAllocation(xiiAllocatorId allocatorId, const void* pPtr);
   static void RemoveAllAllocations(xiiAllocatorId allocatorId);
-  static void SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocatorBase::Stats& stats);
+  static void SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocator::Stats& stats);
 
   static void ResetPerFrameAllocatorStats();
 
-  static xiiStringView                  GetAllocatorName(xiiAllocatorId allocatorId);
-  static const xiiAllocatorBase::Stats& GetAllocatorStats(xiiAllocatorId allocatorId);
-  static xiiAllocatorId                 GetAllocatorParentId(xiiAllocatorId allocatorId);
-  static const AllocationInfo&          GetAllocationInfo(xiiAllocatorId allocatorId, const void* pPtr);
+  static xiiStringView              GetAllocatorName(xiiAllocatorId allocatorId);
+  static const xiiAllocator::Stats& GetAllocatorStats(xiiAllocatorId allocatorId);
+  static xiiAllocatorId             GetAllocatorParentId(xiiAllocatorId allocatorId);
+  static const AllocationInfo&      GetAllocationInfo(xiiAllocatorId allocatorId, const void* pPtr);
 
   static Iterator GetIterator();
 
@@ -91,7 +97,7 @@ public:
   /// \brief Reports back information about all currently known root memory leaks.
   ///
   /// Returns the number of found memory leaks.
-  static xiiUInt32 PrintMemoryLeaks(PrintFunc printFunc);
+  static xiiUInt32 PrintMemoryLeaks(PrintFunc printfunc);
 
   /// \brief Prints the known memory leaks to xiiLog and triggers an assert if there are any.
   ///
