@@ -2,6 +2,7 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
@@ -65,6 +66,7 @@ public:
   static xiiGALResourceFormat::Enum GetGALResourceFormat(vk::Format e);
 
   static vk::ShaderStageFlags          GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e);
+  static vk::ShaderStageFlagBits       GetShaderStageFlagBits(xiiGALShaderType::Enum e);
   static xiiBitflags<xiiGALShaderType> GetGALShaderStageFlags(vk::ShaderStageFlags e);
 
   static vk::Extent2D                        ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e);
@@ -116,6 +118,10 @@ public:
   static xiiUInt32 RankDeviceType(vk::PhysicalDeviceType type);
 
   static vk::FragmentShadingRateCombinerOpKHR GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
+
+  static vk::BuildAccelerationStructureFlagsKHR GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
+
+  static vk::Format GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

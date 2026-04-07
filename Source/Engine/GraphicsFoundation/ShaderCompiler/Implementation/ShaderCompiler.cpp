@@ -234,13 +234,13 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
   xiiGALShaderSections::GetShaderSections(sFileContent, sections);
 
   xiiUInt32 uiFirstLine = 0;
-  sTemp                 = sections.GetSectionContent(xiiGALShaderSections::PLATFORMS, uiFirstLine);
+  sTemp                 = sections.GetSectionContent(xiiGALShaderSections::Platforms, uiFirstLine);
   sTemp.ToUpper();
 
   m_ShaderData.m_sPlatform = sTemp;
 
   xiiHybridArray<xiiHashedString, 16> usedPermutations;
-  xiiGALShaderParser::ParsePermutationSection(sections.GetSectionContent(xiiGALShaderSections::PERMUTATIONS, uiFirstLine), usedPermutations, m_ShaderData.m_FixedPermutationVariables);
+  xiiGALShaderParser::ParsePermutationSection(sections.GetSectionContent(xiiGALShaderSections::Permutations, uiFirstLine), usedPermutations, m_ShaderData.m_FixedPermutationVariables);
 
   for (const xiiHashedString& usedPermutationVariable : usedPermutations)
   {
@@ -268,14 +268,14 @@ xiiResult xiiGALShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringVi
     }
   }
 
-  m_ShaderData.m_StateSource = sections.GetSectionContent(xiiGALShaderSections::RENDERSTATE, uiFirstLine);
+  m_ShaderData.m_StateSource = sections.GetSectionContent(xiiGALShaderSections::RenderState, uiFirstLine);
 
   xiiUInt32     uiFirstShaderLine = 0;
-  xiiStringView sShaderSource     = sections.GetSectionContent(xiiGALShaderSections::SHADER, uiFirstShaderLine);
+  xiiStringView sShaderSource     = sections.GetSectionContent(xiiGALShaderSections::Shader, uiFirstShaderLine);
 
   for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
-    xiiStringView sStageSource = sections.GetSectionContent(xiiGALShaderSections::VERTEXSHADER + stage, uiFirstLine);
+    xiiStringView sStageSource = sections.GetSectionContent(xiiGALShaderSections::VertexShader + stage, uiFirstLine);
 
     // later code checks whether the string is empty, to see whether we have any shader source, so this has to be kept empty
     if (!sStageSource.IsEmpty())

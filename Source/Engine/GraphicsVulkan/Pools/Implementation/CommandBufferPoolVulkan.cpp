@@ -216,6 +216,8 @@ void xiiGALCommandBufferPoolVulkan::ReclaimCompleted()
 {
   XII_LOCK(m_PoolMutex);
 
+  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+
   for (auto& it : m_CommandBufferPoolsPerThread)
   {
     ThreadPool& threadPool = it.Value();

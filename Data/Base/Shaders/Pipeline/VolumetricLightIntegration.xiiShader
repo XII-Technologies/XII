@@ -1,0 +1,60 @@
+// XII Engine — VolumetricLightIntegration.xiiShader  [NEW]
+// Pass 49: Integrate per-froxel scattering/extinction along view ray (front-to-back).
+// Converts 3D froxel grid into a full-res 2D in-scattering buffer.
+// Dispatch: ceil(FroxW/8) × ceil(FroxH/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer VolumetricConstants : register(b3)
+{
+    float3 g_FogAlbedo;      float g_FogDensity;
+    float  g_FogScatterAsym; float g_PhaseG;
+    uint3  g_FroxelCount;    // (X, Y, Z)
+    float  g_NearPlane;
+    float  g_FarPlane;
+    float3 _pad;
+};
+
+Texture3D<float4>   g_FroxelScattering : register(t0);  // rgb=in-scatter, a=extinction
+RWTexture2D<float4> g_VolumetricOut    : register(u0);  // full-res result
+
+float HenyeyGreenstein(float cosTheta, float g)
+{
+    float g2 = g * g;
+    return (1.0f - g2) / (4.0f * 3.14159265f * pow(max(1.0f + g2 - 2.0f*g*cosTheta, 1e-7f), 1.5f));
+}
+
+[numthreads(8, 8, 1)]
+void CS_VolumetricIntegration(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_VolumetricOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
+    float3 V     = normalize(g_CameraPositionAndNearPlane.xyz);
+
+    float3 accumScatter     = float3(0,0,0);
+    float  accumTransmit    = 1.0f;
+    float  prevZ            = 0.0f;
+
+    // March froxel columns front-to-back.
+    for (uint z = 0u; z < g_FroxelCount.z; ++z)
+    {
+        float3 uvw     = float3(uv, (float(z) + 0.5f) / float(g_FroxelCount.z));
+        float4 froxel  = g_FroxelScattering.SampleLevel(g_sLinearClamp, uvw, 0);
+        float3 scatter = froxel.rgb;
+        float  extinct = max(froxel.a, 0.0f) * g_FogDensity;
+
+        // Exponential integration over froxel slab thickness.
+        float slabDepth  = (g_FarPlane - g_NearPlane) / float(g_FroxelCount.z);
+        float transmitSlab = exp(-extinct * slabDepth);
+        float3 inScatter   = scatter * (1.0f - transmitSlab) / max(extinct, 1e-6f);
+
+        accumScatter   += accumTransmit * inScatter;
+        accumTransmit  *= transmitSlab;
+
+        if (accumTransmit < 0.01f) break; // early exit
+    }
+
+    g_VolumetricOut[tid.xy] = float4(accumScatter, 1.0f - accumTransmit);
+}

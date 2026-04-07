@@ -1,0 +1,58 @@
+// XII Engine — CASUpscale.xiiShader  [NEW]
+// Pass 56: Contrast-Adaptive Sharpening spatial upscaler (AMD CAS algorithm).
+// Handles both sharpening-only and upscale modes in one pass.
+// Dispatch: ceil(DstW/8) × ceil(DstH/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer CASConstants : register(b3)
+{
+    float2 g_InvSrcSize;    // 1 / source resolution
+    float2 g_InvDstSize;    // 1 / destination resolution
+    float2 g_SrcToDst;      // (srcW/dstW, srcH/dstH) scale ratio
+    float  g_Sharpening;    // 0=no sharpen, 1=max sharpen
+    uint   _pad;
+};
+
+Texture2D<float4>   g_SrcTex  : register(t0);
+RWTexture2D<float4> g_DstTex  : register(u0);
+
+[numthreads(8, 8, 1)]
+void CS_CASUpscale(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dstDims; g_DstTex.GetDimensions(dstDims.x, dstDims.y);
+    if (any(tid.xy >= dstDims)) return;
+
+    // Map destination pixel to source UV.
+    float2 dstUV = (float2(tid.xy) + 0.5f) / float2(dstDims);
+    float2 srcUV = dstUV; // 1:1 for sharpening-only; scale for upscale
+
+    // CAS 3×3 gather.
+    float3 a = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2(-g_InvSrcSize.x, -g_InvSrcSize.y), 0).rgb;
+    float3 b = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2(0,              -g_InvSrcSize.y), 0).rgb;
+    float3 c = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2( g_InvSrcSize.x, -g_InvSrcSize.y), 0).rgb;
+    float3 d = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2(-g_InvSrcSize.x,  0),             0).rgb;
+    float3 e = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV,                                            0).rgb;
+    float3 f = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2( g_InvSrcSize.x,  0),             0).rgb;
+    float3 g_ = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2(-g_InvSrcSize.x,  g_InvSrcSize.y), 0).rgb;
+    float3 h = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2(0,               g_InvSrcSize.y), 0).rgb;
+    float3 i = g_SrcTex.SampleLevel(g_sLinearClamp, srcUV + float2( g_InvSrcSize.x,  g_InvSrcSize.y), 0).rgb;
+
+    // Luminance for local contrast measurement.
+    float lMin = min(min(dot(b,float3(0.2126f,0.7152f,0.0722f)),
+                         dot(d,float3(0.2126f,0.7152f,0.0722f))),
+                     min(dot(e,float3(0.2126f,0.7152f,0.0722f)),
+                     min(dot(f,float3(0.2126f,0.7152f,0.0722f)),
+                         dot(h,float3(0.2126f,0.7152f,0.0722f)))));
+    float lMax = max(max(dot(b,float3(0.2126f,0.7152f,0.0722f)),
+                         dot(d,float3(0.2126f,0.7152f,0.0722f))),
+                     max(dot(e,float3(0.2126f,0.7152f,0.0722f)),
+                     max(dot(f,float3(0.2126f,0.7152f,0.0722f)),
+                         dot(h,float3(0.2126f,0.7152f,0.0722f)))));
+
+    float w  = -g_Sharpening * rsqrt(max(lMax, 1e-5f)) * 0.125f;
+    float wN = 1.0f + 4.0f * w;
+    float3 sharpened = (e + w * (b + d + f + h)) / wN;
+
+    g_DstTex[tid.xy] = float4(saturate(sharpened), 1.0f);
+}

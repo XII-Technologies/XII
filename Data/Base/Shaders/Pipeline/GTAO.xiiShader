@@ -1,0 +1,93 @@
+// XII Engine — GTAO.xiiShader  [NEW]
+// Pass 29: Ground Truth Ambient Occlusion — horizon-based integration.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer GTAOConstants : register(b3)
+{
+    float  g_Radius;          // world-space AO radius
+    uint   g_SliceCount;      // number of angular slices (typically 3)
+    uint   g_StepsPerSlice;   // horizon steps per slice (typically 4)
+    float  g_FalloffPow;      // AO attenuation exponent
+    float  g_Thickness;       // approximated occluder thickness (world units)
+    float2 g_InvResolution;
+    float  g_InvTanHalfFOV;  // 1 / tan(halfFovY), derived from projection
+};
+
+Texture2D<float>  g_SceneDepth : register(t0);
+Texture2D<float2> g_NRBuffer   : register(t1); // oct-packed normal
+Texture2D<float>  g_HiZPyramid : register(t2);
+RWTexture2D<float>g_RawAO      : register(u0);
+
+// Reconstruct view-space position from a depth sample.
+float3 GetViewPos(float2 uv, float depth, float2 dims)
+{
+    float2 ndc = float2(uv.x, 1.0f - uv.y) * 2.0f - 1.0f;
+    float4 clip   = float4(ndc, depth, 1.0f);
+    float4 world  = mul(g_InverseViewProjectionMatrix, clip);
+    return world.xyz / world.w;
+}
+
+[numthreads(8, 8, 1)]
+void CS_GTAO(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_RawAO.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
+    float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f) { g_RawAO[tid.xy] = 1.0f; return; }
+
+    float3 P  = GetViewPos(uv, depth, float2(dims));
+    float2 on = g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0);
+    float3 N  = DecodeOctNormal(on);
+
+    float ao       = 0.0f;
+    float noiseOff = InterleavedGradientNoise(float2(tid.xy), g_FrameIndex);
+
+    for (uint s = 0u; s < g_SliceCount; ++s)
+    {
+        // Slice direction in screen space.
+        float sliceAngle = (float(s) + noiseOff) * (3.14159265f / float(g_SliceCount));
+        float2 dir2D     = float2(cos(sliceAngle), sin(sliceAngle));
+        float3 sliceDir  = float3(dir2D * g_InvResolution, 0.0f); // screen-to-view approx
+
+        float h1 = -1.0f, h2 = -1.0f; // horizon cosines for both sides
+
+        for (uint step = 1u; step <= g_StepsPerSlice; ++step)
+        {
+            float t = float(step) / float(g_StepsPerSlice);
+            // March step in screen space.
+            float2 tapUV1 = uv + dir2D * t * g_Radius * g_InvResolution;
+            float2 tapUV2 = uv - dir2D * t * g_Radius * g_InvResolution;
+
+            [unroll(2)]
+            for (int side = 0; side < 2; ++side)
+            {
+                float2 tapUV = (side == 0) ? tapUV1 : tapUV2;
+                if (any(tapUV < 0.0f) || any(tapUV > 1.0f)) continue;
+
+                float tapDepth = g_SceneDepth.SampleLevel(g_sPointClamp, tapUV, 0);
+                float3 tapPos  = GetViewPos(tapUV, tapDepth, float2(dims));
+                float3 toTap   = tapPos - P;
+                float  dist    = length(toTap);
+                if (dist < 0.001f || dist > g_Radius) continue;
+
+                float cosH = dot(N, toTap / dist);
+                float att  = 1.0f - saturate(dist / g_Radius);
+
+                if (side == 0) h1 = max(h1, cosH * att);
+                else           h2 = max(h2, cosH * att);
+            }
+        }
+
+        // Integrate horizon angles.
+        float h1A   = acos(clamp(h1, -1.0f, 1.0f));
+        float h2A   = acos(clamp(h2, -1.0f, 1.0f));
+        ao += saturate(1.0f - 0.5f * (cos(h1A) + cos(h2A)));
+    }
+
+    ao = pow(saturate(ao / float(g_SliceCount)), g_FalloffPow);
+    g_RawAO[tid.xy] = 1.0f - ao;
+}

@@ -4,7 +4,6 @@
 #include <Foundation/Types/VarianceTypes.h>
 #include <GraphicsCore/Components/RenderComponent.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 
 class xiiAbstractObjectNode;
 struct xiiMsgComponentInternalTrigger;

@@ -5,7 +5,6 @@
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
 #include <GraphicsCore/AnimationSystem/SkeletonComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 #include <ozz/animation/runtime/local_to_model_job.h>
 #include <ozz/animation/runtime/skeleton_utils.h>

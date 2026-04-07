@@ -1,65 +1,51 @@
-[PLATFORMS]
-ALL
+// XII Engine — CoarseFrustumCulling.xiiShader  [REWRITTEN]
+// Pass 9: Per-instance sphere test against 6 camera frustum planes.
+// Dispatch: ceil(InstanceCount/64) × 1 × 1
 
-[PERMUTATIONS]
+#include "PipelineCommon.xiiShader"
 
-[COMPUTESHADER]
+cbuffer FrustumPlanes : register(b3)
+{
+    float4 g_Planes[6]; // xyz=normal, w=negDistance
+};
 
-StructuredBuffer<float4> GpuSceneBounds;
-StructuredBuffer<float4> CameraFrustumPlanes;
-RWStructuredBuffer<uint> GpuVisibleInstances;
-RWStructuredBuffer<uint> GpuVisibleInstanceCount;
+struct InstanceBounds { float3 Center; float Radius; float3 Extents; float _pad; };
+
+StructuredBuffer<InstanceBounds> g_Bounds      : register(t0);
+StructuredBuffer<uint>           g_LODMetadata : register(t1);
+RWStructuredBuffer<uint>         g_VisibleOut  : register(u0); // [0]=count, [1..]=indices
+
+groupshared uint gs_Count;
+groupshared uint gs_Scratch[64];
 
 [numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_CoarseFrustumCull(uint3 tid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
 {
-  uint instanceIndex = dispatchThreadId.x;
+    if (gtid.x == 0u) gs_Count = 0u;
+    GroupMemoryBarrierWithGroupSync();
 
-  if (instanceIndex == 0 && GpuVisibleInstanceCount.Length > 0)
-  {
-    GpuVisibleInstanceCount[0] = 0;
-  }
-
-  if (instanceIndex >= GpuSceneBounds.Length || GpuVisibleInstances.Length == 0 || GpuVisibleInstanceCount.Length == 0)
-  {
-    return;
-  }
-
-  const float4 bounds = GpuSceneBounds[instanceIndex];
-  const float3 center = bounds.xyz;
-  const float  radius = max(bounds.w, 0.001f);
-
-  if (CameraFrustumPlanes.Length < 6)
-  {
-    uint visibleWriteIndex = 0;
-    InterlockedAdd(GpuVisibleInstanceCount[0], 1, visibleWriteIndex);
-    if (visibleWriteIndex < GpuVisibleInstances.Length)
+    uint iIdx = tid.x;
+    bool visible = (iIdx < 65536u);
+    if (visible)
     {
-      GpuVisibleInstances[visibleWriteIndex] = instanceIndex;
+        InstanceBounds b = g_Bounds[iIdx];
+        [unroll(6)]
+        for (int p = 0; p < 6; ++p)
+            if (dot(g_Planes[p].xyz, b.Center) + g_Planes[p].w < -b.Radius)
+            { visible = false; break; }
     }
-    return;
-  }
 
-  const float d0 = dot(CameraFrustumPlanes[0], float4(center, 1.0f)) + radius;
-  const float d1 = dot(CameraFrustumPlanes[1], float4(center, 1.0f)) + radius;
-  const float d2 = dot(CameraFrustumPlanes[2], float4(center, 1.0f)) + radius;
-  const float d3 = dot(CameraFrustumPlanes[3], float4(center, 1.0f)) + radius;
-  const float d4 = dot(CameraFrustumPlanes[4], float4(center, 1.0f)) + radius;
-  const float d5 = dot(CameraFrustumPlanes[5], float4(center, 1.0f)) + radius;
+    if (visible)
+    {
+        uint slot; InterlockedAdd(gs_Count, 1u, slot);
+        gs_Scratch[slot] = iIdx;
+    }
+    GroupMemoryBarrierWithGroupSync();
 
-  const float minDistance = min(min(min(d0, d1), min(d2, d3)), min(d4, d5));
-  const bool  isVisible   = minDistance >= 0.0f;
-
-  if (!isVisible)
-  {
-    return;
-  }
-
-  uint visibleWriteIndex = 0;
-  InterlockedAdd(GpuVisibleInstanceCount[0], 1, visibleWriteIndex);
-
-  if (visibleWriteIndex < GpuVisibleInstances.Length)
-  {
-    GpuVisibleInstances[visibleWriteIndex] = instanceIndex;
-  }
+    if (gtid.x == 0u && gs_Count > 0u)
+    {
+        uint base; InterlockedAdd(g_VisibleOut[0], gs_Count, base);
+        for (uint i = 0u; i < gs_Count; ++i)
+            g_VisibleOut[base + 1u + i] = gs_Scratch[i];
+    }
 }

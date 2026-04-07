@@ -2,10 +2,8 @@
 
 #include <Core/World/World.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiWorldModule::xiiWorldModule(xiiWorld* pWorld) :
   m_pWorld(pWorld)

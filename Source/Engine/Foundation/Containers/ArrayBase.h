@@ -18,6 +18,8 @@ template <typename T, typename Derived>
 class xiiArrayBase
 {
 public:
+  using ValueType = T;
+
   /// \brief Constructor.
   xiiArrayBase(); // [tested]
 

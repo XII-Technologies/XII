@@ -67,7 +67,7 @@ public:
   static void CopyOrMoveConstruct(Destination* pDestination, Source&& source);
 
   /// \brief Constructs \a uiCount objects of type T in a raw buffer at \a pDestination from an existing array of objects at \a pSource by
-  /// using move construction if availble, otherwise by copy construction. Calls destructor of source elements in any case (if it is a non
+  /// using move construction if available, otherwise by copy construction. Calls destructor of source elements in any case (if it is a non
   /// primitive or mem-relocatable type).
   template <typename T>
   static void RelocateConstruct(T* pDestination, T* pSource, size_t uiCount = 1);

@@ -6,7 +6,6 @@
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :
@@ -249,8 +248,6 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
   if (uiVersion >= 2 && uiVersion <= 7)
   {
-    xiiRenderPipelineResourceHandle m_hRenderPipeline;
-    s >> m_hRenderPipeline;
   }
 
   if (uiVersion >= 3)

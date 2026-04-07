@@ -4,47 +4,6 @@
 #include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 
-namespace
-{
-  [[nodiscard]] static vk::BuildAccelerationStructureFlagsKHR ConvertBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
-  {
-    vk::BuildAccelerationStructureFlagsKHR vkFlags = {};
-
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastBuild;
-    if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
-      vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eLowMemory;
-
-    return vkFlags;
-  }
-
-  [[nodiscard]] static vk::Format ConvertTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
-  {
-    if (triangle.m_VertexValueType == xiiGALValueType::Float32)
-    {
-      return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sfloat : vk::Format::eR32G32B32Sfloat;
-    }
-
-    if (triangle.m_VertexValueType == xiiGALValueType::Float16)
-    {
-      return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Sfloat : vk::Format::eR16G16B16Sfloat;
-    }
-
-    if (triangle.m_VertexValueType == xiiGALValueType::Int32)
-    {
-      return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sint : vk::Format::eR32G32B32Sint;
-    }
-
-    return vk::Format::eUndefined;
-  }
-} // namespace
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelASVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -97,7 +56,7 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
     for (const xiiGALBLASTriangleDescription& triangle : m_Description.m_Triangles)
     {
       vk::AccelerationStructureGeometryTrianglesDataKHR triangleData = {};
-      triangleData.vertexFormat                                      = ConvertTriangleVertexFormat(triangle);
+      triangleData.vertexFormat                                      = xiiVulkanTypeConversions::GetTriangleVertexFormat(triangle);
       triangleData.vertexData.deviceAddress                          = 0U;
       triangleData.vertexStride                                      = 0U;
       triangleData.maxVertex                                         = triangle.m_uiMaxVertexCount;
@@ -137,7 +96,7 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 
     vk::AccelerationStructureBuildGeometryInfoKHR buildInfo = {};
     buildInfo.type                                          = vk::AccelerationStructureTypeKHR::eBottomLevel;
-    buildInfo.flags                                         = ConvertBuildFlags(m_Description.m_BuildASFlags);
+    buildInfo.flags                                         = xiiVulkanTypeConversions::GetAccelerationStructureFlags(m_Description.m_BuildASFlags);
     buildInfo.mode                                          = vk::BuildAccelerationStructureModeKHR::eBuild;
     buildInfo.geometryCount                                 = vkGeometries.GetCount();
     buildInfo.pGeometries                                   = vkGeometries.GetData();

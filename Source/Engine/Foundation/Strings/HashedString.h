@@ -148,6 +148,9 @@ XII_ALWAYS_INLINE bool operator==(const char* sz, const xiiHashedString& rhs)
 template <size_t N>
 xiiHashedString xiiMakeHashedString(const char (&string)[N]);
 
+/// \brief Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.
+xiiHashedString xiiMakeHashedString(xiiStringView sString);
+
 
 /// \brief A class to use together with xiiHashedString for quick comparisons with temporary strings that need not be stored further.
 ///

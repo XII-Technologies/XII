@@ -2,17 +2,21 @@
 
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Threading/DelegateTask.h>
+#include <Foundation/Types/Delegate.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/TagSet.h>
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
 class xiiFrustum;
 class xiiWorld;
+class xiiRenderGraph;
+class xiiExtractedRenderData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -20,37 +24,22 @@ class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiReflectedClass);
 
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiView);
+
 private:
   /// \brief Use xiiRenderLoop::CreateView to create a view.
   xiiView();
   ~xiiView();
 
 public:
-  xiiViewHandle GetHandle() const;
-
   void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
-
-  void            SetWorld(xiiWorld* pWorld);
-  xiiWorld*       GetWorld();
-  const xiiWorld* GetWorld() const;
 
   /// \brief Sets the swapchain that this view will be rendering into. Can be invalid in case the render target is an off-screen buffer in which case SetRenderTargets needs to be called.
   /// Setting the swap-chain is necessary in order to acquire and present the image to the window.
   /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the render targets.
   void             SetSwapChain(xiiGALSwapChain* pSwapChain);
   xiiGALSwapChain* GetSwapChain() const;
-
-  /// \brief Sets the off-screen render targets. Use SetSwapChain if rendering to a window.
-  /// SetSwapChain and SetRenderTargets are mutually exclusive. Calling this function will reset the swap chain.
-  void                    SetRenderTargets(const xiiRenderTargets& renderTargets);
-  const xiiRenderTargets& GetRenderTargets() const;
-
-  /// \brief Returns the render targets that were either set via the swapchain or via the manually set render targets.
-  const xiiRenderTargets& GetActiveRenderTargets() const;
-
-  void                            SetRenderPipelineResource(xiiRenderPipelineResourceHandle hPipeline);
-  xiiRenderPipelineResourceHandle GetRenderPipelineResource() const;
 
   void             SetCamera(xiiCamera* pCamera);
   xiiCamera*       GetCamera();
@@ -74,19 +63,9 @@ public:
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
-  /// \brief Forces the render pipeline to be rebuilt.
-  void ForceUpdate();
-
   const xiiViewData& GetData() const;
 
   bool IsValid() const;
-
-  /// \brief Extracts all relevant data from the world to render the view.
-  void ExtractData();
-
-  /// \brief Returns a task implementation that calls ExtractData on this view.
-  const xiiSharedPtr<xiiTask>& GetExtractTask();
-
 
   /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
@@ -130,48 +109,51 @@ public:
   /// \brief Returns the frustum that should be used for determine visible objects for this view.
   void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
-  void SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue);
+  using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
 
-  void SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-
-  void ResetRenderPassProperties();
-
-  void       SetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-  xiiVariant GetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName);
-  bool       IsRenderPassReadBackPropertyExisting(xiiStringView sPassName, xiiStringView sPropertyName) const;
-
-  /// \brief Pushes the view and camera data into the extracted data of the pipeline.
+  /// \brief Assigns an optional per-view render graph builder callback.
   ///
-  /// Use xiiRenderWorld::GetDataIndexForExtraction() to update the data from the extraction thread. Can't be used if this view is currently extracted.
-  /// Use xiiRenderWorld::GetDataIndexForRendering() to update the data from the render thread.
-  void UpdateViewData(xiiUInt32 uiDataIndex);
+  /// If set, xiiRenderWorldModule calls this callback instead of the default graph builder.
+  void SetRenderGraphBuilder(RenderGraphBuilder builder);
+
+  /// \brief Returns the optional per-view render graph builder callback.
+  const RenderGraphBuilder& GetRenderGraphBuilder() const;
+
+  /// \brief Returns a monotonically increasing counter whenever the graph builder changes.
+  xiiUInt32 GetRenderGraphBuilderVersion() const;
 
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
 
+  xiiRenderGraph*       GetRenderGraph() { return m_pRenderGraph.Borrow(); }
+  const xiiRenderGraph* GetRenderGraph() const { return m_pRenderGraph.Borrow(); }
+
+  xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData.Borrow(); }
+  const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData.Borrow(); }
+
+  /// \brief Returns the per-view, per-frame blackboard. Cleared at the start of every frame by xiiRenderWorldModule.
+  xiiRenderGraphBlackboard&       GetBlackboard() { return m_Blackboard; }
+  const xiiRenderGraphBlackboard& GetBlackboard() const { return m_Blackboard; }
+
+  /// \brief Returns the per-view transient resource cache. Passes acquire and release GPU resources here.
+  xiiRenderGraphResourceCache&       GetResourceCache() { return m_ResourceCache; }
+  const xiiRenderGraphResourceCache& GetResourceCache() const { return m_ResourceCache; }
+
 private:
+  friend class xiiRenderWorldModule;
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
 
-  xiiViewId       m_InternalId;
   xiiHashedString m_sName;
 
-  xiiSharedPtr<xiiTask> m_pExtractTask;
-
-  xiiWorld* m_pWorld = nullptr;
-
-  xiiRenderPipelineResourceHandle m_hRenderPipeline;
-  xiiUInt32                       m_uiRenderPipelineResourceDescriptionCounter = 0;
+  xiiUInt32                       m_uiRenderGraphBuilderVersion                = 0;
   xiiCamera*                      m_pCamera                                    = nullptr;
   const xiiCamera*                m_pCullingCamera                             = nullptr;
   const xiiCamera*                m_pLodCamera                                 = nullptr;
-
+  RenderGraphBuilder              m_RenderGraphBuilder;
 
 private:
   void UpdateCachedMatrices() const;
-
-  /// \brief Rebuilds pipeline if necessary and pushes double-buffered settings into the pipeline.
-  void EnsureUpToDate();
 
   mutable xiiUInt32 m_uiLastCameraSettingsModification    = 0;
   mutable xiiUInt32 m_uiLastCameraOrientationModification = 0;
@@ -179,36 +161,13 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiInternal::RenderDataCache* m_pRenderDataCache = nullptr;
+  xiiUniquePtr<xiiRenderGraph>         m_pRenderGraph;
+  xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
 
-  xiiDynamicArray<xiiGALPermutationVariable> m_PermutationVariables;
-  bool                                       m_bPermutationVariablesModified = false;
-
-  void ApplyPermutationVariables();
-
-  struct PropertyValue
-  {
-    xiiString  m_sObjectName;
-    xiiString  m_sPropertyName;
-    xiiVariant m_DefaultValue;
-    xiiVariant m_CurrentValue;
-    bool       m_bIsValid;
-    bool       m_bIsDirty;
-  };
-
-  void SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-  void SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
-
-  void ReadBackPassProperties();
-
-  void ResetAllPropertyStates(xiiMap<xiiString, PropertyValue>& map);
-
-  void ApplyRenderPassProperties();
-
-  void ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, xiiStringView sTypeName);
-
-  xiiMap<xiiString, PropertyValue> m_PassProperties;
-  xiiMap<xiiString, PropertyValue> m_PassReadBackProperties;
+  // Per-view, per-frame inter-pass data store. Cleared each frame by the render world module.
+  xiiRenderGraphBlackboard m_Blackboard;
+  // Per-view transient GPU resource pool. Reused across frames by the resource cache eviction policy.
+  xiiRenderGraphResourceCache m_ResourceCache;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

@@ -10,8 +10,8 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureReadback
 public:
   struct ReadbackRequest
   {
-    xiiSharedPtr<xiiGALTexture> m_pTexture;         // Source GPU texture (UAV, SRV, etc.)
-    xiiUInt32                   m_uiTextureID = 0U; // Optional user tag (frame or job id)
+    xiiGALTexture* m_pTexture    = nullptr; // Source GPU texture (UAV, SRV, etc.)
+    xiiUInt32      m_uiTextureID = 0U;      // Optional user tag (frame or job id)
 
     // Subresource addressing
     xiiUInt32 m_uiMipLevel   = 0U;
@@ -28,8 +28,8 @@ public:
 
   struct ReadbackCapture
   {
-    xiiSharedPtr<xiiGALTexture> m_pStagingTexture; // CPU-readable texture with copied data
-    xiiUInt32                   m_uiTextureID = 0U;
+    xiiGALTexture* m_pStagingTexture = nullptr; // CPU-readable texture with copied data
+    xiiUInt32      m_uiTextureID     = 0U;
 
     // Metadata for consumer-side mapping
     xiiUInt32 m_uiWidth          = 0U;
@@ -51,14 +51,13 @@ public:
   };
 
 public:
-  xiiGALTextureReadback(xiiSharedPtr<xiiGALDevice> pDevice);
+  xiiGALTextureReadback(xiiGALDevice* pDevice);
   ~xiiGALTextureReadback();
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALDevice> GetDevice() const { return m_pDevice; }
-
   /// \brief Enqueue a readback from a texture into an internal staging texture.
+  ///
   /// Records copy commands on the provided command list and signals an internal fence.
-  void Enqueue(xiiSharedPtr<xiiGALCommandList> pCommandList, const ReadbackRequest& request);
+  void Enqueue(xiiGALCommandList* pCommandList, const ReadbackRequest& request);
 
   /// \brief Returns true if the oldest pending readback has completed on the GPU.
   [[nodiscard]] bool HasCompleted() const;
@@ -70,14 +69,14 @@ public:
   void WaitForNextCompleted();
 
   /// \brief Recycle a staging texture back into the internal pool for reuse.
-  void RecycleStagingTexture(xiiSharedPtr<xiiGALTexture>&& pStagingTexture);
+  void RecycleStagingTexture(xiiGALTexture* pStagingTexture);
 
 private:
   struct Pending
   {
-    xiiSharedPtr<xiiGALTexture> m_pStagingTexture;
-    xiiUInt64                   m_uiFenceValue = 0U;
-    ReadbackCapture             m_CaptureMeta;
+    xiiGALTexture*  m_pStagingTexture = nullptr;
+    xiiUInt64       m_uiFenceValue    = 0U;
+    ReadbackCapture m_CaptureMeta;
 
     XII_ALWAYS_INLINE bool operator==(const Pending& rhs) const
     {
@@ -85,16 +84,27 @@ private:
     }
   };
 
-  xiiSharedPtr<xiiGALDevice> m_pDevice;
-  xiiSharedPtr<xiiGALFence>  m_pFence;
-  xiiUInt64                  m_uiNextFenceValue = 1U;
+  struct TextureResource
+  {
+    xiiSharedPtr<xiiGALTexture> m_pTexture;
+    bool                        m_bInUse = false;
 
-  mutable xiiMutex                                m_PoolMutex;
-  xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 4U> m_StagingPool;
+    XII_ALWAYS_INLINE bool operator==(const TextureResource& rhs) const
+    {
+      return m_pTexture == rhs.m_pTexture;
+    }
+  };
+
+  xiiGALDevice*             m_pDevice;
+  xiiSharedPtr<xiiGALFence> m_pFence;
+  xiiUInt64                 m_uiNextFenceValue = 1U;
+
+  mutable xiiMutex                    m_PoolMutex;
+  xiiHybridArray<TextureResource, 4U> m_StagingPool;
 
   mutable xiiMutex  m_PendingMutex;
   xiiDeque<Pending> m_Pending;
 
   // Internal: create or fetch a staging texture matching region size + format.
-  xiiSharedPtr<xiiGALTexture> AcquireStagingTexture(const xiiGALTextureCreationDescription& description);
+  xiiGALTexture* AcquireStagingTexture(const xiiGALTextureCreationDescription& description);
 };

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
-#include <GraphicsCore/Pipeline/Renderer.h>
 
 using xiiDynamicMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiDynamicMeshBufferResource>;
 using xiiCustomMeshComponentManager      = xiiComponentManager<class xiiCustomMeshComponent, xiiBlockStorageType::Compact>;

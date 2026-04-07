@@ -1,0 +1,55 @@
+// XII Engine — FinalBlit.xiiShader  [NEW]
+// Pass 65: Copy final colour target to swap-chain back buffer with display colour-space correction.
+// Supports sRGB and HDR10/PQ output modes.
+
+#include "PipelineCommon.xiiShader"
+#include "FullscreenTriangleVertexShader.h"
+#include "FullscreenTriangleInterpolator.h"
+
+cbuffer FinalBlitConstants : register(b3)
+{
+    uint  g_OutputMode;   // 0=sRGB, 1=HDR10/PQ, 2=scRGB
+    float g_PaperWhite;   // nits for HDR10 (typically 203 nits)
+    float g_MaxNits;      // display peak (typically 1000 nits)
+    float _pad;
+};
+
+Texture2D<float4> g_FinalColor : register(t0);
+
+struct PS_Out { float4 Color : SV_Target0; };
+
+// Perceptual Quantiser (SMPTE ST 2084 / PQ) transfer function.
+float3 LinearToPQ(float3 L)
+{
+    const float m1 = 0.1593017578125f;
+    const float m2 = 78.84375f;
+    const float c1 = 0.8359375f;
+    const float c2 = 18.8515625f;
+    const float c3 = 18.6875f;
+    float3 Lm1 = pow(L / 10000.0f, m1);
+    return pow((c1 + c2 * Lm1) / (1.0f + c3 * Lm1), m2);
+}
+
+PS_Out PS_FinalBlit(FullscreenInterpolators In)
+{
+    float3 color = g_FinalColor.SampleLevel(g_sPointClamp, In.TexCoord, 0).rgb;
+
+    PS_Out o;
+    if (g_OutputMode == 1u)
+    {
+        // HDR10: scale from scene nits → 0-10000 nits, encode as PQ.
+        float3 hdr10 = color * g_PaperWhite;
+        o.Color = float4(LinearToPQ(hdr10), 1.0f);
+    }
+    else if (g_OutputMode == 2u)
+    {
+        // scRGB: already linear, just output (Windows HDR).
+        o.Color = float4(color * (g_PaperWhite / 80.0f), 1.0f);
+    }
+    else
+    {
+        // sRGB gamma encode (should already be sRGB from ToneMapping, but guard here).
+        o.Color = float4(color, 1.0f);
+    }
+    return o;
+}

@@ -44,28 +44,33 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderSections
 
   enum Enum : StorageType
   {
-    PLATFORMS = 0U,
-    PERMUTATIONS,
-    MATERIALPARAMETER,
-    MATERIALCONFIG,
-    RENDERSTATE,
-    SHADER,
-    VERTEXSHADER,
-    PIXELSHADER,
-    GEOMETRYSHADER,
-    HULLSHADER,
-    DOMAINSHADER,
-    COMPUTESHADER,
-    AMPLIFICATIONSHADER,
-    MESHSHADER,
-    RAYGENERATIONSHADER,
-    RAYMISSSHADER,
-    RAYCLOSESTHITSHADER,
-    RAYANYHITSHADER,
-    RAYINTERSECTIONSHADER,
-    CALLABLESHADER,
-    TILESHADER,
-    TEMPLATE_VARS
+    Platforms = 0U,
+    Permutations,
+    MaterialConstants,
+    MaterialParameter,
+    MaterialConfiguration,
+    RenderState,
+    Shader,
+    VertexShader,
+    PixelShader,
+    GeometryShader,
+    HullShader,
+    DomainShader,
+    ComputeShader,
+    AmplificationShader,
+    MeshShader,
+    RayGenerationShader,
+    RayMissShader,
+    RayClosestHitShader,
+    RayAnyHitShader,
+    RayIntersectionShader,
+    CallableShader,
+    TileShader,
+    TemplateVariables,
+
+    ENUM_COUNT,
+
+    Default = Platforms
   };
 
   static void GetShaderSections(xiiStringView sContent, xiiGALShaderTextSectionizer& out_sections);

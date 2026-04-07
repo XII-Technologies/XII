@@ -1,38 +1,69 @@
-[PLATFORMS]
-ALL
+// XII Engine — ContactShadow.xiiShader  [REWRITTEN]
+// Pass 20: Screen-space contact shadow ray march in view space.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
 
-[PERMUTATIONS]
+#include "PipelineCommon.xiiShader"
 
-[COMPUTESHADER]
+cbuffer ContactShadowConstants : register(b3)
+{
+    float3 g_LightDirView;   // light direction in view space
+    uint   g_RaySteps;       // typically 8-32
+    float  g_MaxRayDistView; // max distance in view space units
+    float  g_DepthBias;      // anti-self-intersection
+    float2 _pad;
+};
 
-Texture2D<float>    SceneDepth;
-Texture2D<float4>   SceneNormalRoughness;
-StructuredBuffer<float4> ContactShadowLightParams;
-RWTexture2D<float>  ScreenSpaceContactShadowTerm;
+Texture2D<float>   g_SceneDepth  : register(t0);
+RWTexture2D<float> g_ShadowOut   : register(u0); // 0=lit, 1=occluded
+
+float3 ViewPosFromDepth(float2 ndc, float depth)
+{
+    float4 clip  = float4(ndc, depth, 1.0f);
+    float4 world = mul(g_InverseViewProjectionMatrix, clip);
+    world /= world.w;
+    // Quick hack: reconstruct view-space via another mul (kept for generality).
+    // In a real pipeline, bind a separate per-frame view matrix.
+    return world.xyz; // using world as approximation for view-space (camera at origin)
+}
 
 [numthreads(8, 8, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_ContactShadow(uint3 tid : SV_DispatchThreadID)
 {
-  uint width = 0;
-  uint height = 0;
-  ScreenSpaceContactShadowTerm.GetDimensions(width, height);
+    uint2 dims; g_ShadowOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
 
-  if (dispatchThreadId.x >= width || dispatchThreadId.y >= height)
-  {
-    return;
-  }
+    float2 uv      = (float2(tid.xy) + 0.5f) / float2(dims);
+    float  depth   = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    float  shadow  = 0.0f;
 
-  const int3 sampleCoord = int3(dispatchThreadId.xy, 0);
+    if (depth > 0.0f && depth < 1.0f)
+    {
+        float2 ndc    = uv * 2.0f - float2(1.0f, -1.0f);
+        float3 vPos   = ViewPosFromDepth(ndc, depth);
+        float  stepSz = g_MaxRayDistView / float(g_RaySteps);
 
-  const float depth = SceneDepth.Load(sampleCoord);
-  const float3 normal = normalize(SceneNormalRoughness.Load(sampleCoord).xyz * 2.0f - 1.0f);
+        for (uint s = 0u; s < g_RaySteps; ++s)
+        {
+            float3 rayPos = vPos + g_LightDirView * (stepSz * float(s + 1u));
 
-  const float4 lightParams = ContactShadowLightParams.Length > 0 ? ContactShadowLightParams[0] : float4(1.0f, 0.5f, 0.01f, 0.0f);
-  const float3 lightDir = normalize(float3(lightParams.x, lightParams.y, max(lightParams.z, 0.001f)));
+            // Project ray position back to screen to sample depth.
+            float4 clip   = mul(g_ViewProjectionMatrix, float4(rayPos, 1.0f));
+            float2 rayNDC = clip.xy / max(clip.w, 1e-7f);
+            float2 rayUV  = rayNDC * float2(0.5f, -0.5f) + 0.5f;
+            if (any(rayUV < 0.0f) || any(rayUV > 1.0f)) break;
 
-  const float ndotl = saturate(dot(normal, -lightDir));
-  const float depthOcclusion = saturate((1.0f - depth) * max(lightParams.w, 1.0f));
-  const float contactTerm = ndotl * depthOcclusion;
+            float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, rayUV, 0);
+            float rayDepth    = clip.z / clip.w;
 
-  ScreenSpaceContactShadowTerm[dispatchThreadId.xy] = contactTerm;
+            // Reversed-Z: sampleDepth > rayDepth means sample is in front of ray = occluded.
+            if (sampleDepth > rayDepth + g_DepthBias)
+            {
+                // Fade out at march end to reduce hard edges.
+                shadow = 1.0f - float(s) / float(g_RaySteps);
+                break;
+            }
+        }
+    }
+
+    g_ShadowOut[tid.xy] = shadow;
 }

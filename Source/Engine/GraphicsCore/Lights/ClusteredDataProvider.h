@@ -3,8 +3,6 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/FrameDataProvider.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 
 struct xiiPerLightData;
 struct xiiPerDecalData;

@@ -36,7 +36,14 @@ public:
   /// \param pCommandList - Pointer to the command list where the debug group is applied.
   /// \param sName        - Name of the debug group for debugging and profiling purposes.
   /// \param color        - Color used for visual representation (defaults to black).
-  xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color = xiiColor::White);
+  xiiGALScopedDebugGroup(xiiGALCommandList* pCommandList, xiiStringView sName, xiiColor color = xiiColor::White);
+
+  /// \brief Constructs a debug group with the specified name and color.
+  ///
+  /// \param commandList - Reference to the command list where the debug group is applied.
+  /// \param sName       - Name of the debug group for debugging and profiling purposes.
+  /// \param color       - Color used for visual representation (defaults to black).
+  xiiGALScopedDebugGroup(xiiGALCommandList& commandList, xiiStringView sName, xiiColor color = xiiColor::White);
 
   /// \brief Destructor, automatically ends the debug group.
   ~xiiGALScopedDebugGroup();
@@ -54,7 +61,7 @@ public:
   xiiGALScopedDebugGroup& operator=(xiiGALScopedDebugGroup&& rhs) noexcept;
 
 private:
-  xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Pointer to the command list associated with this debug group.
+  xiiGALCommandList* m_pCommandList;
 };
 
 #define XII_COMMANDLIST_SCOPE(pCommandList, szName) \

@@ -1,0 +1,91 @@
+// XII Engine — IndirectLighting.xiiShader  [NEW]
+// Pass 47: Combine RT GI / IBL + RT reflections + SSR into indirect lighting buffer.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer IndirectLightingConstants : register(b3)
+{
+    float  g_RTGIWeight;          // blend weight for RT GI  (0=all-IBL, 1=all-RT)
+    float  g_RTReflWeight;        // blend weight for RT reflections vs SSR
+    float  g_IBLIntensity;
+    float  _pad;
+};
+
+Texture2D<float2>   g_GBufNormal  : register(t0);  // oct-packed normal
+Texture2D<float4>   g_GBufMat     : register(t1);  // r=rough, g=metal, b=AO
+Texture2D<float4>   g_GBufAlbedo  : register(t2);
+Texture2D<float>    g_SceneDepth  : register(t3);
+Texture2D<float4>   g_RTGIBuf     : register(t4);  // resolved RT GI
+Texture2D<float4>   g_RTReflBuf   : register(t5);  // resolved RT reflections
+Texture2D<float4>   g_SSRBuf      : register(t6);  // SSR hit UV+confidence
+Texture2D<float>    g_AOTerm      : register(t7);
+TextureCube<float4> g_SpecularIBL : register(t8);  // pre-filtered env cube
+Texture2D<float2>   g_BRDFLut     : register(t9);  // precomputed GGX BRDF split-sum
+Texture2D<float4>   g_SceneColor  : register(t10); // scene colour for SSR resolve
+RWTexture2D<float4> g_IndirectOut : register(u0);
+
+// Diffuse wrap GI from RT or SH-based IBL.
+float3 DiffuseIBL(float3 N, float3 albedo, float metallic, float ao)
+{
+    // Simplified directional IBL — full implementation uses SH/irradiance cube.
+    float3 baseColor = albedo * (1.0f - metallic);
+    return baseColor * g_SpecularIBL.SampleLevel(g_sLinearClamp, N, 8.0f).rgb * g_IBLIntensity * ao;
+}
+
+// Split-sum specular IBL (Karis 2013).
+float3 SpecularIBL(float3 N, float3 V, float roughness, float3 f0, float ao)
+{
+    float3 R      = reflect(-V, N);
+    float  NoV    = saturate(dot(N, V));
+    float  mip    = roughness * 8.0f; // 9-mip env cube
+    float3 envRad = g_SpecularIBL.SampleLevel(g_sLinearClamp, R, mip).rgb;
+    float2 brdf   = g_BRDFLut.SampleLevel(g_sLinearClamp, float2(NoV, roughness), 0);
+    return envRad * (f0 * brdf.x + brdf.y) * ao;
+}
+
+[numthreads(8, 8, 1)]
+void CS_IndirectLighting(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_IndirectOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+
+    float  depth       = g_SceneDepth .SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f) { g_IndirectOut[tid.xy] = float4(0,0,0,1); return; }
+
+    float4 albedoA  = g_GBufAlbedo.SampleLevel(g_sPointClamp, uv, 0);
+    float4 material = g_GBufMat   .SampleLevel(g_sPointClamp, uv, 0);
+    float3 N        = DecodeOctNormal(g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0));
+    float3 worldPos = ReconstructWorldPos(uv, depth);
+    float3 V        = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
+    float  ao       = g_AOTerm    .SampleLevel(g_sPointClamp, uv, 0);
+
+    float3 albedo    = albedoA.rgb;
+    float  roughness = material.r;
+    float  metallic  = material.g;
+    float3 f0        = lerp(float3(0.04f,0.04f,0.04f), albedo, metallic);
+
+    // Diffuse GI: blend RT GI and IBL.
+    float3 rtGI     = g_RTGIBuf.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float3 iblDiff  = DiffuseIBL(N, albedo, metallic, ao);
+    float3 diffuse  = lerp(iblDiff, rtGI, saturate(g_RTGIWeight));
+
+    // Specular: blend RT reflections and SSR, with IBL fallback.
+    float4 ssrData       = g_SSRBuf    .SampleLevel(g_sPointClamp, uv, 0);
+    float4 rtReflData    = g_RTReflBuf .SampleLevel(g_sLinearClamp, uv, 0);
+    float3 iblSpec       = SpecularIBL(N, V, roughness, f0, ao);
+
+    // SSR resolve: sample scene colour at hit UV.
+    float3 ssrColor = float3(0,0,0);
+    if (ssrData.w > 0.01f)
+        ssrColor = g_SceneColor.SampleLevel(g_sLinearClamp, ssrData.xy, 0).rgb;
+
+    float3 reflections = lerp(
+        lerp(iblSpec, ssrColor * ssrData.w, ssrData.w),
+        rtReflData.rgb,
+        saturate(g_RTReflWeight));
+
+    g_IndirectOut[tid.xy] = float4(diffuse + reflections, 1.0f);
+}

@@ -6,7 +6,6 @@
 #include <Foundation/Math/Transform.h>
 #include <GraphicsCore/Debug/DebugRendererContext.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/Declarations.h>
 
 template <typename Type>
 class xiiRectTemplate;

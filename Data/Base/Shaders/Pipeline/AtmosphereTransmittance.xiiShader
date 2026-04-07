@@ -1,0 +1,78 @@
+// XII Engine — AtmosphereTransmittance.xiiShader  [NEW]
+// Pass 25a: Precompute atmospheric transmittance LUT  (256 × 64 × RGBA16F).
+// Each texel stores T(viewHeight, sunZenithCos) = exp(-optical depth integral).
+// Dispatch: ceil(256/8) × ceil(64/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer AtmosphereConstants : register(b3)
+{
+    float g_PlanetRadiusKm;
+    float g_AtmosphereRadiusKm;
+    float g_RayleighScaleHeight;  // km
+    float g_MieScaleHeight;       // km
+    float3 g_RayleighScattering;  float _p0; // km^-1
+    float3 g_MieScattering;       float _p1; // km^-1
+    float3 g_MieAbsorption;       float _p2; // km^-1
+    float3 g_OzoneAbsorption;     float _p3; // km^-1
+    uint   g_IntegrationSteps;
+    float3 _pad;
+};
+
+RWTexture2D<float4> g_TransmittanceLUT : register(u0);
+
+// Map LUT texel to (view height, cos(sunZenith)).
+void TexelToHeightCos(uint2 tid, uint2 dims, out float heightKm, out float cosZenith)
+{
+    float2 uv = (float2(tid) + 0.5f) / float2(dims);
+    heightKm  = lerp(g_PlanetRadiusKm, g_AtmosphereRadiusKm, uv.x);
+    cosZenith = uv.y * 2.0f - 1.0f;
+}
+
+// Density of each atmosphere layer at height h above planet surface.
+float RayleighDensity(float h) { return exp(-h / g_RayleighScaleHeight); }
+float MieDensity(float h)      { return exp(-h / g_MieScaleHeight); }
+float OzoneDensity(float h)    { return max(0.0f, 1.0f - abs(h - 25.0f) / 15.0f); }
+
+float3 IntegrateOpticalDepth(float3 rayStart, float3 rayDir, float rayLen)
+{
+    float3 optical = float3(0,0,0);
+    float  dt      = rayLen / float(g_IntegrationSteps);
+    for (uint i = 0u; i < g_IntegrationSteps; ++i)
+    {
+        float3 pos = rayStart + rayDir * (float(i) + 0.5f) * dt;
+        float  h   = length(pos) - g_PlanetRadiusKm;
+        optical   += (g_RayleighScattering * RayleighDensity(h)
+                    + g_MieScattering      * MieDensity(h)
+                    + g_MieAbsorption      * MieDensity(h)
+                    + g_OzoneAbsorption    * OzoneDensity(h)) * dt;
+    }
+    return optical;
+}
+
+// Ray-sphere intersection: returns parametric t for the atmosphere exit.
+float RaySphereIntersect(float3 origin, float3 dir, float radius)
+{
+    float b = dot(origin, dir);
+    float c = dot(origin, origin) - radius * radius;
+    float d = b*b - c;
+    if (d < 0.0f) return -1.0f;
+    return -b + sqrt(d);
+}
+
+[numthreads(8, 8, 1)]
+void CS_AtmosphereTransmittance(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_TransmittanceLUT.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float heightKm, cosZenith;
+    TexelToHeightCos(tid.xy, dims, heightKm, cosZenith);
+
+    float3 origin  = float3(0.0f, heightKm, 0.0f);
+    float3 rayDir  = float3(sqrt(max(0.0f, 1.0f - cosZenith * cosZenith)), cosZenith, 0.0f);
+    float  rayLen  = RaySphereIntersect(origin, rayDir, g_AtmosphereRadiusKm);
+
+    float3 T = exp(-IntegrateOpticalDepth(origin, rayDir, max(rayLen, 0.0f)));
+    g_TransmittanceLUT[tid.xy] = float4(T, 1.0f);
+}

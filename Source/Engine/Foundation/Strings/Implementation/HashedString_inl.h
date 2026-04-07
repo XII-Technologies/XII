@@ -125,6 +125,13 @@ XII_FORCE_INLINE xiiHashedString xiiMakeHashedString(const char (&string)[N])
   return sResult;
 }
 
+XII_FORCE_INLINE xiiHashedString xiiMakeHashedString(xiiStringView sString)
+{
+  xiiHashedString sResult;
+  sResult.Assign(sString);
+  return sResult;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString()

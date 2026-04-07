@@ -1,0 +1,70 @@
+// XII Engine — AtmosphereMultiScatter.xiiShader  [NEW]
+// Pass 25b: Precompute multiple-scattering approximation LUT (32 × 32 × RGBA16F).
+// Method: Hillaire 2020 — single 2D LUT approximating higher-order scattering.
+// Dispatch: ceil(32/8) × ceil(32/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer AtmosphereConstants : register(b3)
+{
+    float  g_PlanetRadiusKm;
+    float  g_AtmosphereRadiusKm;
+    float  g_RayleighScaleHeight;
+    float  g_MieScaleHeight;
+    float3 g_RayleighScattering;    float _p0;
+    float  g_MieScattering;         float3 _p1;
+    float  g_MiePhaseG;             float3 _p2;
+    uint   g_SqrtSamples;   // sqrt of hemisphere samples (e.g. 8 → 64 total)
+    float3 _pad;
+};
+
+Texture2D<float4>   g_TransmittanceLUT : register(t0);
+RWTexture2D<float4> g_MultiScatterLUT  : register(u0);
+
+float RayleighPhase(float cosTheta) { return (3.0f / (16.0f * 3.14159265f)) * (1.0f + cosTheta * cosTheta); }
+float MiePhase(float cosTheta, float g)
+{
+    float g2 = g * g;
+    return (3.0f / (8.0f * 3.14159265f)) * ((1.0f - g2) * (1.0f + cosTheta * cosTheta))
+         / ((2.0f + g2) * pow(1.0f + g2 - 2.0f * g * cosTheta, 1.5f));
+}
+
+float RayleighDensity(float h) { return exp(-h / g_RayleighScaleHeight); }
+float MieDensity(float h)      { return exp(-h / g_MieScaleHeight); }
+
+[numthreads(8, 8, 1)]
+void CS_AtmosphereMultiScatter(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_MultiScatterLUT.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv      = (float2(tid.xy) + 0.5f) / float2(dims);
+    float  cosView = uv.x * 2.0f - 1.0f;
+    float  height  = lerp(g_PlanetRadiusKm, g_AtmosphereRadiusKm, uv.y);
+
+    // Integrate sphere of directions — approximation for multiple scatter luminance.
+    float3 L2 = float3(0,0,0);
+    float  dOmega = 4.0f * 3.14159265f / float(g_SqrtSamples * g_SqrtSamples);
+
+    for (uint i = 0u; i < g_SqrtSamples; ++i)
+    for (uint j = 0u; j < g_SqrtSamples; ++j)
+    {
+        float theta  = acos(1.0f - 2.0f * (float(i) + 0.5f) / float(g_SqrtSamples));
+        float phi    = 2.0f * 3.14159265f * float(j) / float(g_SqrtSamples);
+        float3 dir   = float3(sin(theta)*cos(phi), cos(theta), sin(theta)*sin(phi));
+        float cosT   = dir.y;
+
+        // Sum scatter at this height for this direction.
+        float h      = height - g_PlanetRadiusKm;
+        float rho_r  = RayleighDensity(h);
+        float rho_m  = MieDensity(h);
+
+        float3 scatter = (g_RayleighScattering * rho_r * RayleighPhase(cosT)
+                        + g_MieScattering      * rho_m * MiePhase(cosT, g_MiePhaseG));
+        L2 += scatter * dOmega;
+    }
+
+    // Final fms coefficient — used in sky composite to add higher-order scatter.
+    float3 fms = L2 / (4.0f * 3.14159265f);
+    g_MultiScatterLUT[tid.xy] = float4(fms, 1.0f);
+}

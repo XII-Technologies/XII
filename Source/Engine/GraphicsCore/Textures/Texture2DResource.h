@@ -13,8 +13,6 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-#include <GraphicsCore/Pipeline/Declarations.h>
-
 class xiiImage;
 
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;

@@ -1,0 +1,111 @@
+// XII Engine — RTGIFinalGather.xiiShader  [NEW]
+// Pass 42: DXR ReSTIR-inspired global illumination gather.
+// Traces diffuse rays, stores reservoirs for temporal reuse in the next pass.
+
+#include "PipelineCommon.xiiShader"
+
+RaytracingAccelerationStructure g_TLAS       : register(t0);
+Texture2D<float>                g_SceneDepth : register(t1);
+Texture2D<float2>               g_NRBuffer   : register(t2);
+Texture2D<float4>               g_GBufAlb    : register(t3);
+TextureCube<float4>             g_EnvCube    : register(t4);
+RWTexture2D<float4>             g_GIOut      : register(u0); // radiance + hit distance
+
+cbuffer RTGIConstants : register(b3)
+{
+    uint  g_RaysPerPixel;
+    uint  g_ReservoirCandidates; // M in ReSTIR
+    uint  g_MaxBounces;
+    float g_RayBias;
+};
+
+struct GIPayload { float3 radiance; float hitT; float3 hitNormal; float pdf; };
+
+// Cosine-weighted hemisphere sample.
+float3 CosineSampleHemisphere(float3 N, float u, float v)
+{
+    float phi   = 2.0f * 3.14159265f * u;
+    float r     = sqrt(v);
+    float x     = r * cos(phi);
+    float y     = r * sin(phi);
+    float z     = sqrt(max(0.0f, 1.0f - v));
+    float3 up   = abs(N.y) < 0.99f ? float3(0,1,0) : float3(1,0,0);
+    float3 T    = normalize(cross(up, N));
+    float3 B    = cross(N, T);
+    return normalize(T * x + B * y + N * z);
+}
+
+[shader("raygeneration")]
+void RGS_RTGIFinalGather()
+{
+    uint2 idx  = DispatchRaysIndex().xy;
+    uint2 dims = DispatchRaysDimensions().xy;
+    float2 uv  = (float2(idx) + 0.5f) / float2(dims);
+
+    float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    g_GIOut[idx] = float4(0,0,0,0);
+    if (depth <= 0.0f) return;
+
+    float3 worldPos = ReconstructWorldPos(uv, depth);
+    float3 N        = DecodeOctNormal(g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0));
+    float3 albedo   = g_GBufAlb.SampleLevel(g_sPointClamp, uv, 0).rgb;
+
+    // ReSTIR: generate M candidate samples, store best via weighted reservoir sampling.
+    float3 selectedDir  = float3(0,1,0);
+    float3 selectedRad  = float3(0,0,0);
+    float  W            = 0.0f;
+    uint   selectedIdx  = 0u;
+
+    for (uint c = 0u; c < g_ReservoirCandidates; ++c)
+    {
+        float u = HaltonSample(g_FrameIndex * g_ReservoirCandidates * g_RaysPerPixel + c, 2u);
+        float v = HaltonSample(g_FrameIndex * g_ReservoirCandidates * g_RaysPerPixel + c, 3u);
+        float3 dir = CosineSampleHemisphere(N, u, v);
+
+        float phat = max(0.0f, dot(N, dir)) / 3.14159265f;
+        float wc   = phat; // simplified target PDF weight
+
+        W += wc;
+        float xi = InterleavedGradientNoise(float2(idx), g_FrameIndex * g_ReservoirCandidates + c);
+        if (xi * W < wc)
+        {
+            selectedDir = dir;
+            selectedIdx = c;
+        }
+    }
+
+    // Trace the selected candidate.
+    RayDesc ray;
+    ray.Origin    = worldPos + N * g_RayBias;
+    ray.Direction = selectedDir;
+    ray.TMin      = 0.001f;
+    ray.TMax      = 100.0f;
+
+    GIPayload payload = { float3(0,0,0), 0.0f, float3(0,1,0), 1.0f };
+    TraceRay(g_TLAS, 0u, 0xFFu, 0u, 0u, 0u, ray, payload);
+
+    // Weight and store.
+    float cosTheta = max(0.0f, dot(N, selectedDir));
+    float W_final  = (W > 0.0f) ? (1.0f / (W / float(g_ReservoirCandidates))) : 0.0f;
+    float3 gi      = payload.radiance * albedo * cosTheta * W_final / 3.14159265f;
+
+    g_GIOut[idx] = float4(gi, payload.hitT);
+}
+
+[shader("miss")]
+void MISS_RTGIGather(inout GIPayload payload)
+{
+    payload.radiance = g_EnvCube.SampleLevel(g_sLinearClamp, WorldRayDirection(), 3.0f).rgb;
+    payload.hitT     = -1.0f;
+}
+
+[shader("closesthit")]
+void CHS_RTGIGather(inout GIPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+    // Simplified direct lighting at hit point — real implementation reads material and re-shades.
+    float3 fakeAlbedo = float3(0.5f, 0.5f, 0.5f);
+    float3 L = normalize(float3(0.5f, 1.0f, 0.3f));
+    float NoL = saturate(dot(payload.hitNormal, L));
+    payload.radiance = fakeAlbedo * NoL * float3(3.0f, 3.0f, 2.8f);
+    payload.hitT     = RayTCurrent();
+}

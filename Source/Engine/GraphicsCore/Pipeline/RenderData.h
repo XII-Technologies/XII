@@ -1,173 +1,74 @@
 #pragma once
 
-#include <Foundation/Communication/Message.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Math/BoundingBoxSphere.h>
-#include <Foundation/Math/Transform.h>
-#include <Foundation/Memory/FrameAllocator.h>
-#include <Foundation/Strings/HashedString.h>
-#include <GraphicsCore/Pipeline/Declarations.h>
+#include <Foundation/Math/Mat4.h>
+#include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Strings/String.h>
 
-class xiiRasterizerObject;
+/// \brief A strongly typed identifier for a render data category.
+struct XII_GRAPHICSCORE_DLL xiiRenderDataCategory
+{
+  xiiUInt16 m_uiValue = 0xFFFF;
 
-/// \brief Base class for all render data. Render data must contain all information that is needed to render the corresponding object.
+  XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0xFFFF; }
+  XII_ALWAYS_INLINE bool operator==(const xiiRenderDataCategory& other) const { return m_uiValue == other.m_uiValue; }
+  XII_ALWAYS_INLINE bool operator!=(const xiiRenderDataCategory& other) const { return m_uiValue != other.m_uiValue; }
+};
+
+/// \brief Base class for components to push generic render data.
 class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderData, xiiReflectedClass);
 
 public:
-  struct Category
-  {
-    Category();
-    explicit Category(xiiUInt16 uiValue);
+  /// \brief Registers a custom category with a given name. Categories are automatically assigned sequential IDs.
+  static xiiRenderDataCategory RegisterCategory(const char* szCategoryName);
 
-    bool operator==(const Category& other) const;
+  /// \brief Finds an existing category by name. Note that this requires a string lookup.
+  static xiiRenderDataCategory FindCategory(const char* szCategoryName);
 
-    XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0xFFFF; }
+  /// \brief Returns the name of the given category.
+  static xiiStringView GetCategoryName(xiiRenderDataCategory category);
 
-    xiiUInt16 m_uiValue = 0xFFFF;
-  };
+  /// \brief Returns an array of all known category names. The index in the array matches the category ID.
+  static const xiiArrayPtr<xiiStringView> GetAllCategoryNames();
 
-  /// \brief This function generates a 64bit sorting key for the given render data. Data with lower sorting key is rendered first.
-  using SortingKeyFunc = xiiUInt64 (*)(const xiiRenderData*, const xiiCamera&);
+  /// \brief Clears all registered categories. Should be called during engine shutdown.
+  static void ClearAllCategories();
 
-  static Category RegisterCategory(xiiStringView sCategoryName, SortingKeyFunc sortingKeyFunc);
-  static Category RegisterDerivedCategory(xiiStringView sCategoryName, Category baseCategory);
-  static Category RegisterRedirectedCategory(xiiStringView sCategoryName, Category staticCategory, Category dynamicCategory);
-  static Category FindCategory(xiiTempHashedString sCategoryName);
-  static Category ResolveCategory(Category category, bool bDynamic);
+  xiiRenderData()          = default;
+  virtual ~xiiRenderData() = default;
 
-  static xiiHashedString GetCategoryName(Category category);
-  static void            GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);
-
-  static const xiiRenderer* GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType);
-
-public:
-  struct Caching
-  {
-    using StorageType = xiiUInt8;
-
-    enum Enum : StorageType
-    {
-      Never = 0U,
-      IfStatic
-    };
-  };
-
-  struct Flags
-  {
-    using StorageType = xiiUInt8;
-
-    enum Enum : StorageType
-    {
-      Dynamic = XII_BIT(0),
-
-      Default = 0U
-    };
-
-    struct Bits
-    {
-      StorageType Dynamic : 1;
-    };
-  };
-
-  /// \brief Returns the final sorting for this render data with the given category and camera.
-  xiiUInt64 GetFinalSortingKey(Category category, const xiiCamera& camera) const;
-
-  /// \brief Returns whether this render data and the other render data can be batched together, e.g. rendered in one draw call.
-  /// An implementation can assume that the other render data is of the same type as this render data.
-  virtual bool CanBatch(const xiiRenderData& other) const { return false; }
-
-  xiiBitflags<Flags> m_Flags;
-
-  xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();
+  xiiMat4              m_GlobalTransform = xiiMat4::MakeIdentity();
   xiiBoundingBoxSphere m_GlobalBounds;
 
-  xiiUInt32 m_uiSortingKey        = 0;
-  float     m_fSortingDepthOffset = 0.0f;
-
-  xiiGameObjectHandle m_hOwner;
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  const xiiGameObject* m_pOwner = nullptr; ///< Debugging only. It is not allowed to access the game object during rendering.
-#endif
-
-private:
-  XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RenderData);
-
-  static void PluginEventHandler(const xiiPluginEvent& e);
-  static void UpdateRendererTypes();
-
-  static void CreateRendererInstances();
-  static void ClearRendererInstances();
-
-  struct CategoryData
-  {
-    xiiHashedString m_sName;
-    SortingKeyFunc  m_SortingKeyFunc;
-
-    xiiHashTable<const xiiRTTI*, xiiUInt32> m_TypeToRendererIndex;
-
-    Category m_BaseCategory;
-    Category m_StaticCategory;
-    Category m_DynamicCategory;
-  };
-
-  static xiiHybridArray<CategoryData, 32> s_CategoryData;
-
-  static xiiHybridArray<const xiiRTTI*, 16>         s_RendererTypes;
-  static xiiDynamicArray<xiiUniquePtr<xiiRenderer>> s_RendererInstances;
-  static bool                                       s_bRendererInstancesDirty;
+  xiiUInt64             m_uiSortingKey = 0;
+  xiiRenderDataCategory m_Category;
 };
 
-/// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
-template <typename T>
-static T* xiiCreateRenderDataForThisFrame(const xiiGameObject* pOwner);
-
-/// \brief This struct contains some default render data categories that can be used by the engine and the game. It is not required to use these categories, but it is recommended to use them if they fit the needs of the render data, as they are already sorted in a way that allows for correct rendering and good performance.
+/// \brief Structure containing the standard predefined categories.
 struct XII_GRAPHICSCORE_DLL xiiDefaultRenderDataCategories
 {
-  static xiiRenderData::Category Light;             ///< This category is intended for all light sources. It should be rendered before all other categories, so that the light information is available for the rendering of the other categories.
-  static xiiRenderData::Category Decal;             ///< This category is intended for decals. It should be rendered after the opaque categories, but before the transparent categories, so that it can be blended correctly with both opaque and transparent objects.
-  static xiiRenderData::Category ReflectionProbe;   ///< This category is intended for reflection probes. It should be rendered after the opaque categories, but before the transparent categories, so that it can be blended correctly with both opaque and transparent objects.
-  static xiiRenderData::Category Sky;               ///< This category is intended for sky rendering. It should be rendered after all other categories, so that it is always in the background.
-  static xiiRenderData::Category OpaqueStatic;      ///< This category is intended for static opaque objects. It should be rendered before the dynamic opaque objects, so that it can be batched together and rendered in fewer draw calls.
-  static xiiRenderData::Category OpaqueDynamic;     ///< This category is intended for dynamic opaque objects. It should be rendered after the static opaque objects, so that it can be batched together and rendered in fewer draw calls.
-  static xiiRenderData::Category Opaque;            ///< This category is intended for all opaque objects. It should be rendered before the transparent objects, so that it can be blended correctly with the transparent objects.
-  static xiiRenderData::Category MaskedStatic;      ///< This category is intended for static masked objects, e.g. objects with alpha tested materials. It should be rendered after the opaque objects, but before the transparent objects, so that it can be blended correctly with the transparent objects.
-  static xiiRenderData::Category MaskedDynamic;     ///< This category is intended for dynamic masked objects, e.g. objects with alpha tested materials. It should be rendered after the opaque objects, but before the transparent objects, so that it can be blended correctly with the transparent objects.
-  static xiiRenderData::Category Masked;            ///< This category is intended for all masked objects, e.g. objects with alpha tested materials. It should be rendered after the opaque objects, but before the transparent objects, so that it can be blended correctly with the transparent objects.
-  static xiiRenderData::Category Transparent;       ///< This category is intended for all transparent objects. It should be rendered after the opaque objects, so that it can be blended correctly with the opaque objects.
-  static xiiRenderData::Category Foreground;        ///< This category is intended for foreground rendering, e.g. for objects that should be rendered on top of all other objects, but are not part of the GUI. It should be rendered after all other categories, so that it is always in the foreground.
-  static xiiRenderData::Category ScreenFX;          ///< This category is intended for screen space effects, e.g. for full screen post processing effects that should be rendered on top of all other objects, but are not part of the GUI. It should be rendered after all other categories, so that it is always on top of the screen.
-  static xiiRenderData::Category SimpleOpaque;      ///< This category is intended for simple opaque objects, e.g. objects that do not require any special handling and can be rendered with a simple shader. It should be rendered before the other opaque categories, so that it can be batched together and rendered in fewer draw calls.
-  static xiiRenderData::Category SimpleTransparent; ///< This category is intended for simple transparent objects, e.g. objects that do not require any special handling and can be rendered with a simple shader. It should be rendered after the other transparent categories, so that it can be blended correctly with the opaque objects.
-  static xiiRenderData::Category Selection;         ///< This category is intended for selection rendering, e.g. for rendering objects in a special way when they are selected in the editor. It should be rendered after all other categories, so that it can be blended correctly with all other objects.
-  static xiiRenderData::Category GUI;               ///< This category is intended for GUI rendering, e.g. for rendering the user interface. It should be rendered after all other categories, so that it is always on top of the GUI.
+  static xiiRenderDataCategory Light;
+  static xiiRenderDataCategory Decal;
+  static xiiRenderDataCategory ReflectionProbe;
+  static xiiRenderDataCategory Sky;
+  static xiiRenderDataCategory OpaqueStatic;
+  static xiiRenderDataCategory OpaqueDynamic;
+  static xiiRenderDataCategory Opaque;
+  static xiiRenderDataCategory MaskedStatic;
+  static xiiRenderDataCategory MaskedDynamic;
+  static xiiRenderDataCategory Masked;
+  static xiiRenderDataCategory Transparent;
+  static xiiRenderDataCategory Foreground;
+  static xiiRenderDataCategory ScreenFX;
+  static xiiRenderDataCategory SimpleOpaque;
+  static xiiRenderDataCategory SimpleTransparent;
+  static xiiRenderDataCategory Selection;
+  static xiiRenderDataCategory GUI;
+
+  /// \brief Registers the default categories internally. Called by the renderer startup.
+  static void RegisterDefaultCategories();
 };
-
-#define xiiInvalidRenderDataCategory xiiRenderData::Category()
-
-struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
-{
-  XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractRenderData, xiiMessage);
-
-  const xiiView*          m_pView            = nullptr;
-  xiiRenderData::Category m_OverrideCategory = xiiInvalidRenderDataCategory;
-
-  /// \brief Adds render data for the current view. This data can be cached depending on the specified caching behavior.
-  /// Non-cached data is only valid for this frame. Cached data must be manually deleted using xiiRenderWorldModule::DeleteCachedRenderData on the owning world's module instance
-  /// function.
-  void AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category, xiiRenderData::Caching::Enum cachingBehavior);
-
-private:
-  struct Data
-  {
-    const xiiRenderData*    m_pRenderData = nullptr;
-    xiiRenderData::Category m_Category;
-  };
-
-  xiiHybridArray<Data, 16> m_ExtractedRenderData;
-  xiiUInt32                m_uiNumCacheIfStatic = 0;
-};
-
-#include <GraphicsCore/Pipeline/Implementation/RenderData_inl.h>

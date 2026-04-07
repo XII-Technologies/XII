@@ -76,26 +76,27 @@ void xiiGALShaderSections::GetShaderSections(xiiStringView sContent, xiiGALShade
 
   out_sections.AddSection("[PLATFORMS]");
   out_sections.AddSection("[PERMUTATIONS]");
-  out_sections.AddSection("[MATERIALPARAMETER]");
-  out_sections.AddSection("[MATERIALCONFIG]");
+  out_sections.AddSection("[MATERIAL_CONSTANTS]");
+  out_sections.AddSection("[MATERIAL_PARAMETER]");
+  out_sections.AddSection("[MATERIAL_CONFIGURATION]");
   out_sections.AddSection("[RENDERSTATE]");
   out_sections.AddSection("[SHADER]");
-  out_sections.AddSection("[VERTEXSHADER]");
-  out_sections.AddSection("[PIXELSHADER]");
-  out_sections.AddSection("[GEOMETRYSHADER]");
-  out_sections.AddSection("[HULLSHADER]");
-  out_sections.AddSection("[DOMAINSHADER]");
-  out_sections.AddSection("[COMPUTESHADER]");
-  out_sections.AddSection("[AMPLIFICATIONSHADER]");
-  out_sections.AddSection("[MESHSHADER]");
-  out_sections.AddSection("[RAYGENERATIONSHADER]");
-  out_sections.AddSection("[RAYMISSSHADER]");
-  out_sections.AddSection("[RAYCLOSESTHITSHADER]");
-  out_sections.AddSection("[RAYANYHITSHADER]");
-  out_sections.AddSection("[RAYINTERSECTIONSHADER]");
-  out_sections.AddSection("[CALLABLESHADER]");
-  out_sections.AddSection("[TILESHADER]");
-  out_sections.AddSection("[TEMPLATE_VARS]");
+  out_sections.AddSection("[VERTEX_SHADER]");
+  out_sections.AddSection("[PIXEL_SHADER]");
+  out_sections.AddSection("[GEOMETRY_SHADER]");
+  out_sections.AddSection("[HULL_SHADER]");
+  out_sections.AddSection("[DOMAIN_SHADER]");
+  out_sections.AddSection("[COMPUTE_SHADER]");
+  out_sections.AddSection("[AMPLIFICATION_SHADER]");
+  out_sections.AddSection("[MESH_SHADER]");
+  out_sections.AddSection("[RAY_GENERATION_SHADER]");
+  out_sections.AddSection("[RAY_MISS_SHADER]");
+  out_sections.AddSection("[RAY_CLOSEST_HIT_SHADER]");
+  out_sections.AddSection("[RAY_ANY_HIT_SHADER]");
+  out_sections.AddSection("[RAY_INTERSECTION_SHADER]");
+  out_sections.AddSection("[CALLABLE_SHADER]");
+  out_sections.AddSection("[TILE_SHADER]");
+  out_sections.AddSection("[TEMPLATE_VARIABLES]");
 
   out_sections.Process(sContent);
 }
