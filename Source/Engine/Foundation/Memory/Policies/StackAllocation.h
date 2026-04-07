@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Containers/SmallArray.h>
 
 namespace xiiMemoryPolicies
 {
@@ -116,6 +116,6 @@ namespace xiiMemoryPolicies
 
     xiiUInt8* m_pNextAllocation = nullptr;
 
-    xiiHybridArray<xiiArrayPtr<xiiUInt8>, 4> m_Buckets;
+    xiiSmallArray<xiiArrayPtr<xiiUInt8>, 4> m_Buckets;
   };
 } // namespace xiiMemoryPolicies
