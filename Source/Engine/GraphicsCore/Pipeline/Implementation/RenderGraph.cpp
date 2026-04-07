@@ -889,7 +889,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     // Emit cross-queue waits.
     for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < submission.m_WaitFences.GetCount(); ++uiWaitIndex)
     {
-      pCommandList->DeviceWaitForFence(submission.m_WaitFences[uiWaitIndex], submission.m_WaitValues[uiWaitIndex]);
+      pCommandList->DeviceWaitForFence(submission.m_WaitFences[uiWaitIndex].Borrow(), submission.m_WaitValues[uiWaitIndex]);
     }
 
     xiiUInt32 uiCurrentMergeGroup = xiiInvalidIndex;
