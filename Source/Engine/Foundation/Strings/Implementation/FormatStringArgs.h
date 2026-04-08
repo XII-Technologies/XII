@@ -11,6 +11,14 @@ class xiiAngleTemplate;
 class xiiRational;
 struct xiiTime;
 
+template <typename T>
+struct xiiEnum;
+template <typename T>
+struct xiiBitflags;
+
+template <typename T>
+const xiiRTTI* xiiGetStaticRTTI();
+
 struct xiiArgI
 {
   inline explicit xiiArgI(xiiInt64 value, xiiUInt8 uiWidth = 1, bool bPadWithZeros = false, xiiUInt8 uiBase = 10) :
@@ -191,6 +199,29 @@ struct xiiArgSensitive
   XII_FOUNDATION_DLL static xiiStringView BuildString_SensitiveUserData_Hash(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
 };
 
+/// \brief Formats an xiiEnum or xiiBitflags value as its string representation using the reflection system.
+///
+/// By default the value name is output without the type prefix (e.g. "Value1" instead of "MyEnum::Value1"). Set bFullyQualifiedName to true to include the type prefix.
+/// Requires that the enum/bitflags type has been registered with the reflection system via XII_BEGIN_STATIC_REFLECTED_ENUM / XII_BEGIN_STATIC_REFLECTED_BITFLAGS.
+struct xiiArgEnum
+{
+  template <typename T>
+  inline explicit xiiArgEnum(xiiEnum<T> value, bool bFullyQualifiedName = false) :
+    m_pType(xiiGetStaticRTTI<T>()), m_iValue(static_cast<xiiInt64>(value.GetValue())), m_bFullyQualifiedName(bFullyQualifiedName)
+  {
+  }
+
+  template <typename T>
+  inline explicit xiiArgEnum(xiiBitflags<T> value, bool bFullyQualifiedName = false) :
+    m_pType(xiiGetStaticRTTI<T>()), m_iValue(static_cast<xiiInt64>(value.GetValue())), m_bFullyQualifiedName(bFullyQualifiedName)
+  {
+  }
+
+  const xiiRTTI* m_pType               = nullptr;
+  xiiInt64       m_iValue              = 0;
+  bool           m_bFullyQualifiedName = false;
+};
+
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgI& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt64 iArg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, xiiInt32 iArg);
@@ -214,7 +245,7 @@ XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLen
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg);
 XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgSensitive& arg);
-
+XII_FOUNDATION_DLL xiiStringView        BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgEnum& arg);
 
 #if XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
 
