@@ -80,7 +80,7 @@ class xiiMemoryStreamContainerStorage : public xiiMemoryStreamStorageInterface
 {
 public:
   /// \brief Creates the storage object for a memory stream. Use \a uiInitialCapacity to reserve some memory up front.
-  xiiMemoryStreamContainerStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()) :
+  xiiMemoryStreamContainerStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()) :
     m_Storage(pAllocator)
   {
     m_Storage.Reserve(uiInitialCapacity);
@@ -144,7 +144,7 @@ private:
 class XII_FOUNDATION_DLL xiiContiguousMemoryStreamStorage : public xiiMemoryStreamContainerStorage<xiiHybridArray<xiiUInt8, 256>>
 {
 public:
-  xiiContiguousMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()) :
+  xiiContiguousMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()) :
     xiiMemoryStreamContainerStorage<xiiHybridArray<xiiUInt8, 256>>(uiInitialCapacity, pAllocator)
   {
   }
@@ -160,7 +160,7 @@ public:
 class XII_FOUNDATION_DLL xiiDefaultMemoryStreamStorage final : public xiiMemoryStreamStorageInterface
 {
 public:
-  xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity = 0, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
   ~xiiDefaultMemoryStreamStorage();
 
   virtual void Reserve(xiiUInt64 uiBytes) override; // [tested]

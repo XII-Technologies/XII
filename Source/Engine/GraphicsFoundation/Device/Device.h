@@ -252,7 +252,7 @@ public:
   [[nodiscard]] static bool HasDefaultDevice();
 
 protected:
-  xiiGALDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& creationDescription);
+  xiiGALDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& creationDescription);
 
   virtual ~xiiGALDevice();
 

@@ -13,7 +13,7 @@ class xiiTaskWorkerThread;
 class xiiTaskSystemState;
 class xiiTaskSystemThreadState;
 class xiiDGMLGraph;
-class xiiAllocatorBase;
+class xiiAllocator;
 
 /// \brief Describes the priority with which to execute a task.
 ///
@@ -185,7 +185,7 @@ struct XII_FOUNDATION_DLL xiiParallelForParams
   xiiTaskNesting m_NestingMode = xiiTaskNesting::Never;
 
   /// The allocator used to for the tasks that the parallel-for uses internally. If null, will use the default allocator.
-  xiiAllocatorBase* m_pTaskAllocator = nullptr;
+  xiiAllocator* m_pTaskAllocator = nullptr;
 
   void DetermineThreading(xiiUInt64 uiNumItemsToExecute, xiiUInt32& out_uiNumTasksToRun, xiiUInt64& out_uiNumItemsPerTask) const;
 };

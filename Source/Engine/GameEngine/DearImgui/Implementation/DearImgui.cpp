@@ -17,7 +17,7 @@ namespace
 {
   void* xiiImguiAllocate(size_t uiSize, void* pUserData)
   {
-    xiiAllocatorBase* pAllocator = static_cast<xiiAllocatorBase*>(pUserData);
+    xiiAllocator* pAllocator = static_cast<xiiAllocator*>(pUserData);
     return pAllocator->Allocate(uiSize, XII_ALIGNMENT_MINIMUM);
   }
 
@@ -25,7 +25,7 @@ namespace
   {
     if (pPtr != nullptr)
     {
-      xiiAllocatorBase* pAllocator = static_cast<xiiAllocatorBase*>(pUserData);
+      xiiAllocator* pAllocator = static_cast<xiiAllocator*>(pUserData);
       pAllocator->Deallocate(pPtr);
     }
   }

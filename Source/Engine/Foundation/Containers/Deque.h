@@ -26,13 +26,13 @@ class xiiDequeBase
 {
 protected:
   /// \brief No memory is allocated during construction.
-  explicit xiiDequeBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiDequeBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Constructs this deque by copying from rhs.
-  xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Constructs this deque by moving from rhs.
-  xiiDequeBase(xiiDequeBase<T, Construct>&& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDequeBase(xiiDequeBase<T, Construct>&& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiDequeBase(); // [tested]
@@ -164,7 +164,7 @@ public:
   void Sort(); // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const { return m_pAllocator; }
+  xiiAllocator* GetAllocator() const { return m_pAllocator; }
 
   using const_iterator         = const_iterator_base<xiiDequeBase<T, Construct>, T, false>;
   using const_reverse_iterator = const_iterator_base<xiiDequeBase<T, Construct>, T, true>;
@@ -184,7 +184,7 @@ public:
 
 private:
   /// \brief A common constructor function.
-  void Constructor(xiiAllocatorBase* pAllocator);
+  void Constructor(xiiAllocator* pAllocator);
 
   /// \brief Reduces the index array to take up less memory.
   void CompactIndexArray(xiiUInt32 uiMinChunksToKeep);
@@ -245,7 +245,7 @@ private:
   /// \brief Deallocates all data, resets the deque to the state after construction.
   void DeallocateAll();
 
-  xiiAllocatorBase* m_pAllocator;
+  xiiAllocator* m_pAllocator;
   T**               m_pChunks;           ///< The chunk index array for redirecting accesses. Not all chunks must be allocated.
   xiiUInt32         m_uiChunks;          ///< The size of the m_pChunks array. Determines how many elements could theoretically be stored in the deque.
   xiiUInt32         m_uiFirstElement;    ///< Which element (across all chunks) is considered to be the first.
@@ -267,7 +267,7 @@ class xiiDeque : public xiiDequeBase<T, Construct>
 {
 public:
   xiiDeque();
-  xiiDeque(xiiAllocatorBase* pAllocator);
+  xiiDeque(xiiAllocator* pAllocator);
 
   xiiDeque(const xiiDeque<T, AllocatorWrapper, Construct>& other);
   xiiDeque(const xiiDequeBase<T, Construct>& other);

@@ -96,11 +96,11 @@ public:
   const xiiVisualScriptDataDescription& GetDesc() const;
 
   bool IsAllocated() const;
-  void AllocateStorage(xiiAllocatorBase* pAllocator);
+  void AllocateStorage(xiiAllocator* pAllocator);
   void DeallocateStorage();
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  xiiResult Deserialize(xiiStreamReader& inout_stream, xiiAllocatorBase* pAllocator);
+  xiiResult Deserialize(xiiStreamReader& inout_stream, xiiAllocator* pAllocator);
 
   using DataOffset = xiiVisualScriptDataDescription::DataOffset;
 
@@ -124,7 +124,7 @@ public:
 private:
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pDesc;
   xiiByteArrayPtr                                    m_Storage;
-  xiiAllocatorBase*                                  m_pAllocator = nullptr;
+  xiiAllocator*                                  m_pAllocator = nullptr;
 };
 
 struct xiiVisualScriptInstanceData

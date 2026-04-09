@@ -29,7 +29,7 @@ namespace xiiInternal
     mutable xiiProxyAllocator             m_Allocator;
     xiiLocalAllocatorWrapper              m_AllocatorWrapper;
     xiiInternal::WorldLargeBlockAllocator m_BlockAllocator;
-    xiiDoubleBufferedStackAllocator       m_StackAllocator;
+    xiiDoubleBufferedLinearAllocator      m_LinearAllocator;
 
     enum
     {
@@ -157,7 +157,7 @@ namespace xiiInternal
 
     struct InitBatch
     {
-      InitBatch(xiiAllocatorBase* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame);
+      InitBatch(xiiAllocator* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame);
 
       xiiHashedString m_sName;
       bool            m_bMustFinishWithinOneFrame = true;

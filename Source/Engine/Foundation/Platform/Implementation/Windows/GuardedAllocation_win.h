@@ -30,7 +30,7 @@ namespace xiiMemoryPolicies
     xiiUInt32 m_magic[32];
   };
 
-  xiiGuardedAllocation::xiiGuardedAllocation(xiiAllocatorBase* pParent)
+  xiiGuardedAllocation::xiiGuardedAllocation(xiiAllocator* pParent)
   {
     XII_IGNORE_UNUSED(pParent);
 

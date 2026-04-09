@@ -14,18 +14,18 @@ class xiiDynamicArrayBase : public xiiArrayBase<T, xiiDynamicArrayBase<T>>
 {
 protected:
   /// \brief Creates an empty array. Does not allocate any data yet.
-  explicit xiiDynamicArrayBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiDynamicArrayBase(xiiAllocator* pAllocator); // [tested]
 
-  xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given array.
-  xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Moves the given array into this one.
-  xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given array.
-  xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiDynamicArrayBase(); // [tested]
@@ -50,7 +50,7 @@ public:
   void Compact(); // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const { return const_cast<xiiAllocatorBase*>(m_pAllocator.GetPtr()); }
+  xiiAllocator* GetAllocator() const { return const_cast<xiiAllocator*>(m_pAllocator.GetPtr()); }
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
@@ -65,7 +65,7 @@ private:
     External = 1
   };
 
-  xiiPointerWithFlags<xiiAllocatorBase, 1> m_pAllocator;
+  xiiPointerWithFlags<xiiAllocator, 1> m_pAllocator;
 
   enum
   {
@@ -83,7 +83,7 @@ public:
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
   xiiDynamicArray();
-  explicit xiiDynamicArray(xiiAllocatorBase* pAllocator);
+  explicit xiiDynamicArray(xiiAllocator* pAllocator);
 
   xiiDynamicArray(const xiiDynamicArray<T, AllocatorWrapper>& other);
   xiiDynamicArray(const xiiDynamicArrayBase<T>& other);
@@ -100,7 +100,7 @@ public:
   void operator=(xiiDynamicArrayBase<T>&& rhs) noexcept;
 
 protected:
-  xiiDynamicArray(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator) :
+  xiiDynamicArray(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocator* pAllocator) :
     xiiDynamicArrayBase<T>(pInplaceStorage, uiCapacity, pAllocator)
   {
   }

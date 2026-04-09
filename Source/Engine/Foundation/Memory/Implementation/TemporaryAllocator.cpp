@@ -3,7 +3,7 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/AllocatorWithPolicy.h>
 #include <Foundation/Memory/Policies/AllocationPolicyStack.h>
-#include <Foundation/Memory/TempAllocator.h>
+#include <Foundation/Memory/TemporaryAllocator.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, TempAllocator)

@@ -48,7 +48,7 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceVulkan, pAllocator, description);
 }
@@ -130,7 +130,7 @@ namespace
   }
 } // namespace
 
-xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description) :
+xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(pAllocator, description), m_Layers(GetAllocator()), m_Extensions(GetAllocator()), m_EnabledExtensions(GetAllocator()), m_PhysicalDevices(GetAllocator()), m_PhysicalDeviceQueueFamilyProperties(GetAllocator()), m_PhysicalDeviceSupportedExtensions(GetAllocator()), m_LogicalDeviceEnabledExtensions(GetAllocator()), m_LogicalDeviceSupportedStagesFlags(GetAllocator()), m_LogicalDeviceSupportedAccessFlags(GetAllocator())
 {
 }

@@ -91,7 +91,7 @@ public:
 
 private:
   void* Allocate(size_t uiAlign);
-  void  Deallocate(void* ptr);
+  void  Deallocate(void* pPtr);
 
   xiiAllocatorId           m_Id;
   xiiAllocatorTrackingMode m_TrackingMode;

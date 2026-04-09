@@ -201,7 +201,7 @@ struct CellDataMapping
 
 struct xiiSpatialSystem_RegularGrid::Cell
 {
-  Cell(xiiAllocatorBase* pAlignedAlloctor, xiiAllocatorBase* pAllocator) :
+  Cell(xiiAllocator* pAlignedAlloctor, xiiAllocator* pAllocator) :
     m_BoundingSpheres(pAlignedAlloctor), m_BoundingBoxHalfExtents(pAlignedAlloctor), m_TagSets(pAllocator), m_ObjectPointers(pAllocator), m_DataIndices(pAllocator)
   {
   }

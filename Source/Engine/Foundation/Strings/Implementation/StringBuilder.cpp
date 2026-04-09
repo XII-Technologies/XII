@@ -1268,7 +1268,7 @@ void xiiStringBuilder::SetPrintf(const char* szUtf8Format, ...)
 }
 
 #if XII_ENABLED(XII_INTEROP_STL_STRINGS)
-xiiStringBuilder::xiiStringBuilder(const std::string_view& rhs, xiiAllocatorBase* pAllocator) :
+xiiStringBuilder::xiiStringBuilder(const std::string_view& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   AppendTerminator();
@@ -1276,7 +1276,7 @@ xiiStringBuilder::xiiStringBuilder(const std::string_view& rhs, xiiAllocatorBase
   *this = rhs;
 }
 
-xiiStringBuilder::xiiStringBuilder(const std::string& rhs, xiiAllocatorBase* pAllocator) :
+xiiStringBuilder::xiiStringBuilder(const std::string& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   AppendTerminator();

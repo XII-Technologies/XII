@@ -3,7 +3,6 @@ XII_ALWAYS_INLINE xiiAllocator::xiiAllocator() = default;
 
 XII_ALWAYS_INLINE xiiAllocator::~xiiAllocator() = default;
 
-
 namespace xiiMath
 {
   // due to #include order issues, we have to forward declare this function here
@@ -74,7 +73,7 @@ namespace xiiInternal
   XII_FORCE_INLINE T* CreateRawBuffer(xiiAllocator* pAllocator, size_t uiCount)
   {
     xiiUInt64 safeAllocationSize = xiiMath::SafeMultiply64(uiCount, sizeof(T));
-    return static_cast<T*>(pAllocator->Allocate(static_cast<size_t>(safeAllocationSize), alignof(T))); // Down-cast to size_t for 32-bit
+    return static_cast<T*>(pAllocator->Allocate(static_cast<size_t>(safeAllocationSize), alignof(T))); // Down-cast to size_t for 32-bit.
   }
 
   XII_FORCE_INLINE void DeleteRawBuffer(xiiAllocator* pAllocator, void* pPtr)
@@ -120,13 +119,12 @@ namespace xiiInternal
   template <typename T>
   XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocator* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsClass)
   {
-    static_assert(!std::is_trivial<T>::value,
-                  "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
+    static_assert(!std::is_trivial<T>::value, "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
 
-    T* pNewMem = CreateRawBuffer<T>(pAllocator, uiNewCount);
-    xiiMemoryUtils::RelocateConstruct(pNewMem, pPtr, uiCurrentCount);
+    T* pNewMemory = CreateRawBuffer<T>(pAllocator, uiNewCount);
+    xiiMemoryUtils::RelocateConstruct(pNewMemory, pPtr, uiCurrentCount);
     DeleteRawBuffer(pAllocator, pPtr);
-    return pNewMem;
+    return pNewMemory;
   }
 
   template <typename T>

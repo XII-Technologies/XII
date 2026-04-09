@@ -36,7 +36,7 @@ struct alignas(16) AlignedVector
 template <typename T>
 void TestAlignmentHelper(size_t uiExpectedAlignment)
 {
-  xiiAllocatorBase* pAllocator = xiiFoundation::GetAlignedAllocator();
+  xiiAllocator* pAllocator = xiiFoundation::GetAlignedAllocator();
   XII_TEST_BOOL(pAllocator != nullptr);
 
   size_t uiAlignment = alignof(T);
@@ -62,7 +62,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
   {
     XII_TEST_INT(pAllocator->AllocatedSize(pTestBuffer), uiExpectedSize);
 
-    xiiAllocatorBase::Stats stats = pAllocator->GetStats();
+    xiiAllocator::Stats stats = pAllocator->GetStats();
     XII_TEST_INT(stats.m_uiAllocationSize, uiExpectedSize * 2);
     XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 2);
   }
@@ -72,7 +72,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
 
   if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::Basics)
   {
-    xiiAllocatorBase::Stats stats = pAllocator->GetStats();
+    xiiAllocator::Stats stats = pAllocator->GetStats();
     XII_TEST_INT(stats.m_uiAllocationSize, 0);
     XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 0);
   }
@@ -107,7 +107,7 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
       blocks.PushBack(block);
     }
 
-    xiiAllocatorBase::Stats stats = allocator.GetStats();
+    xiiAllocator::Stats stats = allocator.GetStats();
 
     XII_TEST_BOOL(stats.m_uiNumAllocations == 17);
     XII_TEST_BOOL(stats.m_uiNumDeallocations == 0);

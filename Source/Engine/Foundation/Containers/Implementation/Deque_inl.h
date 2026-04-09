@@ -17,7 +17,7 @@
 // (sizeof(Type) <= 8 ? 256 : (sizeof(Type) <= 16 ? 128 : (sizeof(Type) <= 32 ? 64 : 32))) // Although this is Pow(2), this is slower than just having larger chunks
 
 template <typename T, bool Construct>
-void xiiDequeBase<T, Construct>::Constructor(xiiAllocatorBase* pAllocator)
+void xiiDequeBase<T, Construct>::Constructor(xiiAllocator* pAllocator)
 {
   m_pAllocator        = pAllocator;
   m_pChunks           = nullptr;
@@ -35,13 +35,13 @@ void xiiDequeBase<T, Construct>::Constructor(xiiAllocatorBase* pAllocator)
 }
 
 template <typename T, bool Construct>
-xiiDequeBase<T, Construct>::xiiDequeBase(xiiAllocatorBase* pAllocator)
+xiiDequeBase<T, Construct>::xiiDequeBase(xiiAllocator* pAllocator)
 {
   Constructor(pAllocator);
 }
 
 template <typename T, bool Construct>
-xiiDequeBase<T, Construct>::xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, xiiAllocatorBase* pAllocator)
+xiiDequeBase<T, Construct>::xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, xiiAllocator* pAllocator)
 {
   static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
@@ -51,7 +51,7 @@ xiiDequeBase<T, Construct>::xiiDequeBase(const xiiDequeBase<T, Construct>& rhs, 
 }
 
 template <typename T, bool Construct>
-xiiDequeBase<T, Construct>::xiiDequeBase(xiiDequeBase<T, Construct>&& rhs, xiiAllocatorBase* pAllocator)
+xiiDequeBase<T, Construct>::xiiDequeBase(xiiDequeBase<T, Construct>&& rhs, xiiAllocator* pAllocator)
 {
   static_assert(Construct, "This function is not supported on Deques that do not construct their data.");
 
@@ -1024,7 +1024,7 @@ xiiDeque<T, A, Construct>::xiiDeque() :
 }
 
 template <typename T, typename A, bool Construct>
-xiiDeque<T, A, Construct>::xiiDeque(xiiAllocatorBase* pAllocator) :
+xiiDeque<T, A, Construct>::xiiDeque(xiiAllocator* pAllocator) :
   xiiDequeBase<T, Construct>(pAllocator)
 {
 }

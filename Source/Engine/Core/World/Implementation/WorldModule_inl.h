@@ -16,7 +16,7 @@ xiiWorldModuleTypeId xiiWorldModuleFactory::RegisterWorldModule()
 {
   struct Helper
   {
-    static xiiWorldModule* Create(xiiAllocatorBase* pAllocator, xiiWorld* pWorld) { return XII_NEW(pAllocator, ModuleType, pWorld); }
+    static xiiWorldModule* Create(xiiAllocator* pAllocator, xiiWorld* pWorld) { return XII_NEW(pAllocator, ModuleType, pWorld); }
   };
 
   const xiiRTTI* pRtti = xiiGetStaticRTTI<RTTIType>();

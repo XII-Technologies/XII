@@ -248,14 +248,14 @@ private:
 
 struct xiiTestClass2Allocator : public xiiRTTIAllocator
 {
-  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override
   {
     ++m_iAllocs;
 
     return XII_DEFAULT_NEW(xiiTestClass2);
   }
 
-  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator) override
+  virtual void Deallocate(void* pObject, xiiAllocator* pAllocator) override
   {
     ++m_iDeallocs;
 

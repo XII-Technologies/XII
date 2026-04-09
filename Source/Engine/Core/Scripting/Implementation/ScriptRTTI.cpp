@@ -128,7 +128,7 @@ void xiiScriptInstance::SetInstanceVariables(const xiiArrayMap<xiiHashedString, 
 //////////////////////////////////////////////////////////////////////////
 
 // static
-xiiAllocatorBase* xiiScriptAllocator::GetAllocator()
+xiiAllocator* xiiScriptAllocator::GetAllocator()
 {
   static xiiProxyAllocator s_ScriptAllocator("Script", xiiFoundation::GetDefaultAllocator());
   return &s_ScriptAllocator;

@@ -1,7 +1,7 @@
 
 #include <Foundation/Strings/StringConversion.h>
 
-inline xiiStringBuilder::xiiStringBuilder(xiiAllocatorBase* pAllocator) :
+inline xiiStringBuilder::xiiStringBuilder(xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   AppendTerminator();
@@ -23,7 +23,7 @@ inline xiiStringBuilder::xiiStringBuilder(xiiStringBuilder&& rhs) noexcept :
   *this = std::move(rhs);
 }
 
-inline xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* pAllocator) :
+inline xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   AppendTerminator();
@@ -31,7 +31,7 @@ inline xiiStringBuilder::xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* 
   *this = szUTF8;
 }
 
-inline xiiStringBuilder::xiiStringBuilder(const wchar_t* pWChar, xiiAllocatorBase* pAllocator) :
+inline xiiStringBuilder::xiiStringBuilder(const wchar_t* pWChar, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   AppendTerminator();
@@ -39,7 +39,7 @@ inline xiiStringBuilder::xiiStringBuilder(const wchar_t* pWChar, xiiAllocatorBas
   *this = pWChar;
 }
 
-inline xiiStringBuilder::xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* pAllocator) :
+inline xiiStringBuilder::xiiStringBuilder(xiiStringView rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   AppendTerminator();
@@ -47,7 +47,7 @@ inline xiiStringBuilder::xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* p
   *this = rhs;
 }
 
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiStringBuilder::GetAllocator() const
+XII_ALWAYS_INLINE xiiAllocator* xiiStringBuilder::GetAllocator() const
 {
   return m_Data.GetAllocator();
 }

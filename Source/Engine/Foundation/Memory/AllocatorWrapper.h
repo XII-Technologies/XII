@@ -23,9 +23,9 @@ struct xiiDefaultAllocatorWrapper
 };
 
 /// \brief Wrapper for the allocator used for static/global objects.
-struct xiiStaticsAllocatorWrapper
+struct xiiStaticAllocatorWrapper
 {
-  XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiFoundation::GetStaticsAllocator(); }
+  XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiFoundation::GetStaticAllocator(); }
 };
 
 /// \brief Wrapper for the allocator that provides memory with specific alignment guarantees.

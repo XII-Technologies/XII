@@ -76,7 +76,7 @@ XII_ALWAYS_INLINE ValueType& xiiIdTableBase<IdType, ValueType>::Iterator::Value(
 // ***** xiiIdTableBase *****
 
 template <typename IdType, typename ValueType>
-xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(xiiAllocatorBase* pAllocator)
+xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(xiiAllocator* pAllocator)
 {
   m_pEntries        = nullptr;
   m_Count           = 0;
@@ -87,7 +87,7 @@ xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(xiiAllocatorBase* pAllocator)
 }
 
 template <typename IdType, typename ValueType>
-xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(const xiiIdTableBase<IdType, ValueType>& other, xiiAllocatorBase* pAllocator)
+xiiIdTableBase<IdType, ValueType>::xiiIdTableBase(const xiiIdTableBase<IdType, ValueType>& other, xiiAllocator* pAllocator)
 {
   m_pEntries        = nullptr;
   m_Count           = 0;
@@ -339,7 +339,7 @@ XII_ALWAYS_INLINE typename xiiIdTableBase<IdType, ValueType>::ConstIterator xiiI
 }
 
 template <typename IdType, typename ValueType>
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiIdTableBase<IdType, ValueType>::GetAllocator() const
+XII_ALWAYS_INLINE xiiAllocator* xiiIdTableBase<IdType, ValueType>::GetAllocator() const
 {
   return m_pAllocator;
 }
@@ -406,7 +406,7 @@ xiiIdTable<IdType, V, A>::xiiIdTable() :
 }
 
 template <typename IdType, typename V, typename A>
-xiiIdTable<IdType, V, A>::xiiIdTable(xiiAllocatorBase* pAllocator) :
+xiiIdTable<IdType, V, A>::xiiIdTable(xiiAllocator* pAllocator) :
   xiiIdTableBase<IdType, V>(pAllocator)
 {
 }

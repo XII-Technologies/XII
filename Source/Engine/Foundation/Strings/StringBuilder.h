@@ -35,7 +35,7 @@ class XII_FOUNDATION_DLL xiiStringBuilder : public xiiStringBase<xiiStringBuilde
 {
 public:
   /// \brief Initializes the string to be empty. No data is allocated, but the xiiStringBuilder ALWAYS creates an array on the stack.
-  xiiStringBuilder(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  xiiStringBuilder(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Copies the given string into this one.
   xiiStringBuilder(const xiiStringBuilder& rhs); // [tested]
@@ -76,13 +76,13 @@ public:
   xiiStringBuilder(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {}); // [tested]
 
   /// \brief Copies the given Utf8 string into this one.
-  /* implicit */ xiiStringBuilder(const char* szUTF8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  /* implicit */ xiiStringBuilder(const char* szUTF8, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Copies the given wchar_t string into this one.
-  /* implicit */ xiiStringBuilder(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  /* implicit */ xiiStringBuilder(const wchar_t* pWChar, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
-  /* implicit */ xiiStringBuilder(xiiStringView rhs, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
+  /* implicit */ xiiStringBuilder(xiiStringView rhs, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator()); // [tested]
 
   /// \brief Copies the given string into this one.
   void operator=(const xiiStringBuilder& rhs); // [tested]
@@ -128,7 +128,7 @@ public:
   }
 
   /// \brief Returns the allocator that is used by this object.
-  xiiAllocatorBase* GetAllocator() const;
+  xiiAllocator* GetAllocator() const;
 
   /// \brief Resets this string to be empty. Does not deallocate any previously allocated data, as it might be reused later again.
   void Clear(); // [tested]
@@ -416,10 +416,10 @@ public:
 
 #if XII_ENABLED(XII_INTEROP_STL_STRINGS)
   /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
-  /* implicit */ xiiStringBuilder(const std::string_view& rhs, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  /* implicit */ xiiStringBuilder(const std::string_view& rhs, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
-  /* implicit */ xiiStringBuilder(const std::string& rhs, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  /* implicit */ xiiStringBuilder(const std::string& rhs, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
   void operator=(const std::string_view& rhs);

@@ -22,7 +22,7 @@ public:
   /// \brief Creates a unique ptr from a pointer and an allocator. The passed allocator will be used to destroy the instance when the unique
   /// ptr goes out of scope.
   template <typename U>
-  xiiUniquePtr(U* pInstance, xiiAllocatorBase* pAllocator);
+  xiiUniquePtr(U* pInstance, xiiAllocator* pAllocator);
 
   /// \brief Move constructs a unique ptr from another. The other unique ptr will be empty afterwards to guarantee that there is only one
   /// unique ptr managing the same object.
@@ -52,7 +52,7 @@ public:
 
   /// \brief Releases the managed object without destroying it. The unique ptr will be empty afterwards. Also returns the allocator that
   /// should be used to destroy the object.
-  T* Release(xiiAllocatorBase*& out_pAllocator);
+  T* Release(xiiAllocator*& out_pAllocator);
 
   /// \brief Borrows the managed object. The unique ptr stays unmodified.
   T* Borrow() const;
@@ -86,7 +86,7 @@ private:
   friend class xiiUniquePtr;
 
   T*                m_pInstance  = nullptr;
-  xiiAllocatorBase* m_pAllocator = nullptr;
+  xiiAllocator* m_pAllocator = nullptr;
 };
 
 #include <Foundation/Types/Implementation/UniquePtr_inl.h>

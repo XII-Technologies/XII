@@ -1,10 +1,10 @@
 #pragma once
 
 /// \brief Operator to serialize xiiIAllocator::Stats objects.
-XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiAllocatorBase::Stats& rhs);
+XII_FOUNDATION_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiAllocator::Stats& rhs);
 
 /// \brief Operator to serialize xiiIAllocator::Stats objects.
-XII_FOUNDATION_DLL void operator>>(xiiStreamReader& ref_stream, xiiAllocatorBase::Stats& rhs);
+XII_FOUNDATION_DLL void operator>>(xiiStreamReader& ref_stream, xiiAllocator::Stats& rhs);
 
 struct xiiTime;
 

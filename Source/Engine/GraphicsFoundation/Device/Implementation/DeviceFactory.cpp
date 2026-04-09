@@ -29,7 +29,7 @@ CreatorFuncInfo* GetCreatorFuncInfo(xiiStringView sImplementationName)
   return pFuncInfo;
 }
 
-xiiSharedPtr<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiSharedPtr<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sImplementationName, xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   if (auto pFuncInfo = GetCreatorFuncInfo(sImplementationName))
   {

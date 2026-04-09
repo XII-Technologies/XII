@@ -29,7 +29,7 @@ void xiiWorldModule::DeregisterUpdateFunction(const UpdateFunctionDesc& desc)
   m_pWorld->DeregisterUpdateFunction(desc);
 }
 
-xiiAllocatorBase* xiiWorldModule::GetAllocator()
+xiiAllocator* xiiWorldModule::GetAllocator()
 {
   return m_pWorld->GetAllocator();
 }

@@ -12,11 +12,11 @@
 class XII_FOUNDATION_DLL xiiStringWChar
 {
 public:
-  xiiStringWChar(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(const wchar_t* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringWChar(xiiStringView sUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(const xiiUInt16* pUtf16, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(const xiiUInt32* pUtf32, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(const wchar_t* pUtf32, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringWChar(xiiStringView sUtf8, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   void operator=(const xiiUInt16* pUtf16);
   void operator=(const xiiUInt32* pUtf32);
@@ -39,11 +39,11 @@ private:
 class XII_FOUNDATION_DLL xiiStringUtf8
 {
 public:
-  xiiStringUtf8(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const char* szUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf8(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const char* szUtf8, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const xiiUInt16* pUtf16, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const xiiUInt32* pUtf32, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf8(const wchar_t* pWChar, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   void operator=(const char* szUtf8);
   void operator=(const xiiUInt16* pUtf16);
@@ -86,11 +86,11 @@ private:
 class XII_FOUNDATION_DLL xiiStringUtf16
 {
 public:
-  xiiStringUtf16(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const char* szUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf16(const wchar_t* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const char* szUtf8, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const xiiUInt16* pUtf16, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const xiiUInt32* pUtf32, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf16(const wchar_t* pUtf32, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   void operator=(const char* szUtf8);
   void operator=(const xiiUInt16* pUtf16);
@@ -113,11 +113,11 @@ private:
 class XII_FOUNDATION_DLL xiiStringUtf32
 {
 public:
-  xiiStringUtf32(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const char* szUtf8, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const xiiUInt16* pUtf16, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const xiiUInt32* pUtf32, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
-  xiiStringUtf32(const wchar_t* pWChar, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const char* szUtf8, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const xiiUInt16* pUtf16, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const xiiUInt32* pUtf32, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
+  xiiStringUtf32(const wchar_t* pWChar, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   void operator=(const char* szUtf8);
   void operator=(const xiiUInt16* pUtf16);

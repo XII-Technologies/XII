@@ -39,11 +39,11 @@ namespace DynamicArrayTestDetail
     bool operator==(const Dummy& dummy) const { return a == dummy.a; }
   };
 
-  xiiAllocatorBase* g_pTestAllocator;
+  xiiAllocator* g_pTestAllocator;
 
   struct xiiTestAllocatorWrapper
   {
-    static xiiAllocatorBase* GetAllocator() { return g_pTestAllocator; }
+    static xiiAllocator* GetAllocator() { return g_pTestAllocator; }
   };
 
   template <typename T = st, typename AllocatorWrapper = xiiTestAllocatorWrapper>

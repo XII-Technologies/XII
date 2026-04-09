@@ -158,13 +158,13 @@ public:
 
 protected:
   /// \brief Creates an empty hashtable. Does not allocate any data yet.
-  explicit xiiHashTableBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiHashTableBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given hashtable.
-  xiiHashTableBase(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHashTableBase(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Moves data from an existing hashtable into this one.
-  xiiHashTableBase(xiiHashTableBase<KeyType, ValueType, Hasher>&& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHashTableBase(xiiHashTableBase<KeyType, ValueType, Hasher>&& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiHashTableBase(); // [tested]
@@ -265,7 +265,7 @@ public:
   ConstIterator GetEndIterator() const; // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const;
+  xiiAllocator* GetAllocator() const;
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
@@ -289,7 +289,7 @@ private:
   xiiUInt32 m_uiCount    = 0;
   xiiUInt32 m_uiCapacity = 0;
 
-  xiiAllocatorBase* m_pAllocator = nullptr;
+  xiiAllocator* m_pAllocator = nullptr;
 
   enum
   {
@@ -329,7 +329,7 @@ class xiiHashTable : public xiiHashTableBase<KeyType, ValueType, Hasher>
 {
 public:
   xiiHashTable();
-  explicit xiiHashTable(xiiAllocatorBase* pAllocator);
+  explicit xiiHashTable(xiiAllocator* pAllocator);
 
   xiiHashTable(const xiiHashTable<KeyType, ValueType, Hasher, AllocatorWrapper>& other);
   xiiHashTable(const xiiHashTableBase<KeyType, ValueType, Hasher>& other);

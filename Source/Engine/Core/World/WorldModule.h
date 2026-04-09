@@ -80,7 +80,7 @@ protected:
   void DeregisterUpdateFunction(const UpdateFunctionDesc& desc);
 
   /// \brief Returns the allocator used by the world.
-  xiiAllocatorBase* GetAllocator();
+  xiiAllocator* GetAllocator();
 
   /// \brief Returns the block allocator used by the world.
   xiiInternal::WorldLargeBlockAllocator* GetBlockAllocator();
@@ -132,7 +132,7 @@ public:
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Core, WorldModuleFactory);
 
-  using CreatorFunc = xiiWorldModule* (*)(xiiAllocatorBase*, xiiWorld*);
+  using CreatorFunc = xiiWorldModule* (*)(xiiAllocator*, xiiWorld*);
 
   xiiWorldModuleFactory();
   xiiWorldModuleTypeId RegisterWorldModule(const xiiRTTI* pRtti, CreatorFunc creatorFunc);

@@ -7,16 +7,16 @@
 #include <Foundation/Types/VarianceTypes.h>
 #include <Foundation/Types/VariantTypeRegistry.h>
 
-// xiiAllocatorBase::Stats
+// xiiAllocator::Stats
 
-void operator<<(xiiStreamWriter& ref_stream, const xiiAllocatorBase::Stats& rhs)
+void operator<<(xiiStreamWriter& ref_stream, const xiiAllocator::Stats& rhs)
 {
   ref_stream << rhs.m_uiNumAllocations;
   ref_stream << rhs.m_uiNumDeallocations;
   ref_stream << rhs.m_uiAllocationSize;
 }
 
-void operator>>(xiiStreamReader& ref_stream, xiiAllocatorBase::Stats& rhs)
+void operator>>(xiiStreamReader& ref_stream, xiiAllocator::Stats& rhs)
 {
   ref_stream >> rhs.m_uiNumAllocations;
   ref_stream >> rhs.m_uiNumDeallocations;

@@ -62,7 +62,7 @@ void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, co
     xiiUInt64 uiItemsPerInvocation;
     params.DetermineThreading(uiNumItems, uiMultiplicity, uiItemsPerInvocation);
 
-    xiiAllocatorBase* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
+    xiiAllocator* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
 
     xiiSharedPtr<Task> pIndexedTask = XII_NEW(pAllocator, Task, uiStartIndex, uiNumItems, std::move(taskCallback), static_cast<IndexType>(uiItemsPerInvocation));
     pIndexedTask->ConfigureTask(sTaskName, taskNesting);

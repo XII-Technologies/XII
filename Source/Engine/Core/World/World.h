@@ -330,13 +330,13 @@ public:
 
 
   /// \brief Returns the allocator used by this world.
-  xiiAllocatorBase* GetAllocator();
+  xiiAllocator* GetAllocator();
 
   /// \brief Returns the block allocator used by this world.
   xiiInternal::WorldLargeBlockAllocator* GetBlockAllocator();
 
   /// \brief Returns the stack allocator used by this world.
-  xiiDoubleBufferedStackAllocator* GetStackAllocator();
+  xiiDoubleBufferedLinearAllocator* GetStackAllocator();
 
   /// \brief Mark the world for reading by using XII_LOCK(world.GetReadMarker()). Multiple threads can read simultaneously if none is
   /// writing.

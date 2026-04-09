@@ -15,7 +15,7 @@ public:
   xiiHybridArray(); // [tested]
 
   /// \brief Creates an empty array. Does not allocate any data yet.
-  explicit xiiHybridArray(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiHybridArray(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given array.
   xiiHybridArray(const xiiHybridArray<T, Size, AllocatorWrapper>& other); // [tested]

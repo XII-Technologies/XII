@@ -8,7 +8,7 @@
 
 enum class xiiAllocatorTrackingMode : xiiUInt32
 {
-  Nothing,                       ///< The allocator doesn't track anything. Use this for best performance.
+  DoNotTrack,                    ///< The allocator doesn't track anything. Use this for best performance.
   Basics,                        ///< The allocator will be known to the system, so it can show up in debugging tools, but barely anything more.
   AllocationStats,               ///< The allocator keeps track of how many allocations and deallocations it did and how large its memory usage is.
   AllocationStatsIgnoreLeaks,    ///< Same as AllocationStats, but any remaining allocations at shutdown are not reported as leaks.

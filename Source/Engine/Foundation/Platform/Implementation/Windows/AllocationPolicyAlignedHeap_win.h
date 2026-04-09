@@ -1,15 +1,15 @@
 
-XII_FORCE_INLINE void* xiiAlignedHeapAllocation::Allocate(size_t uiSize, size_t uiAlign)
+XII_FORCE_INLINE void* xiiAllocationPolicyAlignedHeap::Allocate(size_t uiSize, size_t uiAlign)
 {
   uiAlign = xiiMath::Max<size_t>(uiAlign, 16u);
 
-  void* ptr = _aligned_malloc(uiSize, uiAlign);
-  XII_CHECK_ALIGNMENT(ptr, uiAlign);
+  void* pPtr = _aligned_malloc(uiSize, uiAlign);
+  XII_CHECK_ALIGNMENT(pPtr, uiAlign);
 
-  return ptr;
+  return pPtr;
 }
 
-XII_ALWAYS_INLINE void xiiAlignedHeapAllocation::Deallocate(void* pPtr)
+XII_ALWAYS_INLINE void xiiAllocationPolicyAlignedHeap::Deallocate(void* pPtr)
 {
   _aligned_free(pPtr);
 }

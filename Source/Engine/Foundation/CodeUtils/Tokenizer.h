@@ -81,7 +81,7 @@ public:
   /// \brief Constructor.
   ///
   /// Takes an additional optional allocator. If no allocator is given the default allocator will be used.
-  xiiTokenizer(xiiAllocatorBase* pAllocator = nullptr);
+  xiiTokenizer(xiiAllocator* pAllocator = nullptr);
 
   ~xiiTokenizer();
 

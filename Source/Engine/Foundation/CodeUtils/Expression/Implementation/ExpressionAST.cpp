@@ -462,7 +462,7 @@ xiiExpressionAST::VectorComponent::Enum xiiExpressionAST::VectorComponent::FromC
 //////////////////////////////////////////////////////////////////////////
 
 xiiExpressionAST::xiiExpressionAST() :
-  m_Allocator("Expression AST", xiiFoundation::GetAlignedAllocator())
+  m_Allocator("Expression AST", xiiFoundation::GetAlignedAllocator(), 4 * 1024)
 {
   static_assert(sizeof(Node) == 8);
 #if XII_ENABLED(XII_PLATFORM_64BIT)

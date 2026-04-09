@@ -4,7 +4,7 @@ struct XII_FOUNDATION_DLL xiiLambdaDelegateStorageBase
 {
   xiiLambdaDelegateStorageBase()                                                  = default;
   virtual ~xiiLambdaDelegateStorageBase()                                         = default;
-  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocatorBase* pAllocator) const = 0;
+  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const = 0;
   virtual void                          InplaceCopy(xiiUInt8* pBuffer) const      = 0;
   virtual void                          InplaceMove(xiiUInt8* pBuffer)            = 0;
 
@@ -31,7 +31,7 @@ private:
   }
 
 public:
-  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocatorBase* pAllocator) const override
+  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const override
   {
     if constexpr (std::is_copy_constructible<Function>::value)
     {
@@ -112,7 +112,7 @@ public:
 
   /// \brief Constructs the delegate from a regular C function type.
   template <typename Function>
-  XII_FORCE_INLINE xiiDelegate(Function function, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator())
+  XII_FORCE_INLINE xiiDelegate(Function function, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator())
   {
     static_assert(DataSize >= 16, "DataSize must be at least 16 bytes");
 
@@ -336,7 +336,7 @@ private:
     struct
     {
       xiiLambdaDelegateStorageBase* m_pLambdaStorage;
-      xiiAllocatorBase*             m_pAllocator;
+      xiiAllocator*             m_pAllocator;
     };
   };
 };

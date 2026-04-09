@@ -27,8 +27,8 @@
 
 namespace
 {
-  // no tracking for the tracker data itself
-  using TrackerDataAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyHeap, xiiAllocatorTrackingMode::Nothing>;
+  // No tracking for the tracker data itself.
+  using TrackerDataAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyHeap, xiiAllocatorTrackingMode::DoNotTrack>;
 
   static TrackerDataAllocator* s_pTrackerDataAllocator;
 

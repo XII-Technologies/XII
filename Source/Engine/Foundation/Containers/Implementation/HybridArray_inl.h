@@ -6,7 +6,7 @@ xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray() :
 }
 
 template <typename T, xiiUInt32 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
-xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray(xiiAllocatorBase* pAllocator) :
+xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray(xiiAllocator* pAllocator) :
   xiiDynamicArray<T, AllocatorWrapper>(GetStaticArray(), Size, pAllocator)
 {
 }
