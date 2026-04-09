@@ -4,7 +4,7 @@ struct XII_FOUNDATION_DLL xiiLambdaDelegateStorageBase
 {
   xiiLambdaDelegateStorageBase()                                                  = default;
   virtual ~xiiLambdaDelegateStorageBase()                                         = default;
-  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const = 0;
+  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const     = 0;
   virtual void                          InplaceCopy(xiiUInt8* pBuffer) const      = 0;
   virtual void                          InplaceMove(xiiUInt8* pBuffer)            = 0;
 
@@ -336,7 +336,7 @@ private:
     struct
     {
       xiiLambdaDelegateStorageBase* m_pLambdaStorage;
-      xiiAllocator*             m_pAllocator;
+      xiiAllocator*                 m_pAllocator;
     };
   };
 };

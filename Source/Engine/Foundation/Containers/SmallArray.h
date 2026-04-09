@@ -20,9 +20,9 @@ public:
   XII_DECLARE_MEM_RELOCATABLE_TYPE_CONDITIONAL(T);
 
   xiiSmallArrayBase();                                                                      // [tested]
-  xiiSmallArrayBase(const xiiSmallArrayBase<T, Size>& other, xiiAllocator* pAllocator); // [tested]
-  xiiSmallArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator);       // [tested]
-  xiiSmallArrayBase(xiiSmallArrayBase<T, Size>&& other, xiiAllocator* pAllocator);      // [tested]
+  xiiSmallArrayBase(const xiiSmallArrayBase<T, Size>& other, xiiAllocator* pAllocator);     // [tested]
+  xiiSmallArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator);           // [tested]
+  xiiSmallArrayBase(xiiSmallArrayBase<T, Size>&& other, xiiAllocator* pAllocator);          // [tested]
 
   ~xiiSmallArrayBase(); // [tested]
 
@@ -58,7 +58,7 @@ public:
   void SetCount(xiiUInt16 uiCount, const T& fillValue, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Resizes the array to have exactly uiCount elements. Extra elements might be uninitialized.
-  template <typename = void>                                                   // Template is used to only conditionally compile this function in when it is actually used.
+  template <typename = void>                                               // Template is used to only conditionally compile this function in when it is actually used.
   void SetCountUninitialized(xiiUInt16 uiCount, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Ensures the container has at least \a uiCount elements. Ie. calls SetCount() if the container has fewer elements, does nothing

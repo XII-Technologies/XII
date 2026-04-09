@@ -188,7 +188,7 @@ public:
 
   // Internal objects retrieval.
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*         GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*             GetAllocator() const { return m_Allocator.GetParent(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanMemoryAllocator* GetVulkanMemoryAllocator() const { return m_pVulkanMemoryAllocator.Borrow(); }
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }

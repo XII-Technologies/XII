@@ -116,7 +116,7 @@ private:
   void ReleaseReferenceIfValid();
 
   T*                m_pInstance;
-  xiiAllocator* m_pAllocator;
+  xiiAllocator*     m_pAllocator;
 };
 
 #include <Foundation/Types/Implementation/SharedPtr_inl.h>

@@ -86,7 +86,7 @@ private:
   friend class xiiUniquePtr;
 
   T*                m_pInstance  = nullptr;
-  xiiAllocator* m_pAllocator = nullptr;
+  xiiAllocator*     m_pAllocator = nullptr;
 };
 
 #include <Foundation/Types/Implementation/UniquePtr_inl.h>

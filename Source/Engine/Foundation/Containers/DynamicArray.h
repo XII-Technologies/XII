@@ -2,8 +2,8 @@
 
 #include <Foundation/Containers/ArrayBase.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
-#include <Foundation/Types/PointerWithFlags.h>
 #include <Foundation/Memory/TemporaryAllocator.h>
+#include <Foundation/Types/PointerWithFlags.h>
 
 /// \brief Implementation of a dynamically growing array.
 ///
@@ -108,7 +108,7 @@ protected:
 };
 
 /// A dynamic array that uses the temporary allocator.
-/// 
+///
 /// This is ideal for temporary arrays that are only used within a short scope.
 /// The temp allocator is optimized for short-lived allocations and can be more efficient than the default allocator for this use case.
 template <typename T>

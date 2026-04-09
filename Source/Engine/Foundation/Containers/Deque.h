@@ -245,7 +245,7 @@ private:
   /// \brief Deallocates all data, resets the deque to the state after construction.
   void DeallocateAll();
 
-  xiiAllocator* m_pAllocator;
+  xiiAllocator*     m_pAllocator;
   T**               m_pChunks;           ///< The chunk index array for redirecting accesses. Not all chunks must be allocated.
   xiiUInt32         m_uiChunks;          ///< The size of the m_pChunks array. Determines how many elements could theoretically be stored in the deque.
   xiiUInt32         m_uiFirstElement;    ///< Which element (across all chunks) is considered to be the first.
