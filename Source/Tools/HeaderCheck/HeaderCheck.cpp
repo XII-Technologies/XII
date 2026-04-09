@@ -11,7 +11,7 @@
 #include <Foundation/Logging/HTMLWriter.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
-#include <Foundation/Memory/StackAllocator.h>
+#include <Foundation/Memory/LinearAllocator.h>
 #include <Foundation/Strings/PathUtils.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Strings/StringBuilder.h>
@@ -40,13 +40,13 @@ namespace
 class xiiHeaderCheckApp : public xiiApplication
 {
 private:
-  xiiString                                                             m_sSearchDir;
-  xiiString                                                             m_sProjectName;
-  bool                                                                  m_bHadErrors;
-  bool                                                                  m_bHadSeriousWarnings;
-  bool                                                                  m_bHadWarnings;
-  xiiUniquePtr<xiiStackAllocator<xiiAllocatorTrackingMode::DoNotTrack>> m_pStackAllocator;
-  xiiDynamicArray<xiiString>                                            m_IncludeDirectories;
+  xiiString                                                              m_sSearchDir;
+  xiiString                                                              m_sProjectName;
+  bool                                                                   m_bHadErrors;
+  bool                                                                   m_bHadSeriousWarnings;
+  bool                                                                   m_bHadWarnings;
+  xiiUniquePtr<xiiLinearAllocator<xiiAllocatorTrackingMode::DoNotTrack>> m_pLinearAllocator;
+  xiiDynamicArray<xiiString>                                             m_IncludeDirectories;
 
   struct IgnoreInfo
   {
@@ -177,10 +177,13 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(LogInspector);
 
-    m_pStackAllocator = XII_DEFAULT_NEW(xiiStackAllocator<xiiAllocatorTrackingMode::DoNotTrack>, "Temp Allocator", xiiFoundation::GetAlignedAllocator());
+    constexpr xiiUInt32 uiInitalAllocatorSize = 1024 * 1024;
+    m_pLinearAllocator                        = XII_DEFAULT_NEW(xiiLinearAllocator<xiiAllocatorTrackingMode::DoNotTrack>, "Temporary Allocator", xiiFoundation::GetAlignedAllocator(), uiInitalAllocatorSize);
 
     if (GetArgumentCount() < 2)
+    {
       xiiLog::Error("This tool requires at leas one command-line argument: An absolute path to the top-level folder of a library.");
+    }
 
     // Add the empty data directory to access files via absolute paths
     xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
@@ -278,7 +281,7 @@ public:
     else
       SetReturnCode(0);
 
-    m_pStackAllocator = nullptr;
+    m_pLinearAllocator = nullptr;
 
     xiiGlobalLog::RemoveLogWriter(LogInspector);
     xiiGlobalLog::RemoveLogWriter(xiiLogWriter::Console::LogMessageHandler);
@@ -354,7 +357,7 @@ public:
 
           XII_LOG_BLOCK("Header", &currentFile.GetData()[uiSearchDirLength]);
           CheckHeaderFile(currentFile);
-          m_pStackAllocator->Reset();
+          m_pLinearAllocator->Reset();
         }
       }
     }
@@ -364,7 +367,7 @@ public:
 
   void CheckInclude(const xiiStringBuilder& sCurrentFile, const xiiStringBuilder& sIncludePath, xiiUInt32 uiLine)
   {
-    xiiStringBuilder absIncludePath(m_pStackAllocator.Borrow());
+    xiiStringBuilder absIncludePath(m_pLinearAllocator.Borrow());
     bool             includeOutside = true;
     if (sIncludePath.IsAbsolutePath())
     {
@@ -420,16 +423,16 @@ public:
 
   void CheckHeaderFile(const xiiStringBuilder& sCurrentFile)
   {
-    xiiStringBuilder fileContents(m_pStackAllocator.Borrow());
+    xiiStringBuilder fileContents(m_pLinearAllocator.Borrow());
     ReadEntireFile(sCurrentFile.GetData(), fileContents).IgnoreResult();
 
     auto fileDir = sCurrentFile.GetFileDirectory();
 
-    xiiStringBuilder internalMacroToken(m_pStackAllocator.Borrow());
+    xiiStringBuilder internalMacroToken(m_pLinearAllocator.Borrow());
     internalMacroToken.Append("XII_", m_sProjectName, "_INTERNAL_HEADER");
     auto internalMacroTokenView = internalMacroToken.GetView();
 
-    xiiTokenizer tokenizer(m_pStackAllocator.Borrow());
+    xiiTokenizer tokenizer(m_pLinearAllocator.Borrow());
     auto         dataView = fileContents.GetView();
     tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(dataView.GetStartPointer()), dataView.GetElementCount()), xiiLog::GetThreadLocalLogSystem());
 
@@ -466,8 +469,8 @@ public:
           if (curToken.m_iType == xiiTokenType::String1)
           {
             // #include "bla"
-            xiiStringBuilder absIncludePath(m_pStackAllocator.Borrow());
-            xiiStringBuilder relativePath(m_pStackAllocator.Borrow());
+            xiiStringBuilder absIncludePath(m_pLinearAllocator.Borrow());
+            xiiStringBuilder relativePath(m_pLinearAllocator.Borrow());
             relativePath = curToken.m_DataView;
             relativePath.Trim("\"");
             relativePath.MakeCleanPath();
@@ -511,7 +514,7 @@ public:
             }
             else if (!isInternalHeader)
             {
-              xiiStringBuilder includePath(m_pStackAllocator.Borrow());
+              xiiStringBuilder includePath(m_pLinearAllocator.Borrow());
               includePath = xiiStringView(startToken.m_DataView.GetEndPointer(), curToken.m_DataView.GetStartPointer());
               includePath.MakeCleanPath();
               CheckInclude(sCurrentFile, includePath, startToken.m_uiLine);
