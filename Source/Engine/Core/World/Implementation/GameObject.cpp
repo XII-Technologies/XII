@@ -586,7 +586,7 @@ const xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView s
   return pThis->SearchForChildByNameSequence(sObjectSequence, pExpectedComponent);
 }
 
-void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects)
+void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiDynamicArray<xiiGameObject*>& out_objects)
 {
   if (sObjectSequence.IsEmpty())
   {
@@ -1033,7 +1033,7 @@ bool xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
-  xiiHybridArray<xiiComponent*, 4> eventMsgHandlers;
+  xiiTemporaryHybridArray<xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -1061,7 +1061,7 @@ bool xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
-  xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
+  xiiTemporaryHybridArray<const xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
   bool bResult = false;
@@ -1079,7 +1079,7 @@ void xiiGameObject::PostEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
-  xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
+  xiiTemporaryHybridArray<const xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
   for (auto pEventMsgHandler : eventMsgHandlers)
