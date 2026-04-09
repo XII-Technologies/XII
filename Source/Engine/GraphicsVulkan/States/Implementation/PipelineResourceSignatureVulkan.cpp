@@ -118,8 +118,8 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   vkDescriptorSetLayoutCreateInfo.pNext                             = nullptr;
   vkDescriptorSetLayoutCreateInfo.flags                             = {};
 
-  xiiTemporaryHybridArray<vk::DescriptorSetLayoutBinding, 4U> vkDescriptorSetLayoutBindings;
-  xiiTemporaryHybridArray<xiiTemporaryHybridArray<vk::Sampler, 4U>, 4U>   vkTempSamplerArrayAssignment;
+  xiiTemporaryHybridArray<vk::DescriptorSetLayoutBinding, 4U>           vkDescriptorSetLayoutBindings;
+  xiiTemporaryHybridArray<xiiTemporaryHybridArray<vk::Sampler, 4U>, 4U> vkTempSamplerArrayAssignment;
 
   for (xiiUInt32 uiSet = 0; uiSet < m_PipelineResourceSetLayouts.GetCount(); ++uiSet)
   {
