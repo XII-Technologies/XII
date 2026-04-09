@@ -14,8 +14,6 @@ class xiiOpenDdlReaderElement;
 // Include the proper Input implementation to use
 #if XII_ENABLED(XII_SUPPORTS_SDL)
 #  include <Core/Platform/SDL/WindowDeclaration_SDL.h>
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Core/Platform/Android/WindowDeclaration_android.h>
 #else
 #  include <Core/Platform/NoImpl/WindowDeclaration_NoImpl.h>
 #endif
@@ -65,7 +63,7 @@ struct XII_CORE_DLL xiiWindowMode
 };
 
 /// \brief Parameters for creating a window, such as position and resolution
-struct XII_CORE_DLL xiiWindowCreationDesc
+struct XII_CORE_DLL xiiWindowCreationDescription
 {
   /// \brief Adjusts the position and size members, depending on the current value of m_WindowMode and m_iMonitor.
   ///
@@ -142,7 +140,7 @@ public:
   virtual ~xiiWindow();
 
   /// \brief Returns the currently active description struct.
-  inline const xiiWindowCreationDesc& GetCreationDescription() const { return m_CreationDescription; }
+  inline const xiiWindowCreationDescription& GetCreationDescription() const { return m_CreationDescription; }
 
   /// \brief Returns the size of the client area / ie. the window resolution.
   virtual xiiSizeU32 GetClientAreaSize() const override { return m_CreationDescription.m_Resolution; }
@@ -187,7 +185,7 @@ public:
   ///   Struct with various settings for window creation. Will be saved internally for later lookup.
   ///
   /// \see xiiWindow::Destroy, xiiWindow::Initialize
-  xiiResult Initialize(const xiiWindowCreationDesc& creationDescription)
+  xiiResult Initialize(const xiiWindowCreationDescription& creationDescription)
   {
     m_CreationDescription = creationDescription;
     return Initialize();
@@ -242,8 +240,6 @@ public:
 
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-
 #else
 #  error "Missing code for xiiWindow on this platform!"
 #endif
@@ -251,7 +247,7 @@ public:
   /// \brief Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
 
-  /// \brief Returns a number that can be used as a window number in xiiWindowCreationDesc.
+  /// \brief Returns a number that can be used as a window number in xiiWindowCreationDescription.
   ///
   /// This number just increments whenever a xiiWindow is created. It starts at zero.
   static xiiUInt8 GetNextUnusedWindowNumber();
@@ -260,7 +256,7 @@ protected:
   /// Description at creation time. xiiWindow will not update this in any method other than Initialize.
   ///
   /// \remarks That means that messages like Resize will also have no effect on this variable.
-  xiiWindowCreationDesc m_CreationDescription;
+  xiiWindowCreationDescription m_CreationDescription;
 
 private:
   bool m_bInitialized = false;

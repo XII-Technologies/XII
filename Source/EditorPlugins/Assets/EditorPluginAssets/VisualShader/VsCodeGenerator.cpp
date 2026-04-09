@@ -135,7 +135,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GatherAllNodes(const xiiDocumentObject* 
     XII_SUCCEED_OR_RETURN(GatherAllNodes(children[i]));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiUInt16 xiiVisualShaderCodeGenerator::DeterminePinId(const xiiDocumentObject* pOwner, const xiiPin& pin) const
@@ -191,7 +191,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateVisualShader(const xiiDocumentNo
     out_sCheckPerms.Append("\n", pDesc->m_sCheckPermutations);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pNode)
@@ -202,7 +202,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pN
     return xiiStatus("The shader graph has a circular dependency.");
 
   if (state.m_bCodeGenerated)
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   state.m_bCodeGenerated = true;
   state.m_bInProgress    = true;
@@ -270,7 +270,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateNode(const xiiDocumentObject* pN
     AppendStringIfUnique(m_sShaderMaterialCB, sMaterialCB);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiVisualShaderCodeGenerator::GenerateInputPinCode(xiiArrayPtr<const xiiUniquePtr<const xiiPin>> pins)
@@ -289,11 +289,11 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateInputPinCode(xiiArrayPtr<const x
     const xiiDocumentObject* pOwnerNode = pinSource.GetParent();
     const xiiStatus          resNode    = GenerateOutputPinCode(pOwnerNode, pinSource);
 
-    if (resNode.m_Result.Failed())
+    if (resNode.Failed())
       return resNode;
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentObject* pOwnerNode, const xiiPin& pin)
@@ -301,7 +301,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   OutputPinState& ps = m_OutputPins[&pin];
 
   if (ps.m_bCodeGenerated)
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   ps.m_bCodeGenerated = true;
 
@@ -320,7 +320,7 @@ xiiStatus xiiVisualShaderCodeGenerator::GenerateOutputPinCode(const xiiDocumentO
   // store the result
   ps.m_sCodeAtPin = sInlineCode;
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(const xiiDocumentObject* pOwnerNode, const xiiVisualShaderNodeDescriptor* pNodeDesc, xiiStringBuilder& sInlineCode, xiiStringBuilder& sCodeForPlacingDefines)
@@ -375,7 +375,7 @@ xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(const xiiDocument
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiVisualShaderCodeGenerator::SetPinDefines(const xiiDocumentObject* pOwnerNode, xiiStringBuilder& sInlineCode)
@@ -466,7 +466,7 @@ xiiStatus xiiVisualShaderCodeGenerator::CheckPropertyValues(const xiiDocumentObj
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiVisualShaderCodeGenerator::InsertPropertyValues(const xiiDocumentObject* pNode, const xiiVisualShaderNodeDescriptor* pDesc, xiiStringBuilder& sString)
@@ -488,5 +488,5 @@ xiiStatus xiiVisualShaderCodeGenerator::InsertPropertyValues(const xiiDocumentOb
     sString.ReplaceAll(sPropName, sPropValue);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

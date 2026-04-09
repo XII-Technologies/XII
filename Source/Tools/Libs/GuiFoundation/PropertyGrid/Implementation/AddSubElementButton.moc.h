@@ -8,12 +8,15 @@ class QHBoxLayout;
 class QPushButton;
 class QMenu;
 
+/// \brief Used by container widgets to add new elements to the container.
 class XII_GUIFOUNDATION_DLL xiiQtAddSubElementButton : public xiiQtPropertyWidget
 {
   Q_OBJECT
 
 public:
-  xiiQtAddSubElementButton();
+  /// Constructor
+  /// \param containerCategory The type of container. Only Map, Set and Array are supported.
+  xiiQtAddSubElementButton(xiiEnum<xiiPropertyCategory> containerCategory);
 
 protected:
   virtual void DoPrepareToDie() override {}
@@ -32,8 +35,9 @@ private:
 
   xiiQtTypeMenu m_TypeMenu;
 
-  bool      m_bNoMoreElementsAllowed = false;
-  QMenu*    m_pMenu                  = nullptr;
-  xiiUInt32 m_uiMaxElements          = 0; // 0 means unlimited
-  bool      m_bPreventDuplicates     = false;
+  bool                         m_bNoMoreElementsAllowed = false;
+  QMenu*                       m_pMenu                  = nullptr;
+  xiiUInt32                    m_uiMaxElements          = 0; // 0 means unlimited
+  bool                         m_bPreventDuplicates     = false;
+  xiiEnum<xiiPropertyCategory> m_ContainerCategory;
 };

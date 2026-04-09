@@ -104,8 +104,9 @@ xiiUuid xiiRttiConverterContext::GetObjectGUID(const xiiRTTI* pRtti, const void*
   xiiUuid guid;
 
   if (pObject != nullptr)
+  {
     m_ObjectToGuid.TryGetValue(pObject, guid);
-
+  }
   return guid;
 }
 
@@ -445,8 +446,9 @@ void xiiRttiConverterWriter::AddProperty(xiiAbstractObjectNode* pNode, const xii
 void xiiRttiConverterWriter::AddProperties(xiiAbstractObjectNode* pNode, const xiiRTTI* pRtti, const void* pObject)
 {
   if (pRtti->GetParentType())
+  {
     AddProperties(pNode, pRtti->GetParentType(), pObject);
-
+  }
   for (const auto* pProp : pRtti->GetProperties())
   {
     AddProperty(pNode, pProp, pObject);

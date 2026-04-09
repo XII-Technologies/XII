@@ -635,12 +635,12 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
       WriteTransformd(value.Get<xiiTransformd>());
       return;
     case xiiVariant::Type::String:
-      WriteString(value.Get<xiiString>().GetData());
+      WriteString(value.Get<xiiString>());
       return;
     case xiiVariant::Type::StringView:
     {
       xiiStringBuilder s = value.Get<xiiStringView>();
-      WriteString(s.GetData());
+      WriteString(s);
       return;
     }
     case xiiVariant::Type::Time:

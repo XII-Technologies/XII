@@ -29,7 +29,7 @@ bool xiiCommand::HasModifiedDocument() const
 xiiStatus xiiCommand::Do(bool bRedo)
 {
   xiiStatus status = DoInternal(bRedo);
-  if (status.m_Result == XII_FAILURE)
+  if (status.Failed())
   {
     if (bRedo)
     {
@@ -41,30 +41,30 @@ xiiStatus xiiCommand::Do(bool bRedo)
       for (xiiInt32 j = m_ChildActions.GetCount() - 1; j >= 0; --j)
       {
         xiiStatus status2 = m_ChildActions[j]->Undo(true);
-        XII_ASSERT_DEV(status2.m_Result == XII_SUCCESS, "Failed do could not be recovered! Inconsistent state!");
+        XII_ASSERT_DEV(status2.Succeeded(), "Failed do could not be recovered! Inconsistent state!");
       }
       return status;
     }
   }
   if (!bRedo)
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   const xiiUInt32 uiChildActions = m_ChildActions.GetCount();
   for (xiiUInt32 i = 0; i < uiChildActions; ++i)
   {
     status = m_ChildActions[i]->Do(bRedo);
-    if (status.m_Result == XII_FAILURE)
+    if (status.Failed())
     {
       for (xiiInt32 j = i - 1; j >= 0; --j)
       {
         xiiStatus status2 = m_ChildActions[j]->Undo(true);
-        XII_ASSERT_DEV(status2.m_Result == XII_SUCCESS, "Failed redo could not be recovered! Inconsistent state!");
+        XII_ASSERT_DEV(status2.Succeeded(), "Failed redo could not be recovered! Inconsistent state!");
       }
       // A command that originally succeeded failed on redo!
       return status;
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiCommand::Undo(bool bFireEvents)
@@ -73,12 +73,12 @@ xiiStatus xiiCommand::Undo(bool bFireEvents)
   for (xiiInt32 i = uiChildActions - 1; i >= 0; --i)
   {
     xiiStatus status = m_ChildActions[i]->Undo(bFireEvents);
-    if (status.m_Result == XII_FAILURE)
+    if (status.Failed())
     {
       for (xiiUInt32 j = i + 1; j < uiChildActions; ++j)
       {
         xiiStatus status2 = m_ChildActions[j]->Do(true);
-        XII_ASSERT_DEV(status2.m_Result == XII_SUCCESS, "Failed undo could not be recovered! Inconsistent state!");
+        XII_ASSERT_DEV(status2.Succeeded(), "Failed undo could not be recovered! Inconsistent state!");
       }
       // A command that originally succeeded failed on undo!
       return status;
@@ -86,18 +86,18 @@ xiiStatus xiiCommand::Undo(bool bFireEvents)
   }
 
   xiiStatus status = UndoInternal(bFireEvents);
-  if (status.m_Result == XII_FAILURE)
+  if (status.Failed())
   {
     for (xiiUInt32 j = 0; j < uiChildActions; ++j)
     {
       xiiStatus status2 = m_ChildActions[j]->Do(true);
-      XII_ASSERT_DEV(status2.m_Result == XII_SUCCESS, "Failed undo could not be recovered! Inconsistent state!");
+      XII_ASSERT_DEV(status2.Succeeded(), "Failed undo could not be recovered! Inconsistent state!");
     }
     // A command that originally succeeded failed on undo!
     return status;
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiCommand::Cleanup(CommandState state)
@@ -126,7 +126,7 @@ xiiStatus xiiCommand::AddSubCommand(xiiCommand& command)
   xiiStatus ret = pCommand->Do(false);
   m_pDocument->GetCommandHistory()->GetStorage()->m_ActiveCommandStack.PopBack();
 
-  if (ret.m_Result == XII_FAILURE)
+  if (ret.Failed())
   {
     m_ChildActions.PopBack();
     pCommand->GetDynamicRTTI()->GetAllocator()->Deallocate(pCommand);
@@ -144,5 +144,5 @@ xiiStatus xiiCommand::AddSubCommand(xiiCommand& command)
     xiiReflectionSerializer::ReadObjectPropertiesFromBinary(reader, *pRtti, &command);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

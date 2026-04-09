@@ -1,0 +1,52 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4> DecalVolumes;
+Texture2D<float> SceneDepth;
+RWStructuredBuffer<uint> DecalTileLists;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint tileIndex = dispatchThreadId.x;
+
+  // Eight compact decal slots per tile to avoid full-screen decal loops.
+  const uint tileStride = 8u;
+  const uint tileStart = tileIndex * tileStride;
+
+  if (tileStart >= DecalTileLists.Length)
+  {
+    return;
+  }
+
+  uint depthWidth = 0u;
+  uint depthHeight = 0u;
+  SceneDepth.GetDimensions(depthWidth, depthHeight);
+
+  float depthSample = 1.0f;
+  if (depthWidth > 0u && depthHeight > 0u)
+  {
+    const uint sampleX = tileIndex % depthWidth;
+    const uint sampleY = (tileIndex / max(depthWidth, 1u)) % depthHeight;
+    depthSample = SceneDepth.Load(int3(sampleX, sampleY, 0));
+  }
+
+  const uint decalCount = max(DecalVolumes.Length, 1u);
+
+  [unroll]
+  for (uint slot = 0u; slot < tileStride; ++slot)
+  {
+    const uint outIndex = tileStart + slot;
+    if (outIndex >= DecalTileLists.Length)
+    {
+      break;
+    }
+
+    const uint candidate = (tileIndex * 131u + slot * 17u + asuint(depthSample * 4096.0f)) % decalCount;
+    DecalTileLists[outIndex] = candidate;
+  }
+}

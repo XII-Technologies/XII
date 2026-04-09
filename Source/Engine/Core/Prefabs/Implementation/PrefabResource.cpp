@@ -24,8 +24,8 @@ void xiiPrefabResource::InstantiatePrefab(xiiWorld& ref_world, const xiiTransfor
 
   if (pExposedParamValues != nullptr && !pExposedParamValues->IsEmpty())
   {
-    xiiHybridArray<xiiGameObject*, 8> createdRootObjects;
-    xiiHybridArray<xiiGameObject*, 8> createdChildObjects;
+    xiiTemporaryHybridArray<xiiGameObject*, 8> createdRootObjects;
+    xiiTemporaryHybridArray<xiiGameObject*, 8> createdChildObjects;
 
     if (options.m_pCreatedRootObjectsOut == nullptr)
     {

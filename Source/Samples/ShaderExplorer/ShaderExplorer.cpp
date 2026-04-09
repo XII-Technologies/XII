@@ -18,21 +18,13 @@
 #include <Core/System/Window.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
-#include <GraphicsFoundation/States/PipelineState.h>
-#include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsCore/Utils/CommandListUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 
@@ -210,26 +202,17 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pDefaultQueue = m_pDevice->GetDefaultCommandQueue();
+      xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
 
-      if (auto pCommandList = pDefaultQueue->BeginCommandList())
+      xiiRenderingSetup renderingSetup;
+      renderingSetup.AddColorAttachment({.m_pRenderTarget = m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget), .m_LoadOp = xiiGALAttachmentLoadOperation::Clear})
+        .SetDepthStencilAttachment({.m_pDSTarget = m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), .m_LoadOp = xiiGALAttachmentLoadOperation::Clear, .m_StencilLoadOp = xiiGALAttachmentLoadOperation::Clear})
+        .Build();
+
+      pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
       {
-        float fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-
-        xiiRenderingSetup renderingSetup;
-        renderingSetup
-          .AddColorAttachment({.m_pRenderTarget = m_pSwapChain->GetBackBufferTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget),
-                               .m_LoadOp        = xiiGALAttachmentLoadOperation::Clear})
-          .SetDepthStencilAttachment({.m_pDSTarget     = m_pDepthStencilTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil),
-                                      .m_LoadOp        = xiiGALAttachmentLoadOperation::Clear,
-                                      .m_StencilLoadOp = xiiGALAttachmentLoadOperation::Clear})
-          .Build();
-
-        xiiRenderContext renderContext(pCommandList);
-        renderContext.BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
-
         {
-          xiiGlobalConstants* pGlobalConstants = renderContext.GetGlobalConstants();
+          xiiGlobalConstants* pGlobalConstants = pRenderContext->GetGlobalConstants();
 
           xiiMat4 m0, m1;
           m0                                       = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
@@ -240,18 +223,14 @@ public:
           pGlobalConstants->CameraToWorldMatrix[1] = m1.GetInverse();
           pGlobalConstants->ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
 
-          // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-          pGlobalConstants->GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-          pGlobalConstants->WorldTime  = pGlobalConstants->GlobalTime;
+          pRenderContext->SetGlobalAndWorldTimeConstants();
         }
 
-        renderContext.BindMaterial(m_hMaterial);
-        renderContext.BindMeshBuffer(m_hQuadMeshBuffer);
-        renderContext.DrawMeshBuffer().IgnoreResult();
-        renderContext.EndRendering();
-
-        pCommandList->Submit();
+        pRenderContext->BindMaterial(m_hMaterial);
+        pRenderContext->BindMeshBuffer(m_hQuadMeshBuffer);
+        pRenderContext->DrawMeshBuffer().IgnoreResult();
       }
+      pRenderContext->EndRendering();
 
       m_pSwapChain->Present();
 
@@ -298,7 +277,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     xiiTelemetry::SetServerName("Shader Explorer");
 
     // Activate xiiTelemetry such that the inspector plugin can use the network connection.
@@ -389,7 +368,7 @@ public:
 
     // Create a window for rendering
     {
-      xiiWindowCreationDesc WindowCreationDesc;
+      xiiWindowCreationDescription WindowCreationDesc;
       WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
       WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
       WindowCreationDesc.m_Title             = "Shader Explorer";
@@ -403,48 +382,10 @@ public:
     // Create a device
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
-      deviceCreationDescription.m_DeviceFeatures.m_SeparablePrograms                  = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceQueries              = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WireframeFill                      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ComputeShaders                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_GeometryShaders                    = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_Tessellation                       = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MeshShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_RayTracing                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BindlessResources                  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_OcclusionQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BinaryOcclusionQueries             = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TimestampQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PipelineStatisticsQueries          = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_DurationQueries                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthBiasClamp                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthClamp                         = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_IndependentBlend                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DualSourceBlend                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultiViewport                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PixelUAVWritesAndAtomics           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderFloat16                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer16BitAccess          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer16BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInputOutput16                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInt8                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SparseResources                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
       deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_ExternalMemory                     = xiiGALDeviceFeatureState::Optional;
+      deviceCreationDescription.m_DeviceFeatures.m_ExternalSemaphore                  = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
@@ -565,7 +506,7 @@ public:
   {
     xiiPlugin::UnloadAllPlugins();
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     // Shut down telemetry if it was set up.
     xiiTelemetry::CloseConnection();
 #endif
@@ -575,21 +516,18 @@ public:
 
   void UpdateSwapChain()
   {
-    // Create a Swapchain
     if (!m_pSwapChain)
     {
-      xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = m_pWindow.Borrow();
-      swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
-      swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
-      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
-      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDesc.m_uiBufferCount         = 2U;
-      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
-      swapChainDesc.m_uiDefaultStencilValue = 0U;
+      xiiGALSwapChainCreationDescription swapChainDescription;
+      swapChainDescription.m_pWindow               = m_pWindow.Borrow();
+      swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
+      swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDescription.m_uiBufferCount         = 2U;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_uiDefaultStencilValue = 0U;
 
-      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
 
       m_pSwapChain->SetPresentMode(xiiGALPresentMode::VSync);
     }
@@ -636,9 +574,8 @@ private:
 
 #if XII_ENABLED(USE_DIRECTORY_WATCHER)
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  bool                              m_bFileModified = false;
 #endif
-
-  bool m_bFileModified = false;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiShaderExplorerApp);

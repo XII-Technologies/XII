@@ -11,11 +11,13 @@
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Textures/Texture2DResource.h>
 
+#  include <Imgui/imgui_internal.h>
+
 namespace
 {
   void* xiiImguiAllocate(size_t uiSize, void* pUserData)
   {
-    xiiAllocatorBase* pAllocator = static_cast<xiiAllocatorBase*>(pUserData);
+    xiiAllocator* pAllocator = static_cast<xiiAllocator*>(pUserData);
     return pAllocator->Allocate(uiSize, XII_ALIGNMENT_MINIMUM);
   }
 
@@ -23,7 +25,7 @@ namespace
   {
     if (pPtr != nullptr)
     {
-      xiiAllocatorBase* pAllocator = static_cast<xiiAllocatorBase*>(pUserData);
+      xiiAllocator* pAllocator = static_cast<xiiAllocator*>(pUserData);
       pAllocator->Deallocate(pPtr);
     }
   }
@@ -60,7 +62,11 @@ void xiiImgui::SetCurrentContextForView(const xiiViewHandle& hView)
     // Last frame was not rendered. This can happen if a render pipeline with dear imgui renderer is used.
     if (context.m_uiFrameRenderCounter != context.m_uiFrameBeginCounter)
     {
-      ImGui::EndFrame();
+      ImGuiContext* pContext = ImGui::GetCurrentContext();
+      if (pContext && pContext->Initialized && pContext->WithinFrameScope)
+      {
+        ImGui::EndFrame();
+      }
     }
 
     BeginFrame(hView);
@@ -79,27 +85,27 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
     configFontCallback(*m_pSharedFontAtlas);
   }
 
-  unsigned char* pixels;
-  int            width, height;
-  m_pSharedFontAtlas->GetTexDataAsRGBA32(&pixels, &width, &height); // Load as RGBA 32-bits (75% of the memory is wasted, but default font
-                                                                    // is so small) because it is more likely to be compatible with user's
-                                                                    // existing shaders. If your ImTextureId represent a higher-level
-                                                                    // concept than just a GL texture id, consider calling
-                                                                    // GetTexDataAsAlpha8() instead to save on GPU memory.
+  unsigned char* pPixels;
+  xiiInt32       iWidth, iHeight;
+  m_pSharedFontAtlas->GetTexDataAsRGBA32(&pPixels, &iWidth, &iHeight); // Load as RGBA 32-bits (75% of the memory is wasted, but default font
+                                                                       // is so small) because it is more likely to be compatible with user's
+                                                                       // existing shaders. If your ImTextureId represent a higher-level
+                                                                       // concept than just a GL texture id, consider calling
+                                                                       // GetTexDataAsAlpha8() instead to save on GPU memory.
 
   xiiTexture2DResourceHandle hFont = xiiResourceManager::GetExistingResource<xiiTexture2DResource>("ImguiFont");
 
   if (!hFont.IsValid())
   {
     xiiGALTextureSubResourceData memoryDesc;
-    memoryDesc.m_pData         = xiiMakeByteBlobPtr(pixels, xiiUInt64(width) * height * 4ull);
-    memoryDesc.m_uiStride      = width * 4;
-    memoryDesc.m_uiDepthStride = width * height * 4;
+    memoryDesc.m_pData         = xiiMakeByteBlobPtr(pPixels, xiiUInt64(iWidth) * iHeight * 4ull);
+    memoryDesc.m_uiStride      = iWidth * 4;
+    memoryDesc.m_uiDepthStride = iWidth * iHeight * 4;
 
     xiiTexture2DResourceDescriptor desc;
     desc.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
-    desc.m_DescGAL.m_Size.width  = width;
-    desc.m_DescGAL.m_Size.height = height;
+    desc.m_DescGAL.m_Size.width  = iWidth;
+    desc.m_DescGAL.m_Size.height = iHeight;
     desc.m_DescGAL.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
     desc.m_DescGAL.m_Usage       = xiiGALResourceUsage::Immutable;
     desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
@@ -111,10 +117,14 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
 
   const size_t id           = (size_t)m_Textures.GetCount() - 1;
   m_pSharedFontAtlas->TexID = reinterpret_cast<void*>(id);
+
+  xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.AddEventHandler(xiiMakeDelegate(&xiiImgui::GameApplicationEventHandler, this));
 }
 
 void xiiImgui::Shutdown()
 {
+  xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.RemoveEventHandler(xiiMakeDelegate(&xiiImgui::GameApplicationEventHandler, this));
+
   m_Textures.Clear();
 
   m_pSharedFontAtlas = nullptr;
@@ -241,6 +251,14 @@ void xiiImgui::BeginFrame(const xiiViewHandle& hView)
   ImGui::NewFrame();
 
   m_bImguiWantsInput = cfg.WantCaptureKeyboard || cfg.WantCaptureMouse;
+}
+
+void xiiImgui::GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e)
+{
+  if (e.m_Type == xiiGameApplicationExecutionEvent::Type::AfterUpdatePlugins)
+  {
+    ImGui::EndFrame();
+  }
 }
 
 #endif

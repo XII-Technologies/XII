@@ -238,83 +238,24 @@ protected:
 #  define XII_NV_OPTIMUS
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Basics/Platform/Android/AndroidUtils.h>
-#  include <android/log.h>
-#  include <android/native_activity.h>
-#  include <android_native_app_glue.h>
-
-
-#  define XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN(szTestName, szNiceTestName)                                                  \
-    int             xiiAndroidMain(int argc, char** argv);                                                                 \
-    extern "C" void android_main(struct android_app* app)                                                                  \
-    {                                                                                                                      \
-      xiiAndroidUtils::SetNativeAndroidApp(app);                                                                           \
-      /* TODO: do something with the return value of xiiAndroidMain?  */                                                   \
-      /* TODO: can we get somehow get the command line arguments to the android app? Is there even something like that? */ \
-      int iReturnCode = xiiAndroidMain(0, nullptr);                                                                        \
-      __android_log_print(ANDROID_LOG_ERROR, "XII", "Test framework exited with return code: '%d'", iReturnCode);          \
-    }                                                                                                                      \
-                                                                                                                           \
-    int xiiAndroidMain(int argc, char** argv)                                                                              \
-    {                                                                                                                      \
-      xiiTestSetup::InitTestFramework(szTestName, szNiceTestName, 0, nullptr);                                             \
-      /* Execute custom init code here by using the BEGIN/END macros directly */
-
-#else
 /// \brief Macro to define the application entry point for all test applications
-#  define XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN(szTestName, szNiceTestName)                    \
-    /* Enables that on machines with multiple GPUs the NVIDIA GPU is preferred */            \
-    XII_NV_OPTIMUS                                                                           \
-    XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                               \
-    int main(int argc, char** argv)                                                          \
-    {                                                                                        \
-      xiiTestSetup::InitTestFramework(szTestName, szNiceTestName, argc, (const char**)argv); \
-      /* Execute custom init code here by using the BEGIN/END macros directly */
+#define XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN(szTestName, szNiceTestName)                    \
+  /* Enables that on machines with multiple GPUs the NVIDIA GPU is preferred */            \
+  XII_NV_OPTIMUS                                                                           \
+  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                               \
+  int main(int argc, char** argv)                                                          \
+  {                                                                                        \
+    xiiTestSetup::InitTestFramework(szTestName, szNiceTestName, argc, (const char**)argv); \
+    /* Execute custom init code here by using the BEGIN/END macros directly */
 
-#endif
-
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  define XII_TESTFRAMEWORK_ENTRY_POINT_END()                                      \
-    /* TODO: This is too big for a macro now */                                    \
-    auto pApp = xiiAndroidUtils::GetNativeAndroidApp();                            \
-    bool bRun = true;                                                              \
-    while (true)                                                                   \
-    {                                                                              \
-      struct android_poll_source* source = nullptr;                                \
-      int                         ident  = 0;                                      \
-      int                         events = 0;                                      \
-      while ((ident = ALooper_pollAll(0, nullptr, &events, (void**)&source)) >= 0) \
-      {                                                                            \
-        if (source != nullptr)                                                     \
-          source->process(pApp, source);                                           \
-      }                                                                            \
-      if (bRun && xiiTestSetup::RunTests() != xiiTestAppRun::Continue)             \
-      {                                                                            \
-        bRun = false;                                                              \
-        ANativeActivity_finish(pApp->activity);                                    \
-      }                                                                            \
-      if (pApp->destroyRequested)                                                  \
-      {                                                                            \
-        const xiiInt32 iFailedTests = xiiTestSetup::GetFailedTestCount();          \
-        xiiTestSetup::DeInitTestFramework();                                       \
-        return iFailedTests;                                                       \
-      }                                                                            \
-    }                                                                              \
-    }
-
-#else
-#  define XII_TESTFRAMEWORK_ENTRY_POINT_END()                         \
-    while (xiiTestSetup::RunTests() == xiiTestAppRun::Continue)       \
-    {                                                                 \
-    }                                                                 \
-    const xiiInt32 iFailedTests = xiiTestSetup::GetFailedTestCount(); \
-    xiiTestSetup::DeInitTestFramework();                              \
-    return iFailedTests;                                              \
-    }
-
-#endif
-
+#define XII_TESTFRAMEWORK_ENTRY_POINT_END()                         \
+  while (xiiTestSetup::RunTests() == xiiTestAppRun::Continue)       \
+  {                                                                 \
+  }                                                                 \
+  const xiiInt32 iFailedTests = xiiTestSetup::GetFailedTestCount(); \
+  xiiTestSetup::DeInitTestFramework();                              \
+  return iFailedTests;                                              \
+  }
 
 #define XII_TESTFRAMEWORK_ENTRY_POINT(szTestName, szNiceTestName)            \
   XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN(szTestName, szNiceTestName)            \
@@ -403,7 +344,7 @@ XII_TEST_DLL bool xiiTestResult(xiiResult condition, const char* szErrorText, co
 /// \brief Tests for a xiiStatus condition, outputs xiiStatus message on failure
 #define XII_TEST_STATUS(condition)                     \
   auto XII_PP_CONCAT(l_, XII_SOURCE_LINE) = condition; \
-  xiiTestResult(XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_Result, "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_PP_CONCAT(l_, XII_SOURCE_LINE).m_sMessage)
+  xiiTestResult(XII_PP_CONCAT(l_, XII_SOURCE_LINE).GetResult(), "Test failed: " XII_PP_STRINGIFY(condition), XII_SOURCE_FILE, XII_SOURCE_LINE, XII_SOURCE_FUNCTION, XII_PP_CONCAT(l_, XII_SOURCE_LINE).GetMessageString())
 
 inline double ToFloat(int f)
 {

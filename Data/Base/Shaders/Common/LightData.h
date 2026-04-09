@@ -2,7 +2,7 @@
 
 // clang-format off
 
-#if SHADING_QUALITY != SHADING_QUALITY_NORMAL
+#if SHADING_QUALITY != SHADING_QUALITY_MEDIUM
 #  error "Functions in LightData.h are only for NORMAL shading quality. Todo: Split up file"
 #endif
 
@@ -28,7 +28,7 @@ struct XII_SHADER_STRUCT xiiPerLightData
   FLOAT1(specularMultiplier);
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 DECLARE_STRUCTURED_BUFFER_AUTO(perLightDataBuffer, xiiPerLightData);
 #else
 static_assert(sizeof(xiiPerLightData) == 48);
@@ -64,7 +64,7 @@ struct XII_SHADER_STRUCT xiiDirShadowData
 #define GET_CASCADE_OFFSET_INDEX(baseOffset, index)        ((baseOffset) + 8 + 2 * (index))
 #define GET_ATLAS_SCALE_OFFSET_INDEX(baseOffset, index)    ((baseOffset) + 13 + (index))
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 DECLARE_STRUCTURED_BUFFER_AUTO(shadowDataBuffer, float4);
 #endif
 
@@ -97,7 +97,7 @@ struct XII_SHADER_STRUCT xiiPerDecalData
   UINT1(ormAtlasOffset); // xy as 16 bit floats
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 DECLARE_STRUCTURED_BUFFER_AUTO(perDecalDataBuffer, xiiPerDecalData);
 #else // C++
 static_assert(sizeof(xiiPerDecalData) == 96);
@@ -123,7 +123,7 @@ struct XII_SHADER_STRUCT xiiPerReflectionProbeData
   UINT1(Padding3);
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 DECLARE_STRUCTURED_BUFFER_AUTO(perPerReflectionProbeDataBuffer, xiiPerReflectionProbeData);
 #else // C++
 static_assert(sizeof(xiiPerReflectionProbeData) == 160);
@@ -171,7 +171,7 @@ struct xiiPerClusterData
   UINT1(counts);
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 DECLARE_STRUCTURED_BUFFER_AUTO(perClusterDataBuffer, xiiPerClusterData);
 DECLARE_STRUCTURED_BUFFER_AUTO(clusterItemBuffer, uint);
 #endif

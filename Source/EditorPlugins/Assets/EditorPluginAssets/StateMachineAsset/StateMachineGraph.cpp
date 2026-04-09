@@ -99,7 +99,7 @@ bool xiiStateMachineNodeManager::InternalIsNode(const xiiDocumentObject* pObject
 xiiStatus xiiStateMachineNodeManager::InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const
 {
   out_Result = CanConnectResult::ConnectNtoN;
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiStateMachineNodeManager::InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& node)
@@ -188,7 +188,7 @@ xiiStatus xiiStateMachine_SetInitialStateCommand::DoInternal(bool bRedo)
   if (m_pOldInitialStateObject)
     XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->SetValue(m_pOldInitialStateObject, s_szIsInitialState, xiiVariant(false)));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiStateMachine_SetInitialStateCommand::UndoInternal(bool bFireEvents)
@@ -202,5 +202,5 @@ xiiStatus xiiStateMachine_SetInitialStateCommand::UndoInternal(bool bFireEvents)
   if (m_pOldInitialStateObject)
     XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->SetValue(m_pOldInitialStateObject, s_szIsInitialState, xiiVariant(true)));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

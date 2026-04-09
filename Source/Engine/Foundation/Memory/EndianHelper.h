@@ -2,15 +2,16 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief Collection of helper methods when working with endianess "problems"
+/// \brief Collection of helper methods when working with endianness "problems".
 struct XII_FOUNDATION_DLL xiiEndianHelper
 {
+
   /// \brief Returns true if called on a big endian system, false otherwise.
   ///
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
   static inline bool IsBigEndian()
   {
-    const xiiInt32 i = 1;
+    const int i = 1;
     return (*(char*)&i) == 0;
   }
 
@@ -19,28 +20,28 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   /// \note Note that usually the compile time decisions with the defines XII_PLATFORM_LITTLE_ENDIAN, XII_PLATFORM_BIG_ENDIAN is preferred.
   static inline bool IsLittleEndian() { return !IsBigEndian(); }
 
-  /// \brief Switches endianess of the given array of words (16 bit values).
+  /// \brief Switches endianness of the given array of words (16 bit values).
   static inline void SwitchWords(xiiUInt16* pWords, xiiUInt32 uiCount) // [tested]
   {
-    for (xiiUInt32 i = 0; i < uiCount; i++)
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
       pWords[i] = Switch(pWords[i]);
     }
   }
 
-  /// \brief Switches endianess of the given array of double words (32 bit values).
+  /// \brief Switches endianness of the given array of double words (32 bit values).
   static inline void SwitchDWords(xiiUInt32* pDWords, xiiUInt32 uiCount) // [tested]
   {
-    for (xiiUInt32 i = 0; i < uiCount; i++)
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
       pDWords[i] = Switch(pDWords[i]);
     }
   }
 
-  /// \brief Switches endianess of the given array of quad words (64 bit values).
+  /// \brief Switches endianness of the given array of quad words (64 bit values).
   static inline void SwitchQWords(xiiUInt64* pQWords, xiiUInt32 uiCount) // [tested]
   {
-    for (xiiUInt32 i = 0; i < uiCount; i++)
+    for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
       pQWords[i] = Switch(pQWords[i]);
     }
@@ -127,8 +128,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
 
 #if XII_ENABLED(XII_PLATFORM_LITTLE_ENDIAN)
 
-  static XII_ALWAYS_INLINE void LittleEndianToNative(xiiUInt16* /*pWords*/, xiiUInt32 /*uiCount*/)
-  {}
+  static XII_ALWAYS_INLINE void LittleEndianToNative(xiiUInt16* /*pWords*/, xiiUInt32 /*uiCount*/) {}
 
   static XII_ALWAYS_INLINE void NativeToLittleEndian(xiiUInt16* /*pWords*/, xiiUInt32 /*uiCount*/) {}
 
@@ -182,6 +182,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   static XII_ALWAYS_INLINE void NativeToBigEndian(xiiUInt64* /*pWords*/, xiiUInt32 /*uiCount*/) {}
 
 #endif
+
 
   /// \brief Switches a given struct according to the layout described in the szFormat parameter
   ///

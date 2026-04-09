@@ -20,7 +20,6 @@ XII_STATICLINK_LIBRARY(GameEngine)
   XII_STATICLINK_REFERENCE(GameEngine_Animation_Skeletal_Implementation_SimpleAnimationComponent);
   XII_STATICLINK_REFERENCE(GameEngine_Configuration_Implementation_InputConfig);
   XII_STATICLINK_REFERENCE(GameEngine_Configuration_Implementation_RendererProfileConfigs);
-  XII_STATICLINK_REFERENCE(GameEngine_Configuration_Implementation_XRConfig);
   XII_STATICLINK_REFERENCE(GameEngine_DearImgui_Implementation_DearImgui);
   XII_STATICLINK_REFERENCE(GameEngine_DearImgui_Implementation_DearImguiRenderer);
   XII_STATICLINK_REFERENCE(GameEngine_Effects_Wind_Implementation_SimpleWindComponent);
@@ -67,14 +66,4 @@ XII_STATICLINK_LIBRARY(GameEngine)
   XII_STATICLINK_REFERENCE(GameEngine_VisualScript_Nodes_VisualScriptStringNodes);
   XII_STATICLINK_REFERENCE(GameEngine_VisualScript_Nodes_VisualScriptVariableNodes);
   XII_STATICLINK_REFERENCE(GameEngine_VisualScript_Nodes_VisualScriptVariantNodes);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_Declaration);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_DeviceTrackingComponent);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_DummyXR);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_SpatialAnchorComponent);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_StageSpaceComponent);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_VisualizeHandComponent);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_XRInputDevice);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_XRInterface);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_XRSwapChain);
-  XII_STATICLINK_REFERENCE(GameEngine_XR_Implementation_XRWindow);
 }

@@ -28,10 +28,10 @@ public:
 
 protected:
   /// \brief No memory is allocated during construction.
-  xiiMessageQueueBase(xiiAllocatorBase* pAllocator); // [tested]
+  xiiMessageQueueBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief No memory is allocated during construction.
-  xiiMessageQueueBase(const xiiMessageQueueBase& rhs, xiiAllocatorBase* pAllocator);
+  xiiMessageQueueBase(const xiiMessageQueueBase& rhs, xiiAllocator* pAllocator);
 
   /// \brief Destructor.
   ~xiiMessageQueueBase(); // [tested]
@@ -97,7 +97,7 @@ class xiiMessageQueue : public xiiMessageQueueBase<MetaDataType>
 {
 public:
   xiiMessageQueue();
-  xiiMessageQueue(xiiAllocatorBase* pAllocator);
+  xiiMessageQueue(xiiAllocator* pAllocator);
 
   xiiMessageQueue(const xiiMessageQueue<MetaDataType, AllocatorWrapper>& rhs);
   xiiMessageQueue(const xiiMessageQueueBase<MetaDataType>& rhs);

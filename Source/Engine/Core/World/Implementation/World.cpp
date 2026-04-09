@@ -420,7 +420,7 @@ void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiM
   }
   else
   {
-    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_StackAllocator.GetCurrentAllocator());
+    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_LinearAllocator.GetCurrentAllocator());
     m_Data.m_MessageQueues[queueType].Enqueue(pMsgCopy, metaData);
   }
 }
@@ -451,7 +451,7 @@ void xiiWorld::PostMessage(const xiiComponentHandle& hReceiverComponent, const x
   }
   else
   {
-    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_StackAllocator.GetCurrentAllocator());
+    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_LinearAllocator.GetCurrentAllocator());
     m_Data.m_MessageQueues[queueType].Enqueue(pMsgCopy, metaData);
   }
 }
@@ -573,8 +573,8 @@ void xiiWorld::Update()
     ProcessQueuedMessages(xiiObjectMsgQueueType::AfterInitialized);
   }
 
-  // Swap our double buffered stack allocator
-  m_Data.m_StackAllocator.Swap();
+  // Swap our double buffered stack allocator.
+  m_Data.m_LinearAllocator.Swap();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1040,7 +1040,6 @@ void xiiWorld::RegisterUpdateFunction(const xiiComponentManagerBase::UpdateFunct
 {
   CheckForWriteAccess();
 
-  XII_ASSERT_DEV(desc.m_Phase == xiiWorldUpdatePhase::Async || desc.m_uiGranularity == 0, "Granularity must be 0 for synchronous update functions");
   XII_ASSERT_DEV(desc.m_Phase != xiiWorldUpdatePhase::Async || desc.m_DependsOn.GetCount() == 0, "Asynchronous update functions must not have dependencies");
   XII_ASSERT_DEV(desc.m_Function.IsComparable(), "Delegates with captures are not allowed as xiiWorld update functions.");
 
@@ -1126,9 +1125,9 @@ void xiiWorld::UpdateAsynchronous()
     xiiWorldModule*          pModule  = static_cast<xiiWorldModule*>(updateFunction.m_Function.GetClassInstance());
     xiiComponentManagerBase* pManager = xiiDynamicCast<xiiComponentManagerBase*>(pModule);
 
-    // a world module can also register functions in the async phase so we want at least one task
+    // A world module can also register functions in the async phase so we want at least one task.
     const xiiUInt32 uiTotalCount  = pManager != nullptr ? pManager->GetComponentCount() : 1;
-    const xiiUInt32 uiGranularity = (updateFunction.m_uiGranularity != 0) ? updateFunction.m_uiGranularity : uiTotalCount;
+    const xiiUInt32 uiGranularity = (updateFunction.m_uiAsyncPhaseBatchSize != 0) ? updateFunction.m_uiAsyncPhaseBatchSize : uiTotalCount;
 
     xiiUInt32 uiStartIndex = 0;
     while (uiStartIndex < uiTotalCount)

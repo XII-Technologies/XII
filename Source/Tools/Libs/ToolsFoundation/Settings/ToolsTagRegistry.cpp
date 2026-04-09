@@ -101,7 +101,7 @@ xiiStatus xiiToolsTagRegistry::ReadFromDDL(xiiStreamReader& inout_stream)
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiToolsTagRegistry::AddTag(const xiiToolsTag& tag)

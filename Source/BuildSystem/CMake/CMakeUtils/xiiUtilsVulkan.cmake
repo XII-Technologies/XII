@@ -13,24 +13,6 @@ macro(xii_requires_vulkan)
 endmacro()
 
 # #####################################
-# ## xii_link_target_vulkan(<target>)
-# #####################################
-function(xii_link_target_vulkan TARGET_NAME)
-  xii_requires_vulkan()
-
-  find_package(XIIVulkan REQUIRED)
-
-  if(XIIVULKAN_FOUND)
-    target_link_libraries(${TARGET_NAME} PRIVATE XIIVulkan::Loader)
-
-    if (COMMAND xii_platformhook_link_target_vulkan)
-      # Call platform-specific hook for linking with Vulkan
-      xii_platformhook_link_target_vulkan()
-    endif()
-  endif()
-endfunction()
-
-# #####################################
 # ## xii_link_target_dxc(<target>)
 # #####################################
 function(xii_link_target_dxc TARGET_NAME)
@@ -49,32 +31,5 @@ function(xii_link_target_dxc TARGET_NAME)
     endif()
 
     unset(_dll_location)
-  endif()
-endfunction()
-
-# #####################################
-# ## xii_sources_target_spirv_reflect(<target>)
-# #####################################
-function(xii_sources_target_spirv_reflect TARGET_NAME)
-  xii_requires_vulkan()
-
-  find_package(XIIVulkan REQUIRED)
-
-  if(XIIVULKAN_FOUND)
-    if(XII_CMAKE_PLATFORM_WINDOWS AND XII_CMAKE_ARCHITECTURE_64BIT)
-      target_include_directories(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/Source/SPIRV-Reflect")
-      target_sources(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/Source/SPIRV-Reflect/spirv_reflect.h")
-      target_sources(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/Source/SPIRV-Reflect/spirv_reflect.c")
-      source_group("SPIRV-Reflect" FILES "${XII_VULKAN_DIR}/Source/SPIRV-Reflect/spirv_reflect.h" "${XII_VULKAN_DIR}/x86_64/include/SPIRV-Reflect/spirv_reflect.c")
-
-    elseif(XII_CMAKE_PLATFORM_LINUX AND XII_CMAKE_ARCHITECTURE_64BIT)
-      target_include_directories(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/x86_64/include/SPIRV-Reflect")
-      target_sources(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/x86_64/include/SPIRV-Reflect/spirv_reflect.h")
-      target_sources(${TARGET_NAME} PRIVATE "${XII_VULKAN_DIR}/x86_64/include/SPIRV-Reflect/spirv_reflect.c")
-      source_group("SPIRV-Reflect" FILES "${XII_VULKAN_DIR}/x86_64/include/SPIRV-Reflect/spirv_reflect.h" "${XII_VULKAN_DIR}/x86_64/include/SPIRV-Reflect/spirv_reflect.c")
-
-    else()
-      message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")
-    endif()
   endif()
 endfunction()

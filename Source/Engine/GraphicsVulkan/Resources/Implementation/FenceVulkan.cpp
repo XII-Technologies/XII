@@ -1,7 +1,9 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
+#include <GraphicsVulkan/Utilities/CpuWaitOnlyFenceVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -82,8 +84,8 @@ xiiUInt64 xiiGALFenceVulkan::GetCompletedValue()
 
     // GetSemaphoreCounter() is thread safe.
 
-    uint64_t uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
-    VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, &uiSemaphoreCounter, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+    xiiUInt64 uiSemaphoreCounter = xiiMath::MaxValue<xiiUInt64>();
+    VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiSemaphoreCounter), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
     return uiSemaphoreCounter;
   }
@@ -99,19 +101,14 @@ xiiUInt64 xiiGALFenceVulkan::InternalGetCompletedValue()
 {
   XII_ASSERT_DEV(!IsTimelineSemaphore(), "The fence must have no timeline semaphore.");
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
   while (!m_SyncPoints.IsEmpty())
   {
-    SyncPointData& syncData = m_SyncPoints.PeekFront();
+    SyncPointData&  syncData         = m_SyncPoints.PeekFront();
+    const xiiUInt64 uiCompletedValue = syncData.m_pCommandQueueVulkan->GetCompletedFenceValue();
 
-    vk::Result status = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-    if (status == vk::Result::eSuccess)
+    if (syncData.m_uiFenceValue <= uiCompletedValue)
     {
-      UpdateLastCompletedFenceValue(syncData.m_uiValue);
-
-      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(std::move(syncData.m_vkFence));
+      UpdateLastCompletedFenceValue(syncData.m_uiWaitValue);
 
       m_SyncPoints.PopFront();
     }
@@ -166,13 +163,13 @@ void xiiGALFenceVulkan::Reset(xiiUInt64 uiValue)
   }
 }
 
-const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const xiiUInt64 uiFenceValue)
+void xiiGALFenceVulkan::AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiUInt64 uiWaitValue, const xiiUInt64 uiFenceValue)
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   if (IsTimelineSemaphore())
   {
-    XII_REPORT_FAILURE("CreateSyncPoint() is not supported for timeline semaphore.");
+    XII_REPORT_FAILURE("AddPendingSyncPoint() is not supported for timeline semaphore.");
   }
 
   ValidateFenceSignal(uiFenceValue);
@@ -181,9 +178,13 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   {
-    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiValue;
+    const xiiUInt64 uiLastCompletedValue = m_SyncPoints.IsEmpty() ? (const xiiUInt64)m_LastCompletedFenceValue : m_SyncPoints.PeekBack().m_uiWaitValue;
 
     XII_ASSERT_DEV(uiFenceValue > uiLastCompletedValue, "Creating fence sync point with the value ({}) that is smaller than the last completed value ({}).", uiFenceValue, uiLastCompletedValue);
+  }
+  if (!m_SyncPoints.IsEmpty())
+  {
+    XII_ASSERT_DEV(m_SyncPoints.PeekBack().m_pCommandQueueVulkan == pCommandQueueVulkan, "Fence enqueued for signal operation in command queue {}, but previous signal operation was in command queue {}. This may cause data rase or deadlock. Call Wait() to ensure that all pending signal operation have been completed.", pCommandQueueVulkan->GetDebugName(), m_SyncPoints.PeekBack().m_pCommandQueueVulkan->GetDebugName());
   }
 #endif
 
@@ -195,10 +196,9 @@ const xiiGALFenceVulkan::SyncPointData& xiiGALFenceVulkan::CreateSyncPoint(const
   }
 
   xiiGALFenceVulkan::SyncPointData& syncPoint = m_SyncPoints.ExpandAndGetRef();
-  syncPoint.m_vkFence                         = pDeviceVulkan->GetVulkanFencePool()->RequestFence();
-  syncPoint.m_uiValue                         = uiFenceValue;
-
-  return syncPoint;
+  syncPoint.m_pCommandQueueVulkan             = pCommandQueueVulkan;
+  syncPoint.m_uiWaitValue                     = uiWaitValue;
+  syncPoint.m_uiFenceValue                    = uiFenceValue;
 }
 
 void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
@@ -213,7 +213,7 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
     vkWaitInformation.flags                 = {};
     vkWaitInformation.semaphoreCount        = 1U;
     vkWaitInformation.pSemaphores           = &m_vkTimelineSemaphore;
-    vkWaitInformation.pValues               = reinterpret_cast<const uint64_t*>(&uiValue);
+    vkWaitInformation.pValues               = reinterpret_cast<uint64_t*>(&uiValue);
 
     VK_ASSERT_DEV(vkLogicalDevice.waitSemaphoresKHR(&vkWaitInformation, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }
@@ -225,20 +225,12 @@ void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
     {
       SyncPointData& syncData = m_SyncPoints.PeekFront();
 
-      if (syncData.m_uiValue > uiValue)
+      if (syncData.m_uiWaitValue > uiValue)
         break;
 
-      vk::Result vkFenceStatus = vkLogicalDevice.getFenceStatus(syncData.m_vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      if (vkFenceStatus == vk::Result::eNotReady)
-      {
-        vkFenceStatus = vkLogicalDevice.waitForFences(1U, &syncData.m_vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      }
+      syncData.m_pCommandQueueVulkan->GetWaitOnlyFence()->Wait(syncData.m_uiFenceValue);
 
-      XII_ASSERT_DEV(vkFenceStatus == vk::Result::eSuccess, "All pending fences must now be complete!");
-
-      UpdateLastCompletedFenceValue(syncData.m_uiValue);
-
-      pDeviceVulkan->GetVulkanFencePool()->ReclaimFence(std::move(syncData.m_vkFence));
+      UpdateLastCompletedFenceValue(syncData.m_uiWaitValue);
 
       m_SyncPoints.PopFront();
     }

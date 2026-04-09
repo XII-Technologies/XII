@@ -27,46 +27,46 @@ struct FloatingDragPreviewPrivate;
  */
 class CFloatingDragPreview : public QWidget, public IFloatingWidget
 {
-  Q_OBJECT
+	Q_OBJECT
 private:
-  FloatingDragPreviewPrivate* d;
-  friend struct FloatingDragPreviewPrivate;
+	FloatingDragPreviewPrivate* d;
+	friend struct FloatingDragPreviewPrivate;
 
 private Q_SLOTS:
-  /**
-   * Cancel non opaque undocking if application becomes inactive
-   */
-  void onApplicationStateChanged(Qt::ApplicationState state);
+	/**
+	 * Cancel non opaque undocking if application becomes inactive
+	 */
+	void onApplicationStateChanged(Qt::ApplicationState state);
 
 protected:
-  /**
-   * Cares about painting the
-   */
-  virtual void paintEvent(QPaintEvent *e) override;
+	/**
+	 * Cares about painting the
+	 */
+	virtual void paintEvent(QPaintEvent *e) override;
 
-  /**
-   * The content is a DockArea or a DockWidget
-   */
-  CFloatingDragPreview(QWidget* Content, QWidget* parent);
+	/**
+	 * The content is a DockArea or a DockWidget
+	 */
+	CFloatingDragPreview(QWidget* Content, QWidget* parent);
 
 public:
-  using Super = QWidget;
+	using Super = QWidget;
 
-  /**
-   * Creates an instance for undocking the DockWidget in Content parameter
-   */
-  CFloatingDragPreview(CDockWidget* Content);
+	/**
+	 * Creates an instance for undocking the DockWidget in Content parameter
+	 */
+	CFloatingDragPreview(CDockWidget* Content);
 
-  /**
-   * Creates an instance for undocking the DockArea given in Content
-   * parameters
-   */
-  CFloatingDragPreview(CDockAreaWidget* Content);
+	/**
+	 * Creates an instance for undocking the DockArea given in Content
+	 * parameters
+	 */
+	CFloatingDragPreview(CDockAreaWidget* Content);
 
-  /**
-   * Delete private data
-   */
-  ~CFloatingDragPreview();
+	/**
+	 * Delete private data
+	 */
+	~CFloatingDragPreview();
 
     /**
      * We filter the events of the assigned content widget to receive
@@ -76,33 +76,33 @@ public:
 
 
 public: // implements IFloatingWidget -----------------------------------------
-  virtual void startFloating(const QPoint& DragStartMousePos, const QSize& Size,
+	virtual void startFloating(const QPoint& DragStartMousePos, const QSize& Size,
         eDragState DragState, QWidget* MouseEventHandler) override;
 
-  /**
-   * Moves the widget to a new position relative to the position given when
-   * startFloating() was called
-   */
-  virtual void moveFloating() override;
+	/**
+	 * Moves the widget to a new position relative to the position given when
+	 * startFloating() was called
+	 */
+	virtual void moveFloating() override;
 
-  /**
-   * Finishes dragging.
-   * Hides the dock overlays and executes the real undocking and docking
-   * of the assigned Content widget
-   */
-  virtual void finishDragging() override;
+	/**
+	 * Finishes dragging.
+	 * Hides the dock overlays and executes the real undocking and docking
+	 * of the assigned Content widget
+	 */
+	virtual void finishDragging() override;
 
-  /**
-   * Cleanup auto hide container if the dragged widget has one
-   */
-  void cleanupAutoHideContainerWidget(DockWidgetArea ContainerDropArea);
+	/**
+	 * Cleanup auto hide container if the dragged widget has one
+	 */
+	void cleanupAutoHideContainerWidget(DockWidgetArea ContainerDropArea);
 
 Q_SIGNALS:
-  /**
-   * This signal is emitted, if dragging has been canceled by escape key
-   * or by active application switching via task manager
-   */
-  void draggingCanceled();
+	/**
+	 * This signal is emitted, if dragging has been canceled by escape key
+	 * or by active application switching via task manager
+	 */
+	void draggingCanceled();
 };
 
 

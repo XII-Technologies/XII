@@ -159,7 +159,7 @@ xiiTransformStatus xiiAnimationClipAssetDocument::InternalTransformAsset(xiiStre
   if (res.Failed())
     return xiiStatus("Model importer was unable to read this asset.");
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiTransformStatus xiiAnimationClipAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
@@ -419,7 +419,7 @@ xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sInputF
     accessor.SetValue("File", sInputFileRel.GetView());
     accessor.SetValue("PreviewMesh", sPreviewMesh.GetView());
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   if (sMode == "AnimationClipImport_All")
@@ -461,7 +461,7 @@ xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sInputF
       accessor.SetValue("PreviewMesh", sPreviewMesh.GetView());
     }
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   XII_ASSERT_NOT_IMPLEMENTED;

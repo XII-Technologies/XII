@@ -396,7 +396,7 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
   xiiMap<xiiString, xiiPropertyUiState> PropertyStates;
   pMeta->GetTypePropertiesState(m_Items, PropertyStates);
 
-  xiiDefaultObjectState defaultState(m_pObjectAccessor, m_Items);
+  xiiDefaultObjectState defaultState(m_pType, m_pObjectAccessor, m_Items);
 
   xiiQtPropertyWidget::SetPaletteBackgroundColor(defaultState.GetBackgroundColor(), m_Pal);
   setPalette(m_Pal);

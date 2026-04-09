@@ -63,7 +63,7 @@ xiiTransformStatus xiiMeshAssetDocument::InternalTransformAsset(xiiStreamWriter&
   range.BeginNextStep("Writing Result");
   desc.Save(stream);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -272,7 +272,7 @@ xiiTransformStatus xiiMeshAssetDocument::CreateMeshFromFile(xiiMeshAssetProperti
 
   xiiMeshImportUtils::CopyMeshAssetMaterialSlotToResource(desc, pProp->m_Slots);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiTransformStatus xiiMeshAssetDocument::InternalCreateThumbnail(const ThumbnailInfo& ThumbnailInfo)
@@ -358,5 +358,5 @@ xiiStatus xiiMeshAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, x
     accessor.SetValue("ImportMaterials", false);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

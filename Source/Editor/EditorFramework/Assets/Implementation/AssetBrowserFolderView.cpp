@@ -218,7 +218,7 @@ void eqQtAssetBrowserFolderView::dragMoveEvent(QDragMoveEvent* e)
   xiiStatus                    res = canDrop(e, files, sTarget);
   if (res.Failed())
   {
-    xiiQtUiServices::ShowGlobalStatusBarMessage(res.m_sMessage.GetView());
+    xiiQtUiServices::ShowGlobalStatusBarMessage(res.GetMessageString().GetView());
     e->ignore();
   }
   else
@@ -279,7 +279,7 @@ xiiStatus eqQtAssetBrowserFolderView::canDrop(QDropEvent* e, xiiDynamicArray<xii
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)

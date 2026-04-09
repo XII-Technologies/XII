@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
-#include <Foundation/Memory/StackAllocator.h>
+#include <Foundation/Memory/LinearAllocator.h>
 
 class xiiDGMLGraph;
 
@@ -304,7 +304,7 @@ private:
   static void UpdateHash(Node* pNode);
   static bool IsEqual(const Node* pNodeA, const Node* pNodeB);
 
-  xiiStackAllocator<> m_Allocator;
+  xiiLinearAllocator<> m_Allocator;
 
   xiiSet<xiiExpression::FunctionDesc> m_FunctionDescs;
 

@@ -1,47 +1,17 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Pipeline/Declarations.h>
-#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsCore/Declarations.h>
 
-void xiiRenderViewContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue) const
-{
-  xiiTempHashedString sHashedName(szName);
-
-  xiiHashedString sName;
-  xiiHashedString sValue;
-  if (xiiGALShaderManager::IsPermutationValueAllowed(szName, sHashedName, sTempValue, sName, sValue))
-  {
-    SetShaderPermutationVariableInternal(sName, sValue);
-  }
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue) const
-{
-  xiiTempHashedString sHashedName(sName);
-
-  xiiHashedString sName0;
-  xiiHashedString sValue;
-  if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sName0, sValue))
-  {
-    SetShaderPermutationVariableInternal(sName0, sValue);
-  }
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue) const
-{
-  if (xiiGALShaderManager::IsPermutationValueAllowed(sName, sValue))
-  {
-    SetShaderPermutationVariableInternal(sName, sValue);
-  }
-}
-
-void xiiRenderViewContext::SetShaderPermutationVariableInternal(const xiiHashedString& sName, const xiiHashedString& sValue) const
-{
-  xiiHashedString* pOldValue = nullptr;
-  m_PermutationVariables.TryGetValue(sName, pOldValue);
- 
-  if (pOldValue == nullptr || *pOldValue != sValue)
-  {
-    m_PermutationVariables.Insert(sName, sValue);
-  }
-}
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiExposureControl, 1)
+  XII_ENUM_CONSTANT(xiiExposureControl::Unknown),
+  XII_ENUM_CONSTANT(xiiExposureControl::Manual),
+  XII_ENUM_CONSTANT(xiiExposureControl::AutoLogAverage),
+  XII_ENUM_CONSTANT(xiiExposureControl::AutoHistogramPercentile),
+  XII_ENUM_CONSTANT(xiiExposureControl::EyeAdaptationTemporal),
+  XII_ENUM_CONSTANT(xiiExposureControl::PhysicalCamera),
+  XII_ENUM_CONSTANT(xiiExposureControl::MeterSpot),
+  XII_ENUM_CONSTANT(xiiExposureControl::MeterCenterWeighted),
+  XII_ENUM_CONSTANT(xiiExposureControl::MeterMatrix),
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on

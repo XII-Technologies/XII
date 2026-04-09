@@ -49,7 +49,7 @@ xiiTransformStatus xiiCustomDataAssetDocument::InternalTransformAsset(xiiStreamW
   }
 
   xiiAbstractGraphBinarySerializer::Write(stream, &abstractObjectGraph);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiCustomDataAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const

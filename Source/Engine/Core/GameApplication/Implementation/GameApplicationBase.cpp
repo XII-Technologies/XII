@@ -254,7 +254,6 @@ xiiUniquePtr<xiiGameStateBase> xiiGameApplicationBase::CreateGameState()
       xiiUniquePtr<xiiGameStateBase> pNewState = pRtti->GetAllocator()->Allocate<xiiGameStateBase>();
 
       if (pCurState == nullptr)
-
       {
         pCurState = std::move(pNewState);
         return;
@@ -400,7 +399,8 @@ void xiiGameApplicationBase::RunOneFrame()
 
   xiiActorManager::GetSingleton()->Update();
 
-  if (!IsGameUpdateEnabled())
+  const xiiGameUpdateMode state = GetGameUpdateMode();
+  if (state == xiiGameUpdateMode::Skip)
     return;
 
   {
@@ -412,7 +412,8 @@ void xiiGameApplicationBase::RunOneFrame()
     m_ExecutionEvents.Broadcast(e);
   }
 
-  Run_InputUpdate();
+  if (state == xiiGameUpdateMode::UpdateInputAndRender)
+    Run_InputUpdate();
 
   Run_AcquireImage();
 

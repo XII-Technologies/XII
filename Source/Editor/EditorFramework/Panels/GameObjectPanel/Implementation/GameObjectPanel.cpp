@@ -21,6 +21,7 @@ xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocu
 
   m_pFilterWidget = new xiiQtSearchWidget(this);
   m_pFilterWidget->setObjectName("xiiQtSearchWidget");
+  m_pFilterWidget->setPlaceholderText("Search by name or component type");
   connect(m_pFilterWidget, &xiiQtSearchWidget::textChanged, this, &xiiQtGameObjectWidget::OnFilterTextChanged);
 
   layout()->addWidget(m_pFilterWidget);

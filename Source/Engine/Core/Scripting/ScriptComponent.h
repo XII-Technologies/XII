@@ -6,6 +6,11 @@
 
 using xiiScriptComponentManager = xiiComponentManager<class xiiScriptComponent, xiiBlockStorageType::FreeList>;
 
+/// \brief Component that hosts and executes a script class instance on a game object.
+///
+/// Manages script execution lifecycle, variable access, parameter exposure, and event handling.
+/// Supports configurable update intervals and simulation-only updates.
+/// Provides integration between game objects and scripting systems through the xiiScriptClassResource.
 class XII_CORE_DLL xiiScriptComponent : public xiiEventMessageHandlerComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiScriptComponent, xiiEventMessageHandlerComponent, xiiScriptComponentManager);
@@ -34,8 +39,11 @@ public:
   void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript); // [ property ]
   const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }            // [ property ]
 
-  void    SetUpdateInterval(xiiTime interval); // [ property ]
-  xiiTime GetUpdateInterval() const;           // [ property ]
+  void    SetUpdateInterval(xiiTime interval);                   // [ property ]
+  xiiTime GetUpdateInterval() const { return m_UpdateInterval; } // [ property ]
+
+  void SetUpdateOnlyWhenSimulating(bool bUpdate);                                  // [ property ]
+  bool GetUpdateOnlyWhenSimulating() const { return m_bUpdateOnlyWhenSimulating; } // [ property ]
 
   void BroadcastEventMsg(xiiEventMessage& ref_msg);
 
@@ -62,7 +70,8 @@ private:
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 
   xiiScriptClassResourceHandle m_hScriptClass;
-  xiiTime                      m_UpdateInterval = xiiTime::MakeZero();
+  xiiTime                      m_UpdateInterval            = xiiTime::MakeZero();
+  bool                         m_bUpdateOnlyWhenSimulating = true;
 
   xiiSharedPtr<xiiScriptRTTI>     m_pScriptType;
   xiiUniquePtr<xiiScriptInstance> m_pInstance;

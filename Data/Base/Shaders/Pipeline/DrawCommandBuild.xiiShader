@@ -1,0 +1,65 @@
+// XII Engine — DrawCommandBuild.xiiShader  [REWRITTEN]
+// Pass 12: Build DrawIndexedIndirect args per material bin from surviving instances.
+// Dispatch: ceil(InstanceCount/64) × 1 × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer DrawCmdConstants : register(b3)
+{
+    uint g_SurvivingCount;
+    uint g_MaxDrawCommands;
+    uint2 _pad;
+};
+
+struct DrawIndexedIndirectArgs
+{
+    uint IndexCountPerInstance;
+    uint InstanceCount;
+    uint StartIndexLocation;
+    int  BaseVertexLocation;
+    uint StartInstanceLocation;
+};
+
+struct MeshLODEntry { uint IndexCount; uint StartIndex; int BaseVertex; uint Material; };
+
+StructuredBuffer<uint>              g_Surviving   : register(t0); // [0]=count,[1..]=indices
+StructuredBuffer<uint>              g_LODMetadata : register(t1); // packed (lod:8,bin:8,flags:16)
+StructuredBuffer<MeshLODEntry>      g_MeshLODs    : register(t2);
+
+RWStructuredBuffer<DrawIndexedIndirectArgs> g_DrawArgs  : register(u0);
+RWStructuredBuffer<uint>                   g_DrawCounts: register(u1); // one counter per material bin
+
+[numthreads(64, 1, 1)]
+void CS_DrawCommandBuild(uint3 tid : SV_DispatchThreadID)
+{
+    uint count = g_Surviving[0];
+    if (tid.x >= count) return;
+
+    uint iIdx     = g_Surviving[tid.x + 1u];
+    uint lodPacked= g_LODMetadata[iIdx];
+    uint lodLevel = (lodPacked >>  0u) & 0xFFu;
+    uint matBin   = (lodPacked >>  8u) & 0xFFu;
+
+    if (matBin >= g_MaxDrawCommands) return;
+
+    MeshLODEntry lod = g_MeshLODs[iIdx * 4u + lodLevel];
+
+    // Atomically claim a slot in this bin's draw command.
+    uint instSlot;
+    InterlockedAdd(g_DrawCounts[matBin], 1u, instSlot);
+
+    // First instance in this bin writes the fixed mesh data.
+    if (instSlot == 0u)
+    {
+        DrawIndexedIndirectArgs cmd;
+        cmd.IndexCountPerInstance = lod.IndexCount;
+        cmd.InstanceCount         = 0u; // filled atomically below
+        cmd.StartIndexLocation    = lod.StartIndex;
+        cmd.BaseVertexLocation    = lod.BaseVertex;
+        cmd.StartInstanceLocation = matBin * 65536u; // base offset per bin
+        g_DrawArgs[matBin] = cmd;
+    }
+
+    // Bump InstanceCount (this is a benign race — all values are identical).
+    InterlockedAdd(g_DrawArgs[matBin].InstanceCount, 1u, instSlot);
+}

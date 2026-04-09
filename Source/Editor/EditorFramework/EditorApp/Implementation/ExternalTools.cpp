@@ -183,7 +183,7 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
     return xiiStatus(xiiFmt("{0} returned error code {1}", szTool, proc.exitCode()));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiString xiiQtEditorApp::BuildFileserveCommandLine() const

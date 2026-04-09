@@ -1,0 +1,82 @@
+// XII Engine — ColorGrading.xiiShader  [NEW]
+// Pass 61: 33³ 3D LUT sample + vignette + film grain + gamut compression.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer ColorGradingConstants : register(b3)
+{
+    float  g_Saturation;     // 0=greyscale, 1=identity, >1=boosted
+    float  g_Contrast;       // 0=flat, 1=identity
+    float  g_VignetteStrength;
+    float  g_VignetteRoundness;
+    float  g_GrainStrength;
+    uint   g_LUTSize;        // usually 33
+    float2 _pad;
+};
+
+Texture2D<float4>   g_LDRInput : register(t0);
+Texture3D<float4>   g_ColorLUT : register(t1); // 33³ sRGB LUT
+RWTexture2D<float4> g_GradedOut: register(u0);
+
+float3 SampleLUT(float3 color, uint lutSize)
+{
+    float scale  = float(lutSize - 1u) / float(lutSize);
+    float offset = 0.5f / float(lutSize);
+    float3 uvw   = saturate(color) * scale + offset;
+    return g_ColorLUT.SampleLevel(g_sLinearClamp, uvw, 0).rgb;
+}
+
+// Perceptual saturation via luminance lerp.
+float3 AdjustSaturation(float3 color, float saturation)
+{
+    float lum = dot(color, float3(0.2126f, 0.7152f, 0.0722f));
+    return lerp(float3(lum,lum,lum), color, saturation);
+}
+
+// S-curve contrast (midpoint at 0.5).
+float3 AdjustContrast(float3 color, float contrast)
+{
+    return saturate((color - 0.5f) * contrast + 0.5f);
+}
+
+// Subtle optical vignette.
+float Vignette(float2 uv, float strength, float roundness)
+{
+    float2 d = abs(uv - 0.5f) * 2.0f;
+    d.x     *= roundness;
+    float v  = saturate(1.0f - dot(d, d));
+    return lerp(1.0f, v * v, strength);
+}
+
+// High-frequency film grain (screen-space noise).
+float3 FilmGrain(float3 color, float2 uv, float strength)
+{
+    float noise = InterleavedGradientNoise(uv * float2(1920u, 1080u), g_FrameIndex);
+    noise       = (noise - 0.5f) * strength;
+    return color + noise;
+}
+
+[numthreads(8, 8, 1)]
+void CS_ColorGrading(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_GradedOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv      = (float2(tid.xy) + 0.5f) / float2(dims);
+    float3 color   = g_LDRInput.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+
+    // Adjustments in scene-linear space before LUT.
+    color = AdjustSaturation(color, g_Saturation);
+    color = AdjustContrast(color, g_Contrast);
+
+    // 3D LUT (applied in sRGB-like perceptual space).
+    if (g_LUTSize > 1u)
+        color = SampleLUT(color, g_LUTSize);
+
+    // Post-LUT screen-space effects.
+    color *= Vignette(uv, g_VignetteStrength, g_VignetteRoundness);
+    color  = FilmGrain(color, uv, g_GrainStrength);
+
+    g_GradedOut[tid.xy] = float4(saturate(color), 1.0f);
+}

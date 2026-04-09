@@ -36,12 +36,12 @@ XII_WARNING_POP()
 #  define XII_CHECK_ALIGNMENT(ptr, alignment)
 #endif
 
-#define XII_WINCHECK_1          1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ defined (stringyfied to nothing)
-#define XII_WINCHECK_1_WINDOWS_ 1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ undefined (stringyfied to "_WINDOWS_")
+#define XII_WINCHECK_1          1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ defined (stringified to nothing)
+#define XII_WINCHECK_1_WINDOWS_ 1 // XII_INCLUDED_WINDOWS_H defined to 1, _WINDOWS_ undefined (stringified to "_WINDOWS_")
 #define XII_WINCHECK_XII_INCLUDED_WINDOWS_H \
-  0 // XII_INCLUDED_WINDOWS_H undefined (stringyfied to "XII_INCLUDED_WINDOWS_H", _WINDOWS_ defined (stringyfied to nothing)
+  0 // XII_INCLUDED_WINDOWS_H undefined (stringified to "XII_INCLUDED_WINDOWS_H", _WINDOWS_ defined (stringified to nothing)
 #define XII_WINCHECK_XII_INCLUDED_WINDOWS_H_WINDOWS_ \
-  1 // XII_INCLUDED_WINDOWS_H undefined (stringyfied to "XII_INCLUDED_WINDOWS_H", _WINDOWS_ undefined (stringyfied to "_WINDOWS_")
+  1 // XII_INCLUDED_WINDOWS_H undefined (stringified to "XII_INCLUDED_WINDOWS_H", _WINDOWS_ undefined (stringified to "_WINDOWS_")
 
 /// \brief Checks whether Windows.h has been included directly instead of through 'IncludeWindows.h'
 ///

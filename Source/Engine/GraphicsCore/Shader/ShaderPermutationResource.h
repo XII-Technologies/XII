@@ -4,6 +4,7 @@
 
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
+#include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderPermutationBinary.h>
 
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;

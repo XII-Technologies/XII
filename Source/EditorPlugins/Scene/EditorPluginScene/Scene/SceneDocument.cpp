@@ -270,7 +270,7 @@ void xiiSceneDocument::DuplicateSpecial()
 
   history->StartTransaction("Duplicate Special");
 
-  if (history->AddCommand(cmd).m_Result.Failed())
+  if (history->AddCommand(cmd).Failed())
     history->CancelTransaction();
   else
     history->FinishTransaction();
@@ -537,7 +537,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
   history->FinishTransaction();
 
   GetSelectionManager()->SetSelection(GetObjectManager()->GetObject(NewNode));
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiSceneDocument::DuplicateSelection()
@@ -568,7 +568,7 @@ void xiiSceneDocument::DuplicateSelection()
 
   history->StartTransaction("Duplicate Selection");
 
-  if (history->AddCommand(cmd).m_Result.Failed())
+  if (history->AddCommand(cmd).Failed())
     history->CancelTransaction();
   else
     history->FinishTransaction();
@@ -613,6 +613,8 @@ void xiiSceneDocument::SetGameMode(GameMode::Enum mode)
   m_GameModeData[m_GameMode] = m_CurrentMode;
 
   m_GameMode = mode;
+
+  SetPauseSimulation(false);
 
   switch (m_GameMode)
   {
@@ -819,6 +821,16 @@ bool xiiSceneDocument::StopGameMode()
   }
 
   return true;
+}
+
+void xiiSceneDocument::StepSimulation()
+{
+  SetStepSimulation(true);
+}
+
+void xiiSceneDocument::PauseSimulation()
+{
+  SetPauseSimulation(true);
 }
 
 void xiiSceneDocument::ShowOrHideAllObjects(ShowOrHide action)
@@ -1121,7 +1133,7 @@ xiiStatus xiiSceneDocument::CreateExposedProperty(const xiiDocumentObject* pObje
 
   out_key.m_Object        = pNodeComponent->GetGuid();
   out_key.m_sPropertyPath = sPropertyPath;
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiSceneDocument::AddExposedParameter(xiiStringView sName, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index)
@@ -1145,7 +1157,7 @@ xiiStatus xiiSceneDocument::AddExposedParameter(xiiStringView sName, const xiiDo
   GetObjectAccessor()->SetValueByName(pParam, "Name", sName).LogFailure();
   GetObjectAccessor()->SetValueByName(pParam, "Object", key.m_Object).LogFailure();
   GetObjectAccessor()->SetValueByName(pParam, "PropertyPath", xiiVariant(key.m_sPropertyPath)).LogFailure();
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiInt32 xiiSceneDocument::FindExposedParameter(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index)
@@ -1676,9 +1688,9 @@ void xiiSceneDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) cons
 
         xiiExposedParameterCommandAccessor proxy(context.m_pAccessor, key.m_pProperty, pParameterSourceProp);
         res = proxy.GetValue(pLeafObject, key.m_pProperty, value, key.m_Index);
-        if (key.m_Index.IsA<xiiString>())
+        if (key.m_Index.IsA<xiiString>() || key.m_Index.IsA<xiiStringView>())
         {
-          pSourceParameter = proxy.GetExposedParam(pLeafObject, key.m_Index.Get<xiiString>());
+          pSourceParameter = proxy.GetExposedParam(pLeafObject, key.m_Index.ConvertTo<xiiString>());
         }
       }
       else
@@ -1733,7 +1745,7 @@ xiiTransformStatus xiiSceneDocument::ExportScene(bool bCreateThumbnail)
   // #TODO export layers
   auto saveres = SaveDocument();
 
-  if (saveres.m_Result.Failed())
+  if (saveres.Failed())
     return saveres;
 
   xiiTransformStatus res;

@@ -39,7 +39,7 @@ private:
 
 
 protected:
-  void OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfered, DWORD uiError);
+  void OnIOCompleted(IOContext* pContext, DWORD uiBytesTransferred, DWORD uiError);
 
 private:
   struct State

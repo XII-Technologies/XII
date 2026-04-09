@@ -55,6 +55,30 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentStoreOperation
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALAttachmentStoreOperation);
 
+/// \brief This describes the depth resolve mode for a multi-sampled depth attachment.
+///
+/// Vulkan counterpart: [VkResolveModeFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkResolveModeFlagBits).
+/// D3D12 counterpart: [D3D12_RESOLVE_MODE](https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resolve_mode).
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveMode
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None = 0U,  ///< No depth resolve is performed.
+    Average,    ///< The resolved depth value is the average of all the samples.
+    Min,        ///< The resolved depth value is the minimum of all the samples.
+    Max,        ///< The resolved depth value is the maximum of all the samples.
+    SampleZero, ///< The resolved depth value is taken from sample 0.
+
+    ENUM_COUNT,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDepthResolveMode);
+
 /// \brief This describes the render pass attachment creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassAttachmentDescription : public xiiHashableStruct<xiiGALRenderPassAttachmentDescription>
 {
@@ -79,6 +103,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceStateFlags = xiiGALResourceStateFlags::Unknown; ///< The state of the attachment during the sub pass.
 };
 
+/// \brief This describes the depth resolve attachment.
+///
+/// Vulkan counterpart: [VkSubpassDescriptionDepthStencilResolve](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkSubpassDescriptionDepthStencilResolve).
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHashableStruct<xiiGALDepthResolveDescription>
+{
+  xiiGALAttachmentReferenceDescription m_Attachment;  ///< The depth resolve attachment reference.
+  xiiEnum<xiiGALDepthResolveMode>      m_DepthMode;   ///< The depth resolve mode.
+  xiiEnum<xiiGALDepthResolveMode>      m_StencilMode; ///< The stencil resolve mode.
+};
+
 /// \brief This describes the shading rate attachment.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : public xiiHashableStruct<xiiGALShadingRateAttachmentDescription>
 {
@@ -89,14 +123,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
 };
 
 /// \brief This describes the render pass sub pass.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription : public xiiHashableStruct<xiiGALSubPassDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription
 {
-  xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U>   m_InputAttachments;        ///< An array of input attachments.
-  xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U>   m_RenderTargetAttachments; ///< An array of color render target attachments. Each element of the m_RenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_RenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
-  xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U>   m_ResolveAttachments;      ///< An array of resolve attachments. If m_ResolveAttachments is not nullptr, each of its elements corresponds to a render target attachment (the element in m_RenderTargetAttachments at the same index), and a multisample resolve operation is defined for each attachment. At the end of each sub pass, multisample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
+  xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_InputAttachments;        ///< An array of input attachments.
+  xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_RenderTargetAttachments; ///< An array of color render target attachments. Each element of the m_RenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_RenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
+  xiiDynamicArray<xiiGALAttachmentReferenceDescription>      m_ResolveAttachments;      ///< An array of resolve attachments. If m_ResolveAttachments is not empty, then each of its elements corresponds to a render target attachment (the element in m_RenderTargetAttachments at the same index), and a multi-sample resolve operation is defined for each attachment. At the end of each sub pass, multi-sample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
   xiiStaticArray<xiiGALAttachmentReferenceDescription, 1U>   m_DepthStencilAttachment;  ///< An array of depth-stencil attachment. Note that this array can only hold a single depth stencil attachment reference.
-  xiiHybridArray<xiiUInt32, 4U>                              m_PreserveAttachments;     ///< An array of preserve attachments.
+  xiiStaticArray<xiiGALDepthResolveDescription, 1U>          m_DepthResolveAttachment;  ///< An array of depth resolve attachment. If m_DepthStencilAttachment is not empty, then each of its elements corresponds to a depth stencil attachment (the element in m_DepthStencilAttachment at the same index), and a multi-sample resolve operation is defined for each attachment. At the end of each sub pass, multi-sample resolve operations read the sub pass's depth-stencil attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding depth resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
+  xiiDynamicArray<xiiUInt32>                                 m_PreserveAttachments;     ///< An array of preserve attachments.
   xiiStaticArray<xiiGALShadingRateAttachmentDescription, 1U> m_ShadingRateAttachment;   ///< An array of shading rate attachment. Note that this array can only hold a single shading rate attachment reference.
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALSubPassDescription& rhs) const = default;
 };
 
 /// \brief This describes the sub pass dependency.
@@ -115,9 +152,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
 /// \brief This describes the render pass creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription
 {
-  xiiHybridArray<xiiGALRenderPassAttachmentDescription, 4U> m_Attachments;  ///< An array of sub pass attachments.
-  xiiHybridArray<xiiGALSubPassDescription, 1U>              m_SubPasses;    ///< An array of sub pass descriptions.
-  xiiHybridArray<xiiGALSubPassDependencyDescription, 1U>    m_Dependencies; ///< An array of sub pass dependencies.
+  xiiDynamicArray<xiiGALRenderPassAttachmentDescription> m_Attachments;  ///< An array of sub pass attachments.
+  xiiDynamicArray<xiiGALSubPassDescription>              m_SubPasses;    ///< An array of sub pass descriptions.
+  xiiDynamicArray<xiiGALSubPassDependencyDescription>    m_Dependencies; ///< An array of sub pass dependencies.
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALRenderPassCreationDescription& rhs) const = default;
 };

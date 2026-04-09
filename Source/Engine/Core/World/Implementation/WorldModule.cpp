@@ -2,10 +2,8 @@
 
 #include <Core/World/World.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiWorldModule::xiiWorldModule(xiiWorld* pWorld) :
   m_pWorld(pWorld)
@@ -31,7 +29,7 @@ void xiiWorldModule::DeregisterUpdateFunction(const UpdateFunctionDesc& desc)
   m_pWorld->DeregisterUpdateFunction(desc);
 }
 
-xiiAllocatorBase* xiiWorldModule::GetAllocator()
+xiiAllocator* xiiWorldModule::GetAllocator()
 {
   return m_pWorld->GetAllocator();
 }
@@ -234,8 +232,8 @@ void xiiWorldModuleFactory::FillBaseTypeIds()
   // the mapping for m_TypeToId[xiiWorldModule(interface)], such that querying the TypeID for the interface works as well
   // and yields the implementation
 
-  xiiHybridArray<NewEntry, 64, xiiStaticAllocatorWrapper> newEntries;
-  const xiiRTTI*                                          pModuleRtti = xiiGetStaticRTTI<xiiWorldModule>(); // base type where we want to stop iterating upwards
+  xiiTemporaryHybridArray<NewEntry, 64> newEntries;
+  const xiiRTTI*                        pModuleRtti = xiiGetStaticRTTI<xiiWorldModule>(); // base type where we want to stop iterating upwards
 
   // explicit mappings
   for (auto it = m_InterfaceImplementations.GetIterator(); it.IsValid(); ++it)

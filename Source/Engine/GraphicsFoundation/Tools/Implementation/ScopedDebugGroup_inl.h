@@ -4,8 +4,17 @@ XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup() noexcept :
 {
 }
 
-XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color) :
-  m_pCommandList(std::move(pCommandList))
+XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup(xiiGALCommandList* pCommandList, xiiStringView sName, xiiColor color) :
+  m_pCommandList(pCommandList)
+{
+  if (m_pCommandList)
+  {
+    m_pCommandList->BeginDebugGroup(sName, color);
+  }
+}
+
+XII_ALWAYS_INLINE xiiGALScopedDebugGroup::xiiGALScopedDebugGroup(xiiGALCommandList& commandList, xiiStringView sName, xiiColor color) :
+  m_pCommandList(&commandList)
 {
   if (m_pCommandList)
   {

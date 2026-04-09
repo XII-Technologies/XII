@@ -1,18 +1,17 @@
 
-#define XII_CHECK_CLASS(T)                  \
-  static_assert(!std::is_trivial<T>::value, \
-                "Trivial POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.")
+#define XII_CHECK_CLASS(T) \
+  static_assert(!std::is_trivial<T>::value, "Trivial POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.")
 
 template <xiiConstructionMode mode, typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Construct(T* pDestination, size_t uiCount)
 {
   if constexpr (mode == SkipTrivialTypes && std::is_trivial<T>::value)
   {
-    // do nothing
+    // Do nothing.
   }
   else
   {
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       ::new (pDestination + i) T();
     }
@@ -46,7 +45,8 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
                   "Can't copy POD types that are derived from each other. Are you certain any of these types should be POD?");
 
     const Destination& copyConverted = copy;
-    for (size_t i = 0; i < uiCount; i++)
+
+    for (size_t i = 0; i < uiCount; ++i)
     {
       memcpy(pDestination + i, &copyConverted, sizeof(Destination));
     }
@@ -55,7 +55,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
   {
     XII_CHECK_CLASS(Destination);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       ::new (pDestination + i) Destination(copy); // Note that until now copy has not been converted to Destination. This allows for calling
                                                   // specialized constructors if available.
@@ -66,7 +66,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstruct(Destination* pDestination, 
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstructArray(T* pDestination, const T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using CopyConstruct.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using CopyConstruct.");
 
   if constexpr (xiiIsPodType<T>::value)
   {
@@ -76,7 +76,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyConstructArray(T* pDestination, const
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       ::new (pDestination + i) T(pSource[i]);
     }
@@ -108,7 +108,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::MoveConstruct(T* pDestination, T&& source
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::MoveConstruct(T* pDestination, T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using MoveConstruct.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using MoveConstruct.");
 
   // Enforce move construction.
   static_assert(std::is_move_constructible<T>::value, "Type is not move constructible!");
@@ -137,7 +137,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOrMoveConstruct(Destination* pDestina
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateConstruct(T* pDestination, T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using RelocateConstruct.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using RelocateConstruct.");
 
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
@@ -147,7 +147,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateConstruct(T* pDestination, T* pSo
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       // Note that this calls the move constructor only if available and will copy otherwise.
       ::new (pDestination + i) T(std::move(pSource[i]));
@@ -211,7 +211,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Copy(T* pDestination, const T* pSource, s
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       pDestination[i] = pSource[i];
     }
@@ -234,7 +234,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOverlapped(T* pDestination, const T* 
 
     if (pDestination < pSource)
     {
-      for (size_t i = 0; i < uiCount; i++)
+      for (size_t i = 0; i < uiCount; ++i)
       {
         pDestination[i] = pSource[i];
       }
@@ -252,7 +252,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::CopyOverlapped(T* pDestination, const T* 
 template <typename T>
 XII_ALWAYS_INLINE void xiiMemoryUtils::Relocate(T* pDestination, T* pSource, size_t uiCount)
 {
-  XII_ASSERT_DEV(pDestination < pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using Relocate.");
+  XII_ASSERT_DEV(pDestination + uiCount <= pSource || pSource + uiCount <= pDestination, "Memory regions must not overlap when using Relocate.");
 
   if constexpr (xiiGetTypeClass<T>::value != 0) // POD or mem-relocatable
   {
@@ -262,7 +262,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Relocate(T* pDestination, T* pSource, siz
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       // Note that this calls the move constructor only if available and will copy otherwise.
       pDestination[i] = std::move(pSource[i]);
@@ -302,7 +302,7 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::RelocateOverlapped(T* pDestination, T* pS
 
     if (pDestination < pSource)
     {
-      for (size_t i = 0; i < uiCount; i++)
+      for (size_t i = 0; i < uiCount; ++i)
       {
         pDestination[i] = std::move(pSource[i]);
       }
@@ -418,7 +418,7 @@ XII_ALWAYS_INLINE bool xiiMemoryUtils::IsEqual(const T* a, const T* b, size_t ui
   {
     XII_CHECK_CLASS(T);
 
-    for (size_t i = 0; i < uiCount; i++)
+    for (size_t i = 0; i < uiCount; ++i)
     {
       if (!(a[i] == b[i]))
         return false;

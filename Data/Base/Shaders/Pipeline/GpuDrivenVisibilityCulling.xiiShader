@@ -1,0 +1,41 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+// Placeholder kernel for the GPU-driven visibility path.
+// This validates SRV/UAV bindings and writes a dense visible index list.
+struct GpuDrivenInstance
+{
+  float4x4 ObjectToWorld;
+  float4   Bounds;
+  uint     MeshId;
+  uint     MaterialId;
+  uint     Flags;
+  uint     Padding;
+};
+
+StructuredBuffer<GpuDrivenInstance> GpuSceneInstances;
+RWStructuredBuffer<uint>   GpuVisibleInstances;
+RWStructuredBuffer<uint>   GpuVisibleInstanceCount;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  uint instanceCount = GpuSceneInstances.Length;
+
+  if (dispatchThreadId.x == 0)
+  {
+    GpuVisibleInstanceCount[0] = instanceCount;
+  }
+
+  if (dispatchThreadId.x >= instanceCount)
+  {
+    return;
+  }
+
+  // TODO: Replace this dense pass-through with frustum/occlusion tests.
+  GpuVisibleInstances[dispatchThreadId.x] = dispatchThreadId.x;
+}

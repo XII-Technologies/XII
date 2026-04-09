@@ -2177,6 +2177,7 @@ xiiQtPropertyEditorColorWidget::xiiQtPropertyEditorColorWidget() :
 void xiiQtPropertyEditorColorWidget::OnInit()
 {
   m_bExposeAlpha = (m_pProp->GetAttributeByType<xiiExposeColorAlphaAttribute>() != nullptr);
+  m_bExposeAlpha |= (m_pProp->GetSpecificType() == xiiGetStaticRTTI<xiiVariant>());
 }
 
 void xiiQtPropertyEditorColorWidget::InternalSetValue(const xiiVariant& value)
@@ -2185,15 +2186,12 @@ void xiiQtPropertyEditorColorWidget::InternalSetValue(const xiiVariant& value)
 
   m_OriginalValue = GetOldValue();
   m_pWidget->SetColor(value);
+
+  m_bIsHDR = value.GetType() == xiiVariantType::Color;
 }
 
 void xiiQtPropertyEditorColorWidget::on_Button_triggered()
 {
-  if (GetProperty() && GetProperty()->GetSpecificType() == xiiGetStaticRTTI<xiiColor>())
-  {
-    m_bIsHDR = true;
-  }
-
   Broadcast(xiiPropertyEvent::Type::BeginTemporary);
 
   xiiColor temp = xiiColor::White;
@@ -2314,7 +2312,6 @@ void xiiQtPropertyEditorEnumWidget::OnInit()
 
 void xiiQtPropertyEditorEnumWidget::InternalSetValue(const xiiVariant& value)
 {
-
   if (m_pWidget)
   {
     xiiInt32 iIndex = -1;

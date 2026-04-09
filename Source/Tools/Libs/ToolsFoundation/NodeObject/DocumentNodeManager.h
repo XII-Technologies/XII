@@ -212,8 +212,8 @@ private:
   virtual bool      InternalIsConnection(const xiiDocumentObject* pObject) const;
   virtual bool      InternalIsDynamicPinProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) const { return false; }
   virtual xiiStatus InternalCanConnect(const xiiPin& source, const xiiPin& target, CanConnectResult& out_Result) const;
-  virtual xiiStatus InternalCanDisconnect(const xiiPin& source, const xiiPin& target) const { return xiiStatus(XII_SUCCESS); }
-  virtual xiiStatus InternalCanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const { return xiiStatus(XII_SUCCESS); }
+  virtual xiiStatus InternalCanDisconnect(const xiiPin& source, const xiiPin& target) const { return XII_SUCCESS; }
+  virtual xiiStatus InternalCanMoveNode(const xiiDocumentObject* pObject, const xiiVec2& vPos) const { return XII_SUCCESS; }
   virtual void      InternalCreatePins(const xiiDocumentObject* pObject, NodeInternal& node) = 0;
 
   void ObjectHandler(const xiiDocumentObjectEvent& e);

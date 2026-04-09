@@ -5,6 +5,10 @@
 #include <EditorFramework/Preferences/Preferences.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#  include <EditorFramework/EditorApp/WindowsJumpList.h>
+#endif
+
 void xiiQtEditorApp::SaveRecentFiles()
 {
   if (m_StartupFlags.IsAnySet(StartupFlags::Headless | StartupFlags::UnitTest | StartupFlags::Background))
@@ -12,6 +16,11 @@ void xiiQtEditorApp::SaveRecentFiles()
 
   m_RecentProjects.Save(":appdata/Settings/RecentProjects.txt");
   m_RecentDocuments.Save(":appdata/Settings/RecentDocuments.txt");
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  // Update Windows taskbar jump list with recent projects.
+  xiiWindowsJumpList::UpdateJumpList(m_RecentProjects);
+#endif
 }
 
 void xiiQtEditorApp::LoadRecentFiles()
@@ -83,7 +92,7 @@ void xiiQtEditorApp::SaveSettings()
 
     QSettings s;
     s.beginGroup("EditorPreferences");
-    s.setValue("ShowSplashscreen", pPreferences->m_bShowSplashscreen);
+    s.setValue("ShowSplashScreen", pPreferences->m_bShowSplashScreen);
     s.endGroup();
   }
 

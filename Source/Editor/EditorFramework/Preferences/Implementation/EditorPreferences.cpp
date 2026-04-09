@@ -15,8 +15,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("RestoreProjectOnStartup", m_bLoadLastProjectAtStartup)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("ShowSplashscreen", m_bShowSplashscreen)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("ShowSplashScreen", m_bShowSplashScreen)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("FieldOfView", m_fPerspectiveFieldOfView)->AddAttributes(new xiiDefaultValueAttribute(70.0f), new xiiClampValueAttribute(10.0f, 150.0f)),
     XII_MEMBER_PROPERTY("MaxFramerate", m_uiMaxFramerate)->AddAttributes(new xiiDefaultValueAttribute(60)),
     XII_MEMBER_PROPERTY("MaxFramerateWhenUnfocused", m_uiMaxFramerateWhenUnfocused)->AddAttributes(new xiiDefaultValueAttribute(15)),
@@ -32,6 +32,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("CombinedEditorAndEngineLogs", m_bCombinedEditorAndEngineLogs)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("HighlightUntranslatedUI", GetHighlightUntranslatedUI, SetHighlightUntranslatedUI),
     XII_MEMBER_PROPERTY("AssetBrowserShowItemsInSubFolders", m_bAssetBrowserShowItemsInSubFolders)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiHiddenAttribute()),
+    XII_MEMBER_PROPERTY("AutoSaveMinutes", m_uiAutoSaveMinutes)->AddAttributes(new xiiDefaultValueAttribute(5), new xiiClampValueAttribute(0, 24 * 60)),
 
     // START GROUP Engine View Light Settings
     XII_MEMBER_PROPERTY("SkyBox", m_bSkyBox)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("Engine View Light Settings")),

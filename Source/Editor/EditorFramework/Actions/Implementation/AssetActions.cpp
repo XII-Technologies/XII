@@ -101,9 +101,9 @@ void xiiAssetAction::Execute(const xiiVariant& value)
       if (m_Context.m_pDocument->IsModified())
       {
         xiiStatus res = const_cast<xiiDocument*>(m_Context.m_pDocument)->SaveDocument();
-        if (res.m_Result.Failed())
+        if (res.Failed())
         {
-          xiiLog::Error("Failed to save document '{0}': '{1}'", m_Context.m_pDocument->GetDocumentPath(), res.m_sMessage);
+          xiiLog::Error("Failed to save document '{0}': '{1}'", m_Context.m_pDocument->GetDocumentPath(), res.GetMessageString());
           break;
         }
       }

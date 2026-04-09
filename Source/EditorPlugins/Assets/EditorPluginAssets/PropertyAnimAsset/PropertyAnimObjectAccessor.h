@@ -1,4 +1,5 @@
 #pragma once
+
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
 class xiiPropertyAnimAssetDocument;
@@ -6,6 +7,8 @@ class xiiPropertyAnimObjectManager;
 
 class xiiPropertyAnimObjectAccessor : public xiiObjectCommandAccessor
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiPropertyAnimObjectAccessor, xiiObjectCommandAccessor);
+
 public:
   xiiPropertyAnimObjectAccessor(xiiPropertyAnimAssetDocument* pDoc, xiiCommandHistory* pHistory);
 

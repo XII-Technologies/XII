@@ -2,7 +2,6 @@
 
 #include <EditorEngineProcessFramework/IPC/ProcessCommunicationChannel.h>
 #include <Foundation/Communication/IpcChannel.h>
-#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 
 xiiProcessCommunicationChannel::xiiProcessCommunicationChannel() = default;
 
@@ -52,9 +51,10 @@ void xiiProcessCommunicationChannel::WaitForMessages()
   m_pProtocol->WaitForMessages().IgnoreResult();
 }
 
-void xiiProcessCommunicationChannel::MessageFunc(const xiiProcessMessage* pMsg)
+void xiiProcessCommunicationChannel::MessageFunc(const xiiIpcProcessMessageProtocol::Event& msg)
 {
-  const xiiRTTI* pRtti = pMsg->GetDynamicRTTI();
+  const xiiProcessMessage* pMsg  = msg.m_pMessage;
+  const xiiRTTI*           pRtti = pMsg->GetDynamicRTTI();
 
   if (m_pWaitForMessageType != nullptr && pMsg->GetDynamicRTTI()->IsDerivedFrom(m_pWaitForMessageType))
   {
@@ -77,8 +77,10 @@ void xiiProcessCommunicationChannel::MessageFunc(const xiiProcessMessage* pMsg)
   XII_ASSERT_DEV(pRtti->IsDerivedFrom<xiiProcessMessage>(), "Msg base type is invalid");
 
   Event e;
-  e.m_pMessage = pMsg;
+  e.m_pMessage                    = pMsg;
+  e.m_bInterruptMessageProcessing = msg.m_bInterruptMessageProcessing;
   m_Events.Broadcast(e);
+  msg.m_bInterruptMessageProcessing = e.m_bInterruptMessageProcessing;
 }
 
 xiiResult xiiProcessCommunicationChannel::WaitForMessage(const xiiRTTI* pMessageType, xiiTime timeout, WaitForMessageCallback* pMessageCallack)

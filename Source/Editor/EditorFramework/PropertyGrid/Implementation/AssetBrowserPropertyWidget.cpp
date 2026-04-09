@@ -467,7 +467,7 @@ void xiiQtAssetPropertyWidget::OnCreateNewAsset()
 
       xiiQtUiServices::GetSingleton()->MessageBoxStatus(res, "Creating the document failed.");
 
-      if (res.m_Result.Succeeded())
+      if (res.Succeeded())
       {
         // if this is an asset, make sure it gets transformed, so that the output file exists
         // and make sure the filesystem knows about it (the asset lookup table is written)

@@ -1,0 +1,35 @@
+// XII Engine — HiZBuild.xiiShader
+// Pass 8: Hierarchical-Z max depth pyramid reduction.
+// Dispatch: ceil(W/8) × ceil(H/8) per mip, iterated in C++ per mip level.
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer HiZConstants : register(b3)
+{
+    uint2 g_SrcSize;
+    uint2 g_DstSize;
+    uint  g_SrcMip;
+    float3 _pad;
+};
+
+Texture2D<float>   g_DepthSrc : register(t0);   // source mip (or occluder depth)
+RWTexture2D<float> g_HiZDst   : register(u0);   // destination mip
+
+[numthreads(8, 8, 1)]
+void CS_HiZBuild(uint3 tid : SV_DispatchThreadID)
+{
+    if (any(tid.xy >= g_DstSize)) return;
+
+    // Source texel = 2x2 gather (max reduction for reversed-Z: we want the MINIMUM depth value
+    // i.e. the closest surface, which in reversed-Z is the largest float value).
+    uint2 srcBase = tid.xy * 2u;
+
+    float d00 = g_DepthSrc.Load(int3(srcBase + uint2(0u, 0u), g_SrcMip));
+    float d10 = g_DepthSrc.Load(int3(srcBase + uint2(1u, 0u), g_SrcMip));
+    float d01 = g_DepthSrc.Load(int3(srcBase + uint2(0u, 1u), g_SrcMip));
+    float d11 = g_DepthSrc.Load(int3(srcBase + uint2(1u, 1u), g_SrcMip));
+
+    // Reversed-Z Hi-Z stores minimum depth (largest float = closest to camera).
+    float minDepth = min(min(d00, d10), min(d01, d11));
+    g_HiZDst[tid.xy] = minDepth;
+}

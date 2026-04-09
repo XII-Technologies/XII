@@ -15,7 +15,7 @@ public:
   xiiHybridArray(); // [tested]
 
   /// \brief Creates an empty array. Does not allocate any data yet.
-  explicit xiiHybridArray(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiHybridArray(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given array.
   xiiHybridArray(const xiiHybridArray<T, Size, AllocatorWrapper>& other); // [tested]
@@ -46,5 +46,27 @@ protected:
 
   XII_ALWAYS_INLINE const T* GetStaticArray() const { return reinterpret_cast<const T*>(m_StaticData); }
 };
+
+/// \brief A hybrid array that uses the temp allocator if it exceeds the in-place storage.
+///
+/// This is ideal for temporary arrays that are only used within a short scope and are not expected to grow beyond the in-place storage size in most cases.
+/// The temporary allocator is optimized for short-lived allocations and can be more efficient than the default allocator for this use case.
+template <typename T, xiiUInt32 Size>
+class xiiTemporaryHybridArray : public xiiHybridArray<T, Size>
+{
+public:
+  xiiTemporaryHybridArray();
+
+  template <typename AllocatorWrapper>
+  xiiTemporaryHybridArray(const xiiHybridArray<T, Size, AllocatorWrapper>& other);
+  explicit xiiTemporaryHybridArray(const xiiArrayPtr<const T>& other);
+
+  template <typename AllocatorWrapper>
+  void operator=(const xiiHybridArray<T, Size, AllocatorWrapper>& rhs);
+  void operator=(const xiiArrayPtr<const T>& rhs);
+
+  void operator=(xiiHybridArray<T, Size>&& rhs) noexcept;
+};
+
 
 #include <Foundation/Containers/Implementation/HybridArray_inl.h>

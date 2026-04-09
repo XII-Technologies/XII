@@ -11,7 +11,7 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 xiiUInt32 xiiGALPermutationVariable::CalculateHash(const xiiArrayPtr<xiiGALPermutationVariable>& permutationVariables)
 {
-  xiiHybridArray<xiiUInt64, 128> buffer;
+  xiiHybridArray<xiiUInt64, 128U> buffer;
   buffer.SetCountUninitialized(permutationVariables.GetCount() * 2);
 
   for (xiiUInt32 i = 0; i < permutationVariables.GetCount(); ++i)
@@ -21,6 +21,6 @@ xiiUInt32 xiiGALPermutationVariable::CalculateHash(const xiiArrayPtr<xiiGALPermu
     buffer[i * 2 + 1] = var.m_sValue.GetHash();
   }
 
-  auto pBytes = buffer.GetByteArrayPtr();
+  xiiByteArrayPtr pBytes = buffer.GetByteArrayPtr();
   return xiiHashingUtils::xxHash32(pBytes.GetPtr(), pBytes.GetCount());
 }

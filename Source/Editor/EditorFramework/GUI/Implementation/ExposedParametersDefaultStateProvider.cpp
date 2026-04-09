@@ -4,6 +4,7 @@
 #include <EditorFramework/PropertyGrid/ExposedParametersPropertyWidget.moc.h>
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
+#include <ToolsFoundation/Reflection/VariantStorageAccessor.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
 xiiSharedPtr<xiiDefaultStateProvider> xiiExposedParametersDefaultStateProvider::CreateProvider(xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
@@ -46,10 +47,13 @@ xiiVariant xiiExposedParametersDefaultStateProvider::GetDefaultValue(SuperArray 
   xiiExposedParameterCommandAccessor accessor(pAccessor, pProp, m_pParameterSourceProp);
   if (index.IsValid())
   {
-    const xiiExposedParameter* pParam = accessor.GetExposedParam(pObject, index.Get<xiiString>());
-    if (pParam)
+    if (index.IsA<xiiString>() || index.IsA<xiiStringView>())
     {
-      return pParam->m_DefaultValue;
+      const xiiExposedParameter* pParam = accessor.GetExposedParam(pObject, index.ConvertTo<xiiString>());
+      if (pParam)
+      {
+        return pParam->m_DefaultValue;
+      }
     }
     return superPtr[0]->GetDefaultValue(superPtr.GetSubArray(1), pAccessor, pObject, pProp, index);
   }
@@ -70,7 +74,7 @@ xiiVariant xiiExposedParametersDefaultStateProvider::GetDefaultValue(SuperArray 
 xiiStatus xiiExposedParametersDefaultStateProvider::CreateRevertContainerDiff(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiDeque<xiiAbstractGraphDiffOperation>& out_diff)
 {
   XII_REPORT_FAILURE("Unreachable code");
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiExposedParametersDefaultStateProvider::IsDefaultValue(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index)
@@ -109,7 +113,77 @@ xiiStatus xiiExposedParametersDefaultStateProvider::RevertProperty(SuperArray su
     op.m_uiTypeVersion                         = 0;
     op.m_Value                                 = xiiVariantDictionary();
     xiiDocumentObjectConverterReader::ApplyDiffToObject(pAccessor, pObject, diff);
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return xiiDefaultStateProvider::RevertProperty(superPtr, pAccessor, pObject, pProp, index);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+xiiSharedPtr<xiiDefaultStateProvider> xiiExposedParametersAsTypeDefaultStateProvider::CreateProvider(xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
+{
+  if (auto pExposedParameterCommandAccessor = xiiDynamicCast<xiiExposedParametersAsTypeCommandAccessor*>(pAccessor))
+  {
+    return XII_DEFAULT_NEW(xiiExposedParametersAsTypeDefaultStateProvider, pExposedParameterCommandAccessor, pObject, pProp);
+  }
+  return nullptr;
+}
+
+xiiExposedParametersAsTypeDefaultStateProvider::xiiExposedParametersAsTypeDefaultStateProvider(xiiExposedParametersAsTypeCommandAccessor* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp) :
+  xiiExposedParametersDefaultStateProvider(pAccessor->GetSourceAccessor(), pObject, pAccessor->GetSourceAccessor()->m_pParameterProp), m_pAccessor(pAccessor)
+{
+}
+
+xiiVariant xiiExposedParametersAsTypeDefaultStateProvider::GetDefaultValue(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index)
+{
+  xiiVariant defaultValue;
+  if (GetDefaultValueInternal(superPtr, pAccessor, pObject, pProp, index, defaultValue).Succeeded())
+    return defaultValue;
+
+  return {};
+}
+
+xiiStatus xiiExposedParametersAsTypeDefaultStateProvider::CreateRevertContainerDiff(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiDeque<xiiAbstractGraphDiffOperation>& out_diff)
+{
+  XII_REPORT_FAILURE("Unreachable code");
+  return xiiStatus(XII_SUCCESS);
+}
+
+bool xiiExposedParametersAsTypeDefaultStateProvider::IsDefaultValue(xiiDefaultStateProvider::SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index)
+{
+  xiiVariant defaultValue;
+  if (GetDefaultValueInternal(superPtr, pAccessor, pObject, pProp, index, defaultValue).Failed())
+    return true;
+
+  xiiVariant value;
+  pAccessor->GetValue(pObject, pProp, value, index).LogFailure();
+  return defaultValue == value;
+}
+
+xiiStatus xiiExposedParametersAsTypeDefaultStateProvider::RevertProperty(xiiDefaultStateProvider::SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index)
+{
+  xiiVariant defaultValue;
+  if (GetDefaultValueInternal(superPtr, pAccessor, pObject, pProp, index, defaultValue).Failed())
+    return xiiStatus(xiiFmt("Failed to retrieve default value for exposed parameter."));
+
+  return pAccessor->SetValue(pObject, pProp, defaultValue, index);
+}
+
+xiiResult xiiExposedParametersAsTypeDefaultStateProvider::GetDefaultValueInternal(xiiDefaultStateProvider::SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index, xiiVariant& out_DefaultValue)
+{
+  // As we derive from xiiExposedParametersDefaultStateProvider, we first need to convert the exposed parameter type, prop, accessor into the actual underlying data structure that the base class expects before calling it.
+  // * The xiiExposedParametersAsTypeCommandAccessor proxies the xiiExposedParameterCommandAccessor so the proxy source is the correct accessor.
+  // * The object stays the same.
+  // * The property from the exposed parameter type is replaced by the actual property that stores the exposed parameters in the real object.
+  // * The index is the name of the property as that is how the parameter map is generated (keyed by parameter name).
+  // With these changes made, we can rely on the base class to compute the default value.
+  out_DefaultValue = xiiExposedParametersDefaultStateProvider::GetDefaultValue(superPtr.GetSubArray(1), m_pAccessor->GetSourceAccessor(), pObject, m_pAccessor->GetSourceAccessor()->m_pParameterProp, pProp->GetPropertyName());
+
+  xiiStatus res(XII_SUCCESS);
+  // We now have the value of the exposed parameter. If this is a container, we need to dive into the index. If index is invalid, this is a no-op.
+  out_DefaultValue = xiiVariantStorageAccessor(pProp->GetPropertyName(), out_DefaultValue).GetValue(index, &res);
+  if (res.Failed())
+    return XII_FAILURE;
+
+  return XII_SUCCESS;
 }

@@ -77,7 +77,7 @@ namespace
     }
 
     xiiStringBuilder sOutput;
-    XII_SUCCEED_OR_RETURN(xiiGALShaderParser::PreprocessSection(file, xiiGALShaderSections::MATERIALCONFIG, defines, sOutput));
+    XII_SUCCEED_OR_RETURN(xiiGALShaderParser::PreprocessSection(file, xiiGALShaderSections::MaterialConfiguration, defines, sOutput));
 
     xiiHybridArray<xiiStringView, 32> allAssignments;
     sOutput.Split(false, allAssignments, "\n", ";", "\r");
@@ -305,7 +305,7 @@ void xiiMaterialAssetProperties::DeleteProperties()
   xiiRemoveObjectCommand cmd;
   cmd.m_Object = pPropObject->GetGuid();
   auto res     = pHistory->AddCommand(cmd);
-  XII_ASSERT_DEV(res.m_Result.Succeeded(), "Removal of old properties should never fail.");
+  XII_ASSERT_DEV(res.Succeeded(), "Removal of old properties should never fail.");
 }
 
 void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
@@ -332,7 +332,7 @@ void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
     cmd.m_NewObjectGuid.CombineWithSeed(xiiUuid::MakeStableUuidFromString("ShaderProperties"));
 
     auto res = pHistory->AddCommand(cmd);
-    XII_ASSERT_DEV(res.m_Result.Succeeded(), "Addition of new properties should never fail.");
+    XII_ASSERT_DEV(res.Succeeded(), "Addition of new properties should never fail.");
     LoadOldValues();
   }
 }
@@ -741,7 +741,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringVie
       if (GetProperties()->m_ShaderMode == xiiMaterialShaderMode::Custom)
       {
         e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
-        e.m_sTransformError = ret.m_sMessage;
+        e.m_sTransformError = ret.GetMessageString();
 
         if (ret.Succeeded())
         {
@@ -788,7 +788,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(xiiStringVie
           if (ret.Failed())
           {
             e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;
-            e.m_sTransformError = ret.m_sMessage;
+            e.m_sTransformError = ret.GetMessageString();
           }
           else
           {
@@ -949,7 +949,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
       xiiHybridArray<xiiPropertySelection, 1> selection;
       selection.PushBack({pObject, xiiVariant()});
-      xiiDefaultObjectState defaultState(GetObjectAccessor(), selection.GetArrayPtr());
+      xiiDefaultObjectState defaultState(pType, GetObjectAccessor(), selection.GetArrayPtr());
 
       for (auto pProp : properties)
       {
@@ -1129,7 +1129,7 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 #endif
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiMaterialAssetDocument::TagVisualShaderFileInvalid(const xiiPlatformProfile* pAssetProfile, const char* szError)
@@ -1167,7 +1167,7 @@ xiiStatus xiiMaterialAssetDocument::RecreateVisualShaderFile(const xiiAssetFileH
 {
   if (GetProperties()->m_ShaderMode != xiiMaterialShaderMode::Custom)
   {
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   xiiAssetDocumentManager* pManager       = xiiDynamicCast<xiiAssetDocumentManager*>(GetDocumentManager());
@@ -1188,7 +1188,7 @@ xiiStatus xiiMaterialAssetDocument::RecreateVisualShaderFile(const xiiAssetFileH
 
     InvalidateCachedShader();
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   else
   {
@@ -1398,9 +1398,10 @@ public:
   {
     auto* pBaseMatProp    = pNode->FindProperty("BaseMaterial");
     auto* pShaderModeProp = pNode->FindProperty("ShaderMode");
-    if (pBaseMatProp && pBaseMatProp->m_Value.IsA<xiiString>())
+
+    if (pBaseMatProp && (pBaseMatProp->m_Value.IsA<xiiString>() || pBaseMatProp->m_Value.IsA<xiiStringView>()))
     {
-      if (!pBaseMatProp->m_Value.Get<xiiString>().IsEmpty())
+      if (!pBaseMatProp->m_Value.ConvertTo<xiiString>().IsEmpty())
       {
         // BaseMaterial is set
         pNode->ChangeProperty("ShaderMode", (xiiInt32)xiiMaterialShaderMode::BaseMaterial);

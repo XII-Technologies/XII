@@ -54,13 +54,13 @@ public:
 
 protected:
   /// \brief Creates an empty hashset. Does not allocate any data yet.
-  explicit xiiHashSetBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiHashSetBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given hashset.
-  xiiHashSetBase(const xiiHashSetBase<KeyType, Hasher>& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHashSetBase(const xiiHashSetBase<KeyType, Hasher>& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Moves data from an existing hashtable into this one.
-  xiiHashSetBase(xiiHashSetBase<KeyType, Hasher>&& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHashSetBase(xiiHashSetBase<KeyType, Hasher>&& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiHashSetBase(); // [tested]
@@ -129,7 +129,7 @@ public:
   ConstIterator GetEndIterator() const;
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const;
+  xiiAllocator* GetAllocator() const;
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
@@ -148,7 +148,7 @@ private:
   xiiUInt32 m_uiCount;
   xiiUInt32 m_uiCapacity;
 
-  xiiAllocatorBase* m_pAllocator;
+  xiiAllocator* m_pAllocator;
 
   enum
   {
@@ -188,7 +188,7 @@ class xiiHashSet : public xiiHashSetBase<KeyType, Hasher>
 {
 public:
   xiiHashSet();
-  explicit xiiHashSet(xiiAllocatorBase* pAllocator);
+  explicit xiiHashSet(xiiAllocator* pAllocator);
 
   xiiHashSet(const xiiHashSet<KeyType, Hasher, AllocatorWrapper>& other);
   xiiHashSet(const xiiHashSetBase<KeyType, Hasher>& other);

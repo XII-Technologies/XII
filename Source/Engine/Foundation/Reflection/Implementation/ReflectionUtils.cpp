@@ -8,12 +8,7 @@
 
 namespace
 {
-  // for some reason MSVC does not accept the template keyword here
-#if XII_ENABLED(XII_COMPILER_MSVC_PURE)
-#  define CALL_FUNCTOR(functor, type) functor.operator()<type>(std::forward<Args>(args)...)
-#else
-#  define CALL_FUNCTOR(functor, type) functor.template operator()<type>(std::forward<Args>(args)...)
-#endif
+#define CALL_FUNCTOR(functor, type) functor.template operator()<type>(std::forward<Args>(args)...)
 
   template <typename Functor, class... Args>
   void DispatchTo(Functor& ref_functor, const xiiAbstractProperty* pProp, Args&&... args)
@@ -613,7 +608,7 @@ bool xiiReflectionUtils::IsBasicType(const xiiRTTI* pRtti)
 {
   XII_ASSERT_DEBUG(pRtti != nullptr, "IsBasicType: missing data!");
   xiiVariant::Type::Enum type = pRtti->GetVariantType();
-  return type >= xiiVariant::Type::FirstStandardType && type <= xiiVariant::Type::LastStandardType;
+  return (type >= xiiVariant::Type::FirstStandardType && type <= xiiVariant::Type::LastStandardType) || pRtti == xiiGetStaticRTTI<xiiVariant>();
 }
 
 bool xiiReflectionUtils::IsValueType(const xiiAbstractProperty* pProp)

@@ -1,0 +1,93 @@
+// XII Engine — HiZOcclusionCulling.xiiShader  [REWRITTEN]
+// Pass 10: Per-instance AABB projected onto screen, sampled against Hi-Z pyramid.
+// Dispatch: ceil(InstanceCount/64) × 1 × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer HiZOcclusionConstants : register(b3)
+{
+    float2 g_HiZSize;       // (width, height) of top mip
+    uint   g_HiZMipCount;
+    uint   g_InstanceCount;
+};
+
+struct InstanceBounds { float3 Center; float Radius; float3 Extents; float _pad; };
+
+StructuredBuffer<InstanceBounds>  g_Bounds        : register(t0);
+StructuredBuffer<uint>            g_Candidates    : register(t1); // [0]=count, [1..]=indices
+Texture2D<float>                  g_HiZPyramid    : register(t2);
+RWStructuredBuffer<uint>          g_SurvivingOut  : register(u0); // [0]=count, [1..]=indices
+
+groupshared uint gs_Count;
+groupshared uint gs_Scratch[64];
+
+// Project an AABB corner into NDC, return minimum depth of all 8 corners.
+float ProjectAABBMinDepth(float3 center, float3 extents, out float4 screenRect)
+{
+    float minDepth = 1.0f;
+    float minX = 1.0f, minY = 1.0f, maxX = 0.0f, maxY = 0.0f;
+    [unroll(8)]
+    for (int i = 0; i < 8; ++i)
+    {
+        float3 corner = center + extents * float3((i&1)?1:-1, (i&2)?1:-1, (i&4)?1:-1);
+        float4 clip   = mul(g_ViewProjectionMatrix, float4(corner, 1.0f));
+        if (clip.w <= 0.0001f) { screenRect = float4(0,0,1,1); return 0.0f; }
+        float3 ndc    = clip.xyz / clip.w;
+        float2 uv     = ndc.xy * float2(0.5f, -0.5f) + 0.5f;
+        minX = min(minX, uv.x); minY = min(minY, uv.y);
+        maxX = max(maxX, uv.x); maxY = max(maxY, uv.y);
+        minDepth = min(minDepth, ndc.z); // reversed-Z: smaller = further
+    }
+    screenRect = saturate(float4(minX, minY, maxX, maxY));
+    return minDepth;
+}
+
+[numthreads(64, 1, 1)]
+void CS_HiZOcclusionCull(uint3 tid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
+{
+    if (gtid.x == 0u) gs_Count = 0u;
+    GroupMemoryBarrierWithGroupSync();
+
+    uint count = g_Candidates[0];
+    uint slot  = tid.x;
+    bool visible = false;
+
+    if (slot < count)
+    {
+        uint iIdx             = g_Candidates[slot + 1u];
+        InstanceBounds b      = g_Bounds[iIdx];
+        float4 screenRect;
+        float minDepth        = ProjectAABBMinDepth(b.Center, b.Extents, screenRect);
+
+        // Pick mip level covering the projected footprint.
+        float2 size     = (screenRect.zw - screenRect.xy) * g_HiZSize;
+        float  mip      = clamp(log2(max(size.x, size.y)), 0.0f, float(g_HiZMipCount - 1u));
+        uint   mipLevel = uint(mip);
+
+        // Sample 4 corners of the screen rect at that mip.
+        float2 uv00 = screenRect.xy, uv11 = screenRect.zw;
+        float hiZDepth = min(
+            min(g_HiZPyramid.SampleLevel(g_sPointClamp, uv00, mip),
+                g_HiZPyramid.SampleLevel(g_sPointClamp, float2(uv11.x,uv00.y), mip)),
+            min(g_HiZPyramid.SampleLevel(g_sPointClamp, float2(uv00.x,uv11.y), mip),
+                g_HiZPyramid.SampleLevel(g_sPointClamp, uv11, mip)));
+
+        // Reversed-Z: instance visible if its closest depth >= the Hi-Z closest depth.
+        visible = (minDepth >= hiZDepth - 1e-5f);
+    }
+
+    if (visible)
+    {
+        uint iIdx = g_Candidates[slot + 1u];
+        uint s; InterlockedAdd(gs_Count, 1u, s);
+        gs_Scratch[s] = iIdx;
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    if (gtid.x == 0u && gs_Count > 0u)
+    {
+        uint base; InterlockedAdd(g_SurvivingOut[0], gs_Count, base);
+        for (uint i = 0u; i < gs_Count; ++i)
+            g_SurvivingOut[base + 1u + i] = gs_Scratch[i];
+    }
+}

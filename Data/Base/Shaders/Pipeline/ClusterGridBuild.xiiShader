@@ -1,0 +1,33 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+StructuredBuffer<float4>   ClusterCameraFrustum;
+StructuredBuffer<float4>   ClusterDepthRange;
+RWStructuredBuffer<float4> ClusterDescriptors;
+
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+  const uint clusterIndex = dispatchThreadId.x;
+
+  if (clusterIndex >= ClusterDescriptors.Length)
+  {
+    return;
+  }
+
+  const float4 depthRange = ClusterDepthRange.Length > 0 ? ClusterDepthRange[0] : float4(0.1f, 1000.0f, 24.0f, 0.0f);
+
+  // Pack a lightweight descriptor: x = near, y = far, z = normalized slice index, w = frustum plane count.
+  const float nearPlane = max(depthRange.x, 0.001f);
+  const float farPlane  = max(depthRange.y, nearPlane + 0.001f);
+  const float sliceCount = max(depthRange.z, 1.0f);
+  const float slice = fmod((float)clusterIndex, sliceCount);
+  const float normalizedSlice = slice / sliceCount;
+
+  const float frustumPlaneCount = (float)ClusterCameraFrustum.Length;
+  ClusterDescriptors[clusterIndex] = float4(nearPlane, farPlane, normalizedSlice, frustumPlaneCount);
+}

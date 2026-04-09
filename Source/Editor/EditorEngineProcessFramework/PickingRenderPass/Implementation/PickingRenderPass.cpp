@@ -3,8 +3,12 @@
 #include <EditorEngineProcessFramework/PickingRenderPass/PickingRenderPass.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Tools/TextureReadback.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocator<xiiPickingRenderPass>)
@@ -28,39 +32,49 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
+static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitOpaqueWithoutSelection", xiiDefaultRenderDataCategories::OpaqueStatic);
+static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitMaskedWithoutSelection", xiiDefaultRenderDataCategories::MaskedStatic);
+static xiiRenderData::Category s_LitMaskedDynamicWithoutSelection = xiiRenderData::RegisterDerivedCategory("LitMaskedDynamicWithoutSelection", xiiDefaultRenderDataCategories::MaskedDynamic);
+
+static xiiRenderData::Category s_LitTransparentWithoutSelection    = xiiRenderData::RegisterDerivedCategory("LitTransparentWithoutSelection", xiiDefaultRenderDataCategories::Transparent);
+static xiiRenderData::Category s_SimpleTransparentWithoutSelection = xiiRenderData::RegisterDerivedCategory("SimpleTransparentWithoutSelection", xiiDefaultRenderDataCategories::SimpleTransparent);
+
 xiiPickingRenderPass::xiiPickingRenderPass() :
-  xiiRenderPipelinePass("EditorPickingRenderPass")
+  xiiGraphicsPipelinePass("EditorPickingRenderPass", xiiRenderPipelinePassCapabilityFlags::None)
 {
   m_pGridRenderDataType = xiiRTTI::FindTypeByName("xiiGridRenderData");
   XII_ASSERT_DEV(m_pGridRenderDataType != nullptr, "xiiGridRenderData type not found. Type renamed?");
 }
 
-xiiPickingRenderPass::~xiiPickingRenderPass()
+xiiPickingRenderPass::~xiiPickingRenderPass() = default;
+
+xiiSharedPtr<xiiGALTexture> xiiPickingRenderPass::GetPickingIdRT() const
 {
-  DestroyTarget();
+  return m_pPickingIdRT;
 }
 
-xiiGALTextureHandle xiiPickingRenderPass::GetPickingIdRT() const
+xiiSharedPtr<xiiGALTexture> xiiPickingRenderPass::GetPickingDepthRT() const
 {
-  return m_hPickingIdRT;
+  return m_pPickingDepthRT;
 }
 
-xiiGALTextureHandle xiiPickingRenderPass::GetPickingDepthRT() const
+xiiResult xiiPickingRenderPass::GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs)
 {
-  return m_hPickingDepthRT;
+  return XII_SUCCESS;
 }
 
-bool xiiPickingRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
+xiiResult xiiPickingRenderPass::InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs)
 {
   m_TargetRect = view.GetViewport();
 
-  return true;
-}
-
-void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
-{
   DestroyTarget();
   CreateTarget();
+
+  if (m_uiProcessorId == xiiInvalidIndex)
+  {
+    m_uiProcessorId = GetPipeline()->AddRenderDataProcessor(xiiMakeDelegate(&xiiPickingRenderPass::ProcessPickingRenderData, this));
+  }
+  return XII_SUCCESS;
 }
 
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
@@ -70,192 +84,146 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
   m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
 
-  const xiiGALTexture* pDepthTexture = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hPickingDepthRT);
-  XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_Size.width, "");
-  XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_Size.height, "");
+  XII_ASSERT_DEV(m_uiWindowWidth == m_pPickingDepthRT->GetDescription().GetWidth(), "");
+  XII_ASSERT_DEV(m_uiWindowHeight == m_pPickingDepthRT->GetDescription().GetHeight(), "");
 
-  xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup       = m_RenderTargetSetup;
-  renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-  renderingSetup.m_bClearDepth             = true;
-  renderingSetup.m_bClearStencil           = true;
+  xiiRenderingSetup renderingSetup;
+  renderingSetup.AddColorAttachment({m_pPickingIdRT->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black, xiiGALAttachmentLoadOperation::Clear})
+    .SetDepthStencilAttachment({m_pPickingDepthRT->GetDefaultView(xiiGALTextureViewType::DepthStencil), 1.0f, 0U, xiiGALAttachmentLoadOperation::Clear, xiiGALAttachmentStoreOperation::Store, xiiGALAttachmentLoadOperation::Clear, xiiGALAttachmentStoreOperation::Store})
+    .Build();
 
-  auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName());
+  auto pRenderContext = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName());
 
   xiiViewRenderMode::Enum viewRenderMode = renderViewContext.m_pViewData->m_ViewRenderMode;
   if (viewRenderMode == xiiViewRenderMode::WireframeColor || viewRenderMode == xiiViewRenderMode::WireframeMonochrome)
-    renderViewContext.SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING_WIREFRAME");
-  else
-    renderViewContext.SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING");
-
-  // Setup clustered data
-  auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
-  pClusteredData->BindResources(renderViewContext.m_pRenderContext);
-
-  // copy selection to set for faster checks
-  m_SelectionSet.Clear();
-
-  auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
-  const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
-  for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
   {
-    const xiiRenderDataBatch& batch = batchList.GetBatch(i);
-    for (auto it = batch.GetIterator<xiiRenderData>(); it.IsValid(); ++it)
-    {
-      m_SelectionSet.Insert(it->m_hOwner);
-    }
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING_WIREFRAME");
+  }
+  else
+  {
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING");
   }
 
-  // filter out all selected objects
-  xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner) || pRenderData->IsInstanceOf(m_pGridRenderDataType); });
+  // Setup clustered data.
+  xiiClusteredDataGPU* pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
+  pClusteredData->BindResources(renderViewContext.m_pRenderContext);
 
-  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitOpaque, filter);
-  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitMasked, filter);
+  RenderDataWithCategory(renderViewContext, s_LitOpaqueWithoutSelection);
+  RenderDataWithCategory(renderViewContext, s_LitMaskedWithoutSelection);
 
   if (m_bPickTransparent)
   {
-    RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitTransparent, filter);
+    RenderDataWithCategory(renderViewContext, s_LitTransparentWithoutSelection);
 
-    renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-    RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitForeground);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
-    renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-    RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::LitForeground);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
   }
 
   if (m_bPickSelected)
   {
-    RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::Selection);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Selection);
   }
 
-  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::SimpleOpaque);
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
 
   if (m_bPickTransparent)
   {
-    RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::SimpleTransparent, filter);
+    RenderDataWithCategory(renderViewContext, s_SimpleTransparentWithoutSelection);
   }
 
-  renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::SimpleForeground);
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
-  renderViewContext.SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, pCommandList, xiiDefaultRenderDataCategories::SimpleForeground);
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
 
-  renderViewContext.SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
 
-  // download the picking information from the GPU
+  xiiSharedPtr<xiiGALCommandList> pCommandList = renderViewContext.m_pRenderContext->GetCommandList();
+
+  if (m_PendingReadback.m_bReadbackInProgress)
+  {
+    // Wait for results.
+    m_PendingReadback.m_PickingReadback->WaitForNextCompleted();
+    m_PendingReadback.m_PickingDepthReadback->WaitForNextCompleted();
+
+    m_PickingResultsID.Clear();
+    m_PickingResultsDepth.Clear();
+    m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
+
+    xiiGALTextureMipLevelData      mipLevelData;
+    xiiGALMappedTextureSubresource mappedSubResource;
+
+    // If the resolution has changed, discard the readback result.
+    if (m_uiWindowHeight == m_PendingReadback.m_uiWindowHeight && m_uiWindowWidth == m_PendingReadback.m_uiWindowWidth)
+    {
+      if (m_PendingReadback.m_PickingReadback->HasCompleted())
+      {
+        m_PickingResultsID.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
+
+        auto readback = m_PendingReadback.m_PickingReadback->GetCompleted();
+        pCommandList->MapTextureSubresource(readback.m_pStagingTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).AssertSuccess("Failed to map readback texture.");
+
+        xiiGALTextureUtilities::CopySubresourceToMemory(readback.m_pStagingTexture->GetDescription(), mappedSubResource, mipLevelData, m_PickingResultsID.GetByteArrayPtr(), m_uiWindowWidth * sizeof(xiiUInt32));
+
+        pCommandList->UnmapTextureSubresource(readback.m_pStagingTexture, mipLevelData).IgnoreResult();
+
+        m_PendingReadback.m_PickingReadback->RecycleStagingTexture(std::move(readback.m_pStagingTexture));
+      }
+      if (m_PendingReadback.m_PickingDepthReadback->HasCompleted())
+      {
+        m_PickingResultsDepth.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
+
+        auto readback = m_PendingReadback.m_PickingDepthReadback->GetCompleted();
+        pCommandList->MapTextureSubresource(readback.m_pStagingTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).AssertSuccess("Failed to map readback texture.");
+
+        xiiGALTextureUtilities::CopySubresourceToMemory(readback.m_pStagingTexture->GetDescription(), mappedSubResource, mipLevelData, m_PickingResultsDepth.GetByteArrayPtr(), m_uiWindowWidth * sizeof(float));
+
+        pCommandList->UnmapTextureSubresource(readback.m_pStagingTexture, mipLevelData).IgnoreResult();
+
+        m_PendingReadback.m_PickingDepthReadback->RecycleStagingTexture(std::move(readback.m_pStagingTexture));
+      }
+      m_mPickingInverseViewProjectionMatrix = m_PendingReadback.m_mPickingInverseViewProjectionMatrix;
+    }
+  }
+
+  // Begin transferring the picking information from the GPU to the CPU.
   if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
   {
-    pCommandList->BeginDebugGroup("Readback Picking Rendertargets");
+    {
+      xiiGALTextureReadback::ReadbackRequest request = {};
+      request.m_uiTextureID                          = m_uiMarqueeActionID;
+      request.m_uiMipLevel                           = 0U;
+      request.m_uiArraySlice                         = 0U;
 
-    pCommandList->CopyTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
-    pCommandList->CopyTexture(GetPickingIdRT(), m_hPickingIdRTStaging);
+      request.m_pTexture = GetPickingIdRT();
+      m_PendingReadback.m_PickingReadback->Enqueue(pCommandList, request);
 
-    xiiMat4 mProj;
-    renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
+      request.m_pTexture = GetPickingDepthRT();
+      m_PendingReadback.m_PickingDepthReadback->Enqueue(pCommandList, request);
+    }
+
+    xiiMat4 mProjection;
+    renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProjection);
     xiiMat4 mView = renderViewContext.m_pCamera->GetViewMatrix();
 
-    if (mProj.IsNaN())
+    if (mProjection.IsNaN())
       return;
 
-    xiiMat4 inv = mProj * mView;
-    if (inv.Invert(0).Failed())
+    xiiMat4 mInverse = mProjection * mView;
+    if (mInverse.Invert(0).Failed())
     {
-      xiiLog::Warning("Inversion of View-Projection-Matrix failed. Picking results will be wrong.");
+      xiiLog::Warning("Inversion of View-Projection-Matrix failed. Picking results will be incorrect.");
       return;
     }
 
-    m_mPickingInverseViewProjectionMatrix = inv;
-
-    const xiiUInt32 uiStride      = 4 * m_uiWindowWidth;
-    const xiiUInt32 uiDepthStride = 4 * m_uiWindowWidth * m_uiWindowHeight;
-
-    xiiGALTextureMipLevelData sourceSubResource;
-
-    auto pDevice = xiiGALDevice::GetDefaultDevice();
-    {
-      m_PickingResultsDepth.Clear();
-      m_PickingResultsDepth.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
-
-      xiiGALMappedTextureSubresource mappedSubResource;
-      if (pCommandList->MapTextureSubresource(m_hPickingDepthRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
-      {
-        const auto& textureDescription = pDevice->GetTexture(m_hPickingDepthRTStaging)->GetDescription();
-        const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-        if (mappedSubResource.m_pData)
-        {
-          /// \todo Support depth pitch.
-          if (mappedSubResource.m_uiStride == uiStride)
-          {
-            const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-            memcpy(m_PickingResultsDepth.GetData(), mappedSubResource.m_pData, uiMemorySize);
-          }
-          else
-          {
-            // Copy row by row.
-            const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-            for (xiiUInt32 y = 0; y < uiHeight; ++y)
-            {
-              const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-              void*       pDestination = xiiMemoryUtils::AddByteOffset(m_PickingResultsDepth.GetData(), y * uiStride);
-
-              memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
-            }
-          }
-        }
-        else
-        {
-          xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
-        }
-
-        pCommandList->UnmapTextureSubresource(m_hPickingDepthRTStaging, sourceSubResource).IgnoreResult();
-      }
-    }
-    {
-      m_PickingResultsID.Clear();
-      m_PickingResultsID.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
-
-      xiiGALMappedTextureSubresource mappedSubResource;
-      if (pCommandList->MapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
-      {
-        const auto& textureDescription = pDevice->GetTexture(m_hPickingIdRTStaging)->GetDescription();
-        const auto& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-
-        if (mappedSubResource.m_pData)
-        {
-          /// \todo Support depth pitch.
-          if (mappedSubResource.m_uiStride == uiStride)
-          {
-            const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-            memcpy(m_PickingResultsID.GetData(), mappedSubResource.m_pData, uiMemorySize);
-          }
-          else
-          {
-            // Copy row by row.
-            const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
-
-            for (xiiUInt32 y = 0; y < uiHeight; ++y)
-            {
-              const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
-              void*       pDestination = xiiMemoryUtils::AddByteOffset(m_PickingResultsID.GetData(), y * uiStride);
-
-              memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
-            }
-          }
-        }
-        else
-        {
-          xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
-        }
-
-        pCommandList->UnmapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource).IgnoreResult();
-      }
-    }
-    pCommandList->EndDebugGroup();
+    m_PendingReadback.m_mPickingInverseViewProjectionMatrix = mInverse;
+    m_PendingReadback.m_uiWindowWidth                       = m_uiWindowWidth;
+    m_PendingReadback.m_uiWindowHeight                      = m_uiWindowHeight;
+    m_PendingReadback.m_bReadbackInProgress                 = true;
   }
 }
 
@@ -267,7 +235,7 @@ void xiiPickingRenderPass::ReadBackProperties(xiiView* pView)
 
 void xiiPickingRenderPass::CreateTarget()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Create render target for picking
   xiiGALTextureCreationDescription tcd;
@@ -277,46 +245,22 @@ void xiiPickingRenderPass::CreateTarget()
   tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
   tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget;
 
-  m_hPickingIdRT = pDevice->CreateTexture(tcd);
-
-  tcd.m_Usage          = xiiGALResourceUsage::Staging;
-  tcd.m_BindFlags      = xiiGALBindFlags::None;
-  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-
-  m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
+  m_pPickingIdRT                      = pDevice->CreateTexture(tcd);
+  m_PendingReadback.m_PickingReadback = XII_DEFAULT_NEW(xiiGALTextureReadback, pDevice);
 
   tcd.m_Format         = xiiGALResourceFormat::D32Float;
   tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
-  tcd.m_Usage          = xiiGALResourceUsage::Default;
+  tcd.m_Usage          = xiiGALResourceUsage::Mutable;
 
-  m_hPickingDepthRT = pDevice->CreateTexture(tcd);
-
-  tcd.m_Usage          = xiiGALResourceUsage::Staging;
-  tcd.m_BindFlags      = xiiGALBindFlags::None;
-  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
-
-  m_hPickingDepthRTStaging = pDevice->CreateTexture(tcd);
-
-  m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(m_hPickingIdRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget)).SetDepthStencilTarget(pDevice->GetTexture(m_hPickingDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
+  m_pPickingDepthRT                        = pDevice->CreateTexture(tcd);
+  m_PendingReadback.m_PickingDepthReadback = XII_DEFAULT_NEW(xiiGALTextureReadback, pDevice);
 }
 
 void xiiPickingRenderPass::DestroyTarget()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  m_RenderTargetSetup.DestroyAllAttachedViews();
-  if (!m_hPickingIdRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hPickingIdRT);
-    m_hPickingIdRT.Invalidate();
-  }
-
-  if (!m_hPickingDepthRT.IsInvalidated())
-  {
-    pDevice->DestroyTexture(m_hPickingDepthRT);
-    m_hPickingDepthRT.Invalidate();
-  }
+  m_pPickingIdRT.Clear();
+  m_pPickingDepthRT.Clear();
 }
 
 void xiiPickingRenderPass::ReadBackPropertiesSinglePick(xiiView* pView)
@@ -327,8 +271,7 @@ void xiiPickingRenderPass::ReadBackPropertiesSinglePick(xiiView* pView)
 
   if (uiIndex >= m_PickingResultsDepth.GetCount() || x >= m_uiWindowWidth || y >= m_uiWindowHeight)
   {
-    // xiiLog::Error("Picking position {0}, {1} is outside the available picking area of {2} * {3}", x, y, m_uiWindowWidth,
-    // m_uiWindowHeight);
+    // xiiLog::Error("Picking position {0}, {1} is outside the available picking area of {2} * {3}", x, y, m_uiWindowWidth, m_uiWindowHeight);
     return;
   }
 
@@ -457,4 +400,41 @@ void xiiPickingRenderPass::ReadBackPropertiesMarqueePick(xiiView* pView)
   }
 
   pView->SetRenderPassReadBackProperty(GetName(), "MarqueeResult", resArray);
+}
+
+void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData)
+{
+  // Copy selection to set for faster checks.
+  m_SelectionSet.Clear();
+  {
+    auto renderDataList = extractedRenderData.GetRawRenderDataWithCategory(xiiDefaultRenderDataCategories::Selection);
+    for (auto& sortableRenderData : renderDataList)
+    {
+      m_SelectionSet.Insert(sortableRenderData.m_pRenderData->m_hOwner);
+    }
+  }
+
+  auto Filter = [&](xiiRenderData::Category originalCategory, xiiRenderData::Category filteredCategory) {
+    auto renderDataList = extractedRenderData.GetRawRenderDataWithCategory(originalCategory);
+    for (auto& sortableRenderData : renderDataList)
+    {
+      auto pRenderData = sortableRenderData.m_pRenderData;
+      if (m_SelectionSet.Contains(pRenderData->m_hOwner) || pRenderData->IsInstanceOf(m_pGridRenderDataType))
+        continue;
+
+      extractedRenderData.AddRenderData(pRenderData, filteredCategory);
+    }
+  };
+
+  Filter(xiiDefaultRenderDataCategories::OpaqueStatic, s_LitOpaqueWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::OpaqueDynamic, s_LitOpaqueWithoutSelection);
+
+  Filter(xiiDefaultRenderDataCategories::MaskedStatic, s_LitMaskedWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::MaskedDynamic, s_LitOpaqueWithoutSelection);
+
+  if (m_bPickTransparent)
+  {
+    Filter(xiiDefaultRenderDataCategories::Transparent, s_LitTransparentWithoutSelection);
+    Filter(xiiDefaultRenderDataCategories::SimpleTransparent, s_SimpleTransparentWithoutSelection);
+  }
 }

@@ -53,7 +53,9 @@ void xiiQtCreateProjectDlg::UpdateUI()
   ProjectFolder->setText(m_sTargetFolder.GetData());
 
   if (m_sProjectTemplate.IsEmpty())
+  {
     ChosenTemplate->setText("<none>");
+  }
   else
   {
     xiiStringBuilder tmp = m_sProjectTemplate;
@@ -327,5 +329,9 @@ void xiiQtCreateProjectDlg::CreateProject()
     {
       // TODO
     }
+
+    // Ensure that in case we copied an AssetCache, it gets deleted so that the project definitely starts fresh.
+    xiiStringBuilder sAssetCache(sFullPath, "/AssetCache");
+    xiiOSFile::DeleteFolder(sAssetCache).IgnoreResult();
   }
 }

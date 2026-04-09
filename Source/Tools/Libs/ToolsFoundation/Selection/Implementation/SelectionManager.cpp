@@ -73,9 +73,9 @@ void xiiSelectionManager::AddObject(const xiiDocumentObject* pObject)
 
   XII_ASSERT_DEV(pObject->GetDocumentObjectManager() == m_pSelectionStorage->m_pObjectManager, "Passed in object does not belong to same object manager.");
   xiiStatus res = m_pSelectionStorage->m_pObjectManager->CanSelect(pObject);
-  if (res.m_Result.Failed())
+  if (res.Failed())
   {
-    xiiLog::Error("{0}", res.m_sMessage);
+    xiiLog::Error("{0}", res.GetMessageString());
     return;
   }
 
@@ -154,9 +154,9 @@ void xiiSelectionManager::SetSelection(const xiiDeque<const xiiDocumentObject*>&
     {
       XII_ASSERT_DEV(selection[i]->GetDocumentObjectManager() == m_pSelectionStorage->m_pObjectManager, "Passed in object does not belong to same object manager.");
       xiiStatus res = m_pSelectionStorage->m_pObjectManager->CanSelect(selection[i]);
-      if (res.m_Result.Failed())
+      if (res.Failed())
       {
-        xiiLog::Error("{0}", res.m_sMessage);
+        xiiLog::Error("{0}", res.GetMessageString());
         continue;
       }
 

@@ -604,18 +604,18 @@ void xiiSensorWorldModule::Initialize()
   SUPER::Initialize();
 
   {
-    auto updateDesc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSensorWorldModule::UpdateSensors, this);
-    updateDesc.m_Phase                     = xiiWorldUpdatePhase::Async;
-    updateDesc.m_bOnlyUpdateWhenSimulating = true;
+    auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSensorWorldModule::UpdateSensors, this);
+    desc.m_Phase                     = xiiWorldUpdatePhase::Async;
+    desc.m_bOnlyUpdateWhenSimulating = true;
 
-    RegisterUpdateFunction(updateDesc);
+    RegisterUpdateFunction(desc);
   }
 
   {
-    auto updateDesc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSensorWorldModule::DebugDrawSensors, this);
-    updateDesc.m_Phase = xiiWorldUpdatePhase::PostTransform;
+    auto desc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiSensorWorldModule::DebugDrawSensors, this);
+    desc.m_Phase = xiiWorldUpdatePhase::PostTransform;
 
-    RegisterUpdateFunction(updateDesc);
+    RegisterUpdateFunction(desc);
   }
 
   m_pPhysicsWorldModule = GetWorld()->GetOrCreateModule<xiiPhysicsWorldModuleInterface>();

@@ -66,11 +66,6 @@ private:
   void ResetInputSlotValues() override { m_InputSlotValues.Clear(); }
 };
 
-static bool operator!=(const xiiInputActionConfig& lhs, const xiiInputActionConfig& rhs)
-{
-  return !(lhs == rhs);
-}
-
 XII_CREATE_SIMPLE_TEST(Input, InputManager)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetInputSlotDisplayName / GetInputSlotDisplayName")

@@ -8,7 +8,7 @@ namespace vk
   class Semaphore;
 } // namespace vk
 
-class XII_GRAPHICSVULKAN_DLL xiiGALCpuWaitOnlyFenceVulkan final
+class XII_GRAPHICSVULKAN_DLL xiiGALCpuWaitOnlyFenceVulkan
 {
 public:
   struct SyncPointData
@@ -21,9 +21,9 @@ public:
 
   ~xiiGALCpuWaitOnlyFenceVulkan();
 
-  virtual xiiUInt64 GetCompletedValue();
+  xiiUInt64 GetCompletedValue();
 
-  virtual void Wait(xiiUInt64 uiValue);
+  void Wait(xiiUInt64 uiValue);
 
   void Reset(xiiUInt64 uiValue);
 
@@ -38,7 +38,7 @@ private:
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
-  xiiMutex                m_SyncPointGuard;
+  mutable xiiMutex        m_SyncPointGuard;
   xiiDeque<SyncPointData> m_SyncPoints;
 
   xiiAtomicIntegerU64 m_LastCompletedFenceValue;

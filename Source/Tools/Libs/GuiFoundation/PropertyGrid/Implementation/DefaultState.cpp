@@ -5,6 +5,7 @@
 #include <GuiFoundation/PropertyGrid/AttributeDefaultStateProvider.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 #include <GuiFoundation/PropertyGrid/PrefabDefaultStateProvider.h>
+#include <GuiFoundation/PropertyGrid/VariantSubDefaultStateProvider.h>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>
 
@@ -14,12 +15,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, DefaultState)
   {
     xiiDefaultState::RegisterDefaultStateProvider(xiiAttributeDefaultStateProvider::CreateProvider);
     xiiDefaultState::RegisterDefaultStateProvider(xiiPrefabDefaultStateProvider::CreateProvider);
+    xiiDefaultState::RegisterDefaultStateProvider(xiiVariantSubDefaultStateProvider::CreateProvider);
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiDefaultState::UnregisterDefaultStateProvider(xiiAttributeDefaultStateProvider::CreateProvider);
     xiiDefaultState::UnregisterDefaultStateProvider(xiiPrefabDefaultStateProvider::CreateProvider);
+    xiiDefaultState::UnregisterDefaultStateProvider(xiiVariantSubDefaultStateProvider::CreateProvider);
   }
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
@@ -39,8 +42,9 @@ void xiiDefaultState::UnregisterDefaultStateProvider(CreateStateProviderFunc fun
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiDefaultObjectState::xiiDefaultObjectState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection)
+xiiDefaultObjectState::xiiDefaultObjectState(const xiiRTTI* pType, xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection)
 {
+  m_pType     = pType;
   m_pAccessor = pAccessor;
   m_Selection = selection;
   m_Providers.Reserve(m_Selection.GetCount());
@@ -71,7 +75,7 @@ xiiString xiiDefaultObjectState::GetStateProviderName() const
 
 bool xiiDefaultObjectState::IsDefaultValue(xiiStringView sProperty) const
 {
-  const xiiAbstractProperty* pProp = m_Selection[0].m_pObject->GetTypeAccessor().GetType()->FindPropertyByName(sProperty);
+  const xiiAbstractProperty* pProp = m_pType->FindPropertyByName(sProperty);
   return IsDefaultValue(pProp);
 }
 
@@ -90,7 +94,7 @@ bool xiiDefaultObjectState::IsDefaultValue(const xiiAbstractProperty* pProp) con
 
 xiiStatus xiiDefaultObjectState::RevertProperty(xiiStringView sProperty)
 {
-  const xiiAbstractProperty* pProp = m_Selection[0].m_pObject->GetTypeAccessor().GetType()->FindPropertyByName(sProperty);
+  const xiiAbstractProperty* pProp = m_pType->FindPropertyByName(sProperty);
   return RevertProperty(pProp);
 }
 
@@ -104,7 +108,7 @@ xiiStatus xiiDefaultObjectState::RevertProperty(const xiiAbstractProperty* pProp
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDefaultObjectState::RevertObject()
@@ -125,12 +129,12 @@ xiiStatus xiiDefaultObjectState::RevertObject()
         return res;
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiVariant xiiDefaultObjectState::GetDefaultValue(xiiStringView sProperty, xiiUInt32 uiSelectionIndex) const
 {
-  const xiiAbstractProperty* pProp = m_Selection[0].m_pObject->GetTypeAccessor().GetType()->FindPropertyByName(sProperty);
+  const xiiAbstractProperty* pProp = m_pType->FindPropertyByName(sProperty);
   return GetDefaultValue(pProp, uiSelectionIndex);
 }
 
@@ -143,12 +147,13 @@ xiiVariant xiiDefaultObjectState::GetDefaultValue(const xiiAbstractProperty* pPr
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiDefaultContainerState::xiiDefaultContainerState(xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, xiiStringView sProperty)
+xiiDefaultContainerState::xiiDefaultContainerState(const xiiRTTI* pType, xiiObjectAccessorBase* pAccessor, const xiiArrayPtr<xiiPropertySelection> selection, xiiStringView sProperty)
 {
+  m_pType     = pType;
   m_pAccessor = pAccessor;
   m_Selection = selection;
   // We assume selections can only contain objects of the same (base) type.
-  m_pProp = !sProperty.IsEmpty() ? selection[0].m_pObject->GetTypeAccessor().GetType()->FindPropertyByName(sProperty) : nullptr;
+  m_pProp = !sProperty.IsEmpty() ? m_pType->FindPropertyByName(sProperty) : nullptr;
   m_Providers.Reserve(m_Selection.GetCount());
   for (const xiiPropertySelection& sel : m_Selection)
   {
@@ -213,7 +218,7 @@ xiiStatus xiiDefaultContainerState::RevertElement(xiiVariant index)
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDefaultContainerState::RevertContainer()
@@ -226,7 +231,7 @@ xiiStatus xiiDefaultContainerState::RevertContainer()
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiVariant xiiDefaultContainerState::GetDefaultElement(xiiVariant index, xiiUInt32 uiSelectionIndex) const
@@ -314,7 +319,7 @@ xiiStatus xiiDefaultStateProvider::RevertProperty(SuperArray superPtr, xiiObject
   }
 
   xiiDocumentObjectConverterReader::ApplyDiffToObject(pAccessor, pObject, diff);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDefaultStateProvider::RevertObjectContainer(SuperArray superPtr, xiiObjectAccessorBase* pAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)

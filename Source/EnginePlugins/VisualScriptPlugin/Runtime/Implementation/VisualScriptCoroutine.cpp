@@ -39,12 +39,12 @@ xiiVisualScriptCoroutineAllocator::xiiVisualScriptCoroutineAllocator(const xiiSh
 {
 }
 
-void xiiVisualScriptCoroutineAllocator::Deallocate(void* pObject, xiiAllocatorBase* pAllocator /*= nullptr*/)
+void xiiVisualScriptCoroutineAllocator::Deallocate(void* pObject, xiiAllocator* pAllocator /*= nullptr*/)
 {
   XII_REPORT_FAILURE("Deallocate is not supported");
 }
 
-xiiInternal::NewInstance<void> xiiVisualScriptCoroutineAllocator::AllocateInternal(xiiAllocatorBase* pAllocator)
+xiiInternal::NewInstance<void> xiiVisualScriptCoroutineAllocator::AllocateInternal(xiiAllocator* pAllocator)
 {
   return XII_SCRIPT_NEW(xiiVisualScriptCoroutine, m_pDesc);
 }

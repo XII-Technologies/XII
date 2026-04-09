@@ -3,6 +3,7 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/EditorApp/CheckVersion.moc.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
+#include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/IO/OpenDdlReader.h>
@@ -24,13 +25,17 @@ xiiQtEditorApp::xiiQtEditorApp() :
   m_bSavePreferencesAfterOpenProject = false;
   m_pVersionChecker                  = XII_DEFAULT_NEW(xiiQtVersionChecker);
 
-  m_pTimer = new QTimer(nullptr);
+  m_pTimer         = new QTimer(nullptr);
+  m_pAutoSaveTimer = new QTimer(nullptr);
 }
 
 xiiQtEditorApp::~xiiQtEditorApp()
 {
   delete m_pTimer;
   m_pTimer = nullptr;
+
+  delete m_pAutoSaveTimer;
+  m_pAutoSaveTimer = nullptr;
 
   CloseSplashScreen();
 }
@@ -65,6 +70,46 @@ void xiiQtEditorApp::SlotTimedUpdate()
 void xiiQtEditorApp::SlotSaveSettings()
 {
   SaveSettings();
+}
+
+void xiiQtEditorApp::SlotAutoSave()
+{
+  const auto* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  if (!pPreferences || pPreferences->m_uiAutoSaveMinutes == 0)
+    return;
+
+  const xiiTime tAutoSaveThreshold = xiiTime::MakeFromMinutes(pPreferences->m_uiAutoSaveMinutes);
+  const xiiTime tNow               = xiiTime::Now();
+
+  // Find the oldest modified document that exceeds the auto-save threshold.
+  xiiDocument* pOldestDoc  = nullptr;
+  xiiTime      tOldestTime = tNow;
+
+  for (auto pManager : xiiDocumentManager::GetAllDocumentManagers())
+  {
+    for (auto pDocumenent : pManager->xiiDocumentManager::GetAllOpenDocuments())
+    {
+      const xiiTime tModified = pDocumenent->GetModifiedTime();
+      if (tModified.IsPositive() && (tNow - tModified) >= tAutoSaveThreshold && tModified < tOldestTime)
+      {
+        pOldestDoc  = pDocumenent;
+        tOldestTime = tModified;
+      }
+    }
+  }
+
+  if (pOldestDoc == nullptr)
+    return;
+
+  xiiQtDocumentWindow* pWnd = xiiQtDocumentWindow::FindWindowByDocument(pOldestDoc);
+  if (pWnd && pWnd->GetDocument() == pOldestDoc)
+  {
+    pWnd->SaveDocument().IgnoreResult();
+  }
+  else
+  {
+    pOldestDoc->SaveDocument().IgnoreResult();
+  }
 }
 
 void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bForced)
@@ -147,7 +192,7 @@ void xiiQtEditorApp::SaveAllOpenDocuments()
       // Layers for example will share a window with the scene document and the window will always save the scene.
       if (pWnd && pWnd->GetDocument() == pDoc)
       {
-        if (pWnd->SaveDocument().m_Result.Failed())
+        if (pWnd->SaveDocument().Failed())
           return;
       }
       // There might be no window for this document.
@@ -250,7 +295,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
 {
   // already a local project?
   if (inout_sFilePath.EndsWith_NoCase("xiiProject"))
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   {
     xiiStringBuilder tmp = inout_sFilePath;
@@ -259,7 +304,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
     if (xiiOSFile::ExistsFile(tmp))
     {
       inout_sFilePath = tmp;
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
   }
 
@@ -281,7 +326,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
       if (sContent.EndsWith_NoCase("xiiProject") && xiiOSFile::ExistsFile(sContent))
       {
         inout_sFilePath = sContent;
-        return xiiStatus(XII_SUCCESS);
+        return XII_SUCCESS;
       }
     }
   }
@@ -431,7 +476,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
       }
     }
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   return xiiStatus(xiiFmt("Unknown remote project type '{}' or invalid URL '{}'", sType, sUrl));

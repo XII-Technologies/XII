@@ -108,5 +108,5 @@ xiiTransformStatus xiiCollectionAssetDocument::InternalTransformAsset(xiiStreamW
 
   desc.Save(stream);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

@@ -429,7 +429,7 @@ void xiiQtMemoryWidget::ProcessTelemetry(void* pUnuseed)
       xiiUInt32 uiAllocatorId;
       xiiUInt32 uiParentId;
 
-      xiiAllocatorBase::Stats MemStat;
+      xiiAllocator::Stats MemStat;
       Msg.GetReader() >> uiAllocatorId;
       Msg.GetReader() >> sAllocatorName;
       Msg.GetReader() >> uiParentId;

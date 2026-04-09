@@ -4,23 +4,26 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
-class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiRenderPipelinePass
+class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiGraphicsPipelinePass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiPickingRenderPass, xiiRenderPipelinePass);
+  XII_ADD_DYNAMIC_REFLECTION(xiiPickingRenderPass, xiiGraphicsPipelinePass);
 
 public:
   xiiPickingRenderPass();
   ~xiiPickingRenderPass();
 
-  xiiGALTextureHandle GetPickingIdRT() const;
-  xiiGALTextureHandle GetPickingDepthRT() const;
+  xiiSharedPtr<xiiGALTexture> GetPickingIdRT() const;
+  xiiSharedPtr<xiiGALTexture> GetPickingDepthRT() const;
 
-  virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual void InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual xiiResult GetResourceDescriptions(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassResource* const> pInputs, xiiArrayPtr<xiiRenderPipelinePassResource> pOutputs) override;
+
+  virtual xiiResult InitializeRenderPipelinePass(const xiiView& view, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pInputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> pOutputs) override;
+
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
 
   virtual void ReadBackProperties(xiiView* pView) override;
 
+public:
   bool m_bPickSelected    = true;
   bool m_bPickTransparent = true;
 
@@ -40,17 +43,31 @@ private:
   void ReadBackPropertiesSinglePick(xiiView* pView);
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
+  void ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
+
 private:
   xiiRectFloat   m_TargetRect;
   const xiiRTTI* m_pGridRenderDataType = nullptr;
 
-  xiiGALTextureHandle     m_hPickingIdRT;
-  xiiGALTextureHandle     m_hPickingIdRTStaging;
-  xiiGALTextureHandle     m_hPickingDepthRT;
-  xiiGALTextureHandle     m_hPickingDepthRTStaging;
-  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  xiiSharedPtr<xiiGALTexture> m_pPickingIdRT;
+  xiiSharedPtr<xiiGALTexture> m_pPickingDepthRT;
 
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
+
+  struct PickingReadback
+  {
+    xiiUniquePtr<xiiGALTextureReadback> m_PickingReadback;
+    xiiUniquePtr<xiiGALTextureReadback> m_PickingDepthReadback;
+
+    bool      m_bReadbackInProgress = false;
+    xiiUInt32 m_uiWindowWidth       = 0U;
+    xiiUInt32 m_uiWindowHeight      = 0U;
+
+    /// we need this matrix to compute the world space position of picked pixels
+    xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
+  };
+
+  PickingReadback m_PendingReadback;
 
   /// we need this matrix to compute the world space position of picked pixels
   xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
@@ -60,4 +77,6 @@ private:
 
   /// Stores the 32 Bit picking ID values of each pixel. This can lead back to the xiiComponent, etc. that rendered to that pixel
   xiiDynamicArray<xiiUInt32> m_PickingResultsID;
+
+  xiiUInt32 m_uiProcessorId = xiiInvalidIndex;
 };

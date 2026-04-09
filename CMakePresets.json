@@ -7,13 +7,25 @@
     },
     "configurePresets": [
       {
+        "name": "vs2026x64",
+        "hidden": false,
+        "generator": "Visual Studio 18 2026",
+        "architecture": "x64",
+        "binaryDir": "${sourceDir}/Workspace/${presetName}",
+        "cacheVariables": {
+          "XII_BUILD_VULKAN": "ON",
+          "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
+          "XII_COMPILE_ENGINE_AS_DLL" : "ON"
+        },
+        "environment": {}
+      },
+      {
         "name": "vs2022x64",
         "hidden": false,
         "generator": "Visual Studio 17 2022",
         "architecture": "x64",
         "binaryDir": "${sourceDir}/Workspace/${presetName}",
         "cacheVariables": {
-          "XII_BUILD_D3D11": "ON",
           "XII_BUILD_VULKAN": "ON",
           "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
           "XII_COMPILE_ENGINE_AS_DLL" : "ON"
@@ -38,8 +50,8 @@
         "inherits" : ["linux-base"],
         "hidden": true,
         "cacheVariables": {
-          "CMAKE_CXX_COMPILER" : "clang++-19",
-          "CMAKE_C_COMPILER" : "clang-19"
+          "CMAKE_CXX_COMPILER" : "clang++",
+          "CMAKE_C_COMPILER" : "clang"
         }
       },
       {
@@ -49,76 +61,6 @@
         "cacheVariables": {
           "CMAKE_CXX_COMPILER" : "/usr/bin/g++",
           "CMAKE_C_COMPILER" : "/usr/bin/gcc"
-        }
-      },
-      {
-        "name": "android-base",
-        "hidden": true,
-        "generator": "Ninja",
-        "binaryDir": "${sourceDir}/Workspace/${presetName}",
-        "cacheVariables": {
-          "XII_BUILD_VULKAN": "ON",
-          "XII_BUILD_SAMPLES" : "ON",
-          "XII_ENABLE_QT_SUPPORT" : "OFF",
-          "ANDROID_PLATFORM" : "29",
-          "CMAKE_TOOLCHAIN_FILE" : "$env{ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake"
-        },
-        "environment": {}
-      },
-
-      {
-        "name": "android-arm64-debug",
-        "inherits" : ["android-base"],
-        "hidden" : false,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Debug",
-          "ANDROID_ABI": "arm64-v8a"
-        }
-      },
-      {
-        "name": "android-arm64-dev",
-        "inherits" : ["android-base"],
-        "hidden" : false,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Dev",
-          "ANDROID_ABI": "arm64-v8a"
-        }
-      },
-      {
-        "name": "android-arm64-shipping",
-        "inherits" : ["android-base"],
-        "hidden" : false,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Shipping",
-          "ANDROID_ABI": "arm64-v8a"
-        }
-      },
-
-      {
-        "name": "android-x64-debug",
-        "inherits" : ["android-base"],
-        "hidden" : false,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Debug",
-          "ANDROID_ABI": "x86_64"
-        }
-      },
-      {
-        "name": "android-x64-dev",
-        "inherits" : ["android-base"],
-        "hidden" : false,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Dev",
-          "ANDROID_ABI": "x86_64"
-        }
-      },
-      {
-        "name": "android-x64-shipping",
-        "inherits" : ["android-base"],
-        "hidden" : false,
-        "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Shipping",
-          "ANDROID_ABI": "x86_64"
         }
       },
 

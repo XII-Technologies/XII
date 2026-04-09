@@ -240,7 +240,9 @@ xiiQtProxy::xiiQtProxy()
 xiiQtProxy::~xiiQtProxy()
 {
   if (m_pAction != nullptr)
+  {
     xiiActionManager::GetActionDescriptor(m_pAction->GetDescriptorHandle())->DeleteAction(m_pAction);
+  }
 }
 
 void xiiQtProxy::SetAction(xiiAction* pAction)
@@ -322,13 +324,17 @@ void xiiQtButtonProxy::Update()
 
   auto pButton = static_cast<xiiButtonAction*>(m_pAction);
 
-  const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
-  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
+  const xiiActionDescriptor* pDescriptor = m_pAction->GetDescriptorHandle().GetDescriptor();
+  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDescriptor->m_sShortcut)));
 
-  const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
-  QString       sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
+  const QString    sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
+  QString          sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
+  xiiStringBuilder sDisplay         = xiiTranslate(pButton->GetName());
 
-  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
+  if (!pButton->GetAdditionalDisplayString().IsEmpty())
+  {
+    sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
+  }
 
   if (sTooltip.isEmpty())
   {
@@ -342,9 +348,6 @@ void xiiQtButtonProxy::Update()
     sTooltip.append(sDisplayShortcut);
     sTooltip.append(")");
   }
-
-  if (!pButton->GetAdditionalDisplayString().IsEmpty())
-    sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
   m_pQtAction->setText(xiiMakeQString(sDisplay));
@@ -514,16 +517,17 @@ void xiiQtDynamicActionAndMenuProxy::Update()
 
   auto pButton = static_cast<xiiDynamicActionAndMenuAction*>(m_pAction);
 
-  const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
-  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
+  const xiiActionDescriptor* pDescriptor = m_pAction->GetDescriptorHandle().GetDescriptor();
+  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDescriptor->m_sShortcut)));
 
-  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
+  const QString    sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
+  QString          sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
+  xiiStringBuilder sDisplay         = xiiTranslate(pButton->GetName());
 
   if (!pButton->GetAdditionalDisplayString().IsEmpty())
+  {
     sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
-
-  const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
-  QString       sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
+  }
 
   if (sTooltip.isEmpty())
   {

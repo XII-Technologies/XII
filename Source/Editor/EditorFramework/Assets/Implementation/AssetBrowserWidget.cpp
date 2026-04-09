@@ -1281,7 +1281,7 @@ void xiiQtAssetBrowserWidget::NewAsset()
   sNewAsset.MakeCleanPath();
 
   xiiDocument* pDoc;
-  if (pManager->CreateDocument(sAssetType, sNewAsset, pDoc, xiiDocumentFlags::Default).m_Result.Failed())
+  if (pManager->CreateDocument(sAssetType, sNewAsset, pDoc, xiiDocumentFlags::Default).Failed())
   {
     xiiLog::Error("Failed to create document: {}", sNewAsset);
     return;

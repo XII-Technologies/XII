@@ -50,9 +50,7 @@ DECLARE_CONSTANT_BUFFER(xiiGlobalConstants, 0, 0)
   FLOAT1(WorldTime);
 
   FLOAT1(Exposure);
-
   INT1(RenderPass);
-  UINT1(NumMsaaSamples);
 };
 
 #include "CameraConstantsAccess.h"

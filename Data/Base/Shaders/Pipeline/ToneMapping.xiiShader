@@ -1,0 +1,71 @@
+// XII Engine — ToneMapping.xiiShader  [NEW]
+// Pass 60: HDR → LDR tone mapping with multiple operator support + bloom composite.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer ToneMappingConstants : register(b3)
+{
+    uint  g_Operator;   // 0=ACES, 1=AgX, 2=Reinhard, 3=Uncharted2
+    float g_ExposureBias;
+    float g_BloomStrength;
+    float _pad;
+};
+
+Texture2D<float4>          g_HDRInput  : register(t0);
+Texture2D<float4>          g_BloomTex  : register(t1);
+StructuredBuffer<float>    g_Exposure  : register(t2); // [0]=exposure scalar
+RWTexture2D<float4>        g_LDROut    : register(u0);
+
+// ──────────────────────────────────────────────────────────────────────────────
+// ACES fitted (Krzysztof Narkowicz approximation)
+// ──────────────────────────────────────────────────────────────────────────────
+float3 ACES_Narkowicz(float3 x)
+{
+    const float a = 2.51f, b = 0.03f, c = 2.43f, d = 0.59f, e = 0.14f;
+    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+}
+
+// Reinhard
+float3 Reinhard(float3 x) { return x / (x + 1.0f); }
+
+// Uncharted 2 (Hable)
+float3 Hable(float3 x)
+{
+    float A=0.15f,B=0.50f,C=0.10f,D=0.20f,E=0.02f,F=0.30f;
+    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+float3 Uncharted2(float3 x)
+{
+    float3 curr = Hable(x * 2.0f);
+    float3 whiteScale = 1.0f / Hable(float3(11.2f,11.2f,11.2f));
+    return curr * whiteScale;
+}
+
+// sRGB gamma
+float3 LinearToSRGB(float3 c)
+{
+    return select(c < 0.0031308f, c * 12.92f, 1.055f * pow(saturate(c), 1.0f/2.4f) - 0.055f);
+}
+
+[numthreads(8, 8, 1)]
+void CS_ToneMapping(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_LDROut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
+    float3 hdr   = g_HDRInput.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float3 bloom = g_BloomTex.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+    float  exp   = g_Exposure[0] * pow(2.0f, g_ExposureBias);
+
+    hdr = (hdr + bloom * g_BloomStrength) * exp;
+
+    float3 ldr;
+    if      (g_Operator == 0u) ldr = ACES_Narkowicz(hdr);
+    else if (g_Operator == 1u) ldr = Reinhard(hdr);
+    else if (g_Operator == 2u) ldr = Uncharted2(hdr);
+    else                        ldr = ACES_Narkowicz(hdr); // default
+
+    g_LDROut[tid.xy] = float4(LinearToSRGB(saturate(ldr)), 1.0f);
+}

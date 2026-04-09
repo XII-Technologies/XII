@@ -5,11 +5,11 @@
 #if XII_ENABLED(XII_USE_GUARDED_ALLOCATIONS)
 using DefaultHeapType        = xiiGuardedAllocator;
 using DefaultAlignedHeapType = xiiGuardedAllocator;
-using DefaultStaticHeapType  = xiiAllocator<xiiMemoryPolicies::xiiGuardedAllocation, xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks>;
+using DefaultStaticHeapType  = xiiAllocatorWithPolicy<xiiAllocationPolicyGuarding, xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks>;
 #else
 using DefaultHeapType        = xiiHeapAllocator;
 using DefaultAlignedHeapType = xiiAlignedHeapAllocator;
-using DefaultStaticHeapType  = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks>;
+using DefaultStaticHeapType  = xiiAllocatorWithPolicy<xiiAllocationPolicyHeap, xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks>;
 #endif
 
 static constexpr xiiUInt32 HEAP_ALLOCATOR_BUFFER_SIZE    = sizeof(DefaultHeapType);
@@ -20,9 +20,9 @@ alignas(XII_ALIGNMENT_MINIMUM) static xiiUInt8 s_StaticAllocatorBuffer[HEAP_ALLO
 
 alignas(XII_ALIGNMENT_MINIMUM) static xiiUInt8 s_AlignedAllocatorBuffer[ALIGNED_ALLOCATOR_BUFFER_SIZE];
 
-bool              xiiFoundation::s_bIsInitialized    = false;
-xiiAllocatorBase* xiiFoundation::s_pDefaultAllocator = nullptr;
-xiiAllocatorBase* xiiFoundation::s_pAlignedAllocator = nullptr;
+bool          xiiFoundation::s_bIsInitialized    = false;
+xiiAllocator* xiiFoundation::s_pDefaultAllocator = nullptr;
+xiiAllocator* xiiFoundation::s_pAlignedAllocator = nullptr;
 
 void xiiFoundation::Initialize()
 {
@@ -47,12 +47,12 @@ void xiiFoundation::Initialize()
 }
 
 #if defined(XII_CUSTOM_STATIC_ALLOCATOR_FUNC)
-extern xiiAllocatorBase* XII_CUSTOM_STATIC_ALLOCATOR_FUNC();
+extern xiiAllocator* XII_CUSTOM_STATIC_ALLOCATOR_FUNC();
 #endif
 
-xiiAllocatorBase* xiiFoundation::GetStaticAllocator()
+xiiAllocator* xiiFoundation::GetStaticAllocator()
 {
-  static xiiAllocatorBase* pStaticAllocator = nullptr;
+  static xiiAllocator* pStaticAllocator = nullptr;
 
   if (pStaticAllocator == nullptr)
   {
@@ -61,7 +61,7 @@ xiiAllocatorBase* xiiFoundation::GetStaticAllocator()
 #  if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
 
 #    if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    using GetStaticAllocatorFunc = xiiAllocatorBase* (*)();
+    using GetStaticAllocatorFunc = xiiAllocator* (*)();
 
     HMODULE                hThisModule = GetModuleHandle(nullptr);
     GetStaticAllocatorFunc func        = (GetStaticAllocatorFunc)GetProcAddress(hThisModule, XII_CUSTOM_STATIC_ALLOCATOR_FUNC);

@@ -78,10 +78,27 @@
   - all:
       - changed-files:
           - any-glob-to-any-file: [
-              "Source/BuildSystem",
+              "Source/BuildSystem/**",
               "**/CMakeLists.txt",
               "**/init.cmake",
-              "**/finalize.cmake"
+              "**/finalize.cmake",
+              "CMakeLists.txt",
+              "CMakePresets.json",
+              "CMakeSettings.json",
+              "xiiCMakeConfig.cmake",
+              "Generate.ps1",
+              "Generate.sh",
+              "GenerateWin64vs2022.bat",
+              "cgmanifest.json",
+              "version.txt",
+              "launch.vs.json",
+            ]
+
+"Area: Editor":
+  - all:
+      - changed-files:
+          - any-glob-to-any-file: [
+              "Source/Editor/**",
             ]
 
 "GitHub":

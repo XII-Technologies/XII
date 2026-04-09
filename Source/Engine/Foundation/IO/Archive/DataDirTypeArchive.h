@@ -109,8 +109,6 @@ namespace xiiDataDirectory
 #endif
 
 #ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-  /// \brief Allows reading of zip / apk containers.
-  /// Needed to allow Android to read data from the apk.
   class XII_FOUNDATION_DLL ArchiveReaderZip : public ArchiveReaderUncompressed
   {
     XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderZip);

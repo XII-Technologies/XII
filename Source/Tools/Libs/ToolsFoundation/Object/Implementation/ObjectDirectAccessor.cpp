@@ -3,6 +3,9 @@
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 #include <ToolsFoundation/Object/ObjectDirectAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectDirectAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiObjectDirectAccessor::xiiObjectDirectAccessor(xiiDocumentObjectManager* pManager) :
   xiiObjectAccessorBase(pManager), m_pManager(pManager)
 {
@@ -18,7 +21,7 @@ xiiStatus xiiObjectDirectAccessor::GetValue(const xiiDocumentObject* pObject, co
   if (pProp == nullptr)
     return xiiStatus("Property is null.");
 
-  xiiStatus res;
+  xiiStatus res(XII_SUCCESS);
   out_value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), index, &res);
   return res;
 }
@@ -58,7 +61,7 @@ xiiStatus xiiObjectDirectAccessor::MoveValue(const xiiDocumentObject* pObject, c
 xiiStatus xiiObjectDirectAccessor::GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiInt32& out_iCount)
 {
   out_iCount = pObject->GetTypeAccessor().GetCount(pProp->GetPropertyName());
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiObjectDirectAccessor::AddObject(const xiiDocumentObject* pParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid)
@@ -73,7 +76,7 @@ xiiStatus xiiObjectDirectAccessor::AddObject(const xiiDocumentObject* pParent, c
 
   xiiDocumentObject* pObj = m_pManager->CreateObject(pType, inout_objectGuid);
   m_pManager->AddObject(pObj, pPar, pParentProp->GetPropertyName(), index);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiObjectDirectAccessor::RemoveObject(const xiiDocumentObject* pObject)
@@ -83,7 +86,7 @@ xiiStatus xiiObjectDirectAccessor::RemoveObject(const xiiDocumentObject* pObject
   xiiDocumentObject* pObj = m_pManager->GetObject(pObject->GetGuid());
   XII_ASSERT_DEBUG(pObj, "Object is not part of this document manager.");
   m_pManager->RemoveObject(pObj);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiObjectDirectAccessor::MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const xiiAbstractProperty* pParentProp, const xiiVariant& index)
@@ -96,7 +99,7 @@ xiiStatus xiiObjectDirectAccessor::MoveObject(const xiiDocumentObject* pObject, 
   XII_ASSERT_DEBUG(pPar, "Parent is not part of this document manager.");
 
   m_pManager->MoveObject(pObj, pPar, pParentProp->GetPropertyName(), index);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiObjectDirectAccessor::GetKeys(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiDynamicArray<xiiVariant>& out_keys)

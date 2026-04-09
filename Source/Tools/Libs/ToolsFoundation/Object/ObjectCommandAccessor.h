@@ -7,6 +7,8 @@ class xiiCommandHistory;
 
 class XII_TOOLSFOUNDATION_DLL xiiObjectCommandAccessor : public xiiObjectDirectAccessor
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiObjectCommandAccessor, xiiObjectDirectAccessor);
+
 public:
   xiiObjectCommandAccessor(xiiCommandHistory* pHistory);
 

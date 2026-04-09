@@ -16,8 +16,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALDeviceFeatureState> m_SeparablePrograms                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports separable shader programs.
-  xiiEnum<xiiGALDeviceFeatureState> m_ShaderResourceQueries              = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports resource queries from shader objects.
   xiiEnum<xiiGALDeviceFeatureState> m_WireframeFill                      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports wireframe fill mode.
   xiiEnum<xiiGALDeviceFeatureState> m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports multithreaded resource creation.
   xiiEnum<xiiGALDeviceFeatureState> m_ComputeShaders                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports compute shaders.
@@ -60,6 +58,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_NativeMultiDraw                    = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports a dedicated command that can be used to issue multiple draw calls with a single command (e.g. vkCmdDrawMultiExt).
   xiiEnum<xiiGALDeviceFeatureState> m_AsynchronousShaderCompilation      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports asynchronous shader compilation.
   xiiEnum<xiiGALDeviceFeatureState> m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports SV_RenderTargetArrayIndex semantic in the vertex shader.
+  xiiEnum<xiiGALDeviceFeatureState> m_DepthStencilResolve                = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports depth/stencil resolve operations.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalMemory                     = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared memory across multiple devices or APIs.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalSemaphore                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared semaphores across multiple devices or APIs.
+  xiiEnum<xiiGALDeviceFeatureState> m_ExternalFence                      = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports shared fences across multiple devices or APIs.
 };
 
 /// \brief This describes the optimized depth-stencil clear value.
@@ -77,21 +79,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALResourceFormat> m_ResourceFormat = xiiGALResourceFormat::Unknown; ///< Texture format.
-  xiiColor                      m_ClearColor     = xiiColor::Black;               ///< Render target clear value.
+  xiiColor                      m_ClearColour    = xiiColor::Black;               ///< Render target clear value.
   xiiGALDepthStencilClearValue  m_DepthStencil;                                   ///< Depth stencil clear value.
-};
-
-/// \brief This describes the display mode attributes.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALDisplayModeDescription : public xiiHashableStruct<xiiGALDisplayModeDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiSizeU32                    m_Resolution               = xiiSizeU32(0U, 0U);               ///< Display resolution.
-  xiiEnum<xiiGALResourceFormat> m_ResourceFormat           = xiiGALResourceFormat::Unknown;    ///< Display format.
-  xiiUInt32                     m_uiRefreshRateNumerator   = 0U;                               ///< Refresh rate numerator.
-  xiiUInt32                     m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
-  xiiEnum<xiiGALScalingMode>    m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
-  xiiEnum<xiiGALScanLineOrder>  m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
 };
 
 /// \brief This describes the swap chain creation description.
@@ -100,7 +89,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   XII_DECLARE_POD_TYPE();
 
   xiiWindowBase*                         m_pWindow           = nullptr;                                    ///< Pointer to the window class.
-  xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                         ///< Swap chain resolution.
   xiiEnum<xiiGALResourceFormat>          m_ColorBufferFormat = xiiGALResourceFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
   xiiBitflags<xiiGALSwapChainUsageFlags> m_UsageFlags        = xiiGALSwapChainUsageFlags::RenderTarget;    ///< Swap chain usage flags.
   xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;            ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
@@ -109,18 +97,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   xiiUInt32 m_uiBufferCount         = 2U;                                                                  ///< The number of buffers in the swap chain.
   float     m_fDefaultDepthValue    = 1.0f;                                                                ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                  ///< Default stencil value, which is used as the optimized clear value in D3D12.
-};
-
-/// \brief This describes the full screen mode description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALFullScreenModeDescription : public xiiHashableStruct<xiiGALFullScreenModeDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  bool                         m_bIsFullScreen            = false;                            ///< Specifies whether the swap chain is in full screen mode.
-  xiiUInt32                    m_uiRefreshRateNumerator   = 0U;                               ///< Refresh rate numerator.
-  xiiUInt32                    m_uiRefreshRateDenominator = 0U;                               ///< Refresh rate denominator.
-  xiiEnum<xiiGALScalingMode>   m_ScalingMode              = xiiGALScalingMode::Unspecified;   ///< The scaling mode.
-  xiiEnum<xiiGALScanLineOrder> m_ScanLineOrder            = xiiGALScanLineOrder::Unspecified; ///< The scanline drawing mode.
 };
 
 /// \brief This describes the texture properties.
@@ -222,30 +198,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputeShaderProperties : public xiiHash
   xiiUInt32 m_uiMaxThreadGroupCountZ = 0U; ///< The maximum number of thread groups that can be dispatched in Z dimension.
 };
 
-/// \brief This describes the normalized device coordinates attribute.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALNormalizedDeviceCoordinates : public xiiHashableStruct<xiiGALNormalizedDeviceCoordinates>
-{
-  XII_DECLARE_POD_TYPE();
-
-  float m_fMinZ          = 0.0f;
-  float m_fZToDepthScale = 0.0f;
-  float m_fYToVScale     = 0.0f;
-
-  /// \brief Returns ZtoDepthBias such that given NDC z coordinate, depth value can be computed as d = z * ZtoDepthScale + ZtoDepthBias.
-  XII_ALWAYS_INLINE constexpr float GetZtoDepthBias() const { return -m_fMinZ * m_fZToDepthScale; };
-};
-
 /// \brief This describes the graphics device creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHashableStruct<xiiGALDeviceCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALGraphicsDeviceType>    m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Undefined;
-  xiiEnum<xiiGALDeviceAdapterType>     m_AdapterType        = xiiGALDeviceAdapterType::Unknown;
   xiiEnum<xiiGALDeviceValidationLevel> m_ValidationLevel    = xiiGALDeviceValidationLevel::Standard;
   xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;
   xiiGALDeviceFeatures                 m_DeviceFeatures;
-  xiiGALNormalizedDeviceCoordinates    m_DeviceNormalizedCoordinates;
 };
 
 /// \brief This describes the device memory properties.
@@ -271,17 +232,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
 };
 
 /// \brief This describes the shading rate properties.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties
 {
-  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                    ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;      ///< Shading rate capability flags.
-  xiiBitflags<xiiGALShadingRateCombinerFlags>                     m_CombinerFlags              = xiiGALShadingRateCombinerFlags::PassThrough; ///< Combination of all supported shading rate combiners.
-  xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;            ///< Indicates which shading rate texture format is used by this device.
-  xiiEnum<xiiGALShadingRateTextureAccess>                         m_TextureAccess              = xiiGALShadingRateTextureAccess::Unknown;     ///< Shading rate texture access type.
-  xiiBitflags<xiiGALBindFlags>                                    m_BindFlags                  = xiiGALBindFlags::None;                       ///< Indicates which bind flags are allowed for shading rate texture.
-  xiiSizeU32                                                      m_MinTileSize                = xiiSizeU32(0U, 0U);                          ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
-  xiiSizeU32                                                      m_MaxTileSize                = xiiSizeU32(0U, 0U);                          ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
-  xiiUInt32                                                       m_uiMaxSubSampledArraySlices = 0U;                                          ///< Maximum size of the texture array created with texture subsampled flag.
+  xiiHybridArray<xiiGALShadingRateMode, 2U>     m_Modes;                                                                    ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiBitflags<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;      ///< Shading rate capability flags.
+  xiiBitflags<xiiGALShadingRateCombinerFlags>   m_CombinerFlags              = xiiGALShadingRateCombinerFlags::PassThrough; ///< Combination of all supported shading rate combiners.
+  xiiEnum<xiiGALShadingRateFormat>              m_Format                     = xiiGALShadingRateFormat::Unknown;            ///< Indicates which shading rate texture format is used by this device.
+  xiiEnum<xiiGALShadingRateTextureAccess>       m_TextureAccess              = xiiGALShadingRateTextureAccess::Unknown;     ///< Shading rate texture access type.
+  xiiBitflags<xiiGALBindFlags>                  m_BindFlags                  = xiiGALBindFlags::None;                       ///< Indicates which bind flags are allowed for shading rate texture.
+  xiiSizeU32                                    m_MinTileSize                = xiiSizeU32(0U, 0U);                          ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
+  xiiSizeU32                                    m_MaxTileSize                = xiiSizeU32(0U, 0U);                          ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
+  xiiUInt32                                     m_uiMaxSubSampledArraySlices = 0U;                                          ///< Maximum size of the texture array created with texture subsampled flag.
 };
 
 /// \brief This describes the draw command properties.
@@ -311,33 +272,72 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiBitflags<xiiGALCommandQueueType> m_Type                       = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                           m_uiMaxDeviceContexts        = 0U;                              ///< The maximum number of command queues that may be created for this queue.
-  xiiUInt32                           m_TextureCopyGranularity[3U] = {};                              ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+  xiiBitflags<xiiGALCommandQueueFlags> m_Flags                      = xiiGALCommandQueueFlags::None; ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                            m_uiMaxDeviceContexts        = 0U;                            ///< The maximum number of command queues that may be created for this queue.
+  xiiUInt32                            m_TextureCopyGranularity[3U] = {};                            ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
-/// \brief This describes the graphics device adapter properties.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceAdapterDescription : public xiiHashableStruct<xiiGALGraphicsDeviceAdapterDescription>
+/// \brief Describes the resource and feature‐limits exposed the device.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceLimits : public xiiHashableStruct<xiiGALDeviceLimits>
 {
-  xiiString                                                                     m_sAdapterName;                                              ///< A string that contains the adapter description.
-  xiiEnum<xiiGALDeviceAdapterType>                                              m_Type               = xiiGALDeviceAdapterType::Unknown;     ///< Adapter type.
-  xiiEnum<xiiGALGraphicsAdapterVendor>                                          m_Vendor             = xiiGALGraphicsAdapterVendor::Unknown; ///< Adapter vendor.
-  xiiUInt32                                                                     m_uiVendorID         = 0U;                                   ///< The PCI ID of the hardware vendor (if available).
-  xiiUInt32                                                                     m_uiDeviceID         = 0U;                                   ///< The PCI ID of the hardware device (if available).
-  xiiUInt32                                                                     m_uiVideoOutputCount = 0U;                                   ///< Number of video outputs this adapter has (if available).
-  xiiGALDeviceMemoryProperties                                                  m_MemoryProperties;                                          ///< Device memory information.
-  xiiGALRayTracingProperties                                                    m_RayTracingProperties;                                      ///< Ray tracing properties.
-  xiiGALWaveOperationProperties                                                 m_WaveOperationProperties;                                   ///< Wave operation properties.
-  xiiGALBufferProperties                                                        m_BufferProperties;                                          ///< Buffer properties.
-  xiiGALTextureProperties                                                       m_TextureProperties;                                         ///< Texture properties.
-  xiiGALSamplerProperties                                                       m_SamplerProperties;                                         ///< Sampler properties.
-  xiiGALMeshShaderProperties                                                    m_MeshShaderProperties;                                      ///< Mesh shader properties.
-  xiiGALShadingRateProperties                                                   m_ShadingRateProperties;                                     ///< Shading rate properties.
-  xiiGALComputeShaderProperties                                                 m_ComputeShaderProperties;                                   ///< Compute shader properties.
-  xiiGALDrawCommandProperties                                                   m_DrawCommandProperties;                                     ///< Draw command properties.
-  xiiGALSparseResourceProperties                                                m_SparseResourceProperties;                                  ///< Sparse resource properties.
-  xiiGALDeviceFeatures                                                          m_Features;                                                  ///< Supported device features.
-  xiiStaticArray<xiiGALCommandQueueProperties, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_CommandQueueProperties;                                    ///< An array of NumQueues command queues supported by this device.
+  xiiUInt32 m_uiMaxConstantBuffers    = 0U; ///< Maximum number of constant (uniform) buffers that can be bound at once.
+  xiiUInt32 m_uiMaxVertexBuffers      = 0U; ///< Maximum number of vertex buffers that can be bound at once.
+  xiiUInt32 m_uiMaxSamplers           = 0U; ///< Maximum number of samplers that can be bound at once.
+  xiiUInt32 m_uiMaxRenderTargets      = 0U; ///< Maximum number of color attachments (render targets) supported.
+  xiiUInt32 m_uiMaxViewports          = 0U; ///< Maximum number of viewports that can be set in a single draw call.
+  xiiUInt32 m_uiMaxShadingRateCombos  = 0U; ///< Number of variable‐rate shading combinations supported.
+  xiiUInt32 m_uiShadingRateXShift     = 0U; ///< Bit shift for extracting the X‐axis rate from a combined shading‐rate enum.
+  xiiUInt32 m_uiMaxResourceSignatures = 0U; ///< Maximum number of descriptor‐set layouts (or root‐signature slots) per pipeline.
+
+  //-------------------------------------------------------------------------
+  // Descriptor‐set / buffer size limits
+  //-------------------------------------------------------------------------
+
+  xiiUInt32 m_uiMaxPushConstantsSize     = 0U; ///< Maximum push‐constant size (in bytes).
+  xiiUInt32 m_uiMaxUniformBufferRange    = 0U; ///< Maximum uniform buffer size (in bytes).
+  xiiUInt32 m_uiMaxStorageBufferRange    = 0U; ///< Maximum storage buffer size (in bytes).
+  xiiUInt32 m_uiMaxSampledImages         = 0U; ///< Maximum number of sampled images per descriptor set.
+  xiiUInt32 m_uiMaxStorageImages         = 0U; ///< Maximum number of storage images per descriptor set.
+  xiiUInt32 m_uiMaxStorageBuffers        = 0U; ///< Maximum number of storage buffers per descriptor set.
+  xiiUInt32 m_uiMaxCombinedImageSamplers = 0U; ///< Maximum number of combined image+sampler descriptors.
+
+  //-------------------------------------------------------------------------
+  // Compute shader limits
+  //-------------------------------------------------------------------------
+
+  xiiUInt32 m_uiMaxComputeWorkGroupInvocations = 0U; ///< Maximum total invocations in a single compute workgroup.
+  xiiUInt32 m_uiMaxComputeWorkGroupSizeX       = 0U; ///< Maximum size of a compute workgroup in the X dimension.
+  xiiUInt32 m_uiMaxComputeWorkGroupSizeY       = 0U; ///< Maximum size of a compute workgroup in the Y dimension.
+  xiiUInt32 m_uiMaxComputeWorkGroupSizeZ       = 0U; ///< Maximum size of a compute workgroup in the Z dimension.
+  xiiUInt32 m_uiMaxComputeSharedMemorySize     = 0U; ///< Maximum shared memory size (in bytes) available to a compute workgroup.
+};
+
+/// \brief Describes the properties and capabilities of a graphics device adapter.
+///
+/// This struct provides detailed information about a physical graphics adapter, including its vendor identity, hardware features, and supported limits.
+/// Populated during adapter enumeration by the backend API (e.g., Vulkan or D3D12).
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceAdapterDescription
+{
+  xiiString                                        m_sAdapterName;                                              ///< Human-readable name of the adapter (e.g., "NVIDIA GeForce RTX 5090").
+  xiiEnum<xiiGALDeviceAdapterType>                 m_Type               = xiiGALDeviceAdapterType::Unknown;     ///< High-level type of the adapter (e.g., discrete, integrated, virtual).
+  xiiEnum<xiiGALGraphicsAdapterVendor>             m_Vendor             = xiiGALGraphicsAdapterVendor::Unknown; ///< Hardware vendor classification (e.g., NVIDIA, AMD, Intel).
+  xiiUInt32                                        m_uiVendorID         = 0U;                                   ///< PCI vendor identifier (e.g., 0x10DE for NVIDIA).
+  xiiUInt32                                        m_uiDeviceID         = 0U;                                   ///< PCI device identifier (specific to the GPU model).
+  xiiUInt32                                        m_uiVideoOutputCount = 0U;                                   ///< Number of available video outputs connected to the adapter.
+  xiiGALDeviceMemoryProperties                     m_MemoryProperties;                                          ///< Device-local memory capacity and heap organization.
+  xiiGALRayTracingProperties                       m_RayTracingProperties;                                      ///< Ray tracing hardware capabilities (acceleration structures, shader support).
+  xiiGALWaveOperationProperties                    m_WaveOperationProperties;                                   ///< Wave-level execution properties (e.g., wave size, lane counts).
+  xiiGALBufferProperties                           m_BufferProperties;                                          ///< Buffer-related capabilities (alignment, max sizes, usage flags).
+  xiiGALTextureProperties                          m_TextureProperties;                                         ///< Texture support details (dimensionality, sample counts, formats).
+  xiiGALSamplerProperties                          m_SamplerProperties;                                         ///< Sampler configuration limits (filtering modes, address modes).
+  xiiGALMeshShaderProperties                       m_MeshShaderProperties;                                      ///< Mesh shader capabilities and pipeline limits.
+  xiiGALShadingRateProperties                      m_ShadingRateProperties;                                     ///< Variable-rate shading granularity and compatibility info.
+  xiiGALComputeShaderProperties                    m_ComputeShaderProperties;                                   ///< Compute shader configuration limits (workgroup size, shared memory).
+  xiiGALDrawCommandProperties                      m_DrawCommandProperties;                                     ///< Draw command constraints (indirect count, multi-viewport support).
+  xiiGALSparseResourceProperties                   m_SparseResourceProperties;                                  ///< Sparse resource support flags (residency, binding granularity).
+  xiiGALDeviceFeatures                             m_Features;                                                  ///< Indicates which optional GPU features are supported (e.g., dynamic rendering, descriptor indexing).
+  xiiGALDeviceLimits                               m_DeviceLimits;                                              ///< Resource binding and execution limits shared across pipeline stages. This includes descriptor count limits, push constant ranges, and compute workgroup parameters.
+  xiiHybridArray<xiiGALCommandQueueProperties, 3U> m_CommandQueueProperties;                                    ///< List of command queue families and their properties (e.g., graphics, compute, transfer). Each entry describes the capabilities and priorities of a queue family available on this adapter.
 };
 
 /// \brief This describes the graphics abstraction layer device events.
@@ -364,4 +364,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
 
   /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
   XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALResourceFormatComponentType::Compressed ? m_uiComponentCount : 1); };
+};
+
+/// \brief This describes the external memory description.
+///
+/// Used to import external memory handles into the graphics device. This is useful for interop scenarios where memory is shared between different APIs or processes.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryDescription : public xiiHashableStruct<xiiGALExternalMemoryDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiBitflags<xiiGALExternalMemoryKind>  m_Type                    = xiiGALExternalMemoryKind::None;  ///< The type of external memory handle.
+  xiiBitflags<xiiGALExternalMemoryFlags> m_Flags                   = xiiGALExternalMemoryFlags::None; ///< The usage flags for the external memory.
+  xiiUInt64                              m_uiNativeHandle          = 0U;                              ///< Native external memory handle (e.g., HANDLE on Windows, file descriptor on Linux).
+  xiiUInt64                              m_uiSize                  = 0U;                              ///< Size of the external memory in bytes.
+  xiiUInt64                              m_uiProcessId             = 0U;                              ///< Process ID of the process that created the external memory handle. This is used for cross-process memory sharing.
+  xiiUInt32                              m_uiMemoryTypeIndex       = 0U;                              ///< Memory type index that is compatible with the external memory handle. This is used to ensure that the imported memory can be used with the graphics device.
+  xiiUInt64                              m_uiNativeSemaphoreHandle = 0U;                              ///< Native external semaphore handle (e.g., HANDLE on Windows, file descriptor on Linux). Used when importing semaphores for synchronization.
 };

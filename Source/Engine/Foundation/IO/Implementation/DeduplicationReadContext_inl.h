@@ -8,7 +8,7 @@ XII_ALWAYS_INLINE xiiResult xiiDeduplicationReadContext::ReadObjectInplace(xiiSt
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, T& obj, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, T& obj, xiiAllocator* pAllocator)
 {
   bool bIsRealObject;
   stream >> bIsRealObject;
@@ -23,7 +23,7 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& stream, T& ob
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, T*& ref_pObject, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, T*& ref_pObject, xiiAllocator* pAllocator)
 {
   bool bIsRealObject;
   ref_stream >> bIsRealObject;
@@ -58,7 +58,7 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, T
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, xiiSharedPtr<T>& ref_pObject, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, xiiSharedPtr<T>& ref_pObject, xiiAllocator* pAllocator)
 {
   T* ptr = nullptr;
   if (ReadObject(ref_stream, ptr, pAllocator).Succeeded())
@@ -70,7 +70,7 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, x
 }
 
 template <typename T>
-xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, xiiUniquePtr<T>& ref_pObject, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, xiiUniquePtr<T>& ref_pObject, xiiAllocator* pAllocator)
 {
   T* ptr = nullptr;
   if (ReadObject(ref_stream, ptr, pAllocator).Succeeded())
@@ -82,7 +82,7 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, x
 }
 
 template <typename ArrayType, typename ValueType>
-xiiResult xiiDeduplicationReadContext::ReadArray(xiiStreamReader& ref_stream, xiiArrayBase<ValueType, ArrayType>& ref_array, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadArray(xiiStreamReader& ref_stream, xiiArrayBase<ValueType, ArrayType>& ref_array, xiiAllocator* pAllocator)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ref_stream.ReadQWordValue(&uiCount));
@@ -105,7 +105,7 @@ xiiResult xiiDeduplicationReadContext::ReadArray(xiiStreamReader& ref_stream, xi
 }
 
 template <typename KeyType, typename Comparer>
-xiiResult xiiDeduplicationReadContext::ReadSet(xiiStreamReader& ref_stream, xiiSetBase<KeyType, Comparer>& ref_set, xiiAllocatorBase* pAllocator)
+xiiResult xiiDeduplicationReadContext::ReadSet(xiiStreamReader& ref_stream, xiiSetBase<KeyType, Comparer>& ref_set, xiiAllocator* pAllocator)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ref_stream.ReadQWordValue(&uiCount));
@@ -147,7 +147,7 @@ namespace xiiInternal
 } // namespace xiiInternal
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& ref_stream, xiiMapBase<KeyType, ValueType, Comparer>& ref_map, ReadMapMode mode, xiiAllocatorBase* pKeyAllocator, xiiAllocatorBase* pValueAllocator)
+xiiResult xiiDeduplicationReadContext::ReadMap(xiiStreamReader& ref_stream, xiiMapBase<KeyType, ValueType, Comparer>& ref_map, ReadMapMode mode, xiiAllocator* pKeyAllocator, xiiAllocator* pValueAllocator)
 {
   xiiUInt64 uiCount = 0;
   XII_SUCCEED_OR_RETURN(ref_stream.ReadQWordValue(&uiCount));

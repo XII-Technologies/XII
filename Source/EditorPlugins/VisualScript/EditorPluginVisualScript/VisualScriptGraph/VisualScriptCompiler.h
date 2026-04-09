@@ -5,7 +5,7 @@
 class xiiVisualScriptCompiler
 {
 public:
-  xiiVisualScriptCompiler();
+  xiiVisualScriptCompiler(xiiVisualScriptNodeManager& ref_nodeManager);
   ~xiiVisualScriptCompiler();
 
   void InitModule(xiiStringView sBaseClassName, xiiStringView sScriptClassName);
@@ -36,33 +36,60 @@ public:
     xiiVisualScriptDataDescription     m_InstanceDataDesc;
     xiiVisualScriptInstanceDataMapping m_InstanceDataMapping;
 
-    xiiVisualScriptDataDescription m_ConstantDataDesc;
-    xiiVisualScriptDataStorage     m_ConstantDataStorage;
+    xiiVisualScriptDataDescription      m_ConstantDataDesc;
+    xiiVisualScriptDataStorage          m_ConstantDataStorage;
+    xiiHashTable<xiiVariant, xiiUInt32> m_ConstantDataToIndex;
   };
 
   const CompiledModule& GetCompiledModule() const { return m_Module; }
 
+  using DataOffset = xiiVisualScriptDataDescription::DataOffset;
   struct AstNode;
+
+  struct ExecInput
+  {
+    XII_DECLARE_POD_TYPE();
+
+    AstNode*  m_pSourceNode      = nullptr;
+    xiiUInt32 m_uiSourcePinIndex = 0;
+#if XII_ENABLED(XII_PLATFORM_64BIT)
+    xiiUInt32 m_uiPadding = 0;
+#endif
+  };
+
+  struct ExecOutput
+  {
+    XII_DECLARE_POD_TYPE();
+
+    AstNode* m_pTargetNode = nullptr;
+  };
 
   struct DataInput
   {
     XII_DECLARE_POD_TYPE();
 
-    AstNode*                         m_pSourceNode      = nullptr;
-    xiiUInt32                        m_uiId             = 0;
-    xiiUInt8                         m_uiSourcePinIndex = 0;
-    xiiEnum<xiiVisualScriptDataType> m_DataType;
+    AstNode*   m_pSourceNode      = nullptr;
+    xiiUInt32  m_uiSourcePinIndex = 0;
+    DataOffset m_DataOffset;
+
+    XII_ALWAYS_INLINE bool IsConnected() const { return m_pSourceNode != nullptr; }
+    XII_ALWAYS_INLINE bool IsConnectedAndLocal() const { return IsConnected() && m_DataOffset.GetSource() == DataOffset::Source::Local; }
   };
 
   struct DataOutput
   {
-    xiiSmallArray<AstNode*, 3>       m_TargetNodes;
-    xiiUInt32                        m_uiId = 0;
-    xiiEnum<xiiVisualScriptDataType> m_DataType;
+    XII_DECLARE_POD_TYPE();
+
+    DataOffset m_DataOffset;
+
+    XII_ALWAYS_INLINE bool IsValid() const { return m_DataOffset.IsValid(); }
+    XII_ALWAYS_INLINE bool IsValidAndLocal() const { return IsValid() && m_DataOffset.GetSource() == DataOffset::Source::Local; }
   };
 
   struct AstNode
   {
+    const xiiDocumentObject* m_pObject = nullptr;
+
     xiiEnum<xiiVisualScriptNodeDescription::Type> m_Type;
     xiiEnum<xiiVisualScriptDataType>              m_DeductedDataType;
     bool                                          m_bImplicitExecution = false;
@@ -70,9 +97,10 @@ public:
     xiiHashedString m_sTargetTypeName;
     xiiVariant      m_Value;
 
-    xiiSmallArray<AstNode*, 4>   m_Next;
-    xiiSmallArray<DataInput, 5>  m_Inputs;
-    xiiSmallArray<DataOutput, 2> m_Outputs;
+    xiiSmallArray<ExecInput, 2>  m_ExecInputs;
+    xiiSmallArray<ExecOutput, 2> m_ExecOutputs;
+    xiiSmallArray<DataInput, 7>  m_DataInputs;
+    xiiSmallArray<DataOutput, 4> m_DataOutputs;
   };
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
@@ -80,117 +108,118 @@ public:
 #endif
 
 private:
-  using DataOffset = xiiVisualScriptDataDescription::DataOffset;
-
   XII_ALWAYS_INLINE static xiiStringView GetNiceTypeName(const xiiDocumentObject* pObject)
   {
     return xiiVisualScriptNodeManager::GetNiceTypeName(pObject);
   }
 
-  XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetDeductedType(const xiiDocumentObject* pObject) const
-  {
-    return m_pManager->GetDeductedType(pObject);
-  }
-
-  xiiUInt32                  GetPinId(const xiiVisualScriptPin* pPin);
-  DataOutput&                GetDataOutput(const DataInput& dataInput);
+  // Ast node creation
   AstNode&                   CreateAstNode(xiiVisualScriptNodeDescription::Type::Enum type, xiiVisualScriptDataType::Enum deductedDataType = xiiVisualScriptDataType::Invalid, bool bImplicitExecution = false);
   XII_ALWAYS_INLINE AstNode& CreateAstNode(xiiVisualScriptNodeDescription::Type::Enum type, bool bImplicitExecution)
   {
     return CreateAstNode(type, xiiVisualScriptDataType::Invalid, bImplicitExecution);
   }
 
-  void AddDataInput(AstNode& node, AstNode* pSourceNode, xiiUInt8 uiSourcePinIndex, xiiVisualScriptDataType::Enum dataType);
-  void AddDataOutput(AstNode& node, xiiVisualScriptDataType::Enum dataType);
+  AstNode&  CreateJumpNode(AstNode* pTargetNode);
+  AstNode*  CreateAstNodeFromObject(const xiiDocumentObject* pObject, const xiiVisualScriptNodeRegistry::NodeDesc* pNodeDesc, const xiiDocumentObject* pEntryObject, bool bImplicitOnly = false);
+  DataInput GetOrCreateDefaultPointerNode(const AstNode& node, const xiiRTTI* pRtti);
 
-  struct DefaultInput
-  {
-    AstNode* m_pSourceNode      = nullptr;
-    xiiUInt8 m_uiSourcePinIndex = 0;
-  };
+  void MarkAsCoroutine(AstNode* pEntryAstNode);
 
-  DefaultInput GetDefaultPointerInput(const xiiRTTI* pDataType);
-  AstNode*     CreateConstantNode(const xiiVariant& value);
-  AstNode*     CreateJumpNode(AstNode* pTargetNode);
+  // Pins, inputs and outputs
+  void        AddConstantDataInput(AstNode& node, const xiiVariant& value);
+  xiiResult   AddConstantDataInput(AstNode& node, const xiiDocumentObject* pObject, const xiiVisualScriptPin* pPin, xiiVisualScriptDataType::Enum dataType);
+  void        AddDataInput(AstNode& node, AstNode* pSourceNode, xiiUInt32 uiSourcePinIndex, xiiVisualScriptDataType::Enum dataType);
+  void        AddDataOutput(AstNode& node, xiiVisualScriptDataType::Enum dataType);
+  DataOutput& GetDataOutputFromInput(const DataInput& dataInput);
+
+  void ConnectExecution(AstNode& sourceNode, AstNode& targetNode, xiiUInt32 uiSourcePinIndex = xiiInvalidIndex);
+  void DisconnectExecution(AstNode& sourceNode, AstNode& targetNode, xiiUInt32 uiSourcePinIndex);
+  void ExecuteBefore(AstNode& node, AstNode& firstNewNode, AstNode& lastNewNode);
+  void ExecuteAfter(AstNode& node, AstNode& firstNewNode, AstNode& lastNewNode);
+  void ReplaceExecution(AstNode& oldNode, AstNode& newNode);
 
   DataOffset GetInstanceDataOffset(xiiHashedString sName, xiiVisualScriptDataType::Enum dataType);
 
-  struct ConnectionType
-  {
-    enum Enum
-    {
-      Execution,
-      Data,
-    };
-  };
+  // Compilation steps
+  xiiResult BuildInstanceDataMapping();
+  AstNode*  BuildExecutionFlow(const xiiDocumentObject* pEntryObject);
 
-  struct Connection
-  {
-    AstNode*             m_pSource          = nullptr;
-    AstNode*             m_pTarget          = nullptr;
-    ConnectionType::Enum m_Type             = ConnectionType::Execution;
-    xiiUInt32            m_uiSourcePinIndex = 0;
-  };
-
-  AstNode*  BuildAST(const xiiDocumentObject* pEntryNode);
-  void      MarkAsCoroutine(AstNode* pEntryAstNode);
-  xiiResult ReplaceUnsupportedNodes(AstNode* pEntryAstNode);
-  xiiResult ReplaceLoop(Connection& connection);
-  xiiResult InsertTypeConversions(AstNode* pEntryAstNode);
-  xiiResult InlineConstants(AstNode* pEntryAstNode);
-  xiiResult InlineVariables(AstNode* pEntryAstNode);
-  xiiResult BuildDataStack(AstNode* pEntryAstNode, xiiDynamicArray<AstNode*>& out_Stack);
+  xiiResult BuildDataStack(AstNode* pEntryAstNode, AstNode*& out_pFirstDataNode, AstNode*& out_pLastDataNode);
   xiiResult BuildDataExecutions(AstNode* pEntryAstNode);
-  xiiResult FillDataOutputConnections(AstNode* pEntryAstNode);
+
+  xiiResult InsertTypeConversions(AstNode* pEntryAstNode);
+
+  xiiResult ReplaceLoop(AstNode* pEntryAstNode);
+  xiiResult ReplaceUnsupportedNodes(AstNode* pEntryAstNode);
+
+  xiiResult AssignInstanceVariables(AstNode* pEntryAstNode);
   xiiResult AssignLocalVariables(AstNode* pEntryAstNode, xiiVisualScriptDataDescription& inout_localDataDesc);
+  xiiResult CopyOutputsToInputs(AstNode* pEntryAstNode);
+
   xiiResult BuildNodeDescriptions(AstNode* pEntryAstNode, xiiDynamicArray<xiiVisualScriptNodeDescription>& out_NodeDescriptions);
 
-  struct ConnectionHasher
-  {
-    static xiiUInt32 Hash(const Connection& c);
-    static bool      Equal(const Connection& a, const Connection& b);
-  };
+  xiiResult FinalizeConstantData();
 
   enum class VisitorResult
   {
     Continue,
     Skip,
-    Stop,
     Error,
   };
 
-  using AstNodeVisitorFunc = xiiDelegate<VisitorResult(Connection& connection)>;
-  xiiResult TraverseExecutionConnections(AstNode* pEntryAstNode, AstNodeVisitorFunc func, bool bDeduplicate = true);
-  xiiResult TraverseDataConnections(AstNode* pEntryAstNode, AstNodeVisitorFunc func, bool bDeduplicate = true, bool bClearReportedConnections = true);
-  xiiResult TraverseAllConnections(AstNode* pEntryAstNode, AstNodeVisitorFunc func, bool bDeduplicate = true);
+  // Does allow modifications to the AST structure while iterating
+  xiiResult TraverseAstDepthFirst(AstNode* pEntryAstNode, xiiDelegate<VisitorResult(AstNode*& pAstNode)> func);
 
-  xiiResult FinalizeConstantData();
+  // Does NOT allow modifications to the AST structure while iterating
+  xiiResult TraverseAstTopologicalOrder(const AstNode* pEntryAstNode, xiiDelegate<VisitorResult(const AstNode* pAstNode)> func);
 
   void DumpAST(AstNode* pEntryAstNode, xiiStringView sOutputPath, xiiStringView sFunctionName, xiiStringView sSuffix);
   void DumpGraph(xiiArrayPtr<const xiiVisualScriptNodeDescription> nodeDescriptions, xiiStringView sOutputPath, xiiStringView sFunctionName, xiiStringView sSuffix);
 
-  const xiiVisualScriptNodeManager* m_pManager = nullptr;
+  xiiVisualScriptNodeManager& m_NodeManager;
 
-  xiiDeque<AstNode>                          m_AstNodes;
-  xiiHybridArray<AstNode*, 8>                m_EntryAstNodes;
-  xiiHashTable<const xiiRTTI*, DefaultInput> m_DefaultInputs;
+  xiiDeque<AstNode>                           m_AstNodes;
+  xiiHybridArray<const xiiDocumentObject*, 8> m_EntryObjects;
 
-  xiiHashSet<Connection, ConnectionHasher> m_ReportedConnections;
-
-  xiiHashTable<const xiiVisualScriptPin*, xiiUInt32> m_PinToId;
-  xiiUInt32                                          m_uiNextPinId = 0;
-
-  struct DataDesc
+  struct LiveLocalVar
   {
     XII_DECLARE_POD_TYPE();
 
+    xiiUInt32  m_uiId = xiiInvalidIndex;
     DataOffset m_DataOffset;
-    xiiUInt32  m_uiUsageCounter = 0;
+
+    xiiUInt32 m_uiStart = xiiInvalidIndex;
+    xiiUInt32 m_uiEnd   = 0;
   };
 
-  xiiHashTable<xiiUInt32, DataDesc> m_PinIdToDataDesc;
+  struct CompilationState
+  {
+    xiiHashTable<const xiiDocumentObject*, AstNode*> m_ExecObjectToAstNode;
+    xiiHashTable<const xiiDocumentObject*, AstNode*> m_DataObjectToAstNode;
 
-  xiiHashTable<xiiVariant, xiiUInt32> m_ConstantDataToIndex;
+    xiiHashSet<const AstNode*> m_VisitedNodes;
+
+    xiiDynamicArray<LiveLocalVar> m_LiveLocalVars;
+    xiiUInt32                     m_uiNextLocalVarId = 0;
+
+    AstNode* m_pGetScriptOwnerNode = nullptr;
+
+    void Clear()
+    {
+      m_ExecObjectToAstNode.Clear();
+      m_DataObjectToAstNode.Clear();
+
+      m_VisitedNodes.Clear();
+
+      m_LiveLocalVars.Clear();
+      m_uiNextLocalVarId = 0;
+
+      m_pGetScriptOwnerNode = nullptr;
+    }
+  };
+
+  CompilationState m_CompilationState;
 
   CompiledModule m_Module;
 };

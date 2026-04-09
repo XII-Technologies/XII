@@ -3,6 +3,8 @@
 
 class XII_TOOLSFOUNDATION_DLL xiiNodeCommandAccessor : public xiiObjectCommandAccessor
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiNodeCommandAccessor, xiiObjectCommandAccessor);
+
 public:
   xiiNodeCommandAccessor(xiiCommandHistory* pHistory);
   ~xiiNodeCommandAccessor();

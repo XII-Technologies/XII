@@ -184,7 +184,8 @@ endfunction()
 # #####################################
 function(xii_set_build_flags_gcc TARGET_NAME)
   # Wno-enum-compare removes all annoying enum cast warnings
-  target_compile_options(${TARGET_NAME} PRIVATE -fPIC -Wno-enum-compare -gdwarf-3 -pthread)
+  # -fno-gnu-unique prevents symbols like static inline or static templates to be marked with STB_GNU_UNIQUE, preventing the owning dll from being unloaded.
+  target_compile_options(${TARGET_NAME} PRIVATE -fPIC -Wno-enum-compare -gdwarf-3 -pthread -fno-gnu-unique)
 
   # Dynamic linking will fail without fPIC (plugins)
   # gdwarf-3 will use the old debug info which is compatible with older gdb versions.
@@ -288,9 +289,27 @@ function(xii_set_simd_build_flags TARGET_NAME)
 
   elseif(XII_CMAKE_ARCHITECTURE_ARM)
     if(XII_CMAKE_COMPILER_CLANG OR XII_CMAKE_COMPILER_GCC)
-      check_cxx_compiler_flag("-mfpu=neon" HAS_NEON)
-      if(HAS_NEON)
-        target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+      # Prefer using detected CPU flags (from the CpuIdFlagsDetect probe) when available.
+      get_property(cpuSimdFlags GLOBAL PROPERTY XII_CMAKE_CPU_ID_FLAGS)
+
+      if(cpuSimdFlags)
+        if("NEON" IN_LIST cpuSimdFlags)
+          if(NOT XII_CMAKE_PLATFORM_OSX)
+            # On non-OSX ARM targets, request NEON explicitly.
+            target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+          else()
+            # On macOS ARM (Apple Silicon), use appropriate flags instead.
+            target_compile_options(${TARGET_NAME} PRIVATE -march=armv8-a)
+          endif()
+        endif()
+      else()
+        # No detected flags available; fall back to compiler capability check for NEON.
+        check_cxx_compiler_flag(-mfpu=neon HAS_NEON)
+        if(HAS_NEON AND NOT XII_CMAKE_PLATFORM_OSX)
+          target_compile_options(${TARGET_NAME} PRIVATE -mfpu=neon)
+        elseif(XII_CMAKE_PLATFORM_OSX)
+          target_compile_options(${TARGET_NAME} PRIVATE -march=armv8-a)
+        endif()
       endif()
     endif()
   endif()
@@ -303,11 +322,6 @@ function(xii_set_build_flags TARGET_NAME)
   xii_pull_compiler_and_architecture_vars()
 
   set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 23)
-
-  # On Android, we need to specify it manually.
-  if(ANDROID)
-    add_compile_options(-std=c++23)
-  endif()
 
   if(XII_CMAKE_COMPILER_MSVC)
     xii_set_build_flags_msvc(${TARGET_NAME} ${ARGN})

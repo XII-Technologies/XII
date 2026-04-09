@@ -47,13 +47,3 @@ struct XII_CORE_DLL xiiMsgSetColor : public xiiMessage
   virtual void Serialize(xiiStreamWriter& ref_stream) const override;
   virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) override;
 };
-
-struct XII_CORE_DLL xiiMsgSetCustomData : public xiiMessage
-{
-  XII_DECLARE_MESSAGE_TYPE(xiiMsgSetCustomData, xiiMessage);
-
-  xiiVec4Real m_vData;
-
-  virtual void Serialize(xiiStreamWriter& ref_stream) const override;
-  virtual void Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiTypeVersion) override;
-};

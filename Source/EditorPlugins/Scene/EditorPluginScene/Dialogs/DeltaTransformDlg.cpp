@@ -1,6 +1,7 @@
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
 #include <Core/World/GameObject.h>
+#include <EditorFramework/Gizmos/SnapProvider.h>
 #include <EditorPluginScene/Dialogs/DeltaTransformDlg.moc.h>
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Math/Random.h>
@@ -21,6 +22,8 @@ xiiVec3 xiiQtDeltaTransformDlg::s_vRotateRandom(180.0f);
 xiiVec3 xiiQtDeltaTransformDlg::s_vRotateDeviation(180.0f);
 
 float xiiQtDeltaTransformDlg::s_fNaturalDeviationZ = 10.0f;
+
+bool xiiQtDeltaTransformDlg::s_bUseCurrentSnapSettings = false;
 
 xiiQtDeltaTransformDlg::xiiQtDeltaTransformDlg(QWidget* pParent, xiiSceneDocument* pSceneDoc) :
   QDialog(pParent)
@@ -286,6 +289,20 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         break;
     }
 
+    xiiAngle angleX = xiiAngle::MakeFromDegree(vRotate.x);
+    xiiAngle angleY = xiiAngle::MakeFromDegree(vRotate.y);
+    xiiAngle angleZ = xiiAngle::MakeFromDegree(vRotate.z);
+
+    if (s_bUseCurrentSnapSettings)
+    {
+      xiiSnapProvider::SnapTranslation(vTranslate);
+      xiiSnapProvider::SnapRotation(angleX);
+      xiiSnapProvider::SnapRotation(angleY);
+      xiiSnapProvider::SnapRotation(angleZ);
+      xiiSnapProvider::SnapScale(vScale);
+      xiiSnapProvider::SnapScale(fUniformScale);
+    }
+
     if (space == Space::LocalEach)
     {
       tReference = m_pSceneDocument->GetGlobalTransform(entry.m_pObject);
@@ -306,7 +323,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::RotateX:
       case Mode::RotateXRandom:
       case Mode::RotateXDeviation:
-        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(vRotate.x));
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(1, 0, 0), angleX);
         localTrans.m_qRotation = qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
@@ -317,7 +334,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::RotateY:
       case Mode::RotateYRandom:
       case Mode::RotateYDeviation:
-        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(vRotate.y));
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), angleY);
         localTrans.m_qRotation = qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
@@ -328,7 +345,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::RotateZ:
       case Mode::RotateZRandom:
       case Mode::RotateZDeviation:
-        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(vRotate.z));
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), angleZ);
         localTrans.m_qRotation = qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
@@ -345,12 +362,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::UniformScale:
       case Mode::UniformScaleDeviation:
         trans.m_vScale *= fUniformScale;
-
-        if (trans.m_vScale.x == trans.m_vScale.y && trans.m_vScale.x == trans.m_vScale.z)
-          m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::UniformScale);
-        else
-          m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Scale);
-
+        m_pSceneDocument->SetGlobalTransform(entry.m_pObject, trans, TransformationChanges::Scale);
         break;
 
       case Mode::NaturalDeviationZ:
@@ -490,6 +502,9 @@ void xiiQtDeltaTransformDlg::UpdateUI()
   Label1->setText("X:");
   Label2->setText("Y:");
   Label3->setText("Z:");
+
+  CheckBoxSnapping->setVisible(true);
+  CheckBoxSnapping->setChecked(s_bUseCurrentSnapSettings);
 
   switch (s_Mode)
   {
@@ -641,6 +656,7 @@ void xiiQtDeltaTransformDlg::UpdateUI()
       Label1->setText("Max Tilt:");
       Value1->setValue(s_fNaturalDeviationZ);
       Value1->setSingleStep(1.0f);
+      CheckBoxSnapping->setVisible(false);
       break;
   }
 }
@@ -766,4 +782,9 @@ void xiiQtDeltaTransformDlg::on_Value3_valueChanged(double value)
     default:
       break;
   }
+}
+
+void xiiQtDeltaTransformDlg::on_CheckBoxSnapping_stateChanged(int state)
+{
+  s_bUseCurrentSnapSettings = (state != 0);
 }

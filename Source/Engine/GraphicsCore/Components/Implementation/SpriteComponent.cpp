@@ -4,7 +4,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/SpriteComponent.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
@@ -100,26 +100,26 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
 
   xiiSpriteRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiSpriteRenderData>(GetOwner());
   {
-    pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
-    pRenderData->m_GlobalBounds    = GetOwner()->GetGlobalBounds();
-    pRenderData->m_hTexture        = m_hTexture;
-    pRenderData->m_fSize           = m_fSize;
-    pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
-    pRenderData->m_fAspectRatio    = m_fAspectRatio;
-    pRenderData->m_BlendMode       = m_BlendMode;
-    pRenderData->m_color           = m_Color;
-    pRenderData->m_texCoordScale   = xiiVec2(1.0f);
-    pRenderData->m_texCoordOffset  = xiiVec2(0.0f);
-    pRenderData->m_uiUniqueID      = GetUniqueIdForRendering();
+    pRenderData->m_GlobalTransform     = GetOwner()->GetGlobalTransform();
+    pRenderData->m_GlobalBounds        = GetOwner()->GetGlobalBounds();
+    pRenderData->m_hTexture            = m_hTexture;
+    pRenderData->m_fSize               = m_fSize;
+    pRenderData->m_fMaxScreenSize      = m_fMaxScreenSize;
+    pRenderData->m_fAspectRatio        = m_fAspectRatio;
+    pRenderData->m_BlendMode           = m_BlendMode;
+    pRenderData->m_Colour              = m_Color;
+    pRenderData->m_vTextureCoordScale  = xiiVec2(1.0f);
+    pRenderData->m_vTextureCoordOffset = xiiVec2(0.0f);
+    pRenderData->m_uiUniqueID          = GetUniqueIdForRendering();
 
     pRenderData->FillSortingKey();
   }
 
   // Determine render data category.
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitTransparent;
+  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Transparent;
   if (m_BlendMode == xiiSpriteBlendMode::Masked)
   {
-    category = xiiDefaultRenderDataCategories::LitMasked;
+    category = xiiDefaultRenderDataCategories::Masked;
   }
 
   msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);

@@ -4,9 +4,11 @@
 #include <Foundation/Containers/HybridArray.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyEventHandler.h>
-#include <QWidget>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
+#include <ToolsFoundation/Object/VariantSubAccessor.h>
 #include <ToolsFoundation/Reflection/ReflectedType.h>
+
+#include <QWidget>
 
 class xiiDocumentObject;
 class xiiQtTypeWidget;
@@ -265,8 +267,10 @@ protected:
   virtual void                 RemoveElement(xiiUInt32 index);
   virtual void                 UpdateElement(xiiUInt32 index) = 0;
   void                         UpdateElements();
-  virtual xiiUInt32            GetRequiredElementCount() const;
+  virtual void                 GetRequiredElements(xiiDynamicArray<xiiVariant>& out_keys) const;
   virtual void                 UpdatePropertyMetaState();
+  /// \brief Some containers like xiiVariant can be both a map or an array so we can't reply on the property type alone. For these containers, this method can be overwritten to retrieve the category from something other than `m_pProp->GetCategory()`.
+  virtual xiiPropertyCategory::Enum GetContainerCategory() const;
 
   void         Clear();
   virtual void OnInit() override;
@@ -291,10 +295,10 @@ protected:
   xiiQtAddSubElementButton* m_pAddButton = nullptr;
   QPalette                  m_Pal;
 
-  mutable xiiHybridArray<xiiVariant, 16> m_Keys;
-  xiiDynamicArray<Element>               m_Elements;
-  xiiInt32                               m_iDropSource = -1;
-  xiiInt32                               m_iDropTarget = -1;
+  xiiHybridArray<xiiVariant, 16> m_Keys;
+  xiiDynamicArray<Element>       m_Elements;
+  xiiInt32                       m_iDropSource = -1;
+  xiiInt32                       m_iDropTarget = -1;
 };
 
 
@@ -347,6 +351,7 @@ protected:
   virtual void DoPrepareToDie() override;
   void         UpdateTypeListSelection(xiiVariantType::Enum type);
   void         ChangeVariantType(xiiVariantType::Enum type);
+  void         EnableTypeSelection(bool bEnable);
 
   virtual xiiResult GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const;
 
@@ -355,4 +360,23 @@ protected:
   QComboBox*           m_pTypeList       = nullptr;
   xiiQtPropertyWidget* m_pWidget         = nullptr;
   const xiiRTTI*       m_pCurrentSubType = nullptr;
+};
+
+// Used for sub-containers of an xiiVariant, e.g. an xiiVariantArray or xiiVariantDictionary stored inside an xiiVariant. xiiVariantSubAccessor is used to create a view into a sub-tree container of the xiiVariant.
+class XII_GUIFOUNDATION_DLL xiiQtVariantContainerWidget : public xiiQtPropertyStandardTypeContainerWidget
+{
+  Q_OBJECT;
+
+public:
+  xiiQtVariantContainerWidget(xiiVariantType::Enum variantType);
+  virtual ~xiiQtVariantContainerWidget() = default;
+
+protected:
+  virtual void                      OnInit() override;
+  virtual void                      SetSelection(const xiiHybridArray<xiiPropertySelection, 8>& items) override;
+  virtual xiiPropertyCategory::Enum GetContainerCategory() const override;
+
+private:
+  xiiUniquePtr<xiiVariantSubAccessor> m_pVariantSubAccessor;
+  xiiEnum<xiiPropertyCategory>        m_ContainerCategory;
 };

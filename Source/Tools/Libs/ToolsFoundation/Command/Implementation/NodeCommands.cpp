@@ -62,7 +62,7 @@ xiiStatus xiiRemoveNodeCommand::DoInternal(bool bRedo)
   xiiDocument*            pDocument = GetDocument();
   xiiDocumentNodeManager* pManager  = static_cast<xiiDocumentNodeManager*>(pDocument->GetObjectManager());
 
-  auto RemoveConnections = [&](const xiiPin& pin) {
+  auto RemoveConnections = [&](const xiiPin& pin) -> xiiStatus {
     while (true)
     {
       auto connections = pManager->GetConnections(pin);
@@ -73,7 +73,7 @@ xiiStatus xiiRemoveNodeCommand::DoInternal(bool bRedo)
       xiiDisconnectNodePinsCommand cmd;
       cmd.m_ConnectionObject = connections[0]->GetParent()->GetGuid();
       xiiStatus res          = AddSubCommand(cmd);
-      if (res.m_Result.Succeeded())
+      if (res.Succeeded())
       {
         xiiRemoveObjectCommand remove;
         remove.m_Object = cmd.m_ConnectionObject;
@@ -82,7 +82,7 @@ xiiStatus xiiRemoveNodeCommand::DoInternal(bool bRedo)
 
       XII_SUCCEED_OR_RETURN(res);
     }
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   };
 
   if (!bRedo)
@@ -106,18 +106,18 @@ xiiStatus xiiRemoveNodeCommand::DoInternal(bool bRedo)
     xiiRemoveObjectCommand cmd;
     cmd.m_Object = m_Object;
     auto res     = AddSubCommand(cmd);
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
       return res;
     }
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiRemoveNodeCommand::UndoInternal(bool bFireEvents)
 {
   XII_ASSERT_DEV(bFireEvents, "This command does not support temporary commands");
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiRemoveNodeCommand::CleanupInternal(CommandState state) {}
@@ -145,7 +145,7 @@ xiiStatus xiiMoveNodeCommand::DoInternal(bool bRedo)
   }
 
   pManager->MoveNode(m_pObject, m_NewPos);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiMoveNodeCommand::UndoInternal(bool bFireEvents)
@@ -158,7 +158,7 @@ xiiStatus xiiMoveNodeCommand::UndoInternal(bool bFireEvents)
 
   pManager->MoveNode(m_pObject, m_vOldPos);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -199,7 +199,7 @@ xiiStatus xiiConnectNodePinsCommand::DoInternal(bool bRedo)
   XII_SUCCEED_OR_RETURN(pManager->CanConnect(m_pConnectionObject->GetType(), *pOutput, *pInput, res));
 
   pManager->Connect(m_pConnectionObject, *pOutput, *pInput);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiConnectNodePinsCommand::UndoInternal(bool bFireEvents)
@@ -210,7 +210,7 @@ xiiStatus xiiConnectNodePinsCommand::UndoInternal(bool bFireEvents)
   XII_SUCCEED_OR_RETURN(pManager->CanDisconnect(m_pConnectionObject));
 
   pManager->Disconnect(m_pConnectionObject);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -247,7 +247,7 @@ xiiStatus xiiDisconnectNodePinsCommand::DoInternal(bool bRedo)
 
   pManager->Disconnect(m_pConnectionObject);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDisconnectNodePinsCommand::UndoInternal(bool bFireEvents)
@@ -267,7 +267,7 @@ xiiStatus xiiDisconnectNodePinsCommand::UndoInternal(bool bFireEvents)
   XII_SUCCEED_OR_RETURN(pManager->CanConnect(m_pConnectionObject->GetType(), *pOutput, *pInput, res));
 
   pManager->Connect(m_pConnectionObject, *pOutput, *pInput);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 
@@ -326,7 +326,7 @@ xiiStatus xiiNodeCommands::DisconnectAndRemoveCommand(xiiCommandHistory* pHistor
   cmd.m_ConnectionObject = connectionObject;
 
   xiiStatus res = pHistory->AddCommand(cmd);
-  if (res.m_Result.Succeeded())
+  if (res.Succeeded())
   {
     xiiRemoveObjectCommand remove;
     remove.m_Object = cmd.m_ConnectionObject;

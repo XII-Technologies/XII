@@ -17,8 +17,9 @@ class XII_GRAPHICSVULKAN_DLL xiiGALFenceVulkan final : public xiiGALFence
 public:
   struct SyncPointData
   {
-    xiiUInt64 m_uiValue;
-    vk::Fence m_vkFence;
+    xiiGALCommandQueueVulkan* m_pCommandQueueVulkan;
+    xiiUInt64                 m_uiWaitValue;
+    xiiUInt64                 m_uiFenceValue;
   };
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
@@ -33,7 +34,7 @@ public:
 
   void Reset(xiiUInt64 uiValue);
 
-  [[nodiscard]] const xiiGALFenceVulkan::SyncPointData& CreateSyncPoint(const xiiUInt64 uiFenceValue);
+  void AddPendingSyncPoint(xiiGALCommandQueueVulkan* pCommandQueueVulkan, const xiiUInt64 uiWaitValue, const xiiUInt64 uiFenceValue);
 
 protected:
   friend class xiiGALDeviceVulkan;

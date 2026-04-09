@@ -111,6 +111,11 @@
     "color": "78909c",
     "description": "Build scripts, dependencies, CI tooling."
   },
+  {
+    "name": "Area: Editor",
+    "color": "1975d2",
+    "description": "IDE for real-time simulation, scene editing, asset tools, debugging, and system orchestration."
+  },
 
   {
     "name": "Review: Unit Testing Needed",

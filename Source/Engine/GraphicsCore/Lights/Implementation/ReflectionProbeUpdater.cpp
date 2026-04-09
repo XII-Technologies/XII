@@ -31,35 +31,40 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     textureDescription.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     textureDescription.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
 
-    m_pCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(textureDescription);
+    m_pCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetTexture(textureDescription);
 
     m_pCubemap->SetDebugName("Reflection Cubemap");
   }
 
-  auto pCommandList = pDevice->GetDefaultCommandQueue()->BeginCommandList();
+  xiiGALCommandQueue*             pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList> pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  xiiStringBuilder sName;
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)
+  pCommandList->Begin();
   {
-    xiiGALTextureViewCreationDescription viewDesc;
-    viewDesc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
-    viewDesc.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
-    viewDesc.m_uiFirstArrayOrDepthSlice  = i;
-    viewDesc.m_uiArrayOrDepthSlicesCount = 1;
-    viewDesc.m_uiMipLevelCount           = 1;
-    viewDesc.m_uiMostDetailedMip         = 0;
+    xiiStringBuilder sName;
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCubemapFaceRenderTargets); ++i)
+    {
+      xiiGALTextureViewCreationDescription viewDesc;
+      viewDesc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+      viewDesc.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
+      viewDesc.m_uiFirstArrayOrDepthSlice  = i;
+      viewDesc.m_uiArrayOrDepthSlicesCount = 1;
+      viewDesc.m_uiMipLevelCount           = 1;
+      viewDesc.m_uiMostDetailedMip         = 0;
 
-    m_pCubemapFaceRenderTargets[i] = m_pCubemap->CreateView(viewDesc);
+      m_pCubemapFaceRenderTargets[i] = m_pCubemap->CreateView(viewDesc);
 
-    XII_ASSERT_DEV(m_pCubemapFaceRenderTargets[i] != nullptr, "");
+      XII_ASSERT_DEV(m_pCubemapFaceRenderTargets[i] != nullptr, "");
 
-    sName.SetFormat("Reflection Cubemap View {}", i);
-    m_pCubemapFaceRenderTargets[i]->SetDebugName(sName);
+      sName.SetFormat("Reflection Cubemap View {}", i);
+      m_pCubemapFaceRenderTargets[i]->SetDebugName(sName);
 
-    pCommandList->ClearRenderTargetView(m_pCubemapFaceRenderTargets[i], xiiColor::Black);
+      pCommandList->ClearRenderTargetView(m_pCubemapFaceRenderTargets[i], xiiColor::Black);
+    }
   }
+  pCommandList->End();
 
-  pCommandList->Submit();
+  pCommandQueue->Submit(pCommandList);
 }
 
 xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
@@ -71,7 +76,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
 
   if (m_pCubemap != nullptr)
   {
-    xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(m_pCubemap);
+    xiiGPUResourcePool::GetDefaultInstance()->ReturnTexture(m_pCubemap);
   }
 }
 
@@ -291,7 +296,7 @@ void xiiReflectionProbeUpdater::ScheduleUpdateSteps()
   }
 }
 
-void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, const char* szNameSuffix, const char* szRenderPipelineResource)
+void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& views, xiiUInt32 uiMaxRenderViews, xiiStringView sNameSuffix, xiiStringView sRenderPipelineResource)
 {
   uiMaxRenderViews = xiiMath::Max<xiiUInt32>(uiMaxRenderViews, 1);
 
@@ -304,7 +309,7 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
     {
       auto& renderView = views.ExpandAndGetRef();
 
-      sName.SetFormat("Reflection Probe {} {}", szNameSuffix, i);
+      sName.SetFormat("Reflection Probe {} {}", sNameSuffix, i);
 
       xiiView* pView     = nullptr;
       renderView.m_hView = xiiRenderWorld::CreateView(sName, pView);
@@ -312,7 +317,8 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
       pView->SetCameraUsageHint(xiiCameraUsageHint::Reflection);
       pView->SetViewport(xiiRectFloat(0.0f, 0.0f, static_cast<float>(s_uiReflectionCubeMapSize), static_cast<float>(s_uiReflectionCubeMapSize)));
 
-      pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>(szRenderPipelineResource));
+      XII_IGNORE_UNUSED(sRenderPipelineResource);
+      pView->SetRenderPipelineResource(xiiRenderPipelineResourceHandle());
 
       renderView.m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 90.0f, 0.1f, 100.0f);
       pView->SetCamera(&renderView.m_Camera);
@@ -327,10 +333,10 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
 void xiiReflectionProbeUpdater::CreateReflectionViewsAndResources()
 {
   // ReflectionRenderPipeline.xiiRenderPipelineAsset
-  CreateViews(m_RenderViews, cvar_RenderingReflectionPoolMaxRenderViews, "Render", "{ 734898e8-b1a2-0da2-c4ae-701912983c2f }");
+  CreateViews(m_RenderViews, cvar_RenderingReflectionPoolMaxRenderViews, "Render", "{ 1e90946c-2bfe-4c4c-8123-62e033c11af5 }");
 
   // ReflectionFilterPipeline.xiiRenderPipelineAsset
-  CreateViews(m_FilterViews, cvar_RenderingReflectionPoolMaxFilterViews, "Filter", "{ 3437db17-ddf1-4b67-b80f-9999d6b0c352 }");
+  CreateViews(m_FilterViews, cvar_RenderingReflectionPoolMaxFilterViews, "Filter", "{ 11f1f17b-cc4d-42e4-ac49-481a35c8cae5 }");
 
   if (m_DynamicUpdates.IsEmpty())
   {

@@ -5,7 +5,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 
-class XII_GRAPHICSFOUNDATION_DLL xiiGALDynamicBuffer : xiiGALObject
+class XII_GRAPHICSFOUNDATION_DLL xiiGALDynamicBuffer : public xiiGALObject
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALDynamicBuffer);
 
@@ -16,19 +16,19 @@ public:
   ~xiiGALDynamicBuffer();
 
   /// \brief Returns the buffer description.
-  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferCreationDescription& GetDescription() const { return m_Description; }
+  [[nodiscard]] xiiGALBufferCreationDescription GetDescription() const;
 
   /// \brief Returns a reference-counted pointer to the buffer object.
   ///
   /// \remarks If the buffer has not been initialized, the method returns null.
   ///          If the buffer may need to be updated (resized or initialized), use the Update() method.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALBuffer> GetBuffer() const { return m_pBuffer; }
+  [[nodiscard]] xiiSharedPtr<xiiGALBuffer> GetBuffer() const;
 
   /// \brief Returns the dynamic buffer version. The version is incremented whenever a new internal buffer is created.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetVersion() const { return m_Version; }
 
   /// \brief Returns true if the buffer must be updated before use (e.g., it has been resized, but the internal buffer has not been initialized or updated). When update is not pending, Update() may be called with null command list.
-  [[nodiscard]] XII_ALWAYS_INLINE bool PendingUpdate() const { return m_uiPendingSize != m_Description.m_uiSize; }
+  [[nodiscard]] bool PendingUpdate() const;
 
   /// \brief Resizes the buffer to the new size.
   ///
@@ -38,8 +38,9 @@ public:
   ///
   /// \return A reference-counted pointer to the new buffer.
   ///
-  /// \remarks If pCommandList is null, then the new internal buffer is created and existing contents is copied. Otherwise, the new internal buffer is created, but existing contents are not copied.
-  ///          If uiNewSize is zero, then the internal buffer will be released.
+  /// \remarks If pCommandList is non-null, existing contents are copied to the new internal buffer.
+  ///          If pCommandList is null, the new internal buffer is created but existing contents are not copied.
+  ///          If uiNewSize is zero, the internal buffer will be released.
   xiiSharedPtr<xiiGALBuffer> Resize(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiUInt64 uiNewSize, bool bDiscardContent = false);
 
   /// \brief Updates the internal buffer object, initializing or resizing as necessary.
@@ -55,7 +56,7 @@ public:
 private:
   void InitializeBuffer();
   void ResolvePendingResize(xiiSharedPtr<xiiGALCommandList> pCommandList, bool bPermitNull);
-  void ResizeDefaultBuffer(xiiSharedPtr<xiiGALCommandList> pCommandList);
+  void CopyStaleBuffer(xiiSharedPtr<xiiGALCommandList> pCommandList);
 
   xiiSharedPtr<xiiGALDevice> m_pDevice;
 
@@ -63,6 +64,7 @@ private:
 
   xiiAtomicIntegerU32 m_Version;
 
+  mutable xiiMutex           m_Mutex;
   xiiSharedPtr<xiiGALBuffer> m_pBuffer;
   xiiSharedPtr<xiiGALBuffer> m_pStaleBuffer;
 

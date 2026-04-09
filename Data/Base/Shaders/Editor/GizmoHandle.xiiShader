@@ -7,7 +7,6 @@ RENDER_PASS
 GIZMO_CONSTANT_SIZE
 PREPARE_DEPTH
 CAMERA_MODE
-VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX = TRUE
 GIZMO_FACE_CAMERA
 
 [RENDERSTATE]
@@ -53,6 +52,10 @@ RenderDataCategory = SimpleForeground
 
 VS_OUT main(VS_IN Input)
 {
+  #if CAMERA_MODE == CAMERA_MODE_STEREO
+    s_ActiveCameraEyeIndex = Input.InstanceID % 2;
+  #endif
+
   float3 centerPosition = mul(ObjectToWorldMatrix, float4(0, 0, 0, 1)).xyz;
 
   #if GIZMO_CONSTANT_SIZE == 1
@@ -68,9 +71,9 @@ VS_OUT main(VS_IN Input)
   #endif
 
   float expand = 0.0;
-#if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
-  expand = 0.04;
-#endif
+  #if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
+    expand = 0.04;
+  #endif
 
   float3 inpos = Input.Position.xyz + (Input.Normal.xyz * 2 - 1) * expand;
 
@@ -87,6 +90,13 @@ VS_OUT main(VS_IN Input)
   float4 worldSpacePos = mul(ObjectToWorldMatrix, float4(inpos * scale, 1.0f));
 
   VS_OUT RetVal;
+
+  #if defined(CAMERA_MODE)
+  # if CAMERA_MODE == CAMERA_MODE_STEREO
+     RetVal.RenderTargetArrayIndex = Input.InstanceID % 2;
+  # endif
+  #endif
+
   RetVal.Position = mul(GetWorldToScreenMatrix(), worldSpacePos);
   RetVal.Color0 = GizmoColor;
   RetVal.Normal = float3(0, 1, 0);
@@ -108,13 +118,11 @@ float4 main(PS_IN Input) : SV_Target
 #if PREPARE_DEPTH == 1
   return float4(0, 0, 0, 1);
 #else
-
   #if (RENDER_PASS == RENDER_PASS_PICKING) || (RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
     return RGBA8ToFloat4(GameObjectID);
   #else
     return Input.Color0;
   #endif
-
 #endif
 }
 

@@ -29,7 +29,7 @@ namespace xiiInternal
     mutable xiiProxyAllocator             m_Allocator;
     xiiLocalAllocatorWrapper              m_AllocatorWrapper;
     xiiInternal::WorldLargeBlockAllocator m_BlockAllocator;
-    xiiDoubleBufferedStackAllocator       m_StackAllocator;
+    xiiDoubleBufferedLinearAllocator      m_LinearAllocator;
 
     enum
     {
@@ -157,7 +157,7 @@ namespace xiiInternal
 
     struct InitBatch
     {
-      InitBatch(xiiAllocatorBase* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame);
+      InitBatch(xiiAllocator* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame);
 
       xiiHashedString m_sName;
       bool            m_bMustFinishWithinOneFrame = true;
@@ -179,7 +179,7 @@ namespace xiiInternal
       xiiWorldModule::UpdateFunction m_Function;
       xiiHashedString                m_sFunctionName;
       float                          m_fPriority;
-      xiiUInt16                      m_uiGranularity;
+      xiiUInt16                      m_uiAsyncPhaseBatchSize;
       bool                           m_bOnlyUpdateWhenSimulating;
 
       void FillFromDesc(const xiiWorldModule::UpdateFunctionDesc& desc);

@@ -5,8 +5,8 @@
 
 enum xiiConstructionMode
 {
-  ConstructAll     = 0U, ///< Default initialize all types, including std::is_trivial types.
-  SkipTrivialTypes = 1U, ///< If the given type to construct is trivial, no additional construction steps are performed.
+  ConstructAll     = 0, ///< Default initialize all types, including std::is_trivial types.
+  SkipTrivialTypes = 1, ///< If the given type to construct is trivial, nothing will be done.
 };
 
 /// \brief This class provides functions to work on raw memory.

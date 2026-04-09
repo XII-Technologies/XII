@@ -5,6 +5,9 @@
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectCommandAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiObjectCommandAccessor::xiiObjectCommandAccessor(xiiCommandHistory* pHistory) :
   xiiObjectDirectAccessor(const_cast<xiiDocumentObjectManager*>(pHistory->GetDocument()->GetObjectManager())), m_pHistory(pHistory)
 {
@@ -88,7 +91,7 @@ xiiStatus xiiObjectCommandAccessor::AddObject(const xiiDocumentObject* pParent, 
   cmd.m_NewObjectGuid   = inout_objectGuid;
   cmd.m_sParentProperty = pParentProp ? pParentProp->GetPropertyName() : "Children";
   xiiStatus res         = m_pHistory->AddCommand(cmd);
-  if (res.m_Result.Succeeded())
+  if (res.Succeeded())
     inout_objectGuid = cmd.m_NewObjectGuid;
   return res;
 }

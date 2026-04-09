@@ -249,7 +249,7 @@ struct xiiShadowPool::Data
     {
       xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-      xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight), xiiGALResourceFormat::D16UNormalized, xiiGALMSAASampleCount::OneSample);
+      xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight), xiiGALResourceFormat::D16UNormalized, xiiGALSampleCount::OneSample);
 
       m_pShadowAtlasTexture = pDevice->CreateTexture(desc);
 
@@ -278,8 +278,6 @@ struct xiiShadowPool::Data
     CreateShadowAtlasTexture();
     CreateShadowDataBuffer();
 
-    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
     xiiView*      pView = nullptr;
     xiiViewHandle hView = xiiRenderWorld::CreateView("Unknown", pView);
 
@@ -292,8 +290,8 @@ struct xiiShadowPool::Data
     XII_ASSERT_DEV(m_ShadowViewsMutex.IsLocked(), "m_ShadowViewsMutex must be locked at this point.");
     m_ShadowViewsMutex.Unlock(); // if the resource gets loaded in the call below, his could lead to a deadlock
 
-    // ShadowMapRenderPipeline.xiiRenderPipelineAsset
-    pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ 4f4d9f16-3d47-4c67-b821-a778f11dcaf5 }"));
+    // Legacy render pipeline assets were removed with the RenderGraph migration.
+    pView->SetRenderPipelineResource(xiiRenderPipelineResourceHandle());
 
     m_ShadowViewsMutex.Lock();
 
@@ -969,12 +967,12 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   if (s_pData->m_pShadowAtlasTexture == nullptr || s_pData->m_pShadowDataBuffer == nullptr)
     return;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>      pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*             pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList> pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
+  pCommandList->Begin();
   {
-    auto pCommandList = pGraphicsQueue->BeginCommandList();
-
     pCommandList->BeginDebugGroup("Shadow Atlas");
     {
       pCommandList->ClearDepthStencilView(s_pData->m_pShadowAtlasTexture->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
@@ -990,8 +988,10 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
       }
     }
     pCommandList->EndDebugGroup();
-    pCommandList->Submit();
   }
+  pCommandList->End();
+
+  pCommandQueue->Submit(pCommandList);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ShadowPool);

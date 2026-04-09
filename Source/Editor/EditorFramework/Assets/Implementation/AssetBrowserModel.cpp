@@ -153,7 +153,7 @@ void xiiQtAssetBrowserModel::AssetCuratorEventHandler(const xiiAssetCuratorEvent
       VisibleEntry ve;
       ve.m_Guid         = e.m_AssetGuid;
       ve.m_sAbsFilePath = e.m_pInfo->m_pAssetInfo->m_Path;
-      ve.m_Flags = xiiAssetBrowserItemFlags::File;
+      ve.m_Flags        = xiiAssetBrowserItemFlags::File;
       if (ve.m_Guid.IsValid())
       {
         ve.m_Flags |= xiiAssetBrowserItemFlags::Asset;
@@ -208,6 +208,11 @@ void xiiQtAssetBrowserModel::resetModel()
   m_EntriesToDisplay.Clear();
   m_DisplayedEntries.Clear();
 
+  // Get Curator Mutex first to prevent deadlocks
+  xiiAssetCurator::xiiLockedSubAssetTable   AllAssetsLocked = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
+  const xiiHashTable<xiiUuid, xiiSubAsset>& AllAssets       = *(AllAssetsLocked.operator->());
+
+  auto allFiles   = xiiFileSystemModel::GetSingleton()->GetFiles();
   auto allFolders = xiiFileSystemModel::GetSingleton()->GetFolders();
 
   for (const auto& folder : *allFolders)
@@ -219,8 +224,6 @@ void xiiQtAssetBrowserModel::resetModel()
     entry.m_Flags        = folder.Key().GetDataDirRelativePath().IsEmpty() ? xiiAssetBrowserItemFlags::DataDirectory : xiiAssetBrowserItemFlags::Folder;
     entry.m_sAbsFilePath = folder.Key();
   }
-
-  auto allFiles = xiiFileSystemModel::GetSingleton()->GetFiles();
 
   for (const auto& file : *allFiles)
   {
@@ -264,9 +267,6 @@ void xiiQtAssetBrowserModel::resetModel()
       entry.m_Flags        = xiiAssetBrowserItemFlags::File;
     }
   }
-
-  xiiAssetCurator::xiiLockedSubAssetTable   AllAssetsLocked = xiiAssetCurator::GetSingleton()->GetKnownSubAssets();
-  const xiiHashTable<xiiUuid, xiiSubAsset>& AllAssets       = *(AllAssetsLocked.operator->());
 
   FileComparer cmp(this, AllAssets);
   m_EntriesToDisplay.Sort(cmp);

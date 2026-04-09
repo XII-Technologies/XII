@@ -1,12 +1,12 @@
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiAllocatorBase* pAllocator) :
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiAllocator* pAllocator) :
   m_pAllocator(pAllocator)
 {
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator) :
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocator* pAllocator) :
   m_pAllocator(pAllocator)
 {
   m_pAllocator.SetFlags(Storage::External);
@@ -15,21 +15,21 @@ xiiDynamicArrayBase<T>::xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapa
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocatorBase* pAllocator) :
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocator* pAllocator) :
   m_pAllocator(pAllocator)
 {
   xiiArrayBase<T, xiiDynamicArrayBase<T>>::operator=((xiiArrayPtr<const T>)other); // redirect this to the xiiArrayPtr version
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocatorBase* pAllocator) :
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocator* pAllocator) :
   m_pAllocator(pAllocator)
 {
   *this = std::move(other);
 }
 
 template <typename T>
-xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator) :
+xiiDynamicArrayBase<T>::xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator) :
   m_pAllocator(pAllocator)
 {
   xiiArrayBase<T, xiiDynamicArrayBase<T>>::operator=(other);
@@ -110,8 +110,7 @@ void xiiDynamicArrayBase<T>::Swap(xiiDynamicArrayBase<T>& other)
     const xiiUInt32 localSize      = this->m_uiCount;
     const xiiUInt32 otherLocalSize = other.m_uiCount;
 
-    if (localSize <= InplaceStorageSize && otherLocalSize <= InplaceStorageSize && localSize <= other.m_uiCapacity &&
-        otherLocalSize <= this->m_uiCapacity)
+    if (localSize <= InplaceStorageSize && otherLocalSize <= InplaceStorageSize && localSize <= other.m_uiCapacity && otherLocalSize <= this->m_uiCapacity)
     {
 
       Tmp tmp;
@@ -213,7 +212,9 @@ void xiiDynamicArrayBase<T>::Compact()
   {
     const xiiUInt32 uiNewCapacity = (this->m_uiCount + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
     if (this->m_uiCapacity != uiNewCapacity)
+    {
       SetCapacity(uiNewCapacity);
+    }
   }
 }
 
@@ -238,6 +239,8 @@ xiiUInt64 xiiDynamicArrayBase<T>::GetHeapMemoryUsage() const
   return (xiiUInt64)this->m_uiCapacity * (xiiUInt64)sizeof(T);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 template <typename T, typename A>
 xiiDynamicArray<T, A>::xiiDynamicArray() :
   xiiDynamicArrayBase<T>(A::GetAllocator())
@@ -245,7 +248,7 @@ xiiDynamicArray<T, A>::xiiDynamicArray() :
 }
 
 template <typename T, typename A>
-xiiDynamicArray<T, A>::xiiDynamicArray(xiiAllocatorBase* pAllocator) :
+xiiDynamicArray<T, A>::xiiDynamicArray(xiiAllocator* pAllocator) :
   xiiDynamicArrayBase<T>(pAllocator)
 {
 }
@@ -309,6 +312,34 @@ void xiiDynamicArray<T, A>::operator=(xiiDynamicArrayBase<T>&& rhs) noexcept
 {
   xiiDynamicArrayBase<T>::operator=(std::move(rhs));
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+xiiTemporaryArray<T>::xiiTemporaryArray() :
+  xiiDynamicArray<T>(xiiTemporaryAllocator::Get())
+{
+}
+
+template <typename T>
+void xiiTemporaryArray<T>::operator=(const xiiDynamicArrayBase<T>& rhs)
+{
+  xiiDynamicArrayBase<T>::operator=(rhs);
+}
+
+template <typename T>
+void xiiTemporaryArray<T>::operator=(const xiiArrayPtr<const T>& rhs)
+{
+  xiiArrayBase<T, xiiDynamicArrayBase<T>>::operator=(rhs);
+}
+
+template <typename T>
+void xiiTemporaryArray<T>::operator=(xiiDynamicArrayBase<T>&& rhs) noexcept
+{
+  xiiDynamicArrayBase<T>::operator=(std::move(rhs));
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename AllocatorWrapper>
 xiiArrayPtr<const T* const> xiiMakeArrayPtr(const xiiDynamicArray<T*, AllocatorWrapper>& dynArray)

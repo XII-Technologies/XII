@@ -177,7 +177,7 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(!xiiPathUtils::IsAbsolutePath("\\temp.stuff"));
     XII_TEST_BOOL(!xiiPathUtils::IsAbsolutePath("..\\temp.stuff"));
     XII_TEST_BOOL(!xiiPathUtils::IsAbsolutePath(".\\temp.stuff"));
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
     XII_TEST_BOOL(xiiPathUtils::IsAbsolutePath("/usr/local/.stuff"));
     XII_TEST_BOOL(xiiPathUtils::IsAbsolutePath("/file.test"));
     XII_TEST_BOOL(!xiiPathUtils::IsAbsolutePath("./file.stuff"));

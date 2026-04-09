@@ -4,17 +4,15 @@
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshResource, 1, xiiRTTIDefaultAllocator<xiiMeshResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshResource);
-// clang-format on
 
 xiiUInt32 xiiMeshResource::s_uiMeshBufferNameSuffix = 0;
 
 xiiMeshResource::xiiMeshResource() :
-  xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
+  xiiResource(DoUpdate::OnAnyThread, 1)
 {
   m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
 }
@@ -47,14 +45,14 @@ xiiResourceLoadDesc xiiMeshResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiMeshResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDesc xiiMeshResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiMeshResourceDescriptor desc;
   xiiResourceLoadDesc       res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
-  if (Stream == nullptr)
+  if (pStream == nullptr)
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
@@ -62,12 +60,12 @@ xiiResourceLoadDesc xiiMeshResource::UpdateContent(xiiStreamReader* Stream)
 
   // the standard file reader writes the absolute file path into the stream
   xiiStringBuilder sAbsFilePath;
-  (*Stream) >> sAbsFilePath;
+  (*pStream) >> sAbsFilePath;
 
   xiiAssetFileHeader AssetHash;
-  AssetHash.Read(*Stream).IgnoreResult();
+  AssetHash.Read(*pStream).IgnoreResult();
 
-  if (desc.Load(*Stream).Failed())
+  if (desc.Load(*pStream).Failed())
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;

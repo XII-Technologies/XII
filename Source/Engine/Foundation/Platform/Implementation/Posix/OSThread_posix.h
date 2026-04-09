@@ -34,7 +34,7 @@ void xiiOSThread::Start()
   XII_IGNORE_UNUSED(iReturnCode);
   XII_ASSERT_RELEASE(iReturnCode == 0, "Thread creation failed!");
 
-#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_PLATFORM_LINUX)
   if (iReturnCode == 0 && !m_sName.IsEmpty())
   {
     // pthread has a thread name limit of 16 bytes.

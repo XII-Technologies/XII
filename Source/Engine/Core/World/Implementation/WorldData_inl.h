@@ -36,7 +36,7 @@ namespace xiiInternal
     xiiParallelForParams parallelForParams;
     parallelForParams.m_uiBinSize           = 100;
     parallelForParams.m_uiMaxTasksPerThread = 2;
-    parallelForParams.m_pTaskAllocator      = m_StackAllocator.GetCurrentAllocator();
+    parallelForParams.m_pTaskAllocator      = m_LinearAllocator.GetCurrentAllocator();
 
     xiiTaskSystem::ParallelFor(
       blocks.GetArrayPtr(), [pUserData](xiiArrayPtr<WorldData::Hierarchy::DataBlock> blocksSlice) {
@@ -179,7 +179,7 @@ namespace xiiInternal
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  XII_FORCE_INLINE WorldData::InitBatch::InitBatch(xiiAllocatorBase* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame) :
+  XII_FORCE_INLINE WorldData::InitBatch::InitBatch(xiiAllocator* pAllocator, xiiStringView sName, bool bMustFinishWithinOneFrame) :
     m_bMustFinishWithinOneFrame(bMustFinishWithinOneFrame), m_ComponentsToInitialize(pAllocator), m_ComponentsToStartSimulation(pAllocator)
   {
     m_sName.Assign(sName);
@@ -192,7 +192,7 @@ namespace xiiInternal
     m_Function                  = desc.m_Function;
     m_sFunctionName             = desc.m_sFunctionName;
     m_fPriority                 = desc.m_fPriority;
-    m_uiGranularity             = desc.m_uiGranularity;
+    m_uiAsyncPhaseBatchSize     = desc.m_uiAsyncPhaseBatchSize;
     m_bOnlyUpdateWhenSimulating = desc.m_bOnlyUpdateWhenSimulating;
   }
 

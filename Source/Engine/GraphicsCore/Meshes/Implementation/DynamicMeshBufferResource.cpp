@@ -9,7 +9,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDynamicMeshBufferResource);
 
 xiiDynamicMeshBufferResource::xiiDynamicMeshBufferResource() :
-  xiiResource(DoUpdate::OnGraphicsResourceThreads, 1)
+  xiiResource(DoUpdate::OnAnyThread, 1)
 {
 }
 

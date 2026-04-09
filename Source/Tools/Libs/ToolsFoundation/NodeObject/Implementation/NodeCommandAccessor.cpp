@@ -4,6 +4,9 @@
 #include <ToolsFoundation/NodeObject/DocumentNodeManager.h>
 #include <ToolsFoundation/NodeObject/NodeCommandAccessor.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiNodeCommandAccessor, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiNodeCommandAccessor::xiiNodeCommandAccessor(xiiCommandHistory* pHistory) :
   xiiObjectCommandAccessor(pHistory)
 {
@@ -168,7 +171,7 @@ xiiStatus xiiNodeCommandAccessor::DisconnectAllPins(const xiiDocumentObject* pOb
       XII_SUCCEED_OR_RETURN(xiiNodeCommands::DisconnectAndRemoveCommand(m_pHistory, pConnection->GetParent()->GetGuid()));
     }
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   };
 
   auto inputs = pManager->GetInputPins(pObject);
@@ -183,7 +186,7 @@ xiiStatus xiiNodeCommandAccessor::DisconnectAllPins(const xiiDocumentObject* pOb
     XII_SUCCEED_OR_RETURN(Disconnect(pManager->GetConnections(*pOutputPin)));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiNodeCommandAccessor::TryReconnectAllPins(const xiiDocumentObject* pObject, const xiiDynamicArray<ConnectionInfo>& oldConnections)
@@ -208,5 +211,5 @@ xiiStatus xiiNodeCommandAccessor::TryReconnectAllPins(const xiiDocumentObject* p
     XII_SUCCEED_OR_RETURN(xiiNodeCommands::AddAndConnectCommand(m_pHistory, pConnectionType, *pSourcePin, *pTargetPin));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

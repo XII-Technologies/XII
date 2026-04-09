@@ -112,7 +112,7 @@ xiiStatus xiiDuplicateObjectsCommand::DoInternal(bool bRedo)
 
   SetAsSelection();
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiDuplicateObjectsCommand::SetAsSelection()
@@ -313,7 +313,7 @@ xiiStatus xiiDuplicateObjectsCommand::UndoInternal(bool bFireEvents)
     pDocument->GetObjectManager()->RemoveObject(po.m_pObject);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiDuplicateObjectsCommand::CleanupInternal(CommandState state)

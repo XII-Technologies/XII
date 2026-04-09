@@ -33,7 +33,6 @@ inline void xiiHashTableBaseConstIterator<K, V, H>::SetToEnd()
   m_uiCurrentIndex = m_pHashTable->m_uiCapacity;
 }
 
-
 template <typename K, typename V, typename H>
 XII_FORCE_INLINE bool xiiHashTableBaseConstIterator<K, V, H>::IsValid() const
 {
@@ -173,7 +172,7 @@ namespace std
 // ***** xiiHashTableBase *****
 
 template <typename K, typename V, typename H>
-xiiHashTableBase<K, V, H>::xiiHashTableBase(xiiAllocatorBase* pAllocator)
+xiiHashTableBase<K, V, H>::xiiHashTableBase(xiiAllocator* pAllocator)
 {
   m_pEntries    = nullptr;
   m_pEntryFlags = nullptr;
@@ -183,7 +182,7 @@ xiiHashTableBase<K, V, H>::xiiHashTableBase(xiiAllocatorBase* pAllocator)
 }
 
 template <typename K, typename V, typename H>
-xiiHashTableBase<K, V, H>::xiiHashTableBase(const xiiHashTableBase<K, V, H>& other, xiiAllocatorBase* pAllocator)
+xiiHashTableBase<K, V, H>::xiiHashTableBase(const xiiHashTableBase<K, V, H>& other, xiiAllocator* pAllocator)
 {
   m_pEntries    = nullptr;
   m_pEntryFlags = nullptr;
@@ -195,7 +194,7 @@ xiiHashTableBase<K, V, H>::xiiHashTableBase(const xiiHashTableBase<K, V, H>& oth
 }
 
 template <typename K, typename V, typename H>
-xiiHashTableBase<K, V, H>::xiiHashTableBase(xiiHashTableBase<K, V, H>&& other, xiiAllocatorBase* pAllocator)
+xiiHashTableBase<K, V, H>::xiiHashTableBase(xiiHashTableBase<K, V, H>&& other, xiiAllocator* pAllocator)
 {
   m_pEntries    = nullptr;
   m_pEntryFlags = nullptr;
@@ -330,7 +329,9 @@ void xiiHashTableBase<K, V, H>::Compact()
   {
     const xiiUInt32 uiNewCapacity = xiiMath::PowerOfTwo_Ceil(m_uiCount + (CAPACITY_ALIGNMENT - 1)) & ~(CAPACITY_ALIGNMENT - 1);
     if (m_uiCapacity != uiNewCapacity)
+    {
       SetCapacity(uiNewCapacity);
+    }
   }
 }
 
@@ -377,19 +378,25 @@ bool xiiHashTableBase<K, V, H>::Insert(CompatibleKeyType&& key, CompatibleValueT
     if (IsDeletedEntry(uiIndex))
     {
       if (uiDeletedIndex == xiiInvalidIndex)
+      {
         uiDeletedIndex = uiIndex;
+      }
     }
     else if (H::Equal(m_pEntries[uiIndex].key, key))
     {
       if (out_pOldValue != nullptr)
+      {
         *out_pOldValue = std::move(m_pEntries[uiIndex].value);
+      }
 
       m_pEntries[uiIndex].value = std::forward<CompatibleValueType>(value); // Either move or copy assignment.
       return true;
     }
     ++uiIndex;
     if (uiIndex == m_uiCapacity)
+    {
       uiIndex = 0;
+    }
 
     ++uiCounter;
   }
@@ -415,7 +422,9 @@ bool xiiHashTableBase<K, V, H>::Remove(const CompatibleKeyType& key, V* out_pOld
   if (uiIndex != xiiInvalidIndex)
   {
     if (out_pOldValue != nullptr)
+    {
       *out_pOldValue = std::move(m_pEntries[uiIndex].value);
+    }
 
     RemoveInternal(uiIndex);
     return true;
@@ -432,7 +441,9 @@ typename xiiHashTableBase<K, V, H>::Iterator xiiHashTableBase<K, V, H>::Remove(c
   xiiUInt32 uiIndex = pos.m_uiCurrentIndex;
   ++it;
   --it.m_uiCurrentCount;
+
   RemoveInternal(uiIndex);
+
   return it;
 }
 
@@ -444,7 +455,9 @@ void xiiHashTableBase<K, V, H>::RemoveInternal(xiiUInt32 uiIndex)
 
   xiiUInt32 uiNextIndex = uiIndex + 1;
   if (uiNextIndex == m_uiCapacity)
+  {
     uiNextIndex = 0;
+  }
 
   // if the next entry is free we are at the end of a chain and
   // can immediately mark this entry as free as well
@@ -461,7 +474,10 @@ void xiiHashTableBase<K, V, H>::RemoveInternal(xiiUInt32 uiIndex)
       MarkEntryAsFree(uiPrevIndex);
 
       if (uiPrevIndex == 0)
+      {
         uiPrevIndex = m_uiCapacity;
+      }
+
       --uiPrevIndex;
     }
   }
@@ -596,7 +612,9 @@ V& xiiHashTableBase<K, V, H>::FindOrAdd(const K& key, bool* out_pExisted)
     {
       ++uiIndex;
       if (uiIndex == m_uiCapacity)
+      {
         uiIndex = 0;
+      }
     }
 
     // new entry
@@ -651,7 +669,7 @@ XII_ALWAYS_INLINE typename xiiHashTableBase<K, V, H>::ConstIterator xiiHashTable
 }
 
 template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiHashTableBase<K, V, H>::GetAllocator() const
+XII_ALWAYS_INLINE xiiAllocator* xiiHashTableBase<K, V, H>::GetAllocator() const
 {
   return m_pAllocator;
 }
@@ -715,7 +733,9 @@ inline xiiUInt32 xiiHashTableBase<K, V, H>::FindEntry(xiiUInt32 uiHash, const Co
 
       ++uiIndex;
       if (uiIndex == m_uiCapacity)
+      {
         uiIndex = 0;
+      }
 
       ++uiCounter;
     }
@@ -807,7 +827,7 @@ xiiHashTable<K, V, H, A>::xiiHashTable() :
 }
 
 template <typename K, typename V, typename H, typename A>
-xiiHashTable<K, V, H, A>::xiiHashTable(xiiAllocatorBase* pAllocator) :
+xiiHashTable<K, V, H, A>::xiiHashTable(xiiAllocator* pAllocator) :
   xiiHashTableBase<K, V, H>(pAllocator)
 {
 }

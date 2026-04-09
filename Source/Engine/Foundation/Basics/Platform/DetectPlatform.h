@@ -12,24 +12,13 @@
 #  if TARGET_OS_MAC == 1
 #    undef XII_PLATFORM_OSX
 #    define XII_PLATFORM_OSX XII_ON
-#  elif TARGET_OS_IPHONE == 1 || TARGET_IPHONE_SIMULATOR == 1
-#    undef XII_PLATFORM_IOS
-#    define XII_PLATFORM_IOS XII_ON
 #  endif
-
-#elif defined(ANDROID)
-
-#  undef XII_PLATFORM_ANDROID
-#  define XII_PLATFORM_ANDROID XII_ON
 
 #elif defined(__linux)
 
 #  undef XII_PLATFORM_LINUX
 #  define XII_PLATFORM_LINUX XII_ON
 
-//#elif defined(...)
-//  #undef XII_PLATFORM_LINUX
-//  #define XII_PLATFORM_LINUX XII_ON
 #else
 #  error "Unknown Platform."
 #endif

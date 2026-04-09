@@ -171,8 +171,6 @@ public:                                                                         
   }                                                                                                                       \
   virtual xiiComponentMode::Enum                GetMode() const override;                                                 \
   static xiiTypedComponentHandle<componentType> CreateComponent(xiiGameObject* pOwnerObject, componentType*& pComponent); \
-  static void                                   DeleteComponent(componentType* pComponent);                               \
-  void                                          DeleteComponent();                                                        \
                                                                                                                           \
 private:                                                                                                                  \
   friend managerType;                                                                                                     \
@@ -213,14 +211,6 @@ public:                                                                   \
   xiiTypedComponentHandle<componentType> componentType::CreateComponent(xiiGameObject* pOwnerObject, componentType*& out_pComponent)     \
   {                                                                                                                                      \
     return pOwnerObject->GetWorld()->GetOrCreateComponentManager<ComponentManagerType>()->CreateComponent(pOwnerObject, out_pComponent); \
-  }                                                                                                                                      \
-  void componentType::DeleteComponent(componentType* pComponent)                                                                         \
-  {                                                                                                                                      \
-    pComponent->GetOwningManager()->DeleteComponent(pComponent->GetHandle());                                                            \
-  }                                                                                                                                      \
-  void componentType::DeleteComponent()                                                                                                  \
-  {                                                                                                                                      \
-    GetOwningManager()->DeleteComponent(GetHandle());                                                                                    \
   }                                                                                                                                      \
   XII_BEGIN_DYNAMIC_REFLECTED_TYPE(componentType, version, xiiRTTINoAllocator)
 

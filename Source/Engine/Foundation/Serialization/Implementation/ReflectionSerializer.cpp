@@ -218,7 +218,9 @@ namespace
             pSpecific->GetValue(pClone, i, &pOldSubClone);
             pSpecific->Remove(pClone, i);
             if (pOldSubClone)
+            {
               xiiReflectionUtils::DeleteObject(pOldSubClone, pProp);
+            }
           }
         }
 
@@ -277,7 +279,9 @@ namespace
           {
             void* pOldClone = value.ConvertTo<void*>();
             if (pOldClone)
+            {
               xiiReflectionUtils::DeleteObject(pOldClone, pProp);
+            }
           }
         }
         pSpecific->Clear(pClone);
@@ -323,7 +327,9 @@ namespace
             void*      pOldClone = value.ConvertTo<void*>();
             pSpecific->Remove(pClone, sKey);
             if (pOldClone)
+            {
               xiiReflectionUtils::DeleteObject(pOldClone, pProp);
+            }
           }
         }
         pSpecific->Clear(pClone);
@@ -333,8 +339,7 @@ namespace
 
         for (xiiUInt32 i = 0; i < keys.GetCount(); ++i)
         {
-          if (bIsValueType ||
-              (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) && !pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner)))
+          if (bIsValueType || (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) && !pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner)))
           {
             xiiVariant value = xiiReflectionUtils::GetMapPropertyValue(pSpecific, pObject, keys[i]);
             xiiReflectionUtils::SetMapPropertyValue(pSpecific, pClone, keys[i], value);
@@ -374,7 +379,9 @@ namespace
   static void CloneProperties(const void* pObject, void* pClone, const xiiRTTI* pType)
   {
     if (pType->GetParentType())
+    {
       CloneProperties(pObject, pClone, pType->GetParentType());
+    }
 
     for (auto* pProp : pType->GetProperties())
     {

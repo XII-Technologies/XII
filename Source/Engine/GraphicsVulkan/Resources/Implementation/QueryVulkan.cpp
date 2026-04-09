@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryVulkan, 1, xiiRTTINoAllocator)
@@ -49,14 +50,16 @@ bool xiiGALQueryVulkan::OnEndQuery(xiiGALCommandListVulkan* pCommandListVulkan)
 
   if (m_QueryPoolIndex[0] == xiiInvalidIndex || (m_Description.m_Type == xiiGALQueryType::Duration && m_QueryPoolIndex[1] == xiiInvalidIndex))
   {
-    xiiLog::Error("Query '{}' is invalid. Vulkan query allocation failed!");
-
+    xiiLog::Error("Query '{}' is invalid. Vulkan query allocation failed!", m_Description.m_Type.GetValue());
     return false;
   }
 
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
 
-  m_uiQueryEndFenceValue = m_pCommandList->GetCommandQueue()->GetNextFenceValue();
+  xiiSharedPtr<xiiGALDeviceVulkan>            pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const xiiGALCommandListCreationDescription& description   = pCommandListVulkan->GetDescription();
+
+  m_uiQueryEndFenceValue = pDeviceVulkan->GetCommandQueue(description.m_QueueFlags)->GetNextFenceValue();
 
   return false;
 }
@@ -70,8 +73,8 @@ bool xiiGALQueryVulkan::AllocateQueries()
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
   XII_ASSERT_DEV(m_pCommandList != nullptr, "");
 
-  xiiGALCommandQueueVulkan* pCommandQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(m_pCommandList->GetCommandQueue());
-  m_pQueryPoolVulkan                            = pDeviceVulkan->GetQueryPoolForCommandQueue(pCommandQueueVulkan);
+  const xiiGALCommandListCreationDescription& description = m_pCommandList->GetDescription();
+  m_pQueryPoolVulkan                                      = pDeviceVulkan->GetCommandQueueQueryPool(description.m_QueueFlags);
 
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
 

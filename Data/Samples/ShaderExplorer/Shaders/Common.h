@@ -5,7 +5,7 @@ DECLARE_CONSTANT_BUFFER(xiiMaterialConstants, 0, 1)
   MAT4(ViewMatrix);
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 
 struct VS_IN
 {

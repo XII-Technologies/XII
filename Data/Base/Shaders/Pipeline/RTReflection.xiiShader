@@ -1,0 +1,91 @@
+// XII Engine — RTReflection.xiiShader  [NEW]
+// Pass 39: DXR ray-generation for glossy reflections.
+// Budget-based: rougher pixels fire fewer rays, smoother pixels fire more.
+
+#include "PipelineCommon.xiiShader"
+
+RaytracingAccelerationStructure g_TLAS       : register(t0);
+Texture2D<float>                g_SceneDepth : register(t1);
+Texture2D<float2>               g_NRBuffer   : register(t2); // oct-normal + roughness in .g
+Texture2D<float4>               g_GBufMat    : register(t3); // r=roughness
+TextureCube<float4>             g_EnvCube    : register(t4); // fallback IBL
+RWTexture2D<float4>             g_ReflOut    : register(u0);
+
+cbuffer RTReflConstants : register(b3)
+{
+    float g_MaxRoughnessForRT;
+    uint  g_MaxRaysPerPixel;
+    float g_RayBias;
+    float _pad;
+};
+
+struct ReflPayload { float4 radiance; float hitT; };
+
+[shader("raygeneration")]
+void RGS_RTReflection()
+{
+    uint2 idx  = DispatchRaysIndex().xy;
+    uint2 dims = DispatchRaysDimensions().xy;
+    float2 uv  = (float2(idx) + 0.5f) / float2(dims);
+
+    float  roughness = g_GBufMat.SampleLevel(g_sPointClamp, uv, 0).r;
+    g_ReflOut[idx]   = float4(0,0,0,0);
+    if (roughness > g_MaxRoughnessForRT) return;
+
+    float  depth    = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f) return;
+
+    float3 worldPos = ReconstructWorldPos(uv, depth);
+    float3 V        = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
+    float3 N        = DecodeOctNormal(g_NRBuffer.SampleLevel(g_sPointClamp, uv, 0));
+
+    // Reduce ray count for rougher surfaces.
+    uint rays = max(1u, uint(float(g_MaxRaysPerPixel) * (1.0f - roughness / g_MaxRoughnessForRT)));
+
+    float4 totalRad = float4(0,0,0,0);
+    for (uint r = 0u; r < rays; ++r)
+    {
+        // GGX importance sample direction.
+        float noise  = InterleavedGradientNoise(float2(idx), g_FrameIndex * g_MaxRaysPerPixel + r);
+        float noise2 = HaltonSample(g_FrameIndex * g_MaxRaysPerPixel + r, 3u);
+        float a  = roughness * roughness;
+        float phi = 2.0f * 3.14159265f * noise;
+        float cosTheta = sqrt((1.0f - noise2) / (1.0f + (a*a - 1.0f) * noise2));
+        float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+        float3 up   = abs(N.y) < 0.99f ? float3(0,1,0) : float3(1,0,0);
+        float3 T    = normalize(cross(up, N));
+        float3 B    = cross(N, T);
+        float3 H    = normalize(T * sinTheta * cos(phi) + B * sinTheta * sin(phi) + N * cosTheta);
+        float3 R    = reflect(-V, H);
+
+        RayDesc ray;
+        ray.Origin    = worldPos + N * g_RayBias;
+        ray.Direction = R;
+        ray.TMin      = 0.001f;
+        ray.TMax      = 500.0f;
+
+        ReflPayload payload = { float4(0,0,0,0), 0.0f };
+        TraceRay(g_TLAS, 0u, 0xFFu, 0u, 0u, 0u, ray, payload);
+        totalRad += payload.radiance;
+    }
+
+    g_ReflOut[idx] = totalRad / float(rays);
+}
+
+[shader("miss")]
+void MISS_RTReflection(inout ReflPayload payload)
+{
+    // Sample environment cube as infinite fallback.
+    float3 dir = WorldRayDirection();
+    payload.radiance = float4(g_EnvCube.SampleLevel(g_sLinearClamp, dir, 4.0f).rgb, 0.0f);
+    payload.hitT     = -1.0f;
+}
+
+[shader("closesthit")]
+void CHS_RTReflection(inout ReflPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+    // Simplified: re-shade hit surface with direct lighting only.
+    // Production: trace secondary shadow rays here.
+    payload.radiance = float4(0.2f, 0.2f, 0.2f, 1.0f); // placeholder shading at hit
+    payload.hitT     = RayTCurrent();
+}

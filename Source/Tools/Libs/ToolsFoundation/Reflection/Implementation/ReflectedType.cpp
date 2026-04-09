@@ -31,9 +31,12 @@ xiiAttributeHolder::xiiAttributeHolder(const xiiAttributeHolder& rhs)
 
 xiiAttributeHolder::~xiiAttributeHolder()
 {
-  for (auto pAttr : m_Attributes)
+  for (const xiiPropertyAttribute* pAttr : m_Attributes)
   {
-    pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
+    if (pAttr)
+    {
+      pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
+    }
   }
 }
 

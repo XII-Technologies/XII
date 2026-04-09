@@ -25,7 +25,8 @@ xiiTransformStatus xiiImageDataAssetDocument::InternalTransformAsset(xiiStringVi
     // if the file was touched, but nothing written to it, delete the file
     // might happen if TexConv crashed or had an error
     xiiOSFile::DeleteFile(sTargetFile).IgnoreResult();
-    result.m_Result = XII_FAILURE;
+
+    result = xiiStatus(xiiFmt("File does not exist: '{}'.", sTargetFile));
   }
 
   if (result.Succeeded())
@@ -128,5 +129,5 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(xiiStringView sTargetFile, const
     InvalidateAssetThumbnail();
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

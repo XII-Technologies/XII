@@ -21,7 +21,7 @@ namespace xiiInternal
     {
       using ComponentType = typename std::conditional<std::is_const<World>::value, const xiiComponent*, xiiComponent*>::type;
 
-      xiiHybridArray<ComponentType, 4> eventMsgHandlers;
+      xiiTemporaryHybridArray<ComponentType, 4> eventMsgHandlers;
       ref_world.FindEventMsgHandlers(msg, pSearchObject, eventMsgHandlers);
 
       for (auto pEventMsgHandler : eventMsgHandlers)

@@ -2,6 +2,7 @@
 
 #include <Foundation/Application/Application.h>
 #include <Foundation/Communication/Telemetry.h>
+#include <GuiFoundation/Style/DarkEditorStyle.moc.h>
 #include <Inspector/CVarsWidget.moc.h>
 #include <Inspector/DataTransferWidget.moc.h>
 #include <Inspector/FileWidget.moc.h>
@@ -16,6 +17,7 @@
 #include <Inspector/ResourceWidget.moc.h>
 #include <Inspector/SubsystemsWidget.moc.h>
 #include <Inspector/TimeWidget.moc.h>
+
 #include <QApplication>
 #include <QSettings>
 #include <qstylefactory.h>
@@ -32,40 +34,7 @@ public:
 
   void SetStyleSheet()
   {
-    QApplication::setStyle(QStyleFactory::create("fusion"));
-    QPalette palette;
-
-    palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
-    palette.setColor(QPalette::Button, QColor(50, 50, 50, 255));
-    palette.setColor(QPalette::Light, QColor(60, 60, 60, 255));
-    palette.setColor(QPalette::Midlight, QColor(59, 59, 59, 255));
-    palette.setColor(QPalette::Dark, QColor(45, 45, 45, 255));
-    palette.setColor(QPalette::Mid, QColor(45, 45, 45, 255));
-    palette.setColor(QPalette::Text, QColor(200, 200, 200, 255));
-    palette.setColor(QPalette::BrightText, QColor(180, 180, 180, 255));
-    palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));
-    palette.setColor(QPalette::Base, QColor(15, 15, 15, 255));
-    palette.setColor(QPalette::AlternateBase, QColor(15, 15, 15, 255));
-    palette.setColor(QPalette::Window, QColor(25, 25, 25, 255));
-    palette.setColor(QPalette::Shadow, QColor(0, 0, 0, 255));
-    palette.setColor(QPalette::Highlight, QColor(103, 141, 178, 255));
-    palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255, 255));
-    palette.setColor(QPalette::Link, QColor(0, 0, 238, 255));
-    palette.setColor(QPalette::LinkVisited, QColor(82, 24, 139, 255));
-    QBrush NoRoleBrush(QColor(0, 0, 0, 255), Qt::NoBrush);
-    palette.setBrush(QPalette::NoRole, NoRoleBrush);
-    palette.setColor(QPalette::ToolTipBase, QColor(255, 255, 220, 255));
-    palette.setColor(QPalette::ToolTipText, QColor(0, 0, 0, 255));
-    palette.setColor(QPalette::PlaceholderText, QColor(200, 200, 200, 255).darker());
-
-    palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(128, 128, 128, 255));
-    palette.setColor(QPalette::Disabled, QPalette::Button, QColor(40, 40, 40, 255));
-    palette.setColor(QPalette::Disabled, QPalette::Text, QColor(105, 105, 105, 255));
-    palette.setColor(QPalette::Disabled, QPalette::BrightText, QColor(255, 255, 255, 255));
-    palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128, 255));
-    palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(86, 117, 148, 255));
-
-    QApplication::setPalette(palette);
+    QApplication::setStyle(new xiiQtDarkEditorStyle);
   }
 
   virtual xiiResult BeforeCoreSystemsStartup() override

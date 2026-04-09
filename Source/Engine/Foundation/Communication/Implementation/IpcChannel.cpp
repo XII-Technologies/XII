@@ -74,26 +74,27 @@ void xiiIpcChannel::Disconnect()
 }
 
 
-bool xiiIpcChannel::Send(xiiArrayPtr<const xiiUInt8> data)
+bool xiiIpcChannel::Send(xiiArrayPtr<const xiiUInt8> pData)
 {
   {
     XII_LOCK(m_OutputQueueMutex);
     xiiMemoryStreamStorageInterface& storage = m_OutputQueue.ExpandAndGetRef();
     xiiMemoryStreamWriter            writer(&storage);
-    xiiUInt32                        uiSize  = data.GetCount() + HEADER_SIZE;
+    xiiUInt32                        uiSize  = pData.GetCount() + HEADER_SIZE;
     xiiUInt32                        uiMagic = MAGIC_VALUE;
     writer << uiMagic;
     writer << uiSize;
     XII_ASSERT_DEBUG(storage.GetStorageSize32() == HEADER_SIZE, "Magic value and size should have written HEADER_SIZE bytes.");
-    writer.WriteBytes(data.GetPtr(), data.GetCount()).AssertSuccess("Failed to write to in-memory buffer, out of memory?");
+    writer.WriteBytes(pData.GetPtr(), pData.GetCount()).AssertSuccess("Failed to write to in-memory buffer, out of memory?");
   }
   if (IsConnected())
   {
     XII_LOCK(m_pOwner->m_TasksMutex);
 
     if (!m_pOwner->m_SendQueue.Contains(this))
+    {
       m_pOwner->m_SendQueue.PushBack(this);
-
+    }
     if (NeedWakeup())
     {
       m_pOwner->WakeUp();
@@ -136,38 +137,38 @@ void xiiIpcChannel::SetConnectionState(xiiEnum<xiiIpcChannel::ConnectionState> s
   }
 }
 
-void xiiIpcChannel::ReceiveData(xiiArrayPtr<const xiiUInt8> data)
+void xiiIpcChannel::ReceiveData(xiiArrayPtr<const xiiUInt8> pData)
 {
   XII_LOCK(m_ReceiveCallbackMutex);
 
   if (!m_ReceiveCallback.IsValid())
   {
-    m_MessageAccumulator.PushBackRange(data);
+    m_MessageAccumulator.PushBackRange(pData);
     return;
   }
 
-  xiiArrayPtr<const xiiUInt8> remainingData = data;
+  xiiArrayPtr<const xiiUInt8> pRemainingData = pData;
   while (true)
   {
     if (m_MessageAccumulator.GetCount() < HEADER_SIZE)
     {
-      if (remainingData.GetCount() + m_MessageAccumulator.GetCount() < HEADER_SIZE)
+      if (pRemainingData.GetCount() + m_MessageAccumulator.GetCount() < HEADER_SIZE)
       {
-        m_MessageAccumulator.PushBackRange(remainingData);
+        m_MessageAccumulator.PushBackRange(pRemainingData);
         return;
       }
       else
       {
         xiiUInt32                   uiRemainingHeaderData = HEADER_SIZE - m_MessageAccumulator.GetCount();
-        xiiArrayPtr<const xiiUInt8> headerData            = remainingData.GetSubArray(0, uiRemainingHeaderData);
-        m_MessageAccumulator.PushBackRange(headerData);
+        xiiArrayPtr<const xiiUInt8> pHeaderData           = pRemainingData.GetSubArray(0, uiRemainingHeaderData);
+        m_MessageAccumulator.PushBackRange(pHeaderData);
         XII_ASSERT_DEBUG(m_MessageAccumulator.GetCount() == HEADER_SIZE, "We should have a full header now.");
-        remainingData = remainingData.GetSubArray(uiRemainingHeaderData);
+        pRemainingData = pRemainingData.GetSubArray(uiRemainingHeaderData);
       }
     }
 
     XII_ASSERT_DEBUG(m_MessageAccumulator.GetCount() >= HEADER_SIZE, "Header must be complete at this point.");
-    if (remainingData.IsEmpty())
+    if (pRemainingData.IsEmpty())
       return;
 
     // Read and verify header
@@ -176,18 +177,18 @@ void xiiIpcChannel::ReceiveData(xiiArrayPtr<const xiiUInt8> data)
     XII_ASSERT_DEBUG(uiMagic == MAGIC_VALUE, "Message received with wrong magic value.");
     xiiUInt32 uiMessageSize = *reinterpret_cast<const xiiUInt32*>(m_MessageAccumulator.GetData() + 4);
     XII_ASSERT_DEBUG(uiMessageSize < MAX_MESSAGE_SIZE, "Message too big: {0}! Either the stream got corrupted or you need to increase MAX_MESSAGE_SIZE.", uiMessageSize);
-    if (uiMessageSize > remainingData.GetCount() + m_MessageAccumulator.GetCount())
+    if (uiMessageSize > pRemainingData.GetCount() + m_MessageAccumulator.GetCount())
     {
-      m_MessageAccumulator.PushBackRange(remainingData);
+      m_MessageAccumulator.PushBackRange(pRemainingData);
       return;
     }
 
     // Write missing data into message accumulator
-    xiiUInt32                   remainingMessageData = uiMessageSize - m_MessageAccumulator.GetCount();
-    xiiArrayPtr<const xiiUInt8> messageData          = remainingData.GetSubArray(0, remainingMessageData);
-    m_MessageAccumulator.PushBackRange(messageData);
+    xiiUInt32                   uiRemainingMessageData = uiMessageSize - m_MessageAccumulator.GetCount();
+    xiiArrayPtr<const xiiUInt8> pMessageData           = pRemainingData.GetSubArray(0, uiRemainingMessageData);
+    m_MessageAccumulator.PushBackRange(pMessageData);
     XII_ASSERT_DEBUG(m_MessageAccumulator.GetCount() == uiMessageSize, "");
-    remainingData = remainingData.GetSubArray(remainingMessageData);
+    pRemainingData = pRemainingData.GetSubArray(uiRemainingMessageData);
 
     {
       m_ReceiveCallback(xiiArrayPtr<const xiiUInt8>(m_MessageAccumulator.GetData() + HEADER_SIZE, uiMessageSize - HEADER_SIZE));

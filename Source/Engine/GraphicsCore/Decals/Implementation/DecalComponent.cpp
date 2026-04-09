@@ -458,12 +458,12 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
   pRenderData->m_uiFlags         = uiDecalFlags;
   pRenderData->m_uiFlags |= (m_bWrapAround ? DECAL_WRAP_AROUND : 0);
   pRenderData->m_uiFlags |= (m_bMapNormalToGeometry ? DECAL_MAP_NORMAL_TO_GEOMETRY : 0);
-  pRenderData->m_uiAngleFadeParams = xiiShaderUtilities::Float2ToRG16F(xiiVec2(fFadeParamScale, fFadeParamOffset));
+  pRenderData->m_uiAngleFadeParams = xiiGALShaderUtilities::Float2ToRG16F(xiiVec2(fFadeParamScale, fFadeParamOffset));
   pRenderData->m_BaseColor         = finalColor;
   pRenderData->m_EmissiveColor     = m_EmissiveColor;
-  xiiShaderUtilities::Float4ToRGBA16F(baseAtlasScaleOffset, pRenderData->m_uiBaseColorAtlasScale, pRenderData->m_uiBaseColorAtlasOffset);
-  xiiShaderUtilities::Float4ToRGBA16F(normalAtlasScaleOffset, pRenderData->m_uiNormalAtlasScale, pRenderData->m_uiNormalAtlasOffset);
-  xiiShaderUtilities::Float4ToRGBA16F(ormAtlasScaleOffset, pRenderData->m_uiORMAtlasScale, pRenderData->m_uiORMAtlasOffset);
+  xiiGALShaderUtilities::Float4ToRGBA16F(baseAtlasScaleOffset, pRenderData->m_uiBaseColorAtlasScale, pRenderData->m_uiBaseColorAtlasOffset);
+  xiiGALShaderUtilities::Float4ToRGBA16F(normalAtlasScaleOffset, pRenderData->m_uiNormalAtlasScale, pRenderData->m_uiNormalAtlasOffset);
+  xiiGALShaderUtilities::Float4ToRGBA16F(ormAtlasScaleOffset, pRenderData->m_uiORMAtlasScale, pRenderData->m_uiORMAtlasOffset);
 
   xiiRenderData::Caching::Enum caching = (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0) ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Decal, caching);

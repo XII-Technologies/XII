@@ -1,6 +1,6 @@
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>
-XII_ALWAYS_INLINE xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::xiiGALVertexBufferPool(xiiStringView sName, xiiAllocatorBase* pAllocator, xiiUInt32 uiInitialChunkSize, xiiUInt32 uiExpansionFactor) :
+XII_ALWAYS_INLINE xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::xiiGALVertexBufferPool(xiiStringView sName, xiiAllocator* pAllocator, xiiUInt32 uiInitialChunkSize, xiiUInt32 uiExpansionFactor) :
   m_Allocator(sName.IsEmpty() ? "VertexBufferPool" : sName, pAllocator), m_uiInitialChunkSize(uiInitialChunkSize), m_uiExpansionFactor(uiExpansionFactor)
 {
   XII_ASSERT_DEV(uiInitialChunkSize > 0, "Initial chunk size must be greater than zero.");

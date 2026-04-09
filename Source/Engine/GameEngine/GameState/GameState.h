@@ -17,7 +17,6 @@ class xiiView;
 struct xiiActorEvent;
 class xiiWindowOutputTargetGAL;
 class xiiActor;
-class xiiDummyXR;
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 
@@ -72,7 +71,7 @@ public:
   ///
   /// Calls CreateActors() to create the game's main window and setup input devices.
   /// Calls ConfigureInputActions() to setup input actions.
-  /// Finally switches to pWorld (if available) or starts loading the scene that GetStartupSceneFile() returns.
+  /// Finally switches to pWorld (if available) or starts loading the scene that GetStartupOptions() returns.
   ///
   /// Override any of the above functions to customize them.
   virtual void OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset) override;
@@ -152,9 +151,6 @@ protected:
   /// Returns XII_SUCCESS if a prefab was spawned, XII_FAILURE if nothing was done.
   virtual xiiResult SpawnPlayer(xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
 
-  /// \brief Creates an XR Actor, if XR is configured and available for the project.
-  xiiUniquePtr<xiiActor> CreateXRActor();
-
   /// \brief Creates a default main view.
   xiiView* CreateMainView();
 
@@ -183,11 +179,11 @@ protected:
   /// Called by CreateActors() with the result of CreateMainWindow().
   virtual void ConfigureMainWindowInputDevices(xiiWindow* pWindow);
 
-  /// \brief Returns the path to the scene file to load at startup.
+  /// \brief Returns the path to the scene file and the corresponding preload collection to load at startup.
   ///
   /// By default this is taken from the command line '-scene' option.
   /// Override this function to define a custom startup scene (e.g. for the main menu) or load a saved state.
-  virtual xiiString GetStartupSceneFile();
+  virtual void GetStartupOptions(xiiString& out_sScene, xiiString& out_sPreloadCollection);
 
   /// \brief Called by SwitchToLoadingScreen() to set up a new loading screen world.
   ///
@@ -219,11 +215,8 @@ protected:
 
   xiiWorld* m_pMainWorld = nullptr;
 
-  xiiCamera                m_MainCamera;
-  xiiUniquePtr<xiiDummyXR> m_pDummyXR;
-  bool                     m_bStateWantsToQuit  = false;
-  bool                     m_bXREnabled         = false;
-  bool                     m_bXRRemotingEnabled = false;
+  xiiCamera m_MainCamera;
+  bool      m_bStateWantsToQuit = false;
 
   bool                              m_bTransitionWhenReady = false;
   xiiUniquePtr<xiiSceneLoadUtility> m_pBackgroundSceneLoad;

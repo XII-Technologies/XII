@@ -68,7 +68,7 @@ xiiStatus xiiObjectPropertyPath::CreatePath(const xiiObjectPropertyPathContext& 
 
     pObject = pObject->GetParent();
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiObjectPropertyPath::CreatePropertyPath(const xiiObjectPropertyPathContext& context, const xiiPropertyReference& prop, xiiStringBuilder& out_sPropertyPath)
@@ -91,7 +91,7 @@ xiiStatus xiiObjectPropertyPath::CreatePropertyPath(const xiiObjectPropertyPathC
 
     pObject = pObject->GetParent();
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiObjectPropertyPath::ResolvePath(const xiiObjectPropertyPathContext& context, xiiDynamicArray<xiiPropertyReference>& ref_keys, const char* szObjectSearchSequence, const char* szComponentType, const char* szPropertyPath)
@@ -217,7 +217,7 @@ xiiStatus xiiObjectPropertyPath::ResolvePropertyPath(const xiiObjectPropertyPath
     }
 
     xiiVariant value;
-    xiiStatus  res;
+    xiiStatus  res(XII_SUCCESS);
     if (const xiiExposedParametersAttribute* pAttrib = pProperty->GetAttributeByType<xiiExposedParametersAttribute>())
     {
       const xiiAbstractProperty* pParameterSourceProp = pObject->GetType()->FindPropertyByName(pAttrib->GetParametersSource());
@@ -238,7 +238,7 @@ xiiStatus xiiObjectPropertyPath::ResolvePropertyPath(const xiiObjectPropertyPath
       out_key.m_Object    = pObject->GetGuid();
       out_key.m_pProperty = pProperty;
       out_key.m_Index     = index;
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
     else
     {
@@ -265,7 +265,7 @@ xiiStatus xiiObjectPropertyPath::PrependProperty(const xiiDocumentObject* pObjec
       if (!out_sPropertyPath.IsEmpty())
         out_sPropertyPath.Prepend("/");
       out_sPropertyPath.Prepend(pProperty->GetPropertyName());
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
     case xiiPropertyCategory::Enum::Array:
     case xiiPropertyCategory::Enum::Map:
@@ -276,7 +276,7 @@ xiiStatus xiiObjectPropertyPath::PrependProperty(const xiiDocumentObject* pObjec
         out_sPropertyPath.PrependFormat("{0}[{1}]", pProperty->GetPropertyName(), index);
       else
         out_sPropertyPath.PrependFormat("{0}", pProperty->GetPropertyName());
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
     default:
       return xiiStatus(xiiFmt("The property '{0}' of category '{1}' which is not supported in property paths", pProperty->GetPropertyName(), pProperty->GetCategory()));

@@ -4,6 +4,19 @@
 
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
+
+class XII_GRAPHICSCORE_DLL xiiSimplifiedDataCPU : public xiiRenderData
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiSimplifiedDataCPU, xiiRenderData);
+
+public:
+  xiiSimplifiedDataCPU();
+  ~xiiSimplifiedDataCPU();
+
+  xiiUInt32                   m_uiSkyIrradianceIndex = 0;
+  xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
+};
 
 struct XII_GRAPHICSCORE_DLL xiiSimplifiedDataGPU
 {
@@ -13,12 +26,12 @@ public:
   xiiSimplifiedDataGPU();
   ~xiiSimplifiedDataGPU();
 
-  xiiUInt32                      m_uiSkyIrradianceIndex = 0;
-  xiiEnum<xiiCameraUsageHint>    m_cameraUsageHint      = xiiCameraUsageHint::Default;
+  xiiUInt32                   m_uiSkyIrradianceIndex = 0;
+  xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
 
-  xiiSharedPtr<xiiGALBuffer>     m_pSimplifiedDataConstantBuffer;
+  xiiSharedPtr<xiiGALBuffer> m_pSimplifiedDataConstantBuffer;
 
-  void BindResources(xiiSharedPtr<xiiGALCommandList> pCommandList);
+  void BindResources(xiiRenderContext* pRenderContext);
 };
 
 class XII_GRAPHICSCORE_DLL xiiSimplifiedDataProvider : public xiiFrameDataProvider<xiiSimplifiedDataGPU>
@@ -30,7 +43,7 @@ public:
   ~xiiSimplifiedDataProvider();
 
 private:
-  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiExtractedRenderData& extractedData) override;
+  virtual void* UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData) override;
 
   xiiSimplifiedDataGPU m_Data;
 };

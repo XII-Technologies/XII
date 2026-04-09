@@ -39,17 +39,13 @@ struct xiiMemoryMappedFileImpl
       close(m_hFile);
       m_hFile = -1;
     }
-#  if XII_ENABLED(XII_PLATFORM_ANDROID)
-    // shm_open / shm_unlink deprecated.
-    // There is an alternative in ASharedMemory_create but that is only
-    // available in API 26 upwards.
-#  else
+
     if (!m_sSharedMemoryName.IsEmpty())
     {
       shm_unlink(m_sSharedMemoryName);
       m_sSharedMemoryName.Clear();
     }
-#  endif
+
     m_uiFileSize = 0;
 #endif
   }

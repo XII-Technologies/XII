@@ -319,8 +319,8 @@ xiiResult xiiExpressionCompiler::AssignRegisters()
   m_LiveIntervals.Sort([](const LiveInterval& a, const LiveInterval& b) { return a.m_uiStart < b.m_uiStart; });
 
   // Assign registers
-  xiiHybridArray<LiveInterval, 64> activeIntervals;
-  xiiHybridArray<xiiUInt32, 64>    freeRegisters;
+  xiiTemporaryHybridArray<LiveInterval, 64> activeIntervals;
+  xiiTemporaryHybridArray<xiiUInt32, 64>    freeRegisters;
 
   for (auto& liveInterval : m_LiveIntervals)
   {
@@ -358,9 +358,9 @@ xiiResult xiiExpressionCompiler::AssignRegisters()
 
 xiiResult xiiExpressionCompiler::GenerateByteCode(const xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode)
 {
-  xiiHybridArray<xiiExpression::StreamDesc, 8>   inputs;
-  xiiHybridArray<xiiExpression::StreamDesc, 8>   outputs;
-  xiiHybridArray<xiiExpression::FunctionDesc, 4> functions;
+  xiiTemporaryHybridArray<xiiExpression::StreamDesc, 8>   inputs;
+  xiiTemporaryHybridArray<xiiExpression::StreamDesc, 8>   outputs;
+  xiiTemporaryHybridArray<xiiExpression::FunctionDesc, 4> functions;
 
   m_ByteCode.Clear();
 

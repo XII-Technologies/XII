@@ -1,4 +1,3 @@
-#pragma once
 
 #include <Foundation/Math/Math.h>
 
@@ -19,7 +18,7 @@ xiiListBase<T>::ListElement::ListElement(const T& data) :
 // **** xiiListBase ****
 
 template <typename T>
-xiiListBase<T>::xiiListBase(xiiAllocatorBase* pAllocator) :
+xiiListBase<T>::xiiListBase(xiiAllocator* pAllocator) :
   m_End(reinterpret_cast<ListElement*>(&m_Last)), m_uiCount(0), m_Elements(pAllocator), m_pFreeElementStack(nullptr)
 {
   m_First.m_pNext = reinterpret_cast<ListElement*>(&m_Last);
@@ -27,7 +26,7 @@ xiiListBase<T>::xiiListBase(xiiAllocatorBase* pAllocator) :
 }
 
 template <typename T>
-xiiListBase<T>::xiiListBase(const xiiListBase<T>& cc, xiiAllocatorBase* pAllocator) :
+xiiListBase<T>::xiiListBase(const xiiListBase<T>& cc, xiiAllocator* pAllocator) :
   m_End(reinterpret_cast<ListElement*>(&m_Last)), m_uiCount(0), m_Elements(pAllocator), m_pFreeElementStack(nullptr)
 {
   m_First.m_pNext = reinterpret_cast<ListElement*>(&m_Last);
@@ -132,7 +131,9 @@ template <typename T>
 void xiiListBase<T>::Clear()
 {
   if (!IsEmpty())
+  {
     Remove(GetIterator(), GetEndIterator());
+  }
 
   m_pFreeElementStack = nullptr;
   m_Elements.Clear();
@@ -291,7 +292,9 @@ typename xiiListBase<T>::Iterator xiiListBase<T>::Remove(Iterator first, const I
   XII_ASSERT_DEV(last.m_pElement != nullptr, "The iterator (last) is invalid.");
 
   while (first != last)
+  {
     first = Remove(first);
+  }
 
   return last;
 }
@@ -303,10 +306,14 @@ template <typename T>
 void xiiListBase<T>::SetCount(xiiUInt32 uiNewSize)
 {
   while (m_uiCount > uiNewSize)
+  {
     PopBack();
+  }
 
   while (m_uiCount < uiNewSize)
+  {
     PushBack();
+  }
 }
 
 template <typename T>
@@ -337,7 +344,7 @@ xiiList<T, A>::xiiList() :
 }
 
 template <typename T, typename A>
-xiiList<T, A>::xiiList(xiiAllocatorBase* pAllocator) :
+xiiList<T, A>::xiiList(xiiAllocator* pAllocator) :
   xiiListBase<T>(pAllocator)
 {
 }

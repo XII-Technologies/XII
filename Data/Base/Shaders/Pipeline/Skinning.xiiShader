@@ -1,0 +1,74 @@
+// XII Engine — Skinning.xiiShader
+// Pass 4: GPU skinning and morph target application.
+// Dispatch: ceil(VertexCount/64) × 1 × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer SkinningConstants : register(b3)
+{
+    uint  g_VertexCount;
+    uint  g_MorphTargetCount;
+    float g_MorphBlendWeight;
+    uint  _pad;
+};
+
+struct SkinVertex
+{
+    float3 Position;   float _p0;
+    float3 Normal;     float _p1;
+    float4 Tangent;
+    float2 UV0;        float2 UV1;
+    uint4  BoneIndices;
+    float4 BoneWeights;
+};
+
+struct SkinnedVertex
+{
+    float3 Position;   float _p0;
+    float3 Normal;     float _p1;
+    float4 Tangent;
+    float2 UV0;        float2 UV1;
+};
+
+StructuredBuffer<float4x3>       g_BonePalette     : register(t0);
+StructuredBuffer<SkinVertex>     g_InputVertices   : register(t1);
+StructuredBuffer<float4>         g_MorphDeltas     : register(t2);
+StructuredBuffer<float>          g_MorphWeights    : register(t3);
+RWStructuredBuffer<SkinnedVertex>g_OutputVertices  : register(u0);
+
+[numthreads(64, 1, 1)]
+void CS_Skinning(uint3 tid : SV_DispatchThreadID)
+{
+    uint vIdx = tid.x;
+    if (vIdx >= g_VertexCount) return;
+
+    SkinVertex v = g_InputVertices[vIdx];
+
+    float4x3 blendedMat = (float4x3)0;
+    float totalWeight = 0.0f;
+    [unroll(4)]
+    for (int b = 0; b < 4; ++b)
+    {
+        float w = v.BoneWeights[b];
+        if (w <= 0.0f) continue;
+        blendedMat += g_BonePalette[v.BoneIndices[b]] * w;
+        totalWeight += w;
+    }
+    if (totalWeight > 0.001f) blendedMat /= totalWeight;
+
+    float3 skinnedPos = mul(float4(v.Position, 1.0f), blendedMat).xyz;
+    float3 skinnedNor = normalize(mul(float4(v.Normal,  0.0f), blendedMat).xyz);
+
+    for (uint m = 0u; m < g_MorphTargetCount; ++m)
+    {
+        float w = g_MorphWeights[m];
+        if (abs(w) < 1e-5f) continue;
+        float4 delta = g_MorphDeltas[m * g_VertexCount + vIdx];
+        skinnedPos += delta.xyz * w;
+    }
+
+    SkinnedVertex o;
+    o.Position = skinnedPos; o.Normal = skinnedNor;
+    o.Tangent  = v.Tangent;  o.UV0 = v.UV0; o.UV1 = v.UV1;
+    g_OutputVertices[vIdx] = o;
+}

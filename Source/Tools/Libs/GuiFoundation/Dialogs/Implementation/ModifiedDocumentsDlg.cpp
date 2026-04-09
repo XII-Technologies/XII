@@ -88,7 +88,7 @@ xiiResult xiiQtModifiedDocumentsDlg::SaveDocument(xiiDocument* pDoc)
 
   auto res = pDoc->SaveDocument();
 
-  if (res.m_Result.Failed())
+  if (res.Failed())
   {
     xiiStringBuilder s, s2;
     s.SetFormat("Failed to save document:\n'{0}'", pDoc->GetDocumentPath());

@@ -125,6 +125,13 @@ XII_FORCE_INLINE xiiHashedString xiiMakeHashedString(const char (&string)[N])
   return sResult;
 }
 
+XII_FORCE_INLINE xiiHashedString xiiMakeHashedString(xiiStringView sString)
+{
+  xiiHashedString sResult;
+  sResult.Assign(sString);
+  return sResult;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString()
@@ -134,9 +141,9 @@ XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString()
 }
 
 template <size_t N>
-XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(const char (&string)[N])
+XII_ALWAYS_INLINE constexpr xiiTempHashedString::xiiTempHashedString(const char (&string)[N]) :
+  m_uiHash(xiiHashingUtils::StringHash<N>(string))
 {
-  m_uiHash = xiiHashingUtils::StringHash<N>(string);
 }
 
 XII_ALWAYS_INLINE xiiTempHashedString::xiiTempHashedString(xiiStringView sString)

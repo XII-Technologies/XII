@@ -10,15 +10,12 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Algorithm_Implementation_HashingUtils);
   XII_STATICLINK_REFERENCE(Foundation_Application_Config_Implementation_FileSystemConfig);
   XII_STATICLINK_REFERENCE(Foundation_Application_Config_Implementation_PluginConfig);
-  XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_Android_Application_android);
   XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_Application);
   XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_MainLoop);
   XII_STATICLINK_REFERENCE(Foundation_Application_Implementation_Win_ApplicationEntryPoint_win);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Assert);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Basics);
   XII_STATICLINK_REFERENCE(Foundation_Basics_IncludeAll);
-  XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Android_AndroidJni);
-  XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Android_AndroidUtils);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Win_HResultUtils);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Win_MinWindows);
   XII_STATICLINK_REFERENCE(Foundation_Basics_Platform_Win_WinRTUtils);
@@ -118,6 +115,7 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_AllocatorWrapper);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_EndianHelper);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_FrameAllocator);
+  XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_TemporaryAllocator);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_MemoryTracker);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_MemoryUtils);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_PageAllocator);

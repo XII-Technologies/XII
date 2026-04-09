@@ -8,9 +8,9 @@
 #  define USE_WORLDPOS
 #endif
 
-#if SHADING_QUALITY == SHADING_QUALITY_NORMAL
+#if SHADING_QUALITY == SHADING_QUALITY_MEDIUM
 #  include <Shaders/Materials/MaterialPixelShaderNormal.h>
-#elif SHADING_QUALITY == SHADING_QUALITY_SIMPLIFIED
+#elif SHADING_QUALITY == SHADING_QUALITY_LOW
 #  include <Shaders/Materials/MaterialPixelShaderSimplified.h>
 #else
 #  error "Unknown shading quality configuration."

@@ -38,7 +38,9 @@ void xiiQuakeConsole::AddConsoleString(xiiStringView sText, xiiConsoleString::Ty
   cs.m_Type            = type;
 
   if (m_ConsoleStrings.GetCount() > m_uiMaxConsoleStrings)
+  {
     m_ConsoleStrings.PopBack(m_ConsoleStrings.GetCount() - m_uiMaxConsoleStrings);
+  }
 
   xiiConsole::AddConsoleString(sText, type);
 }
@@ -49,7 +51,6 @@ const xiiDeque<xiiConsoleString>& xiiQuakeConsole::GetConsoleStrings() const
   {
     return m_FilteredConsoleStrings;
   }
-
   return m_ConsoleStrings;
 }
 
@@ -422,7 +423,7 @@ void xiiConsole::LoadInputHistory(xiiStringView sFile)
   xiiStringBuilder str;
   str.ReadAll(file);
 
-  xiiHybridArray<xiiStringView, 32> lines;
+  xiiTemporaryHybridArray<xiiStringView, 32> lines;
   str.Split(false, lines, "\n", "\r");
 
   for (xiiUInt32 i = 0; i < lines.GetCount(); ++i)

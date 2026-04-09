@@ -316,6 +316,13 @@ void xiiVisualScriptNodeRegistry::UpdateNodeTypes()
   auto& scriptBaseClassesDynEnum = xiiDynamicStringEnum::CreateDynamicEnum("ScriptBaseClasses");
 
   xiiRTTI::ForEachType([this](const xiiRTTI* pRtti) { UpdateNodeType(pRtti); });
+
+  for (const xiiRTTI* pRtti : m_TypesToUpdate)
+  {
+    if (m_ExposedTypes.Contains(pRtti) == false)
+      UpdateNodeType(pRtti, true);
+  }
+  m_TypesToUpdate.Clear();
 }
 
 void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti, bool bForceExpose /*= false*/)
@@ -377,8 +384,9 @@ void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti, bool bFor
         CreateFunctionCallNodeType(pRtti, bIsBaseClassFunction ? sEventHandlerCategory : sCategoryHashed, pFuncProp, pScriptableFunctionAttribute, bIsBaseClassFunction);
       }
 
-      if (bExposeToVisualScript)
+      if (bExposeToVisualScript && m_ExposedTypes.Insert(pRtti) == false)
       {
+        xiiStringView    sTypeName = GetTypeName(pRtti);
         xiiStringBuilder sPropertyNodeTypeName;
 
         for (const xiiAbstractProperty* pProp : pRtti->GetProperties())
@@ -393,18 +401,18 @@ void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti, bool bFor
           }
 
           xiiUInt32 uiStart = m_PropertyValues.GetCount();
-          m_PropertyValues.PushBack({sType, pRtti->GetTypeName()});
+          m_PropertyValues.PushBack({sType, sTypeName});
           m_PropertyValues.PushBack({sProperty, pProp->GetPropertyName()});
           m_PropertyValues.PushBack({sValue, xiiReflectionUtils::GetDefaultValue(pProp)});
 
           // Setter
           {
             sPropertyNodeTypeName.Set("Set", pProp->GetPropertyName());
-            m_PropertyNodeTypeNames.PushBack(sPropertyNodeTypeName);
+            auto it = m_PropertyNodeTypeNames.Insert(sPropertyNodeTypeName);
 
             auto& nodeTemplate                   = m_NodeCreationTemplates.ExpandAndGetRef();
             nodeTemplate.m_pType                 = m_pSetPropertyType;
-            nodeTemplate.m_sTypeName             = m_PropertyNodeTypeNames.PeekBack();
+            nodeTemplate.m_sTypeName             = it.Key();
             nodeTemplate.m_sCategory             = sCategoryHashed;
             nodeTemplate.m_uiPropertyValuesStart = uiStart;
             nodeTemplate.m_uiPropertyValuesCount = 3;
@@ -413,11 +421,11 @@ void xiiVisualScriptNodeRegistry::UpdateNodeType(const xiiRTTI* pRtti, bool bFor
           // Getter
           {
             sPropertyNodeTypeName.Set("Get", pProp->GetPropertyName());
-            m_PropertyNodeTypeNames.PushBack(sPropertyNodeTypeName);
+            auto it = m_PropertyNodeTypeNames.Insert(sPropertyNodeTypeName);
 
             auto& nodeTemplate                   = m_NodeCreationTemplates.ExpandAndGetRef();
             nodeTemplate.m_pType                 = m_pGetPropertyType;
-            nodeTemplate.m_sTypeName             = m_PropertyNodeTypeNames.PeekBack();
+            nodeTemplate.m_sTypeName             = it.Key();
             nodeTemplate.m_sCategory             = sCategoryHashed;
             nodeTemplate.m_uiPropertyValuesStart = uiStart;
             nodeTemplate.m_uiPropertyValuesCount = 2;
@@ -533,7 +541,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     NodeDesc nodeDesc;
     nodeDesc.m_Type           = xiiVisualScriptNodeDescription::Type::GetReflectedProperty;
     nodeDesc.m_DeductTypeFunc = &xiiVisualScriptTypeDeduction::DeductFromPropertyProperty;
-    nodeDesc.AddInputDataPin("Object", nullptr, xiiVisualScriptDataType::AnyPointer, true, xiiHashedString(), &xiiVisualScriptTypeDeduction::DeductFromTypeProperty);
+    nodeDesc.AddInputDataPin("Object", nullptr, xiiVisualScriptDataType::Any, true, xiiHashedString(), &xiiVisualScriptTypeDeduction::DeductFromTypeProperty);
     nodeDesc.AddOutputDataPin("Value", nullptr, xiiVisualScriptDataType::Any);
 
     m_pGetPropertyType = RegisterNodeType(typeDesc, std::move(nodeDesc), sPropertiesCategory);
@@ -554,7 +562,7 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     nodeDesc.m_DeductTypeFunc = &xiiVisualScriptTypeDeduction::DeductFromPropertyProperty;
     nodeDesc.AddInputExecutionPin("");
     nodeDesc.AddOutputExecutionPin("");
-    nodeDesc.AddInputDataPin("Object", nullptr, xiiVisualScriptDataType::AnyPointer, true, xiiHashedString(), &xiiVisualScriptTypeDeduction::DeductFromTypeProperty);
+    nodeDesc.AddInputDataPin("Object", nullptr, xiiVisualScriptDataType::Any, true, xiiHashedString(), &xiiVisualScriptTypeDeduction::DeductFromTypeProperty);
     AddInputDataPin_Any(typeDesc, nodeDesc, "Value", false, true);
 
     m_pSetPropertyType = RegisterNodeType(typeDesc, std::move(nodeDesc), sPropertiesCategory);
@@ -1253,6 +1261,21 @@ void xiiVisualScriptNodeRegistry::CreateBuiltinTypes()
     RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
   }
 
+  // Builtin_Array_PushBackRange
+  {
+    FillDesc(typeDesc, "Builtin_Array::PushBackRange", variantColor);
+
+    NodeDesc nodeDesc;
+    nodeDesc.m_Type = xiiVisualScriptNodeDescription::Type::Builtin_Array_PushBackRange;
+
+    nodeDesc.AddInputExecutionPin("");
+    nodeDesc.AddOutputExecutionPin("");
+    nodeDesc.AddInputDataPin("Array", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+    nodeDesc.AddInputDataPin("Range", xiiGetStaticRTTI<xiiVariantArray>(), xiiVisualScriptDataType::Array, true);
+
+    RegisterNodeType(typeDesc, std::move(nodeDesc), sArrayCategory);
+  }
+
   // Builtin_Array_Remove
   {
     FillDesc(typeDesc, "Builtin_Array_Remove", variantColor);
@@ -1554,14 +1577,14 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
           return;
         }
 
-        if (m_ExposedTypes.Insert(pReturnRtti) == false)
-          UpdateNodeType(pReturnRtti, true);
+        m_TypesToUpdate.Insert(pReturnRtti);
 
         nodeDesc.AddOutputDataPin("Result", pReturnRtti, scriptDataType);
       }
     }
 
-    XII_ASSERT_ALWAYS(pFunction->GetArgumentCount() == pScriptableFunctionAttribute->GetArgumentCount(), "The function reflection for '{}::{}' does not match the actual signature. Num arguments: {}, reflected arguments: {}.", sTypeName, sFunctionName, pFunction->GetArgumentCount(), pScriptableFunctionAttribute->GetArgumentCount());
+    XII_ASSERT_ALWAYS(pFunction->GetArgumentCount() == pScriptableFunctionAttribute->GetArgumentCount(),
+                      "The function reflection for '{}::{}' does not match the actual signature. Num arguments: {}, reflected arguments: {}.", sTypeName, sFunctionName, pFunction->GetArgumentCount(), pScriptableFunctionAttribute->GetArgumentCount());
 
     xiiUInt32 titleArgIdx = xiiInvalidIndex;
 
@@ -1596,8 +1619,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
         pinScriptDataType = xiiVisualScriptDataType::Variant;
       }
 
-      if (m_ExposedTypes.Insert(pArgRtti) == false)
-        UpdateNodeType(pArgRtti, true);
+      m_TypesToUpdate.Insert(pArgRtti);
 
       if (bIsEntryFunction)
       {
@@ -1626,22 +1648,16 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
             titleArgIdx = argIdx;
           }
         }
-        else if (argType == xiiScriptableFunctionAttribute::Out || argType == xiiScriptableFunctionAttribute::Inout)
+
+        if (argType == xiiScriptableFunctionAttribute::Out || argType == xiiScriptableFunctionAttribute::Inout)
         {
-          // xiiLog::Error("Script function out parameter are not yet supported");
-          return;
-
-#if 0
-          if (!pFunction->GetArgumentFlags(argIdx).IsSet(xiiPropertyFlags::Reference))
+          if (!pFunction->GetArgumentFlags(argIdx).IsAnySet(xiiPropertyFlags::Reference | xiiPropertyFlags::Pointer))
           {
-            // TODO: xiiPropertyFlags::Reference is also set for const-ref parameters, should we change that ?
-
-            xiiLog::Error("Script function '{}' argument {} is marked 'out' but is not a non-const reference value", pRtti->GetTypeName(), argIdx);
+            xiiLog::Error("Script function '{}::{}' argument {} is marked 'out' but is not a non-const reference or pointer value", sTypeName, sFunctionName, argIdx);
             return;
           }
 
-          nodeDesc.AddOutputDataPin(sArgName, pArgRtti, scriptDataType, sDynamicPinProperty);
-#endif
+          nodeDesc.AddOutputDataPin(sArgName, pArgRtti, scriptDataType);
         }
       }
     }
@@ -1749,7 +1765,9 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
 
 void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
 {
-  if (pRtti == xiiGetStaticRTTI<xiiMessage>() || pRtti == xiiGetStaticRTTI<xiiEventMessage>() || pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+  if (pRtti == xiiGetStaticRTTI<xiiMessage>() ||
+      pRtti == xiiGetStaticRTTI<xiiEventMessage>() ||
+      pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
     return;
 
   xiiStringView sTypeName = GetTypeName(pRtti);
@@ -1964,10 +1982,8 @@ void xiiVisualScriptNodeRegistry::FillDesc(xiiReflectedTypeDescriptor& desc, xii
 const xiiRTTI* xiiVisualScriptNodeRegistry::RegisterNodeType(xiiReflectedTypeDescriptor& typeDesc, NodeDesc&& nodeDesc, const xiiHashedString& sCategory)
 {
   const xiiRTTI* pRtti = xiiPhantomRttiManager::RegisterType(typeDesc);
-  if (m_TypeToNodeDescs.Contains(pRtti) == false)
+  if (m_TypeToNodeDescs.Insert(pRtti, std::move(nodeDesc)) == false)
   {
-    m_TypeToNodeDescs.Insert(pRtti, std::move(nodeDesc));
-
     auto& nodeTemplate       = m_NodeCreationTemplates.ExpandAndGetRef();
     nodeTemplate.m_pType     = pRtti;
     nodeTemplate.m_sCategory = sCategory;

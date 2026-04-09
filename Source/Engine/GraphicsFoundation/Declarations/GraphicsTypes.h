@@ -7,11 +7,11 @@
 /// \brief Defines the graphics device.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Undefined = -1, ///< Undefined graphics device type.
+    Undefined = 0U, ///< Undefined graphics device type.
     Null,           ///< Quasi implementation of a graphics device.
     OpenGLES,       ///< OpenGL ES graphics device.
     OpenGL,         ///< OpenGL graphics device.
@@ -31,11 +31,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsDeviceTyp
 /// \brief This describes the graphics device feature state.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatureState
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Disabled = -1, ///< Device feature is disabled.
+    Disabled = 0U, ///< Device feature is disabled.
     Enabled,       ///< Device feature is enabled. If a feature is requested to be enabled during the initialization but is not supported by the device/driver/platform, the device will fail to be initialized.
     Optional,      ///< Device feature is optional. The device will attempt to enable the feature during initialization. If the feature is not supported by the device/driver/platform, the device will initialize successfully, but the feature will be disabled.
                    ///< The actual feature state can be queried from the device capabilities description.
@@ -51,11 +51,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceFeatureStat
 /// \brief This describes the graphics device adapter vendor.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsAdapterVendor
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1,            ///< Adapter vendor is unknowm.
+    Unknown = 0U,            ///< Adapter vendor is unknowm.
     Nvidia,                  ///< Adapter vendor is NVidia.
     AMD,                     ///< Adapter vendor is AMD.
     Intel,                   ///< Adapter vendor is Intel.
@@ -78,11 +78,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsAdapterVe
 /// \brief This describes common validation levels that translate to specific settings for different backends.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceValidationLevel
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Disabled = -1, ///< Validation is disabled.
+    Disabled = 0U, ///< Validation is disabled.
     Standard,      ///< Standard validation options are enabled.
     All,           ///< All validation options are enabled. Note that enabling this level may add a significant overhead.
 
@@ -96,11 +96,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceValidationL
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEventType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1,        ///< Unknown device event.
+    Unknown = 0U,        ///< Unknown device event.
     AfterInitialization, ///< After initialization.
     BeforeBeginFrame,    ///< Before begin frame.
     AfterBeginFrame,     ///< After begin frame.
@@ -120,11 +120,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceEventType);
 /// for an indexed draw call.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALValueType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Undefined = -1, ///< Undefined type.
+    Undefined = 0U, ///< Undefined type.
     Int8,           ///< Signed 8-bit integer.
     Int16,          ///< Signed 16-bit integer.
     Int32,          ///< Signed 32-bit integer.
@@ -309,17 +309,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
   enum Enum : StorageType
   {
     Immutable = 0, ///< A resource that can only be read by the GPU. It cannot be written to by the GPU, and cannot be accessed by the CPU.
-                   ///< This type of resource must be initialized when it is created, since it cannot be modified after creation.
-    Default,       ///< A resource that requires read and write access by the GPU and can also be occasionally written to by the CPU.
+                   ///  This type of resource must be initialized when it is created, since it cannot be modified after creation.
+    Mutable,       ///< A resource that requires read and write access by the GPU and can also be occasionally written to by the CPU.
     Dynamic,       ///< A resource that can be read by the GPU and written to, at least once per frame by the CPU.
     Staging,       ///< A resource that facilitates transferring data between the GPU and CPU.
     Unified,       ///< A resource that resides in a unified memory (eg. memory shared between the CPU and GPU), that can be read and written
                    ///  to by the GPU and can also be directly accessed by the CPU.
                    ///  \remarks An application should check if unified memory is available on the device by checking the device capabilities.
-                   ///           If there is no unified memory support, an application should choose another usage type (typically xiiGALResourceUsage::Default).
+                   ///           If there is no unified memory support, an application should choose another usage type (typically xiiGALResourceUsage::Mutable).
     Sparse,        ///< A resource that can be partially committed to physical memory.
 
     ENUM_COUNT,
+
+    Default = Mutable
   };
 };
 
@@ -410,11 +412,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapFlags);
 /// and the texture view description to describe the texture view type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimension
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Undefined = -1,   ///< Undefined resource type.
+    Undefined = 0U,   ///< Undefined resource type.
     Buffer,           ///< Buffer resource type.
     Texture1D,        ///< One-dimensional texture.
     Texture1DArray,   ///< One-dimensional texture array.
@@ -609,11 +611,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormat);
 /// R32_FLOAT_X8X24_TYPELESS, R32_FLOAT, R24_UNORM_X8_TYPELESS, R16_UNORM.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFilterType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1,          ///< Unknown filter type.
+    Unknown = 0U,          ///< Unknown filter type.
     Point,                 ///< Point filtering.
     Linear,                ///< Linear filtering.
     Anisotropic,           ///< Anisotropic filtering.
@@ -648,11 +650,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFilterType);
 /// are outside  of the boundries of a texture. The enumeration generally mirrors [D3D11_TEXTURE_ADDRESS_MODE][]/[D3D12_TEXTURE_ADDRESS_MODE][] enumeration.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureAddressMode
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1, ///< Unknown texture address mode.
+    Unknown = 0U, ///< Unknown texture address mode.
     Wrap,         ///< Tile the texture at every integer junction.
     Mirror,       ///< Flip the texture at every integer junctions.
     Clamp,        ///< Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0 respectively.
@@ -674,11 +676,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureAddressMod
 /// This enumeration defines a comparison function. It generally mirrors [D3D11_COMPARISON_FUNC]/[D3D12_COMPARISON_FUNC] enumeration.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALComparisonFunction
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1, ///< Unknown comparison function.
+    Unknown = 0U, ///< Unknown comparison function.
     Never,        ///< Comparison never passes.
     Less,         ///< Comparison passes if the source data is less than the destination data.
     Equal,        ///< Comparison passes if the source data is equal to the destination data.
@@ -915,11 +917,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryPropertyFla
 /// \brief This describes the hardware adapter type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1, ///< Unknown adapter type.
+    Unknown = 0U, ///< Unknown adapter type.
     Software,     ///< Software adapter.
     Integrated,   ///< Integrated hardware adapter.
     Discrete,     ///< Discrete hardware adapter.
@@ -931,47 +933,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceAdapterType);
-
-/// \brief This describes how an image is stretched to fit a given monitor's resolution.
-/// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173066(v=vs.85)">DXGI_MODE_SCALING enumeration on MSDN</a>,
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALScalingMode
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Unspecified = 0U, ///< Unspecified scaling.
-    Centered,         ///< Specifies no scaling. The image is centered on the display. This flag is typically used for a fixed-dot-pitch display (such as an LED display).
-    Stretched,        ///< Specifies a stretched scaling.
-
-    ENUM_COUNT,
-
-    Default = Unspecified
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALScalingMode);
-
-/// \brief This describes the method the raster uses to create an image on a surface.
-/// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173067(v=vs.85)">DXGI_MODE_SCANLINE_ORDER enumeration on MSDN</a>,
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALScanLineOrder
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Unspecified = 0U, ///< Unspecified scanline order.
-    Progressive,      ///< The image is created from the first scanline to the last without skipping any.
-    UpperFieldFirst,  ///< The image is created beginning with the upper field.
-    LowerFieldFirst,  ///< The image is created beginning with the lower field.
-
-    ENUM_COUNT,
-
-    Default = Unspecified
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALScanLineOrder);
 
 /// \brief This describes the method the raster uses to create an image on a surface.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
@@ -1144,13 +1105,13 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALValidationFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValidationFlags);
 
 /// \brief This describes the command queue type.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueFlags
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown       = 0U,                    ///< Queue type is unknown.
+    None          = 0U,                    ///< Queue flags are unknown.
     Transfer      = XII_BIT(0),            ///< Command queue that only supports memory transfer operations.
     Compute       = XII_BIT(1) | Transfer, ///< Command queue that supports compute, ray tracing and transfer commands.
     Graphics      = XII_BIT(2) | Compute,  ///< Command queue that supports graphics, compute, ray tracing and transfer commands.
@@ -1158,7 +1119,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
 
     PrimaryType = Transfer | Compute | Graphics, ///< Mask to extract primary command queue type.
 
-    Default = Unknown
+    Default = None
   };
 
   struct Bits
@@ -1172,18 +1133,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandQueueType);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandQueueFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueType);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueFlags);
 
 /// \brief This describes the queue priority.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueuePriority
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1, ///< Queue priority is unknown.
+    Unknown = 0U, ///< Queue priority is unknown.
     Low,          ///<
     Medium,       ///<
     High,         ///<
@@ -1232,11 +1193,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCombin
 /// \brief This describes the shading rate texture format supported by the device.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFormat
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1,     ///< Variable shading rate is not supported.
+    Unknown = 0U,     ///< Variable shading rate is not supported.
     Palette,          ///< Single channel 8-bit surface that contains shading rate values. Only 2D and 2D array textures with R8UNormalized format are allowed.
     RG8UNormalized,   ///< RG8UNormalized texture that defines the shading rate (0.5, 0.25 etc.). The R channel is used for X axis, G channel is used for Y axis.
     ColumnRowFloat32, ///< This format is only used in Metal when shading rate is defined by column/row rates instead of a texture. The values are 32-bit floating point values in 0 to 1 range (0.5, 0.25 etc.).
@@ -1344,27 +1305,6 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 
-/// \brief This describes the multi-sample count.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALMSAASampleCount
-{
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    OneSample        = 1U,  ///< One sample.
-    TwoSamples       = 2U,  ///< Two samples.
-    FourSamples      = 4U,  ///< Four samples.
-    EightSamples     = 8U,  ///< Eight samples.
-    SixteenSamples   = 16U, ///< Sixteen samples.
-    ThirtyTwoSamples = 32U, ///< Thirty-two samples.
-    SixtyFourSamples = 64U, ///< Sixty-four samples.
-
-    Default = OneSample
-  };
-};
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMSAASampleCount);
-
 /// \brief This describes the shading rate capability flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
 {
@@ -1419,11 +1359,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCapabi
 /// \brief This describes the access pattern of the shading rate texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateTextureAccess
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown = -1,      ///< Shading rate texture access type is unknown.
+    Unknown = 0U,      ///< Shading rate texture access type is unknown.
     OnGPU,             ///< Shading rate texture is accessed by the GPU when command buffer is executed.
     OnSubmit,          ///< Shading rate texture is accessed by the CPU when command buffer is submitted for execution. An application is not allowed to modify the texture until the command buffer is executed by the GPU. Fences or other synchronization methods must be used to control the access to the texture.
     OnSetRenderTarget, ///< Shading rate texture is accessed by the CPU when the render target is set. An application is not allowed to modify the texture until the command buffer is executed by GPU. Fences or other synchronization methods must be used to control the access to the texture.
@@ -1527,11 +1467,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseResourceCap
 /// \brief This describes the texture format component type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatComponentType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Undefined = -1,         ///< Undefined component type.
+    Undefined = 0U,         ///< Undefined component type.
     Float,                  ///< Floating point component type.
     SignedNormalized,       ///< Signed-normalized-integer component type.
     UnsignedNormalized,     ///< Unsigned-normalized-integer component type.
@@ -1827,7 +1767,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 
   enum Enum : StorageType
   {
-    Immediate,
+    Immediate = 0U,
     VSync,
 
     ENUM_COUNT,
@@ -1837,6 +1777,67 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPresentMode);
+
+/// \brief This describes the external memory kind.
+///
+/// These kinds mirror [VkExternalMemoryFeatureFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkExternalMemoryFeatureFlagBits).
+///
+/// \note Not all external memory kinds may be supported on all platforms. For example, ImportedExportable kind may not be supported on some platforms.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryKind
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None               = 0U,                    ///< Normal engine-owned memory.
+    Imported           = 1U,                    ///< Created from external memory.
+    Exportable         = 2U,                    ///< Can be exported to an external handle.
+    ImportedExportable = Imported | Exportable, ///< Both imported and exportable.
+
+    ENUM_COUNT,
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType Imported : 1;
+    StorageType Exportable : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALExternalMemoryKind);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryKind);
+
+/// \brief This describes the external memory usage flags.
+///
+/// These flags mirror [VkExternalMemoryHandleTypeFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkExternalMemoryHandleTypeFlagBits).
+///
+/// \note Not all flags may be supported for all external memory types. For example, UserPointer external memory type may only support None flag.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALExternalMemoryFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None         = 0U,
+    ReadOnly     = XII_BIT(0), ///< The external memory is immutable and will not be written by the GAL.
+    WriteOnly    = XII_BIT(1), ///< The external memory may be written by the GAL.
+    SharedAccess = XII_BIT(2), ///< The external memory will be accessed by both the GAL and an external producer/consumer.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType ReadOnly : 1;
+    StorageType WriteOnly : 1;
+    StorageType SharedAccess : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALExternalMemoryFlags);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALExternalMemoryFlags);
 
 namespace xiiGAL
 {

@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/Containers/Blob.h>
 #include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
@@ -193,7 +194,7 @@ public:
     m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALResourceFormat::UAVFormat; \
     m_ViewFormats[textureFormat][xiiGALTextureViewType::ShadingRate]          = xiiGALResourceFormat::Unknown;   \
   }
-    static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type above, if necessary");
+    static_assert(xiiGALTextureViewType::ENUM_COUNT == 6U, "Please handle the new view type above, if necessary");
 
     // clang-format off
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::Unknown,                  Unknown, Unknown, Unknown, Unknown);
@@ -352,7 +353,7 @@ public:
               XII_REPORT_FAILURE("Unexpected texture view type");
               return xiiGALResourceFormat::Unknown;
           }
-          static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type in the switch above, if necessary.");
+          static_assert(xiiGALTextureViewType::ENUM_COUNT == 6U, "Please handle the new view type in the switch above, if necessary.");
         }
         [[fallthrough]];
       }
@@ -579,7 +580,7 @@ xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture1DDesc
     .m_uiArraySizeOrDepth = 1U,
     .m_Format             = xiiGALResourceFormat::Unknown,
     .m_uiMipLevels        = 1U,
-    .m_uiSampleCount      = xiiGALMSAASampleCount::OneSample,
+    .m_uiSampleCount      = xiiGALSampleCount::OneSample,
     .m_BindFlags          = xiiGALBindFlags::ShaderResource,
     .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
     .m_MiscFlags          = xiiGALMiscTextureFlags::None,
@@ -594,7 +595,7 @@ xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture2DDesc
     .m_uiArraySizeOrDepth = 1U,
     .m_Format             = xiiGALResourceFormat::Unknown,
     .m_uiMipLevels        = 1U,
-    .m_uiSampleCount      = xiiGALMSAASampleCount::OneSample,
+    .m_uiSampleCount      = xiiGALSampleCount::OneSample,
     .m_BindFlags          = xiiGALBindFlags::ShaderResource,
     .m_Usage              = xiiGALResourceUsage::Immutable,
     .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
@@ -610,7 +611,7 @@ xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture3DDesc
     .m_uiArraySizeOrDepth = 1U,
     .m_Format             = xiiGALResourceFormat::Unknown,
     .m_uiMipLevels        = 1U,
-    .m_uiSampleCount      = xiiGALMSAASampleCount::OneSample,
+    .m_uiSampleCount      = xiiGALSampleCount::OneSample,
     .m_BindFlags          = xiiGALBindFlags::ShaderResource,
     .m_Usage              = xiiGALResourceUsage::Immutable,
     .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
@@ -626,12 +627,87 @@ xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTextureCubeDe
     .m_uiArraySizeOrDepth = 6U,
     .m_Format             = xiiGALResourceFormat::Unknown,
     .m_uiMipLevels        = 1U,
-    .m_uiSampleCount      = xiiGALMSAASampleCount::OneSample,
+    .m_uiSampleCount      = xiiGALSampleCount::OneSample,
     .m_BindFlags          = xiiGALBindFlags::ShaderResource,
     .m_Usage              = xiiGALResourceUsage::Immutable,
     .m_CPUAccessFlags     = xiiGALCPUAccessFlag::None,
     .m_MiscFlags          = xiiGALMiscTextureFlags::None,
   };
+}
+
+xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALTextureCreationDescription description, xiiHybridArray<xiiGALTextureSubResourceData, 2U>& out_subresourceData, xiiDynamicArray<xiiUInt8>& out_Data)
+{
+  out_subresourceData.Clear();
+  out_Data.Clear();
+
+  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.GetArraySize();
+  out_subresourceData.Reserve(uiTotalSubResources);
+
+  // First compute total size needed.
+  xiiUInt64 uiTotalSize = 0;
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  {
+    for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
+    {
+      const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(description, uiMipLevel);
+
+      uiTotalSize += mipLevelProperties.m_uiMipSize;
+    }
+  }
+
+  // Allocate once.
+  out_Data.SetCountUninitialized(static_cast<xiiUInt32>(uiTotalSize));
+  memset(out_Data.GetData(), 0, static_cast<size_t>(uiTotalSize));
+
+  // Now assign subresource pointers into the already allocated buffer.
+  xiiUInt64 uiCurrentOffset = 0;
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  {
+    for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
+    {
+      const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(description, uiMipLevel);
+      const xiiUInt64                uiSubResourceSize  = mipLevelProperties.m_uiMipSize;
+
+      xiiGALTextureSubResourceData& subResourceData = out_subresourceData.ExpandAndGetRef();
+      subResourceData.m_pData                       = xiiMakeByteArrayPtr(out_Data.GetData() + uiCurrentOffset, static_cast<xiiUInt32>(uiSubResourceSize));
+      subResourceData.m_uiStride                    = mipLevelProperties.m_uiRowSize;
+      subResourceData.m_uiDepthStride               = mipLevelProperties.m_uiDepthSliceSize;
+
+      uiCurrentOffset += uiSubResourceSize;
+    }
+  }
+
+  return xiiGALTextureData{out_subresourceData};
+}
+
+void xiiGALTextureUtilities::CopySubresourceToMemory(const xiiGALTextureCreationDescription& description, const xiiGALMappedTextureSubresource& subresourceData, const xiiGALTextureMipLevelData& mipLevelData, xiiArrayPtr<xiiUInt8> pTargetData, xiiUInt32 uiTargetRowStride)
+{
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
+
+  if (subresourceData.m_uiStride == uiTargetRowStride)
+  {
+    const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(description.m_Size.width, mipLevelData.m_uiMipLevel) * xiiGALTextureUtilities::GetMipSize(description.m_Size.height, mipLevelData.m_uiMipLevel);
+
+    XII_ASSERT_DEBUG(uiMemorySize <= pTargetData.GetCount(), "");
+
+    memcpy(pTargetData.GetPtr(), subresourceData.m_pData, uiMemorySize);
+  }
+  else
+  {
+    // Copy row by row.
+    const xiiUInt32 uiHeight = xiiGALTextureUtilities::GetMipSize(description.m_Size.height, mipLevelData.m_uiMipLevel);
+
+    for (xiiUInt32 y = 0; y < uiHeight; ++y)
+    {
+      const xiiUInt8* pSource      = xiiMemoryUtils::AddByteOffset(static_cast<xiiUInt8*>(subresourceData.m_pData), y * subresourceData.m_uiStride);
+      xiiUInt8*       pDestination = xiiMemoryUtils::AddByteOffset(pTargetData.GetPtr(), y * uiTargetRowStride);
+      const xiiUInt32 uiCopySize   = formatProperties.GetElementSize() * xiiGALTextureUtilities::GetMipSize(description.m_Size.width, mipLevelData.m_uiMipLevel);
+
+      XII_ASSERT_DEBUG(pDestination + uiCopySize <= pTargetData.GetEndPtr(), "");
+
+      memcpy(pDestination, pSource, uiCopySize);
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Utilities_Implementation_TextureUtilities);

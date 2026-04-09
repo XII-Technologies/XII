@@ -22,14 +22,14 @@ xiiQtCppProjectDlg::xiiQtCppProjectDlg(QWidget* pParent) :
   {
     xiiQtScopedBlockSignals _1(PluginName);
     PluginName->setPlaceholderText(xiiToolsProject::GetSingleton()->GetProjectName(true).GetData());
-    PluginName->setText(m_CppSettings.m_sPluginName.GetData());
+    PluginName->setText(xiiMakeQString(m_CppSettings.m_sPluginName));
   }
 
   if (xiiStatus compilerTestResult = xiiCppProject::TestCompiler(); compilerTestResult.Failed())
   {
     // TODO: how do I color the ErrorText label in Red (or whatever error color is configured?)
     xiiStringBuilder fmt;
-    ErrorText->setText(xiiMakeQString(xiiFmt("<html><b>Error:</b> {}<br>Please go to preferences and configure the C & C++ compiler.", compilerTestResult.m_sMessage).GetText(fmt)));
+    ErrorText->setText(xiiMakeQString(xiiFmt("<html><b>Error:</b> {}<br>Please go to preferences and configure the C & C++ compiler.", compilerTestResult.GetMessageString()).GetText(fmt)));
     GenerateSolution->setDisabled(true);
   }
 
@@ -55,7 +55,7 @@ void xiiQtCppProjectDlg::on_OpenSolution_clicked()
 {
   if (auto result = xiiCppProject::OpenSolution(m_CppSettings); result.Failed())
   {
-    xiiQtUiServices::GetSingleton()->MessageBoxWarning(result.m_sMessage.GetView());
+    xiiQtUiServices::GetSingleton()->MessageBoxWarning(result.GetMessageString().GetView());
   }
 }
 

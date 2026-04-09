@@ -87,6 +87,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
 
   ON_CORESYSTEMS_STARTUP
   {
+    xiiDefaultState::RegisterDefaultStateProvider(xiiExposedParametersAsTypeDefaultStateProvider::CreateProvider);
     xiiDefaultState::RegisterDefaultStateProvider(xiiExposedParametersDefaultStateProvider::CreateProvider);
     xiiDefaultState::RegisterDefaultStateProvider(xiiDynamicDefaultStateProvider::CreateProvider);
     xiiProjectActions::RegisterActions();
@@ -178,6 +179,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
+    xiiDefaultState::UnregisterDefaultStateProvider(xiiExposedParametersAsTypeDefaultStateProvider::CreateProvider);
     xiiDefaultState::UnregisterDefaultStateProvider(xiiExposedParametersDefaultStateProvider::CreateProvider);
     xiiDefaultState::UnregisterDefaultStateProvider(xiiDynamicDefaultStateProvider::CreateProvider);
     xiiProjectActions::UnregisterActions();
@@ -262,14 +264,17 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 {
   XII_PROFILE_SCOPE("StartupEditor");
 
-  QCoreApplication::setOrganizationDomain("www.xiitechnologies.com");
+  xiiStringBuilder sb;
+  sb.SetFormat("{}.{}.{}", BUILDSYSTEM_SDKVERSION_MAJOR, BUILDSYSTEM_SDKVERSION_MINOR, BUILDSYSTEM_SDKVERSION_PATCH);
+
+  QCoreApplication::setOrganizationDomain("xiitechnologies.com");
   QCoreApplication::setOrganizationName("XII Technologies");
-  QCoreApplication::setApplicationName(xiiApplication::GetApplicationInstance()->GetApplicationName().GetData());
-  QCoreApplication::setApplicationVersion("1.0.0");
+  QCoreApplication::setApplicationName(xiiMakeQString(xiiApplication::GetApplicationInstance()->GetApplicationName()));
+  QCoreApplication::setApplicationVersion(xiiMakeQString(sb));
 
   m_StartupFlags = startupFlags;
 
-  auto* pCmd = xiiCommandLineUtils::GetGlobalInstance();
+  xiiCommandLineUtils* pCmd = xiiCommandLineUtils::GetGlobalInstance();
 
   if (!IsInHeadlessMode())
   {
@@ -282,9 +287,9 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_pQtProgressbar->SetProgressbar(m_pProgressbar);
   }
 
-  // custom command line arguments
+  // Custom command line arguments.
   {
-    // Make sure to disable the fileserve plugin
+    // Disable the FileServe plugin.
     pCmd->InjectCustomArgument("-fs_off");
   }
 
@@ -404,6 +409,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   LoadEditorPlugins();
   CloseSplashScreen();
 
+  m_bIsRunning = true;
   {
     xiiEditorAppEvent e;
     e.m_Type = xiiEditorAppEvent::Type::EditorStarted;
@@ -443,14 +449,17 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   connect(m_pTimer, SIGNAL(timeout()), this, SLOT(SlotTimedUpdate()), Qt::QueuedConnection);
   m_pTimer->start(1);
 
+  // Setup auto-save timer - polls every 20 seconds and checks document modification age.
+  connect(m_pAutoSaveTimer, SIGNAL(timeout()), this, SLOT(SlotAutoSave()), Qt::QueuedConnection);
+  m_pAutoSaveTimer->start(20 * 1000);
+
   if (m_bWroteCrashIndicatorFile)
   {
-    QTimer::singleShot(1000, [this]() {
+    QTimer::singleShot(1000, [this]() -> void {
       xiiStringBuilder sTemp = xiiOSFile::GetTempDataFolder("xiiEditor");
       sTemp.AppendPath("xiiEditorCrashIndicator");
       xiiOSFile::DeleteFile(sTemp).IgnoreResult();
       m_bWroteCrashIndicatorFile = false;
-      //
     });
   }
 
@@ -464,6 +473,8 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
 
 void xiiQtEditorApp::ShutdownEditor()
 {
+  m_bIsRunning = false;
+
   xiiStackTraceLogParser::Unregister();
 
   xiiToolsProject::SaveProjectState();
@@ -587,7 +598,7 @@ void xiiQtEditorApp::SetupAndShowSplashScreen()
   {
     QSettings s;
     s.beginGroup("EditorPreferences");
-    bShowSplashScreen = s.value("ShowSplashscreen", true).toBool();
+    bShowSplashScreen = s.value("ShowSplashScreen", true).toBool();
     s.endGroup();
   }
 

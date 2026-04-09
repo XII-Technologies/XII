@@ -114,7 +114,7 @@ void xiiCrashHandler_WriteMiniDump::HandleCrash(void* pOsSpecificData)
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/CrashHandler_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/CrashHandler_posix.h>
 #else
 #  error "xiiCrashHandler is not implemented on current platform"

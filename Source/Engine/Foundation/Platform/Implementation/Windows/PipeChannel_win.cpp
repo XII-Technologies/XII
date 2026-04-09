@@ -66,10 +66,10 @@ bool xiiPipeChannel_win::CreatePipe(xiiStringView sAddress)
   {
     xiiMessageLoop_win* pMsgLoopWin = static_cast<xiiMessageLoop_win*>(m_pOwner);
 
-    ULONG_PTR key  = reinterpret_cast<ULONG_PTR>(this);
-    HANDLE    port = CreateIoCompletionPort(m_hPipeHandle, pMsgLoopWin->GetPort(), key, 1);
-    XII_ASSERT_DEBUG(pMsgLoopWin->GetPort() == port, "Failed to CreateIoCompletionPort: {0}", xiiArgErrorCode(GetLastError()));
-    XII_IGNORE_UNUSED(port);
+    ULONG_PTR uiKey = reinterpret_cast<ULONG_PTR>(this);
+    HANDLE    hPort = CreateIoCompletionPort(m_hPipeHandle, pMsgLoopWin->GetPort(), uiKey, 1);
+    XII_ASSERT_DEBUG(pMsgLoopWin->GetPort() == hPort, "Failed to CreateIoCompletionPort: {0}", xiiArgErrorCode(GetLastError()));
+    XII_IGNORE_UNUSED(hPort);
   }
   return true;
 }
@@ -121,7 +121,9 @@ void xiiPipeChannel_win::InternalDisconnect()
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   if (m_ThreadId != 0)
+  {
     XII_ASSERT_DEBUG(m_ThreadId == xiiThreadUtils::GetCurrentThreadID(), "Function must be called from worker thread!");
+  }
 #  endif
   if (m_InputState.IsPending || m_OutputState.IsPending)
   {
@@ -161,7 +163,6 @@ void xiiPipeChannel_win::InternalSend()
     ProcessOutgoingMessages(0);
   }
 }
-
 
 bool xiiPipeChannel_win::NeedWakeup() const
 {
@@ -271,7 +272,7 @@ bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
     m_OutputState.IsPending = false;
     return false;
   }
-  const xiiMemoryStreamStorageInterface* storage = nullptr;
+  const xiiMemoryStreamStorageInterface* pStorage = nullptr;
   {
     XII_LOCK(m_OutputQueueMutex);
     if (m_OutputQueue.IsEmpty())
@@ -279,14 +280,14 @@ bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
       m_OutputState.IsPending = false;
       return true;
     }
-    storage = &m_OutputQueue.PeekFront();
+    pStorage = &m_OutputQueue.PeekFront();
   }
 
-  xiiUInt64 uiToWrite    = storage->GetStorageSize64();
+  xiiUInt64 uiToWrite    = pStorage->GetStorageSize64();
   xiiUInt64 uiNextOffset = 0;
   while (uiToWrite > 0)
   {
-    const xiiArrayPtr<const xiiUInt8> range = storage->GetContiguousMemoryRange(uiNextOffset);
+    const xiiArrayPtr<const xiiUInt8> range = pStorage->GetContiguousMemoryRange(uiNextOffset);
     uiToWrite -= range.GetCount();
 
     BOOL res = WriteFile(m_hPipeHandle, range.GetPtr(), range.GetCount(), &uiBytesWritten, &m_OutputState.Context.Overlapped);
@@ -306,12 +307,11 @@ bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
     uiNextOffset += range.GetCount();
   }
 
-
   m_OutputState.IsPending = true;
   return true;
 }
 
-void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfered, DWORD uiError)
+void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransferred, DWORD uiError)
 {
   XII_IGNORE_UNUSED(uiError);
 
@@ -335,12 +335,12 @@ void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfe
       if (m_InputState.IsPending)
         return;
     }
-    bRes = ProcessIncomingMessages(uiBytesTransfered);
+    bRes = ProcessIncomingMessages(uiBytesTransferred);
   }
   else
   {
     XII_ASSERT_DEBUG(pContext == &m_OutputState.Context, "");
-    bRes = ProcessOutgoingMessages(uiBytesTransfered);
+    bRes = ProcessOutgoingMessages(uiBytesTransferred);
   }
   if (!bRes && m_hPipeHandle != INVALID_HANDLE_VALUE)
   {

@@ -4,6 +4,7 @@
 #include <Core/ActorSystem/ActorManager.h>
 #include <Core/ActorSystem/ActorPluginWindow.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
+#include <GameEngine/Configuration/RendererProfileConfigs.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
@@ -43,7 +44,7 @@ void xiiEditorEngineProcessApp::CreateRemoteWindow()
   {
     xiiUniquePtr<xiiRemoteProcessWindow> pWindow = XII_DEFAULT_NEW(xiiRemoteProcessWindow);
 
-    xiiWindowCreationDesc desc;
+    xiiWindowCreationDescription desc;
     desc.m_uiWindowNumber   = 0;
     desc.m_bClipMouseCursor = false;
     desc.m_bShowMouseCursor = true;
@@ -80,19 +81,21 @@ void xiiEditorEngineProcessApp::DestroyRemoteWindow()
 
 xiiRenderPipelineResourceHandle xiiEditorEngineProcessApp::CreateDefaultMainRenderPipeline()
 {
-  // EditorRenderPipeline.xiiRenderPipelineAsset
-  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ da463c4d-c984-4910-b0b7-a0b3891d0448 }");
+  const auto* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
+
+  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sEditorRenderPipeline);
 }
 
 xiiRenderPipelineResourceHandle xiiEditorEngineProcessApp::CreateDefaultDebugRenderPipeline()
 {
-  // DebugRenderPipeline.xiiRenderPipelineAsset
-  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ 0416eb3e-69c0-4640-be5b-77354e0e37d7 }");
+  const auto* pConfig = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
+
+  return xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sDebugRenderPipeline);
 }
 
 xiiViewHandle xiiEditorEngineProcessApp::CreateRemoteWindowAndView(xiiCamera* pCamera)
 {
-  XII_ASSERT_DEV(IsRemoteMode(), "Incorrect app mode");
+  XII_ASSERT_DEV(IsRemoteMode(), "Incorrect application mode.");
 
   CreateRemoteWindow();
 
@@ -100,44 +103,44 @@ xiiViewHandle xiiEditorEngineProcessApp::CreateRemoteWindowAndView(xiiCamera* pC
   {
     xiiActorPluginWindowOwner* pWindowPlugin = m_pActor->GetPlugin<xiiActorPluginWindowOwner>();
 
-    // create output target
+    // Create output target.
     {
       xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL);
 
-      xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
-      swapChainDesc.m_Resolution            = pWindowPlugin->m_pWindow->GetClientAreaSize();
-      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
-      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDesc.m_uiBufferCount         = 2U;
-      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
-      swapChainDesc.m_uiDefaultStencilValue = 0U;
+      xiiGALSwapChainCreationDescription swapChainDescription;
+      swapChainDescription.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
+      swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
+      swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDescription.m_uiBufferCount         = 2U;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_uiDefaultStencilValue = 0U;
 
-      pOutput->CreateSwapchain(swapChainDesc);
+      pOutput->CreateSwapchain(swapChainDescription);
 
       pWindowPlugin->m_pWindowOutputTarget = std::move(pOutput);
     }
 
-    // get swapchain
-    xiiGALSwapChainHandle hSwapChain;
+    // Retrieve swap chain.
+    xiiSharedPtr<xiiGALSwapChain> pSwapChain;
     {
       xiiWindowOutputTargetGAL* pOutputTarget = static_cast<xiiWindowOutputTargetGAL*>(pWindowPlugin->m_pWindowOutputTarget.Borrow());
-      hSwapChain                              = pOutputTarget->m_hSwapChain;
+      pSwapChain                              = pOutputTarget->m_pSwapChain;
     }
 
-    // setup view
+    // Setup view.
     {
       xiiView* pView = nullptr;
       m_hRemoteView  = xiiRenderWorld::CreateView("Remote Process", pView);
 
-      // EditorRenderPipeline.xiiRenderPipelineAsset
-      pView->SetRenderPipelineResource(xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ da463c4d-c984-4910-b0b7-a0b3891d0448 }"));
+      const auto* pConfig         = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
+      auto        hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sEditorRenderPipeline);
+      pView->SetRenderPipelineResource(hRenderPipeline);
 
-      const xiiSizeU32 wndSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
+      const xiiSizeU32 windowSize = pWindowPlugin->m_pWindow->GetClientAreaSize();
 
-      pView->SetSwapChain(hSwapChain);
-      pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)wndSize.width, (float)wndSize.height));
+      pView->SetSwapChain(pSwapChain);
+      pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)windowSize.width, (float)windowSize.height));
       pView->SetCamera(pCamera);
     }
   }

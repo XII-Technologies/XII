@@ -87,7 +87,7 @@ QVariant xiiQtNamedAdapter::data(const xiiDocumentObject* pObject, int iRow, int
       case Qt::DisplayRole:
       case Qt::EditRole:
       {
-        return QString::fromUtf8(pObject->GetTypeAccessor().GetValue(m_sNameProperty).ConvertTo<xiiString>().GetData());
+        return xiiMakeQString(pObject->GetTypeAccessor().GetValue(m_sNameProperty).ConvertTo<xiiString>());
       }
       break;
     }
@@ -558,11 +558,11 @@ bool xiiQtDocumentTreeModel::MoveObjects(const xiiDragDropInfo& info)
       cmd.m_NewParent       = pTarget->GetGuid();
 
       res = pHistory->AddCommand(cmd);
-      if (res.m_Result.Failed())
+      if (res.Failed())
         break;
     }
 
-    if (res.m_Result.Failed())
+    if (res.Failed())
       pHistory->CancelTransaction();
     else
       pHistory->FinishTransaction();
@@ -572,6 +572,11 @@ bool xiiQtDocumentTreeModel::MoveObjects(const xiiDragDropInfo& info)
   }
 
   return false;
+}
+
+const xiiDocumentObject* xiiQtDocumentTreeModel::GetObject(const QModelIndex index) const
+{
+  return (const xiiDocumentObject*)index.internalPointer();
 }
 
 QStringList xiiQtDocumentTreeModel::mimeTypes() const

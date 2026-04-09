@@ -5,7 +5,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMiscTextureFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::GenerateMips),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::Memoryless),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::SparseAlias),
@@ -209,9 +208,13 @@ xiiSharedPtr<xiiGALTextureView> xiiGALTexture::CreateView(xiiGALTextureViewCreat
   if (description.m_uiMipLevelCount == 0U || description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS)
   {
     if (description.m_ViewType == xiiGALTextureViewType::ShaderResource)
+    {
       description.m_uiMipLevelCount = m_Description.m_uiMipLevels - description.m_uiMostDetailedMip;
+    }
     else
+    {
       description.m_uiMipLevelCount = 1U;
+    }
   }
 
   if (description.m_uiArrayOrDepthSlicesCount == 0 || description.m_uiArrayOrDepthSlicesCount == XII_GAL_REMAINING_ARRAY_SLICES)
@@ -238,8 +241,10 @@ void xiiGALTexture::CreateDefaultResourceViews()
 {
   // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.
   xiiUInt32 uiArraySize = XII_GAL_REMAINING_ARRAY_SLICES;
-  if (m_Description.IsCube() && m_Description.IsArray())
-    uiArraySize = m_Description.GetArraySize() / 6U;
+  if (m_Description.Is3D())
+  {
+    uiArraySize = 1U;
+  }
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
@@ -248,7 +253,7 @@ void xiiGALTexture::CreateDefaultResourceViews()
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
     viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
-    viewDescription.m_uiArrayOrDepthSlicesCount = XII_GAL_REMAINING_ARRAY_SLICES;
+    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
 
     if (m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
       viewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
@@ -306,7 +311,7 @@ void xiiGALTexture::CreateDefaultResourceViews()
 
 xiiUInt64 xiiGALTexture::GetMemoryConsumption() const
 {
-  auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
   // This generic implementation is only an approximation, but it can be overridden by specific implementations to give an accurate memory consumption figure.
   xiiUInt64 uiMemory = xiiUInt64(m_Description.m_Size.width) * xiiUInt64(m_Description.m_Size.height) * xiiUInt64(m_Description.m_uiArraySizeOrDepth);

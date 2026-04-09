@@ -11,24 +11,25 @@ class XII_CORE_DLL xiiResource : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiResource, xiiReflectedClass);
 
 public:
-  enum class DoUpdate
+  /// \brief Specifies the thread type on which update operations should be performed.
+  enum class DoUpdate : xiiUInt8
   {
-    OnMainThread,
-    OnAnyThread,
-    OnGraphicsResourceThreads ///< If set, the setting from UpdateGraphicsResource is used. This must be configured by the active renderer.
+    OnMainThread = 0U, ///< Perform update operations on the main thread.
+    OnAnyThread,       ///< Allow update operations to occur on any available thread.
   };
 
-  static DoUpdate UpdateGraphicsResource /*= DoUpdate::OnAnyThread*/;
-
 protected:
-  enum class Unload
+  /// \brief Defines unloading behavior for quality levels.
+  ///
+  /// Used to control how quality levels are removed or managed during runtime or resource cleanup.
+  enum class Unload : xiiUInt8
   {
-    AllQualityLevels,
-    OneQualityLevel
+    AllQualityLevels = 0U, ///< Unloads all available quality levels. This option is typically used when a full cleanup is required.
+    OneQualityLevel        ///< Unloads only one quality level. Useful for selectively freeing memory or optimizing transitions.
   };
 
   /// \brief Default constructor.
-  xiiResource(DoUpdate ResourceUpdateThread, xiiUInt8 uiQualityLevelsLoadable);
+  xiiResource(DoUpdate resourceUpdateThread, xiiUInt8 uiQualityLevelsLoadable);
 
   /// \brief virtual destructor.
   virtual ~xiiResource();

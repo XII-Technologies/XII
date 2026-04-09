@@ -2,6 +2,7 @@
 
 #include <Foundation/Containers/ArrayBase.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
+#include <Foundation/Memory/TemporaryAllocator.h>
 #include <Foundation/Types/PointerWithFlags.h>
 
 /// \brief Implementation of a dynamically growing array.
@@ -14,18 +15,18 @@ class xiiDynamicArrayBase : public xiiArrayBase<T, xiiDynamicArrayBase<T>>
 {
 protected:
   /// \brief Creates an empty array. Does not allocate any data yet.
-  explicit xiiDynamicArrayBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiDynamicArrayBase(xiiAllocator* pAllocator); // [tested]
 
-  xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given array.
-  xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(const xiiDynamicArrayBase<T>& other, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Moves the given array into this one.
-  xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(xiiDynamicArrayBase<T>&& other, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given array.
-  xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator); // [tested]
+  xiiDynamicArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiDynamicArrayBase(); // [tested]
@@ -50,7 +51,7 @@ public:
   void Compact(); // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const { return const_cast<xiiAllocatorBase*>(m_pAllocator.GetPtr()); }
+  xiiAllocator* GetAllocator() const { return const_cast<xiiAllocator*>(m_pAllocator.GetPtr()); }
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
@@ -65,7 +66,7 @@ private:
     External = 1
   };
 
-  xiiPointerWithFlags<xiiAllocatorBase, 1> m_pAllocator;
+  xiiPointerWithFlags<xiiAllocator, 1> m_pAllocator;
 
   enum
   {
@@ -83,7 +84,7 @@ public:
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
   xiiDynamicArray();
-  explicit xiiDynamicArray(xiiAllocatorBase* pAllocator);
+  explicit xiiDynamicArray(xiiAllocator* pAllocator);
 
   xiiDynamicArray(const xiiDynamicArray<T, AllocatorWrapper>& other);
   xiiDynamicArray(const xiiDynamicArrayBase<T>& other);
@@ -100,10 +101,26 @@ public:
   void operator=(xiiDynamicArrayBase<T>&& rhs) noexcept;
 
 protected:
-  xiiDynamicArray(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocatorBase* pAllocator) :
+  xiiDynamicArray(T* pInplaceStorage, xiiUInt32 uiCapacity, xiiAllocator* pAllocator) :
     xiiDynamicArrayBase<T>(pInplaceStorage, uiCapacity, pAllocator)
   {
   }
+};
+
+/// A dynamic array that uses the temporary allocator.
+///
+/// This is ideal for temporary arrays that are only used within a short scope.
+/// The temp allocator is optimized for short-lived allocations and can be more efficient than the default allocator for this use case.
+template <typename T>
+class xiiTemporaryArray : public xiiDynamicArray<T>
+{
+public:
+  xiiTemporaryArray();
+
+  void operator=(const xiiDynamicArrayBase<T>& rhs);
+  void operator=(const xiiArrayPtr<const T>& rhs);
+
+  void operator=(xiiDynamicArrayBase<T>&& rhs) noexcept;
 };
 
 /// Overload of xiiMakeArrayPtr for const dynamic arrays of pointer pointing to const type.
@@ -118,6 +135,6 @@ xiiArrayPtr<const T> xiiMakeArrayPtr(const xiiDynamicArray<T, AllocatorWrapper>&
 template <typename T, typename AllocatorWrapper>
 xiiArrayPtr<T> xiiMakeArrayPtr(xiiDynamicArray<T, AllocatorWrapper>& ref_dynArray);
 
-static_assert(xiiGetTypeClass<xiiDynamicArray<xiiInt32>>::value == 2, "dynamic array is not memory relocatable");
+static_assert(xiiGetTypeClass<xiiDynamicArray<xiiInt32>>::value == 2, "Dynamic array is not memory relocatable.");
 
 #include <Foundation/Containers/Implementation/DynamicArray_inl.h>

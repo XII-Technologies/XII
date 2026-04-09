@@ -15,12 +15,10 @@ xiiShaderPermutationResourceHandle xiiShaderPermutationUtilities::PreloadSingleP
   if (!pShader->IsShaderValid())
     return xiiShaderPermutationResourceHandle();
 
-  xiiHybridArray<xiiGALPermutationVariable, 64> filteredPermutationVariables(xiiFrameAllocator::GetCurrentAllocator());
-  xiiUInt32                                     uiPermutationHash = xiiGALShaderManager::FilterPermutationVariables(pShader->GetUsedPermutationVariables(), permVars, filteredPermutationVariables);
+  xiiTemporaryHybridArray<xiiGALPermutationVariable, 64> filteredPermutationVariables;
+  xiiUInt32                                              uiPermutationHash = xiiGALShaderManager::FilterPermutationVariables(pShader->GetUsedPermutationVariables(), permVars, filteredPermutationVariables);
 
   return PreloadSinglePermutationInternal(pShader->GetResourceID(), pShader->GetResourceIDHash(), uiPermutationHash, filteredPermutationVariables);
-
-  return xiiShaderPermutationResourceHandle();
 }
 
 xiiShaderPermutationResourceHandle xiiShaderPermutationUtilities::PreloadSinglePermutationInternal(xiiStringView sResourceId, xiiUInt64 uiResourceIdHash, xiiUInt32 uiPermutationHash, xiiArrayPtr<xiiGALPermutationVariable> filteredPermutationVariables)

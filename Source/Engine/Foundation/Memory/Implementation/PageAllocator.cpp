@@ -2,9 +2,8 @@
 
 #include <Foundation/Memory/MemoryTracker.h>
 #include <Foundation/Memory/PageAllocator.h>
-#include <Foundation/System/SystemInformation.h>
 
-static xiiAllocatorId GetPageAllocatorId()
+xiiAllocatorId xiiPageAllocator::GetId()
 {
   static xiiAllocatorId id;
 
@@ -16,17 +15,10 @@ static xiiAllocatorId GetPageAllocatorId()
   return id;
 }
 
-xiiAllocatorId xiiPageAllocator::GetId()
-{
-  return GetPageAllocatorId();
-}
-
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/PageAllocator_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/PageAllocator_posix.h>
 #else
 #  error "xiiPageAllocator is not implemented on current platform"
 #endif
-
-XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_PageAllocator);

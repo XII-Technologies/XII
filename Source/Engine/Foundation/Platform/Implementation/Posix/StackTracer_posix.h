@@ -10,6 +10,11 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <Foundation/Math/Math.h>
 
+#if __has_include(<cxxabi.h>)
+#  include <cxxabi.h>
+#  define HAS_CXXABI 1
+#endif
+
 #if __has_include(<execinfo.h>)
 #  include <execinfo.h>
 #  define HAS_EXECINFO 1
@@ -45,9 +50,9 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
   // Demangle if possible, otherwise fallback to backtrace_symbols output.
   if (ppSymbols != nullptr)
   {
-    for (xiiUInt32 i = 0; i < trace.GetCount(); i++)
+    for (xiiUInt32 i = 0; i < trace.GetCount(); ++i)
     {
-#  if HAS_DLFCN
+#  if HAS_DLFCN && HAS_CXXABI
       Dl_info info{0};
       if (dladdr(trace[i], &info))
       {
@@ -69,7 +74,7 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
 #  if HAS_DLFCN
     // Addr2line commands:
     printFunc("*** Run in terminal to resolve file and line callstack: ***");
-    for (xiiUInt32 i = 0; i < trace.GetCount(); i++)
+    for (xiiUInt32 i = 0; i < trace.GetCount(); ++i)
     {
       Dl_info info{0};
       if (dladdr(trace[i], &info))

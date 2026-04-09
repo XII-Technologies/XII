@@ -34,8 +34,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscBufferFlags
     None        = 0U,         ///< No miscellaneous buffer flags.
     SparseAlias = XII_BIT(0), ///< For a sparse buffer, allow binding the same memory region in different buffer ranges or in different sparse buffers.
 
-    ENUM_COUNT,
-
     Default = None
   };
 
@@ -56,13 +54,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
 
   xiiUInt64                          m_uiSize              = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
   xiiBitflags<xiiGALBindFlags>       m_BindFlags           = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
-  xiiEnum<xiiGALResourceUsage>       m_Usage               = xiiGALResourceUsage::Default; ///< The resource usage. The default is Default.
+  xiiEnum<xiiGALResourceUsage>       m_Usage               = xiiGALResourceUsage::Mutable; ///< The resource usage. The default is Default.
   xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;    ///< The CPU access flags or None if no CPU access is allowed. The default is None.
   xiiEnum<xiiGALBufferMode>          m_Mode                = xiiGALBufferMode::Undefined;  ///< The buffer mode. The default is Undefined.
   xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags           = xiiGALMiscBufferFlags::None;  ///< The miscellaneous flags. The default is None.
   xiiUInt32                          m_uiElementByteStride = 0U;                           ///< The buffer element stride in bytes. For a structured buffer, this member defines the size of each buffer element. For a formatted buffer and optionally a raw buffer, this member defines the size of the format that will be used for views created for this buffer. For an index buffer, a stride of 2 will set the index buffer format to 16-bits. The default is 0.
-  xiiUInt64                          m_uiCommandQueueMask  = XII_BIT(0);                   ///< Defines which command queues are allowed to execute commands that use this buffer. The default is the main command queue.
-                                                                                           ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
 /// \brief This describes the buffer initial data.
@@ -109,6 +105,9 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource
 public:
   /// \brief This returns the creation description for this object.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALBufferCreationDescription& GetDescription() const { return m_Description; }
+
+  /// \brief This returns the external memory kind flags for this buffer.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiBitflags<xiiGALExternalMemoryKind> GetExternalMemoryKind() const { return m_ExternalMemoryKind; }
 
   /// \brief This returns the buffer size.
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetSize() const { return m_Description.m_uiSize; }
@@ -178,7 +177,7 @@ protected:
 
   virtual ~xiiGALBuffer();
 
-  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) = 0;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind) = 0;
 
   virtual xiiInternal::NewInstance<xiiGALBufferView> CreateViewPlatform(const xiiGALBufferViewCreationDescription& description) = 0;
 
@@ -188,6 +187,7 @@ protected:
 protected:
   xiiGALBufferCreationDescription m_Description;
 
+  xiiBitflags<xiiGALExternalMemoryKind>  m_ExternalMemoryKind;
   xiiBitflags<xiiGALMemoryPropertyFlags> m_MemoryPropertyFlags;
 
   xiiSharedPtr<xiiGALBufferView> m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];

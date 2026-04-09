@@ -34,13 +34,13 @@ private:
   void ProcessConnectSuccessfull();
 
 private:
-  xiiString m_serverSocketPath;
-  xiiString m_clientSocketPath;
-  xiiInt32  m_serverSocketFd = -1;
-  xiiInt32  m_clientSocketFd = -1;
+  xiiString m_ServerSocketPath;
+  xiiString m_ClientSocketPath;
+  xiiInt32  m_ServerSocketFd = -1;
+  xiiInt32  m_ClientSocketFd = -1;
 
   xiiUInt8 m_InputBuffer[4096];
 
-  xiiUInt64 m_previousSendOffset = 0;
+  xiiUInt64 m_uiPreviousSendOffset = 0;
 };
 #endif

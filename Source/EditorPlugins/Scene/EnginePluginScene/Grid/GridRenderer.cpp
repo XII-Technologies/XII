@@ -3,7 +3,9 @@
 #include <EnginePluginScene/Grid/GridRenderer.h>
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
@@ -48,7 +50,7 @@ void xiiGridRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
 
 void xiiGridRenderer::CreateVertexBuffer()
 {
-  if (!m_hVertexBuffer.IsInvalidated())
+  if (m_pVertexBuffer)
     return;
 
   // load the shader
@@ -65,7 +67,7 @@ void xiiGridRenderer::CreateVertexBuffer()
     desc.m_Usage               = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+    m_pVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }
 
   // Setup the input layout
@@ -172,7 +174,7 @@ void xiiGridRenderer::CreateGrid(const xiiGridRenderData& rd) const
   }
 }
 
-void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   for (auto it = batch.GetIterator<xiiGridRenderData>(); it.IsValid(); ++it)
   {
@@ -181,10 +183,8 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
     if (m_Vertices.IsEmpty())
       return;
 
-    xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
-
-    renderViewContext.SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
-    pRenderContext->BindShader(m_hShader);
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PRE_TRANSFORMED_VERTICES", "FALSE");
+    renderViewContext.m_pRenderContext->BindShader(m_hShader);
 
     xiiUInt32         uiNumLineVertices = m_Vertices.GetCount();
     const GridVertex* pLineData         = m_Vertices.GetData();
@@ -194,10 +194,11 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
       const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, s_uiLineVerticesPerBatch);
       XII_ASSERT_DEBUG(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-      xiiGALDeviceUtilities::MapAndUpdateBuffer(pRenderContext->GetCommandList(), m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
+      xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray()).AssertSuccess();
 
-      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
-      pRenderContext->DrawMeshBuffer().IgnoreResult();
+      xiiSharedPtr<xiiGALBuffer> pVertexBuffer = m_pVertexBuffer;
+      renderViewContext.m_pRenderContext->BindMeshBuffer(xiiMakeArrayPtr(&pVertexBuffer, 1U), {}, &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+      renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       uiNumLineVertices -= uiNumLineVerticesInBatch;
       pLineData += s_uiLineVerticesPerBatch;
@@ -230,38 +231,38 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
   if (m_pSceneContext == nullptr || m_pSceneContext->GetGridDensity() == 0.0f)
     return;
 
-  const xiiCamera* cam      = view.GetCamera();
+  const xiiCamera* pCamera  = view.GetCamera();
   float            fDensity = m_pSceneContext->GetGridDensity();
 
   xiiGridRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiGridRenderData>(nullptr);
   pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
-  pRenderData->m_bOrthoMode      = cam->IsOrthographic();
+  pRenderData->m_bOrthoMode      = pCamera->IsOrthographic();
   pRenderData->m_bGlobal         = m_pSceneContext->IsGridInGlobalSpace();
 
-  if (cam->IsOrthographic())
+  if (pCamera->IsOrthographic())
   {
     const float fAspectRatio = view.GetViewport().width / view.GetViewport().height;
-    const float fDimX        = cam->GetDimensionX(fAspectRatio) * 0.5f;
-    const float fDimY        = cam->GetDimensionY(fAspectRatio) * 0.5f;
+    const float fDimX        = pCamera->GetDimensionX(fAspectRatio) * 0.5f;
+    const float fDimY        = pCamera->GetDimensionY(fAspectRatio) * 0.5f;
 
     fDensity                = AdjustGridDensity(fDensity, (xiiUInt32)view.GetViewport().width, fDimX, 10);
     pRenderData->m_fDensity = fDensity;
 
     pRenderData->m_GlobalTransform.SetIdentity();
-    pRenderData->m_GlobalTransform.m_vPosition = cam->GetCenterDirForwards() * cam->GetFarPlane() * 0.9f;
+    pRenderData->m_GlobalTransform.m_vPosition = pCamera->GetCenterDirForwards() * pCamera->GetFarPlane() * 0.9f;
 
     xiiMat3 mRot;
-    mRot.SetColumn(0, cam->GetCenterDirRight());
-    mRot.SetColumn(1, cam->GetCenterDirUp());
-    mRot.SetColumn(2, cam->GetCenterDirForwards());
+    mRot.SetColumn(0, pCamera->GetCenterDirRight());
+    mRot.SetColumn(1, pCamera->GetCenterDirUp());
+    mRot.SetColumn(2, pCamera->GetCenterDirForwards());
     pRenderData->m_GlobalTransform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
 
-    const xiiVec3 vBottomLeft = cam->GetCenterPosition() - cam->GetCenterDirRight() * fDimX - cam->GetCenterDirUp() * fDimY;
-    const xiiVec3 vTopRight   = cam->GetCenterPosition() + cam->GetCenterDirRight() * fDimX + cam->GetCenterDirUp() * fDimY;
+    const xiiVec3 vBottomLeft = pCamera->GetCenterPosition() - pCamera->GetCenterDirRight() * fDimX - pCamera->GetCenterDirUp() * fDimY;
+    const xiiVec3 vTopRight   = pCamera->GetCenterPosition() + pCamera->GetCenterDirRight() * fDimX + pCamera->GetCenterDirUp() * fDimY;
 
     xiiPlane plane1, plane2;
-    plane1 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirRight(), xiiVec3(0));
-    plane2 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirUp(), xiiVec3(0));
+    plane1 = xiiPlane::MakeFromNormalAndPoint(pCamera->GetCenterDirRight(), xiiVec3(0));
+    plane2 = xiiPlane::MakeFromNormalAndPoint(pCamera->GetCenterDirUp(), xiiVec3(0));
 
     const float fFirstDist1 = plane1.GetDistanceTo(vBottomLeft) - fDensity;
     const float fLastDist1  = plane1.GetDistanceTo(vTopRight) + fDensity;

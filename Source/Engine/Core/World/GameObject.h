@@ -156,6 +156,12 @@ public:
   /// \brief Checks whether the xiiObjectFlags::CreatedByPrefab flag is set on this object.
   bool WasCreatedByPrefab() const { return m_Flags.IsSet(xiiObjectFlags::CreatedByPrefab); }
 
+  /// \brief Adds xiiObjectFlags::HideShapeIcon to the object. See the flag for details.
+  void SetHideShapeIcon() { m_Flags.Add(xiiObjectFlags::HideShapeIcon); }
+
+  /// \brief Checks whether the xiiObjectFlags::HideShapeIcon flag is set on this object.
+  bool IsShapeIconHidden() const { return m_Flags.IsSet(xiiObjectFlags::HideShapeIcon); }
+
   /// \brief Sets the name to identify this object. Does not have to be a unique name.
   void                   SetName(xiiStringView sName);
   void                   SetName(const xiiHashedString& sName);
@@ -164,6 +170,9 @@ public:
   bool                   HasName(const xiiTempHashedString& sName) const;
 
   /// \brief Sets the global key to identify this object. Global keys must be unique within a world.
+  ///
+  /// If two objects use the same global key, the last one that registers it will be the referenced object.
+  /// To prevent warnings about overwriting global keys, first clear the global key on the previous object.
   void          SetGlobalKey(xiiStringView sGlobalKey);
   void          SetGlobalKey(const xiiHashedString& sGlobalKey);
   xiiStringView GetGlobalKey() const;
@@ -237,7 +246,7 @@ public:
   const xiiGameObject* SearchForChildByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent = nullptr) const; // [tested]
 
   /// \brief Same as SearchForChildByNameSequence but returns ALL matches, in case the given path could mean multiple objects
-  void SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects);
+  void SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiDynamicArray<xiiGameObject*>& out_objects);
 
   xiiWorld*       GetWorld();
   const xiiWorld* GetWorld() const;

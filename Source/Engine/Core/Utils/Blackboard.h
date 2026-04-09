@@ -79,7 +79,7 @@ public:
   /// which created the blackboard is already unloaded.
   ///
   /// See https://groups.google.com/g/microsoft.public.vc.language/c/atSh_2VSc2w/m/EgJ3r_7OzVUJ?pli=1
-  static xiiSharedPtr<xiiBlackboard> Create(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  static xiiSharedPtr<xiiBlackboard> Create(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   /// \brief Factory method to get access to a globally registered blackboard.
   ///
@@ -90,7 +90,7 @@ public:
   ///
   /// If at some point you want to "remove" a global blackboard, instead call UnregisterAllEntries() to
   /// clear all its values.
-  static xiiSharedPtr<xiiBlackboard> GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  static xiiSharedPtr<xiiBlackboard> GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   /// \brief Finds a global blackboard with the given name.
   static xiiSharedPtr<xiiBlackboard> FindGlobal(const xiiTempHashedString& sBlackboardName);
@@ -107,6 +107,7 @@ public:
   {
     xiiVariant                           m_Value;
     xiiBitflags<xiiBlackboardEntryFlags> m_Flags;
+    xiiUInt8                             m_uiEditorIndex = 0xFFU;
 
     /// The change counter is increased every time the entry's value changes.
     /// Read this and compare it to a previous known value, to detect whether the value was changed since the last check.
@@ -159,6 +160,12 @@ public:
 
   /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
   xiiVariant GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback = xiiVariant()) const;
+
+  /// \brief For the editor to know what index an element had, so that it can pass through exposed properties (which are given by index).
+  xiiResult SetEditorIndex(const xiiTempHashedString& sName, xiiUInt8 uiEditorIndex);
+
+  /// \brief Searches for the first item that has the previously set index. Returns an empty string, if none was found.
+  xiiHashedString FindNameForEditorIndex(xiiUInt8 uiEditorIndex) const;
 
   /// \brief Increments the value of the named entry. Returns the incremented value or an invalid variant if the entry does not exist or is not a number type.
   xiiVariant IncrementEntryValue(const xiiTempHashedString& sName);

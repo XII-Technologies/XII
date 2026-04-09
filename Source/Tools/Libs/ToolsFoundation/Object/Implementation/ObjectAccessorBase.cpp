@@ -2,6 +2,9 @@
 
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectAccessorBase, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 void xiiObjectAccessorBase::StartTransaction(xiiStringView sDisplayString) {}
 
 
@@ -135,7 +138,7 @@ xiiStatus xiiObjectAccessorBase::ClearByName(const xiiDocumentObject* pObject, x
     if (res.Failed())
       return res;
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 const xiiAbstractProperty* xiiObjectAccessorBase::FindPropertyByName(const xiiDocumentObject* pObject, xiiStringView sProp)

@@ -24,6 +24,6 @@ protected:
   virtual xiiResult InitPlatform(xiiGALShader* pShader) override final;
 
 private:
-  xiiHybridArray<vk::VertexInputAttributeDescription, XII_GAL_MAX_VERTEX_BUFFER_COUNT> m_vkVertexAttributes;
-  xiiHybridArray<vk::VertexInputBindingDescription, XII_GAL_MAX_VERTEX_BUFFER_COUNT>   m_vkVertexInputBindings;
+  xiiHybridArray<vk::VertexInputAttributeDescription, 2U> m_vkVertexAttributes;
+  xiiHybridArray<vk::VertexInputBindingDescription, 2U>   m_vkVertexInputBindings;
 };

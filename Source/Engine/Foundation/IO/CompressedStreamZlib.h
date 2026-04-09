@@ -9,8 +9,7 @@
 
 struct z_stream_s;
 
-/// \brief Part of the zip / apk support of the xiiArchiveReader.
-/// Needed to allow Android to read data from the apk.
+/// \brief Part of the zip support of the xiiArchiveReader.
 class XII_FOUNDATION_DLL xiiCompressedStreamReaderZip : public xiiStreamReader
 {
 public:

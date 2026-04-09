@@ -177,7 +177,7 @@ xiiStatus xiiDocumentObjectManager::SetValue(xiiDocumentObject* pObject, xiiStri
 
   // Allow a recursion depth of 2 for property setters. This allowed for two levels of side-effects on property setters.
   m_pObjectStorage->m_PropertyEvents.Broadcast(e, 2);
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDocumentObjectManager::InsertValue(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& newValue, xiiVariant index)
@@ -201,7 +201,7 @@ xiiStatus xiiDocumentObjectManager::InsertValue(xiiDocumentObject* pObject, xiiS
 
   m_pObjectStorage->m_PropertyEvents.Broadcast(e);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDocumentObjectManager::RemoveValue(xiiDocumentObject* pObject, xiiStringView sProperty, xiiVariant index)
@@ -223,7 +223,7 @@ xiiStatus xiiDocumentObjectManager::RemoveValue(xiiDocumentObject* pObject, xiiS
 
   m_pObjectStorage->m_PropertyEvents.Broadcast(e);
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiDocumentObjectManager::MoveValue(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& oldIndex, const xiiVariant& newIndex)
@@ -256,7 +256,7 @@ xiiStatus xiiDocumentObjectManager::MoveValue(xiiDocumentObject* pObject, xiiStr
     m_pObjectStorage->m_PropertyEvents.Broadcast(e);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -271,20 +271,20 @@ void xiiDocumentObjectManager::AddObject(xiiDocumentObject* pObject, xiiDocument
     sParentProperty = "Children";
 
   XII_ASSERT_DEV(pObject->GetGuid().IsValid(), "Object Guid invalid! Object was not created via a xiiObjectManagerBase!");
-  XII_ASSERT_DEV(CanAdd(pObject->GetTypeAccessor().GetType(), pParent, sParentProperty, index).m_Result.Succeeded(), "Trying to execute invalid add!");
+  XII_ASSERT_DEV(CanAdd(pObject->GetTypeAccessor().GetType(), pParent, sParentProperty, index).Succeeded(), "Trying to execute invalid add!");
 
   InternalAddObject(pObject, pParent, sParentProperty, index);
 }
 
 void xiiDocumentObjectManager::RemoveObject(xiiDocumentObject* pObject)
 {
-  XII_ASSERT_DEV(CanRemove(pObject).m_Result.Succeeded(), "Trying to execute invalid remove!");
+  XII_ASSERT_DEV(CanRemove(pObject).Succeeded(), "Trying to execute invalid remove!");
   InternalRemoveObject(pObject);
 }
 
 void xiiDocumentObjectManager::MoveObject(xiiDocumentObject* pObject, xiiDocumentObject* pNewParent, xiiStringView sParentProperty, xiiVariant index)
 {
-  XII_ASSERT_DEV(CanMove(pObject, pNewParent, sParentProperty, index).m_Result.Succeeded(), "Trying to execute invalid move!");
+  XII_ASSERT_DEV(CanMove(pObject, pNewParent, sParentProperty, index).Succeeded(), "Trying to execute invalid move!");
 
   InternalMoveObject(pNewParent, pObject, sParentProperty, index);
 }

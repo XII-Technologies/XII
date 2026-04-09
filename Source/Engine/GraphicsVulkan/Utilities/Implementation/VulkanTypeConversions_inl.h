@@ -636,6 +636,44 @@ XII_ALWAYS_INLINE vk::ShaderStageFlags xiiVulkanTypeConversions::GetShaderStageF
   return shaderStage;
 }
 
+XII_ALWAYS_INLINE vk::ShaderStageFlagBits xiiVulkanTypeConversions::GetShaderStageFlagBits(xiiGALShaderType::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALShaderType::Vertex:
+      return vk::ShaderStageFlagBits::eVertex;
+    case xiiGALShaderType::Pixel:
+      return vk::ShaderStageFlagBits::eFragment;
+    case xiiGALShaderType::Geometry:
+      return vk::ShaderStageFlagBits::eGeometry;
+    case xiiGALShaderType::Hull:
+      return vk::ShaderStageFlagBits::eTessellationControl;
+    case xiiGALShaderType::Domain:
+      return vk::ShaderStageFlagBits::eTessellationEvaluation;
+    case xiiGALShaderType::Compute:
+      return vk::ShaderStageFlagBits::eCompute;
+    case xiiGALShaderType::Amplification:
+      return vk::ShaderStageFlagBits::eTaskEXT;
+    case xiiGALShaderType::Mesh:
+      return vk::ShaderStageFlagBits::eMeshEXT;
+    case xiiGALShaderType::RayGeneration:
+      return vk::ShaderStageFlagBits::eRaygenKHR;
+    case xiiGALShaderType::RayMiss:
+      return vk::ShaderStageFlagBits::eMissKHR;
+    case xiiGALShaderType::RayClosestHit:
+      return vk::ShaderStageFlagBits::eClosestHitKHR;
+    case xiiGALShaderType::RayAnyHit:
+      return vk::ShaderStageFlagBits::eAnyHitKHR;
+    case xiiGALShaderType::RayIntersection:
+      return vk::ShaderStageFlagBits::eIntersectionKHR;
+    case xiiGALShaderType::Callable:
+      return vk::ShaderStageFlagBits::eCallableKHR;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ShaderStageFlagBits();
+}
+
 XII_ALWAYS_INLINE xiiBitflags<xiiGALShaderType> xiiVulkanTypeConversions::GetGALShaderStageFlags(vk::ShaderStageFlags e)
 {
   if (e == vk::ShaderStageFlagBits::eAllGraphics)
@@ -707,23 +745,23 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALShadingRateFlags> xiiVulkanTypeConversions::
   return static_cast<xiiGALShadingRateFlags::Enum>((x << XII_GAL_SHADING_RATE_X_SHIFT) | y);
 }
 
-XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueType> xiiVulkanTypeConversions::GetGALCommandQueueType(vk::QueueFlags e)
+XII_ALWAYS_INLINE xiiBitflags<xiiGALCommandQueueFlags> xiiVulkanTypeConversions::GetGALCommandQueueFlags(vk::QueueFlags e)
 {
-  xiiBitflags<xiiGALCommandQueueType> queueType;
+  xiiBitflags<xiiGALCommandQueueFlags> queueFlags;
 
   if (e & vk::QueueFlagBits::eSparseBinding)
-    queueType |= xiiGALCommandQueueType::SparseBinding;
+    queueFlags |= xiiGALCommandQueueFlags::SparseBinding;
 
   if (e & vk::QueueFlagBits::eGraphics)
-    return queueType | xiiGALCommandQueueType::Graphics;
+    return queueFlags | xiiGALCommandQueueFlags::Graphics;
 
   if (e & vk::QueueFlagBits::eCompute)
-    return queueType | xiiGALCommandQueueType::Compute;
+    return queueFlags | xiiGALCommandQueueFlags::Compute;
 
   if (e & vk::QueueFlagBits::eTransfer)
-    return queueType | xiiGALCommandQueueType::Transfer;
+    return queueFlags | xiiGALCommandQueueFlags::Transfer;
 
-  return xiiGALCommandQueueType::Unknown;
+  return xiiGALCommandQueueFlags::None;
 }
 
 XII_ALWAYS_INLINE vk::SurfaceTransformFlagsKHR xiiVulkanTypeConversions::GetSurfaceTransform(xiiGALSurfaceTransform::Enum e)
@@ -1509,4 +1547,158 @@ XII_ALWAYS_INLINE vk::DescriptorType xiiVulkanTypeConversions::GetDescriptorType
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return (vk::DescriptorType)VK_DESCRIPTOR_TYPE_MAX_ENUM;
+}
+
+XII_ALWAYS_INLINE vk::IndexType xiiVulkanTypeConversions::GetIndexType(xiiGALValueType::Enum indexType)
+{
+  switch (indexType)
+  {
+    case xiiGALValueType::Undefined:
+      return vk::IndexType::eNoneKHR; // Valid only in Ray Tracing.
+    case xiiGALValueType::UInt16:
+      return vk::IndexType::eUint16;
+    case xiiGALValueType::UInt32:
+      return vk::IndexType::eUint32;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::IndexType::eUint32;
+}
+
+XII_ALWAYS_INLINE vk::ResolveModeFlagBits xiiVulkanTypeConversions::GetDepthResolveMode(xiiEnum<xiiGALDepthResolveMode> mode)
+{
+  switch (mode)
+  {
+    case xiiGALDepthResolveMode::Min:
+      return vk::ResolveModeFlagBits::eMin;
+    case xiiGALDepthResolveMode::Max:
+      return vk::ResolveModeFlagBits::eMax;
+    case xiiGALDepthResolveMode::Average:
+      return vk::ResolveModeFlagBits::eAverage;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return vk::ResolveModeFlagBits::eNone;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
+{
+  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;
+
+  for (auto v : bindFlags)
+  {
+    switch (v)
+    {
+      case xiiGALBindFlags::VertexBuffer:
+        resourceStates |= xiiGALResourceStateFlags::VertexBuffer;
+        break;
+      case xiiGALBindFlags::IndexBuffer:
+        resourceStates |= xiiGALResourceStateFlags::IndexBuffer;
+        break;
+      case xiiGALBindFlags::UniformBuffer:
+        resourceStates |= xiiGALResourceStateFlags::ConstantBuffer;
+        break;
+      case xiiGALBindFlags::ShaderResource:
+        resourceStates |= xiiGALResourceStateFlags::ShaderResource;
+        break;
+      case xiiGALBindFlags::RenderTarget:
+        resourceStates |= xiiGALResourceStateFlags::RenderTarget;
+        break;
+      case xiiGALBindFlags::DepthStencil:
+        resourceStates |= xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::DepthWrite;
+        break;
+      case xiiGALBindFlags::UnorderedAccess:
+        resourceStates |= xiiGALResourceStateFlags::UnorderedAccess;
+        break;
+      case xiiGALBindFlags::IndirectDrawArguments:
+        resourceStates |= xiiGALResourceStateFlags::IndirectArgument;
+        break;
+      case xiiGALBindFlags::InputAttachment:
+        resourceStates |= xiiGALResourceStateFlags::InputAttachment;
+        break;
+      case xiiGALBindFlags::RayTracing:
+        resourceStates |= xiiGALResourceStateFlags::RayTracing;
+        break;
+      case xiiGALBindFlags::ShadingRate:
+        resourceStates |= xiiGALResourceStateFlags::ShadingRate;
+        break;
+      case xiiGALBindFlags::None:
+      case xiiGALBindFlags::StreamOutput:
+      default:
+        XII_REPORT_FAILURE("Unexpected bind flag.");
+        break;
+    }
+  }
+  return resourceStates;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiVulkanTypeConversions::RankDeviceType(vk::PhysicalDeviceType type)
+{
+  switch (type)
+  {
+    case vk::PhysicalDeviceType::eDiscreteGpu: return 5;
+    case vk::PhysicalDeviceType::eIntegratedGpu: return 4;
+    case vk::PhysicalDeviceType::eVirtualGpu: return 3;
+    case vk::PhysicalDeviceType::eCpu: return 2;
+    case vk::PhysicalDeviceType::eOther: return 1;
+    default: return 0;
+  }
+}
+
+XII_ALWAYS_INLINE vk::FragmentShadingRateCombinerOpKHR xiiVulkanTypeConversions::GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(e.GetValue()), "Expected a single combiner flag.");
+
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateCombinerFlags::PassThrough:
+      return vk::FragmentShadingRateCombinerOpKHR::eKeep;
+    case xiiGALShadingRateCombinerFlags::CombinerOverride:
+      return vk::FragmentShadingRateCombinerOpKHR::eReplace;
+    case xiiGALShadingRateCombinerFlags::CombinerMin:
+      return vk::FragmentShadingRateCombinerOpKHR::eMin;
+    case xiiGALShadingRateCombinerFlags::CombinerMax:
+      return vk::FragmentShadingRateCombinerOpKHR::eMax;
+    case xiiGALShadingRateCombinerFlags::CombinerSum:
+    case xiiGALShadingRateCombinerFlags::CombinerMul:
+      return vk::FragmentShadingRateCombinerOpKHR::eMul;
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate combiner flag.");
+      return vk::FragmentShadingRateCombinerOpKHR();
+  }
+}
+
+XII_ALWAYS_INLINE vk::BuildAccelerationStructureFlagsKHR xiiVulkanTypeConversions::GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
+{
+  vk::BuildAccelerationStructureFlagsKHR vkFlags = {};
+
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastBuild;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
+    vkFlags |= vk::BuildAccelerationStructureFlagBitsKHR::eLowMemory;
+
+  return vkFlags;
+}
+
+XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
+{
+  if (triangle.m_VertexValueType == xiiGALValueType::Float32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sfloat : vk::Format::eR32G32B32Sfloat;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Float16)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR16G16Sfloat : vk::Format::eR16G16B16Sfloat;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Int32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? vk::Format::eR32G32Sint : vk::Format::eR32G32B32Sint;
+  }
+  return vk::Format::eUndefined;
 }

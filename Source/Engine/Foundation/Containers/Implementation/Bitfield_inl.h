@@ -1,4 +1,3 @@
-#pragma once
 
 template <class Container>
 XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::GetBitInt(xiiUInt32 uiBitIndex) const
@@ -42,9 +41,13 @@ void xiiBitfield<Container>::SetCount(xiiUInt32 uiBitCount, bool bSetNew)
   if (uiBitCount > uiOldBits)
   {
     if (bSetNew)
+    {
       SetBitRange(uiOldBits, uiBitCount - uiOldBits);
+    }
     else
+    {
       ClearBitRange(uiOldBits, uiBitCount - uiOldBits);
+    }
   }
 }
 
@@ -62,7 +65,7 @@ bool xiiBitfield<Container>::IsAnyBitSet(xiiUInt32 uiFirstBit /*= 0*/, xiiUInt32
 
   XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
 
-  const xiiUInt32 uiLastBit = xiiMath::Min<xiiUInt32>(uiFirstBit + uiNumBits, m_uiCount - 1);
+  const xiiUInt32 uiLastBit = xiiMath::Min<xiiUInt32>(uiFirstBit + uiNumBits, m_uiCount) - 1;
 
   const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
   const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);
@@ -212,14 +215,18 @@ template <class Container>
 void xiiBitfield<Container>::ClearAllBits()
 {
   for (xiiUInt32 i = 0; i < m_Container.GetCount(); ++i)
+  {
     m_Container[i] = 0;
+  }
 }
 
 template <class Container>
 void xiiBitfield<Container>::SetAllBits()
 {
   for (xiiUInt32 i = 0; i < m_Container.GetCount(); ++i)
+  {
     m_Container[i] = 0xFFFFFFFF;
+  }
 }
 
 template <class Container>
@@ -239,7 +246,9 @@ void xiiBitfield<Container>::SetBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBi
   if (uiFirstInt == uiLastInt)
   {
     for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+    {
       SetBit(i);
+    }
 
     return;
   }
@@ -249,15 +258,21 @@ void xiiBitfield<Container>::SetBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBi
 
   // set the bits in the first int individually
   for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+  {
     SetBit(i);
+  }
 
   // set the bits in the ints in between with one operation
   for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+  {
     m_Container[i] = 0xFFFFFFFF;
+  }
 
   // set the bits in the last int individually
   for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+  {
     SetBit(i);
+  }
 }
 
 template <class Container>
@@ -277,7 +292,9 @@ void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNum
   if (uiFirstInt == uiLastInt)
   {
     for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+    {
       ClearBit(i);
+    }
 
     return;
   }
@@ -287,15 +304,21 @@ void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNum
 
   // set the bits in the first int individually
   for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+  {
     ClearBit(i);
+  }
 
   // set the bits in the ints in between with one operation
   for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+  {
     m_Container[i] = 0;
+  }
 
   // set the bits in the last int individually
   for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+  {
     ClearBit(i);
+  }
 }
 
 template <class Container>

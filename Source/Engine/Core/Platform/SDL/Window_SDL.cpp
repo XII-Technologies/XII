@@ -47,28 +47,44 @@ xiiResult xiiWindow::Initialize()
 
   XII_ASSERT_RELEASE(m_CreationDescription.m_Resolution.HasNonZeroArea(), "The client area size can't be zero sized!");
 
-  // Initialize the video subsystem if not initialized.
-  if (!SDL_WasInit(SDL_INIT_VIDEO))
+  // Initialize SDL subsystems. If SDL hasn't been initialized at all, call SDL_Init
+  // which provides a clearer error state. Otherwise initialize any missing subsystems.
+
+  if (!SDL_WasInit(0))
   {
-    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
+    // Nothing initialized yet - initialize both video and events together.
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
     {
-      xiiLog::Error("Failed to initialize the SDL Video Subsystem with error '{0}'.", SDL_GetError());
+      const char* szError = SDL_GetError();
+      xiiLog::Error("Failed to initialize the SDL subsystems (video/events) with error '{}'.", (szError && szError[0]) ? szError : "<no error>");
       return XII_FAILURE;
     }
   }
-
-  // Initialize the event subsystem if not initialized.
-  if (!SDL_WasInit(SDL_INIT_EVENTS))
+  else
   {
-    if (!SDL_InitSubSystem(SDL_INIT_EVENTS))
+    if (!SDL_WasInit(SDL_INIT_VIDEO))
     {
-      xiiLog::Error("Failed to initialize the SDL Event Subsystem with error '{0}'.", SDL_GetError());
-      return XII_FAILURE;
+      if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
+      {
+        const char* szError = SDL_GetError();
+        xiiLog::Error("Failed to initialize the SDL Video Subsystem with error '{}'.", (szError && szError[0]) ? szError : "<no error>");
+        return XII_FAILURE;
+      }
+    }
+
+    if (!SDL_WasInit(SDL_INIT_EVENTS))
+    {
+      if (!SDL_InitSubSystem(SDL_INIT_EVENTS))
+      {
+        const char* szError = SDL_GetError();
+        xiiLog::Error("Failed to initialize the SDL Event Subsystem with error '{}'.", (szError && szError[0]) ? szError : "<no error>");
+        return XII_FAILURE;
+      }
     }
   }
 
   SDL_Window* pWindow       = nullptr;
-  xiiUInt32   uiWindowFlags = 0;
+  xiiUInt32   uiWindowFlags = 0U;
 
   switch (m_CreationDescription.m_WindowMode)
   {
@@ -202,7 +218,7 @@ xiiResult xiiWindow::Resize(const xiiSizeU32& newWindowSize)
 
   XII_ASSERT_DEV(newWindowSize.HasNonZeroArea(), "Invalid window size.");
 
-  if (!SDL_SetWindowSize(m_hWindowHandle, newWindowSize.width, newWindowSize.height))
+  if (SDL_SetWindowSize(m_hWindowHandle, newWindowSize.width, newWindowSize.height) != 0)
   {
     xiiLog::Error("Failed to initialize SDL Window size with error '{}'", SDL_GetError());
   }
@@ -236,7 +252,40 @@ void xiiWindow::ProcessWindowMessages()
       break;
       case SDL_EVENT_WINDOW_RESIZED:
       {
-        OnResize(xiiSizeU32(static_cast<xiiUInt32>(event.window.data1), static_cast<xiiUInt32>(event.window.data2)));
+        xiiSizeU32 newSize = {static_cast<xiiUInt32>(event.window.data1), static_cast<xiiUInt32>(event.window.data2)};
+        if (newSize != m_CreationDescription.m_Resolution)
+        {
+          m_CreationDescription.m_Resolution = newSize;
+
+          OnResize(newSize);
+        }
+      }
+      break;
+      case SDL_EVENT_WINDOW_RESTORED:
+      {
+        // Window was restored from minimized state. Notify visibility change and update size.
+        xiiInt32 iWidth = 0, iHeight = 0;
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+        if (m_hWindowHandle.m_pSDLWindow)
+        {
+          SDL_GetWindowSize(m_hWindowHandle.m_pSDLWindow, &iWidth, &iHeight);
+        }
+#  else
+        if (m_hWindowHandle)
+        {
+          SDL_GetWindowSize(m_hWindowHandle, &iWidth, &iHeight);
+        }
+#  endif
+        {
+          xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
+          if (reportedSize != m_CreationDescription.m_Resolution)
+          {
+            m_CreationDescription.m_Resolution = reportedSize;
+
+            OnResize(reportedSize);
+          }
+        }
+        OnVisibleChange(true);
       }
       break;
       case SDL_EVENT_WINDOW_FOCUS_GAINED:
@@ -257,6 +306,28 @@ void xiiWindow::ProcessWindowMessages()
       break;
       case SDL_EVENT_WINDOW_MAXIMIZED:
       {
+        // Window may have changed size when maximized. Query and notify about the new size.
+        xiiInt32 iWidth = 0, iHeight = 0;
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+        if (m_hWindowHandle.m_pSDLWindow)
+        {
+          SDL_GetWindowSize(m_hWindowHandle.m_pSDLWindow, &iWidth, &iHeight);
+        }
+#  else
+        if (m_hWindowHandle)
+        {
+          SDL_GetWindowSize(m_hWindowHandle, &iWidth, &iHeight);
+        }
+#  endif
+        {
+          xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
+          if (reportedSize != m_CreationDescription.m_Resolution)
+          {
+            m_CreationDescription.m_Resolution = reportedSize;
+
+            OnResize(reportedSize);
+          }
+        }
         OnVisibleChange(true);
       }
       break;
@@ -267,6 +338,28 @@ void xiiWindow::ProcessWindowMessages()
       break;
       case SDL_EVENT_WINDOW_SHOWN:
       {
+        // Window shown - ensure the current size is propagated.
+        xiiInt32 iWidth = 0, iHeight = 0;
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+        if (m_hWindowHandle.m_pSDLWindow)
+        {
+          SDL_GetWindowSize(m_hWindowHandle.m_pSDLWindow, &iWidth, &iHeight);
+        }
+#  else
+        if (m_hWindowHandle)
+        {
+          SDL_GetWindowSize(m_hWindowHandle, &iWidth, &iHeight);
+        }
+#  endif
+        {
+          xiiSizeU32 reportedSize = {static_cast<xiiUInt32>(iWidth), static_cast<xiiUInt32>(iHeight)};
+          if (reportedSize != m_CreationDescription.m_Resolution)
+          {
+            m_CreationDescription.m_Resolution = reportedSize;
+
+            OnResize(reportedSize);
+          }
+        }
         OnVisibleChange(true);
       }
       break;

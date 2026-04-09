@@ -66,12 +66,9 @@ void TestCoordinateSystemConversion(const xiiCoordinateSystem& a, const xiiCoord
   TestPosition(AtoB, BtoA, a.m_vRightDir, b.m_vRightDir);
   TestPosition(AtoB, BtoA, a.m_vUpDir, b.m_vUpDir);
 
-  TestRotation(AtoB, BtoA, a.m_vForwardDir, a.m_vRightDir, FromAxisAndAngle(a.m_vUpDir, A_CWRot), b.m_vForwardDir, b.m_vRightDir,
-               FromAxisAndAngle(b.m_vUpDir, B_CWRot));
-  TestRotation(AtoB, BtoA, a.m_vUpDir, a.m_vForwardDir, FromAxisAndAngle(a.m_vRightDir, A_CWRot), b.m_vUpDir, b.m_vForwardDir,
-               FromAxisAndAngle(b.m_vRightDir, B_CWRot));
-  TestRotation(AtoB, BtoA, a.m_vUpDir, a.m_vRightDir, FromAxisAndAngle(a.m_vForwardDir, -A_CWRot), b.m_vUpDir, b.m_vRightDir,
-               FromAxisAndAngle(b.m_vForwardDir, -B_CWRot));
+  TestRotation(AtoB, BtoA, a.m_vForwardDir, a.m_vRightDir, FromAxisAndAngle(a.m_vUpDir, A_CWRot), b.m_vForwardDir, b.m_vRightDir, FromAxisAndAngle(b.m_vUpDir, B_CWRot));
+  TestRotation(AtoB, BtoA, a.m_vUpDir, a.m_vForwardDir, FromAxisAndAngle(a.m_vRightDir, A_CWRot), b.m_vUpDir, b.m_vForwardDir, FromAxisAndAngle(b.m_vRightDir, B_CWRot));
+  TestRotation(AtoB, BtoA, a.m_vUpDir, a.m_vRightDir, FromAxisAndAngle(a.m_vForwardDir, -A_CWRot), b.m_vUpDir, b.m_vRightDir, FromAxisAndAngle(b.m_vForwardDir, -B_CWRot));
 }
 
 
@@ -162,14 +159,8 @@ XII_CREATE_SIMPLE_TEST(World, CoordinateSystem)
     TestPosition(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vRightDir, xiiCoordSysLH.m_vRightDir);
     TestPosition(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vUpDir);
 
-    TestRotation(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vForwardDir, xiiCoordSysLH.m_vRightDir,
-                 FromAxisAndAngle(xiiCoordSysLH.m_vUpDir, rot), xiiCoordSysLH.m_vForwardDir, xiiCoordSysLH.m_vRightDir,
-                 FromAxisAndAngle(xiiCoordSysLH.m_vUpDir, rot));
-    TestRotation(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vForwardDir,
-                 FromAxisAndAngle(xiiCoordSysLH.m_vRightDir, rot), xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vForwardDir,
-                 FromAxisAndAngle(xiiCoordSysLH.m_vRightDir, rot));
-    TestRotation(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vRightDir,
-                 FromAxisAndAngle(xiiCoordSysLH.m_vForwardDir, -rot), xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vRightDir,
-                 FromAxisAndAngle(xiiCoordSysLH.m_vForwardDir, -rot));
+    TestRotation(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vForwardDir, xiiCoordSysLH.m_vRightDir, FromAxisAndAngle(xiiCoordSysLH.m_vUpDir, rot), xiiCoordSysLH.m_vForwardDir, xiiCoordSysLH.m_vRightDir, FromAxisAndAngle(xiiCoordSysLH.m_vUpDir, rot));
+    TestRotation(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vForwardDir, FromAxisAndAngle(xiiCoordSysLH.m_vRightDir, rot), xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vForwardDir, FromAxisAndAngle(xiiCoordSysLH.m_vRightDir, rot));
+    TestRotation(defaultConstucted, defaultConstucted, xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vRightDir, FromAxisAndAngle(xiiCoordSysLH.m_vForwardDir, -rot), xiiCoordSysLH.m_vUpDir, xiiCoordSysLH.m_vRightDir, FromAxisAndAngle(xiiCoordSysLH.m_vForwardDir, -rot));
   }
 }

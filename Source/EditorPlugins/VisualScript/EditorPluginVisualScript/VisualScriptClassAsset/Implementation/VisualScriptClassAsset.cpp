@@ -20,7 +20,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetProperties, 1, xiiRTTI
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetDocument, 7, xiiRTTINoAllocator)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassAssetDocument, 10, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -49,7 +49,7 @@ xiiTransformStatus xiiVisualScriptClassAssetDocument::InternalTransformAsset(xii
 
   xiiStringView sScriptClassName = xiiPathUtils::GetFileName(GetDocumentPath());
 
-  xiiVisualScriptCompiler compiler;
+  xiiVisualScriptCompiler compiler(*pManager);
   compiler.InitModule(sBaseClassName, sScriptClassName);
 
   xiiHybridArray<const xiiVisualScriptPin*, 16> pins;
@@ -100,12 +100,26 @@ void xiiVisualScriptClassAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocument
 
   for (const auto& v : GetProperties()->m_Variables)
   {
-    if (v.m_bExpose == false)
+    if (v.m_TypeDecl.m_Type == xiiVisualScriptVariableType::Invalid || v.m_TypeDecl.m_bPublic == false)
       continue;
+
+    if (v.m_TypeDecl.m_Type == xiiVisualScriptVariableType::GameObject || v.m_TypeDecl.m_Type == xiiVisualScriptVariableType::Component)
+    {
+      xiiLog::Error("Variables of type 'GameObject' or 'Component' are currently not supported as exposed parameters.");
+      continue;
+    }
 
     xiiExposedParameter* param = XII_DEFAULT_NEW(xiiExposedParameter);
     param->m_sName             = v.m_sName.GetString();
+    param->m_sType             = xiiVisualScriptDataType::GetRtti(static_cast<xiiVisualScriptDataType::Enum>(v.m_TypeDecl.m_Type.GetValue()))->GetTypeName();
     param->m_DefaultValue      = v.m_DefaultValue;
+    param->m_Category          = xiiVisualScriptVariableCategory::GetPropertyCategory(v.m_TypeDecl.m_Category);
+
+    if (v.m_bClampRange && v.m_TypeDecl.m_Type >= xiiVisualScriptVariableType::Byte && v.m_TypeDecl.m_Type <= xiiVisualScriptVariableType::Double)
+    {
+      auto pClampValueAttribute = XII_DEFAULT_NEW(xiiClampValueAttribute, v.m_fMinValue, v.m_fMaxValue);
+      param->m_Attributes.PushBack(pClampValueAttribute);
+    }
 
     pExposedParams->m_Parameters.PushBack(param);
   }

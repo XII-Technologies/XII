@@ -1,13 +1,13 @@
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 
+#include <EditorPluginVisualScript/VisualScriptClassAsset/VisualScriptClassAsset.h>
 #include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptGraph.h>
+#include <EditorPluginVisualScript/VisualScriptGraph/VisualScriptVariable.moc.h>
 #include <Foundation/SimdMath/SimdRandom.h>
 #include <Foundation/Utilities/DGMLWriter.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptPin, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiVisualScriptPin::xiiVisualScriptPin(Type type, xiiStringView sName, const xiiVisualScriptNodeRegistry::PinDesc& pinDesc, const xiiDocumentObject* pObject, xiiUInt32 uiDataPinIndex, xiiUInt32 uiElementIndex) :
   xiiPin(type, sName, pinDesc.GetColor(), pObject), m_pDesc(&pinDesc), m_uiDataPinIndex(uiDataPinIndex), m_uiElementIndex(uiElementIndex)
@@ -64,9 +64,6 @@ bool xiiVisualScriptPin::CanConvertTo(const xiiVisualScriptPin& targetPin, bool 
   const xiiRTTI* pSourceDataType = GetDataType();
   const xiiRTTI* pTargetDataType = targetPin.GetDataType();
 
-  if (xiiVisualScriptDataType::IsPointer(sourceScriptDataType) && targetScriptDataType == xiiVisualScriptDataType::AnyPointer)
-    return true;
-
   if (sourceScriptDataType == xiiVisualScriptDataType::TypedPointer && pSourceDataType != nullptr && targetScriptDataType == xiiVisualScriptDataType::TypedPointer && pTargetDataType != nullptr)
     return pSourceDataType->IsDerivedFrom(pTargetDataType);
 
@@ -75,9 +72,6 @@ bool xiiVisualScriptPin::CanConvertTo(const xiiVisualScriptPin& targetPin, bool 
 
   if (sourceScriptDataType == xiiVisualScriptDataType::BitflagValue && pSourceDataType != nullptr && targetScriptDataType == xiiVisualScriptDataType::BitflagValue && pTargetDataType != nullptr)
     return pSourceDataType == pTargetDataType;
-
-  if (sourceScriptDataType == xiiVisualScriptDataType::Any || targetScriptDataType == xiiVisualScriptDataType::Any)
-    return true;
 
   return xiiVisualScriptDataType::CanConvertTo(sourceScriptDataType, targetScriptDataType);
 }
@@ -101,6 +95,10 @@ xiiHashedString xiiVisualScriptNodeManager::GetScriptBaseClass() const
     if (baseClass.IsA<xiiString>())
     {
       sBaseClass.Assign(baseClass.Get<xiiString>());
+    }
+    else if (baseClass.IsA<xiiStringView>())
+    {
+      sBaseClass.Assign(baseClass.Get<xiiStringView>());
     }
   }
   return sBaseClass;
@@ -127,12 +125,16 @@ bool xiiVisualScriptNodeManager::IsFilteredByBaseClass(const xiiRTTI* pNodeType,
 
 xiiVisualScriptDataType::Enum xiiVisualScriptNodeManager::GetVariableType(xiiTempHashedString sName) const
 {
-  xiiVariant defaultValue;
-  GetVariableDefaultValue(sName, defaultValue).IgnoreResult();
-  return xiiVisualScriptDataType::FromVariantType(defaultValue.GetType());
+  xiiVisualScriptVariable variable;
+  if (GetVariable(sName, variable).Succeeded())
+  {
+    return variable.m_TypeDecl.GetDataType();
+  }
+
+  return xiiVisualScriptDataType::Invalid;
 }
 
-xiiResult xiiVisualScriptNodeManager::GetVariableDefaultValue(xiiTempHashedString sName, xiiVariant& out_value) const
+xiiResult xiiVisualScriptNodeManager::GetVariable(xiiTempHashedString sName, xiiVisualScriptVariable& out_variable) const
 {
   if (GetRootObject()->GetChildren().IsEmpty() == false)
   {
@@ -152,12 +154,40 @@ xiiResult xiiVisualScriptNodeManager::GetVariableDefaultValue(xiiTempHashedStrin
       if (nameVar.IsA<xiiHashedString>() == false || nameVar.Get<xiiHashedString>() != sName)
         continue;
 
-      out_value = pVariableObject->GetTypeAccessor().GetValue("DefaultValue");
+      out_variable.m_sName        = nameVar.Get<xiiHashedString>();
+      out_variable.m_TypeDecl     = pVariableObject->GetTypeAccessor().GetValue("Type").Get<xiiVisualScriptVariableTypeDeclaration>();
+      out_variable.m_DefaultValue = pVariableObject->GetTypeAccessor().GetValue("DefaultValue");
       return XII_SUCCESS;
     }
   }
 
   return XII_FAILURE;
+}
+
+void xiiVisualScriptNodeManager::GetAllVariables(xiiDynamicArray<xiiVisualScriptVariable>& out_variables) const
+{
+  out_variables.Clear();
+
+  if (GetRootObject()->GetChildren().IsEmpty() == false)
+  {
+    auto&     typeAccessor   = GetRootObject()->GetChildren()[0]->GetTypeAccessor();
+    xiiUInt32 uiNumVariables = typeAccessor.GetCount("Variables");
+    for (xiiUInt32 i = 0; i < uiNumVariables; ++i)
+    {
+      xiiVariant variableUuid = typeAccessor.GetValue("Variables", i);
+      if (variableUuid.IsA<xiiUuid>() == false)
+        continue;
+
+      auto pVariableObject = GetObject(variableUuid.Get<xiiUuid>());
+      if (pVariableObject == nullptr)
+        continue;
+
+      auto& variable          = out_variables.ExpandAndGetRef();
+      variable.m_sName        = pVariableObject->GetTypeAccessor().GetValue("Name").ConvertTo<xiiHashedString>();
+      variable.m_TypeDecl     = pVariableObject->GetTypeAccessor().GetValue("Type").Get<xiiVisualScriptVariableTypeDeclaration>();
+      variable.m_DefaultValue = pVariableObject->GetTypeAccessor().GetValue("DefaultValue");
+    }
+  }
 }
 
 void xiiVisualScriptNodeManager::GetInputExecutionPins(const xiiDocumentObject* pObject, xiiDynamicArray<const xiiVisualScriptPin*>& out_pins) const
@@ -567,14 +597,24 @@ void xiiVisualScriptNodeManager::PropertyEventsHandler(const xiiDocumentObjectPr
   {
     DeductNodeTypeAndAllPinTypes(e.m_pObject);
   }
-  else if (e.m_sProperty == "Name" || e.m_sProperty == "DefaultValue") // a variable's name or default value has changed, re-run type deduction
+  else if (e.m_pObject->GetType() == xiiGetStaticRTTI<xiiVisualScriptVariable>() && (e.m_sProperty == "Name" || e.m_sProperty == "Type"))
   {
+    // a variable's name or type has changed, re-run type deduction
     for (auto pObject : GetRootObject()->GetChildren())
     {
       if (IsNode(pObject) == false)
         continue;
 
       DeductNodeTypeAndAllPinTypes(pObject);
+    }
+
+    if (e.m_sProperty == "Type")
+    {
+      auto       typeDecl     = e.m_NewValue.Get<xiiVisualScriptVariableTypeDeclaration>();
+      xiiVariant defaultValue = e.m_pObject->GetTypeAccessor().GetValue("DefaultValue");
+      xiiVisualScriptVariable::ConvertDefaultValue(defaultValue, typeDecl);
+
+      GetDocument()->GetObjectAccessor()->SetValueByName(e.m_pObject, "DefaultValue", defaultValue).AssertSuccess();
     }
   }
 }

@@ -37,6 +37,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALInputLayoutSemantic, 1)
   XII_ENUM_CONSTANT(xiiGALInputLayoutSemantic::BoneIndices1),
   XII_ENUM_CONSTANT(xiiGALInputLayoutSemantic::BoneWeights0),
   XII_ENUM_CONSTANT(xiiGALInputLayoutSemantic::BoneWeights1),
+  XII_ENUM_CONSTANT(xiiGALInputLayoutSemantic::DataOffsets),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayout, 1, xiiRTTINoAllocator)

@@ -114,7 +114,7 @@ void xiiQtPropertyEditorTagSetWidget::InternalUpdateValue()
   {
     xiiHybridArray<xiiVariant, 16> currentSetValues;
     xiiStatus                      status = m_pObjectAccessor->GetValues(item.m_pObject, m_pProp, currentSetValues);
-    XII_ASSERT_DEV(status.m_Result.Succeeded(), "Failed to get tag keys!");
+    XII_ASSERT_DEV(status.Succeeded(), "Failed to get tag keys!");
     for (const xiiVariant& key : currentSetValues)
     {
       XII_ASSERT_DEV(key.GetType() == xiiVariantType::String || key.GetType() == xiiVariantType::StringView, "Tags are supposed to be of type string or string view!");
@@ -180,11 +180,11 @@ void xiiQtPropertyEditorTagSetWidget::onCheckBoxClicked(bool bChecked)
       xiiHybridArray<xiiVariant, 16> currentSetValues;
 
       xiiStatus status = m_pObjectAccessor->GetValues(item.m_pObject, m_pProp, currentSetValues);
-      XII_ASSERT_DEV(status.m_Result.Succeeded(), "Failed to get tag keys!");
+      XII_ASSERT_DEV(status.Succeeded(), "Failed to get tag keys!");
       if (!currentSetValues.Contains(value))
       {
         auto res = m_pObjectAccessor->InsertValue(item.m_pObject, m_pProp, value, -1);
-        if (res.m_Result.Failed())
+        if (res.Failed())
         {
           XII_REPORT_FAILURE("Failed to add '{0}' tag to tag set", value.Get<xiiString>());
         }
@@ -203,12 +203,12 @@ void xiiQtPropertyEditorTagSetWidget::onCheckBoxClicked(bool bChecked)
     {
       xiiHybridArray<xiiVariant, 16> currentSetValues;
       xiiStatus                      status = m_pObjectAccessor->GetValues(item.m_pObject, m_pProp, currentSetValues);
-      XII_ASSERT_DEV(status.m_Result.Succeeded(), "Failed to get tag keys!");
+      XII_ASSERT_DEV(status.Succeeded(), "Failed to get tag keys!");
       xiiUInt32 uiIndex = currentSetValues.IndexOf(value);
       if (uiIndex != -1)
       {
         auto res = m_pObjectAccessor->RemoveValue(item.m_pObject, m_pProp, uiIndex);
-        if (res.m_Result.Failed())
+        if (res.Failed())
         {
           XII_REPORT_FAILURE("Failed to remove '{0}' tag from tag set", value.Get<xiiString>());
         }

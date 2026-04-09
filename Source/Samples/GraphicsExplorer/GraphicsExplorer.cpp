@@ -154,27 +154,42 @@ public:
       // Before starting to render in a frame call this function.
       m_pDevice->BeginFrame();
 
-      auto pGraphicsQueue = m_pDevice->GetDefaultCommandQueue();
+      // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
+      bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr) && (m_pDepthStencilTexture != nullptr) && (m_pRenderPass != nullptr);
 
-      if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+      if (bCanRender)
       {
-        xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
+        auto pGraphicsQueue = m_pDevice->GetCommandQueue();
 
-        auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
-        depthClearValue.m_DepthStencil.m_uiStencil = 0U;
+        m_pCommandList->Begin();
+        {
+          xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
 
-        float fGlobalTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        auto& colorClearValue        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-        colorClearValue.m_ClearColor = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+          auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+          depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
+          depthClearValue.m_DepthStencil.m_uiStencil = 0U;
 
-        pCommandList->BeginRenderPass(beginRenderPass);
-        pCommandList->EndRenderPass();
+          float fGlobalTime             = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+          auto& colorClearValue         = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+          colorClearValue.m_ClearColour = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
 
-        pCommandList->Submit();
+          m_pCommandList->BeginRenderPass(beginRenderPass);
+          m_pCommandList->EndRenderPass();
+        }
+        m_pCommandList->End();
+
+        pGraphicsQueue->Submit(m_pCommandList);
+
+        m_pSwapChain->Present();
       }
-
-      m_pSwapChain->Present();
+      else
+      {
+        // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
+        if (m_pSwapChain)
+        {
+          m_pSwapChain->Present();
+        }
+      }
 
       m_pDevice->EndFrame();
     }
@@ -207,7 +222,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     xiiTelemetry::SetServerName("Graphics Explorer");
 
     // Activate xiiTelemetry such that the inspector plugin can use the network connection.
@@ -295,7 +310,7 @@ public:
 
     // Create a window for rendering
     {
-      xiiWindowCreationDesc WindowCreationDesc;
+      xiiWindowCreationDescription WindowCreationDesc;
       WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
       WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
       WindowCreationDesc.m_Title             = "Graphics Explorer";
@@ -308,49 +323,6 @@ public:
 
     {
       xiiGALDeviceCreationDescription deviceCreationDescription;
-      deviceCreationDescription.m_DeviceFeatures.m_SeparablePrograms                  = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceQueries              = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WireframeFill                      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultithreadedResourceCreation      = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ComputeShaders                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_GeometryShaders                    = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_Tessellation                       = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MeshShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_RayTracing                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BindlessResources                  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_OcclusionQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_BinaryOcclusionQueries             = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TimestampQueries                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PipelineStatisticsQueries          = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_DurationQueries                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthBiasClamp                     = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DepthClamp                         = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_IndependentBlend                   = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_DualSourceBlend                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_MultiViewport                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureCompressionBC               = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics  = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_PixelUAVWritesAndAtomics           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderFloat16                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer16BitAccess          = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer16BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInputOutput16                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderInt8                         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray         = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_WaveOperation                      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate               = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeFence                        = xiiGALDeviceFeatureState::Enabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TileShaders                        = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries      = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading                = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SparseResources                    = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch            = xiiGALDeviceFeatureState::Disabled;
-      deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle            = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_VertexShaderRenderTargetArrayIndex = xiiGALDeviceFeatureState::Optional;
-      deviceCreationDescription.m_DeviceFeatures.m_NativeMultiDraw                    = xiiGALDeviceFeatureState::Disabled;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
@@ -368,9 +340,19 @@ public:
       xiiGALDevice::SetDefaultDevice(m_pDevice);
     }
 
+    {
+      m_pCommandList = m_pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
+
+      XII_ASSERT_DEV(m_pCommandList != nullptr, "Failed to create command list!");
+    }
+
     UpdateSwapChain();
 
-    CreateRenderPass();
+    // Only create the render pass if we have a valid back buffer and depth stencil.
+    if (m_pSwapChain && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && m_pSwapChain->GetBackBufferTexture() && m_pDepthStencilTexture)
+    {
+      CreateRenderPass();
+    }
 
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
@@ -380,7 +362,7 @@ public:
   {
     xiiPlugin::UnloadAllPlugins();
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     // Shut down telemetry if it was set up.
     xiiTelemetry::CloseConnection();
 #endif
@@ -390,6 +372,7 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+    m_pCommandList.Clear();
     m_FramebufferCache.Clear();
     m_pRenderPass.Clear();
     m_pDepthStencilTexture.Clear();
@@ -412,21 +395,19 @@ public:
 
   void UpdateSwapChain()
   {
-    // Create a Swapchain
+    // Create a Swap Chain
     if (!m_pSwapChain)
     {
-      xiiGALSwapChainCreationDescription swapChainDesc;
-      swapChainDesc.m_pWindow               = m_pWindow.Borrow();
-      swapChainDesc.m_Resolution.width      = g_uiWindowWidth;
-      swapChainDesc.m_Resolution.height     = g_uiWindowHeight;
-      swapChainDesc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-      swapChainDesc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
-      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-      swapChainDesc.m_uiBufferCount         = 2U;
-      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
-      swapChainDesc.m_uiDefaultStencilValue = 0U;
+      xiiGALSwapChainCreationDescription swapChainDescription;
+      swapChainDescription.m_pWindow               = m_pWindow.Borrow();
+      swapChainDescription.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      swapChainDescription.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDescription.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDescription.m_uiBufferCount         = 2U;
+      swapChainDescription.m_fDefaultDepthValue    = 1.0f;
+      swapChainDescription.m_uiDefaultStencilValue = 0U;
 
-      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
+      m_pSwapChain = m_pDevice->CreateSwapChain(swapChainDescription);
 
       m_pSwapChain->SetPresentMode(xiiGALPresentMode::VSync);
     }
@@ -444,7 +425,9 @@ public:
       }
     }
 
-    if (!m_pDepthStencilTexture)
+    // Create or recreate depth stencil only when the window has a non-zero area.
+    auto currentSize = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
+    if (currentSize.HasNonZeroArea() && !m_pDepthStencilTexture)
     {
       xiiGALTextureCreationDescription texDesc;
       texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -456,6 +439,12 @@ public:
       m_pDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
 
       m_pDepthStencilTexture->SetDebugName("Depth Stencil");
+    }
+
+    // Ensure render pass exists only when we have a valid backbuffer and depth stencil.
+    if (currentSize.HasNonZeroArea())
+    {
+      CreateRenderPass();
     }
   }
 
@@ -564,6 +553,7 @@ private:
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
   xiiSharedPtr<xiiGALTexture>   m_pDepthStencilTexture;
 
+  xiiSharedPtr<xiiGALCommandList>                     m_pCommandList;
   xiiSharedPtr<xiiGALRenderPass>                      m_pRenderPass;
   xiiHybridArray<xiiSharedPtr<xiiGALFramebuffer>, 3U> m_FramebufferCache;
 };

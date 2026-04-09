@@ -28,10 +28,10 @@ public:
   };
 
   /// \brief Constructor.
-  explicit xiiArrayMapBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiArrayMapBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copy-Constructor.
-  xiiArrayMapBase(const xiiArrayMapBase& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiArrayMapBase(const xiiArrayMapBase& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copy assignment operator.
   void operator=(const xiiArrayMapBase& rhs); // [tested]
@@ -150,7 +150,7 @@ class xiiArrayMap : public xiiArrayMapBase<KEY, VALUE>
 
 public:
   xiiArrayMap();
-  explicit xiiArrayMap(xiiAllocatorBase* pAllocator);
+  explicit xiiArrayMap(xiiAllocator* pAllocator);
 
   xiiArrayMap(const xiiArrayMap<KEY, VALUE, AllocatorWrapper>& rhs);
   xiiArrayMap(const xiiArrayMapBase<KEY, VALUE>& rhs);

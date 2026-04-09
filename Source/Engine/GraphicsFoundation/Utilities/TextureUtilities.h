@@ -1,7 +1,5 @@
 #pragma once
 
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
-
 #include <GraphicsFoundation/Resources/Texture.h>
 
 /// \brief This describes the mip level properties.
@@ -136,4 +134,26 @@ public:
 
   /// \brief Returns the default texture cube creation description.
   [[nodiscard]] static xiiGALTextureCreationDescription GetDefaultTextureCubeDescription() noexcept;
+
+  /// \brief Returns the total number of subresources for the given texture description.
+  XII_ALWAYS_INLINE static xiiUInt32 GetSubResourceCount(const xiiGALTextureCreationDescription& description) noexcept { return description.m_uiMipLevels * description.GetArraySize(); }
+
+  /// \brief Returns the required row pitch for the given texture description and mip level.
+  XII_ALWAYS_INLINE static xiiUInt32 GetRequiredRowPitch(const xiiGALTextureCreationDescription& description, xiiUInt32 uiMipLevel)
+  {
+    const xiiGALMipLevelProperties mipLevelProperties = GetMipLevelProperties(description, uiMipLevel);
+    return static_cast<xiiUInt32>(mipLevelProperties.m_uiRowSize);
+  }
+
+  /// \brief Returns the required slice pitch for the given texture description and mip level.
+  XII_ALWAYS_INLINE static xiiUInt32 GetRequiredSlicePitch(const xiiGALTextureCreationDescription& description, xiiUInt32 uiMipLevel)
+  {
+    const xiiGALMipLevelProperties mipLevelProperties = GetMipLevelProperties(description, uiMipLevel);
+    return static_cast<xiiUInt32>(mipLevelProperties.m_uiDepthSliceSize);
+  }
+
+  /// \brief Fills the out_subresourceData array with zero-initialized data pointers for all subresources of the given texture description.
+  [[nodiscard]] static xiiGALTextureData GetZeroMemoryInitialData(const xiiGALTextureCreationDescription description, xiiHybridArray<xiiGALTextureSubResourceData, 2U>& out_subresourceData, xiiDynamicArray<xiiUInt8>& out_Data);
+
+  static void CopySubresourceToMemory(const xiiGALTextureCreationDescription& description, const xiiGALMappedTextureSubresource& subresourceData, const xiiGALTextureMipLevelData& mipLevelData, xiiArrayPtr<xiiUInt8> pTargetData, xiiUInt32 uiTargetRowStride);
 };

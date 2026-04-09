@@ -68,7 +68,7 @@ protected:
     xiiHybridArray<xiiHashedString, 4> m_DependsOn;                         ///< Array of other functions on which this function depends on. This function will be called after all its dependencies have been called.
     xiiEnum<xiiWorldUpdatePhase>       m_Phase;                             ///< The update phase in which this update function should be called. See xiiWorld for a description on the different phases.
     bool                               m_bOnlyUpdateWhenSimulating = false; ///< The update function is only called when the world simulation is enabled.
-    xiiUInt16                          m_uiGranularity             = 0;     ///< The granularity in which batch updates should happen during the asynchronous phase. Has to be 0 for synchronous functions.
+    xiiUInt16                          m_uiAsyncPhaseBatchSize     = 0;     ///< Zero means m_Function is called once per frame, to update all components, but still in parallel with other world modules. Non-zero means m_Function is called multiple times (in parallel) with batches of roughly this size.
     float                              m_fPriority                 = 0.0f;  ///< Higher priority (higher number) means that this function is called earlier than a function with lower priority.
   };
 
@@ -80,7 +80,7 @@ protected:
   void DeregisterUpdateFunction(const UpdateFunctionDesc& desc);
 
   /// \brief Returns the allocator used by the world.
-  xiiAllocatorBase* GetAllocator();
+  xiiAllocator* GetAllocator();
 
   /// \brief Returns the block allocator used by the world.
   xiiInternal::WorldLargeBlockAllocator* GetBlockAllocator();
@@ -132,7 +132,7 @@ public:
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Core, WorldModuleFactory);
 
-  using CreatorFunc = xiiWorldModule* (*)(xiiAllocatorBase*, xiiWorld*);
+  using CreatorFunc = xiiWorldModule* (*)(xiiAllocator*, xiiWorld*);
 
   xiiWorldModuleFactory();
   xiiWorldModuleTypeId RegisterWorldModule(const xiiRTTI* pRtti, CreatorFunc creatorFunc);

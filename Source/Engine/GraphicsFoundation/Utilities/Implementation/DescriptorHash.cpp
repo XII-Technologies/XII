@@ -7,15 +7,6 @@
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 template <typename T>
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiSizeTemplate<T>& value)
-{
-  ref_stream << value.width;
-  ref_stream << value.height;
-
-  return ref_stream;
-}
-
-template <typename T>
 xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiSharedPtr<T>& pPtr)
 {
   ref_stream << reinterpret_cast<const xiiUInt64&>(pPtr.Borrow());
@@ -148,6 +139,37 @@ xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTilePipelin
   }
 
   return ref_stream;
+}
+
+xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALBlendStateCreationDescription& blendStateDescription)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << blendStateDescription.m_bAlphaToCoverage;
+  writer << blendStateDescription.m_bIndependentBlend;
+  writer << blendStateDescription.m_LogicOperationEnable;
+  writer << blendStateDescription.m_LogicOperation;
+
+  writer << blendStateDescription.m_RenderTargets.GetCount();
+  for (xiiUInt32 i = 0; i < blendStateDescription.m_RenderTargets.GetCount(); ++i)
+  {
+    const xiiGALRenderTargetBlendDescription& renderTargetBlend = blendStateDescription.m_RenderTargets[i];
+
+    writer << renderTargetBlend.m_bBlendEnable;
+    writer << renderTargetBlend.m_SourceBlend;
+    writer << renderTargetBlend.m_DestinationBlend;
+    writer << renderTargetBlend.m_SourceBlendAlpha;
+    writer << renderTargetBlend.m_DestinationBlendAlpha;
+    writer << renderTargetBlend.m_BlendOperationAlpha;
+    writer << renderTargetBlend.m_ColorMask;
+  }
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALDescriptorHash::Equal(const xiiGALBlendStateCreationDescription& a, const xiiGALBlendStateCreationDescription& b)
+{
+  return a == b;
 }
 
 xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALRenderPassCreationDescription& renderPassDescription)

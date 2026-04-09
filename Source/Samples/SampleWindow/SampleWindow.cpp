@@ -159,7 +159,7 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiTelemetry::SetServerName("Sample Window");
 
   // Activate xiiTelemetry such that the inspector plugin can use the network connection.
@@ -247,7 +247,7 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
 
   // Create a window for rendering
   {
-    xiiWindowCreationDesc WindowCreationDesc;
+    xiiWindowCreationDescription WindowCreationDesc;
     WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
     WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
     WindowCreationDesc.m_Title             = "Sample Window";
@@ -266,7 +266,7 @@ void xiiSampleWindowApp::BeforeCoreSystemsShutdown()
 {
   xiiPlugin::UnloadAllPlugins();
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   // Shut down telemetry if it was set up.
   xiiTelemetry::CloseConnection();
 #endif

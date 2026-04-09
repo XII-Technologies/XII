@@ -5,10 +5,8 @@
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
 
 class QHBoxLayout;
-class QComboBox;
 class xiiDynamicEnum;
-
-/// *** Asset Browser ***
+class xiiQtSearchableMenu;
 
 class XII_EDITORFRAMEWORK_DLL xiiQtDynamicEnumPropertyWidget : public xiiQtStandardPropertyWidget
 {
@@ -18,15 +16,18 @@ public:
   xiiQtDynamicEnumPropertyWidget();
 
 protected slots:
-  void on_CurrentEnum_changed(int iEnum);
+  void onMenuAboutToShow();
 
 protected:
   virtual void OnInit() override;
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QComboBox*      m_pWidget;
-  QHBoxLayout*    m_pLayout;
-  xiiDynamicEnum* m_pDynamicEnum = nullptr;
-  xiiInt32        m_iLastIndex   = -1;
+  QHBoxLayout*                      m_pLayout         = nullptr;
+  xiiDynamicEnum*                   m_pEnum           = nullptr;
+  QPushButton*                      m_pButton         = nullptr;
+  QMenu*                            m_pMenu           = nullptr;
+  xiiQtSearchableMenu*              m_pSearchableMenu = nullptr;
+  xiiString                         m_sEnumAttribute;
+  static xiiMap<xiiString, QString> s_LastSearch;
 };

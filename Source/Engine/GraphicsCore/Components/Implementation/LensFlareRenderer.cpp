@@ -6,8 +6,8 @@
 #include <GraphicsCore/Components/LensFlareRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
-#include <GraphicsCore/Utils/CommandListUtilities.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 
@@ -31,10 +31,10 @@ void xiiLensFlareRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiR
 
 void xiiLensFlareRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
 }
 
-void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   const xiiLensFlareRenderData* pRenderData = batch.GetFirstData<xiiLensFlareRenderData>();
 
@@ -42,22 +42,19 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
   xiiSharedPtr<xiiGALBuffer> pLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
   XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(pLensFlareData));
 
-#ifdef CORE_ENABLE
-  pContext->BindShader(m_hShader);
-
-  xiiGALCommandListUtilities::BindBuffer(pCommandList, "lensFlareData", pLensFlareData);
-  xiiGALCommandListUtilities::BindTexture2D(pCommandList, "LensFlareTexture", pRenderData->m_hTexture);
+  renderViewContext.m_pRenderContext->BindShader(m_hShader);
+  renderViewContext.m_pRenderContext->BindBuffer("lensFlareData", pLensFlareData);
+  renderViewContext.m_pRenderContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
 
   FillLensFlareData(batch);
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), pLensFlareData, 0, m_LensFlareData.GetByteArrayPtr()).AssertSuccess();
 
-    pContext->BindMeshBuffer(nullptr, nullptr, nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
-    pContext->DrawMeshBuffer().IgnoreResult();
+    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
+    renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
-#endif
 }
 
 xiiSharedPtr<xiiGALBuffer> xiiLensFlareRenderer::CreateLensFlareDataBuffer(xiiUInt32 uiBufferSize) const
@@ -94,9 +91,9 @@ void xiiLensFlareRenderer::FillLensFlareData(const xiiRenderDataBatch& batch) co
     LensFlareData.OcclusionRadius     = pRenderData->m_fOcclusionSampleRadius;
     LensFlareData.OcclusionSpread     = pRenderData->m_fOcclusionSampleSpread;
     LensFlareData.DepthOffset         = pRenderData->m_fOcclusionDepthOffset;
-    LensFlareData.AspectRatioAndShift = xiiShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_fAspectRatio, pRenderData->m_fShiftToCenter));
-    LensFlareData.ColorRG             = xiiShaderUtilities::PackFloat16intoUint(pRenderData->m_Color.x, pRenderData->m_Color.y);
-    LensFlareData.ColorBA             = xiiShaderUtilities::PackFloat16intoUint(pRenderData->m_Color.z, pRenderData->m_Color.w);
+    LensFlareData.AspectRatioAndShift = xiiGALShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_fAspectRatio, pRenderData->m_fShiftToCenter));
+    LensFlareData.ColorRG             = xiiGALShaderUtilities::PackFloat16intoUint(pRenderData->m_Color.x, pRenderData->m_Color.y);
+    LensFlareData.ColorBA             = xiiGALShaderUtilities::PackFloat16intoUint(pRenderData->m_Color.z, pRenderData->m_Color.w);
     LensFlareData.Flags               = (pRenderData->m_bInverseTonemap ? LENS_FLARE_INVERSE_TONEMAP : 0) | (pRenderData->m_bGreyscaleTexture ? LENS_FLARE_GREYSCALE_TEXTURE : 0) | (pRenderData->m_bApplyFog ? LENS_FLARE_APPLY_FOG : 0);
   }
 }

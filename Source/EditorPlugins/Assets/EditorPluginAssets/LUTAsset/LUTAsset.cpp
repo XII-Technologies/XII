@@ -92,7 +92,7 @@ xiiTransformStatus xiiLUTAssetDocument::InternalTransformAsset(xiiStringView sTa
   if (file.Close().Failed())
     return xiiStatus(xiiFmt("Writing to target file failed: '{0}'", sTargetFile));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -137,5 +137,5 @@ xiiStatus xiiLUTAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs, xi
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("Input", sInputFileRel.GetView());
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

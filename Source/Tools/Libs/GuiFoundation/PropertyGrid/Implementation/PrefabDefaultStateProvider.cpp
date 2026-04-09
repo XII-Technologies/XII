@@ -137,7 +137,7 @@ xiiVariant xiiPrefabDefaultStateProvider::GetDefaultValue(SuperArray superPtr, x
       if (defaultValue.IsString() && pProp->GetAttributeByType<xiiGameObjectReferenceAttribute>())
       {
         // While pretty expensive this restores the default state of game object references which are stored as strings.
-        xiiStringView sValue = defaultValue.GetType() == xiiVariantType::StringView ? defaultValue.Get<xiiStringView>() : xiiStringView(defaultValue.Get<xiiString>().GetData());
+        xiiString sValue = defaultValue.ConvertTo<xiiString>();
         if (xiiConversionUtils::IsStringUuid(sValue))
         {
           xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(sValue);
@@ -188,7 +188,7 @@ xiiStatus xiiPrefabDefaultStateProvider::CreateRevertContainerDiff(SuperArray su
 
     prefabSubGraph.CreateDiffWithBaseGraph(instanceSubGraph, out_diff);
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
   return xiiStatus(xiiFmt("The object was not found in the base prefab graph."));

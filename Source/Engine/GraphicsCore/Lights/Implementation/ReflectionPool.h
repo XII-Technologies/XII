@@ -2,7 +2,6 @@
 
 #include <Core/Graphics/AmbientCubeBasis.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/Declarations.h>
 
 class xiiView;
 class xiiWorld;

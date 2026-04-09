@@ -1,6 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 
 xiiGALStagingBufferPoolVulkan::xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiAlignment, vk::BufferUsageFlags vkBufferUsageFlags) :
@@ -11,22 +12,25 @@ xiiGALStagingBufferPoolVulkan::xiiGALStagingBufferPoolVulkan(xiiGALDeviceVulkan*
 xiiGALStagingBufferPoolVulkan::~xiiGALStagingBufferPoolVulkan()
 {
   // We assume that these resources are not in use when this pool is destroyed.
+  xiiVulkanMemoryAllocator* pVulkanMemoryAllocator = m_pDeviceVulkan->GetVulkanMemoryAllocator();
 
-  for (const auto& stagingBufferPages : m_StagingBufferPages)
+  for (auto& stagingBufferPages : m_StagingBufferPages)
   {
-    vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferPages.m_vkBuffer, stagingBufferPages.m_VmaAllocation);
+    pVulkanMemoryAllocator->DestroyBuffer(stagingBufferPages.m_vkBuffer, stagingBufferPages.m_VulkanAllocation);
   }
   m_StagingBufferPages.Clear();
 
-  for (const auto& largeAllocation : m_LargeAllocations)
+  for (auto& largeAllocation : m_LargeAllocations)
   {
-    vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), largeAllocation.m_vkBuffer, largeAllocation.m_VmaAllocation);
+    pVulkanMemoryAllocator->DestroyBuffer(largeAllocation.m_vkBuffer, largeAllocation.m_VulkanAllocation);
   }
   m_LargeAllocations.Clear();
 }
 
 void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
 {
+  xiiVulkanMemoryAllocator* pVulkanMemoryAllocator = m_pDeviceVulkan->GetVulkanMemoryAllocator();
+
   StagingBufferPage stagingBufferPage;
   xiiUInt64         uiPageSize = s_uiStagingBufferDefaultPageSize;
 
@@ -37,11 +41,11 @@ void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
   vkBufferCreateInfo.usage                = m_vkBufferUsageFlags | vk::BufferUsageFlagBits::eTransferSrc;
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
-  VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
-  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+  xiiVulkanAllocationCreateInfo allocationCreateInfo;
+  allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_Flags = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
-  VK_ASSERT_DEV(vmaCreateBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&stagingBufferPage.m_vkBuffer), &stagingBufferPage.m_VmaAllocation, nullptr));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, stagingBufferPage.m_vkBuffer, stagingBufferPage.m_VulkanAllocation));
 
   stagingBufferPage.m_uiSize = uiPageSize;
 
@@ -50,6 +54,8 @@ void xiiGALStagingBufferPoolVulkan::CreateStagingBufferPage()
 
 void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
 {
+  xiiVulkanMemoryAllocator* pVulkanMemoryAllocator = m_pDeviceVulkan->GetVulkanMemoryAllocator();
+
   StagingBufferPage stagingBufferPage;
 
   vk::BufferCreateInfo vkBufferCreateInfo = {};
@@ -59,11 +65,11 @@ void xiiGALStagingBufferPoolVulkan::CreateLargeBuffer(xiiUInt64 uiSize)
   vkBufferCreateInfo.usage                = m_vkBufferUsageFlags | vk::BufferUsageFlagBits::eTransferSrc;
   vkBufferCreateInfo.sharingMode          = vk::SharingMode::eExclusive;
 
-  VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
-  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+  xiiVulkanAllocationCreateInfo allocationCreateInfo;
+  allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_Flags = xiiVulkanAllocationCreateFlags::StrategyHostSequential;
 
-  VK_ASSERT_DEV(vmaCreateBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&stagingBufferPage.m_vkBuffer), &stagingBufferPage.m_VmaAllocation, nullptr));
+  VK_ASSERT_DEV(pVulkanMemoryAllocator->CreateBuffer(vkBufferCreateInfo, allocationCreateInfo, stagingBufferPage.m_vkBuffer, stagingBufferPage.m_VulkanAllocation));
 
   stagingBufferPage.m_uiSize = uiSize;
 
@@ -79,9 +85,9 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
     const auto& largeAllocation = m_LargeAllocations.PeekBack();
 
     xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
-    stagingBufferAllocation.m_vkBuffer      = largeAllocation.m_vkBuffer;
-    stagingBufferAllocation.m_VmaAllocation = largeAllocation.m_VmaAllocation;
-    stagingBufferAllocation.m_uiOffset      = 0;
+    stagingBufferAllocation.m_vkBuffer         = largeAllocation.m_vkBuffer;
+    stagingBufferAllocation.m_VulkanAllocation = largeAllocation.m_VulkanAllocation;
+    stagingBufferAllocation.m_uiOffset         = 0;
 
     return stagingBufferAllocation;
   }
@@ -96,7 +102,7 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
       uiBufferID = i;
       break;
     }
-    uiBufferAllocationOffset = 0;
+    uiBufferAllocationOffset = 0U;
   }
 
   // If we cannot find an existing page with sufficient free space, create a new page.
@@ -107,11 +113,11 @@ xiiGALStagingBufferAllocationVulkan xiiGALStagingBufferPoolVulkan::Allocate(xiiU
     uiBufferID = m_StagingBufferPages.GetCount() - 1;
   }
 
-  // Sub allocate from current page.
+  // Sub-allocate from current page.
   xiiGALStagingBufferAllocationVulkan stagingBufferAllocation;
-  stagingBufferAllocation.m_vkBuffer      = m_StagingBufferPages[uiBufferID].m_vkBuffer;
-  stagingBufferAllocation.m_VmaAllocation = m_StagingBufferPages[uiBufferID].m_VmaAllocation;
-  stagingBufferAllocation.m_uiOffset      = uiBufferAllocationOffset;
+  stagingBufferAllocation.m_vkBuffer         = m_StagingBufferPages[uiBufferID].m_vkBuffer;
+  stagingBufferAllocation.m_VulkanAllocation = m_StagingBufferPages[uiBufferID].m_VulkanAllocation;
+  stagingBufferAllocation.m_uiOffset         = uiBufferAllocationOffset;
 
   m_uiPageAllocationCounter   = uiBufferID;
   m_uiOffsetAllocationCounter = uiBufferAllocationOffset + uiSize;
@@ -126,13 +132,13 @@ void xiiGALStagingBufferPoolVulkan::Reset()
 
   for (auto& stagingBufferPages : m_StagingBufferPages)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(std::move(stagingBufferPages.m_vkBuffer), std::move(stagingBufferPages.m_VmaAllocation));
+    m_pDeviceVulkan->SafeReleaseDeviceObject(std::move(stagingBufferPages.m_vkBuffer), std::move(stagingBufferPages.m_VulkanAllocation));
   }
   m_StagingBufferPages.Clear();
 
   for (auto& largeAllocation : m_LargeAllocations)
   {
-    m_pDeviceVulkan->SafeReleaseDeviceObject(std::move(largeAllocation.m_vkBuffer), std::move(largeAllocation.m_VmaAllocation));
+    m_pDeviceVulkan->SafeReleaseDeviceObject(std::move(largeAllocation.m_vkBuffer), std::move(largeAllocation.m_VulkanAllocation));
   }
   m_LargeAllocations.Clear();
 }

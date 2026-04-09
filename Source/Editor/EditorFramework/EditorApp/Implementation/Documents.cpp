@@ -32,12 +32,12 @@ xiiDocument* xiiQtEditorApp::OpenDocument(xiiStringView sDocument, xiiBitflags<x
   if (!pDocument)
   {
     xiiStatus res = pTypeDesc->m_pManager->CanOpenDocument(sDocument);
-    if (res.m_Result.Succeeded())
+    if (res.Succeeded())
     {
       res = pTypeDesc->m_pManager->OpenDocument(pTypeDesc->m_sDocumentTypeName, sDocument, pDocument, flags, pOpenContext);
     }
 
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
       xiiStringBuilder s;
       s.SetFormat("Failed to open document: \n'{0}'", sDocument);
@@ -94,7 +94,7 @@ xiiDocument* xiiQtEditorApp::CreateDocument(xiiStringView sDocument, xiiBitflags
   xiiDocument* pDocument = nullptr;
   {
     xiiStatus result = pTypeDesc->m_pManager->CreateDocument(pTypeDesc->m_sDocumentTypeName, sDocument, pDocument, flags, pOpenContext);
-    if (result.m_Result.Failed())
+    if (result.Failed())
     {
       xiiStringBuilder s;
       s.SetFormat("Failed to create document: \n'{0}'", sDocument);
@@ -182,7 +182,7 @@ void xiiQtEditorApp::DocumentManagerRequestHandler(xiiDocumentManager::Request& 
     case xiiDocumentManager::Request::Type::DocumentAllowedToOpen:
     {
       // if someone else already said no, don't bother to check further
-      if (r.m_RequestStatus.m_Result.Failed())
+      if (r.m_RequestStatus.Failed())
         return;
 
       if (!xiiToolsProject::IsProjectOpen())
@@ -206,7 +206,7 @@ void xiiQtEditorApp::DocumentManagerRequestHandler(xiiDocumentManager::Request& 
           xiiStatus res = xiiToolsProject::OpenProject(sProjectPath);
 
           // if project opening failed, relay that error message
-          if (res.m_Result.Failed())
+          if (res.Failed())
           {
             r.m_RequestStatus = res;
             return;

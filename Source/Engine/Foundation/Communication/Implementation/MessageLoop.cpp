@@ -110,18 +110,18 @@ void xiiMessageLoop::RunLoop()
     }
 
     // process all available data until all is processed and we wait for new messages.
-    bool didwork = ProcessTasks();
+    bool bWasSuccessful = ProcessTasks();
     if (m_bShouldQuit)
       break;
 
-    if (didwork)
+    if (bWasSuccessful)
       continue;
 
-    didwork |= WaitForMessages(0, nullptr);
+    bWasSuccessful |= WaitForMessages(0, nullptr);
     if (m_bShouldQuit)
       break;
 
-    if (didwork)
+    if (bWasSuccessful)
       continue;
 
     // wait until we have work again
@@ -152,11 +152,11 @@ bool xiiMessageLoop::ProcessTasks()
     pChannel->InternalDisconnect();
   }
 
-  bool bDidWork = !m_ConnectQueueTask.IsEmpty() || !m_SendQueueTask.IsEmpty() || !m_DisconnectQueueTask.IsEmpty();
+  bool bWasSuccessful = !m_ConnectQueueTask.IsEmpty() || !m_SendQueueTask.IsEmpty() || !m_DisconnectQueueTask.IsEmpty();
   m_ConnectQueueTask.Clear();
   m_SendQueueTask.Clear();
   m_DisconnectQueueTask.Clear();
-  return bDidWork;
+  return bWasSuccessful;
 }
 
 void xiiMessageLoop::Quit()

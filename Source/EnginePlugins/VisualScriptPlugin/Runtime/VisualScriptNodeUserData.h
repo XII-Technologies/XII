@@ -129,20 +129,11 @@ namespace
       return XII_SUCCESS;
     }
 
-    template <bool PropIsFunction>
     static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& ref_node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
     {
       auto& userData = ref_node.InitUserData<NodeUserData_TypeAndProperty>(inout_pAdditionalData);
       XII_SUCCEED_OR_RETURN(ReadType(inout_stream, userData.m_pType));
-
-      if constexpr (PropIsFunction)
-      {
-        XII_SUCCEED_OR_RETURN(ReadProperty(inout_stream, userData.m_pType, userData.m_pType->GetFunctions(), userData.m_pProperty));
-      }
-      else
-      {
-        XII_SUCCEED_OR_RETURN(ReadProperty(inout_stream, userData.m_pType, userData.m_pType->GetProperties(), userData.m_pProperty));
-      }
+      XII_SUCCEED_OR_RETURN(ReadProperty(inout_stream, userData.m_pType, userData.m_pType->GetProperties(), userData.m_pProperty));
 
       return XII_SUCCESS;
     }
@@ -237,6 +228,95 @@ namespace
 
   static_assert(sizeof(NodeUserData_TypeAndProperties) == 24);
   static_assert(GetUserDataAlignment<NodeUserData_TypeAndProperties>() == 8);
+
+  //////////////////////////////////////////////////////////////////////////
+
+  struct NodeUserData_TypeAndFunction : public NodeUserData_TypeAndProperty
+  {
+    xiiUInt32 m_uiInputArgsMask  = 0;
+    xiiUInt32 m_uiOutputArgsMask = 0;
+
+    static xiiResult Serialize(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_uiSize, xiiUInt32& out_uiAlignment)
+    {
+      XII_SUCCEED_OR_RETURN(NodeUserData_Type::Serialize(nodeDesc, inout_stream, out_uiSize, out_uiAlignment));
+
+      const xiiVariantArray& propertiesVar = nodeDesc.m_Value.Get<xiiVariantArray>();
+      XII_ASSERT_DEBUG(propertiesVar.GetCount() == 1, "Invalid number of properties");
+
+      xiiHashedString sFunctionName = propertiesVar[0].Get<xiiHashedString>();
+      inout_stream << sFunctionName;
+
+      const xiiRTTI* pType = xiiRTTI::FindTypeByName(nodeDesc.m_sTargetTypeName);
+      if (pType == nullptr)
+        return XII_FAILURE;
+
+      const xiiAbstractFunctionProperty* pFunction = nullptr;
+      for (auto pFunc : pType->GetFunctions())
+      {
+        if (pFunc->GetPropertyName() == sFunctionName)
+        {
+          pFunction = pFunc;
+          break;
+        }
+      }
+
+      if (pFunction == nullptr)
+        return XII_FAILURE;
+
+      auto pScriptableFunctionAttribute = pFunction->GetAttributeByType<xiiScriptableFunctionAttribute>();
+      if (pScriptableFunctionAttribute == nullptr)
+        return XII_FAILURE;
+
+      xiiUInt32 uiInputArgsMask  = 0;
+      xiiUInt32 uiOutputArgsMask = 0;
+      for (xiiUInt32 i = 0; i < pScriptableFunctionAttribute->GetArgumentCount(); ++i)
+      {
+        auto argType = pScriptableFunctionAttribute->GetArgumentType(i);
+        if (argType == xiiScriptableFunctionAttribute::In || argType == xiiScriptableFunctionAttribute::Inout)
+        {
+          uiInputArgsMask |= XII_BIT(i);
+        }
+
+        if (argType == xiiScriptableFunctionAttribute::Out || argType == xiiScriptableFunctionAttribute::Inout)
+        {
+          uiOutputArgsMask |= XII_BIT(i);
+        }
+      }
+
+      inout_stream << uiInputArgsMask;
+      inout_stream << uiOutputArgsMask;
+
+      out_uiSize      = sizeof(NodeUserData_TypeAndFunction);
+      out_uiAlignment = GetUserDataAlignment<NodeUserData_TypeAndFunction>();
+      return XII_SUCCESS;
+    }
+
+    static xiiResult Deserialize(xiiVisualScriptGraphDescription::Node& ref_node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData)
+    {
+      auto& userData = ref_node.InitUserData<NodeUserData_TypeAndFunction>(inout_pAdditionalData);
+      XII_SUCCEED_OR_RETURN(ReadType(inout_stream, userData.m_pType));
+      XII_SUCCEED_OR_RETURN(ReadProperty(inout_stream, userData.m_pType, userData.m_pType->GetFunctions(), userData.m_pProperty));
+
+      inout_stream >> userData.m_uiInputArgsMask;
+      inout_stream >> userData.m_uiOutputArgsMask;
+
+      if (static_cast<const xiiAbstractFunctionProperty*>(userData.m_pProperty)->GetArgumentCount() != xiiMath::CountBits(userData.m_uiInputArgsMask | userData.m_uiOutputArgsMask))
+      {
+        xiiLog::Error("Visual script {} '{}': Argument count mismatch. Script needs re-transform.", xiiVisualScriptNodeDescription::Type::GetName(ref_node.m_Type), userData.m_pProperty->GetPropertyName());
+        return XII_FAILURE;
+      }
+
+      return XII_SUCCESS;
+    }
+
+    static void ToString(const xiiVisualScriptNodeDescription& nodeDesc, xiiStringBuilder& out_sResult)
+    {
+      NodeUserData_TypeAndProperty::ToString(nodeDesc, out_sResult);
+    }
+  };
+
+  static_assert(sizeof(NodeUserData_TypeAndFunction) == 24);
+  static_assert(GetUserDataAlignment<NodeUserData_TypeAndFunction>() == 8);
 
   //////////////////////////////////////////////////////////////////////////
 
@@ -440,18 +520,18 @@ namespace
     {&NodeUserData_TypeAndProperties::Serialize,
      &NodeUserData_TypeAndProperties::Deserialize,
      &NodeUserData_TypeAndProperties::ToString}, // MessageHandler_Coroutine,
+    {&NodeUserData_TypeAndFunction::Serialize,
+     &NodeUserData_TypeAndFunction::Deserialize,
+     &NodeUserData_TypeAndFunction::ToString}, // ReflectedFunction,
     {&NodeUserData_TypeAndProperty::Serialize,
-     &NodeUserData_TypeAndProperty::Deserialize<true>,
-     &NodeUserData_TypeAndProperty::ToString}, // ReflectedFunction,
-    {&NodeUserData_TypeAndProperty::Serialize,
-     &NodeUserData_TypeAndProperty::Deserialize<false>,
+     &NodeUserData_TypeAndProperty::Deserialize,
      &NodeUserData_TypeAndProperty::ToString}, // GetReflectedProperty,
     {&NodeUserData_TypeAndProperty::Serialize,
-     &NodeUserData_TypeAndProperty::Deserialize<false>,
+     &NodeUserData_TypeAndProperty::Deserialize,
      &NodeUserData_TypeAndProperty::ToString}, // SetReflectedProperty,
-    {&NodeUserData_TypeAndProperty::Serialize,
-     &NodeUserData_TypeAndProperty::Deserialize<true>,
-     &NodeUserData_TypeAndProperty::ToString}, // InplaceCoroutine,
+    {&NodeUserData_TypeAndFunction::Serialize,
+     &NodeUserData_TypeAndFunction::Deserialize,
+     &NodeUserData_TypeAndFunction::ToString}, // InplaceCoroutine,
     {},                                        // GetScriptOwner,
     {&NodeUserData_TypeAndProperties::Serialize,
      &NodeUserData_TypeAndProperties::Deserialize,
@@ -517,6 +597,7 @@ namespace
     {}, // Builtin_Array_IndexOf,
     {}, // Builtin_Array_Insert,
     {}, // Builtin_Array_PushBack,
+    {}, // Builtin_Array_PushBackRange,
     {}, // Builtin_Array_Remove,
     {}, // Builtin_Array_RemoveAt,
 

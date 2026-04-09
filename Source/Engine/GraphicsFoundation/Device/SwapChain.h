@@ -17,7 +17,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const { return m_pBackBufferTexture; };
 
   /// \brief This retrieves the current swap chain size.
-  [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_Description.m_Resolution; };
+  [[nodiscard]] XII_ALWAYS_INLINE xiiSizeU32 GetCurrentSize() const { return m_CurrentSize; };
 
   /// \brief This sets the present mode.
   XII_ALWAYS_INLINE void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode) { m_PresentMode = presentMode; };
@@ -36,19 +36,6 @@ public:
   /// \note When resizing non-primary swap chains, the engine unbinds the swap chain buffers from the output.
   virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;
 
-  /// \brief This sets the swap chain to full screen mode. Note that this is only supported on the Windows platform.
-  virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) = 0;
-
-  /// \brief This sets the swap chain to windowed mode. Note that this is only supported on the Windows platform.
-  virtual void SetWindowedMode() = 0;
-
-  /// \brief This sets the maximum number of frames that the swap chain is allowed to queue for rendering.
-  ///
-  /// This value is only relevant for Direct3D11 and Direct3D12 backends and ignored for others. By default it matches the number of buffers in the swap chain. For example, for a 2-buffer
-  /// swap chain, the CPU can enqueue frames 0 and 1, but Present command of frame 2 will block until frame 0 is presented. If in the example above the maximum frame latency is set
-  /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) { XII_IGNORE_UNUSED(uiMaxLatency); };
-
 protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
@@ -66,4 +53,6 @@ protected:
   xiiGALSwapChainCreationDescription m_Description;
 
   xiiEnum<xiiGALSurfaceTransform> m_DesiredSurfaceTransform = xiiGALSurfaceTransform::Optimal;
+
+  xiiSizeU32 m_CurrentSize = {};
 };

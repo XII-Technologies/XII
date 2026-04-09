@@ -172,6 +172,21 @@ namespace
 
     return result;
   }
+
+  XII_ALWAYS_INLINE xiiUInt64 EncodeLastVisibleFrameIndexAndVisType(xiiUInt64 uiFrameCounter, xiiVisibilityState::Enum visType)
+  {
+    return (uiFrameCounter << 4) | static_cast<xiiUInt64>(visType);
+  }
+
+  XII_ALWAYS_INLINE xiiUInt64 ExtractLastVisibleFrameIndex(xiiUInt64 uiLastVisibleFrameIdxAndVisType)
+  {
+    return (uiLastVisibleFrameIdxAndVisType >> 4);
+  }
+
+  XII_ALWAYS_INLINE xiiVisibilityState::Enum ExtractVisType(xiiUInt64 uiLastVisibleFrameIdxAndVisType)
+  {
+    return static_cast<xiiVisibilityState::Enum>(uiLastVisibleFrameIdxAndVisType & static_cast<xiiUInt64>(15));
+  }
 } // namespace
 
 //////////////////////////////////////////////////////////////////////////
@@ -186,7 +201,7 @@ struct CellDataMapping
 
 struct xiiSpatialSystem_RegularGrid::Cell
 {
-  Cell(xiiAllocatorBase* pAlignedAlloctor, xiiAllocatorBase* pAllocator) :
+  Cell(xiiAllocator* pAlignedAlloctor, xiiAllocator* pAllocator) :
     m_BoundingSpheres(pAlignedAlloctor), m_BoundingBoxHalfExtents(pAlignedAlloctor), m_TagSets(pAllocator), m_ObjectPointers(pAllocator), m_DataIndices(pAllocator)
   {
   }
@@ -557,7 +572,7 @@ namespace xiiInternal
       ref_stats.m_uiNumObjectsTested += numSpheres;
 
       xiiUInt32       currentIndex      = 0;
-      const xiiUInt64 uiFrameIdxAndType = (pQueryData->m_uiFrameCounter << 4) | static_cast<xiiUInt64>(visType);
+      const xiiUInt64 uiFrameIdxAndType = EncodeLastVisibleFrameIndexAndVisType(pQueryData->m_uiFrameCounter, visType);
 
       while (currentIndex < numSpheres)
       {
@@ -950,13 +965,12 @@ xiiVisibilityState::Enum xiiSpatialSystem_RegularGrid::GetVisibilityState(const 
                 return xiiVisitorExecution::Continue;
               });
 
-  const xiiUInt64 uiLastVisibleFrameIdx = (uiLastVisibleFrameIdxAndVisType >> 4);
-  const xiiUInt64 uiLastVisibilityType  = (uiLastVisibleFrameIdxAndVisType & static_cast<xiiUInt64>(15)); // mask out lower 4 bits
+  const xiiUInt64 uiLastVisibleFrameIdx = ExtractLastVisibleFrameIndex(uiLastVisibleFrameIdxAndVisType);
 
   if (m_uiFrameCounter > uiLastVisibleFrameIdx + uiNumFramesBeforeInvisible)
     return xiiVisibilityState::Invisible;
 
-  return static_cast<xiiVisibilityState::Enum>(uiLastVisibilityType);
+  return ExtractVisType(uiLastVisibleFrameIdxAndVisType);
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -1054,7 +1068,8 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::AddSpatialDataToGrids(const x
       pGrid = XII_NEW(&m_Allocator, Grid, *this, xiiSpatialData::Category(static_cast<xiiUInt16>(uiGridIndex)));
     }
 
-    pGrid->AddSpatialData(bounds, tags, pObject, m_uiFrameCounter, hData);
+    const xiiUInt64 uiLastVisibleFrameIdxAndVisType = EncodeLastVisibleFrameIndexAndVisType(m_uiFrameCounter, xiiVisibilityState::Direct);
+    pGrid->AddSpatialData(bounds, tags, pObject, uiLastVisibleFrameIdxAndVisType, hData);
   }
 
   return hData;

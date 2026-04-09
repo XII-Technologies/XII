@@ -24,7 +24,7 @@ public:
   void         UpdateStats();
   virtual void closeEvent(QCloseEvent* pEvent) override;
 
-  static void ProcessTelemetry(void* pUnuseed);
+  static void ProcessTelemetry(void* pUnused);
 
 public Q_SLOTS:
   void ShowStatIn(bool);

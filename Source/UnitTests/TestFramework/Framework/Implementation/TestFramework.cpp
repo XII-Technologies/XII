@@ -913,13 +913,26 @@ void xiiTestFramework::ExecuteNextTest()
 void xiiTestFramework::EndTests()
 {
   m_bTestsRunning = false;
+
+  if (GetTestsPassedCount() + GetTestsFailedCount() == 0)
+  {
+    xiiTestFramework::Output(xiiTestOutput::Error, "No tests were run. The -filter option may not have matched any tests.");
+    ++m_iTestsFailed;
+  }
+
   if (GetTestsFailedCount() == 0)
+  {
     xiiTestFramework::Output(xiiTestOutput::FinalResult, "All tests passed.");
+  }
   else
+  {
     xiiTestFramework::Output(xiiTestOutput::FinalResult, "Tests failed: %i. Tests passed: %i", GetTestsFailedCount(), GetTestsPassedCount());
+  }
 
   if (!m_Settings.m_sJsonOutput.empty())
+  {
     m_Result.WriteJsonToFile(m_Settings.m_sJsonOutput.c_str());
+  }
 
   m_uiExecutingTest    = xiiInvalidIndex;
   m_uiExecutingSubTest = xiiInvalidIndex;

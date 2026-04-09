@@ -6,7 +6,6 @@
 #include <Foundation/Types/ScopeExit.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
@@ -27,7 +26,6 @@ void xiiMaterialResourceDescriptor::Clear()
   m_Parameters.Clear();
   m_Texture2DBindings.Clear();
   m_TextureCubeBindings.Clear();
-  m_RenderDataCategory = xiiInvalidRenderDataCategory;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -381,12 +379,6 @@ xiiTextureCubeResourceHandle xiiMaterialResource::GetTextureCubeBinding(const xi
   return xiiTextureCubeResourceHandle();
 }
 
-xiiRenderData::Category xiiMaterialResource::GetRenderDataCategory()
-{
-  auto pCachedValues = GetOrUpdateCachedValues();
-  return pCachedValues->m_RenderDataCategory;
-}
-
 void xiiMaterialResource::PreserveCurrentDescription()
 {
   m_LoadingDescription = m_Description;
@@ -645,16 +637,6 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
     {
       xiiStringBuilder sRenderDataCategoryName;
       s >> sRenderDataCategoryName;
-
-      xiiTempHashedString sCategoryNameHashed(sRenderDataCategoryName.GetView());
-      if (sCategoryNameHashed != xiiTempHashedString("<Invalid>"))
-      {
-        m_Description.m_RenderDataCategory = xiiRenderData::FindCategory(sCategoryNameHashed);
-        if (m_Description.m_RenderDataCategory == xiiInvalidRenderDataCategory)
-        {
-          xiiLog::Error("Material '{}' uses an invalid render data category '{}'", GetResourceDescription(), sRenderDataCategoryName);
-        }
-      }
     }
 
     if (uiVersion >= 5)
@@ -709,12 +691,6 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
     if (const xiiOpenDdlReaderElement* pShader = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "Shader"))
     {
       m_Description.m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>(pShader->GetPrimitivesString()[0]);
-    }
-
-    // Read the render data category
-    if (const xiiOpenDdlReaderElement* pRenderDataCategory = pRoot->FindChildOfType(xiiOpenDdlPrimitiveType::String, "RenderDataCategory"))
-    {
-      m_Description.m_RenderDataCategory = xiiRenderData::FindCategory(xiiTempHashedString(pRenderDataCategory->GetPrimitivesString()[0]));
     }
 
     for (const xiiOpenDdlReaderElement* pChild = pRoot->GetFirstChild(); pChild != nullptr; pChild = pChild->GetSibling())
@@ -898,8 +874,10 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
   }
   if (m_pMaterialData.GetCount() != pBinding->m_uiTotalSize)
   {
-    xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
-
+    if (!m_pMaterialData.IsEmpty())
+    {
+      xiiFoundation::GetAlignedAllocator()->Deallocate(m_pMaterialData.GetPtr());
+    }
     m_pMaterialData.Clear();
 
     m_pMaterialData = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(pBinding->m_uiTotalSize, 16U)), pBinding->m_uiTotalSize);
@@ -992,35 +970,6 @@ xiiMaterialResource::CachedValues* xiiMaterialResource::GetOrUpdateCachedValues(
     {
       m_pCachedValues->m_TextureCubeBindings.Insert(textureBinding.m_Name, textureBinding.m_Value);
     }
-
-    if (description.m_RenderDataCategory != xiiInvalidRenderDataCategory)
-    {
-      m_pCachedValues->m_RenderDataCategory = description.m_RenderDataCategory;
-    }
-  }
-
-  if (m_pCachedValues->m_RenderDataCategory == xiiInvalidRenderDataCategory)
-  {
-    xiiHashedString sBlendModeValue;
-    if (m_pCachedValues->m_PermutationVariables.TryGetValue("BLEND_MODE", sBlendModeValue))
-    {
-      if (sBlendModeValue == xiiTempHashedString("BLEND_MODE_OPAQUE"))
-      {
-        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitOpaque;
-      }
-      else if (sBlendModeValue == xiiTempHashedString("BLEND_MODE_MASKED"))
-      {
-        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitMasked;
-      }
-      else
-      {
-        m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitTransparent;
-      }
-    }
-    else
-    {
-      m_pCachedValues->m_RenderDataCategory = xiiDefaultRenderDataCategories::LitOpaque;
-    }
   }
 
   m_iLastUpdated = m_iLastModified;
@@ -1049,7 +998,6 @@ void xiiMaterialResource::CachedValues::Reset()
   m_Parameters.Clear();
   m_Texture2DBindings.Clear();
   m_TextureCubeBindings.Clear();
-  m_RenderDataCategory = xiiInvalidRenderDataCategory;
 }
 
 // static
@@ -1059,7 +1007,7 @@ xiiMaterialResource::CachedValues* xiiMaterialResource::AllocateCache(xiiUInt32&
 
   xiiUInt32 uiOldCacheIndex = inout_uiCacheIndex;
 
-  xiiUInt64 uiCurrentFrame = xiiRenderWorld::GetFrameCounter();
+  xiiUInt64 uiCurrentFrame = 0; // TODO
   if (!s_FreeMaterialCacheEntries.IsEmpty() && s_FreeMaterialCacheEntries[0].m_uiFrame < uiCurrentFrame)
   {
     inout_uiCacheIndex = s_FreeMaterialCacheEntries[0].m_uiIndex;
@@ -1089,7 +1037,7 @@ void xiiMaterialResource::DeallocateCache(xiiUInt32 uiCacheIndex)
 
       auto& freeEntry     = s_FreeMaterialCacheEntries.ExpandAndGetRef();
       freeEntry.m_uiIndex = uiCacheIndex;
-      freeEntry.m_uiFrame = xiiRenderWorld::GetFrameCounter();
+      freeEntry.m_uiFrame = 0; // TODO
     }
   }
 }

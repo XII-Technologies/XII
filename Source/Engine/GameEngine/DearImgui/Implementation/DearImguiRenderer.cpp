@@ -5,8 +5,9 @@
 #  include <Foundation/IO/TypeVersionContext.h>
 #  include <GameEngine/DearImgui/DearImgui.h>
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
-#  include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#  include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
 #  include <GraphicsCore/Pipeline/View.h>
+#  include <GraphicsCore/RenderContext/RenderContext.h>
 #  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Shader/ShaderResource.h>
 #  include <GraphicsFoundation/CommandEncoder/CommandList.h>
@@ -14,7 +15,6 @@
 #  include <GraphicsFoundation/Resources/Buffer.h>
 #  include <GraphicsFoundation/Shader/InputLayout.h>
 #  include <GraphicsFoundation/Utilities/DeviceUtilities.h>
-#include <GraphicsCore/Utils/CommandListUtilities.h>
 #  include <Imgui/imgui_internal.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderData, 1, xiiRTTINoAllocator)
@@ -94,7 +94,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
         }
       }
 
-      // pass along a xiiImguiBatch for every necessary drawcall
+      // pass along a xiiImguiBatch for every necessary draw call
       {
         const ImDrawList* pCommands = pDrawData->CmdLists[draw];
 
@@ -155,26 +155,28 @@ void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   if (xiiImgui::GetSingleton() == nullptr)
     return;
 
-  pRenderContext->BindShader(m_hShader);
-  const auto&     textures    = xiiImgui::GetSingleton()->m_Textures;
+  renderViewContext.m_pRenderContext->BindShader(m_hShader);
+
+  const auto&     textures       = xiiImgui::GetSingleton()->m_Textures;
   const xiiUInt32 uiTextureCount = textures.GetCount();
 
   for (auto it = batch.GetIterator<xiiImguiRenderData>(); it.IsValid(); ++it)
   {
     const xiiImguiRenderData* pRenderData = it;
 
-    XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one drawcall");
-    XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one drawcall");
+    XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one draw call");
+    XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one draw call");
 
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray()).AssertSuccess();
-    xiiGALDeviceUtilities::MapAndUpdateBuffer(pCommandList, m_pIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray()).AssertSuccess();
+    xiiGALDeviceUtilities::MapAndUpdateBuffer(renderViewContext.m_pRenderContext->GetCommandList(), m_pIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray()).AssertSuccess();
 
-    pRenderContext->BindMeshBuffer(m_hVertexBuffer, m_hIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
+    xiiSharedPtr<xiiGALBuffer> pVertexBuffer = m_pVertexBuffer;
+    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiMakeArrayPtr(&pVertexBuffer, 1U), m_pIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
 
     xiiUInt32       uiFirstIndex = 0;
     const xiiUInt32 numBatches   = pRenderData->m_Batches.GetCount();
@@ -184,13 +186,11 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, xi
 
       if (imGuiBatch.m_uiVertexCount > 0 && imGuiBatch.m_uiTextureID < uiTextureCount)
       {
-        auto rect = imGuiBatch.m_ScissorRect;
+        xiiRectU32 rect = imGuiBatch.m_ScissorRect;
 
-        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U));
-
-        xiiGALCommandListUtilities::BindTexture2D(pCommandList, "BaseTexture", textures[imGuiBatch.m_uiTextureID]);
-
-        pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
+        renderViewContext.m_pRenderContext->GetCommandList()->SetScissorRects(xiiMakeArrayPtr(&rect, 1U));
+        renderViewContext.m_pRenderContext->BindTexture2D("BaseTexture", textures[imGuiBatch.m_uiTextureID]);
+        renderViewContext.m_pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
       }
 
       uiFirstIndex += imGuiBatch.m_uiVertexCount;
@@ -202,6 +202,8 @@ void xiiImguiRenderer::SetupRenderer()
 {
   if (m_pVertexBuffer)
     return;
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   // load the shader
   {
@@ -217,7 +219,7 @@ void xiiImguiRenderer::SetupRenderer()
     bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_pVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
+    m_pVertexBuffer = pDevice->CreateBuffer(bufferDescription);
   }
 
   // Create the index buffer
@@ -229,7 +231,7 @@ void xiiImguiRenderer::SetupRenderer()
     bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
     bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_pIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(bufferDescription);
+    m_pIndexBuffer = pDevice->CreateBuffer(bufferDescription);
   }
 
   // Setup the vertex declaration

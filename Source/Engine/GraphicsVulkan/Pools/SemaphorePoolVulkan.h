@@ -2,6 +2,11 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+namespace vk
+{
+  class Semaphore;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALSemaphorePoolVulkan
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALSemaphorePoolVulkan);

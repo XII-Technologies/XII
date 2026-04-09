@@ -54,7 +54,7 @@ public:
   ///
   /// This is meant to be used to open existing config dialogs.
   /// There is currently no way to report back a selection, so after making changes, the user has to make another selection.
-  void             SetEditCommand(xiiStringView sCmd, const xiiVariant& value);
+  void              SetEditCommand(xiiStringView sCmd, const xiiVariant& value);
   xiiStringView     GetEditCommand() const { return m_sEditCommand; }
   const xiiVariant& GetEditCommandValue() const { return m_EditCommandValue; }
 

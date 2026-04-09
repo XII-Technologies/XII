@@ -355,16 +355,22 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
           auto pAsset = xiiAssetCurator::GetSingleton()->GetSubAsset(AssetGuid);
 
           if (pAsset)
+          {
             sValue = pAsset->m_pAssetInfo->m_Path.GetDataDirParentRelativePath();
+          }
           else
+          {
             sValue = "<unknown>";
+          }
         }
 
         // only use the file name for our display
         sValue = sValue.GetFileName();
 
         if (!sValue.IsEmpty())
+        {
           out_sResult.Append(": ", sValue);
+        }
 
         return;
       }
@@ -375,9 +381,13 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     return;
 
   if (bHasChildren)
+  {
     out_sResult = "Group";
+  }
   else
+  {
     out_sResult = "Object";
+  }
 }
 
 
@@ -416,7 +426,9 @@ void xiiGameObjectDocument::QueryCachedNodeName(const xiiDocumentObject* pObject
     m_GameObjectMetaData->EndModifyMetaData(0); // no need to broadcast this change
 
     if (out_pIcon != nullptr)
+    {
       *out_pIcon = icon;
+    }
   }
 }
 
@@ -509,11 +521,6 @@ void xiiGameObjectDocument::SetGlobalTransform(const xiiDocumentObject* pObject,
   if ((uiTransformationChanges & TransformationChanges::Scale) != 0)
   {
     pAccessor->SetValueByName(pObject, "LocalScaling", vLocalScale).LogFailure();
-  }
-
-  // if (pObject->GetTypeAccessor().GetValue("LocalUniformScaling").ConvertTo<float>() != fUniformScale)
-  if ((uiTransformationChanges & TransformationChanges::UniformScale) != 0)
-  {
     pAccessor->SetValueByName(pObject, "LocalUniformScaling", fUniformScale).LogFailure();
   }
 
@@ -763,6 +770,18 @@ void xiiGameObjectDocument::SetSimulationSpeed(float f)
   m_GameObjectEvents.Broadcast(e);
 
   ShowDocumentStatus(xiiFmt("Simulation Speed: {0}%%", (xiiInt32)(m_fSimulationSpeed * 100.0f)));
+}
+
+void xiiGameObjectDocument::SetPauseSimulation(bool b)
+{
+  if (m_bPauseSimulation == b)
+    return;
+
+  m_bPauseSimulation = b;
+
+  xiiGameObjectEvent e;
+  e.m_Type = xiiGameObjectEvent::Type::SimulationSpeedChanged;
+  m_GameObjectEvents.Broadcast(e);
 }
 
 void xiiGameObjectDocument::SetRenderSelectionOverlay(bool b)

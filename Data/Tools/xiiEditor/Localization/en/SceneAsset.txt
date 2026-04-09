@@ -140,6 +140,7 @@ Scene.FavoriteCams.Menu;Favorite Cameras
 Scene.GameMode.Play;Play the Game
 Scene.GameMode.Simulate;Simulate World
 Scene.GameMode.Stop;Reset World
+Scene.GameMode.Pause;Pause Game / Step Game;Pauses the running simulation. When paused, press again to step one frame at a time.
 Scene.KeepSimulationChanges;Keep Simulation Changes;Only possible during simulation. Synchronizes the position of selected objects back to the editor.
 Scene.Render.AddAmbient;Add Ambient Light
 Scene.Render.Grid;Show Grid
@@ -168,6 +169,7 @@ Layer.SaveLayer;Save Layer
 Layer.SaveActiveLayer;Save Active Layer
 Layer.LayerLoaded;Layer Loaded
 Layer.LayerVisible;Layer Visible
+Layer.SwitchOnSelection;Auto Switch Layer to Selection;Automatically switch to the layer that a selected object is in. If disabled, only objects in the active layer can be selected, to prevent accidentally editing a different layer.
 
 xiiLogicOperator::Equal;=
 xiiLogicOperator::Unequal;<>

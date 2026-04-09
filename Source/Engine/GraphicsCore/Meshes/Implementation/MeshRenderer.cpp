@@ -4,9 +4,8 @@
 #include <GraphicsCore/Meshes/Implementation/MeshRendererUtils.h>
 #include <GraphicsCore/Meshes/InstancedMeshComponent.h>
 #include <GraphicsCore/Meshes/MeshRenderer.h>
-#include <GraphicsCore/Pipeline/InstanceDataProvider.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/Pipeline/InstanceData.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiMeshRenderer>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -14,7 +13,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiMeshRenderer::xiiMeshRenderer()  = default;
 xiiMeshRenderer::~xiiMeshRenderer() = default;
 
-void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
+void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& ref_types) const
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiMeshRenderData>());
   ref_types.PushBack(xiiGetStaticRTTI<xiiInstancedMeshRenderData>());
@@ -23,18 +22,17 @@ void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*,
 void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Sky);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitForeground);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Foreground);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   const xiiMeshRenderData* pRenderData = batch.GetFirstData<xiiMeshRenderData>();
 
@@ -50,24 +48,27 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
   if (subMeshes.GetCount() <= uiPartIndex)
     return;
 
-  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);
+  if (!bHasExplicitInstanceData)
+    return;
+
+  XII_IGNORE_UNUSED(pPass);
+  xiiInstanceData* pInstanceData = static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData;
 
   if (pRenderData->m_uiFlipWinding)
   {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
   }
   else
   {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
   }
 
-#ifdef CORE_ENABLE
-  pContext->BindMaterial(hMaterial);
-  pContext->BindMeshBuffer(pMesh->GetMeshBuffer());
+  renderViewContext.m_pRenderContext->BindMaterial(hMaterial);
+  renderViewContext.m_pRenderContext->BindMeshBuffer(pMesh->GetMeshBuffer());
 
-  SetAdditionalData(renderViewContext, pCommandList, pRenderData);
+  SetAdditionalData(renderViewContext, pRenderData);
 
-  pInstanceData->BindResources(pCommandList);
+  pInstanceData->BindResources(renderViewContext.m_pRenderContext);
 
   if (!bHasExplicitInstanceData)
   {
@@ -84,11 +85,11 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        pInstanceData->UpdateInstanceData(pCommandList, uiFilteredCount);
+        pInstanceData->UpdateInstanceData(renderViewContext.m_pRenderContext->GetCommandList(), uiFilteredCount);
 
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 
-        if (pContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive, uiFilteredCount).Failed())
+        if (renderViewContext.m_pRenderContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive, uiFilteredCount).Failed())
         {
           for (auto it = batch.GetIterator<xiiMeshRenderData>(uiStartIndex, instanceData.GetCount()); it.IsValid(); ++it)
           {
@@ -112,16 +113,14 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
     const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 
-    pContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive, uiInstanceCount).IgnoreResult();
+    renderViewContext.m_pRenderContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive, uiInstanceCount).IgnoreResult();
   }
-#endif
 }
 
-void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiMeshRenderData* pRenderData) const
+void xiiMeshRenderer::SetAdditionalData(const xiiRenderViewContext& renderViewContext, const xiiMeshRenderData* pRenderData) const
 {
-  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
+  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
 
-  XII_IGNORE_UNUSED(pCommandList);
   XII_IGNORE_UNUSED(pRenderData);
 }
 

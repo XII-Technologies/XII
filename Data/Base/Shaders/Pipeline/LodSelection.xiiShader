@@ -1,0 +1,46 @@
+// XII Engine — LodSelection.xiiShader  [REWRITTEN]
+// Pass 7: Per-instance LOD selection based on sphere screen-coverage.
+// Dispatch: ceil(InstanceCount/64) × 1 × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer LODConstants : register(b3)
+{
+    float4 g_LODDistances; // (lod0->1, lod1->2, lod2->3, lod3->cull) thresholds
+    float  g_ScreenHeight;
+    float  g_LODBias;
+    uint2  _pad;
+};
+
+struct InstanceBounds { float3 Center; float Radius; float3 Extents; float _pad; };
+
+StructuredBuffer<InstanceBounds> g_Bounds      : register(t0);
+RWStructuredBuffer<uint>         g_LODMetadata : register(u0); // packed (lod:8, bin:8, flags:16)
+
+[numthreads(64, 1, 1)]
+void CS_LodSelection(uint3 tid : SV_DispatchThreadID)
+{
+    if (tid.x >= 65536u) return;
+
+    InstanceBounds b = g_Bounds[tid.x];
+
+    // Compute world-space distance from camera to sphere surface.
+    float dist = max(length(b.Center - g_CameraPositionAndNearPlane.xyz) - b.Radius, 0.001f);
+
+    // Screen-space radius in pixels for this sphere at this distance (FOV correct).
+    // tan(halfFOV) is embedded in the projection matrix m[1][1].
+    float screenR = (b.Radius / dist) * g_ScreenHeight * g_LODBias;
+
+    // Map to LOD: higher screen coverage = lower (more detailed) LOD.
+    uint lodLevel;
+    if      (dist < g_LODDistances.x) lodLevel = 0u;
+    else if (dist < g_LODDistances.y) lodLevel = 1u;
+    else if (dist < g_LODDistances.z) lodLevel = 2u;
+    else if (dist < g_LODDistances.w) lodLevel = 3u;
+    else                              lodLevel = 0xFFu; // cull
+
+    uint matBin = 0u; // material bin resolved downstream (material index lives in instance data)
+    uint flags  = (lodLevel == 0xFFu) ? 1u : 0u; // bit0 = culled
+
+    g_LODMetadata[tid.x] = (lodLevel & 0xFFu) | ((matBin & 0xFFu) << 8u) | ((flags & 0xFFFFu) << 16u);
+}

@@ -1,0 +1,118 @@
+name: XII Build + Unit Tests
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * *" # nightly run
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025] # TODO: ubuntu-24.04, macos-15
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout XII repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          lfs: true
+          clean: false
+
+      - name: Read SDK Version
+        id: sdk-version
+        uses: juliangruber/read-file-action@v1
+        with:
+          path: ./version.txt
+
+      - name: Echo SDK Version
+        shell: bash
+        run: echo "SDK Version is ${{ steps.sdk-version.outputs.content }}"
+
+      # Platform-specific setup
+      - name: Setup MSBuild (Windows only)
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install dependencies (Linux only)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build uuid-dev mold libfreetype-dev libtinfo6 \
+                                  libwayland-dev wayland-protocols libxkbcommon-dev pkg-config libdrm-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev libpipewire-0.3-dev libdecor-0-dev \
+                                  qt6-base-dev libqt6svg6-dev qt6-base-private-dev
+
+      - name: Install dependencies (macOS only)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install cmake qt6
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cmake.exe -S . -B build -G "Visual Studio 17 2022" -A x64 \
+              -DCMAKE_BUILD_TYPE=Dev -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_ENABLE_FOLDER_UNITY_FILES=ON -DXII_BUILD_FILTER:STRING="UnitTestOnly" -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON -DXII_SOLUTION_NAME:string="solution"
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            cmake -S . -B build -G Ninja \
+              -DCMAKE_BUILD_TYPE=Dev -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_ENABLE_FOLDER_UNITY_FILES=ON -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON
+          else
+            cmake -S . -B build -G Xcode \
+              -DCMAKE_BUILD_TYPE=Dev -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_ENABLE_FOLDER_UNITY_FILES=ON -DXII_ENABLE_QT_SUPPORT=ON -DXII_BUILD_SAMPLES=OFF -DXII_BUILD_UNITTESTS=ON
+          fi
+
+      - name: Build Solution (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: msbuild build/solution.sln /p:Configuration=Dev
+
+      - name: Build Solution (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: cmake --build build --config Dev
+
+      # Unit tests
+      - name: Run FoundationTest
+        if: runner.os == 'Windows'
+        shell: bash
+        run: Output/Bin/WinVs2022Dev64/FoundationTest.exe -nosave -nogui -all -outputDir Test/FoundationTest
+
+      - name: Run CoreTest
+        if: runner.os == 'Windows'
+        shell: bash
+        run: Output/Bin/WinVs2022Dev64/CoreTest.exe -nosave -nogui -all -outputDir Test/CoreTest
+
+      - name: Run ToolsFoundationTest
+        if: runner.os == 'Windows'
+        shell: bash
+        run: Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
+
+      - name: Run FoundationTest (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: Output/Bin/FoundationTest -nosave -nogui -all -outputDir Test/FoundationTest
+
+      - name: Run CoreTest (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: Output/Bin/CoreTest -nosave -nogui -all -outputDir Test/CoreTest
+
+      - name: Run ToolsFoundationTest (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
+
+      # Upload test results artifacts
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: XII.TestResults.${{ matrix.os }}.${{ steps.sdk-version.outputs.content }}
+          path: Test
+          retention-days: 7

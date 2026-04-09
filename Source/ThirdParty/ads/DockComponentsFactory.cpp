@@ -28,52 +28,52 @@ static QSharedPointer<ads::CDockComponentsFactory> DefaultFactory;
 //============================================================================
 CDockWidgetTab* CDockComponentsFactory::createDockWidgetTab(CDockWidget* DockWidget) const
 {
-  return new CDockWidgetTab(DockWidget);
+	return new CDockWidgetTab(DockWidget);
 }
 
 //============================================================================
 CAutoHideTab* CDockComponentsFactory::createDockWidgetSideTab(CDockWidget *DockWidget) const
 {
-  return new CAutoHideTab(DockWidget);
+	return new CAutoHideTab(DockWidget);
 }
 
 
 //============================================================================
 CDockAreaTabBar* CDockComponentsFactory::createDockAreaTabBar(CDockAreaWidget* DockArea) const
 {
-  return new CDockAreaTabBar(DockArea);
+	return new CDockAreaTabBar(DockArea);
 }
 
 
 //============================================================================
 CDockAreaTitleBar* CDockComponentsFactory::createDockAreaTitleBar(CDockAreaWidget* DockArea) const
 {
-  return new CDockAreaTitleBar(DockArea);
+	return new CDockAreaTitleBar(DockArea);
 }
 
 
 //============================================================================
 QSharedPointer<ads::CDockComponentsFactory> CDockComponentsFactory::factory()
 {
-  if (!DefaultFactory)
-  {
-    DefaultFactory.reset(new CDockComponentsFactory());
-  }
-  return DefaultFactory;
+	if (!DefaultFactory)
+	{
+		DefaultFactory.reset(new CDockComponentsFactory());
+	}
+	return DefaultFactory;
 }
 
 
 //============================================================================
 void CDockComponentsFactory::setFactory(CDockComponentsFactory* Factory)
 {
-  DefaultFactory.reset(Factory);
+	DefaultFactory.reset(Factory);
 }
 
 
 //============================================================================
 void CDockComponentsFactory::resetDefaultFactory()
 {
-  DefaultFactory.reset(new CDockComponentsFactory());
+	DefaultFactory.reset(new CDockComponentsFactory());
 }
 
 } // namespace ads

@@ -6,9 +6,13 @@ class xiiDocumentObject;
 
 class XII_TOOLSFOUNDATION_DLL xiiObjectProxyAccessor : public xiiObjectAccessorBase
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiObjectProxyAccessor, xiiObjectAccessorBase);
+
 public:
   xiiObjectProxyAccessor(xiiObjectAccessorBase* pSource);
   virtual ~xiiObjectProxyAccessor();
+
+  xiiObjectAccessorBase* GetSourceAccessor() const { return m_pSource; }
 
   /// \name Transaction Operations
   ///@{

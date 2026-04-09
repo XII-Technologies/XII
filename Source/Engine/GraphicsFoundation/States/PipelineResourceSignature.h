@@ -72,12 +72,23 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xii
   xiiBitflags<xiiGALPipelineResourceFlags> m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None; ///< Special resource flags, see xiiGALPipelineResourceFlags. The default is xiiGALPipelineResourceFlags::None.
 };
 
+/// \brief Describes a push constant range to include in the pipeline layout for this signature.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPushConstantRange
+{
+  xiiUInt32                     m_uiOffset     = 0U;                        ///< Byte offset of the push constant range.
+  xiiUInt32                     m_uiSize       = 0U;                        ///< Size in bytes of the push constant range.
+  xiiBitflags<xiiGALShaderType> m_ShaderStages = xiiGALShaderType::Unknown; ///< Shader stages that can access this range.
+
+  XII_ALWAYS_INLINE bool operator==(const xiiGALPushConstantRange& rhs) const = default;
+};
+
 /// \brief This describes the pipeline resource signature creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceSignatureCreationDescription
 {
   xiiUInt32                                             m_uiBindingIndex = 0U; ///< The binding index that this resource signature uses. Every resource signature must be assign to one signature slot. The total number of slots is given by XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT constant. All resource signatures used by a pipeline state must be assigned to different slots.
   xiiHybridArray<xiiGALPipelineResourceDescription, 2U> m_Resources;           ///< An array of resource descriptions, see xiiGALPipelineResourceDescription for details.
   xiiHybridArray<xiiGALImmutableSamplerDescription, 2U> m_ImmutableSamplers;   ///< An array of immutable samplers, see xiiGALImmutableSamplerDescription for details.
+  xiiHybridArray<xiiGALPushConstantRange, 1U>           m_PushConstantRanges;  ///< Push constant ranges for the pipeline layout.
 
   XII_ALWAYS_INLINE bool operator==(const xiiGALPipelineResourceSignatureCreationDescription& rhs) const = default;
 };

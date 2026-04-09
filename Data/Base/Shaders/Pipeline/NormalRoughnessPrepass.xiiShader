@@ -1,0 +1,56 @@
+// XII Engine — NormalRoughnessPrepass.xiiShader  [NEW]
+// Pass 15: Write oct-packed normals + material roughness into R8G8B8A8 buffer for denoisers.
+// Used as an earlier-available input for GTAO and RT denoising without waiting for full GBuffer.
+
+#include "PipelineCommon.xiiShader"
+
+struct VS_In
+{
+    float3 Position  : POSITION;
+    float3 Normal    : NORMAL;
+    float4 Tangent   : TANGENT;
+    float2 UV0       : TEXCOORD0;
+    uint   InstanceID: SV_InstanceID;
+};
+
+struct VS_Out
+{
+    float4 ClipPos   : SV_Position;
+    float3 WorldNorm : TEXCOORD0;
+    float3 WorldTan  : TEXCOORD1;
+    float  BitangSign: TEXCOORD2;
+    float2 UV0       : TEXCOORD3;
+};
+
+StructuredBuffer<float4x3> g_WorldMatrices : register(t0);
+
+VS_Out VS_NormalRoughness(VS_In In)
+{
+    float4x3 world = g_WorldMatrices[In.InstanceID];
+    float3 wP = mul(float4(In.Position, 1.0f), world).xyz;
+    VS_Out o;
+    o.ClipPos    = mul(g_ViewProjectionMatrix, float4(wP, 1.0f));
+    o.WorldNorm  = normalize(mul(float4(In.Normal, 0.0f), world).xyz);
+    o.WorldTan   = normalize(mul(float4(In.Tangent.xyz, 0.0f), world).xyz);
+    o.BitangSign = In.Tangent.w;
+    o.UV0        = In.UV0;
+    return o;
+}
+
+Texture2D<float4> g_NormalMap   : register(t1);
+Texture2D<float4> g_MaterialMap : register(t2); // r=roughness
+
+struct PS_Out { float4 NormalRoughness : SV_Target0; }; // rg=oct-normal, b=roughness, a=unused
+
+PS_Out PS_NormalRoughness(VS_Out In)
+{
+    float3 normalTs = g_NormalMap.Sample(g_sLinearWrap, In.UV0).xyz * 2.0f - 1.0f;
+    float3 B        = cross(In.WorldNorm, In.WorldTan) * In.BitangSign;
+    float3 wN       = normalize(normalTs.x * In.WorldTan + normalTs.y * B + normalTs.z * In.WorldNorm);
+    float2 oct      = EncodeOctNormal(wN);
+    float  roughness= g_MaterialMap.Sample(g_sLinearWrap, In.UV0).r;
+
+    PS_Out o;
+    o.NormalRoughness = float4(oct.x, oct.y, roughness, 0.0f);
+    return o;
+}

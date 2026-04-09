@@ -38,7 +38,7 @@ xiiResult xiiGALComputePipelineStateVulkan::InitPlatform()
   vkComputePipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
 #endif
 
-  xiiHybridArray<vk::PipelineShaderStageCreateInfo, 1U> vkShaderStages(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::PipelineShaderStageCreateInfo, 1U> vkShaderStages;
   {
 #define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                              \
   if (xiiSharedPtr<xiiGALShaderVulkan> pShaderVulkan = m_Description.m_p##shaderType.Downcast<xiiGALShaderVulkan>()) \
@@ -66,12 +66,35 @@ xiiResult xiiGALComputePipelineStateVulkan::InitPlatform()
   {
     auto pDescriptorSetLayouts = pPipelineResourceSignatureVulkan->GetVulkanDescriptorSetLayouts();
 
-    vkPipelineLayoutCreateInfo.pNext                  = nullptr;
-    vkPipelineLayoutCreateInfo.flags                  = {};
-    vkPipelineLayoutCreateInfo.setLayoutCount         = pDescriptorSetLayouts.GetCount();
-    vkPipelineLayoutCreateInfo.pSetLayouts            = pDescriptorSetLayouts.GetPtr();
-    vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0;       // TODO.
-    vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr; // TODO.
+    vkPipelineLayoutCreateInfo.pNext          = nullptr;
+    vkPipelineLayoutCreateInfo.flags          = {};
+    vkPipelineLayoutCreateInfo.setLayoutCount = pDescriptorSetLayouts.GetCount();
+    vkPipelineLayoutCreateInfo.pSetLayouts    = pDescriptorSetLayouts.GetPtr();
+
+    // Build push constant ranges from the pipeline resource signature description.
+    const auto&                            pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
+    xiiTemporaryHybridArray<vk::PushConstantRange, 4U> vkPushRanges;
+
+    if (!pushConstantRanges.IsEmpty())
+    {
+      vkPushRanges.SetCount(pushConstantRanges.GetCount());
+
+      for (xiiUInt32 i = 0; i < pushConstantRanges.GetCount(); ++i)
+      {
+        const xiiGALPushConstantRange& range = pushConstantRanges[i];
+        vkPushRanges[i].stageFlags           = xiiVulkanTypeConversions::GetShaderStageFlags(range.m_ShaderStages);
+        vkPushRanges[i].offset               = range.m_uiOffset;
+        vkPushRanges[i].size                 = range.m_uiSize;
+      }
+
+      vkPipelineLayoutCreateInfo.pushConstantRangeCount = vkPushRanges.GetCount();
+      vkPipelineLayoutCreateInfo.pPushConstantRanges    = vkPushRanges.GetData();
+    }
+    else
+    {
+      vkPipelineLayoutCreateInfo.pushConstantRangeCount = 0U;
+      vkPipelineLayoutCreateInfo.pPushConstantRanges    = nullptr;
+    }
 
     VK_ASSERT_DEV(vkLogicalDevice.createPipelineLayout(&vkPipelineLayoutCreateInfo, nullptr, &m_vkPipelineLayout, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   }

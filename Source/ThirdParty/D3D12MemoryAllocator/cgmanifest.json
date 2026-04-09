@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "repositoryUrl": "https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator",
+          "commitHash": "0a9cbbbdb0da95be059f6c40a958188bfbd96b9e"
+        }
+      }
+    }
+  ],
+  "$schema": "https://json.schemastore.org/component-detection-manifest.json"
+}

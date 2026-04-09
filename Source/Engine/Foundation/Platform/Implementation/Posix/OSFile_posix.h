@@ -27,12 +27,6 @@ XII_FOUNDATION_INTERNAL_HEADER
 #  include <CoreFoundation/CoreFoundation.h>
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-#  include <Foundation/Basics/Platform/Android/AndroidJni.h>
-#  include <Foundation/Basics/Platform/Android/AndroidUtils.h>
-#  include <android_native_app_glue.h>
-#endif
-
 #ifndef PATH_MAX
 #  define PATH_MAX 1024
 #endif
@@ -74,6 +68,20 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     return XII_FAILURE;
   }
 
+  struct stat stats = {};
+  if (fstat(fd, &stats) != 0)
+  {
+    close(fd);
+    return XII_FAILURE;
+  }
+
+  // Prevent opening of directories
+  if ((stats.st_mode & S_IFMT) == S_IFDIR)
+  {
+    close(fd);
+    return XII_FAILURE;
+  }
+
   const xiiInt32 iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
   const xiiTime  sleepTime   = xiiTime::MakeFromMilliseconds(20);
   xiiInt32       iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
@@ -85,7 +93,6 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     if (iRetries == 0 || errorCode != EWOULDBLOCK)
     {
       // error, could not get a lock
-      xiiLog::Error("Failed to get a {} lock for file {}, error {}", (FileShareMode == xiiFileShareMode::Exclusive) ? "Exculsive" : "Shared", szFile, errno);
       close(fd);
       return XII_FAILURE;
     }
@@ -147,7 +154,6 @@ xiiResult xiiOSFile::InternalWrite(const void* pBuffer, xiiUInt64 uiBytes)
   {
     if (fwrite(pBuffer, 1, uiBatchBytes, m_FileData.m_pFileHandle) != uiBatchBytes)
     {
-      xiiLog::Error("fwrite 1GB failed for '{}'", m_sFileName);
       return XII_FAILURE;
     }
 
@@ -161,7 +167,6 @@ xiiResult xiiOSFile::InternalWrite(const void* pBuffer, xiiUInt64 uiBytes)
 
     if (fwrite(pBuffer, 1, uiBytes32, m_FileData.m_pFileHandle) != uiBytes)
     {
-      xiiLog::Error("fwrite failed for '{}'", m_sFileName);
       return XII_FAILURE;
     }
   }
@@ -329,8 +334,12 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
   out_Stats.m_uiFileSize   = tempStat.st_size;
   out_Stats.m_sParentPath  = sFileOrFolder;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName                = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
+  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
+#  ifdef __USE_XOPEN2K8
+  out_Stats.m_LastModificationTime = xiiTimestamp::MakeFromInt(tempStat.st_mtim.tv_sec * 1000000000ull + tempStat.st_mtim.tv_nsec, xiiSIUnitOfTime::Nanosecond);
+#  else
   out_Stats.m_LastModificationTime = xiiTimestamp::MakeFromInt(tempStat.st_mtime, xiiSIUnitOfTime::Second);
+#  endif
 
   return XII_SUCCESS;
 }
@@ -364,17 +373,6 @@ xiiStringView xiiOSFile::GetApplicationPath()
     CFRelease(bundlePath);
     CFRelease(bundleURL);
     CFRelease(appBundle);
-#elif XII_ENABLED(XII_PLATFORM_ANDROID)
-    {
-      xiiJniAttachment attachment;
-
-      xiiJniString packagePath = attachment.GetActivity().Call<xiiJniString>("getPackageCodePath");
-      // By convention, android requires assets to be placed in the 'Assets' folder
-      // inside the apk thus we use that as our SDK root.
-      xiiStringBuilder sTemp = packagePath.GetData();
-      sTemp.AppendPath("Assets/xiiTempBin");
-      s_sApplicationPath = sTemp;
-    }
 #else
     char    result[PATH_MAX];
     ssize_t length     = readlink("/proc/self/exe", result, PATH_MAX);
@@ -389,15 +387,12 @@ xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDataPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-    android_app* pAndroidApp = xiiAndroidUtils::GetNativeAndroidApp();
-    s_sUserDataPath          = pAndroidApp->activity->internalDataPath;
-#else
     s_sUserDataPath = getenv("HOME");
 
     if (s_sUserDataPath.IsEmpty())
+    {
       s_sUserDataPath = getpwuid(getuid())->pw_dir;
-#endif
+    }
   }
 
   xiiStringBuilder s = s_sUserDataPath;
@@ -410,15 +405,7 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder)
 {
   if (s_sTempDataPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-    xiiJniAttachment attachment;
-
-    xiiJniObject cacheDir = attachment.GetActivity().Call<xiiJniObject>("getCacheDir");
-    xiiJniString path     = cacheDir.Call<xiiJniString>("getPath");
-    s_sTempDataPath       = path.GetData();
-#else
     s_sTempDataPath = GetUserDataFolder(".cache").GetData();
-#endif
   }
 
   xiiStringBuilder s = s_sTempDataPath;
@@ -431,14 +418,12 @@ xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder)
 {
   if (s_sUserDocumentsPath.IsEmpty())
   {
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-    XII_ASSERT_NOT_IMPLEMENTED;
-#else
     s_sUserDataPath = getenv("HOME");
 
     if (s_sUserDataPath.IsEmpty())
+    {
       s_sUserDataPath = getpwuid(getuid())->pw_dir;
-#endif
+    }
   }
 
   xiiStringBuilder s = s_sUserDocumentsPath;
@@ -499,11 +484,15 @@ namespace
     struct stat fileStat = {};
     stat(absFileName.GetData(), &fileStat);
 
-    curFile.m_uiFileSize           = fileStat.st_size;
-    curFile.m_bIsDirectory         = hCurrentFile->d_type == DT_DIR;
-    curFile.m_sParentPath          = curPath;
-    curFile.m_sName                = hCurrentFile->d_name;
+    curFile.m_uiFileSize   = fileStat.st_size;
+    curFile.m_bIsDirectory = hCurrentFile->d_type == DT_DIR;
+    curFile.m_sParentPath  = curPath;
+    curFile.m_sName        = hCurrentFile->d_name;
+#  ifdef __USE_XOPEN2K8
+    curFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(fileStat.st_mtim.tv_sec * 1000000000ull + fileStat.st_mtim.tv_nsec, xiiSIUnitOfTime::Nanosecond);
+#  else
     curFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(fileStat.st_mtime, xiiSIUnitOfTime::Second);
+#  endif
 
     return XII_SUCCESS;
   }

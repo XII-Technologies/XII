@@ -15,7 +15,7 @@
 
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
-struct ImGuiContext;
+struct xiiGameApplicationExecutionEvent;
 
 using xiiImguiConfigFontCallback  = xiiDelegate<void(ImFontAtlas&)>;
 using xiiImguiConfigStyleCallback = xiiDelegate<void(ImGuiStyle&)>;
@@ -67,6 +67,7 @@ private:
 
   ImGuiContext* CreateContext();
   void          BeginFrame(const xiiViewHandle& hView);
+  void          GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e);
 
   xiiProxyAllocator m_Allocator;
 

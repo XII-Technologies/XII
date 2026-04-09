@@ -115,7 +115,9 @@ void xiiQtFilePropertyWidget::on_TextFinished_triggered()
 void xiiQtFilePropertyWidget::on_TextChanged_triggered(const QString& value)
 {
   if (!hasFocus())
+  {
     on_TextFinished_triggered();
+  }
 }
 
 void xiiQtFilePropertyWidget::OnOpenExplorer()
@@ -144,7 +146,7 @@ void xiiQtFilePropertyWidget::OnCustomAction()
   if (!res.IsValid() || !res.IsA<xiiString>())
     return;
 
-  m_pWidget->setText(res.Get<xiiString>().GetData());
+  m_pWidget->setText(xiiMakeQString(res.Get<xiiString>()));
   on_TextFinished_triggered();
 }
 
@@ -155,7 +157,9 @@ void xiiQtFilePropertyWidget::OnOpenFile()
     return;
 
   if (!xiiQtUiServices::OpenFileInDefaultProgram(sPath))
+  {
     xiiQtUiServices::MessageBoxInformation(xiiFmt("File could not be opened:\n{0}\nCheck that the file exists, that a program is associated with this file type and that access to this file is not denied.", sPath));
+  }
 }
 
 void xiiQtFilePropertyWidget::OnOpenFileWith()

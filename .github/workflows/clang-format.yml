@@ -6,15 +6,13 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install libtinfo5
+        with:
+          fetch-depth: 0
+          submodules: true
 
       - name: Run ClangFormat
         id: format_files
@@ -32,17 +30,17 @@ jobs:
 
           $codeDiff = git diff "$baseCommit..HEAD" -U0 --no-color -- "*.cpp" "*.h" "*.inl"
 
-          & chmod +x ${env:GITHUB_WORKSPACE}/Source/BuildTools/FormatValidation/clang-format_linux_10.0.0
+          & chmod +x ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0
 
           echo "Running ClangFormat"
 
           # Run once to detect whether there are any changes
-          $clangDiff = $codeDiff | python "${env:GITHUB_WORKSPACE}/Utilities/ClangFormatDiff.py" -style file -p1 -binary "${env:GITHUB_WORKSPACE}/Source/BuildTools/FormatValidation/clang-format_linux_10.0.0" -iregex ".*\.(cpp|h|inl)"
+          $clangDiff = $codeDiff | python "${env:GITHUB_WORKSPACE}/Utilities/ClangFormatDiff.py" -style file -p1 -binary "${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0" -iregex ".*\.(cpp|h|inl)"
 
           if($clangDiff.Length -gt 0)
           {
             # Run a second time, and let it modify the files itself, because applying the patch appears to be impossible
-            $codeDiff | python "${env:GITHUB_WORKSPACE}/Utilities/ClangFormatDiff.py" -style file -p1 -i -binary "${env:GITHUB_WORKSPACE}/Source/BuildTools/FormatValidation/clang-format_linux_10.0.0" -iregex ".*\.(cpp|h|inl)"
+            $codeDiff | python "${env:GITHUB_WORKSPACE}/Utilities/ClangFormatDiff.py" -style file -p1 -i -binary "${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/clang-format/clang-format_linux_21.0.0" -iregex ".*\.(cpp|h|inl)"
 
             # Convert to linux line ending as required for a correct patch file
             $clangDiff = $clangDiff -join "`n"

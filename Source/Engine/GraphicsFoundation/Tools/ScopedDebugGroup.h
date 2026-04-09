@@ -21,11 +21,9 @@
 ///   // Commands within this scope belong to the "Rendering Pass" debug group.
 /// }
 /// \endcode
-class XII_GRAPHICSFOUNDATION_DLL xiiGALScopedDebugGroup : public xiiReflectedClass
+class XII_GRAPHICSFOUNDATION_DLL xiiGALScopedDebugGroup
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALScopedDebugGroup);
-
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALScopedDebugGroup, xiiReflectedClass);
 
 public:
   /// \brief Default constructor.
@@ -38,7 +36,14 @@ public:
   /// \param pCommandList - Pointer to the command list where the debug group is applied.
   /// \param sName        - Name of the debug group for debugging and profiling purposes.
   /// \param color        - Color used for visual representation (defaults to black).
-  xiiGALScopedDebugGroup(xiiSharedPtr<xiiGALCommandList> pCommandList, xiiStringView sName, xiiColor color = xiiColor::Black);
+  xiiGALScopedDebugGroup(xiiGALCommandList* pCommandList, xiiStringView sName, xiiColor color = xiiColor::White);
+
+  /// \brief Constructs a debug group with the specified name and color.
+  ///
+  /// \param commandList - Reference to the command list where the debug group is applied.
+  /// \param sName       - Name of the debug group for debugging and profiling purposes.
+  /// \param color       - Color used for visual representation (defaults to black).
+  xiiGALScopedDebugGroup(xiiGALCommandList& commandList, xiiStringView sName, xiiColor color = xiiColor::White);
 
   /// \brief Destructor, automatically ends the debug group.
   ~xiiGALScopedDebugGroup();
@@ -56,7 +61,19 @@ public:
   xiiGALScopedDebugGroup& operator=(xiiGALScopedDebugGroup&& rhs) noexcept;
 
 private:
-  xiiSharedPtr<xiiGALCommandList> m_pCommandList; ///< Pointer to the command list associated with this debug group.
+  xiiGALCommandList* m_pCommandList;
 };
+
+#define XII_COMMANDLIST_SCOPE(pCommandList, szName) \
+  xiiGALScopedDebugGroup XII_PP_CONCAT(_xiiDebugGroupScope, XII_SOURCE_LINE)(pCommandList, szName)
+
+#define XII_COMMANDLIST_SCOPE_COLOR(pCommandList, szName, color) \
+  xiiGALScopedDebugGroup XII_PP_CONCAT(_xiiDebugGroupScope, XII_SOURCE_LINE)(pCommandList, szName, color)
+
+#define XII_COMMANDLIST_SCOPE_FUNCTION(pCommandList) \
+  xiiGALScopedDebugGroup XII_PP_CONCAT(_xiiDebugGroupScope, XII_SOURCE_LINE)(pCommandList, XII_SOURCE_FUNCTION)
+
+#define XII_COMMANDLIST_SCOPE_FUNCTION_COLOR(pCommandList, color) \
+  xiiGALScopedDebugGroup XII_PP_CONCAT(_xiiDebugGroupScope, XII_SOURCE_LINE)(pCommandList, XII_SOURCE_FUNCTION, color)
 
 #include <GraphicsFoundation/Tools/Implementation/ScopedDebugGroup_inl.h>

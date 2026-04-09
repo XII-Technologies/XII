@@ -56,7 +56,7 @@ void xiiTaskSystem::ParallelForInternal(xiiArrayPtr<ElemType> taskItems, xiiPara
     xiiUInt64 uiItemsPerInvocation;
     params.DetermineThreading(taskItems.GetCount(), uiMultiplicity, uiItemsPerInvocation);
 
-    xiiAllocatorBase* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
+    xiiAllocator* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
 
     xiiSharedPtr<ArrayPtrTask<ElemType>> pArrayPtrTask = XII_NEW(pAllocator, ArrayPtrTask<ElemType>, taskItems, std::move(taskCallback), static_cast<xiiUInt32>(uiItemsPerInvocation));
     pArrayPtrTask->ConfigureTask(!sTaskName.IsEmpty() ? sTaskName : "Generic ArrayPtr Task", params.m_NestingMode);

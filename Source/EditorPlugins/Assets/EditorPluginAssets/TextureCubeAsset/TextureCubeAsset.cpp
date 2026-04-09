@@ -166,7 +166,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(xiiStringView sTargetFile, con
     InvalidateAssetThumbnail();
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 void xiiTextureCubeAssetDocument::UpdateAssetDocumentInfo(xiiAssetDocumentInfo* pInfo) const
@@ -297,5 +297,5 @@ xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sInputFil
     accessor.SetValue("Usage", (int)xiiTexConvUsage::Color);
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

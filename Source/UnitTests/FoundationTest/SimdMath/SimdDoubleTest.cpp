@@ -15,7 +15,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
 // So it optimizes away the 1,2,3,4 initializer completely.
 #  if XII_DISABLED(XII_COMPILER_GCC)
     // Placement new of the default constructor should not have any effect on the previous data.
-    alignas(16) double testBlock[4] = {1, 2, 3, 4};
+    alignas(32) double testBlock[4] = {1, 2, 3, 4};
     xiiSimdDouble*     pDefCtor     = ::new ((void*)&testBlock[0]) xiiSimdDouble;
     XII_TEST_BOOL_MSG((double)(*pDefCtor) == 1.0, "Default constructed value is %f", (double)(*pDefCtor));
 #  endif

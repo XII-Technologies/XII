@@ -6,13 +6,20 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 #include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DescriptorSetPoolVulkan.h>
+#include <GraphicsVulkan/Pools/DynamicBufferPoolVulkan.h>
+#include <GraphicsVulkan/Pools/FencePoolVulkan.h>
+#include <GraphicsVulkan/Pools/QueryPoolVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
@@ -41,7 +48,7 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceVulkan, pAllocator, description);
 }
@@ -70,11 +77,8 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 namespace
 {
-  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessengerCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+  VKAPI_ATTR vk::Bool32 VKAPI_CALL xiiVulkanDebugMessengerCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT, const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
   {
-    XII_IGNORE_UNUSED(messageType);
-    XII_IGNORE_UNUSED(pUserData);
-
     switch (messageSeverity)
     {
       case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
@@ -104,15 +108,8 @@ namespace
     return vk::False;
   }
 
-  VKAPI_ATTR xiiUInt32 VKAPI_CALL xiiVulkanDebugReportCallback(vk::DebugReportFlagsEXT reportFlags, vk::DebugReportObjectTypeEXT objectType, xiiUInt64 uiObject, size_t uiLocation, xiiInt32 iMessageCode, const char* szLayerPrefix, const char* szMessage, void* pUserData)
+  VKAPI_ATTR xiiUInt32 VKAPI_CALL xiiVulkanDebugReportCallback(vk::DebugReportFlagsEXT reportFlags, vk::DebugReportObjectTypeEXT, xiiUInt64, size_t, xiiInt32, const char*, const char* szMessage, void*)
   {
-    XII_IGNORE_UNUSED(objectType);
-    XII_IGNORE_UNUSED(uiObject);
-    XII_IGNORE_UNUSED(uiLocation);
-    XII_IGNORE_UNUSED(iMessageCode);
-    XII_IGNORE_UNUSED(szLayerPrefix);
-    XII_IGNORE_UNUSED(pUserData);
-
     if (reportFlags & vk::DebugReportFlagBitsEXT::eError)
     {
       xiiLog::Error("Vulkan: {}", szMessage);
@@ -133,8 +130,8 @@ namespace
   }
 } // namespace
 
-xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description) :
-  xiiGALDevice(pAllocator, description)
+xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
+  xiiGALDevice(pAllocator, description), m_PhysicalDeviceQueueFamilyProperties(GetAllocator()), m_PhysicalDeviceSupportedExtensions(GetAllocator()), m_LogicalDeviceEnabledExtensions(GetAllocator()), m_LogicalDeviceSupportedStagesFlags(GetAllocator()), m_LogicalDeviceSupportedAccessFlags(GetAllocator())
 {
 }
 
@@ -148,51 +145,50 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
     if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_pTransferCommandQueue.Clear();
+      m_pTransferCommandBufferPool.Clear();
       m_pTransferCommandQueueQueryPool.Clear();
     }
 
     if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
     {
       m_pComputeCommandQueue.Clear();
+      m_pComputeCommandBufferPool.Clear();
       m_pComputeCommandQueueQueryPool.Clear();
     }
 
     m_pGraphicsCommandQueue.Clear();
+    m_pGraphicsCommandBufferPool.Clear();
     m_pGraphicsCommandQueueQueryPool.Clear();
   }
 
   {
     m_pDeferredDeletionQueue.Clear();
-    m_pDescriptorSetPool.Clear();
     m_pFencePool.Clear();
     m_pSemaphorePool.Clear();
   }
 
-  if (m_vkVmaAllocator != VK_NULL_HANDLE)
-  {
-    vmaDestroyAllocator(m_vkVmaAllocator);
-  }
+  m_pVulkanMemoryAllocator.Clear();
 
   if (m_LogicalDevice != VK_NULL_HANDLE)
   {
     m_LogicalDevice.destroy(nullptr, m_InstanceDispatchLoader);
   }
 
-  if (m_DebugMode != DebugMode::Disabled && m_Instance != VK_NULL_HANDLE)
-  {
-    if (m_DebugMessenger != VK_NULL_HANDLE)
-    {
-      m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
-    }
-
-    if (m_DebugCallback != VK_NULL_HANDLE)
-    {
-      m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
-    }
-  }
-
   if (m_Instance != VK_NULL_HANDLE)
   {
+    if (m_InstanceFlags.m_DebugMode != DebugMode::Disabled)
+    {
+      if (m_DebugMessenger != VK_NULL_HANDLE)
+      {
+        m_Instance.destroyDebugUtilsMessengerEXT(m_DebugMessenger, nullptr, m_InstanceDispatchLoader);
+      }
+
+      if (m_DebugCallback != VK_NULL_HANDLE)
+      {
+        m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
+      }
+    }
+
     m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
   }
 }
@@ -201,46 +197,24 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::InitializePlatform");
 
-  m_InstanceDispatchLoader.init(vkGetInstanceProcAddr);
-
-  // Enumerate available layers.
-  {
-    xiiUInt32 uiLayerCount = 0U;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
-
-    m_Layers.SetCountUninitialized(uiLayerCount);
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData(), m_InstanceDispatchLoader));
-
-    XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
-  }
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  {
-    XII_LOG_BLOCK("Available Vulkan Instance Layers");
-
-    for (const auto& layer : m_Layers)
-    {
-      xiiLog::Dev("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
-    }
-  }
-#endif
+  m_InstanceDispatchLoader.init();
 
   // Enumerate available instance extensions.
+  xiiTemporaryArray<vk::ExtensionProperties> extensionProperties;
   {
     XII_LOG_BLOCK("Supported Vulkan Instance Extensions");
 
     xiiUInt32 uiExtensionCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Extensions.SetCountUninitialized(uiExtensionCount);
+    extensionProperties.SetCountUninitialized(uiExtensionCount);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, m_Extensions.GetData(), m_InstanceDispatchLoader));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, extensionProperties.GetData(), m_InstanceDispatchLoader));
 
-    XII_ASSERT_DEV(m_Extensions.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, m_Extensions.GetCount());
+    XII_ASSERT_DEV(extensionProperties.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, extensionProperties.GetCount());
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    for (const auto& extension : m_Extensions)
+    for (const vk::ExtensionProperties& extension : extensionProperties)
     {
       xiiLog::Dev("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
     }
@@ -254,10 +228,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   constexpr bool bUsePortabilityEnumeration = false;
 #endif
 
-  // Request instance extensions.
-  xiiHybridArray<const char*, 6U> instanceExtensions;
+  xiiTemporaryHybridArray<const char*, 6U> instanceExtensions;
   {
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_SURFACE_EXTENSION_NAME))
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_SURFACE_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_SURFACE_EXTENSION_NAME);
 
@@ -265,20 +238,11 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
       instanceExtensions.PushBack(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-      instanceExtensions.PushBack(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#endif
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
       instanceExtensions.PushBack(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
       instanceExtensions.PushBack(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#endif
-#if defined(VK_USE_PLATFORM_XCB_KHR)
-      instanceExtensions.PushBack(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#endif
-#if defined(VK_USE_PLATFORM_IOS_MVK)
-      instanceExtensions.PushBack(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 #endif
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
       instanceExtensions.PushBack(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
@@ -290,33 +254,74 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceExtensions.PushBack(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     }
 
-    // This extension added to core in 1.1, but current version is 1.0
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    // This extension added to core in 1.1, but current version is 1.0.
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     }
 
+    // External memory extensions (required for interop with other APIs).
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalFenceCapabilities = true;
+    }
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalSemaphoreCapabilities = true;
+    }
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME))
+    {
+      instanceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
+
+      m_InstanceFlags.m_bExternalMemoryCapabilities = true;
+    }
+
     for (const auto* szExtensionName : instanceExtensions)
     {
-      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
+      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(extensionProperties, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
     }
   }
 
-  // Request instance layers.
-  xiiHybridArray<const char*, 6U> instanceLayers;
+
+  // Add required instance extensions and layers for debugging if validation is enabled.
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  xiiTemporaryHybridArray<const char*, 6U> instanceLayers;
   {
-    // Validation instance layers.
+    xiiTemporaryArray<vk::LayerProperties> layerProperties;
+
+    xiiUInt32 uiLayerCount = 0U;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
+
+    layerProperties.SetCountUninitialized(uiLayerCount);
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, layerProperties.GetData(), m_InstanceDispatchLoader));
+
+    XII_ASSERT_DEV(layerProperties.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, layerProperties.GetCount());
+
+    {
+      XII_LOG_BLOCK("Available Vulkan Instance Layers");
+
+      for (const vk::LayerProperties& layer : layerProperties)
+      {
+        xiiLog::Dev("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
+      }
+    }
+
     if (m_Description.m_ValidationLevel > xiiGALDeviceValidationLevel::Disabled)
     {
-      if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+      if (IsExtensionAvailable(extensionProperties, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
       {
         // Prefer VK_EXT_debug_utils.
-        m_DebugMode = DebugMode::Utils;
+        m_InstanceFlags.m_DebugMode = DebugMode::Utils;
       }
-      else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+      else if (IsExtensionAvailable(extensionProperties, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
       {
-        // If debug utils are unavailable (e.g. on Android), use VK_EXT_debug_report.
-        m_DebugMode = DebugMode::Report;
+        // If debug utils are unavailable, use VK_EXT_debug_report.
+        m_InstanceFlags.m_DebugMode = DebugMode::Report;
       }
 
       const char* validationLayerNames[] = {
@@ -326,7 +331,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       for (const char* szValidationLayerName : validationLayerNames)
       {
         xiiUInt32 uiLayerVersion = 0xFFFFFFFFU;
-        if (!IsLayerAvailable(m_Layers, szValidationLayerName, &uiLayerVersion))
+        if (!IsLayerAvailable(layerProperties, szValidationLayerName, &uiLayerVersion))
         {
           xiiLog::Error("Instance layer ({0}) is not available.", szValidationLayerName);
           continue;
@@ -342,22 +347,21 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         instanceLayers.PushBack(szValidationLayerName);
 
-        if (m_DebugMode != DebugMode::Utils)
+        if (m_InstanceFlags.m_DebugMode != DebugMode::Utils)
         {
-          // On Android, VK_EXT_debug_utils extension may not be supported by the loader,
-          // but supported by the layer.
+          // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
-          xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
+          xiiTemporaryHybridArray<vk::ExtensionProperties, 4U> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
           {
             if (IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
             {
-              m_DebugMode = DebugMode::Utils;
+              m_InstanceFlags.m_DebugMode = DebugMode::Utils;
             }
 
-            if (m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+            if (m_InstanceFlags.m_DebugMode == DebugMode::Disabled && IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
             {
-              m_DebugMode = DebugMode::Report;
+              m_InstanceFlags.m_DebugMode = DebugMode::Report;
             }
           }
           else
@@ -367,11 +371,11 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         }
       }
 
-      if (m_DebugMode == DebugMode::Utils)
+      if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
       {
         instanceExtensions.PushBack(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       }
-      else if (m_DebugMode == DebugMode::Report)
+      else if (m_InstanceFlags.m_DebugMode == DebugMode::Report)
       {
         instanceExtensions.PushBack(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
       }
@@ -379,11 +383,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       {
         xiiLog::Error("Neither {} nor {} extension is available. Debug tools (validation layer message logging, performance markers, etc.) will be disabled.", VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
-        m_DebugMode                     = DebugMode::Disabled;
+        m_InstanceFlags.m_DebugMode     = DebugMode::Disabled;
         m_Description.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
       }
     }
   }
+#endif
 
   // Create Vulkan Instance.
   {
@@ -392,7 +397,8 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       if (m_InstanceDispatchLoader.vkEnumerateInstanceVersion != nullptr)
       {
         // If the implementation is available, this call must return vk::Result::eSuccess.
-        m_uiVulkanVersion = vk::enumerateInstanceVersion(m_InstanceDispatchLoader);
+
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceVersion(&m_uiVulkanVersion, m_InstanceDispatchLoader));
       }
       else
       {
@@ -416,9 +422,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     instanceCreateInformation.pApplicationInfo        = &applicationInformation;
     instanceCreateInformation.enabledExtensionCount   = instanceExtensions.GetCount();
     instanceCreateInformation.ppEnabledExtensionNames = instanceExtensions.GetData();
-    instanceCreateInformation.enabledLayerCount       = instanceLayers.GetCount();
-    instanceCreateInformation.ppEnabledLayerNames     = instanceLayers.GetData();
     instanceCreateInformation.flags                   = {};
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    instanceCreateInformation.enabledLayerCount   = instanceLayers.GetCount();
+    instanceCreateInformation.ppEnabledLayerNames = instanceLayers.GetData();
+#endif
 
     if (bUsePortabilityEnumeration)
     {
@@ -435,7 +444,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   }
 
   // If requested, we enable the default validation layers for debugging purposes.
-  if (m_DebugMode == DebugMode::Utils)
+  if (m_InstanceFlags.m_DebugMode == DebugMode::Utils)
   {
     constexpr vk::DebugUtilsMessageSeverityFlagsEXT messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
     constexpr vk::DebugUtilsMessageTypeFlagsEXT     messageType     = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
@@ -450,7 +459,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugUtilsMessengerEXT(&debugMessengerCreateInfo, nullptr, &m_DebugMessenger, m_InstanceDispatchLoader));
   }
-  else if (m_DebugMode == DebugMode::Report)
+  else if (m_InstanceFlags.m_DebugMode == DebugMode::Report)
   {
     constexpr vk::DebugReportFlagsEXT reportFlags = vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::ePerformanceWarning | vk::DebugReportFlagBitsEXT::eError;
 
@@ -463,27 +472,26 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugReportCallbackEXT(&debugReportCallbackCreateInfo, nullptr, &m_DebugCallback, m_InstanceDispatchLoader));
   }
 
-  // Enumerate physical devices.
+  // Enumerate physical devices and select a suitable device.
   {
+    xiiTemporaryHybridArray<vk::PhysicalDevice, 2U> physicalDevices;
+
     xiiUInt32 uiPhysicalDeviceCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, nullptr, m_InstanceDispatchLoader));
 
     XII_ASSERT_ALWAYS(uiPhysicalDeviceCount != 0U, "No physical devices are found on the system.");
 
-    m_PhysicalDevices.SetCountUninitialized(uiPhysicalDeviceCount);
+    physicalDevices.SetCountUninitialized(uiPhysicalDeviceCount);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData(), m_InstanceDispatchLoader));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, physicalDevices.GetData(), m_InstanceDispatchLoader));
 
-    XII_ASSERT_DEV(m_PhysicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, m_PhysicalDevices.GetCount());
-  }
+    XII_ASSERT_DEV(physicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, physicalDevices.GetCount());
 
-  // Select physical device.
-  {
-    m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
+    m_PhysicalDevice = SelectPhysicalDevice(physicalDevices, m_Description.m_uiAdapterID);
 
-    m_PhysicalDeviceProperties       = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
-    m_PhysicalDeviceFeatures         = m_PhysicalDevice.getFeatures(m_InstanceDispatchLoader);
-    m_PhysicalDeviceMemoryProperties = m_PhysicalDevice.getMemoryProperties(m_InstanceDispatchLoader);
+    m_PhysicalDevice.getProperties(&m_PhysicalDeviceProperties, m_InstanceDispatchLoader);
+    m_PhysicalDevice.getFeatures(&m_PhysicalDeviceFeatures, m_InstanceDispatchLoader);
+    m_PhysicalDevice.getMemoryProperties(&m_PhysicalDeviceMemoryProperties, m_InstanceDispatchLoader);
 
     xiiUInt32 uiQueueFamilyCount = 0U;
     m_PhysicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, m_InstanceDispatchLoader);
@@ -502,7 +510,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
       XII_LOG_BLOCK(sb);
 
-      for (const auto& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
+      for (const vk::QueueFamilyProperties& queueFamilyProperty : m_PhysicalDeviceQueueFamilyProperties)
       {
         xiiLog::Dev("Queue Count: {},  Flags: {}", queueFamilyProperty.queueCount, vk::to_string(queueFamilyProperty.queueFlags).data());
       }
@@ -528,7 +536,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
         XII_LOG_BLOCK(sb);
 
-        for (const auto& extensionProperty : m_PhysicalDeviceSupportedExtensions)
+        for (const vk::ExtensionProperties& extensionProperty : m_PhysicalDeviceSupportedExtensions)
         {
           xiiLog::Dev("{} {}.{}.{}", extensionProperty.extensionName, VK_API_VERSION_MAJOR(extensionProperty.specVersion), VK_API_VERSION_MINOR(extensionProperty.specVersion), VK_API_VERSION_PATCH(extensionProperty.specVersion));
         }
@@ -538,11 +546,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     if (m_PhysicalDevice != VK_NULL_HANDLE)
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
-
-      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", deviceProperties.deviceName,
-                  VK_API_VERSION_MAJOR(deviceProperties.apiVersion), VK_API_VERSION_MINOR(deviceProperties.apiVersion), VK_API_VERSION_PATCH(deviceProperties.apiVersion),
-                  VK_API_VERSION_MAJOR(deviceProperties.driverVersion), VK_API_VERSION_MINOR(deviceProperties.driverVersion), VK_API_VERSION_PATCH(deviceProperties.driverVersion));
+      xiiLog::Dev("Using physical device '{}', API version {}.{}.{}, Driver version {}.{}.{}.", m_PhysicalDeviceProperties.deviceName,
+                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion),
+                  VK_API_VERSION_MAJOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_MINOR(m_PhysicalDeviceProperties.driverVersion), VK_API_VERSION_PATCH(m_PhysicalDeviceProperties.driverVersion));
     }
     else
     {
@@ -561,9 +567,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::PostInitializePlatform");
 
-  xiiDynamicArray<const char*> deviceExtensions;
+  xiiTemporaryHybridArray<const char*, 4U> deviceExtensions;
 
-  if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
+  if (IsExtensionEnabled(m_EnabledExtensions, VK_KHR_SURFACE_EXTENSION_NAME))
   {
     deviceExtensions.PushBack(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   }
@@ -577,12 +583,12 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
 
-  xiiDynamicArray<vk::DeviceQueueCreateInfo> queueDescriptions;
+  xiiTemporaryHybridArray<vk::DeviceQueueCreateInfo, 4U> queueDescriptions;
   float                                      fQueuePriorities = 1.0f;
 
   // Setup device queues.
   {
-    xiiHybridArray<xiiUInt32, 3U> excludedQueueIndices;
+    xiiTemporaryHybridArray<xiiUInt32, 3U> excludedQueueIndices;
 
     // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
     // must support both graphics and compute operations.
@@ -609,46 +615,47 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       return XII_FAILURE;
     }
 
-    xiiUInt32 uiComputeQueueIndex = FindQueueFamily(vk::QueueFlagBits::eCompute, excludedQueueIndices);
-    if (uiComputeQueueIndex != xiiInvalidIndex)
+    if (m_AdapterDescription.m_Features.m_NativeFence != xiiGALDeviceFeatureState::Disabled && IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
     {
-      XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiComputeQueueIndex), "");
+      xiiUInt32 uiComputeQueueIndex = FindQueueFamily(vk::QueueFlagBits::eCompute, excludedQueueIndices);
+      if (uiComputeQueueIndex != xiiInvalidIndex)
+      {
+        XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiComputeQueueIndex), "");
 
-      excludedQueueIndices.PushBack(uiComputeQueueIndex);
+        excludedQueueIndices.PushBack(uiComputeQueueIndex);
 
-      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
-      queueDescription.pNext                      = nullptr;
-      queueDescription.flags                      = {};
-      queueDescription.queueFamilyIndex           = uiComputeQueueIndex;
-      queueDescription.queueCount                 = 1U;
-      queueDescription.pQueuePriorities           = &fQueuePriorities;
+        vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
+        queueDescription.pNext                      = nullptr;
+        queueDescription.flags                      = {};
+        queueDescription.queueFamilyIndex           = uiComputeQueueIndex;
+        queueDescription.queueCount                 = 1U;
+        queueDescription.pQueuePriorities           = &fQueuePriorities;
 
-      m_ComputeQueueInformation.m_uiQueueFamilyIndex = uiComputeQueueIndex;
-    }
+        m_ComputeQueueInformation.m_uiQueueFamilyIndex = uiComputeQueueIndex;
+      }
 
-    xiiUInt32 uiTransferQueueIndex = FindQueueFamily(vk::QueueFlagBits::eTransfer, excludedQueueIndices);
-    if (uiTransferQueueIndex != xiiInvalidIndex)
-    {
-      XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiTransferQueueIndex), "");
+      xiiUInt32 uiTransferQueueIndex = FindQueueFamily(vk::QueueFlagBits::eTransfer, excludedQueueIndices);
+      if (uiTransferQueueIndex != xiiInvalidIndex)
+      {
+        XII_ASSERT_DEV(!excludedQueueIndices.Contains(uiTransferQueueIndex), "");
 
-      excludedQueueIndices.PushBack(uiTransferQueueIndex);
+        excludedQueueIndices.PushBack(uiTransferQueueIndex);
 
-      vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
-      queueDescription.pNext                      = nullptr;
-      queueDescription.flags                      = {};
-      queueDescription.queueFamilyIndex           = uiTransferQueueIndex;
-      queueDescription.queueCount                 = 1U;
-      queueDescription.pQueuePriorities           = &fQueuePriorities;
+        vk::DeviceQueueCreateInfo& queueDescription = queueDescriptions.ExpandAndGetRef();
+        queueDescription.pNext                      = nullptr;
+        queueDescription.flags                      = {};
+        queueDescription.queueFamilyIndex           = uiTransferQueueIndex;
+        queueDescription.queueCount                 = 1U;
+        queueDescription.pQueuePriorities           = &fQueuePriorities;
 
-      m_TransferQueueInformation.m_uiQueueFamilyIndex = uiTransferQueueIndex;
+        m_TransferQueueInformation.m_uiQueueFamilyIndex = uiTransferQueueIndex;
+      }
     }
   }
 
   // https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#extended-functionality-device-layer-deprecation
   vk::DeviceCreateInfo deviceCreationDescription = {};
   deviceCreationDescription.flags                = {};
-  deviceCreationDescription.enabledLayerCount    = 0U;      // Deprecated and ignored.
-  deviceCreationDescription.ppEnabledLayerNames  = nullptr; // Deprecated and ignored.
   deviceCreationDescription.queueCreateInfoCount = queueDescriptions.GetCount();
   deviceCreationDescription.pQueueCreateInfos    = queueDescriptions.GetData();
 
@@ -712,7 +719,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   ExtensionFeatures enabledExtensionFeatures = {};
 
   // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2 and add feature description to DeviceCreateInfo.pNext.
-  const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   if (bSupportsDeviceFeatures2)
   {
     void** pNextExtension = const_cast<void**>(&deviceCreationDescription.pNext);
@@ -724,7 +731,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 
       XII_ASSERT_DEV(enabledExtensionFeatures.m_MeshShader.taskShader != vk::False && enabledExtensionFeatures.m_MeshShader.meshShader != vk::False, "");
 
-      const auto* szMeshShaderExtensionName = VK_EXT_MESH_SHADER_EXTENSION_NAME;
+      const char* szMeshShaderExtensionName = VK_EXT_MESH_SHADER_EXTENSION_NAME;
 
       XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, szMeshShaderExtensionName), "{} extension must be supported as it has already been checked by VulkanPhysicalDevice and both taskShader and meshShader features are TRUE.", szMeshShaderExtensionName);
 
@@ -1010,7 +1017,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       }
       else
       {
-        XII_REPORT_FAILURE("One of vulkan features: fragment shading rate or fragment density map must be enabled");
+        XII_REPORT_FAILURE("One of Vulkan features: fragment shading rate or fragment density map must be enabled");
       }
     }
 
@@ -1042,6 +1049,13 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_ShaderDrawParameters.pNext;
     }
 
+    if (m_AdapterDescription.m_Features.m_VertexShaderRenderTargetArrayIndex != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
+    }
+
     // Custom border color.
     if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME))
     {
@@ -1053,6 +1067,58 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
       pNextExtension  = &enabledExtensionFeatures.m_CustomBorderColor.pNext;
     }
 
+    // External memory support.
+    if (m_AdapterDescription.m_Features.m_ExternalMemory != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+#endif
+    }
+
+    // External semaphore support.
+    if (m_AdapterDescription.m_Features.m_ExternalSemaphore != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+#endif
+    }
+
+    // External fence support.
+    if (m_AdapterDescription.m_Features.m_ExternalFence != xiiGALDeviceFeatureState::Disabled)
+    {
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME);
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME), "");
+
+      deviceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+#endif
+    }
+
     // Ensure that the last next is null.
     *pNextExtension = nullptr;
   }
@@ -1061,14 +1127,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Error("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
   }
 
-  if (m_PhysicalDeviceExtensionFeatures.m_bShaderViewportIndexLayer)
-  {
-    XII_ASSERT_DEV(IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME), "");
-
-    deviceExtensions.PushBack(VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME);
-  }
-
-  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   deviceCreationDescription.ppEnabledExtensionNames = deviceExtensions.IsEmpty() ? nullptr : deviceExtensions.GetData();
   deviceCreationDescription.enabledExtensionCount   = deviceExtensions.GetCount();
@@ -1149,36 +1208,17 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     }
   }
 
-  // Initialize Vulkan Memory Allocator (VMA). We prefer dynamically finding the function pointers.
+  // Initialize Vulkan Memory Allocator (VMA).
   {
-    const vk::PhysicalDeviceProperties& deviceProperties = m_PhysicalDevice.getProperties(m_InstanceDispatchLoader);
+    m_pVulkanMemoryAllocator = XII_NEW(&m_Allocator, xiiVulkanMemoryAllocator);
 
-    VmaVulkanFunctions vmaVulkanFunctions    = {};
-    vmaVulkanFunctions.vkGetInstanceProcAddr = m_InstanceDispatchLoader.vkGetInstanceProcAddr;
-    vmaVulkanFunctions.vkGetDeviceProcAddr   = m_InstanceDispatchLoader.vkGetDeviceProcAddr;
-
-    VmaAllocatorCreateInfo vmaAllocatorCreateInfo = {};
-    vmaAllocatorCreateInfo.vulkanApiVersion       = deviceProperties.apiVersion;
-    vmaAllocatorCreateInfo.instance               = m_Instance;
-    vmaAllocatorCreateInfo.physicalDevice         = m_PhysicalDevice;
-    vmaAllocatorCreateInfo.device                 = m_LogicalDevice;
-    vmaAllocatorCreateInfo.pVulkanFunctions       = &vmaVulkanFunctions;
-    vmaAllocatorCreateInfo.flags                  = {};
-
-    if (IsLogicalDeviceExtensionEnabled(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
-    {
-      // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION is required by our implementation for ray tracing.
-      vmaAllocatorCreateInfo.flags |= VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-    }
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_vkVmaAllocator));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_pVulkanMemoryAllocator->Initialize(this));
   }
 
   // Create pools.
   {
     m_pFencePool             = XII_NEW(&m_Allocator, xiiGALFencePoolVulkan, this, 16U);
     m_pSemaphorePool         = XII_NEW(&m_Allocator, xiiGALSemaphorePoolVulkan, this, 16U);
-    m_pDescriptorSetPool     = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolVulkan, this, 1024U);
     m_pDeferredDeletionQueue = XII_NEW(&m_Allocator, DeferredDeletionQueue, this);
   }
 
@@ -1187,8 +1227,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_GraphicsQueueInformation.m_uiQueueFamilyIndex, m_GraphicsQueueInformation.m_uiQueueIndex, &m_GraphicsQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_GraphicsQueueInformation);
+      m_pGraphicsCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_pGraphicsCommandQueue.Borrow());
       m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
@@ -1200,8 +1241,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_ComputeQueueInformation.m_uiQueueFamilyIndex, m_ComputeQueueInformation.m_uiQueueIndex, &m_ComputeQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Compute};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
       m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_ComputeQueueInformation);
+      m_pComputeCommandBufferPool                            = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_pComputeCommandQueue.Borrow());
       m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
       m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
@@ -1213,8 +1255,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     {
       m_LogicalDevice.getQueue(m_TransferQueueInformation.m_uiQueueFamilyIndex, m_TransferQueueInformation.m_uiQueueIndex, &m_TransferQueueInformation.m_vkQueue, m_InstanceDispatchLoader);
 
-      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Transfer};
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
       m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, this, queueDescription, m_TransferQueueInformation);
+      m_pTransferCommandBufferPool                           = XII_NEW(&m_Allocator, xiiGALCommandBufferPoolVulkan, this, m_pTransferCommandQueue.Borrow());
       m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolVulkan, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
       m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
@@ -1232,11 +1275,16 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::SafeReleaseDeviceObjectInternal(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation, vk::DeviceMemory vkExternalMemory)
 {
-  if (vmaAllocation != VK_NULL_HANDLE)
+  if (vkExternalMemory != VK_NULL_HANDLE)
   {
-    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vmaAllocation);
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, vkExternalMemory);
+    return;
+  }
+  if (allocation != VK_NULL_HANDLE)
+  {
+    m_pDeferredDeletionQueue->EnqueueResource(vkObjectType, pObject, allocation);
   }
   else
   {
@@ -1258,19 +1306,17 @@ void xiiGALDeviceVulkan::ReclaimLaterInternal(vk::ObjectType vkObjectType, void*
       m_pDeferredDeletionQueue->EnqueueResource(m_pFencePool.Borrow(), reinterpret_cast<vk::Fence&>(pObject));
     }
     break;
-    case vk::ObjectType::eDescriptorPool:
-    {
-      m_pDeferredDeletionQueue->EnqueueResource(m_pDescriptorSetPool.Borrow(), reinterpret_cast<vk::DescriptorPool&>(pObject));
-    }
-    break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
-void xiiGALDeviceVulkan::ReclaimCommandBufferLater(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
+void xiiGALDeviceVulkan::SetVulkanAllocationDebugName(xiiVulkanAllocation allocation, const char* szDebugName) const
 {
-  m_pDeferredDeletionQueue->EnqueueResource(pCommandBufferPool, vkCommandBuffer);
+  if (allocation != VK_NULL_HANDLE)
+  {
+    m_pVulkanMemoryAllocator->SetAllocationUserData(allocation, szDebugName);
+  }
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform()
@@ -1279,21 +1325,31 @@ void xiiGALDeviceVulkan::BeginFramePlatform()
 
 void xiiGALDeviceVulkan::EndFramePlatform()
 {
+  if (m_pTransferCommandBufferPool)
+  {
+    m_pTransferCommandBufferPool->ReclaimCompleted();
+  }
+  if (m_pComputeCommandBufferPool)
+  {
+    m_pComputeCommandBufferPool->ReclaimCompleted();
+  }
+  m_pGraphicsCommandBufferPool->ReclaimCompleted();
+
   m_pDeferredDeletionQueue->ReleaseResources();
 }
 
-xiiGALCommandQueue* xiiGALDeviceVulkan::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+xiiGALCommandQueue* xiiGALDeviceVulkan::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
-  if (((queueType & xiiGALCommandQueueType::Graphics) == xiiGALCommandQueueType::Graphics))
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
     return m_pGraphicsCommandQueue.Borrow();
 
-  if (((queueType & xiiGALCommandQueueType::Compute) == xiiGALCommandQueueType::Compute) && m_pComputeCommandQueue != nullptr)
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute) && m_pComputeCommandQueue != nullptr)
     return m_pComputeCommandQueue.Borrow();
 
-  if (((queueType & xiiGALCommandQueueType::Transfer) == xiiGALCommandQueueType::Transfer) && m_pTransferCommandQueue != nullptr)
+  if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && m_pTransferCommandQueue != nullptr)
     return m_pTransferCommandQueue.Borrow();
 
-  return GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics);
+  return m_pGraphicsCommandQueue.Borrow();
 }
 
 void xiiGALDeviceVulkan::SetDebugNamePlatform(xiiStringView sName) const
@@ -1314,6 +1370,19 @@ xiiInternal::NewInstance<xiiGALSwapChain> xiiGALDeviceVulkan::CreateSwapChainPla
   }
 
   return pSwapChainVulkan;
+}
+
+xiiInternal::NewInstance<xiiGALCommandList> xiiGALDeviceVulkan::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiInternal::NewInstance<xiiGALCommandListVulkan> pCommandListVulkan = XII_NEW(&m_Allocator, xiiGALCommandListVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
+
+  if (pCommandListVulkan->InitPlatform().Failed())
+  {
+    XII_DELETE(pCommandListVulkan.m_pAllocator, pCommandListVulkan.m_pInstance);
+    return nullptr;
+  }
+
+  return pCommandListVulkan;
 }
 
 xiiInternal::NewInstance<xiiGALBlendState> xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -1368,11 +1437,11 @@ xiiInternal::NewInstance<xiiGALShader> xiiGALDeviceVulkan::CreateShaderPlatform(
   return pShaderVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
+xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   xiiInternal::NewInstance<xiiGALBufferVulkan> pBufferVulkan = XII_NEW(&m_Allocator, xiiGALBufferVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pBufferVulkan->InitPlatform(pInitialData).Failed())
+  if (pBufferVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
     XII_DELETE(pBufferVulkan.m_pAllocator, pBufferVulkan.m_pInstance);
     return nullptr;
@@ -1381,11 +1450,11 @@ xiiInternal::NewInstance<xiiGALBuffer> xiiGALDeviceVulkan::CreateBufferPlatform(
   return pBufferVulkan;
 }
 
-xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
+xiiInternal::NewInstance<xiiGALTexture> xiiGALDeviceVulkan::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
   xiiInternal::NewInstance<xiiGALTextureVulkan> pTextureVulkan = XII_NEW(&m_Allocator, xiiGALTextureVulkan, xiiSharedPtr<xiiGALDeviceVulkan>(this, m_Allocator.GetParent()), description);
 
-  if (pTextureVulkan->InitPlatform(pInitialData).Failed())
+  if (pTextureVulkan->InitPlatform(pInitialData, externalMemoryKind).Failed())
   {
     XII_DELETE(pTextureVulkan.m_pAllocator, pTextureVulkan.m_pInstance);
     return nullptr;
@@ -1552,16 +1621,17 @@ xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceVulkan::CreateTile
 
 void xiiGALDeviceVulkan::WaitIdlePlatform()
 {
-  if (xiiGALCommandQueueVulkan* pGraphicsQueue = m_pGraphicsCommandQueue.Borrow())
-    pGraphicsQueue->WaitForIdle();
+  if (m_pTransferCommandQueue)
+  {
+    m_pTransferCommandQueue->WaitForIdle();
+  }
+  if (m_pComputeCommandQueue)
+  {
+    m_pComputeCommandQueue->WaitForIdle();
+  }
+  m_pGraphicsCommandQueue->WaitForIdle();
 
-  if (xiiGALCommandQueueVulkan* pComputeQueue = m_pComputeCommandQueue.Borrow())
-    pComputeQueue->WaitForIdle();
-
-  if (xiiGALCommandQueueVulkan* pTransferQueue = m_pTransferCommandQueue.Borrow())
-    pTransferQueue->WaitForIdle();
-
-  m_LogicalDevice.waitIdle(m_InstanceDispatchLoader);
+  VK_ASSERT_DEV(m_LogicalDevice.waitIdle(m_InstanceDispatchLoader));
 
   m_pDeferredDeletionQueue->ReleaseResources(true);
 }
@@ -1654,7 +1724,6 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
     m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16; // From the specification.
     m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;  // From the specification.
-    m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
     m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = m_PhysicalDeviceExtensionProperties.m_AccelerationStructure.minAccelerationStructureScratchOffsetAlignment;
     m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16; // From the specification.
 
@@ -1745,8 +1814,8 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     // VK_KHR_fragment_shading_rate
     if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.primitiveFragmentShadingRate != vk::False || m_PhysicalDeviceExtensionFeatures.m_ShadingRate.attachmentFragmentShadingRate != vk::False)
     {
-      auto& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
-      auto  SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
+      xiiBitflags<xiiGALShadingRateCapabilityFlags>& shadingRateCapabilityFlags = m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags;
+      auto                                           SetShadingRateCapability   = [&shadingRateCapabilityFlags](VkBool32 vkFlag, xiiGALShadingRateCapabilityFlags::Enum capabilityFlag) {
         if (vkFlag != vk::False)
         {
           shadingRateCapabilityFlags |= capabilityFlag;
@@ -1785,24 +1854,23 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.height = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateAttachmentTexelSize.height;
       }
 
-      xiiDynamicArray<vk::PhysicalDeviceFragmentShadingRateKHR> shadingRates;
+      xiiTemporaryHybridArray<vk::PhysicalDeviceFragmentShadingRateKHR, 4U> shadingRates;
       {
         xiiUInt32 uiShadingRateCount = 0U;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));
 
-        shadingRates.SetCountUninitialized(uiShadingRateCount);
+        shadingRates.SetCount(uiShadingRateCount);
 
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, shadingRates.GetData(), m_InstanceDispatchLoader));
       }
 
-      const xiiUInt32 uiShadingRateCount = static_cast<xiiUInt8>(xiiMath::Min(shadingRates.GetCount(), XII_GAL_MAX_SHADING_RATE));
-      for (xiiUInt32 i = 0; i < uiShadingRateCount; ++i)
+      for (xiiUInt32 i = 0U; i < shadingRates.GetCount(); ++i)
       {
-        const auto& srcShadingRate = shadingRates[i];
-        auto&       dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
+        const vk::PhysicalDeviceFragmentShadingRateKHR& srcShadingRate = shadingRates[i];
+        xiiGALShadingRateMode&                          dstShadingRate = m_AdapterDescription.m_ShadingRateProperties.m_Modes.ExpandAndGetRef();
 
         // maxFragmentShadingRateRasterizationSamples - contains only maximum bit
-        // sampleCounts - contains all supported bits
+        // sampleCounts                               - contains all supported bits
         XII_ASSERT_DEV((srcShadingRate.fragmentSize.width == 1 && srcShadingRate.fragmentSize.height == 1) || (xiiUInt32{srcShadingRate.sampleCounts} <= ((static_cast<xiiUInt32>(m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateRasterizationSamples) << 1) - 1)), "");
 
         if (srcShadingRate.sampleCounts & vk::SampleCountFlagBits::e1)
@@ -1909,7 +1977,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       }
     }
 
-    static_assert(sizeof(m_AdapterDescription.m_ShadingRateProperties) == 80, "There may be uninitialized shading rate properties.");
+    static_assert(sizeof(m_AdapterDescription.m_ShadingRateProperties) == 64, "There may be uninitialized shading rate properties.");
   }
 
   // Draw Command Properties
@@ -2015,7 +2083,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
       }
 
       // In Metal, input attachment with memoryless texture must be used as an imageblock, which is not supported in SPIRV to MSL translator.
-#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+#if XII_ENABLED(XII_PLATFORM_OSX)
       if (m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet())
       {
         m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil;
@@ -2044,16 +2112,79 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     static_assert(sizeof(m_AdapterDescription.m_MemoryProperties) == 40, "There may be uninitialized memory properties.");
   }
 
+  // Device Limits
+  {
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxConstantBuffers = m_PhysicalDeviceProperties.limits.maxPerStageDescriptorUniformBuffers;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxVertexBuffers   = m_PhysicalDeviceProperties.limits.maxVertexInputBindings;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxSamplers        = m_PhysicalDeviceProperties.limits.maxPerStageDescriptorSamplers;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxRenderTargets   = m_PhysicalDeviceProperties.limits.maxColorAttachments;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxViewports       = m_PhysicalDeviceProperties.limits.maxViewports;
+
+    // KHR_fragment_shading_rate support.
+    if (m_PhysicalDeviceExtensionFeatures.m_ShadingRate.pipelineFragmentShadingRate == vk::True)
+    {
+      // maxFragmentSize.width/height is the largest texel coverage (e.g. 4x4).
+      xiiUInt32 uiMaxWidth  = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.width;
+      xiiUInt32 uiMaxHeight = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentSize.height;
+
+      // Compute how many discrete rates per axis: {1,2,4,...,max}
+      xiiUInt32 uiXRates = xiiMath::FirstBitHigh(uiMaxWidth) + 1U;
+      xiiUInt32 uiYRates = xiiMath::FirstBitHigh(uiMaxHeight) + 1U;
+
+      // Total combinations = all pairs of (xRate, yRate)
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = uiXRates * uiYRates;
+
+      // X-rate bits sit in the high half of a 4-bit enum: shift = log2(uiMaxWidth)
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift = xiiMath::FirstBitHigh(uiMaxWidth);
+    }
+    // EXT_fragment_density_map (desktop) fallback.
+    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap == vk::True)
+    {
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 1U;
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
+    }
+    // EXT_fragment_density_map2 (mobile deferred) fallback.
+    else if (m_PhysicalDeviceExtensionFeatures.m_FragmentDensityMap2.fragmentDensityMapDeferred == vk::True)
+    {
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 1U;
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
+    }
+    // No variable‐rate shading support.
+    else
+    {
+      m_AdapterDescription.m_DeviceLimits.m_uiMaxShadingRateCombos = 0U;
+      m_AdapterDescription.m_DeviceLimits.m_uiShadingRateXShift    = 0U;
+    }
+
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxResourceSignatures = m_PhysicalDeviceProperties.limits.maxBoundDescriptorSets;
+
+    // Buffer sizes.
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize  = m_PhysicalDeviceProperties.limits.maxPushConstantsSize;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxUniformBufferRange = m_PhysicalDeviceProperties.limits.maxUniformBufferRange;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxStorageBufferRange = m_PhysicalDeviceProperties.limits.maxStorageBufferRange;
+
+    // Descriptor counts per set.
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxSampledImages         = m_PhysicalDeviceProperties.limits.maxDescriptorSetSampledImages;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxStorageImages         = m_PhysicalDeviceProperties.limits.maxDescriptorSetStorageImages;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxStorageBuffers        = m_PhysicalDeviceProperties.limits.maxDescriptorSetStorageBuffers;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxCombinedImageSamplers = m_PhysicalDeviceProperties.limits.maxDescriptorSetSampledImages;
+
+    // Compute shader limits.
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupInvocations = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupInvocations;
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupSizeX       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[0];
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupSizeY       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[1];
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeWorkGroupSizeZ       = m_PhysicalDeviceProperties.limits.maxComputeWorkGroupSize[2];
+    m_AdapterDescription.m_DeviceLimits.m_uiMaxComputeSharedMemorySize     = m_PhysicalDeviceProperties.limits.maxComputeSharedMemorySize;
+  }
+
   // Queue Information
   {
-    const xiiUInt32 uiMaxAdapterQueues = xiiMath::Min(XII_GAL_MAX_ADAPTER_QUEUE_COUNT, m_PhysicalDeviceQueueFamilyProperties.GetCount());
-
-    for (xiiUInt32 uiQueueIndex = 0U; uiQueueIndex < uiMaxAdapterQueues; ++uiQueueIndex)
+    for (xiiUInt32 uiQueueIndex = 0U; uiQueueIndex < m_PhysicalDeviceQueueFamilyProperties.GetCount(); ++uiQueueIndex)
     {
       const vk::QueueFamilyProperties& sourceQueue      = m_PhysicalDeviceQueueFamilyProperties[uiQueueIndex];
       xiiGALCommandQueueProperties&    destinationQueue = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
 
-      destinationQueue.m_Type                      = xiiVulkanTypeConversions::GetGALCommandQueueType(sourceQueue.queueFlags);
+      destinationQueue.m_Flags                     = xiiVulkanTypeConversions::GetGALCommandQueueFlags(sourceQueue.queueFlags);
       destinationQueue.m_uiMaxDeviceContexts       = sourceQueue.queueCount;
       destinationQueue.m_TextureCopyGranularity[0] = sourceQueue.minImageTransferGranularity.width;
       destinationQueue.m_TextureCopyGranularity[1] = sourceQueue.minImageTransferGranularity.height;
@@ -2064,59 +2195,59 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   return XII_SUCCESS;
 }
 
-vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
+vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiArrayPtr<vk::PhysicalDevice> pPhysicalDevices, xiiUInt32 uiAdapterID) const
 {
-  const auto IsGraphicsAndComputeQueueSupported = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> bool {
+  auto FindGraphicsComputeQueueFamily = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> xiiUInt32 {
     xiiUInt32 uiQueueFamilyCount = 0U;
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, instanceDispatchLoader);
+    XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "No queue families available");
 
-    XII_ASSERT_DEV(uiQueueFamilyCount > 0, "");
+    xiiTemporaryHybridArray<vk::QueueFamilyProperties, 8U> queueFamilies;
+    queueFamilies.SetCountUninitialized(uiQueueFamilyCount);
+    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilies.GetData(), instanceDispatchLoader);
 
-    xiiHybridArray<vk::QueueFamilyProperties, 2U> queueFamilyProperties;
-    queueFamilyProperties.SetCountUninitialized(uiQueueFamilyCount);
-
-    physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilyProperties.GetData(), instanceDispatchLoader);
-    XII_ASSERT_DEV(queueFamilyProperties.GetCount() == uiQueueFamilyCount, "");
-
-    // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
-    // must support both graphics and compute operations.
-    for (const vk::QueueFamilyProperties& properties : queueFamilyProperties)
+    for (xiiUInt32 i = 0U; i < uiQueueFamilyCount; ++i)
     {
-      if ((properties.queueFlags & vk::QueueFlagBits::eGraphics) && (properties.queueFlags & vk::QueueFlagBits::eCompute))
+      const vk::QueueFamilyProperties& vkQueueFamilyProperties = queueFamilies[i];
+
+      if ((vkQueueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics) && (vkQueueFamilyProperties.queueFlags & vk::QueueFlagBits::eCompute))
       {
-        return true;
+        return i;
       }
     }
-    return false;
+    return xiiInvalidIndex;
   };
 
-  vk::PhysicalDevice selectedPhysicalDevice = VK_NULL_HANDLE;
-
-  if (uiAdapterID < m_PhysicalDevices.GetCount() && IsGraphicsAndComputeQueueSupported(m_PhysicalDevices[uiAdapterID]))
+  // Direct adapter selection if valid.
+  if (uiAdapterID < pPhysicalDevices.GetCount())
   {
-    selectedPhysicalDevice = m_PhysicalDevices[uiAdapterID];
+    const vk::PhysicalDevice& vkPhysicalDeviceCandidate = pPhysicalDevices[uiAdapterID];
+
+    if (FindGraphicsComputeQueueFamily(vkPhysicalDeviceCandidate) != xiiInvalidIndex)
+      return vkPhysicalDeviceCandidate;
   }
 
-  // Device Selection Criteria:
-  // - Exposes a queue family that supports both compute and graphics operations.
-  // - Prefer discrete GPU.
-  if (selectedPhysicalDevice == VK_NULL_HANDLE)
+  // Rank devices: discrete > integrated > others.
+  vk::PhysicalDevice     vkBestDevice = VK_NULL_HANDLE;
+  vk::PhysicalDeviceType vkBestType   = vk::PhysicalDeviceType::eOther;
+
+  for (const vk::PhysicalDevice& vkPhysicalDevice : pPhysicalDevices)
   {
-    for (const vk::PhysicalDevice& physicalDevice : m_PhysicalDevices)
+    vk::PhysicalDeviceProperties vkPhysicalDeviceProperties;
+    vkPhysicalDevice.getProperties(&vkPhysicalDeviceProperties, m_InstanceDispatchLoader);
+
+    if (FindGraphicsComputeQueueFamily(vkPhysicalDevice) == xiiInvalidIndex)
+      continue; // unsuitable
+
+    // Prefer discrete > integrated > virtual > CPU > other.
+    if ((vkBestDevice == VK_NULL_HANDLE) || (xiiVulkanTypeConversions::RankDeviceType(vkPhysicalDeviceProperties.deviceType) > xiiVulkanTypeConversions::RankDeviceType(vkBestType)))
     {
-      const vk::PhysicalDeviceProperties& deviceProperties = physicalDevice.getProperties(m_InstanceDispatchLoader);
-
-      if (IsGraphicsAndComputeQueueSupported(physicalDevice))
-      {
-        selectedPhysicalDevice = physicalDevice;
-
-        if (deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-          break;
-      }
+      vkBestDevice = vkPhysicalDevice;
+      vkBestType   = vkPhysicalDeviceProperties.deviceType;
     }
   }
 
-  return selectedPhysicalDevice;
+  return vkBestDevice;
 }
 
 xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
@@ -2126,7 +2257,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   if (m_PhysicalDevice == VK_NULL_HANDLE)
     return XII_FAILURE;
 
-  if (!IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+  if (!IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     return XII_SUCCESS;
 
   vk::PhysicalDeviceFeatures2 features2    = {};
@@ -2338,6 +2469,63 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_CustomBorderColor.pNext;
   }
 
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME))
+  {
+    *pNextProperty = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve;
+    pNextProperty  = &m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve.pNext;
+  }
+
+  // External memory support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemory = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd = true;
+  }
+#endif
+
+  // External semaphore support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd = true;
+  }
+#endif
+
+  // External fence support.
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFence = true;
+  }
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_WIN32_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32 = true;
+  }
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  if (IsExtensionAvailable(m_PhysicalDeviceSupportedExtensions, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME))
+  {
+    m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd = true;
+  }
+#endif
+
   // Ensure that last pNext is null
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
@@ -2385,6 +2573,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
     m_PhysicalDeviceExtensionProperties.m_FragmentDensityMap2.pNext    = nullptr;
     m_PhysicalDeviceExtensionProperties.m_MultiDraw.pNext              = nullptr;
     m_PhysicalDeviceExtensionProperties.m_CustomBorderColor.pNext      = nullptr;
+    m_PhysicalDeviceExtensionProperties.m_DepthStencilResolve.pNext    = nullptr;
   }
 
   // Check shading rate texture formats.
@@ -2471,9 +2660,9 @@ bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionPro
   return false;
 }
 
-bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName) const
+bool xiiGALDeviceVulkan::IsExtensionEnabled(xiiArrayPtr<const char*> pEnabledExtensions, const char* szExtensionName) const
 {
-  for (const auto* szEnabledExtension : m_EnabledExtensions)
+  for (const auto* szEnabledExtension : pEnabledExtensions)
   {
     if (strcmp(szExtensionName, szEnabledExtension) == 0)
     {
@@ -2504,8 +2693,6 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 #define INITIALIZE_DEVICE_FEATURE(featureName, bIsFeatureSupported) deviceFeatures.m_##featureName = (bIsFeatureSupported) ? optionalState : xiiGALDeviceFeatureState::Disabled
 
   // The following features are always enabled.
-  deviceFeatures.m_SeparablePrograms             = xiiGALDeviceFeatureState::Enabled;
-  deviceFeatures.m_ShaderResourceQueries         = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_MultithreadedResourceCreation = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_BindlessResources             = xiiGALDeviceFeatureState::Enabled;
@@ -2513,7 +2700,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
   deviceFeatures.m_SubpassFramebufferFetch       = xiiGALDeviceFeatureState::Enabled;
   deviceFeatures.m_TextureComponentSwizzle       = xiiGALDeviceFeatureState::Enabled;
 
-  // Timestamps are nnot a feature and cannot be disabled. They are either supported by the device, or not supported by the device.
+  // Timestamps are not a feature and cannot be disabled. They are either supported by the device, or not supported by the device.
   deviceFeatures.m_TimestampQueries = vkDeviceProperties.limits.timestampComputeAndGraphics ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_DurationQueries  = vkDeviceProperties.limits.timestampComputeAndGraphics ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
 
@@ -2564,10 +2751,39 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   INITIALIZE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, extensionFeatures.m_bShaderViewportIndexLayer);
 
+  INITIALIZE_DEVICE_FEATURE(DepthStencilResolve, extensionProperties.m_DepthStencilResolve.supportedDepthResolveModes != vk::ResolveModeFlagBits::eNone || extensionProperties.m_DepthStencilResolve.supportedStencilResolveModes != vk::ResolveModeFlagBits::eNone);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalMemory = m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalMemory = m_PhysicalDeviceExtensionFeatures.m_bExternalMemoryFd;
+#else
+  const bool bPlatformSupportsExternalMemory = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalMemory, m_PhysicalDeviceExtensionFeatures.m_bExternalMemory && bPlatformSupportsExternalMemory);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalSemaphore = m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalSemaphore = m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphoreFd;
+#else
+  const bool bPlatformSupportsExternalSemaphore = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalSemaphore, m_PhysicalDeviceExtensionFeatures.m_bExternalSemaphore && bPlatformSupportsExternalSemaphore);
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  const bool bPlatformSupportsExternalFence = m_PhysicalDeviceExtensionFeatures.m_bExternalFenceWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+  const bool bPlatformSupportsExternalFence = m_PhysicalDeviceExtensionFeatures.m_bExternalFenceFd;
+#else
+  const bool bPlatformSupportsExternalFence = false;
+#endif
+  INITIALIZE_DEVICE_FEATURE(ExternalFence, m_PhysicalDeviceExtensionFeatures.m_bExternalFence && bPlatformSupportsExternalFence);
+
 #undef INITIALIZE_DEVICE_FEATURE
 
   // Not supported in MoltenVk.
-#if XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_IOS)
+#if XII_ENABLED(XII_PLATFORM_OSX)
   deviceFeatures.m_BinaryOcclusionQueries = xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_TimestampQueries       = xiiGALDeviceFeatureState::Disabled;
   deviceFeatures.m_DurationQueries        = xiiGALDeviceFeatureState::Disabled;
@@ -2575,7 +2791,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::ConvertVulkanFeaturesToDeviceFeatures(x
 
   deviceFeatures.m_AsynchronousShaderCompilation = xiiGALDeviceFeatureState::Enabled;
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2614,18 +2830,11 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
     return xiiGALDeviceFeatureState::Disabled;
   };
 
-  if (supportedDeviceFeatures.m_SeparablePrograms == xiiGALDeviceFeatureState::Enabled && requestedDeviceFeatures.m_SeparablePrograms == xiiGALDeviceFeatureState::Disabled)
-  {
-    xiiLog::Info("Can not disable Separable Programs device feature state.");
-  }
-
   xiiGALDeviceFeatures deviceFeatures;
 
 #define ENABLE_DEVICE_FEATURE(feature, featureName) deviceFeatures.m_##feature = GetFeatureState(requestedDeviceFeatures.m_##feature, supportedDeviceFeatures.m_##feature, featureName)
 
   // clang-format off
-  ENABLE_DEVICE_FEATURE(SeparablePrograms,                  "Separable programs are");
-  ENABLE_DEVICE_FEATURE(ShaderResourceQueries,              "Shader resource queries are");
   ENABLE_DEVICE_FEATURE(WireframeFill,                      "Wireframe fill is");
   ENABLE_DEVICE_FEATURE(MultithreadedResourceCreation,      "Multithreaded resource creation is");
   ENABLE_DEVICE_FEATURE(ComputeShaders,                     "Compute shaders are");
@@ -2643,7 +2852,7 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   ENABLE_DEVICE_FEATURE(DepthClamp,                         "Depth clamp is");
   ENABLE_DEVICE_FEATURE(IndependentBlend,                   "Independent blend is");
   ENABLE_DEVICE_FEATURE(DualSourceBlend,                    "Dual-source blend is");
-  ENABLE_DEVICE_FEATURE(MultiViewport,                      "Multiviewport is");
+  ENABLE_DEVICE_FEATURE(MultiViewport,                      "Multi-viewport is");
   ENABLE_DEVICE_FEATURE(TextureCompressionBC,               "BC texture compression is");
   ENABLE_DEVICE_FEATURE(VertexPipelineUAVWritesAndAtomics,  "Vertex pipeline UAV writes and atomics are");
   ENABLE_DEVICE_FEATURE(PixelUAVWritesAndAtomics,           "Pixel UAV writes and atomics are");
@@ -2668,11 +2877,15 @@ xiiGALDeviceFeatures xiiGALDeviceVulkan::GetEnabledDeviceFeatures(const xiiGALDe
   ENABLE_DEVICE_FEATURE(NativeMultiDraw,                    "Native multi-draw commands are");
   ENABLE_DEVICE_FEATURE(AsynchronousShaderCompilation,      "Asynchronous shader compilation is");
   ENABLE_DEVICE_FEATURE(VertexShaderRenderTargetArrayIndex, "Vertex shader render target array index is");
+  ENABLE_DEVICE_FEATURE(DepthStencilResolve,                "Depth/stencil resolve is");
+  ENABLE_DEVICE_FEATURE(ExternalMemory,                     "External memory support is");
+  ENABLE_DEVICE_FEATURE(ExternalSemaphore,                  "External semaphore support is");
+  ENABLE_DEVICE_FEATURE(ExternalFence,                      "External fence support is");
   // clang-format on
 
 #undef ENABLE_DEVICE_FEATURE
 
-  static_assert(sizeof(xiiGALDeviceFeatures) == 44, "There may be uninitialized device features.");
+  static_assert(sizeof(xiiGALDeviceFeatures) == 46, "There may be uninitialized device features.");
 
   return deviceFeatures;
 }
@@ -2737,15 +2950,44 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
   return uiQueueFamilyIndex;
 }
 
-
 ///////////////////////////////////////////////////////////////////////////
 
 xiiGALDeviceVulkan::DeferredDeletionQueue::DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan) :
   m_pDeviceVulkan(pDeviceVulkan)
 {
+  const ExtensionFeatures& logicalDeviceFeatures = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
+
+  if (logicalDeviceFeatures.m_TimelineSemaphore.timelineSemaphore == vk::True)
+  {
+    vk::SemaphoreTypeCreateInfo vkTimelineCreateInfo = {};
+    vkTimelineCreateInfo.semaphoreType               = vk::SemaphoreType::eTimeline;
+    vkTimelineCreateInfo.initialValue                = 0ULL;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkTimelineCreateInfo;
+
+    vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+    VK_ASSERT_DEV(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkTimelineSemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Mark timeline semaphore availability while holding the deletion queue mutex to avoid data races with other threads reading this flag.
+    {
+      XII_LOCK(m_DeletionQueueMutex);
+      m_bHasTimelineSemaphore = true;
+    }
+  }
 }
 
-xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue() = default;
+xiiGALDeviceVulkan::DeferredDeletionQueue::~DeferredDeletionQueue()
+{
+  ReleaseResources(true);
+
+  if (m_vkTimelineSemaphore)
+  {
+    vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+
+    vkLogicalDevice.destroySemaphore(m_vkTimelineSemaphore, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  }
+}
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject)
 {
@@ -2755,37 +2997,65 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType v
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    // m_uiNextSubmitValue contains the next submit value that will be reserved.
+    // The fence value that corresponds to already submitted work is therefore (m_uiNextSubmitValue - 1). Use that so resources are not freed prematurely.
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
-  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid VMA Allocation.");
+  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid Vulkan memory allocation.");
   XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
-  XII_ASSERT_DEV(vmaAllocation != VK_NULL_HANDLE, "VMA allocation must be valid.");
+  XII_ASSERT_DEV(allocation != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_vkObjectType                        = vkObjectType;
   entry.m_pObject                             = pObject;
-  entry.m_VmaAllocation                       = vmaAllocation;
+  entry.m_VulkanAllocation                    = allocation;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer vkCommandBuffer)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
 {
-  XII_ASSERT_DEV(pCommandBufferPool != nullptr, "Command buffer pool must be valid.");
-  XII_ASSERT_DEV(vkCommandBuffer != VK_NULL_HANDLE, "Command buffer must be valid.");
+  XII_ASSERT_DEV(vkObjectType == vk::ObjectType::eBuffer || vkObjectType == vk::ObjectType::eImage, "Vulkan object type does not have a valid Vulkan memory allocation.");
+  XII_ASSERT_DEV(pObject != nullptr, "Object must be valid.");
+  XII_ASSERT_DEV(vkExternalMemory != VK_NULL_HANDLE, "The Vulkan memory allocation must be valid.");
 
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
-  entry.m_pCommandBufferPool                  = pCommandBufferPool;
-  entry.m_vkCommandBuffer                     = vkCommandBuffer;
+  entry.m_vkObjectType                        = vkObjectType;
+  entry.m_pObject                             = pObject;
+  entry.m_vkExternalMemory                    = vkExternalMemory;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
@@ -2796,9 +3066,17 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALSemaphoreP
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pSemaphorePool                      = pSemaphorePool;
   entry.m_vkSemaphore                         = vkSemaphore;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool)
@@ -2809,9 +3087,17 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALDescriptor
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pDescriptorSetPool                  = pDescriptorSetPool;
   entry.m_vkDescriptorPool                    = vkDescriptorPool;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolVulkan* pFencePool, vk::Fence vkFence)
@@ -2822,9 +3108,17 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::EnqueueResource(xiiGALFencePoolV
   XII_LOCK(m_DeletionQueueMutex);
 
   DeferredDeletionQueue::DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
-  entry.m_uiFenceValue                        = m_pDeviceVulkan->GetFrameNumber() + 1;
   entry.m_pFencePool                          = pFencePool;
   entry.m_vkFence                             = vkFence;
+
+  if (m_vkTimelineSemaphore != VK_NULL_HANDLE)
+  {
+    entry.m_uiFenceValue = (m_uiNextSubmitValue > 0) ? (m_uiNextSubmitValue - 1) : 0;
+  }
+  else
+  {
+    entry.m_uiFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetNextFenceValue();
+  }
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceReleaseAll)
@@ -2838,11 +3132,7 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
     // Release all resources.
     for (auto& entry : m_DeletionQueue)
     {
-      if (entry.m_pCommandBufferPool != nullptr)
-      {
-        DestroyCommandBuffer(entry.m_pCommandBufferPool, std::move(entry.m_vkCommandBuffer));
-      }
-      else if (entry.m_pSemaphorePool != nullptr)
+      if (entry.m_pSemaphorePool != nullptr)
       {
         DestroySemaphore(entry.m_pSemaphorePool, std::move(entry.m_vkSemaphore));
       }
@@ -2854,9 +3144,13 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
       {
         DestroyFence(entry.m_pFencePool, std::move(entry.m_vkFence));
       }
-      else if (entry.m_VmaAllocation != VK_NULL_HANDLE)
+      else if (entry.m_vkExternalMemory != VK_NULL_HANDLE)
       {
-        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VmaAllocation);
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_vkExternalMemory);
+      }
+      else if (entry.m_VulkanAllocation != VK_NULL_HANDLE)
+      {
+        DestroyObject(entry.m_vkObjectType, entry.m_pObject, entry.m_VulkanAllocation);
       }
       else
       {
@@ -2867,48 +3161,87 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::ReleaseResources(bool bForceRele
   }
   else
   {
-    XII_LOCK(m_DeletionQueueMutex);
-
     // Release only resources that are not in use.
-    for (auto it = begin(m_DeletionQueue); it != end(m_DeletionQueue);)
+    while (true)
     {
-      const xiiUInt64 uiCompletedFenceValue = m_pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics)->GetCompletedFenceValue();
+      // Grab the next deletion entry in a thread-safe manner.
+      xiiGALDeviceVulkan::DeferredDeletionQueue::DeletionEntry entryCopy;
+      bool                                                     bHasEntry = false;
 
-      if (it->m_uiFenceValue <= uiCompletedFenceValue)
       {
-        if (it->m_pCommandBufferPool != nullptr)
+        XII_LOCK(m_DeletionQueueMutex);
+        if (!m_DeletionQueue.IsEmpty())
         {
-          DestroyCommandBuffer(it->m_pCommandBufferPool, std::move(it->m_vkCommandBuffer));
+          entryCopy = m_DeletionQueue.PeekFront();
+          bHasEntry = true;
         }
-        else if (it->m_pSemaphorePool != nullptr)
-        {
-          DestroySemaphore(it->m_pSemaphorePool, std::move(it->m_vkSemaphore));
-        }
-        else if (it->m_pDescriptorSetPool != nullptr)
-        {
-          DestroyDescriptorSetPool(it->m_pDescriptorSetPool, std::move(it->m_vkDescriptorPool));
-        }
-        else if (it->m_pFencePool != nullptr)
-        {
-          DestroyFence(it->m_pFencePool, std::move(it->m_vkFence));
-        }
-        else if (it->m_VmaAllocation != VK_NULL_HANDLE)
-        {
-          DestroyObject(it->m_vkObjectType, it->m_pObject, it->m_VmaAllocation);
-        }
-        else
-        {
-          DestroyObject(vkLogicalDevice, it->m_vkObjectType, it->m_pObject);
-        }
+      }
 
-        m_DeletionQueue.RemoveAndCopy(*it);
-        it = begin(m_DeletionQueue);
+      if (!bHasEntry)
+        break;
+
+      xiiUInt64 uiCompletedFenceValue = xiiMath::MaxValue<xiiUInt64>();
+
+      // Query completed fence/timeline value without holding the deletion queue mutex to avoid lock-order inversions (command queue mutex vs deletion queue mutex).
+      if (m_bHasTimelineSemaphore)
+      {
+        VK_ASSERT_DEV(vkLogicalDevice.getSemaphoreCounterValueKHR(m_vkTimelineSemaphore, reinterpret_cast<uint64_t*>(&uiCompletedFenceValue), m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
       }
       else
       {
-        // ++it;
-        break;
+        m_pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&](const vk::Queue&) -> void {
+          uiCompletedFenceValue = m_pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics)->GetCompletedFenceValue();
+        });
       }
+
+      // If the entry is ready to be destroyed, lock and remove it. Otherwise we're done.
+      if (entryCopy.m_uiFenceValue <= uiCompletedFenceValue)
+      {
+        XII_LOCK(m_DeletionQueueMutex);
+
+        // Ensure the front entry still matches what we looked at earlier.
+        if (!m_DeletionQueue.IsEmpty())
+        {
+          auto& front = m_DeletionQueue.PeekFront();
+          if (front == entryCopy)
+          {
+            // Destroy the resource while holding the deletion queue mutex to keep ordering consistent.
+            if (front.m_pSemaphorePool != nullptr)
+            {
+              DestroySemaphore(front.m_pSemaphorePool, std::move(front.m_vkSemaphore));
+            }
+            else if (front.m_pDescriptorSetPool != nullptr)
+            {
+              DestroyDescriptorSetPool(front.m_pDescriptorSetPool, std::move(front.m_vkDescriptorPool));
+            }
+            else if (front.m_pFencePool != nullptr)
+            {
+              DestroyFence(front.m_pFencePool, std::move(front.m_vkFence));
+            }
+            else if (front.m_vkExternalMemory != VK_NULL_HANDLE)
+            {
+              DestroyObject(front.m_vkObjectType, front.m_pObject, front.m_vkExternalMemory);
+            }
+            else if (front.m_VulkanAllocation != VK_NULL_HANDLE)
+            {
+              DestroyObject(front.m_vkObjectType, front.m_pObject, front.m_VulkanAllocation);
+            }
+            else
+            {
+              DestroyObject(vkLogicalDevice, front.m_vkObjectType, front.m_pObject);
+            }
+
+            m_DeletionQueue.PopFront();
+            continue; // Check next entry.
+          }
+        }
+
+        // If the front changed in the meantime, restart loop.
+        continue;
+      }
+
+      // Not ready yet.
+      break;
     }
   }
 }
@@ -2929,12 +3262,12 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
     break;
     case vk::ObjectType::eBuffer:
     {
-      XII_REPORT_FAILURE("Buffer must be destroyed using the VMA allocator.");
+      XII_REPORT_FAILURE("Buffer must be destroyed using the Vulkan memory allocator or external memory semantics.");
     }
     break;
     case vk::ObjectType::eImage:
     {
-      XII_REPORT_FAILURE("Image must be destroyed using the VMA allocator.");
+      XII_REPORT_FAILURE("Image must be destroyed using the Vulkan memory allocator or external memory semantics.");
     }
     break;
     case vk::ObjectType::eEvent:
@@ -3012,18 +3345,18 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::Device vkLogic
   }
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, VmaAllocation vmaAllocation)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation)
 {
   switch (vkObjectType)
   {
     case vk::ObjectType::eBuffer:
     {
-      vmaDestroyBuffer(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Buffer&>(pObject), vmaAllocation);
+      m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyBuffer(reinterpret_cast<vk::Buffer&>(pObject), allocation);
     }
     break;
     case vk::ObjectType::eImage:
     {
-      vmaDestroyImage(m_pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<vk::Image&>(pObject), vmaAllocation);
+      m_pDeviceVulkan->m_pVulkanMemoryAllocator->DestroyImage(reinterpret_cast<vk::Image&>(pObject), allocation);
     }
     break;
 
@@ -3031,9 +3364,26 @@ void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkO
   }
 }
 
-void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyCommandBuffer(xiiGALCommandBufferPoolVulkan* pCommandBufferPool, vk::CommandBuffer&& vkCommandBuffer)
+void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroyObject(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
 {
-  pCommandBufferPool->ReclaimCommandBuffer(std::move(vkCommandBuffer));
+  vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
+  switch (vkObjectType)
+  {
+    case vk::ObjectType::eBuffer:
+    {
+      vkLogicalDevice.destroyBuffer(reinterpret_cast<vk::Buffer&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vkLogicalDevice.freeMemory(vkExternalMemory, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+    case vk::ObjectType::eImage:
+    {
+      vkLogicalDevice.destroyImage(reinterpret_cast<vk::Image&>(pObject), nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vkLogicalDevice.freeMemory(vkExternalMemory, nullptr, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
 }
 
 void xiiGALDeviceVulkan::DeferredDeletionQueue::DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore)

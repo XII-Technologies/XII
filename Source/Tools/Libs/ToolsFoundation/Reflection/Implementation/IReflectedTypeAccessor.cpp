@@ -10,7 +10,7 @@ bool xiiIReflectedTypeAccessor::GetValues(xiiStringView sProperty, xiiDynamicArr
 
   out_values.Clear();
   out_values.Reserve(keys.GetCount());
-  for (xiiVariant key : keys)
+  for (const xiiVariant& key : keys)
   {
     out_values.PushBack(GetValue(sProperty, key));
   }

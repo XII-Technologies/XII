@@ -33,7 +33,6 @@ xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& ref_testFramework) :
   m_pStatusText = new QLabel(this);
   testStatusBar->addWidget(m_pStatusText);
 
-
   // Model
   m_pModel = new xiiQtTestModel(this, m_pTestFramework);
   testTreeView->setModel(m_pModel);
@@ -59,8 +58,7 @@ xiiQtTestGUI::xiiQtTestGUI(xiiQtTestFramework& ref_testFramework) :
 
   // connect current row changed signal
   QItemSelectionModel* pSelectionModel = testTreeView->selectionModel();
-  connect(pSelectionModel, SIGNAL(currentRowChanged(const QModelIndex&, const QModelIndex&)), this,
-          SLOT(onSelectionModelCurrentRowChanged(const QModelIndex&)));
+  connect(pSelectionModel, SIGNAL(currentRowChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(onSelectionModelCurrentRowChanged(const QModelIndex&)));
 
   // Sync actions with test framework settings
   TestSettings settings = m_pTestFramework->GetSettings();
@@ -300,7 +298,7 @@ void xiiQtTestGUI::on_actionEnableOnlyThis_triggered()
 
   m_pTestFramework->SetAllTestsEnabledStatus(false);
 
-  for (auto idx : testTreeView->selectionModel()->selectedIndexes())
+  for (auto& idx : testTreeView->selectionModel()->selectedIndexes())
   {
     // Need to set data on column 0
     CurrentIndex = m_pModel->index(idx.row(), 0, idx.parent());
@@ -575,40 +573,50 @@ void xiiQtTestGUI::EnableAllParents(const QModelIndex& index)
 
 void xiiQtTestGUI::SetDarkTheme()
 {
-  // return;
   QApplication::setStyle(QStyleFactory::create("fusion"));
-  // return;
+
   QPalette palette;
 
-  palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
-  palette.setColor(QPalette::Button, QColor(50, 50, 50, 255));
-  palette.setColor(QPalette::Light, QColor(60, 60, 60, 255));
-  palette.setColor(QPalette::Midlight, QColor(59, 59, 59, 255));
-  palette.setColor(QPalette::Dark, QColor(45, 45, 45, 255));
-  palette.setColor(QPalette::Mid, QColor(45, 45, 45, 255));
-  palette.setColor(QPalette::Text, QColor(200, 200, 200, 255));
-  palette.setColor(QPalette::BrightText, QColor(180, 180, 180, 255));
-  palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));
-  palette.setColor(QPalette::Base, QColor(15, 15, 15, 255));
-  palette.setColor(QPalette::AlternateBase, QColor(15, 15, 15, 255));
-  palette.setColor(QPalette::Window, QColor(25, 25, 25, 255));
-  palette.setColor(QPalette::Shadow, QColor(0, 0, 0, 255));
-  palette.setColor(QPalette::Highlight, QColor(103, 141, 178, 255));
-  palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255, 255));
-  palette.setColor(QPalette::Link, QColor(0, 0, 238, 255));
-  palette.setColor(QPalette::LinkVisited, QColor(82, 24, 139, 255));
-  QBrush NoRoleBrush(QColor(0, 0, 0, 255), Qt::NoBrush);
-  palette.setBrush(QPalette::NoRole, NoRoleBrush);
-  palette.setColor(QPalette::ToolTipBase, QColor(255, 255, 220, 255));
-  palette.setColor(QPalette::ToolTipText, QColor(0, 0, 0, 255));
-  palette.setColor(QPalette::PlaceholderText, QColor(200, 200, 200, 255).darker());
+  // Base surfaces
+  palette.setColor(QPalette::Window, QColor(28, 28, 30));        // Main window background
+  palette.setColor(QPalette::Base, QColor(18, 18, 20));          // Input fields, scene graph
+  palette.setColor(QPalette::AlternateBase, QColor(36, 36, 38)); // Alternating rows
+  palette.setColor(QPalette::Shadow, QColor(0, 0, 0));           // Property grid arrays
 
-  palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(128, 128, 128, 255));
-  palette.setColor(QPalette::Disabled, QPalette::Button, QColor(40, 40, 40, 255));
-  palette.setColor(QPalette::Disabled, QPalette::Text, QColor(105, 105, 105, 255));
-  palette.setColor(QPalette::Disabled, QPalette::BrightText, QColor(255, 255, 255, 255));
-  palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128, 255));
-  palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(86, 117, 148, 255));
+  // Text & foreground
+  palette.setColor(QPalette::WindowText, QColor(220, 220, 220));
+  palette.setColor(QPalette::Text, QColor(220, 220, 220));
+  palette.setColor(QPalette::BrightText, QColor(255, 85, 85)); // Alerts or emphasis
+  palette.setColor(QPalette::ButtonText, QColor(220, 220, 220));
+  palette.setColor(QPalette::PlaceholderText, QColor(140, 140, 140));
+
+  // Buttons & controls
+  palette.setColor(QPalette::Button, QColor(40, 40, 42)); // Toolbuttons, dashboard
+  palette.setColor(QPalette::Light, QColor(60, 60, 60));  // Tab lines, gradients
+  palette.setColor(QPalette::Midlight, QColor(55, 55, 55));
+  palette.setColor(QPalette::Dark, QColor(35, 35, 35)); // Underlines, separators
+  palette.setColor(QPalette::Mid, QColor(45, 45, 45));  // Group box outlines
+
+  // Highlights & links
+  palette.setColor(QPalette::Highlight, QColor(0, 122, 204)); // Selection blue
+  palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255));
+  palette.setColor(QPalette::Link, QColor(0, 122, 204));
+  palette.setColor(QPalette::LinkVisited, QColor(128, 100, 162));
+
+  // Tooltips
+  palette.setColor(QPalette::ToolTipBase, QColor(255, 255, 240));
+  palette.setColor(QPalette::ToolTipText, QColor(0, 0, 0));
+
+  // Disabled state
+  palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(128, 128, 128));
+  palette.setColor(QPalette::Disabled, QPalette::Button, QColor(35, 35, 35));
+  palette.setColor(QPalette::Disabled, QPalette::Text, QColor(105, 105, 105));
+  palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128));
+  palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(70, 90, 110));
+  palette.setColor(QPalette::Disabled, QPalette::BrightText, QColor(255, 255, 255));
+
+  // NoRole fallback
+  palette.setBrush(QPalette::NoRole, QBrush(QColor(0, 0, 0), Qt::NoBrush));
 
   QApplication::setPalette(palette);
 }

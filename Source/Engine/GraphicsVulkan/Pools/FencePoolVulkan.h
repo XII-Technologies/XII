@@ -2,6 +2,11 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+namespace vk
+{
+  class Fence;
+}
+
 class XII_GRAPHICSVULKAN_DLL xiiGALFencePoolVulkan
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALFencePoolVulkan);
@@ -22,7 +27,7 @@ private:
 
   xiiGALDeviceVulkan* m_pDeviceVulkan;
 
-  xiiMutex                   m_PoolMutex;
+  mutable xiiMutex           m_PoolMutex;
   xiiDynamicArray<vk::Fence> m_Fences;
   xiiDeque<vk::Fence>        m_QueuedFences;
 };

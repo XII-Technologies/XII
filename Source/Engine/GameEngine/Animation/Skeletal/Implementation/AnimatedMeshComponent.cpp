@@ -163,7 +163,7 @@ xiiMeshRenderData* xiiAnimatedMeshComponent::CreateRenderData() const
   auto pRenderData               = xiiCreateRenderDataForThisFrame<xiiSkinnedMeshRenderData>(GetOwner());
   pRenderData->m_GlobalTransform = m_RootTransform;
 
-  pRenderData->m_hSkinningTransforms = m_SkinningState.m_hGpuBuffer;
+  pRenderData->m_pSkinningTransforms = m_SkinningState.m_pGpuBuffer;
 
   return pRenderData;
 }

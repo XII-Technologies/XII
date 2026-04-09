@@ -1,6 +1,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Components/RenderComponent.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
@@ -25,7 +26,7 @@ xiiRenderComponent::~xiiRenderComponent() = default;
 
 void xiiRenderComponent::Deinitialize()
 {
-  xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+  GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
 
   SUPER::Deinitialize();
 }
@@ -37,8 +38,13 @@ void xiiRenderComponent::OnActivated()
 
 void xiiRenderComponent::OnDeactivated()
 {
-  // Can't call TriggerLocalBoundsUpdate because it checks whether we are active, which is not the case anymore.
-  GetOwner()->UpdateLocalBounds();
+  // Only update the local bounds if the owner is still active, if not no other components are active anymore and the bounds update would be pointless.
+  // The bounds will be updated when the owner is re-activated anyway.
+  if (GetOwner()->IsActive())
+  {
+    // Can't call TriggerLocalBoundsUpdate because it checks whether we are active, which is not the case anymore.
+    GetOwner()->UpdateLocalBounds();
+  }
 }
 
 void xiiRenderComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
@@ -67,7 +73,7 @@ void xiiRenderComponent::InvalidateCachedRenderData()
 {
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 

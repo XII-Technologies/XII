@@ -2,7 +2,7 @@
 
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Meshes/InstancedMeshComponent.h>
-#include <GraphicsCore/Pipeline/InstanceDataProvider.h>
+#include <GraphicsCore/Pipeline/InstanceData.h>
 #include <GraphicsCore/Utils/WorldGeoExtractionUtil.h>
 
 #include <Core/WorldSerializer/WorldReader.h>
@@ -19,7 +19,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiMeshInstanceData, xiiNoBase, 1, xiiRTTIDefaul
     XII_ACCESSOR_PROPERTY("LocalRotation", GetLocalRotation, SetLocalRotation),
     XII_ACCESSOR_PROPERTY("LocalScaling", GetLocalScaling, SetLocalScaling)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(1.0f, 1.0f, 1.0f))),
 
-    XII_MEMBER_PROPERTY("Color", m_color)
+    XII_MEMBER_PROPERTY("Color", m_Colour)
   }
   XII_END_PROPERTIES;
 
@@ -67,7 +67,7 @@ xiiResult                       xiiMeshInstanceData::Serialize(xiiStreamWriter& 
   ref_writer.WriteVersion(s_MeshInstanceDataVersion);
 
   ref_writer << m_transform;
-  ref_writer << m_color;
+  ref_writer << m_Colour;
 
   return XII_SUCCESS;
 }
@@ -77,7 +77,7 @@ xiiResult xiiMeshInstanceData::Deserialize(xiiStreamReader& ref_reader)
   /*auto version = */ ref_reader.ReadVersion(s_MeshInstanceDataVersion);
 
   ref_reader >> m_transform;
-  ref_reader >> m_color;
+  ref_reader >> m_Colour;
 
   return XII_SUCCESS;
 }
@@ -124,33 +124,35 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   if (m_RequireUpdate.IsEmpty())
     return;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice>      pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*             pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList> pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
 
-  if (auto pCommandQueue = pDevice->GetDefaultCommandQueue())
+  pCommandList->Begin();
   {
-    auto pCommandList = pCommandQueue->BeginCommandList();
-
     pCommandList->BeginDebugGroup("Update Instanced Mesh Data");
     {
       for (const auto& componentToUpdate : m_RequireUpdate)
       {
-        xiiInstancedMeshComponent* pComp = nullptr;
-        if (!TryGetComponent(componentToUpdate.m_hComponent, pComp))
+        xiiInstancedMeshComponent* pInstancedMeshComponent = nullptr;
+        if (!TryGetComponent(componentToUpdate.m_hComponent, pInstancedMeshComponent))
           continue;
 
-        if (pComp->m_pExplicitInstanceData)
+        if (pInstancedMeshComponent->m_pExplicitInstanceData)
         {
-          xiiUInt32 uiOffset     = 0;
-          auto      instanceData = pComp->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
-          instanceData.CopyFrom(componentToUpdate.m_InstanceData);
+          xiiUInt32                       uiOffset      = 0;
+          xiiArrayPtr<xiiPerInstanceData> pInstanceData = pInstancedMeshComponent->m_pExplicitInstanceData->GetInstanceData(componentToUpdate.m_InstanceData.GetCount(), uiOffset);
+          pInstanceData.CopyFrom(componentToUpdate.m_InstanceData);
 
-          pComp->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, instanceData.GetCount());
+          pInstancedMeshComponent->m_pExplicitInstanceData->UpdateInstanceData(pCommandList, pInstanceData.GetCount());
         }
       }
     }
     pCommandList->EndDebugGroup();
-    pCommandList->Submit();
   }
+  pCommandList->End();
+
+  pCommandQueue->Submit(pCommandList);
 
   m_RequireUpdate.Clear();
 }
@@ -347,7 +349,7 @@ xiiArrayPtr<xiiPerInstanceData> xiiInstancedMeshComponent::GetInstanceData() con
     instanceData[i].GameObjectID         = GetUniqueIdForRendering();
     instanceData[i].BoundingSphereRadius = fBoundingSphereRadius * m_RawInstancedData[i].m_transform.GetMaxScale();
 
-    instanceData[i].Color = m_Color * m_RawInstancedData[i].m_color;
+    instanceData[i].Color = m_Color * m_RawInstancedData[i].m_Colour;
   }
 
   return instanceData;

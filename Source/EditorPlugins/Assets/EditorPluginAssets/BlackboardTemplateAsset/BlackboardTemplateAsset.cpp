@@ -31,7 +31,7 @@ xiiStatus xiiBlackboardTemplateAssetDocument::WriteAsset(xiiStreamWriter& inout_
   XII_SUCCEED_OR_RETURN(RetrieveState(GetProperties(), desc));
   XII_SUCCEED_OR_RETURN(desc.Serialize(inout_stream));
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiBlackboardTemplateAssetDocument::RetrieveState(const xiiBlackboardTemplateAssetObject* pProp, xiiBlackboardTemplateResourceDescriptor& inout_Desc) const
@@ -74,7 +74,7 @@ xiiStatus xiiBlackboardTemplateAssetDocument::RetrieveState(const xiiBlackboardT
   next:;
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiTransformStatus xiiBlackboardTemplateAssetDocument::InternalTransformAsset(xiiStreamWriter& inout_stream, xiiStringView sOutputTag, const xiiPlatformProfile* pAssetProfile, const xiiAssetFileHeader& AssetHeader, xiiBitflags<xiiTransformFlags> transformFlags)

@@ -5,7 +5,7 @@
         "type": "git",
         "git": {
           "repositoryUrl": "https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator",
-          "commitHash": "c788c52156f3ef7bc7ab769cb03c110a53ac8fcb"
+          "commitHash": "e722e57c891a8fbe3cc73ca56c19dd76be242759"
         }
       }
     }

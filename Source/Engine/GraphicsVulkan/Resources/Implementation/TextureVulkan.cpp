@@ -1,18 +1,50 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <Foundation/System/Process.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
+#include <GraphicsVulkan/Pools/StagingBufferPoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+#  include <errno.h>
+#  include <sys/syscall.h>
+#  include <unistd.h>
+#endif
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+namespace
+{
+  XII_ALWAYS_INLINE xiiBitflags<xiiVulkanMemoryPropertyFlags> FromVkMemoryPropertyFlags(vk::MemoryPropertyFlags vkFlags)
+  {
+    xiiBitflags<xiiVulkanMemoryPropertyFlags> flags;
+
+    if (vkFlags & vk::MemoryPropertyFlagBits::eDeviceLocal)
+      flags |= xiiVulkanMemoryPropertyFlags::DeviceLocal;
+    if (vkFlags & vk::MemoryPropertyFlagBits::eHostVisible)
+      flags |= xiiVulkanMemoryPropertyFlags::HostVisible;
+    if (vkFlags & vk::MemoryPropertyFlagBits::eHostCoherent)
+      flags |= xiiVulkanMemoryPropertyFlags::HostCoherent;
+    if (vkFlags & vk::MemoryPropertyFlagBits::eHostCached)
+      flags |= xiiVulkanMemoryPropertyFlags::HostCached;
+    if (vkFlags & vk::MemoryPropertyFlagBits::eLazilyAllocated)
+      flags |= xiiVulkanMemoryPropertyFlags::LazilyAllocated;
+    if (vkFlags & vk::MemoryPropertyFlagBits::eProtected)
+      flags |= xiiVulkanMemoryPropertyFlags::Protected;
+
+    return flags;
+  }
+} // namespace
+
 vk::ImageLayout xiiGALTextureVulkan::GetVulkanImageLayout() const
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const auto&                      fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
+  xiiSharedPtr<xiiGALDeviceVulkan>                       pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  const vk::PhysicalDeviceFragmentDensityMapFeaturesEXT& fragmentDensityMap = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap;
   return xiiVulkanTypeConversions::GetImageLayout(GetResourceState(), false, fragmentDensityMap.fragmentDensityMap != vk::False);
 }
 
@@ -31,17 +63,26 @@ xiiGALTextureVulkan::~xiiGALTextureVulkan()
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkStagingBuffer), std::move(m_StagingBufferMemoryAllocation));
+  pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkExternalMemorySemaphore));
 
   // Prevent releasing the native object.
   if (m_vkImage != VK_NULL_HANDLE && m_Description.m_pExistingNativeObject == nullptr)
   {
-    pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
+    if (m_ExternalMemoryDescription.m_Type == xiiGALExternalMemoryKind::Imported)
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), VK_NULL_HANDLE, std::move(m_ImageMemoryAllocationInfo.m_vkDeviceMemory));
+    }
+    else
+    {
+      pDeviceVulkan->SafeReleaseDeviceObject(std::move(m_vkImage), std::move(m_ImageMemoryAllocation));
+    }
   }
 }
 
-xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData)
+xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
   if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_pSubResources.IsEmpty()))
   {
@@ -62,7 +103,7 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     return XII_FAILURE;
   }
 
-  const auto& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+  const xiiGALResourceFormatDescription& resourceFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
   if (m_Description.m_pExistingNativeObject != nullptr)
   {
@@ -72,24 +113,62 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
 
     return XII_SUCCESS;
   }
-  else if (m_Description.m_Usage == xiiGALResourceUsage::Immutable || m_Description.m_Usage == xiiGALResourceUsage::Default || m_Description.m_Usage == xiiGALResourceUsage::Dynamic || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+  else if (m_Description.m_Usage == xiiGALResourceUsage::Immutable || m_Description.m_Usage == xiiGALResourceUsage::Mutable || m_Description.m_Usage == xiiGALResourceUsage::Dynamic || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
   {
     vk::ImageCreateInfo vkImageCreateInfo = {};
     ComputeVkImageCreateInfo(pDeviceVulkan, m_Description, vkImageCreateInfo);
 
-    /// \todo GraphicsVulkan: Selectively utilize vk::SharingMode::eConcurrent for multiple queue family's ownership of the Vulkan image.
+    vk::ExternalMemoryImageCreateInfo vkExternalMemoryImageCreateInfo = {};
+    if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+    {
+      if (pDeviceVulkan->GetFeatures().m_NativeFence != xiiGALDeviceFeatureState::Enabled)
+      {
+        xiiLog::Error("Exportable external memory for sparse textures requires the NativeFence device feature to be enabled.");
+        return XII_FAILURE;
+      }
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+      vkExternalMemoryImageCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+      vkExternalMemoryImageCreateInfo.handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+#endif
+
+      vkExternalMemoryImageCreateInfo.pNext = vkImageCreateInfo.pNext;
+      vkImageCreateInfo.pNext               = &vkExternalMemoryImageCreateInfo;
+    }
 
     // initialLayout must be either VK_IMAGE_LAYOUT_UNDEFINED or VK_IMAGE_LAYOUT_PREINITIALIZED (11.4).
     // If it is VK_IMAGE_LAYOUT_PREINITIALIZED, then the image data can be preinitialized by the host while using this layout, and the transition away from this layout will preserve that data.
     // If it is VK_IMAGE_LAYOUT_UNDEFINED, then the contents of the data are considered to be undefined, and the transition away from this layout is not guaranteed to preserve that data.
     vkImageCreateInfo.initialLayout = vk::ImageLayout::eUndefined;
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    vk::ImageFormatProperties vkImageFormatProperties;
+    VK_ASSERT_DEBUG(pDeviceVulkan->GetVulkanPhysicalDevice().getImageFormatProperties(vkImageCreateInfo.format, vkImageCreateInfo.imageType, vkImageCreateInfo.tiling, vkImageCreateInfo.usage, vkImageCreateInfo.flags, &vkImageFormatProperties, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+#endif
+
     if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
     {
-      VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-      vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+      xiiVulkanAllocationCreateInfo allocationCreateInfo;
+      allocationCreateInfo.m_Usage = xiiVulkanMemoryUsage::Auto;
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
+      if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
+      {
+        allocationCreateInfo.m_bExportSharedAllocation = true;
+      }
+
+      if (externalMemoryKind == xiiGALExternalMemoryKind::None || externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
+      }
+      else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+
+      XII_SUCCEED_OR_RETURN(InitializeImageExternalMemoryProperties(externalMemoryKind));
 
       SetResourceState(xiiGALResourceStateFlags::Undefined);
 
@@ -97,11 +176,27 @@ xiiResult xiiGALTextureVulkan::InitPlatform(const xiiGALTextureData* pInitialDat
     }
     else
     {
-      VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-      vmaAllocationCreateInfo.requiredFlags           = bIsMemoryLess ? VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-      vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
+      xiiVulkanAllocationCreateInfo allocationCreateInfo;
+      allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
+      allocationCreateInfo.m_RequiredFlags = bIsMemoryLess ? xiiVulkanMemoryPropertyFlags::LazilyAllocated : xiiVulkanMemoryPropertyFlags::DeviceLocal;
 
-      VK_SUCCEED_OR_RETURN_XII_FAILURE(vmaCreateImage(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkImageCreateInfo*>(&vkImageCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkImage*>(&m_vkImage), &m_ImageMemoryAllocation, nullptr));
+      if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
+      {
+        allocationCreateInfo.m_bExportSharedAllocation = true;
+      }
+
+      if (externalMemoryKind == xiiGALExternalMemoryKind::None || externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->CreateImage(vkImageCreateInfo, allocationCreateInfo, m_vkImage, m_ImageMemoryAllocation, &m_ImageMemoryAllocationInfo));
+      }
+      else if (externalMemoryKind == xiiGALExternalMemoryKind::Imported)
+      {
+        vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+        VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImage(&vkImageCreateInfo, nullptr, &m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      }
+
+      XII_SUCCEED_OR_RETURN(InitializeImageExternalMemoryProperties(externalMemoryKind));
 
       if (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty())
       {
@@ -151,8 +246,9 @@ void xiiGALTextureVulkan::SetDebugNamePlatform(xiiStringView sName) const
 
 vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureData* pInitialData, const xiiGALResourceFormatDescription& formatProperties)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan      = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  const bool                       bInitializeTexture = (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty());
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  const bool                       bInitializeTexture     = (pInitialData != nullptr && !pInitialData->m_pSubResources.IsEmpty());
 
   vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
   vkStagingBufferCreateInfo.pNext                = nullptr;
@@ -199,29 +295,28 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   vkStagingBufferCreateInfo.pQueueFamilyIndices   = nullptr;
   vkStagingBufferCreateInfo.queueFamilyIndexCount = 0;
 
-  VmaAllocationCreateInfo vmaAllocationCreateInfo = {};
-  vmaAllocationCreateInfo.requiredFlags           = static_cast<VkMemoryPropertyFlags>(vkMemoryPropertyFlags);
-  vmaAllocationCreateInfo.usage                   = VMA_MEMORY_USAGE_AUTO;
-  vmaAllocationCreateInfo.flags                   = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+  xiiVulkanAllocationCreateInfo allocationCreateInfo;
+  allocationCreateInfo.m_Usage         = xiiVulkanMemoryUsage::Auto;
+  allocationCreateInfo.m_RequiredFlags = FromVkMemoryPropertyFlags(vkMemoryPropertyFlags);
+  allocationCreateInfo.m_Flags         = xiiVulkanAllocationCreateFlags::StrategyHostSequential | xiiVulkanAllocationCreateFlags::Mapped;
 
-  VmaAllocationInfo stagingBufferAllocationInfo;
-  VK_SUCCEED_OR_RETURN_LOG((vk::Result)vmaCreateBuffer(pDeviceVulkan->GetVulkanMemoryAllocator(), reinterpret_cast<const VkBufferCreateInfo*>(&vkStagingBufferCreateInfo), &vmaAllocationCreateInfo, reinterpret_cast<VkBuffer*>(&m_vkStagingBuffer), &m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
-
-  XII_ASSERT_DEV(stagingBufferAllocationInfo.pMappedData != nullptr, "");
+  xiiVulkanAllocationInfo stagingBufferAllocationInfo;
+  VK_SUCCEED_OR_RETURN_LOG(pVulkanMemoryAllocator->CreateBuffer(vkStagingBufferCreateInfo, allocationCreateInfo, m_vkStagingBuffer, m_StagingBufferMemoryAllocation, &stagingBufferAllocationInfo));
+  XII_ASSERT_DEV(stagingBufferAllocationInfo.m_pMappedData != nullptr, "");
 
   if (bInitializeTexture)
   {
-    xiiUInt32 uiSubresourceIndex = 0;
+    xiiUInt32 uiSubResourceIndex = 0;
 
     for (xiiUInt32 uiLayer = 0; uiLayer < m_Description.GetArraySize(); ++uiLayer)
     {
       for (xiiUInt32 uiMip = 0; uiMip < m_Description.m_uiMipLevels; ++uiMip)
       {
-        const xiiGALTextureSubResourceData& subresourceData                = pInitialData->m_pSubResources[uiSubresourceIndex++];
+        const xiiGALTextureSubResourceData& subResourceData                = pInitialData->m_pSubResources[uiSubResourceIndex++];
         const xiiGALMipLevelProperties      mipLevelProperty               = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
         const xiiUInt64                     uiDestinationSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, uiLayer, uiMip, s_uiStagingBufferOffsetAlignment);
 
-        xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight, mipLevelProperty.m_uiDepth, mipLevelProperty.m_uiRowSize, xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.pMappedData, uiDestinationSubresourceOffset), mipLevelProperty.m_uiRowSize, mipLevelProperty.m_uiDepthSliceSize);
+        xiiGALTextureUtilities::CopyTextureSubresource(subResourceData, mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight, mipLevelProperty.m_uiDepth, mipLevelProperty.m_uiRowSize, xiiMemoryUtils::AddByteOffset(stagingBufferAllocationInfo.m_pMappedData, uiDestinationSubresourceOffset), mipLevelProperty.m_uiRowSize, mipLevelProperty.m_uiDepthSliceSize);
       }
     }
   }
@@ -232,9 +327,11 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 {
   XII_ASSERT_DEV(m_Description.m_Usage == xiiGALResourceUsage::Sparse, "");
 
-  xiiGALDeviceVulkan*    pDeviceVulkan        = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device             vkLogicalDevice      = pDeviceVulkan->GetVulkanLogicalDevice();
-  vk::MemoryRequirements vkMemoryRequirements = vkLogicalDevice.getImageMemoryRequirements(m_vkImage, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  vk::MemoryRequirements vkMemoryRequirements;
+  vkLogicalDevice.getImageMemoryRequirements(m_vkImage, &vkMemoryRequirements, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
   // If the image was not created with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT, then pSparseMemoryRequirementCount will be set to zero.
   xiiUInt32 uiSparseRequirementCount = 0U;
@@ -286,21 +383,303 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
-    const auto&     formatProperties    = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
-    const xiiUInt32 uiByteCountPerBlock = formatProperties.GetElementSize();
-    const xiiUInt32 uiByteCountPerTile  = (m_SparseTextureProperties.m_vTileSize.x / formatProperties.m_uiBlockWidth) * (m_SparseTextureProperties.m_vTileSize.y / formatProperties.m_uiBlockHeight) * (m_SparseTextureProperties.m_vTileSize.z * m_Description.m_uiSampleCount * uiByteCountPerBlock);
+    const xiiGALResourceFormatDescription& formatProperties    = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
+    const xiiUInt32                        uiByteCountPerBlock = formatProperties.GetElementSize();
+    const xiiUInt32                        uiByteCountPerTile  = (m_SparseTextureProperties.m_vTileSize.x / formatProperties.m_uiBlockWidth) * (m_SparseTextureProperties.m_vTileSize.y / formatProperties.m_uiBlockHeight) * (m_SparseTextureProperties.m_vTileSize.z * m_Description.m_uiSampleCount * uiByteCountPerBlock);
 
     XII_ASSERT_DEBUG(uiByteCountPerTile == m_SparseTextureProperties.m_uiBlockSize, "Expected memory alignment equivalent to the block size.");
   }
 #endif
 }
 
+xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
+{
+  if (!externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+    return XII_SUCCESS;
+
+  m_ExternalMemoryDescription.m_Type = xiiGALExternalMemoryKind::None;
+
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Exportable))
+  {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    xiiVulkanAllocationInfo allocationInfo = pDeviceVulkan->GetVulkanMemoryAllocator()->GetAllocationInfo(m_ImageMemoryAllocation);
+
+    vk::MemoryGetWin32HandleInfoKHR vkGetMemoryHandleInfo = {};
+    vkGetMemoryHandleInfo.memory                          = allocationInfo.m_vkDeviceMemory;
+    vkGetMemoryHandleInfo.handleType                      = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+
+    HANDLE hNativeHandle;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getMemoryWin32HandleKHR(&vkGetMemoryHandleInfo, &hNativeHandle, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_Type              = xiiGALExternalMemoryKind::Exportable;
+    m_ExternalMemoryDescription.m_Flags             = xiiGALExternalMemoryFlags::SharedAccess;
+    m_ExternalMemoryDescription.m_uiNativeHandle    = reinterpret_cast<uintptr_t>(hNativeHandle);
+    m_ExternalMemoryDescription.m_uiProcessId       = xiiProcess::GetCurrentProcessID();
+    m_ExternalMemoryDescription.m_uiSize            = allocationInfo.m_uiSize;
+    m_ExternalMemoryDescription.m_uiMemoryTypeIndex = allocationInfo.m_uiMemoryType;
+
+    vk::ExportSemaphoreWin32HandleInfoKHR vkExportSemaphoreHandleInfo = {};
+    vkExportSemaphoreHandleInfo.dwAccess                              = GENERIC_READ | GENERIC_WRITE;
+
+    vk::ExportSemaphoreCreateInfo vkExportSemaphoreCreateInfo = {};
+    vkExportSemaphoreCreateInfo.pNext                         = &vkExportSemaphoreHandleInfo;
+    vkExportSemaphoreCreateInfo.handleTypes                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkExportSemaphoreCreateInfo.pNext                        = &vkExportSemaphoreCreateInfo;
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    HANDLE                             hSemaphoreHandle;
+    vk::SemaphoreGetWin32HandleInfoKHR vkSemaphoreGetHandleInfo = {};
+    vkSemaphoreGetHandleInfo.semaphore                          = m_vkExternalMemorySemaphore;
+    vkSemaphoreGetHandleInfo.handleType                         = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSemaphoreWin32HandleKHR(&vkSemaphoreGetHandleInfo, &hSemaphoreHandle, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hNativeHandle);
+
+#elif XII_ENABLED(XII_PLATFORM_LINUX) && defined(SYS_pidfd_getfd)
+    xiiVulkanAllocationInfo allocationInfo = pDeviceVulkan->GetVulkanMemoryAllocator()->GetAllocationInfo(m_ImageMemoryAllocation);
+
+    vk::MemoryGetFdInfoKHR vkGetMemoryFdInfo = {};
+    vkGetMemoryFdInfo.memory                 = allocationInfo.m_vkDeviceMemory;
+    vkGetMemoryFdInfo.handleType             = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+
+    xiiInt32 iFD;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getMemoryFdKHR(&vkGetMemoryFdInfo, &iFD, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_Type              = xiiGALExternalMemoryKind::Exportable;
+    m_ExternalMemoryDescription.m_Flags             = xiiGALExternalMemoryFlags::SharedAccess;
+    m_ExternalMemoryDescription.m_uiNativeHandle    = static_cast<uintptr_t>(iFD);
+    m_ExternalMemoryDescription.m_uiProcessId       = xiiProcess::GetCurrentProcessID();
+    m_ExternalMemoryDescription.m_uiSize            = allocationInfo.m_uiSize;
+    m_ExternalMemoryDescription.m_uiMemoryTypeIndex = allocationInfo.m_uiMemoryType;
+
+    vk::ExportSemaphoreCreateInfo vkExportSemaphoreCreateInfo = {};
+    vkExportSemaphoreCreateInfo.handleTypes                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+    vkSemaphoreTypeCreateInfo.pNext                          = &vkExportSemaphoreCreateInfo;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    xiiInt32                  iSemaphoreFD;
+    vk::SemaphoreGetFdInfoKHR vkSemaphoreGetFdInfo = {};
+    vkSemaphoreGetFdInfo.semaphore                 = m_vkExternalMemorySemaphore;
+    vkSemaphoreGetFdInfo.handleType                = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSemaphoreFdKHR(&vkSemaphoreGetFdInfo, &iSemaphoreFD, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = static_cast<uintptr_t>(iSemaphoreFD);
+
+#else
+    XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+  }
+  else if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
+  {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    const bool bNeedsForeignFileDescriptorsImport = m_ExternalMemoryDescription.m_uiProcessId != xiiProcess::GetCurrentProcessID();
+    if (bNeedsForeignFileDescriptorsImport)
+    {
+      HANDLE hProcess = OpenProcess(PROCESS_DUP_HANDLE, FALSE, static_cast<DWORD>(m_ExternalMemoryDescription.m_uiProcessId));
+      if (hProcess == nullptr)
+      {
+        xiiLog::Error("Failed to open process with ID {} to import external memory handle. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(GetLastError()));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0;
+
+        return XII_FAILURE;
+      }
+
+      HANDLE hDuplicatedHandleA;
+      bool   bSuccess                              = DuplicateHandle(hProcess, reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle), GetCurrentProcess(), &hDuplicatedHandleA, 0, FALSE, DUPLICATE_SAME_ACCESS);
+      m_ExternalMemoryDescription.m_uiNativeHandle = reinterpret_cast<uintptr_t>(hDuplicatedHandleA);
+      if (!bSuccess)
+      {
+        xiiLog::Error("Failed to duplicate external memory handle from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(GetLastError()));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0;
+
+        CloseHandle(hProcess);
+        return XII_FAILURE;
+      }
+
+      HANDLE hDuplicatedHandleB;
+      bSuccess                                              = DuplicateHandle(hProcess, reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle), GetCurrentProcess(), &hDuplicatedHandleB, 0, FALSE, DUPLICATE_SAME_ACCESS);
+      m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = reinterpret_cast<uintptr_t>(hDuplicatedHandleB);
+      if (!bSuccess)
+      {
+        xiiLog::Error("Failed to duplicate external semaphore handle from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(GetLastError()));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0;
+
+        CloseHandle(hProcess);
+        return XII_FAILURE;
+      }
+    }
+
+    // Import semaphore.
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    vk::ImportSemaphoreWin32HandleInfoKHR vkImportSemaphoreHandleInfo = {};
+    vkImportSemaphoreHandleInfo.semaphore                             = m_vkExternalMemorySemaphore;
+    vkImportSemaphoreHandleInfo.handleType                            = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueWin32;
+    vkImportSemaphoreHandleInfo.handle                                = reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle);
+    vkImportSemaphoreHandleInfo.flags                                 = {};
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.importSemaphoreWin32HandleKHR(&vkImportSemaphoreHandleInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Image is already created, so import memory.
+    vk::ImageMemoryRequirementsInfo2 vkImageMemoryRequirementsInfo = {};
+    vkImageMemoryRequirementsInfo.image                            = m_vkImage;
+
+    vk::MemoryRequirements2 vkMemoryRequirements2 = {};
+    vkLogicalDevice.getImageMemoryRequirements2(&vkImageMemoryRequirementsInfo, &vkMemoryRequirements2, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    XII_ASSERT_DEBUG(m_ExternalMemoryDescription.m_uiSize >= vkMemoryRequirements2.memoryRequirements.size, "Imported memory size is smaller than required.");
+
+    vk::ImportMemoryWin32HandleInfoKHR vkImportMemoryHandleInfo = {};
+    vkImportMemoryHandleInfo.handle                             = reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle);
+    vkImportMemoryHandleInfo.handleType                         = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
+    vkImportMemoryHandleInfo.pNext                              = nullptr;
+
+    vk::MemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.pNext                  = &vkImportMemoryHandleInfo;
+    vkMemoryAllocateInfo.allocationSize         = vkMemoryRequirements2.memoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex        = m_ExternalMemoryDescription.m_uiMemoryTypeIndex;
+
+    vk::DeviceMemory vkDeviceMemory;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.allocateMemory(&vkMemoryAllocateInfo, nullptr, &vkDeviceMemory, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ImageMemoryAllocation                      = {};
+    m_ImageMemoryAllocationInfo.m_vkDeviceMemory = vkDeviceMemory;
+    m_ImageMemoryAllocationInfo.m_uiOffset       = 0U;
+    m_ImageMemoryAllocationInfo.m_uiSize         = vkMemoryRequirements2.memoryRequirements.size;
+    m_ImageMemoryAllocationInfo.m_uiMemoryType   = vkMemoryAllocateInfo.memoryTypeIndex;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.bindImageMemory(m_vkImage, vkDeviceMemory, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+#elif XII_ENABLED(XII_PLATFORM_LINUX)
+    const bool bNeedsForeignFileDescriptorsImport = m_ExternalMemoryDescription.m_uiProcessId != xiiProcess::GetCurrentProcessID();
+    if (bNeedsForeignFileDescriptorsImport)
+    {
+      // On Linux, file descriptors are shared between processes, so no duplication is necessary. However, we still need to check if the process that created the external memory is still alive to avoid importing stale file descriptors.
+      xiiInt32 iProcessFD = syscall(SYS_pidfd_open, static_cast<pid_t>(m_ExternalMemoryDescription.m_uiProcessId), 0);
+      if (iProcessFD == -1)
+      {
+        xiiLog::Error("Failed to open (SYS_pidfd_open) process with ID {} to import external memory handle. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(errno));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0U;
+        return XII_FAILURE;
+      }
+      XII_SCOPE_EXIT(close(iProcessFD));
+
+      m_ExternalMemoryDescription.m_uiNativeHandle = syscall(SYS_pidfd_getfd, iProcessFD, static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeHandle), 0);
+      if (m_ExternalMemoryDescription.m_uiNativeHandle == static_cast<uintptr_t>(-1))
+      {
+        xiiLog::Error("Failed to duplicate external memory file descriptor (SYS_pidfd_getfd) from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(errno));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+        m_ExternalMemoryDescription.m_uiNativeHandle          = 0U;
+        return XII_FAILURE;
+      }
+
+      m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = syscall(SYS_pidfd_getfd, iProcessFD, static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle), 0);
+      if (m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle == static_cast<uintptr_t>(-1))
+      {
+        xiiLog::Error("Failed to duplicate external semaphore file descriptor (SYS_pidfd_getfd) from process with ID {}. Error code: {}", m_ExternalMemoryDescription.m_uiProcessId, xiiArgErrorCode(errno));
+
+        m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+        return XII_FAILURE;
+      }
+    }
+
+    // Import semaphore.
+    vk::SemaphoreTypeCreateInfoKHR vkSemaphoreTypeCreateInfo = {};
+    vkSemaphoreTypeCreateInfo.semaphoreType                  = vk::SemaphoreType::eTimeline;
+    vkSemaphoreTypeCreateInfo.initialValue                   = 0;
+
+    vk::SemaphoreCreateInfo vkSemaphoreCreateInfo = {};
+    vkSemaphoreCreateInfo.pNext                   = &vkSemaphoreTypeCreateInfo;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createSemaphore(&vkSemaphoreCreateInfo, nullptr, &m_vkExternalMemorySemaphore, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    vk::ImportSemaphoreFdInfoKHR vkImportSemaphoreFdInfo = {};
+    vkImportSemaphoreFdInfo.semaphore                    = m_vkExternalMemorySemaphore;
+    vkImportSemaphoreFdInfo.handleType                   = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+    vkImportSemaphoreFdInfo.fd                           = static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle);
+    vkImportSemaphoreFdInfo.flags                        = {};
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.importSemaphoreFdKHR(&vkImportSemaphoreFdInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Note: Importing a semaphore payload from a file descriptor does not transfer ownership of the file descriptor to the Vulkan implementation, so the application is still responsible for closing the file descriptor when it is no longer needed.
+    m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = 0U;
+
+    // Image is already created, so import memory.
+    vk::ImageMemoryRequirementsInfo2 vkImageMemoryRequirementsInfo = {};
+    vkImageMemoryRequirementsInfo.image                            = m_vkImage;
+
+    vk::MemoryRequirements2 vkMemoryRequirements2 = {};
+    vkLogicalDevice.getImageMemoryRequirements2(&vkImageMemoryRequirementsInfo, &vkMemoryRequirements2, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+    XII_ASSERT_DEBUG(m_ExternalMemoryDescription.m_uiSize >= vkMemoryRequirements2.memoryRequirements.size, "Imported memory size is smaller than required.");
+
+    vk::ImportMemoryFdInfoKHR vkImportMemoryFdInfo = {};
+    vkImportMemoryFdInfo.fd                        = static_cast<xiiInt32>(m_ExternalMemoryDescription.m_uiNativeHandle);
+    vkImportMemoryFdInfo.handleType                = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueFd;
+    vkImportMemoryFdInfo.pNext                     = nullptr;
+
+    vk::MemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.pNext                  = &vkImportMemoryFdInfo;
+    vkMemoryAllocateInfo.allocationSize         = vkMemoryRequirements2.memoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex        = m_ExternalMemoryDescription.m_uiMemoryTypeIndex;
+
+    vk::DeviceMemory vkDeviceMemory;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.allocateMemory(&vkMemoryAllocateInfo, nullptr, &vkDeviceMemory, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    m_ImageMemoryAllocation                      = {};
+    m_ImageMemoryAllocationInfo.m_vkDeviceMemory = vkDeviceMemory;
+    m_ImageMemoryAllocationInfo.m_uiOffset       = 0U;
+    m_ImageMemoryAllocationInfo.m_uiSize         = vkMemoryRequirements2.memoryRequirements.size;
+    m_ImageMemoryAllocationInfo.m_uiMemoryType   = vkMemoryAllocateInfo.memoryTypeIndex;
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.bindImageMemory(m_vkImage, vkDeviceMemory, 0, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+
+    // Note: Importing memory from a file descriptor does not transfer ownership of the file descriptor to the Vulkan implementation, so the application is still responsible for closing the file descriptor when it is no longer needed.
+    m_ExternalMemoryDescription.m_uiNativeHandle = 0U;
+
+#else
+    XII_ASSERT_NOT_IMPLEMENTED;
+#endif
+  }
+
+  return XII_SUCCESS;
+}
+
 void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALTextureCreationDescription& creationDescription, vk::ImageCreateInfo& ref_vkImageCreateInfo)
 {
-  const bool  bIsMemoryLess         = creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless);
-  const auto& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(creationDescription.m_Format);
-  const bool  bImageView2DSupported = !creationDescription.Is3D() || pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_bTextureView2DOn3DSupported;
-  const auto& vkExtensionFeatures   = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
+  const bool                             bIsMemoryLess         = creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless);
+  const xiiGALResourceFormatDescription& formatProperties      = xiiGALTextureUtilities::GetResourceFormatProperties(creationDescription.m_Format);
+  const bool                             bImageView2DSupported = !creationDescription.Is3D() || pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_TextureProperties.m_bTextureView2DOn3DSupported;
+  const auto&                            vkExtensionFeatures   = pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
   ref_vkImageCreateInfo       = vk::ImageCreateInfo();
   ref_vkImageCreateInfo.pNext = nullptr;
@@ -380,11 +759,13 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDevi
   if (creationDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    XII_ASSERT_DEV(!bIsMemoryLess, "");
+    XII_ASSERT_DEV(!bIsMemoryLess, "Expected memory-less image.");
 
     {
-      vk::PhysicalDevice   vkPhysicalDevice   = pDeviceVulkan->GetVulkanPhysicalDevice();
-      vk::FormatProperties vkFormatProperties = vkPhysicalDevice.getFormatProperties(ref_vkImageCreateInfo.format, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+      vk::PhysicalDevice vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+
+      vk::FormatProperties vkFormatProperties;
+      vkPhysicalDevice.getFormatProperties(ref_vkImageCreateInfo.format, &vkFormatProperties, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
       XII_ASSERT_DEV((vkFormatProperties.optimalTilingFeatures & (vk::FormatFeatureFlagBits::eBlitSrc | vk::FormatFeatureFlagBits::eBlitDst)) == (vk::FormatFeatureFlagBits::eBlitSrc | vk::FormatFeatureFlagBits::eBlitDst), "Automatic mipmap generation is not supported for {} as the format does not support blitting.", internalTextureFormat);
       XII_ASSERT_DEV((vkFormatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear), "Automatic mipmap generation is not supported for {} as the format does not support linear filtering.", internalTextureFormat);
@@ -418,9 +799,10 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
 {
   // Vulkan validation layers do not like uninitialized memory, so if no initial data is provided, we will clear the memory.
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
 
-	auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> void {
+  auto UploadStagingData = [&](xiiGALCommandListVulkan* pCommandListVulkan) -> void {
     vk::ImageAspectFlags imageAspectFlags = {};
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth)
     {
@@ -459,22 +841,22 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
       XII_REPORT_FAILURE("Incorrect number of subresources in Vulkan image initialization data. {} expected, while {} provided.", uiExpectedSubresourceCount, pInitialData->m_pSubResources.GetCount());
     }
 
-    xiiUInt32 uiSubresourceIndex = 0;
+    xiiUInt32 uiSubResourceIndex = 0;
 
     for (xiiUInt32 uiLayer = 0; uiLayer < vkImageCreateInfo.arrayLayers; ++uiLayer)
     {
       for (xiiUInt32 uiMip = 0; uiMip < vkImageCreateInfo.mipLevels; ++uiMip)
       {
-        const auto&              subresourceData  = pInitialData->m_pSubResources[uiSubresourceIndex];
-        vk::BufferImageCopy      vkCopyRegion     = {};
-        xiiGALMipLevelProperties mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
+        const xiiGALTextureSubResourceData& subResourceData  = pInitialData->m_pSubResources[uiSubResourceIndex];
+        vk::BufferImageCopy                 vkCopyRegion     = {};
+        xiiGALMipLevelProperties            mipLevelProperty = xiiGALTextureUtilities::GetMipLevelProperties(m_Description, uiMip);
 
         // The allocation will stay in the upload heap until the command list is reset, at which point all upload pages will be discarded.
-        auto stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);
+        xiiGALStagingBufferAllocationVulkan stagingBufferAllocation = pCommandListVulkan->GetVulkanUploadStagingBufferPool()->Allocate(mipLevelProperty.m_uiMipSize);
+        void*                               pMappedMemory           = nullptr;
 
-        void* pMappedMemory = nullptr;
-        VK_SUCCEED_OR_RETURN(vmaMapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, &pMappedMemory));
-        VK_ASSERT_DEV(vmaInvalidateAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, mipLevelProperty.m_uiMipSize));
+        VK_SUCCEED_OR_RETURN(pVulkanMemoryAllocator->MapMemory(stagingBufferAllocation.m_VulkanAllocation, &pMappedMemory));
+        VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, mipLevelProperty.m_uiMipSize));
 
         pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
@@ -495,24 +877,23 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
         vkCopyRegion.imageSubresource.baseArrayLayer = uiLayer;
         vkCopyRegion.imageSubresource.layerCount     = 1;
 
-        XII_ASSERT_DEV(subresourceData.m_uiStride == 0 || subresourceData.m_uiStride >= mipLevelProperty.m_uiRowSize, "Stride is too small.");
+        XII_ASSERT_DEV(subResourceData.m_uiStride == 0 || subResourceData.m_uiStride >= mipLevelProperty.m_uiRowSize, "Stride is too small.");
         // For compressed-block formats, mipLevelProperty.m_uiRowSize is the size of one row of blocks
-        XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride >= (mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize, "Depth stride is too small");
+        XII_ASSERT_DEV(subResourceData.m_uiDepthStride == 0 || subResourceData.m_uiDepthStride >= (mipLevelProperty.m_StorageSize.height / formatProperties.m_uiBlockHeight) * mipLevelProperty.m_uiRowSize, "Depth stride is too small");
 
         for (xiiUInt32 uiZ = 0; uiZ < mipLevelProperty.m_uiDepth; ++uiZ)
         {
           for (xiiUInt32 uiY = 0; uiY < mipLevelProperty.m_StorageSize.height; uiY += formatProperties.m_uiBlockHeight)
           {
-            // The subresourceData.m_uiStride must be the stride of one row of compressed blocks.
+            // The subResourceData.m_uiStride must be the stride of one row of compressed blocks.
             memcpy(xiiMemoryUtils::AddByteOffset(pMappedMemory, ((uiY + uiZ * mipLevelProperty.m_StorageSize.height) / xiiUInt32{formatProperties.m_uiBlockHeight}) * mipLevelProperty.m_uiRowSize),
-                   xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subresourceData.m_uiStride + uiZ * subresourceData.m_uiDepthStride),
+                   xiiMemoryUtils::AddByteOffset(subResourceData.m_pData.GetPtr(), (uiY / xiiUInt32{formatProperties.m_uiBlockHeight}) * subResourceData.m_uiStride + uiZ * subResourceData.m_uiDepthStride),
                    mipLevelProperty.m_uiRowSize);
           }
         }
 
-        VK_ASSERT_DEV(vmaFlushAllocation(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation, stagingBufferAllocation.m_uiOffset, mipLevelProperty.m_uiMipSize));
-
-        vmaUnmapMemory(pDeviceVulkan->GetVulkanMemoryAllocator(), stagingBufferAllocation.m_VmaAllocation);
+        VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(stagingBufferAllocation.m_VulkanAllocation, stagingBufferAllocation.m_uiOffset, mipLevelProperty.m_uiMipSize));
+        pVulkanMemoryAllocator->UnmapMemory(stagingBufferAllocation.m_VulkanAllocation);
 
         pCommandListVulkan->MemoryBarrier(vk::AccessFlagBits::eHostWrite, vk::AccessFlagBits::eTransferRead, vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer);
 
@@ -520,24 +901,28 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
         // dstImageLayout must be VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL or VK_IMAGE_LAYOUT_GENERAL (18.4)
         pCommandListVulkan->CopyBufferToImage(stagingBufferAllocation.m_vkBuffer, m_vkImage, vkCurrentImageLayout, xiiMakeArrayPtr(&vkCopyRegion, 1U));
 
-        ++uiSubresourceIndex;
+        ++uiSubResourceIndex;
       }
     }
 
-    XII_ASSERT_DEV(uiSubresourceIndex == pInitialData->m_pSubResources.GetCount(), "");
+    XII_ASSERT_DEV(uiSubResourceIndex == pInitialData->m_pSubResources.GetCount(), "");
   };
 
-	if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
+  if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
   {
     UploadStagingData(pCommandListVulkan);
   }
-  else if (auto pCommandQueue = pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+  else if (auto pCommandQueue = pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics))
   {
-    if (auto pImmediateCommandListVulkan = pCommandQueue->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+    if (auto pImmediateCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
     {
-      UploadStagingData(pImmediateCommandListVulkan);
+      pImmediateCommandListVulkan->Begin();
+      {
+        UploadStagingData(pImmediateCommandListVulkan);
+      }
+      pImmediateCommandListVulkan->End();
 
-      pImmediateCommandListVulkan->Submit();
+      pCommandQueue->Submit(pImmediateCommandListVulkan);
     }
   }
 }

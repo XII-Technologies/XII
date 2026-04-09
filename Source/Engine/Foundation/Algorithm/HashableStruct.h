@@ -1,30 +1,62 @@
-
 #pragma once
 
 #include <Foundation/Basics.h>
 
-
-/// \brief This class provides a base class for hashable structs (e.g. descriptor objects).
+/// \brief Curiously Recurring Template Pattern (CRTP) base for making trivially copyable structs hashable and comparable.
 ///
-/// To help with this there are two parts:
-///   1) memclear on initialization.
-///   2) a CalculateHash() function calculating the 32 bit hash of the object.
+/// This class provides automatic zero-initialization, bitwise equality, ordering, hashing, and a set of utility functions.
+/// It is designed for descriptor-style types that contain raw data (including pointers) and no dynamic allocation or polymorphic behavior.
 ///
-/// You can make your own struct hashable by deriving from xiiHashableStruct providing the type of
-/// your class / struct as the template parameter.
+/// \note Requires derived types to be trivially copyable and standard-layout.
+///
+/// \tparam DERIVED The derived struct type using CRTP.
 template <typename DERIVED>
 class xiiHashableStruct
 {
 public:
-  xiiHashableStruct();                                        // [tested]
-  xiiHashableStruct(const xiiHashableStruct<DERIVED>& other); // [tested]
+  /// \brief Default constructor. Initializes all bytes to zero.
+  constexpr xiiHashableStruct() noexcept;
 
-  void operator=(const xiiHashableStruct<DERIVED>& other); // [tested]
+  /// \brief Bitwise copy constructor.
+  xiiHashableStruct(const xiiHashableStruct& other) noexcept;
 
-  XII_ALWAYS_INLINE constexpr bool operator==(const xiiHashableStruct<DERIVED>& rhs) const = default;
+  /// \brief Bitwise assignment operator.
+  xiiHashableStruct& operator=(const xiiHashableStruct& other) noexcept;
 
-  /// \brief Calculates the 32 bit hash of the struct and returns it
-  xiiUInt32 CalculateHash() const; // [tested]
+  /// \brief Compares equality via raw byte comparison.
+  bool operator==(const xiiHashableStruct& other) const noexcept;
+
+  /// \brief Compares ordering via raw byte comparison.
+  std::strong_ordering operator<=>(const xiiHashableStruct& other) const noexcept;
+
+  /// \brief Calculates a 32-bit hash from raw bytes of the struct.
+  xiiUInt32 CalculateHash() const noexcept;
+
+  /// \brief Fills all bytes with zero.
+  void Clear() noexcept;
+
+  /// \brief Returns true if all bytes are zero.
+  bool IsZero() const noexcept;
+
+private:
+  /// \brief Deleted virtual destructor to prevent polymorphism.
+  struct NoVTable
+  {
+    virtual ~NoVTable() = delete;
+  };
+};
+
+/// \brief For use as the Hasher in STL unordered_map/unordered_set (e.g., xiiHash<MyType>).
+template <typename T, typename = void>
+struct xiiHash;
+
+template <typename T>
+struct xiiHash<T, typename std::enable_if<std::is_base_of<xiiHashableStruct<T>, T>::value>::type>
+{
+  size_t operator()(const T& v) const noexcept
+  {
+    return static_cast<size_t>(v.CalculateHash());
+  }
 };
 
 #include <Foundation/Algorithm/Implementation/HashableStruct_inl.h>

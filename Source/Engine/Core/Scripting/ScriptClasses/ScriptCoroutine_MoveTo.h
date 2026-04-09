@@ -4,9 +4,14 @@
 #include <Core/World/Declarations.h>
 #include <Foundation/Math/Easing.h>
 
+/// Script coroutine that smoothly moves a game object to a target position over time.
+///
+/// Provides interpolated movement with configurable easing curves for animation effects.
+/// The object's position is updated each frame until the target is reached or the duration expires.
 class XII_CORE_DLL xiiScriptCoroutine_MoveTo : public xiiTypedScriptCoroutine<xiiScriptCoroutine_MoveTo, xiiGameObjectHandle, xiiVec3, xiiTime, xiiEnum<xiiEasingFunction>>
 {
 public:
+  /// Initiates the move operation to the specified target position.
   void           Start(xiiGameObjectHandle hObject, const xiiVec3& vTargetPos, xiiTime duration, xiiEnum<xiiEasingFunction> easing);
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 

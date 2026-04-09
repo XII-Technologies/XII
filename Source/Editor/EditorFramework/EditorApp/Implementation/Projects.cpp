@@ -47,7 +47,11 @@ xiiResult xiiQtEditorApp::OpenProject(const char* szProject, bool bImmediate /*=
 
 void xiiQtEditorApp::SlotQueuedOpenProject(QString sProject)
 {
-  CreateOrOpenProject(false, sProject.toUtf8().data()).IgnoreResult();
+  // Don't try to execute a queued project open if we have already shutdown the editor.
+  if (m_bIsRunning)
+  {
+    CreateOrOpenProject(false, sProject.toUtf8().data()).IgnoreResult();
+  }
 }
 
 xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0)
@@ -59,7 +63,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     if (status.Failed())
     {
       // if the message is empty, the user decided not to continue, so don't show an error message in this case
-      if (!status.m_sMessage.IsEmpty())
+      if (!status.GetMessageString().IsEmpty())
       {
         xiiQtUiServices::GetSingleton()->MessageBoxStatus(status, "Opening remote project failed.");
       }
@@ -119,7 +123,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
   if (!ExistsPluginSelectionStateDDL(sProjectFile))
     CreatePluginSelectionDDL(sProjectFile, "General3D");
 
-  xiiStatus res;
+  xiiStatus res(XII_SUCCESS);
   if (bCreate)
   {
     if (m_bAnyProjectOpened)
@@ -189,7 +193,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     }
   }
 
-  if (res.m_Result.Failed())
+  if (res.Failed())
   {
     xiiStringBuilder s;
     s.SetFormat("Failed to open project:\n'{0}'", sProjectFile);
@@ -197,7 +201,6 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
     xiiQtUiServices::MessageBoxStatus(res, s);
     return XII_FAILURE;
   }
-
 
   if (m_StartupFlags.AreNoneSet(StartupFlags::SafeMode | StartupFlags::Headless))
   {
@@ -317,7 +320,7 @@ void xiiQtEditorApp::ProjectEventHandler(const xiiToolsProjectEvent& r)
             xiiQtUiServices::MessageBoxWarning(xiiFmt("<html>The compiler preferences are invalid.<br><br>\
               This project has <a href='https://xiiengine.net/pages/docs/custom-code/cpp/cpp-project-generation.html'>a dedicated C++ plugin</a> with custom code.<br><br>\
               The compiler set in the preferences does not appear to work, as a result the plugin cannot be compiled <br><br><b>Error:</b> {}</html>",
-                                                      compilerStatus.m_sMessage.GetView()));
+                                                      compilerStatus.GetMessageString().GetView()));
             break;
           }
           else if (xiiCppProject::IsBuildRequired())
@@ -492,7 +495,7 @@ void xiiQtEditorApp::SetupNewProject()
 
     if (!xiiFileSystem::ExistsFile(sPath))
     {
-      xiiWindowCreationDesc desc;
+      xiiWindowCreationDescription desc;
       desc.m_Title = xiiToolsProject::GetSingleton()->GetProjectName(false);
       desc.SaveToDDL(sPath).IgnoreResult();
     }

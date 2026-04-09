@@ -22,8 +22,8 @@ class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptCoroutineAllocator : public xiiR
 public:
   xiiVisualScriptCoroutineAllocator(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc);
 
-  void                           Deallocate(void* pObject, xiiAllocatorBase* pAllocator = nullptr) override;
-  xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override;
+  void                           Deallocate(void* pObject, xiiAllocator* pAllocator = nullptr) override;
+  xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override;
 
 private:
   xiiSharedPtr<const xiiVisualScriptGraphDescription> m_pDesc;

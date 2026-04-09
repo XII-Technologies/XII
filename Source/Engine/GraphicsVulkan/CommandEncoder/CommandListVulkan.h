@@ -4,8 +4,20 @@
 
 #include <Foundation/Algorithm/HashStream.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsVulkan/CommandEncoder/CommandListDataVulkan.h>
+
+#include <GraphicsVulkan/Pools/CommandBufferPoolVulkan.h>
+
+namespace vk
+{
+  class CommandBuffer;
+  class RenderPass;
+  class Framebuffer;
+  class Pipeline;
+  class Buffer;
+  class Image;
+} // namespace vk
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandListVulkan final : public xiiGALCommandList
 {
@@ -46,10 +58,10 @@ public:
 
   void UpdateTextureRegion(const void* pSourceData, xiiUInt64 uiSourceStride, xiiUInt64 uiSourceDepthStride, xiiGALTextureVulkan* pTextureVulkan, xiiUInt32 uiMipLevel, xiiUInt32 uiSlice, const xiiBoundingBoxU32& destinationBox);
 
-  void AddWaitSemaphore(vk::Semaphore semaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
-  void AddSignalSemaphore(vk::Semaphore semaphore, xiiUInt64 uiValue = 0ULL);
+  void AddWaitSemaphore(vk::Semaphore vkSemaphore, vk::PipelineStageFlags pipelineFlags, xiiUInt64 uiValue = 0ULL);
+  void AddSignalSemaphore(vk::Semaphore vkSemaphore, xiiUInt64 uiValue = 0ULL);
 
-  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_pUploadStagingBufferPool.Borrow(); }
+  XII_ALWAYS_INLINE xiiGALStagingBufferPoolVulkan* GetVulkanUploadStagingBufferPool() const { return m_CommandListData.m_pUploadStagingBufferPool.Borrow(); }
 
   struct CommandListState
   {
@@ -66,6 +78,38 @@ public:
     xiiUInt32       m_uiFramebufferArraySlices = 0;
     xiiUInt32       m_uiInsidePassQueries      = 0;
     xiiUInt32       m_uiOutsidePassQueries     = 0;
+    bool            m_bIsShadingRateSet        = false;
+  };
+
+  struct CommandListFlags
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      None                           = 0,
+      CommittedVertexBuffersModified = XII_BIT(0),
+      CommittedIndexBufferModified   = XII_BIT(1),
+      ShadingRateSet                 = XII_BIT(2),
+
+      Default = None
+    };
+
+    struct Bits
+    {
+      StorageType CommittedVertexBuffersModified : 1;
+      StorageType CommittedIndexBufferModified : 1;
+      StorageType ShadingRateSet : 1;
+    };
+
+    friend inline xiiBitflags<CommandListFlags> operator|(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) | xiiBitflags<CommandListFlags>(rhs));
+    }
+    friend inline xiiBitflags<CommandListFlags> operator&(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) & xiiBitflags<CommandListFlags>(rhs));
+    };
   };
 
 protected:
@@ -73,18 +117,21 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, xiiGALCommandQueueVulkan* pCommandQueueVulkan, xiiGALCommandBufferPoolVulkan* pCommandBufferPool, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListVulkan();
+
+  virtual xiiResult InitPlatform() override final;
 
 protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
 
-  virtual xiiUInt64 SubmitPlatform() override final;
+  virtual void SubmitPlatform(xiiGALCommandList* pSecondaryCommandList) override final;
 
-  virtual void SetPipelineStatePlatform(xiiSharedPtr<xiiGALPipelineState> pPipelineState) override final;
+  virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
+  virtual void PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) override final;
@@ -92,55 +139,69 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) override final;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects) override final;
 
-  virtual void      SetIndexBufferPlatform(xiiSharedPtr<xiiGALBuffer> pIndexBuffer, xiiUInt64 uiByteOffset) override final;
-  virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiSharedPtr<xiiGALBuffer>> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
-  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBuffer> pConstantBuffer) override final;
-  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView) override final;
-  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
-  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALBufferView> pBufferView) override final;
-  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
-  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiSharedPtr<xiiGALSampler> pSampler) override final;
+  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
+  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
+
+  virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
+  virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
+  virtual void      SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS) override final;
   virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode) override final;
 
-  virtual void ClearRenderTargetViewPlatform(xiiSharedPtr<xiiGALTextureView> pRenderTargetView, const xiiColor& clearColor) override final;
-  virtual void ClearDepthStencilViewPlatform(xiiSharedPtr<xiiGALTextureView> pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
+  virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor) override final;
+  virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
 
-  virtual void BeginRenderPassPlatform(xiiSharedPtr<xiiGALRenderPass> pRenderPass, xiiSharedPtr<xiiGALFramebuffer> pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) override final;
+  virtual void BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) override final;
   virtual void NextSubpassPlatform() override final;
   virtual void EndRenderPassPlatform() override final;
 
-  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex) override final;
-  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex) override final;
-  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
+  virtual void DrawPlatform(const xiiGALDrawDescription& description) override final;
+  virtual void DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description) override final;
+  virtual void DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description) override final;
+  virtual void DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description) override final;
+  virtual void DrawMeshPlatform(const xiiGALDrawMeshDescription& description) override final;
+  virtual void DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description) override final;
+  virtual void MultiDrawPlatform(const xiiGALMultiDrawDescription& description) override final;
+  virtual void MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description) override final;
 
-  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
-  virtual xiiResult DispatchIndirectPlatform(xiiSharedPtr<xiiGALBuffer> pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
+  virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description) override final;
+  virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
+  virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description) override final;
+  virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description) override final;
+  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description) override final;
+  virtual void BuildBLASPlatform(const xiiGALBuildBLASDescription& description) override final;
+  virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description) override final;
+  virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description) override final;
+  virtual void CopyTLASPlatform(const xiiGALCopyTLASDescription& description) override final;
+  virtual void WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description) override final;
+  virtual void WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description) override final;
 
-  virtual void BeginQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
-  virtual void EndQueryPlatform(xiiSharedPtr<xiiGALQuery> pQuery) override final;
+  virtual void BeginQueryPlatform(xiiGALQuery* pQuery) override final;
+  virtual void EndQueryPlatform(xiiGALQuery* pQuery) override final;
 
-  virtual void      UpdateBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData) override final;
-  virtual void      CopyBufferPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer) override final;
-  virtual void      CopyBufferRegionPlatform(xiiSharedPtr<xiiGALBuffer> pSourceBuffer, xiiUInt64 uiSourceOffset, xiiSharedPtr<xiiGALBuffer> pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) override final;
-  virtual xiiResult MapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData) override final;
-  virtual xiiResult UnmapBufferPlatform(xiiSharedPtr<xiiGALBuffer> pBuffer, xiiEnum<xiiGALMapType> mapType) override final;
+  virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData) override final;
+  virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer) override final;
+  virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) override final;
+  virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData) override final;
+  virtual xiiResult UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType) override final;
 
-  virtual void      UpdateTexturePlatform(xiiSharedPtr<xiiGALTexture> pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData) override final;
-  virtual void      CopyTexturePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture) override final;
-  virtual void      CopyTextureRegionPlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) override final;
-  virtual void      ResolveTextureSubResourcePlatform(xiiSharedPtr<xiiGALTexture> pSourceTexture, xiiSharedPtr<xiiGALTexture> pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description) override final;
-  virtual void      GenerateMipsPlatform(xiiSharedPtr<xiiGALTextureView> pTextureView) override final;
-  virtual xiiResult MapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData) override final;
-  virtual xiiResult UnmapTextureSubresourcePlatform(xiiSharedPtr<xiiGALTexture> pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
+  virtual void      UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData) override final;
+  virtual void      CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture) override final;
+  virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) override final;
+  virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description) override final;
+  virtual void      GenerateMipsPlatform(xiiGALTextureView* pTextureView) override final;
+  virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData) override final;
+  virtual xiiResult UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
+
+  virtual void SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags) override final;
 
   virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) override final;
 
-  virtual void EnqueueSignalPlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) override final;
-  virtual void DeviceWaitForFencePlatform(xiiSharedPtr<xiiGALFence> pFence, xiiUInt64 uiValue) override final;
+  virtual void EnqueueSignalPlatform(xiiGALFence* pFence, xiiUInt64 uiValue) override final;
+  virtual void DeviceWaitForFencePlatform(xiiGALFence* pFence, xiiUInt64 uiValue) override final;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
   virtual void EndDebugGroupPlatform() override final;
@@ -149,6 +210,12 @@ protected:
   virtual void InvalidateStatePlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
+
+private:
+  void PrepareForDraw();
+  void PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType);
+  void PrepareForDispatchCompute();
+  void PrepareForRayTracing();
 
 private:
   struct PipelineBarrier
@@ -167,9 +234,9 @@ private:
 
   struct MappedTextureKey
   {
-    xiiSharedPtr<xiiGALTextureVulkan> m_pTextureVulkan;
-    xiiUInt32 const                   m_uiMipLevel;
-    xiiUInt32 const                   m_uiArraySlice;
+    xiiGALTextureVulkan* m_pTextureVulkan;
+    xiiUInt32 const      m_uiMipLevel;
+    xiiUInt32 const      m_uiArraySlice;
 
     bool operator==(const MappedTextureKey& rhs) const
     {
@@ -204,8 +271,8 @@ private:
 
   struct MappedBufferKey
   {
-    xiiSharedPtr<xiiGALBufferVulkan> m_pBufferVulkan = nullptr;
-    xiiEnum<xiiGALMapType>           m_MapType;
+    xiiGALBufferVulkan*    m_pBufferVulkan = nullptr;
+    xiiEnum<xiiGALMapType> m_MapType;
 
     bool operator==(const MappedBufferKey& rhs) const
     {
@@ -239,42 +306,18 @@ private:
 
   struct FenceInfo
   {
-    xiiSharedPtr<xiiGALFenceVulkan> m_pFenceVulkan;
-    xiiUInt64                       m_uiWaitValue = 0U;
+    xiiGALFenceVulkan* m_pFenceVulkan;
+    xiiUInt64          m_uiWaitValue = 0U;
   };
 
-  struct ResourceSetBindings
-  {
-    xiiDynamicArray<xiiSharedPtr<xiiGALBufferVulkan>>      m_pBoundConstantBuffers;
-    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>  m_pBoundBufferResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundTextureResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALBufferViewVulkan>>  m_pBoundUnorderedAccessBufferResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALTextureViewVulkan>> m_pBoundUnorderedAccessTextureResourceViews;
-    xiiDynamicArray<xiiSharedPtr<xiiGALSamplerVulkan>>     m_pBoundSamplerStates;
-  };
+  xiiGALCommandBufferPoolVulkan::AutoCommandBuffer m_CommandBufferAllocation;
+  vk::CommandBuffer                                m_vkCommandBuffer;
+  xiiBitflags<CommandListFlags>                    m_CommandListFlags;
+  CommandListState                                 m_CommandListState;
+  xiiGALCommandListDataVulkan                      m_CommandListData;
 
-  xiiGALCommandBufferPoolVulkan* m_pCommandBufferPool;
-
-  vk::CommandBuffer m_vkCommandBuffer;
-  CommandListState  m_CommandListState;
-  PipelineBarrier   m_PipelineBarrier;
-
+  PipelineBarrier                         m_PipelineBarrier;
   xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
-
-  xiiSharedPtr<xiiGALTextureViewVulkan> m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  xiiSharedPtr<xiiGALTextureViewVulkan> m_pBoundDepthStencilTarget;
-  xiiUInt32                             m_uiBoundRenderTargetCount = 0U;
-
-  xiiUInt32                                                          m_uiSubpassIndex = 0U;
-  xiiStaticArray<vk::ClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> m_AttachmentClearValues;
-
-  bool m_bPipelineStateModified = false;
-
-  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
-  xiiHybridArray<vk::DescriptorSet, 4U>   m_DescriptorSets;
-  xiiDeque<vk::DescriptorBufferInfo>      m_DynamicUniformBuffers;
-  xiiHybridArray<xiiUInt32, 6U>           m_DynamicUniformBufferOffsets;
-  bool                                    m_bDescriptorsModified = false;
 
   xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
   xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
@@ -294,9 +337,4 @@ private:
 
   xiiHashTable<MappedBufferKey, MappedBuffer, MappedBufferKey::Hasher>    m_MappedBuffers;
   xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
-
-  xiiUniquePtr<xiiGALDynamicBufferPoolVulkan> m_pDynamicBufferPoolVulkan;
-  xiiUniquePtr<xiiGALStagingBufferPoolVulkan> m_pUploadStagingBufferPool;
-
-  xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

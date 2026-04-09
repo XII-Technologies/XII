@@ -271,7 +271,7 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     xiiCommandHistory* history = GetDocumentNodeManager()->GetDocument()->GetCommandHistory();
     history->StartTransaction("Move Node");
 
-    xiiStatus res;
+    xiiStatus res(XII_SUCCESS);
     for (auto pObject : moved)
     {
       xiiMoveNodeCommand move;
@@ -279,11 +279,11 @@ void xiiQtNodeScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
       auto pos      = m_Nodes[pObject]->pos();
       move.m_NewPos = xiiVec2(pos.x(), pos.y());
       res           = history->AddCommand(move);
-      if (res.m_Result.Failed())
+      if (res.Failed())
         break;
     }
 
-    if (res.m_Result.Failed())
+    if (res.Failed())
       history->CancelTransaction();
     else
       history->FinishTransaction();
@@ -498,7 +498,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
   xiiCommandHistory* history = m_pManager->GetDocument()->GetCommandHistory();
   history->StartTransaction("Add Node");
 
-  xiiStatus res;
+  xiiStatus res(XII_SUCCESS);
   {
     xiiAddObjectCommand cmd;
     cmd.m_pType         = nodeTemplate.m_pType;
@@ -506,7 +506,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
     cmd.m_Index         = -1;
 
     res = history->AddCommand(cmd);
-    if (res.m_Result.Succeeded())
+    if (res.Succeeded())
     {
       xiiMoveNodeCommand move;
       move.m_Object = cmd.m_NewObjectGuid;
@@ -516,7 +516,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
 
     for (auto& propValue : nodeTemplate.m_PropertyValues)
     {
-      if (res.m_Result.Failed())
+      if (res.Failed())
         break;
 
       xiiSetObjectPropertyCommand setCmd;
@@ -527,7 +527,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiNodeCreationTemplate& nodeTemplat
     }
   }
 
-  if (res.m_Result.Failed())
+  if (res.Failed())
     history->CancelTransaction();
   else
     history->FinishTransaction();
@@ -812,7 +812,7 @@ void xiiQtNodeScene::RemoveSelectedNodesAction()
   {
     xiiStatus res = RemoveNode(pNode);
 
-    if (res.m_Result.Failed())
+    if (res.Failed())
     {
       history->CancelTransaction();
 
@@ -884,13 +884,13 @@ void xiiQtNodeScene::ConnectPinsAction(const xiiPin& sourcePin, const xiiPin& ta
 void xiiQtNodeScene::DisconnectPinsAction(xiiQtConnection* pConnection)
 {
   xiiStatus res = m_pManager->CanDisconnect(pConnection->GetConnection());
-  if (res.m_Result.Succeeded())
+  if (res.Succeeded())
   {
     xiiCommandHistory* history = GetDocumentNodeManager()->GetDocument()->GetCommandHistory();
     history->StartTransaction("Disconnect Pins");
 
     res = xiiNodeCommands::DisconnectAndRemoveCommand(history, pConnection->GetConnection()->GetParent()->GetGuid());
-    if (res.m_Result.Failed())
+    if (res.Failed())
       history->CancelTransaction();
     else
       history->FinishTransaction();
@@ -910,7 +910,7 @@ void xiiQtNodeScene::DisconnectPinsAction(xiiQtPin* pPin)
     DisconnectPinsAction(pConnection);
   }
 
-  if (res.m_Result.Failed())
+  if (res.Failed())
     history->CancelTransaction();
   else
     history->FinishTransaction();

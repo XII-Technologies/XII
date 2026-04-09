@@ -1,0 +1,43 @@
+// XII Engine — MotionVectors.xiiShader  [NEW]
+// Pass 14: Fullscreen triangle — reconstruct world position, reproject with previous VP matrix.
+// Produces screen-space velocity in normalised device coordinates [-1,1].
+
+#include "PipelineCommon.xiiShader"
+#include "FullscreenTriangleVertexShader.h"
+#include "FullscreenTriangleInterpolator.h"
+
+cbuffer MotionVectorConstants : register(b3)
+{
+    float4x4 g_PrevViewProjectionMatrix;
+    float4x4 g_PrevInverseViewProjectionMatrix;
+    float2   g_JitterCurrent;   // current frame Halton jitter (NDC)
+    float2   g_JitterPrevious;  // previous frame Halton jitter (NDC)
+};
+
+Texture2D<float> g_SceneDepth : register(t0);
+
+struct PS_Out { float2 Velocity : SV_Target0; };
+
+PS_Out PS_MotionVectors(FullscreenInterpolators In)
+{
+    float2 uv = In.TexCoord;
+    float  rawDepth = g_SceneDepth.Sample(g_sPointClamp, uv);
+
+    // Reconstruct world position.
+    float4 clipPos   = float4(uv * 2.0f - 1.0f, rawDepth, 1.0f);
+    clipPos.y        = -clipPos.y;
+    float4 worldPos4 = mul(g_InverseViewProjectionMatrix, clipPos);
+    float3 worldPos  = worldPos4.xyz / worldPos4.w;
+
+    // Reproject to previous frame clip space.
+    float4 prevClip = mul(g_PrevViewProjectionMatrix, float4(worldPos, 1.0f));
+    float2 prevNDC  = prevClip.xy / max(prevClip.w, 1e-7f);
+    float2 currNDC  = clipPos.xy;
+
+    // Subtract jitter — ensures TAA gets clean subpixel velocity.
+    float2 velocity = (currNDC - g_JitterCurrent) - (prevNDC - g_JitterPrevious);
+
+    PS_Out o;
+    o.Velocity = velocity;
+    return o;
+}

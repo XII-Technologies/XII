@@ -3,7 +3,7 @@
 #include <Foundation/Types/ScopeExit.h>
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
-xiiEventBase<EventData, MutexType, EventType>::xiiEventBase(xiiAllocatorBase* pAllocator) :
+xiiEventBase<EventData, MutexType, EventType>::xiiEventBase(xiiAllocator* pAllocator) :
   m_EventHandlers(pAllocator)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -201,11 +201,11 @@ void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventDat
     XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
 #endif
 
-    m_uiRecursionDepth++;
+    ++m_uiRecursionDepth;
 
     // RAII to ensure correctness in case exceptions are used
     auto scopeExit = xiiMakeScopeExit([&]() {
-      m_uiRecursionDepth--;
+      --m_uiRecursionDepth;
     });
 
     // don't execute handlers that are added while we are broadcasting
@@ -242,7 +242,7 @@ void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventDat
         XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
 #endif
 
-        m_uiRecursionDepth++;
+        ++m_uiRecursionDepth;
       }
       else
       {
@@ -262,12 +262,12 @@ void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventDat
 #if XII_ENABLED(XII_COMPILER_MSVC) && _MSC_VER < 1920
       if (RecursionDepthSupported)
       {
-        m_uiRecursionDepth--;
+        --m_uiRecursionDepth;
       }
 #else
       if constexpr (RecursionDepthSupported)
       {
-        m_uiRecursionDepth--;
+        --m_uiRecursionDepth;
       }
 #endif
     });
@@ -288,7 +288,7 @@ xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent() :
 }
 
 template <typename EventData, typename MutexType, typename AllocatorWrapper, xiiEventType EventType>
-xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent(xiiAllocatorBase* pAllocator) :
+xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent(xiiAllocator* pAllocator) :
   xiiEventBase<EventData, MutexType, EventType>(pAllocator)
 {
 }

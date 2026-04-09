@@ -192,10 +192,10 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
         xiiUuid       newGuid = xiiUuid::MakeUuid();
         if (oldGuid.IsValid())
         {
-          XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid)).m_Result.Succeeded());
+          XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid)).Succeeded());
         }
 
-        XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, xiiVariant(), pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
+        XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, xiiVariant(), pProp->GetSpecificType(), newGuid).Succeeded());
 
         const xiiDocumentObject* pChild = pObject->GetChild(newGuid);
         XII_ASSERT_DEV(pChild != nullptr, "References child object does not exist!");
@@ -203,7 +203,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       else
       {
         xiiVariant value = GetVariantFromType(pProp->GetSpecificType()->GetVariantType());
-        XII_TEST_BOOL(pObjectAccessor->SetValue(pObject, pProp, value).m_Result.Succeeded());
+        XII_TEST_BOOL(pObjectAccessor->SetValue(pObject, pProp, value).Succeeded());
       }
     }
     else
@@ -211,7 +211,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags | xiiPropertyFlags::StandardType))
       {
         xiiVariant value = GetVariantFromType(pProp->GetSpecificType()->GetVariantType());
-        XII_TEST_BOOL(pObjectAccessor->SetValue(pObject, pProp, value).m_Result.Succeeded());
+        XII_TEST_BOOL(pObjectAccessor->SetValue(pObject, pProp, value).Succeeded());
       }
       else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Class))
       {
@@ -232,8 +232,8 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
 
       xiiVariant value1 = xiiReflectionUtils::GetDefaultValue(pProp, 0);
       xiiVariant value2 = GetVariantFromType(pProp->GetSpecificType()->GetVariantType());
-      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value1, 0).m_Result.Succeeded());
-      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value2, 1).m_Result.Succeeded());
+      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value1, 0).Succeeded());
+      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value2, 1).Succeeded());
     }
     else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Class))
     {
@@ -242,13 +242,13 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       pObject->GetTypeAccessor().GetValues(pProp->GetPropertyName(), currentValues);
       for (xiiInt32 i = iCurrentCount - 1; i >= 0; --i)
       {
-        XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).m_Result.Succeeded());
+        XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).Succeeded());
       }
 
       if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
         xiiUuid newGuid = xiiUuid::MakeUuid();
-        XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, 0, pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
+        XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, 0, pProp->GetSpecificType(), newGuid).Succeeded());
       }
     }
   }
@@ -267,8 +267,8 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
 
       xiiVariant value1 = xiiReflectionUtils::GetDefaultValue(pProp, "Dummy");
       xiiVariant value2 = GetVariantFromType(pProp->GetSpecificType()->GetVariantType());
-      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value1, "value1").m_Result.Succeeded());
-      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value2, "value2").m_Result.Succeeded());
+      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value1, "value1").Succeeded());
+      XII_TEST_BOOL(pObjectAccessor->InsertValue(pObject, pProp, value2, "value2").Succeeded());
     }
     else if (pProp->GetFlags().IsSet(xiiPropertyFlags::Class))
     {
@@ -277,11 +277,11 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       pObject->GetTypeAccessor().GetValues(pProp->GetPropertyName(), currentValues);
       for (xiiInt32 i = iCurrentCount - 1; i >= 0; --i)
       {
-        XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).m_Result.Succeeded());
+        XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).Succeeded());
       }
 
       xiiUuid newGuid = xiiUuid::MakeUuid();
-      XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, "value1", pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
+      XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, "value1", pProp->GetSpecificType(), newGuid).Succeeded());
     }
   }
 }
@@ -311,7 +311,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, ObjectMirror)
   pAccessor->StartTransaction("Init");
   xiiStatus                status  = pAccessor->AddObject(nullptr, (const xiiAbstractProperty*)nullptr, -1, xiiGetStaticRTTI<xiiMirrorTest>(), mirrorGuid);
   const xiiDocumentObject* pObject = pAccessor->GetObject(mirrorGuid);
-  XII_TEST_BOOL(status.m_Result.Succeeded());
+  XII_TEST_BOOL(status.Succeeded());
   pAccessor->FinishTransaction();
 
   MirrorCheck(&doc, pObject);

@@ -5,8 +5,10 @@ T xiiObjectAccessorBase::Get(const xiiDocumentObject* pObject, const xiiAbstract
 {
   xiiVariant value;
   xiiStatus  res = GetValue(pObject, pProp, value, index);
-  if (res.m_Result.Failed())
-    xiiLog::Error("GetValue failed: {0}", res.m_sMessage);
+  if (res.Failed())
+  {
+    xiiLog::Error("GetValue failed: {0}", res.GetMessageString());
+  }
   return value.ConvertTo<T>();
 }
 
@@ -15,8 +17,10 @@ T xiiObjectAccessorBase::GetByName(const xiiDocumentObject* pObject, xiiStringVi
 {
   xiiVariant value;
   xiiStatus  res = GetValueByName(pObject, sProp, value, index);
-  if (res.m_Result.Failed())
-    xiiLog::Error("GetValue failed: {0}", res.m_sMessage);
+  if (res.Failed())
+  {
+    xiiLog::Error("GetValue failed: {0}", res.GetMessageString());
+  }
   return value.ConvertTo<T>();
 }
 
@@ -24,8 +28,10 @@ inline xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject
 {
   xiiInt32  iCount = 0;
   xiiStatus res    = GetCount(pObject, pProp, iCount);
-  if (res.m_Result.Failed())
-    xiiLog::Error("GetCount failed: {0}", res.m_sMessage);
+  if (res.Failed())
+  {
+    xiiLog::Error("GetCount failed: {0}", res.GetMessageString());
+  }
   return iCount;
 }
 
@@ -33,7 +39,9 @@ inline xiiInt32 xiiObjectAccessorBase::GetCountByName(const xiiDocumentObject* p
 {
   xiiInt32  iCount = 0;
   xiiStatus res    = GetCountByName(pObject, sProp, iCount);
-  if (res.m_Result.Failed())
-    xiiLog::Error("GetCount failed: {0}", res.m_sMessage);
+  if (res.Failed())
+  {
+    xiiLog::Error("GetCount failed: {0}", res.GetMessageString());
+  }
   return iCount;
 }

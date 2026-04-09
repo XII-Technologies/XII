@@ -4,7 +4,7 @@
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Platform/Implementation/Windows/Semaphore_win.h>
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Platform/Implementation/Posix/Semaphore_posix.h>
 #else
 #  error "Semaphore is not implemented on current platform"

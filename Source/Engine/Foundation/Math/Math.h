@@ -5,7 +5,6 @@
 #include <Foundation/Math/Constants.h>
 #include <Foundation/Math/Declarations.h>
 
-
 /// \brief This namespace provides common math-functionality as functions.
 ///
 /// It is a namespace, instead of a static class, because that allows it to be extended

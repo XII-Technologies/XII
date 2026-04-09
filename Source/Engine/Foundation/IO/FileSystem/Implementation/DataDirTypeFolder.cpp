@@ -160,7 +160,7 @@ namespace xiiDataDirectory
       xiiOSFile file;
       if (file.Open(sRedirectionFile, xiiFileOpenMode::Read).Succeeded())
       {
-        xiiHybridArray<char, 1024 * 10> content;
+        xiiTemporaryHybridArray<char, 1024 * 10> content;
         content.Reserve((xiiUInt32)(file.GetFileSize() + 1));
 
         char uiTemp[4096];

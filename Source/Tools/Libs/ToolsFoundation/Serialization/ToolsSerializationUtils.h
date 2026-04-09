@@ -7,7 +7,7 @@ class xiiDocumentObjectManager;
 class xiiDocumentObject;
 class xiiRTTI;
 
-/// \brief Helper functions for serializing data
+/// \brief Provides helper functions for serializing document object types and copying properties between objects.
 ///
 /// Also check out xiiToolsReflectionUtils for related functionality.
 class XII_TOOLSFOUNDATION_DLL xiiToolsSerializationUtils
@@ -15,7 +15,9 @@ class XII_TOOLSFOUNDATION_DLL xiiToolsSerializationUtils
 public:
   using FilterFunction = xiiDelegate<bool(const xiiAbstractProperty*)>;
 
+  /// \brief Serializes the given set of types into the provided object graph.
   static void SerializeTypes(const xiiSet<const xiiRTTI*>& types, xiiAbstractObjectGraph& ref_typesGraph);
 
+  /// \brief Copies properties from a source document object to a target object, optionally filtering properties.
   static void CopyProperties(const xiiDocumentObject* pSource, const xiiDocumentObjectManager* pSourceManager, void* pTarget, const xiiRTTI* pTargetType, FilterFunction propertFilter = nullptr);
 };

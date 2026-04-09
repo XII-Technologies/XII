@@ -21,6 +21,7 @@
 
 class QWidget;
 class QObject;
+class QKeyEvent;
 
 Q_DECLARE_METATYPE(xiiUuid);
 
@@ -110,3 +111,15 @@ void operator<<(QDataStream& inout_stream, xiiDynamicArray<T>& rhs)
     inout_stream << rhs[i];
   }
 }
+
+namespace xiiQtUtils
+{
+  /// Uses keyboard layout independent scan-codes to check whether the key of the QKeyEvent represents the desired key.
+  ///
+  /// Use this when the position of the key on the keyboard is the desired aspect, not the actual character.
+  /// For example for navigation (WSAD) in a viewport.
+  ///
+  /// Assumes the standard US keyboard layout for the reference keys.
+  XII_GUIFOUNDATION_DLL bool IsEquivalentQtKey(const QKeyEvent* e, Qt::Key reference);
+
+} // namespace xiiQtUtils

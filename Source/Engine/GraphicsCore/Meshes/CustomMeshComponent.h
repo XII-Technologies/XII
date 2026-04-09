@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
-#include <GraphicsCore/Pipeline/Renderer.h>
 
 using xiiDynamicMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiDynamicMeshBufferResource>;
 using xiiCustomMeshComponentManager      = xiiComponentManager<class xiiCustomMeshComponent, xiiBlockStorageType::Compact>;
@@ -124,6 +123,6 @@ public:
   ~xiiCustomMeshRenderer();
 
   virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
-  virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
-  virtual void RenderBatch(const xiiRenderViewContext& renderContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
+  virtual void GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& ref_types) const override;
+  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 };

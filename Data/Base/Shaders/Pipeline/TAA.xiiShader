@@ -1,0 +1,98 @@
+// XII Engine — TAA.xiiShader  [NEW]
+// Pass 55: Temporal Anti-Aliasing — YCoCg AABB neighbour clamping + velocity reprojection.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer TAAConstants : register(b3)
+{
+    float  g_BlendAlpha;    // new frame weight (typically 0.1)
+    float  g_VelocityScale; // multiplier for motion vectors (typically 1.0)
+    float  g_Sharpness;     // 0-1, output CAS sharpening applied in this pass
+    uint   g_FrameIndex;
+};
+
+Texture2D<float4> g_CurrentFrame : register(t0);
+Texture2D<float4> g_HistoryFrame : register(t1);
+Texture2D<float2> g_VelocityBuf  : register(t2);
+Texture2D<float>  g_DepthBuf     : register(t3);
+RWTexture2D<float4> g_Resolved   : register(u0);
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Colour-space conversion for luminance-based neighbourhood clamping.
+// ──────────────────────────────────────────────────────────────────────────────
+float3 RGBtoYCoCg(float3 c)
+{
+    return float3(
+         0.25f*c.r + 0.5f*c.g + 0.25f*c.b,
+         0.5f *c.r - 0.5f*c.b,
+        -0.25f*c.r + 0.5f*c.g - 0.25f*c.b);
+}
+
+float3 YCoCgtoRGB(float3 c)
+{
+    float t = c.x - c.z;
+    return float3(t + c.y, c.x + c.z, t - c.y);
+}
+
+float3 ClipAABB(float3 aabbMin, float3 aabbMax, float3 historyCol)
+{
+    float3 p_clip = 0.5f * (aabbMax + aabbMin);
+    float3 e_clip = 0.5f * (aabbMax - aabbMin) + 1e-5f;
+    float3 v_clip = historyCol - p_clip;
+    float3 v_unit = v_clip / e_clip;
+    float3 a_unit = abs(v_unit);
+    float  ma     = max(a_unit.x, max(a_unit.y, a_unit.z));
+    return ma > 1.0f ? p_clip + v_clip / ma : historyCol;
+}
+
+[numthreads(8, 8, 1)]
+void CS_TAA(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims; g_Resolved.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+
+    // Dilate velocity to closest depth (sub-pixel triangle edges).
+    float2 velocity = float2(0,0);
+    float  bestDepth = 0.0f;
+    [unroll(9)]
+    for (int dx = -1; dx <= 1; ++dx)
+    for (int dy = -1; dy <= 1; ++dy)
+    {
+        float2 tapUV = uv + float2(dx, dy) / float2(dims);
+        float  d     = g_DepthBuf.SampleLevel(g_sPointClamp, tapUV, 0);
+        if (d > bestDepth) { bestDepth = d; velocity = g_VelocityBuf.SampleLevel(g_sPointClamp, tapUV, 0); }
+    }
+
+    // Current frame sample.
+    float3 curr   = g_CurrentFrame.SampleLevel(g_sLinearClamp, uv, 0).rgb;
+
+    // YCoCg 3×3 neighbourhood AABB.
+    float3 cMin = float3( 1e9,  1e9,  1e9);
+    float3 cMax = float3(-1e9, -1e9, -1e9);
+    [unroll(9)]
+    for (int sx = -1; sx <= 1; ++sx)
+    for (int sy = -1; sy <= 1; ++sy)
+    {
+        float2 tapUV = uv + float2(sx, sy) / float2(dims);
+        float3 yco   = RGBtoYCoCg(g_CurrentFrame.SampleLevel(g_sLinearClamp, tapUV, 0).rgb);
+        cMin = min(cMin, yco); cMax = max(cMax, yco);
+    }
+
+    // Reproject history.
+    float2 prevUV  = uv - velocity * g_VelocityScale * float2(0.5f, -0.5f);
+    float3 history = g_HistoryFrame.SampleLevel(g_sLinearClamp, prevUV, 0).rgb;
+
+    // Clamp history inside neighbourhood AABB.
+    float3 histYCo = RGBtoYCoCg(history);
+    histYCo = ClipAABB(cMin, cMax, histYCo);
+    history = YCoCgtoRGB(histYCo);
+
+    // Blend.
+    float  alpha   = saturate(g_BlendAlpha + 0.5f * length(velocity) * 10.0f); // more blend on fast motion
+    float3 result  = lerp(history, curr, clamp(alpha, g_BlendAlpha, 0.5f));
+
+    g_Resolved[tid.xy] = float4(max(result, 0.0f), 1.0f);
+}

@@ -94,7 +94,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  define XII_FASTCALL  __fastcall
 #  define XII_NO_INLINE __declspec(noinline)
-#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif XII_ENABLED(XII_PLATFORM_OSX) || XII_ENABLED(XII_PLATFORM_LINUX)
 #  if XII_ENABLED(XII_PLATFORM_ARCH_X86) && XII_ENABLED(XII_PLATFORM_32BIT)
 #    define XII_FASTCALL __attribute((fastcall)) // Fastcall only relevant on x86-32 and would otherwise generate warnings
 #  else

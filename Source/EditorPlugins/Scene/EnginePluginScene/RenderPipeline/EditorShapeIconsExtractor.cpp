@@ -101,7 +101,7 @@ void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject
   if (pObject->GetTags().IsSet(tagEditor) || pObject->GetTags().IsSet(tagHidden))
     return;
 
-  if (pObject->WasCreatedByPrefab())
+  if (pObject->IsShapeIconHidden())
     return;
 
   if (pObject->GetComponents().IsEmpty())
@@ -127,32 +127,32 @@ void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject
   {
     xiiSpriteRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiSpriteRenderData>(pObject);
     {
-      pRenderData->m_GlobalTransform = pObject->GetGlobalTransform();
-      pRenderData->m_GlobalBounds    = pObject->GetGlobalBounds();
-      pRenderData->m_hTexture        = pShapeIconInfo->m_hTexture;
-      pRenderData->m_fSize           = m_fSize;
-      pRenderData->m_fMaxScreenSize  = m_fMaxScreenSize;
-      pRenderData->m_fAspectRatio    = 1.0f;
-      pRenderData->m_BlendMode       = xiiSpriteBlendMode::ShapeIcon;
-      pRenderData->m_texCoordScale   = xiiVec2(1.0f);
-      pRenderData->m_texCoordOffset  = xiiVec2(0.0f);
-      pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(*pComponent);
+      pRenderData->m_GlobalTransform     = pObject->GetGlobalTransform();
+      pRenderData->m_GlobalBounds        = pObject->GetGlobalBounds();
+      pRenderData->m_hTexture            = pShapeIconInfo->m_hTexture;
+      pRenderData->m_fSize               = m_fSize;
+      pRenderData->m_fMaxScreenSize      = m_fMaxScreenSize;
+      pRenderData->m_fAspectRatio        = 1.0f;
+      pRenderData->m_BlendMode           = xiiSpriteBlendMode::ShapeIcon;
+      pRenderData->m_vTextureCoordScale  = xiiVec2(1.0f);
+      pRenderData->m_vTextureCoordOffset = xiiVec2(0.0f);
+      pRenderData->m_uiUniqueID          = xiiRenderComponent::GetUniqueIdForRendering(*pComponent);
 
       // prefer color gamma properties
       if (pShapeIconInfo->m_pColorGammaProperty != nullptr)
       {
-        pRenderData->m_color = xiiColor(pShapeIconInfo->m_pColorGammaProperty->GetValue(pComponent));
+        pRenderData->m_Colour = xiiColor(pShapeIconInfo->m_pColorGammaProperty->GetValue(pComponent));
       }
       else if (pShapeIconInfo->m_pColorProperty != nullptr)
       {
-        pRenderData->m_color = pShapeIconInfo->m_pColorProperty->GetValue(pComponent);
+        pRenderData->m_Colour = pShapeIconInfo->m_pColorProperty->GetValue(pComponent);
       }
       else
       {
-        pRenderData->m_color = pShapeIconInfo->m_FallbackColor;
+        pRenderData->m_Colour = pShapeIconInfo->m_FallbackColor;
       }
 
-      pRenderData->m_color.a = 1.0f;
+      pRenderData->m_Colour.a = 1.0f;
 
       pRenderData->FillSortingKey();
     }

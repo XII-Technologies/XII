@@ -37,7 +37,7 @@ class xiiEventBase
 {
 protected:
   /// \brief Constructor.
-  xiiEventBase(xiiAllocatorBase* pAllocator);
+  xiiEventBase(xiiAllocator* pAllocator);
   ~xiiEventBase();
 
 public:
@@ -177,7 +177,7 @@ class xiiEvent : public xiiEventBase<EventData, MutexType, EventType>
 {
 public:
   xiiEvent();
-  xiiEvent(xiiAllocatorBase* pAllocator);
+  xiiEvent(xiiAllocator* pAllocator);
 };
 
 template <typename EventData, typename MutexType = xiiNoMutex, typename AllocatorWrapper = xiiDefaultAllocatorWrapper>

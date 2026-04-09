@@ -622,7 +622,7 @@ xiiStatus xiiScene2Document::CreateLayer(xiiStringView sName, xiiUuid& out_layer
     m_LayerEvents.Broadcast(e);
   }
   out_layerGuid = pLayerDoc->GetGuid();
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiScene2Document::DeleteLayer(const xiiUuid& layerGuid)
@@ -669,7 +669,7 @@ xiiStatus xiiScene2Document::DeleteLayer(const xiiUuid& layerGuid)
     XII_VERIFY(pAccessor->RemoveObject(pObject).Succeeded(), "Failed to remove Layer.");
   }
   pAccessor->FinishTransaction();
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 const xiiUuid& xiiScene2Document::GetActiveLayer() const
@@ -683,7 +683,7 @@ xiiStatus xiiScene2Document::SetActiveLayer(const xiiUuid& layerGuid)
   XII_ASSERT_DEV(!m_pSceneCommandHistory || !m_pSceneCommandHistory->IsInTransaction(), "Active layer must not be changed while an operation is in progress.");
 
   if (layerGuid == m_ActiveLayerGuid)
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   m_ActiveLayerGoEvUnsubscriber.Unsubscribe();
 
@@ -776,7 +776,7 @@ xiiStatus xiiScene2Document::SetActiveLayer(const xiiUuid& layerGuid)
   {
     m_pLayerSelection->SetSelection(pLayerObject);
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 bool xiiScene2Document::IsLayerLoaded(const xiiUuid& layerGuid) const
@@ -812,7 +812,7 @@ xiiStatus xiiScene2Document::SetLayerLoaded(const xiiUuid& layerGuid, bool bLoad
   }
 
   if ((pInfo->m_pLayer != nullptr) == bLoaded)
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
 
   if (bLoaded)
   {
@@ -855,7 +855,7 @@ xiiStatus xiiScene2Document::SetLayerLoaded(const xiiUuid& layerGuid, bool bLoad
         m_LayerEvents.Broadcast(e);
       }
 
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
     }
     else
     {
@@ -865,7 +865,7 @@ xiiStatus xiiScene2Document::SetLayerLoaded(const xiiUuid& layerGuid, bool bLoad
   else
   {
     if (pInfo->m_pLayer == nullptr)
-      return xiiStatus(XII_SUCCESS);
+      return XII_SUCCESS;
 
     // Unload document (save and close)
     xiiDocumentManager* pManager = pInfo->m_pLayer->GetDocumentManager();
@@ -877,7 +877,7 @@ xiiStatus xiiScene2Document::SetLayerLoaded(const xiiUuid& layerGuid, bool bLoad
     // e.m_layerGuid = layerGuid;
     // m_LayerEvents.Broadcast(e);
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 }
 
@@ -928,7 +928,7 @@ xiiStatus xiiScene2Document::SetLayerVisible(const xiiUuid& layerGuid, bool bVis
       }
       SendLayerVisibility();
     }
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return xiiStatus("Unknown layer.");
 }
@@ -971,4 +971,16 @@ bool xiiScene2Document::IsAnyLayerModified() const
   }
 
   return false;
+}
+
+void xiiScene2Document::SetSwitchLayerToSelection(bool bEnable)
+{
+  if (m_bSwitchLayerToSelection == bEnable)
+    return;
+
+  m_bSwitchLayerToSelection = bEnable;
+
+  xiiScene2LayerEvent e;
+  e.m_Type = xiiScene2LayerEvent::Type::SettingsChanged;
+  m_LayerEvents.Broadcast(e);
 }

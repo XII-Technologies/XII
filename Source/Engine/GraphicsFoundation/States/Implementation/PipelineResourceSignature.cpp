@@ -4,7 +4,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALPipelineResourceFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::NoDynamicBuffers),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::CombinedSampler),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineResourceFlags::Formattedbuffer),
@@ -28,15 +27,15 @@ bool xiiGALPipelineResourceSignature::IsCompatibleWith(const xiiGALPipelineResou
   if (pPipelineResourceSignature == this)
     return true;
 
-  const auto& sourceDescription  = GetDescription();
-  const auto& compareDescription = pPipelineResourceSignature->GetDescription();
+  const xiiGALPipelineResourceSignatureCreationDescription& sourceDescription  = GetDescription();
+  const xiiGALPipelineResourceSignatureCreationDescription& compareDescription = pPipelineResourceSignature->GetDescription();
 
-  for (const auto& resource : compareDescription.m_Resources)
+  for (const xiiGALPipelineResourceDescription& resource : compareDescription.m_Resources)
   {
     if (!sourceDescription.m_Resources.Contains(resource))
       return false;
   }
-  for (const auto& immutableSampler : compareDescription.m_ImmutableSamplers)
+  for (const xiiGALImmutableSamplerDescription& immutableSampler : compareDescription.m_ImmutableSamplers)
   {
     if (!sourceDescription.m_ImmutableSamplers.Contains(immutableSampler))
       return false;

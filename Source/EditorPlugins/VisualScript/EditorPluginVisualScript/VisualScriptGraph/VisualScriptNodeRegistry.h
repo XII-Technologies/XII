@@ -106,16 +106,17 @@ private:
 
   const xiiRTTI* RegisterNodeType(xiiReflectedTypeDescriptor& typeDesc, NodeDesc&& nodeDesc, const xiiHashedString& sCategory);
 
-  const xiiRTTI*                   m_pBaseType            = nullptr;
-  const xiiRTTI*                   m_pSetPropertyType     = nullptr;
-  const xiiRTTI*                   m_pGetPropertyType     = nullptr;
-  const xiiRTTI*                   m_pSetVariableType     = nullptr;
-  const xiiRTTI*                   m_pGetVariableType     = nullptr;
-  bool                             m_bBuiltinTypesCreated = false;
-  xiiMap<const xiiRTTI*, NodeDesc> m_TypeToNodeDescs;
-  xiiHashSet<const xiiRTTI*>       m_ExposedTypes;
+  const xiiRTTI*                         m_pBaseType            = nullptr;
+  const xiiRTTI*                         m_pSetPropertyType     = nullptr;
+  const xiiRTTI*                         m_pGetPropertyType     = nullptr;
+  const xiiRTTI*                         m_pSetVariableType     = nullptr;
+  const xiiRTTI*                         m_pGetVariableType     = nullptr;
+  bool                                   m_bBuiltinTypesCreated = false;
+  xiiHashTable<const xiiRTTI*, NodeDesc> m_TypeToNodeDescs;
+  xiiHashSet<const xiiRTTI*>             m_ExposedTypes;
+  xiiHashSet<const xiiRTTI*>             m_TypesToUpdate;
 
   xiiDynamicArray<NodeCreationTemplate> m_NodeCreationTemplates;
   xiiDynamicArray<xiiNodePropertyValue> m_PropertyValues;
-  xiiDeque<xiiString>                   m_PropertyNodeTypeNames;
+  xiiSet<xiiString>                     m_PropertyNodeTypeNames;
 };

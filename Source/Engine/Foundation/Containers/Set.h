@@ -93,10 +93,10 @@ public:
 
 protected:
   /// \brief Initializes the set to be empty.
-  xiiSetBase(const Comparer& comparer, xiiAllocatorBase* pAllocator); // [tested]
+  xiiSetBase(const Comparer& comparer, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies all keys from the given set into this one.
-  xiiSetBase(const xiiSetBase<KeyType, Comparer>& cc, xiiAllocatorBase* pAllocator); // [tested]
+  xiiSetBase(const xiiSetBase<KeyType, Comparer>& cc, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destroys all elements in the set.
   ~xiiSetBase(); // [tested]
@@ -162,7 +162,7 @@ public:
   void Intersection(const xiiSetBase<KeyType, Comparer>& operand); // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const { return m_Elements.GetAllocator(); }
+  xiiAllocator* GetAllocator() const { return m_Elements.GetAllocator(); }
 
   /// \brief Comparison operator
   bool operator==(const xiiSetBase<KeyType, Comparer>& rhs) const; // [tested]
@@ -236,8 +236,8 @@ class xiiSet : public xiiSetBase<KeyType, Comparer>
 {
 public:
   xiiSet();
-  explicit xiiSet(xiiAllocatorBase* pAllocator);
-  xiiSet(const Comparer& comparer, xiiAllocatorBase* pAllocator);
+  explicit xiiSet(xiiAllocator* pAllocator);
+  xiiSet(const Comparer& comparer, xiiAllocator* pAllocator);
 
   xiiSet(const xiiSet<KeyType, Comparer, AllocatorWrapper>& other);
   xiiSet(const xiiSetBase<KeyType, Comparer>& other);

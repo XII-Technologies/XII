@@ -21,7 +21,7 @@ public:
   /// \brief Creates a shared ptr from a pointer and an allocator. The passed allocator will be used to destroy the instance when the shared
   /// ptr goes out of scope.
   template <typename U>
-  xiiSharedPtr(U* pInstance, xiiAllocatorBase* pAllocator);
+  xiiSharedPtr(U* pInstance, xiiAllocator* pAllocator);
 
   /// \brief Copy constructs a shared ptr from another. Both will hold a reference to the managed object afterwards.
   xiiSharedPtr(const xiiSharedPtr<T>& other);
@@ -116,7 +116,7 @@ private:
   void ReleaseReferenceIfValid();
 
   T*                m_pInstance;
-  xiiAllocatorBase* m_pAllocator;
+  xiiAllocator*     m_pAllocator;
 };
 
 #include <Foundation/Types/Implementation/SharedPtr_inl.h>

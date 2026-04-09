@@ -273,5 +273,5 @@ xiiStatus xiiAssetDocumentGenerator::Import(xiiStringView sInputFileAbs, xiiStri
     }
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }

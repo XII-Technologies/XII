@@ -167,7 +167,7 @@ xiiVariant xiiDynamicDefaultStateProvider::GetDefaultValue(SuperArray superPtr, 
             pMapProp->GetKeys(pLeaf, keys);
 
             xiiVariantDictionary varDict;
-            for (auto& key : keys)
+            for (xiiString& key : keys)
             {
               if (bIsValueType)
               {
@@ -191,11 +191,11 @@ xiiVariant xiiDynamicDefaultStateProvider::GetDefaultValue(SuperArray superPtr, 
           {
             if (bIsValueType)
             {
-              defaultValue = xiiReflectionUtils::GetMapPropertyValue(pMapProp, pLeaf, index.Get<xiiString>());
+              defaultValue = xiiReflectionUtils::GetMapPropertyValue(pMapProp, pLeaf, index.ConvertTo<xiiString>());
             }
             else
             {
-              if (auto* pValue = currentDict.GetValue(index.Get<xiiString>()))
+              if (auto* pValue = currentDict.GetValue(index.ConvertTo<xiiString>()))
               {
                 defaultValue = *pValue;
               }
@@ -232,17 +232,9 @@ const xiiReflectedClass* xiiDynamicDefaultStateProvider::GetMetaInfo(xiiObjectAc
   xiiVariant value;
   if (pAccessor->GetValue(m_pRootObject, m_pClassSourceProp, value).Succeeded())
   {
-    if (value.IsA<xiiString>())
+    if (value.IsA<xiiString>() || value.IsA<xiiStringView>())
     {
-      const auto& sValue = value.Get<xiiString>();
-      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
-      {
-        return asset->m_pAssetInfo->m_Info->GetMetaInfo(m_pClassType);
-      }
-    }
-    else if (value.IsA<xiiStringView>())
-    {
-      const auto& sValue = value.Get<xiiStringView>();
+      const xiiString& sValue = value.ConvertTo<xiiString>();
       if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return asset->m_pAssetInfo->m_Info->GetMetaInfo(m_pClassType);
@@ -332,7 +324,7 @@ xiiStatus xiiDynamicDefaultStateProvider::CreateRevertContainerDiff(SuperArray s
     pPrefabSubRoot->SetType(pInstanceSubRoot->GetType());
     prefabSubGraph.ReMapNodeGuidsToMatchGraph(pPrefabSubRoot, instanceSubGraph, pInstanceSubRoot);
     prefabSubGraph.CreateDiffWithBaseGraph(instanceSubGraph, out_diff);
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
   return superPtr[0]->CreateRevertContainerDiff(superPtr.GetSubArray(1), pAccessor, pObject, pProp, out_diff);
 }

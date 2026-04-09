@@ -1,0 +1,30 @@
+// XII Engine — DepthPrepass.xiiShader  [NEW]
+// Pass 13: Full-resolution reversed-Z depth prepass via GPU-driven indirect draw.
+// Minimal VS+PS — no colour output, only depth writes.
+
+#include "PipelineCommon.xiiShader"
+
+struct VS_In
+{
+    float3 Position  : POSITION;
+    uint   InstanceID: SV_InstanceID;
+};
+
+struct VS_Out
+{
+    float4 ClipPos : SV_Position;
+};
+
+StructuredBuffer<float4x3> g_WorldMatrices : register(t0);
+
+VS_Out VS_DepthPrepass(VS_In In)
+{
+    float4x3 world = g_WorldMatrices[In.InstanceID];
+    float3 worldPos = mul(float4(In.Position, 1.0f), world).xyz;
+    VS_Out o;
+    o.ClipPos = mul(g_ViewProjectionMatrix, float4(worldPos, 1.0f));
+    return o;
+}
+
+// No pixel shader output — depth only. Clip alpha-masked surfaces here if needed.
+void PS_DepthPrepass(VS_Out In) {}

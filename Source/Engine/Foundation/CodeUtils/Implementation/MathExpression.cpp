@@ -54,7 +54,7 @@ float xiiMathExpression::Evaluate(xiiArrayPtr<Input> inputs)
     return fOutput;
   }
 
-  xiiHybridArray<xiiProcessingStream, 8> inputStreams;
+  xiiTemporaryHybridArray<xiiProcessingStream, 8> inputStreams;
   for (auto& input : inputs)
   {
     if (input.m_sName.IsEmpty())

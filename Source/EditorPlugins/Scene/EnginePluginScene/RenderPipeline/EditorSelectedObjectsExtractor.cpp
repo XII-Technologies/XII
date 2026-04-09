@@ -1,7 +1,9 @@
 #include <EnginePluginScene/EnginePluginScenePCH.h>
 
+#include <Core/GameApplication/GameApplicationBase.h>
 #include <EnginePluginScene/RenderPipeline/EditorSelectedObjectsExtractor.h>
 #include <Foundation/IO/TypeVersionContext.h>
+#include <GameEngine/Configuration/RendererProfileConfigs.h>
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
@@ -49,7 +51,7 @@ void xiiEditorSelectedObjectsExtractor::Extract(const xiiView& view, const xiiDy
     if (pSelection == nullptr)
       return;
 
-    const xiiCameraComponent* pCamComp = nullptr;
+    const xiiCameraComponent* pCameraComponent = nullptr;
 
     CreateRenderTargetTexture(view);
 
@@ -64,9 +66,9 @@ void xiiEditorSelectedObjectsExtractor::Extract(const xiiView& view, const xiiDy
       if (FilterByViewTags(view, pObject))
         continue;
 
-      if (pObject->TryGetComponentOfBaseType(pCamComp))
+      if (pObject->TryGetComponentOfBaseType(pCameraComponent))
       {
-        UpdateRenderTargetCamera(pCamComp);
+        UpdateRenderTargetCamera(pCameraComponent);
 
         const float fAspect = 9.0f / 16.0f;
 
@@ -126,17 +128,15 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetView(const xiiView& vi
 {
   XII_ASSERT_DEV(m_hRenderTargetView.IsInvalidated(), "Render target view is already created");
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
   xiiResourceLock<xiiRenderToTexture2DResource> pRenderTarget(m_hRenderTarget, xiiResourceAcquireMode::BlockTillLoaded);
 
-  xiiStringBuilder name("EditorCameraRT");
+  xiiStringBuilder sName("EditorCameraRT");
 
   xiiView* pRenderTargetView = nullptr;
-  m_hRenderTargetView        = xiiRenderWorld::CreateView(name, pRenderTargetView);
+  m_hRenderTargetView        = xiiRenderWorld::CreateView(sName, pRenderTargetView);
 
-  // MainRenderPipeline.xiiRenderPipelineAsset
-  auto hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ c533e113-2a4c-4f42-a546-653c78f5e8a7 }");
+  const auto* pConfig         = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
+  auto        hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sEditorRenderPipeline);
   pRenderTargetView->SetRenderPipelineResource(hRenderPipeline);
 
   // TODO: get rid of const cast ?
@@ -145,8 +145,8 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetView(const xiiView& vi
 
   m_RenderTargetCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 45, 0.1f, 100.0f);
 
-  xiiGALRenderTargets renderTargets;
-  renderTargets.m_hRTs[0] = pDevice->GetTexture(pRenderTarget->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  xiiRenderTargets renderTargets;
+  renderTargets.m_pRTs[0] = pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
   pRenderTargetView->SetRenderTargets(renderTargets);
 
   const float resX = (float)pRenderTarget->GetWidth();
@@ -155,21 +155,21 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetView(const xiiView& vi
   pRenderTargetView->SetViewport(xiiRectFloat(0, 0, resX, resY));
 }
 
-void xiiEditorSelectedObjectsExtractor::UpdateRenderTargetCamera(const xiiCameraComponent* pCamComp)
+void xiiEditorSelectedObjectsExtractor::UpdateRenderTargetCamera(const xiiCameraComponent* pCameraComponent)
 {
-  float fFarPlane = xiiMath::Max(pCamComp->GetNearPlane() + 0.00001f, pCamComp->GetFarPlane());
-  switch (pCamComp->GetCameraMode())
+  float fFarPlane = xiiMath::Max(pCameraComponent->GetNearPlane() + 0.00001f, pCameraComponent->GetFarPlane());
+  switch (pCameraComponent->GetCameraMode())
   {
     case xiiCameraMode::OrthoFixedHeight:
     case xiiCameraMode::OrthoFixedWidth:
-      m_RenderTargetCamera.SetCameraMode(pCamComp->GetCameraMode(), pCamComp->GetOrthoDimension(), pCamComp->GetNearPlane(), fFarPlane);
+      m_RenderTargetCamera.SetCameraMode(pCameraComponent->GetCameraMode(), pCameraComponent->GetOrthoDimension(), pCameraComponent->GetNearPlane(), fFarPlane);
       break;
     case xiiCameraMode::PerspectiveFixedFovX:
     case xiiCameraMode::PerspectiveFixedFovY:
-      m_RenderTargetCamera.SetCameraMode(pCamComp->GetCameraMode(), pCamComp->GetFieldOfView(), pCamComp->GetNearPlane(), fFarPlane);
+      m_RenderTargetCamera.SetCameraMode(pCameraComponent->GetCameraMode(), pCameraComponent->GetFieldOfView(), pCameraComponent->GetNearPlane(), fFarPlane);
       break;
     case xiiCameraMode::Stereo:
-      m_RenderTargetCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 45, pCamComp->GetNearPlane(), fFarPlane);
+      m_RenderTargetCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 45, pCameraComponent->GetNearPlane(), fFarPlane);
       break;
     default:
       break;
@@ -179,25 +179,25 @@ void xiiEditorSelectedObjectsExtractor::UpdateRenderTargetCamera(const xiiCamera
   if (!xiiRenderWorld::TryGetView(m_hRenderTargetView, pRenderTargetView))
     return;
 
-  pRenderTargetView->m_IncludeTags = pCamComp->m_IncludeTags;
-  pRenderTargetView->m_ExcludeTags = pCamComp->m_ExcludeTags;
+  pRenderTargetView->m_IncludeTags = pCameraComponent->m_IncludeTags;
+  pRenderTargetView->m_ExcludeTags = pCameraComponent->m_ExcludeTags;
   pRenderTargetView->m_ExcludeTags.SetByName("Editor");
 
-  if (pCamComp->GetRenderPipeline().IsValid())
+  if (pCameraComponent->GetRenderPipeline().IsValid())
   {
-    pRenderTargetView->SetRenderPipelineResource(pCamComp->GetRenderPipeline());
+    pRenderTargetView->SetRenderPipelineResource(pCameraComponent->GetRenderPipeline());
   }
   else
   {
-    // MainRenderPipeline.xiiRenderPipelineAsset
-    auto hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>("{ c533e113-2a4c-4f42-a546-653c78f5e8a7 }");
+    const auto* pConfig         = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
+    auto        hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sEditorRenderPipeline);
     pRenderTargetView->SetRenderPipelineResource(hRenderPipeline);
   }
 
-  const xiiVec3 pos = pCamComp->GetOwner()->GetGlobalPosition();
-  const xiiVec3 dir = pCamComp->GetOwner()->GetGlobalDirForwards();
-  const xiiVec3 up  = pCamComp->GetOwner()->GetGlobalDirUp();
+  const xiiVec3 pos = pCameraComponent->GetOwner()->GetGlobalPosition();
+  const xiiVec3 dir = pCameraComponent->GetOwner()->GetGlobalDirForwards();
+  const xiiVec3 up  = pCameraComponent->GetOwner()->GetGlobalDirUp();
 
   m_RenderTargetCamera.LookAt(pos, pos + dir, up);
-  m_RenderTargetCamera.SetExposure(pCamComp->GetExposure());
+  m_RenderTargetCamera.SetExposure(pCameraComponent->GetExposure());
 }

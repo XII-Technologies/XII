@@ -114,6 +114,9 @@ public:
   //
   //
 
+  /// \brief Returns whether we are between StartupEditor and ShutdownEditor.
+  bool IsRunning() const { return m_bIsRunning; }
+
   /// \brief Can be set via the command line option '-safe'. In this mode the editor will not automatically load recent documents
   bool IsInSafeMode() const { return m_StartupFlags.IsSet(StartupFlags::SafeMode); }
 
@@ -143,7 +146,7 @@ public:
   /// \brief Reads the list of last open documents in the current project.
   xiiRecentFilesList LoadOpenDocumentsList();
 
-  void     InitQt(int iArgc, char** pArgv);
+  void     InitQt(xiiInt32 iArgc, char** pArgv);
   void     StartupEditor();
   void     StartupEditor(xiiBitflags<StartupFlags> startupFlags, const char* szUserDataFolder = nullptr);
   void     ShutdownEditor();
@@ -235,6 +238,7 @@ private:
 
 private Q_SLOTS:
   void SlotTimedUpdate();
+  void SlotAutoSave();
   void SlotQueuedCloseProject();
   void SlotQueuedOpenProject(QString sProject);
   void SlotQueuedOpenDocument(QString sProject, void* pOpenContext);
@@ -278,6 +282,7 @@ private:
   bool m_bLoadingProjectInProgress = false;
   bool m_bAnyProjectOpened         = false;
   bool m_bWroteCrashIndicatorFile  = false;
+  bool m_bIsRunning                = false;
 
   xiiBitflags<StartupFlags>  m_StartupFlags;
   xiiDynamicArray<xiiString> m_DocumentsToOpen;
@@ -293,13 +298,14 @@ private:
   xiiRecentFilesList m_RecentProjects;
   xiiRecentFilesList m_RecentDocuments;
 
-  int                               m_iArgc          = 0;
+  xiiInt32                          m_iArgc          = 0;
   QApplication*                     m_pQtApplication = nullptr;
   xiiLongOpControllerManager        m_LongOpControllerManager;
   xiiEditorEngineProcessConnection* m_pEngineViewProcess;
   QTimer*                           m_pTimer = nullptr;
 
   QSplashScreen* m_pSplashScreen = nullptr;
+  QTimer*        m_pAutoSaveTimer;
 
   xiiLogWriter::HTML m_LogHTML;
 

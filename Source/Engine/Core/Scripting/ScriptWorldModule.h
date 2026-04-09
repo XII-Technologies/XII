@@ -10,6 +10,10 @@
 using xiiScriptClassResourceHandle = xiiTypedResourceHandle<class xiiScriptClassResource>;
 class xiiScriptInstance;
 
+/// World module responsible for script execution and coroutine management.
+///
+/// Handles the execution of script functions, manages script coroutines, and provides scheduling for script update functions.
+/// This module ensures scripts are properly integrated with the world update cycle.
 class XII_CORE_DLL xiiScriptWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
@@ -23,44 +27,55 @@ public:
   virtual void Initialize() override;
   virtual void WorldClear() override;
 
+  /// Schedules a script function to be called at regular intervals.
   void AddUpdateFunctionToSchedule(const xiiAbstractFunctionProperty* pFunction, void* pInstance, xiiTime updateInterval, bool bOnlyWhenSimulating);
+
+  /// Removes a previously scheduled script function from the scheduler.
   void RemoveUpdateFunctionToSchedule(const xiiAbstractFunctionProperty* pFunction, void* pInstance);
 
   /// \name Coroutine Functions
   ///@{
 
-  /// \brief Creates a new coroutine of pCoroutineType with the given name. If the creationMode prevents creating a new coroutine,
-  /// this function will return an invalid handle and a nullptr in out_pCoroutine if there is already a coroutine running
-  /// with the same name on the given instance.
+  /// Creates a new coroutine of the specified type with the given name.
+  ///
+  /// Returns an invalid handle if the creationMode prevents creating a new coroutine
+  /// and there is already a coroutine running with the same name on the given instance.
   xiiScriptCoroutineHandle CreateCoroutine(const xiiRTTI* pCoroutineType, xiiStringView sName, xiiScriptInstance& inout_instance, xiiScriptCoroutineCreationMode::Enum creationMode, xiiScriptCoroutine*& out_pCoroutine);
 
-  /// \brief Starts the coroutine with the given arguments. This will call the Start() function and then UpdateAndSchedule() once on the coroutine object.
+  /// Starts the coroutine with the given arguments.
+  ///
+  /// Calls the Start() function and then UpdateAndSchedule() once on the coroutine object.
   void StartCoroutine(xiiScriptCoroutineHandle hCoroutine, xiiArrayPtr<xiiVariant> arguments);
 
-  /// \brief Stops and deletes the coroutine. This will call the Stop() function and will delete the coroutine on next update of the script world module.
+  /// Stops and deletes the coroutine.
+  ///
+  /// Calls the Stop() function and deletes the coroutine on the next update cycle.
   void StopAndDeleteCoroutine(xiiScriptCoroutineHandle hCoroutine);
 
-  /// \brief Stops and deletes all coroutines with the given name on pInstance.
+  /// Stops and deletes all coroutines with the given name on the specified instance.
   void StopAndDeleteCoroutine(xiiStringView sName, xiiScriptInstance* pInstance);
 
-  /// \brief Stops and deletes all coroutines on pInstance.
+  /// Stops and deletes all coroutines on the specified instance.
   void StopAndDeleteAllCoroutines(xiiScriptInstance* pInstance);
 
-  /// \brief Returns whether the coroutine has already finished or has been stopped.
+  /// Returns whether the coroutine has finished or been stopped.
   bool IsCoroutineFinished(xiiScriptCoroutineHandle hCoroutine) const;
 
   ///@}
 
-  /// \brief Returns a expression vm that can be used in custom script implementations.
-  /// Make sure to only execute one expression at a time, the VM is NOT thread safe.
+  /// Returns a shared expression VM for custom script implementations.
+  ///
+  /// The VM is NOT thread safe - only execute one expression at a time.
   xiiExpressionVM& GetSharedExpressionVM() { return m_SharedExpressionVM; }
 
+  /// Context information for scheduled script functions.
   struct FunctionContext
   {
+    /// Flags controlling when the function should be executed.
     enum Flags : xiiUInt8
     {
-      None,
-      OnlyWhenSimulating
+      None,              ///< Execute always
+      OnlyWhenSimulating ///< Execute only during simulation
     };
 
     xiiPointerWithFlags<const xiiAbstractFunctionProperty, 1> m_pFunctionAndFlags;

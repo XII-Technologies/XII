@@ -7,62 +7,99 @@
 
 class xiiLogInterface;
 
-/// \brief A xiiResult with an additional message for the reason of failure
+/// \brief A wrapper around xiiResult that includes an optional error message.
+///
+/// The xiiStatus structure represents a success or failure state.
+/// If failure is indicated, an additional message provides context or details.
+/// Intended to be returned from functions to communicate success/failure in a structured manner.
+///
+/// Usage example:
+/// \code
+/// xiiStatus status = SomeFunction();
+/// if (status.Failed())
+///   xiiLog::Error(status.GetMessageString());
+/// \endcode
 struct [[nodiscard]] XII_FOUNDATION_DLL xiiStatus
 {
-  XII_ALWAYS_INLINE explicit xiiStatus() :
-    m_Result(XII_FAILURE)
-  {
-  }
+  /// \name Constructors
+  /// @{
 
-  // This const char* version is needed for disambiguation.
-  explicit xiiStatus(const char* szError) :
+  /// \brief Constructs a failure status with the given C-string error message.
+  XII_ALWAYS_INLINE explicit xiiStatus(const char* szError) :
     m_Result(XII_FAILURE), m_sMessage(szError)
   {
   }
 
-  explicit xiiStatus(xiiResult r, xiiStringView sError) :
-    m_Result(r), m_sMessage(sError)
-  {
-  }
-
-  explicit xiiStatus(xiiStringView sError) :
+  /// \brief Constructs a failure status with the given string view error message.
+  XII_ALWAYS_INLINE explicit xiiStatus(xiiStringView sError) :
     m_Result(XII_FAILURE), m_sMessage(sError)
   {
   }
 
-  XII_ALWAYS_INLINE xiiStatus(xiiResult r) :
-    m_Result(r)
-  {
-  }
-
+  /// \brief Constructs a failure status from a formatted string.
+  ///
+  /// Useful for creating detailed messages with placeholders using xiiFmt().
   explicit xiiStatus(const xiiFormatString& fmt);
 
-  [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_Result.Succeeded(); }
-  [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_Result.Failed(); }
-
-  /// \brief Used to silence compiler warnings, when success or failure doesn't matter.
-  XII_ALWAYS_INLINE void IgnoreResult()
+  /// \brief Constructs a status with the given result (success or failure), without a message.
+  XII_ALWAYS_INLINE xiiStatus(xiiResult result) :
+    m_Result(result)
   {
-    /* To be called when a return value is [[nodiscard]] but the result is not needed. */
   }
 
-  /// \brief If the state is XII_FAILURE, the message is written to the given log (or the currently active thread-local log).
+  /// \brief Constructs a status with the given result enum, without a message.
+  XII_ALWAYS_INLINE xiiStatus(xiiResultEnum result) :
+    m_Result(result)
+  {
+  }
+
+  /// @}
+
+  /// \name Query Functions
+  /// @{
+
+  /// \brief Returns the underlying xiiResult value.
+  [[nodiscard]] XII_ALWAYS_INLINE xiiResult GetResult() const { return m_Result; }
+
+  /// \brief Returns true if the result indicates success.
+  [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_Result.Succeeded(); }
+
+  /// \brief Returns true if the result indicates failure.
+  [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_Result.Failed(); }
+
+  /// \brief Returns the stored error message string (may be empty).
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiString& GetMessageString() const { return m_sMessage; }
+
+  /// @}
+
+  /// \name Control and Logging
+  /// @{
+
+  /// \brief Used to suppress [[nodiscard]] warnings when the result doesn't need handling.
   ///
-  /// The return value is the same as 'Failed()' but isn't marked as [[nodiscard]], ie returns true, if a failure happened.
+  /// Call this if you're intentionally ignoring the result, e.g., inside a cleanup function.
+  XII_ALWAYS_INLINE void IgnoreResult() {}
+
+  /// \brief Logs the error message if this represents a failure.
+  ///
+  /// Uses the provided log interface or falls back to the thread-local default.
+  /// Returns true if this is a failure (same as Failed()), but not marked [[nodiscard]].
   bool LogFailure(xiiLogInterface* pLog = nullptr);
 
-  /// \brief Asserts that the function succeeded. In case of failure, the program will terminate.
+  /// \brief Asserts that the status indicates success.
   ///
-  /// If \a msg is given, this will be the assert message.
-  /// Additionally m_sMessage will be included as a detailed message.
+  /// If the assertion fails, the program will terminate.
+  /// A custom message can be passed, and the internal error string is appended.
   void AssertSuccess(const char* szMsg = nullptr) const;
 
+  /// @}
+
+private:
   xiiResult m_Result;
   xiiString m_sMessage;
 };
 
 XII_ALWAYS_INLINE xiiResult xiiToResult(const xiiStatus& result)
 {
-  return result.m_Result;
+  return result.GetResult();
 }

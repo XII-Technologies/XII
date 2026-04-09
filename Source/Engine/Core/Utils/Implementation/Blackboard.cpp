@@ -50,13 +50,13 @@ xiiMutex                                                   xiiBlackboard::s_Glob
 xiiHashTable<xiiHashedString, xiiSharedPtr<xiiBlackboard>> xiiBlackboard::s_GlobalBlackboards;
 
 // static
-xiiSharedPtr<xiiBlackboard> xiiBlackboard::Create(xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::Create(xiiAllocator* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
 {
   return XII_NEW(pAllocator, xiiBlackboard, false);
 }
 
 // static
-xiiSharedPtr<xiiBlackboard> xiiBlackboard::GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocator* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
 {
   XII_LOCK(s_GlobalBlackboardsMutex);
 
@@ -210,6 +210,26 @@ xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& sName, const 
 {
   auto pEntry = m_Entries.GetValue(sName);
   return pEntry != nullptr ? pEntry->m_Value : fallback;
+}
+
+xiiResult xiiBlackboard::SetEditorIndex(const xiiTempHashedString& sName, xiiUInt8 uiEditorIndex)
+{
+  auto itEntry = m_Entries.Find(sName);
+  if (!itEntry.IsValid())
+    return XII_FAILURE;
+
+  itEntry.Value().m_uiEditorIndex = uiEditorIndex;
+  return XII_SUCCESS;
+}
+
+xiiHashedString xiiBlackboard::FindNameForEditorIndex(xiiUInt8 uiEditorIndex) const
+{
+  for (auto& e : m_Entries)
+  {
+    if (e.Value().m_uiEditorIndex == uiEditorIndex)
+      return e.Key();
+  }
+  return {};
 }
 
 xiiVariant xiiBlackboard::IncrementEntryValue(const xiiTempHashedString& sName)

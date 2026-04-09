@@ -30,6 +30,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCompiler, 1)
 #if XII_ENABLED(XII_PLATFORM_LINUX)
   XII_ENUM_CONSTANT(xiiCompiler::Gcc),
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS)
+  XII_ENUM_CONSTANT(xiiCompiler::Vs2026),
   XII_ENUM_CONSTANT(xiiCompiler::Vs2022),
 #endif
 XII_END_STATIC_REFLECTED_ENUM;
@@ -193,11 +194,13 @@ xiiString xiiCppProject::GetTargetSourceDir(xiiStringView sProjectDirectory /*= 
 
 xiiString xiiCppProject::GetGeneratorFolderName(const xiiCppSettings& cfg)
 {
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
-  switch (preferences->m_CompilerPreferences.m_Compiler.GetValue())
+  switch (pProjectPreferences->m_CompilerPreferences.m_Compiler.GetValue())
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    case xiiCompiler::Vs2026:
+      return "Vs2026x64";
     case xiiCompiler::Vs2022:
       return "Vs2022x64";
 #endif
@@ -216,10 +219,12 @@ xiiString xiiCppProject::GetCMakeGeneratorName(const xiiCppSettings& cfg)
 {
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
-  switch (preferences->m_CompilerPreferences.m_Compiler.GetValue())
+  switch (pProjectPreferences->m_CompilerPreferences.m_Compiler.GetValue())
   {
+    case xiiCompiler::Vs2026:
+      return "Visual Studio 18 2026";
     case xiiCompiler::Vs2022:
       return "Visual Studio 17 2022";
     case xiiCompiler::Clang:
@@ -255,8 +260,14 @@ xiiString xiiCppProject::GetSolutionPath(const xiiCppSettings& cfg)
   sSolutionFile = GetBuildDir(cfg);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
-  if (preferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026)
+  {
+    sSolutionFile.AppendPath(cfg.m_sPluginName);
+    sSolutionFile.Append(".slnx");
+    return sSolutionFile;
+  }
+  else if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
   {
     sSolutionFile.AppendPath(cfg.m_sPluginName);
     sSolutionFile.Append(".sln");
@@ -270,17 +281,19 @@ xiiString xiiCppProject::GetSolutionPath(const xiiCppSettings& cfg)
 
 xiiStatus xiiCppProject::OpenSolution(const xiiCppSettings& cfg)
 {
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
-  switch (preferences->m_Ide.GetValue())
+  switch (pProjectPreferences->m_Ide.GetValue())
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
     case xiiIDE::VisualStudio:
+    {
       if (!xiiQtUiServices::OpenFileInDefaultProgram(xiiCppProject::GetSolutionPath(cfg)))
       {
         return xiiStatus("Opening the solution in Visual Studio failed.");
       }
-      break;
+    }
+    break;
 #endif
     case xiiIDE::VisualStudioCode:
     {
@@ -289,13 +302,13 @@ xiiStatus xiiCppProject::OpenSolution(const xiiCppSettings& cfg)
       args.push_back(QString::fromUtf8(solutionPath.GetData(), solutionPath.GetElementCount()));
       if (xiiStatus status = xiiQtUiServices::OpenInVsCode(args); status.Failed())
       {
-        return xiiStatus(xiiFmt("Opening Visual Studio Code failed: {}", status.m_sMessage));
+        return xiiStatus(xiiFmt("Opening Visual Studio Code failed: {}", status.GetMessageString()));
       }
     }
     break;
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt32 iLineNumber)
@@ -308,11 +321,11 @@ xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt
   xiiStringBuilder sLineNumber;
   xiiConversionUtils::ToString(iLineNumber, sLineNumber);
 
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
   // Visual Studio does not expose a CLI command to open a file/line in all use-cases directly
   // therefore run a custom .vbs script which controls VS and performs the needed actions for us. This avoids pulling COM interfacing into the project.
-  if (preferences->m_CodeEditorPreferences.m_bIsVisualStudio)
+  if (pProjectPreferences->m_CodeEditorPreferences.m_bIsVisualStudio)
   {
     xiiStringBuilder dir;
     if (xiiFileSystem::ResolveSpecialDirectory(">sdk/Utilities/Scripts/open-in-msvs.vbs", dir).Failed())
@@ -337,10 +350,10 @@ xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt
       return xiiStatus("Failed to launch code editor");
     }
 
-    return xiiStatus(XII_SUCCESS);
+    return XII_SUCCESS;
   }
 
-  xiiStringBuilder sFormatString = preferences->m_CodeEditorPreferences.m_sEditorArgs;
+  xiiStringBuilder sFormatString = pProjectPreferences->m_CodeEditorPreferences.m_sEditorArgs;
   if (sFormatString.IsEmpty())
   {
     return xiiStatus("Code editor is not configured");
@@ -350,14 +363,14 @@ xiiStatus xiiCppProject::OpenInCodeEditor(const xiiStringView& sFileName, xiiInt
   sFormatString.ReplaceAll("{file}", sFileName);
 
   const QStringList args         = QProcess::splitCommand(QString::fromUtf8(sFormatString.GetData()));
-  const QString     sProgramPath = QString::fromUtf8(preferences->m_CodeEditorPreferences.m_sEditorPath.GetData());
+  const QString     sProgramPath = QString::fromUtf8(pProjectPreferences->m_CodeEditorPreferences.m_sEditorPath.GetData());
 
   QProcess proc;
   if (proc.startDetached(sProgramPath, args) == false)
   {
     return xiiStatus("Failed to launch code editor");
   }
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 xiiStringView xiiCppProject::CompilerToString(xiiCompiler::Enum compiler)
@@ -365,6 +378,8 @@ xiiStringView xiiCppProject::CompilerToString(xiiCompiler::Enum compiler)
   switch (compiler)
   {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
+    case xiiCompiler::Vs2026:
+      return "Vs2026";
     case xiiCompiler::Vs2022:
       return "Vs2022";
 #endif
@@ -388,7 +403,11 @@ xiiCompiler::Enum xiiCppProject::GetSdkCompiler()
 #elif XII_ENABLED(XII_COMPILER_GCC)
   return xiiCompiler::Gcc;
 #elif XII_ENABLED(XII_COMPILER_MSVC)
+#  if _MSC_VER >= 1950
+  return xiiCompiler::Vs2026;
+#  else
   return xiiCompiler::Vs2022;
+#  endif
 #else
 #  error Unknown compiler
 #endif
@@ -411,34 +430,32 @@ xiiString xiiCppProject::GetSdkCompilerMajorVersion()
 
 xiiStatus xiiCppProject::TestCompiler()
 {
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
-  if (preferences->m_CompilerPreferences.m_Compiler != GetSdkCompiler())
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  if (pProjectPreferences->m_CompilerPreferences.m_Compiler != GetSdkCompiler())
   {
-    return xiiStatus(xiiFmt("The currently configured compiler is incompatible with this SDK. The SDK was built with '{}' but the currently configured compiler is '{}'.", CompilerToString(GetSdkCompiler()), CompilerToString(preferences->m_CompilerPreferences.m_Compiler)));
+    return xiiStatus(xiiFmt("The currently configured compiler is incompatible with this SDK. The SDK was built with '{}' but the currently configured compiler is '{}'.", CompilerToString(GetSdkCompiler()), CompilerToString(pProjectPreferences->m_CompilerPreferences.m_Compiler)));
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   // As CMake is selecting the compiler it is hard to do a version check, for now just assume they are compatible.
-  if (GetSdkCompiler() == xiiCompiler::Vs2022)
-  {
-    return xiiStatus(XII_SUCCESS);
-  }
+  if (GetSdkCompiler() == xiiCompiler::Vs2026 || GetSdkCompiler() == xiiCompiler::Vs2022)
+    return XII_SUCCESS;
 
   if (GetSdkCompiler() == xiiCompiler::Clang)
   {
-    if (!xiiOSFile::ExistsFile(preferences->m_CompilerPreferences.m_sRcCompiler))
+    if (!xiiOSFile::ExistsFile(pProjectPreferences->m_CompilerPreferences.m_sRcCompiler))
     {
-      return xiiStatus(xiiFmt("The selected RC compiler '{}' does not exist on disk.", preferences->m_CompilerPreferences.m_sRcCompiler));
+      return xiiStatus(xiiFmt("The selected RC compiler '{}' does not exist on disk.", pProjectPreferences->m_CompilerPreferences.m_sRcCompiler));
     }
   }
 #endif
 
   xiiString cCompilerVersion, cppCompilerVersion;
-  if (TestCompilerExecutable(preferences->m_CompilerPreferences.m_sCCompiler, &cCompilerVersion).Failed())
+  if (TestCompilerExecutable(pProjectPreferences->m_CompilerPreferences.m_sCCompiler, &cCompilerVersion).Failed())
   {
     return xiiStatus("The selected C Compiler doesn't work or doesn't exist.");
   }
-  if (TestCompilerExecutable(preferences->m_CompilerPreferences.m_sCppCompiler, &cppCompilerVersion).Failed())
+  if (TestCompilerExecutable(pProjectPreferences->m_CompilerPreferences.m_sCppCompiler, &cppCompilerVersion).Failed())
   {
     return xiiStatus("The selected C++ Compiler doesn't work or doesn't exist.");
   }
@@ -454,7 +471,7 @@ xiiStatus xiiCppProject::TestCompiler()
     return xiiStatus(xiiFmt("The selected C++ Compiler has an incompatible version. The SDK was built with version {} but the compiler has version {}.", GetSdkCompilerMajorVersion(), cppCompilerVersion));
   }
 
-  return xiiStatus(XII_SUCCESS);
+  return XII_SUCCESS;
 }
 
 const char* xiiCppProject::GetCMakePath()
@@ -743,7 +760,7 @@ xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
 
   if (res.Failed())
   {
-    xiiLog::Error("CMake generation failed:\n\n{}\n{}\n", log.m_sBuffer, res.m_sMessage);
+    xiiLog::Error("CMake generation failed:\n\n{}\n{}\n", log.m_sBuffer, res.GetMessageString());
     return XII_FAILURE;
   }
 
@@ -765,9 +782,7 @@ xiiResult xiiCppProject::RunCMakeIfNecessary(const xiiCppSettings& cfg)
 
   auto userPresetResult = CheckCMakeUserPresets(cfg, false);
   if (userPresetResult == ModifyResult::FAILURE)
-  {
     return XII_FAILURE;
-  }
 
   if (xiiCppProject::ExistsSolution(cfg) && xiiCppProject::CheckCMakeCache(cfg).Succeeded() && userPresetResult == ModifyResult::NOT_MODIFIED)
     return XII_SUCCESS;
@@ -799,9 +814,9 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   po.AddArgument("--build");
   po.AddArgument(GetBuildDir(cfg));
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
-  if (preferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
+  if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026 || pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
   {
     po.AddArgument("--config");
     po.AddArgument(BUILDSYSTEM_BUILDTYPE);
@@ -811,11 +826,15 @@ xiiResult xiiCppProject::CompileSolution(const xiiCppSettings& cfg)
   po.m_bHideConsoleWindow = true;
   po.m_onStdOut           = [&](xiiStringView sText) {
     if (sText.FindSubString_NoCase("error") != nullptr)
+    {
       errors.PushBack(sText);
+    }
   };
   po.m_onStdError = [&](xiiStringView sText) {
     if (sText.FindSubString_NoCase("error") != nullptr)
+    {
       errors.PushBack(sText);
+    }
   };
 
   xiiStringBuilder sCMakeBuildCmd;
@@ -1018,7 +1037,7 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
   if (!configurePresets)
     return ModifyResult::FAILURE;
 
-  const xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  const xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
   for (auto& preset : *configurePresets)
   {
@@ -1041,20 +1060,20 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
     Modify(*cacheVariables, "XII_BUILDTYPE_ONLY", BUILDSYSTEM_BUILDTYPE, result);
     Modify(*cacheVariables, "CMAKE_BUILD_TYPE", BUILDSYSTEM_BUILDTYPE, result);
 
-    bool needsCompilerPaths = true;
+    bool bNeedsCompilerPaths = true;
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    if (preferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
+    if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026 || pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
     {
-      needsCompilerPaths = false;
+      bNeedsCompilerPaths = false;
     }
 #endif
 
-    if (needsCompilerPaths)
+    if (bNeedsCompilerPaths)
     {
-      Modify(*cacheVariables, "CMAKE_C_COMPILER", preferences->m_CompilerPreferences.m_sCCompiler, result);
-      Modify(*cacheVariables, "CMAKE_CXX_COMPILER", preferences->m_CompilerPreferences.m_sCppCompiler, result);
+      Modify(*cacheVariables, "CMAKE_C_COMPILER", pProjectPreferences->m_CompilerPreferences.m_sCCompiler, result);
+      Modify(*cacheVariables, "CMAKE_CXX_COMPILER", pProjectPreferences->m_CompilerPreferences.m_sCppCompiler, result);
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-      Modify(*cacheVariables, "CMAKE_RC_COMPILER", preferences->m_CompilerPreferences.m_sRcCompiler, result);
+      Modify(*cacheVariables, "CMAKE_RC_COMPILER", pProjectPreferences->m_CompilerPreferences.m_sRcCompiler, result);
       Modify(*cacheVariables, "CMAKE_RC_COMPILER_INIT", "rc", result);
 #endif
     }
@@ -1071,7 +1090,7 @@ xiiCppProject::ModifyResult xiiCppProject::ModifyCMakeUserPresetsJson(const xiiC
     Modify(presetDict, "generator", GetCMakeGeneratorName(cfg), result);
     Modify(presetDict, "binaryDir", GetBuildDir(cfg), result);
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    if (preferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
+    if (pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2026 || pProjectPreferences->m_CompilerPreferences.m_Compiler == xiiCompiler::Vs2022)
     {
       Modify(presetDict, "architecture", "x64", result);
     }
@@ -1092,11 +1111,16 @@ xiiCppProject::xiiCppProject() :
 void xiiCppProject::LoadPreferences()
 {
   XII_PROFILE_SCOPE("Preferences");
-  auto preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  auto pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
   xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
+
+  if (sdkCompiler == xiiCompiler::Vs2026)
+  {
+    s_MachineSpecificCompilers.PushBack({"Visual Studio 2026 (system default)", xiiCompiler::Vs2026, "", "", false});
+  }
   if (sdkCompiler == xiiCompiler::Vs2022)
   {
     s_MachineSpecificCompilers.PushBack({"Visual Studio 2022 (system default)", xiiCompiler::Vs2022, "", "", false});
@@ -1104,7 +1128,7 @@ void xiiCppProject::LoadPreferences()
 
 #  if XII_ENABLED(XII_COMPILER_CLANG)
   // if the rcCompiler path is empty or points to a non existant file, try to autodetect it
-  if ((preferences->m_CompilerPreferences.m_sRcCompiler.IsEmpty() || !xiiOSFile::ExistsFile(preferences->m_CompilerPreferences.m_sRcCompiler)))
+  if ((pProjectPreferences->m_CompilerPreferences.m_sRcCompiler.IsEmpty() || !xiiOSFile::ExistsFile(pProjectPreferences->m_CompilerPreferences.m_sRcCompiler)))
   {
     xiiStringBuilder rcPath;
     HKEY             hInstalledRoots = nullptr;
@@ -1148,7 +1172,7 @@ void xiiCppProject::LoadPreferences()
     }
     if (!rcPath.IsEmpty())
     {
-      preferences->m_CompilerPreferences.m_sRcCompiler = rcPath;
+      pProjectPreferences->m_CompilerPreferences.m_sRcCompiler = rcPath;
     }
   }
 
@@ -1191,27 +1215,27 @@ void xiiCppProject::LoadPreferences()
   s_MachineSpecificCompilers.PushBack({"Gcc (Custom)", xiiCompiler::Gcc, "", "", true});
 #endif
 
-  if (preferences->m_CompilerPreferences.m_Compiler != sdkCompiler)
+  if (pProjectPreferences->m_CompilerPreferences.m_Compiler != sdkCompiler)
   {
     xiiStringBuilder incompatibleCompilerName = reinterpret_cast<const char*>(u8"⚠ ");
-    incompatibleCompilerName.SetFormat(reinterpret_cast<const char*>(u8"⚠ {} (incompatible)"), xiiCppProject::CompilerToString(preferences->m_CompilerPreferences.m_Compiler));
-    s_MachineSpecificCompilers.PushBack({incompatibleCompilerName, preferences->m_CompilerPreferences.m_Compiler, preferences->m_CompilerPreferences.m_sCCompiler, preferences->m_CompilerPreferences.m_sCppCompiler, preferences->m_CompilerPreferences.m_bCustomCompiler});
+    incompatibleCompilerName.SetFormat(reinterpret_cast<const char*>(u8"⚠ {} (incompatible)"), xiiCppProject::CompilerToString(pProjectPreferences->m_CompilerPreferences.m_Compiler));
+    s_MachineSpecificCompilers.PushBack({incompatibleCompilerName, pProjectPreferences->m_CompilerPreferences.m_Compiler, pProjectPreferences->m_CompilerPreferences.m_sCCompiler, pProjectPreferences->m_CompilerPreferences.m_sCppCompiler, pProjectPreferences->m_CompilerPreferences.m_bCustomCompiler});
   }
 }
 
 xiiResult xiiCppProject::ForceSdkCompatibleCompiler()
 {
-  xiiCppProject* preferences = xiiPreferences::QueryPreferences<xiiCppProject>();
+  xiiCppProject* pProjectPreferences = xiiPreferences::QueryPreferences<xiiCppProject>();
 
   xiiCompiler::Enum sdkCompiler = GetSdkCompiler();
   for (auto& compiler : s_MachineSpecificCompilers)
   {
     if (!compiler.m_bIsCustom && compiler.m_Compiler == sdkCompiler)
     {
-      preferences->m_CompilerPreferences.m_Compiler        = sdkCompiler;
-      preferences->m_CompilerPreferences.m_sCCompiler      = compiler.m_sCCompiler;
-      preferences->m_CompilerPreferences.m_sCppCompiler    = compiler.m_sCppCompiler;
-      preferences->m_CompilerPreferences.m_bCustomCompiler = compiler.m_bIsCustom;
+      pProjectPreferences->m_CompilerPreferences.m_Compiler        = sdkCompiler;
+      pProjectPreferences->m_CompilerPreferences.m_sCCompiler      = compiler.m_sCCompiler;
+      pProjectPreferences->m_CompilerPreferences.m_sCppCompiler    = compiler.m_sCppCompiler;
+      pProjectPreferences->m_CompilerPreferences.m_bCustomCompiler = compiler.m_bIsCustom;
 
       return XII_SUCCESS;
     }

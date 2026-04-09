@@ -6,7 +6,7 @@
  * CDockContainerWidget
  *****************************************************************************/
 ads--CDockContainerWidget {
-        background: palette(dark);
+        background: palette(window);
 }
 
 
@@ -95,7 +95,7 @@ ads--CDockWidgetTab[activeTab="true"] {
 }
 
 ads--CDockWidgetTab QLabel {
-        color: palette(dark);
+        color: palette(foreground);
 }
 
 ads--CDockWidgetTab[activeTab="true"] QLabel {
@@ -401,9 +401,9 @@ ads--CAutoHideDockContainer ads--CDockAreaWidget[focused="true"] ads--CDockAreaT
  * CAutoHideDockContainer titlebar buttons
  *****************************************************************************/
 #dockAreaAutoHideButton {
-  qproperty-icon: url(:/ads/images/vs-pin-button.svg),
-    url(:/ads/images/vs-pin-button-disabled.svg) disabled;
-  qproperty-iconSize: 16px;
+	qproperty-icon: url(:/ads/images/vs-pin-button.svg),
+		url(:/ads/images/vs-pin-button-disabled.svg) disabled;
+	qproperty-iconSize: 16px;
 }
 
 ads--CAutoHideDockContainer #dockAreaAutoHideButton {
@@ -413,8 +413,8 @@ ads--CAutoHideDockContainer #dockAreaAutoHideButton {
 
 
 ads--CAutoHideDockContainer #dockAreaMinimizeButton {
-  qproperty-icon: url(:/ads/images/minimize-button-focused.svg);
-  qproperty-iconSize: 16px;
+	qproperty-icon: url(:/ads/images/minimize-button-focused.svg);
+	qproperty-iconSize: 16px;	
 }
 
 

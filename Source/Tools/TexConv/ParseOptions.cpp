@@ -104,7 +104,7 @@ xiiCommandLineOptionEnum opt_Filter("_TexConv", "-filter", "Which texture filter
 
 xiiCommandLineOptionEnum opt_BumpMapFilter("_TexConv", "-bumpMapFilter", "Filter used to approximate the x/y bump map gradients.", "Finite = 0 | Sobel = 1 | Scharr = 2", 0);
 
-xiiCommandLineOptionEnum opt_Platform("_TexConv", "-platform", "What platform to generate the textures for.", "PC | Android", 0);
+xiiCommandLineOptionEnum opt_Platform("_TexConv", "-platform", "What platform to generate the textures for.", "PC", 0);
 
 xiiCommandLineOptionString opt_CompareHtmlTitle("_TexConv", "-cmpHtml", "Title for the compare result HTML. If empty no HTML file is written.", "");
 xiiCommandLineOptionPath   opt_CompareActual("_TexConv", "-cmpImg", "Path to an image to compare with another.", "");

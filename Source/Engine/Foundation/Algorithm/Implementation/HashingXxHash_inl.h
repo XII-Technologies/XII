@@ -21,64 +21,64 @@ namespace xiiInternal
   constexpr xiiUInt32 CompileTimeXxHash32(const char (&str)[N], xiiUInt32 uiSeed)
   {
     // Note: N will contain the trailing 0 of a string literal. This needs to be ignored.
-    constexpr xiiUInt32 length = static_cast<xiiUInt32>(N - 1);
-    if constexpr (length == 0)
+    constexpr xiiUInt32 uiLength = static_cast<xiiUInt32>(N - 1);
+    if constexpr (uiLength == 0)
     {
       return 46947589u;
     }
     else
     {
-      xiiUInt32 acc   = 0;
-      xiiUInt32 index = 0;
+      xiiUInt32 uiAccumulator = 0;
+      xiiUInt32 uiIndex       = 0;
       // Perform simple initialization if N < 16
-      if constexpr (length < 16)
+      if constexpr (uiLength < 16)
       {
-        acc = uiSeed + PRIME32_5;
+        uiAccumulator = uiSeed + PRIME32_5;
       }
       else
       {
-        xiiUInt32 accs[4] = {uiSeed + PRIME32_1 + PRIME32_2, uiSeed + PRIME32_2, uiSeed, uiSeed - PRIME32_1};
-        for (; length - index >= 16; index += 16)
+        xiiUInt32 pAccumulators[4] = {uiSeed + PRIME32_1 + PRIME32_2, uiSeed + PRIME32_2, uiSeed, uiSeed - PRIME32_1};
+        for (; uiLength - uiIndex >= 16; uiIndex += 16)
         {
-          for (xiiInt32 i = 0; i < 4; i++)
+          for (xiiInt32 i = 0; i < 4; ++i)
           {
-            xiiUInt32 laneN = (static_cast<xiiUInt32>(str[index + i * 4 + 0]) << 0) | (static_cast<xiiUInt32>(str[index + i * 4 + 1]) << 8) |
-              (static_cast<xiiUInt32>(str[index + i * 4 + 2]) << 16) | (static_cast<xiiUInt32>(str[index + i * 4 + 3]) << 24);
-            accs[i] = accs[i] + (laneN * PRIME32_2);
-            accs[i] = xiiRotLeft(accs[i], 13);
-            accs[i] = accs[i] * PRIME32_1;
+            xiiUInt32 uiLaneN = (static_cast<xiiUInt32>(str[uiIndex + i * 4 + 0]) << 0) | (static_cast<xiiUInt32>(str[uiIndex + i * 4 + 1]) << 8) |
+              (static_cast<xiiUInt32>(str[uiIndex + i * 4 + 2]) << 16) | (static_cast<xiiUInt32>(str[uiIndex + i * 4 + 3]) << 24);
+            pAccumulators[i] = pAccumulators[i] + (uiLaneN * PRIME32_2);
+            pAccumulators[i] = xiiRotLeft(pAccumulators[i], 13);
+            pAccumulators[i] = pAccumulators[i] * PRIME32_1;
           }
         }
-        acc = xiiRotLeft(accs[0], 1) + xiiRotLeft(accs[1], 7) + xiiRotLeft(accs[2], 12) + xiiRotLeft(accs[3], 18);
+        uiAccumulator = xiiRotLeft(pAccumulators[0], 1) + xiiRotLeft(pAccumulators[1], 7) + xiiRotLeft(pAccumulators[2], 12) + xiiRotLeft(pAccumulators[3], 18);
       }
 
       // Step 4
-      acc = acc + length;
+      uiAccumulator = uiAccumulator + uiLength;
 
       // Step 5
-      for (; length - index >= 4; index += 4)
+      for (; uiLength - uiIndex >= 4; uiIndex += 4)
       {
-        xiiUInt32 lane = (static_cast<xiiUInt32>(str[index + 0]) << 0) | (static_cast<xiiUInt32>(str[index + 1]) << 8) |
-          (static_cast<xiiUInt32>(str[index + 2]) << 16) | (static_cast<xiiUInt32>(str[index + 3]) << 24);
-        acc = acc + lane * PRIME32_3;
-        acc = xiiRotLeft(acc, 17) * PRIME32_4;
+        xiiUInt32 uiLane = (static_cast<xiiUInt32>(str[uiIndex + 0]) << 0) | (static_cast<xiiUInt32>(str[uiIndex + 1]) << 8) |
+          (static_cast<xiiUInt32>(str[uiIndex + 2]) << 16) | (static_cast<xiiUInt32>(str[uiIndex + 3]) << 24);
+        uiAccumulator = uiAccumulator + uiLane * PRIME32_3;
+        uiAccumulator = xiiRotLeft(uiAccumulator, 17) * PRIME32_4;
       }
 
-      for (; length - index >= 1; index++)
+      for (; uiLength - uiIndex >= 1; ++uiIndex)
       {
-        xiiUInt32 lane = static_cast<xiiUInt32>(str[index]);
-        acc            = acc + lane * PRIME32_5;
-        acc            = xiiRotLeft(acc, 11) * PRIME32_1;
+        xiiUInt32 uiLane = static_cast<xiiUInt32>(str[uiIndex]);
+        uiAccumulator    = uiAccumulator + uiLane * PRIME32_5;
+        uiAccumulator    = xiiRotLeft(uiAccumulator, 11) * PRIME32_1;
       }
 
       // Step 6
-      acc = acc ^ (acc >> 15);
-      acc = acc * PRIME32_2;
-      acc = acc ^ (acc >> 13);
-      acc = acc * PRIME32_3;
-      acc = acc ^ (acc >> 16);
+      uiAccumulator = uiAccumulator ^ (uiAccumulator >> 15);
+      uiAccumulator = uiAccumulator * PRIME32_2;
+      uiAccumulator = uiAccumulator ^ (uiAccumulator >> 13);
+      uiAccumulator = uiAccumulator * PRIME32_3;
+      uiAccumulator = uiAccumulator ^ (uiAccumulator >> 16);
 
-      return acc;
+      return uiAccumulator;
     }
   }
 
@@ -86,86 +86,86 @@ namespace xiiInternal
   constexpr xiiUInt64 CompileTimeXxHash64(const char (&str)[N], xiiUInt64 uiSeed)
   {
     // Note: N will contain the trailing 0 of a string literal. This needs to be ignored.
-    constexpr xiiUInt32 length = static_cast<xiiUInt32>(N - 1);
-    if constexpr (length == 0)
+    constexpr xiiUInt32 uiLength = static_cast<xiiUInt32>(N - 1);
+    if constexpr (uiLength == 0)
     {
       return 17241709254077376921llu;
     }
     else
     {
-      xiiUInt64 acc   = 0;
-      xiiUInt32 index = 0;
+      xiiUInt64 uiAccumulator = 0;
+      xiiUInt32 uiIndex       = 0;
 
       // Step 1
-      if constexpr (length < 32)
+      if constexpr (uiLength < 32)
       {
         // simple initialization
-        acc = uiSeed + PRIME64_5;
+        uiAccumulator = uiSeed + PRIME64_5;
       }
       else
       {
-        xiiUInt64 accs[] = {uiSeed + PRIME64_1 + PRIME64_2, uiSeed + PRIME64_2, uiSeed + 0, uiSeed - PRIME64_1};
+        xiiUInt64 pAccumulators[] = {uiSeed + PRIME64_1 + PRIME64_2, uiSeed + PRIME64_2, uiSeed + 0, uiSeed - PRIME64_1};
         // Step 2
-        for (; length - index >= 32; index += 32)
+        for (; uiLength - uiIndex >= 32; uiIndex += 32)
         {
-          for (xiiInt32 i = 0; i < 4; i++)
+          for (xiiInt32 i = 0; i < 4; ++i)
           {
-            xiiUInt64 laneN = (static_cast<xiiUInt64>(str[index + i * 8 + 0]) << 0) | (static_cast<xiiUInt64>(str[index + i * 8 + 1]) << 8) |
-              (static_cast<xiiUInt64>(str[index + i * 8 + 2]) << 16) | (static_cast<xiiUInt64>(str[index + i * 8 + 3]) << 24) |
-              (static_cast<xiiUInt64>(str[index + i * 8 + 4]) << 32) | (static_cast<xiiUInt64>(str[index + i * 8 + 5]) << 40) |
-              (static_cast<xiiUInt64>(str[index + i * 8 + 6]) << 48) | (static_cast<xiiUInt64>(str[index + i * 8 + 7]) << 56);
-            accs[i] = accs[i] + (laneN * PRIME64_2);
-            accs[i] = xiiRotLeft(accs[i], 31ULL);
-            accs[i] = accs[i] * PRIME64_1;
+            xiiUInt64 uiLaneN = (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 0]) << 0) | (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 1]) << 8) |
+              (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 2]) << 16) | (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 3]) << 24) |
+              (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 4]) << 32) | (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 5]) << 40) |
+              (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 6]) << 48) | (static_cast<xiiUInt64>(str[uiIndex + i * 8 + 7]) << 56);
+            pAccumulators[i] = pAccumulators[i] + (uiLaneN * PRIME64_2);
+            pAccumulators[i] = xiiRotLeft(pAccumulators[i], 31ULL);
+            pAccumulators[i] = pAccumulators[i] * PRIME64_1;
           }
         }
 
         // Step 3
-        acc = xiiRotLeft(accs[0], 1ULL) + xiiRotLeft(accs[1], 7ULL) + xiiRotLeft(accs[2], 12ULL) + xiiRotLeft(accs[3], 18ULL);
-        for (xiiInt32 i = 0; i < 4; i++)
+        uiAccumulator = xiiRotLeft(pAccumulators[0], 1ULL) + xiiRotLeft(pAccumulators[1], 7ULL) + xiiRotLeft(pAccumulators[2], 12ULL) + xiiRotLeft(pAccumulators[3], 18ULL);
+        for (xiiInt32 i = 0; i < 4; ++i)
         {
-          acc = (acc ^ (xiiRotLeft(accs[i] * PRIME64_2, 31ULL) * PRIME64_1)) * PRIME64_1 + PRIME64_4;
+          uiAccumulator = (uiAccumulator ^ (xiiRotLeft(pAccumulators[i] * PRIME64_2, 31ULL) * PRIME64_1)) * PRIME64_1 + PRIME64_4;
         }
       }
       // Step 4
-      acc += length;
+      uiAccumulator += uiLength;
 
       // Step 5
-      for (; length - index >= 8; index += 8)
+      for (; uiLength - uiIndex >= 8; uiIndex += 8)
       {
-        xiiUInt64 lane = (static_cast<xiiUInt64>(str[index + 0]) << 0) | (static_cast<xiiUInt64>(str[index + 1]) << 8) |
-          (static_cast<xiiUInt64>(str[index + 2]) << 16) | (static_cast<xiiUInt64>(str[index + 3]) << 24) |
-          (static_cast<xiiUInt64>(str[index + 4]) << 32) | (static_cast<xiiUInt64>(str[index + 5]) << 40) |
-          (static_cast<xiiUInt64>(str[index + 6]) << 48) | (static_cast<xiiUInt64>(str[index + 7]) << 56);
-        acc = acc ^ (xiiRotLeft(lane * PRIME64_2, 31ULL) * PRIME64_1);
-        acc = xiiRotLeft(acc, 27ULL) * PRIME64_1;
-        acc += PRIME64_4;
+        xiiUInt64 uiLane = (static_cast<xiiUInt64>(str[uiIndex + 0]) << 0) | (static_cast<xiiUInt64>(str[uiIndex + 1]) << 8) |
+          (static_cast<xiiUInt64>(str[uiIndex + 2]) << 16) | (static_cast<xiiUInt64>(str[uiIndex + 3]) << 24) |
+          (static_cast<xiiUInt64>(str[uiIndex + 4]) << 32) | (static_cast<xiiUInt64>(str[uiIndex + 5]) << 40) |
+          (static_cast<xiiUInt64>(str[uiIndex + 6]) << 48) | (static_cast<xiiUInt64>(str[uiIndex + 7]) << 56);
+        uiAccumulator = uiAccumulator ^ (xiiRotLeft(uiLane * PRIME64_2, 31ULL) * PRIME64_1);
+        uiAccumulator = xiiRotLeft(uiAccumulator, 27ULL) * PRIME64_1;
+        uiAccumulator += PRIME64_4;
       }
 
-      for (; length - index >= 4; index += 4)
+      for (; uiLength - uiIndex >= 4; uiIndex += 4)
       {
-        xiiUInt64 lane = (static_cast<xiiUInt64>(str[index + 0]) << 0) | (static_cast<xiiUInt64>(str[index + 1]) << 8) |
-          (static_cast<xiiUInt64>(str[index + 2]) << 16) | (static_cast<xiiUInt64>(str[index + 3]) << 24);
-        acc = acc ^ (lane * PRIME64_1);
-        acc = xiiRotLeft(acc, 23ULL) * PRIME64_2;
-        acc += PRIME64_3;
+        xiiUInt64 uiLane = (static_cast<xiiUInt64>(str[uiIndex + 0]) << 0) | (static_cast<xiiUInt64>(str[uiIndex + 1]) << 8) |
+          (static_cast<xiiUInt64>(str[uiIndex + 2]) << 16) | (static_cast<xiiUInt64>(str[uiIndex + 3]) << 24);
+        uiAccumulator = uiAccumulator ^ (uiLane * PRIME64_1);
+        uiAccumulator = xiiRotLeft(uiAccumulator, 23ULL) * PRIME64_2;
+        uiAccumulator += PRIME64_3;
       }
 
-      for (; length - index >= 1; index++)
+      for (; uiLength - uiIndex >= 1; ++uiIndex)
       {
-        xiiUInt64 lane = static_cast<xiiUInt64>(str[index]);
-        acc            = acc ^ (lane * PRIME64_5);
-        acc            = xiiRotLeft(acc, 11ULL) * PRIME64_1;
+        xiiUInt64 uiLane = static_cast<xiiUInt64>(str[uiIndex]);
+        uiAccumulator    = uiAccumulator ^ (uiLane * PRIME64_5);
+        uiAccumulator    = xiiRotLeft(uiAccumulator, 11ULL) * PRIME64_1;
       }
 
       // Step 6
-      acc = acc ^ (acc >> 33);
-      acc = acc * PRIME64_2;
-      acc = acc ^ (acc >> 29);
-      acc = acc * PRIME64_3;
-      acc = acc ^ (acc >> 32);
+      uiAccumulator = uiAccumulator ^ (uiAccumulator >> 33);
+      uiAccumulator = uiAccumulator * PRIME64_2;
+      uiAccumulator = uiAccumulator ^ (uiAccumulator >> 29);
+      uiAccumulator = uiAccumulator * PRIME64_3;
+      uiAccumulator = uiAccumulator ^ (uiAccumulator >> 32);
 
-      return acc;
+      return uiAccumulator;
     }
   }
 } // namespace xiiInternal

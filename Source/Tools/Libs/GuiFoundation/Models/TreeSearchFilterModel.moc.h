@@ -14,6 +14,9 @@ class XII_GUIFOUNDATION_DLL xiiQtTreeSearchFilterModel : public QSortFilterProxy
   Q_OBJECT
 
 public:
+  /// Return true to indicate that the model index shall be visible.
+  using CustomFilterFunc = xiiDelegate<bool(QModelIndex, const xiiSearchPatternFilter&)>;
+
   xiiQtTreeSearchFilterModel(QWidget* pParent);
 
   void SetFilterText(const QString& sText);
@@ -21,6 +24,9 @@ public:
   /// \brief By default only nodes (and their parents) are shown that fit the search criterion.
   /// If this is enabled, all child nodes of nodes that fit the criterion are included as well.
   void SetIncludeChildren(bool bInclude);
+
+  /// The custom function is executed when when visibility is updated. Return false to hide an element.
+  void SetCustomFilterFunc(CustomFilterFunc func);
 
 protected:
   void         RecomputeVisibleItems();
@@ -31,4 +37,5 @@ protected:
   QAbstractItemModel*       m_pSourceModel;
   xiiSearchPatternFilter    m_Filter;
   xiiMap<QModelIndex, bool> m_Visible;
+  CustomFilterFunc          m_CustomFilterFunc;
 };

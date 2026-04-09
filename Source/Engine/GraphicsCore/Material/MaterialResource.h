@@ -4,7 +4,6 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsFoundation/ShaderCompiler/Descriptors.h>
 
@@ -40,7 +39,7 @@ struct xiiMaterialResourceDescriptor
 
   void Clear();
 
-  XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const { return m_hBaseMaterial == other.m_hBaseMaterial && m_hShader == other.m_hShader && m_PermutationVariables == other.m_PermutationVariables && m_Parameters == other.m_Parameters && m_Texture2DBindings == other.m_Texture2DBindings && m_TextureCubeBindings == other.m_TextureCubeBindings && m_RenderDataCategory == other.m_RenderDataCategory; }
+  XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const { return m_hBaseMaterial == other.m_hBaseMaterial && m_hShader == other.m_hShader && m_PermutationVariables == other.m_PermutationVariables && m_Parameters == other.m_Parameters && m_Texture2DBindings == other.m_Texture2DBindings && m_TextureCubeBindings == other.m_TextureCubeBindings; }
 
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)
@@ -51,7 +50,6 @@ struct xiiMaterialResourceDescriptor
   xiiDynamicArray<Parameter>                 m_Parameters;
   xiiDynamicArray<Texture2DBinding>          m_Texture2DBindings;
   xiiDynamicArray<TextureCubeBinding>        m_TextureCubeBindings;
-  xiiRenderData::Category                    m_RenderDataCategory;
 };
 
 class XII_GRAPHICSCORE_DLL xiiMaterialResource final : public xiiResource
@@ -78,8 +76,6 @@ public:
   void                         SetTextureCubeBinding(const xiiHashedString& sName, const xiiTextureCubeResourceHandle& value);
   void                         SetTextureCubeBinding(xiiStringView sName, const xiiTextureCubeResourceHandle& value);
   xiiTextureCubeResourceHandle GetTextureCubeBinding(const xiiTempHashedString& sName);
-
-  xiiRenderData::Category GetRenderDataCategory();
 
   /// \brief Copies current description to the loading description so the material is not modified on reset.
   void         PreserveCurrentDescription();
@@ -140,7 +136,6 @@ private:
     xiiHashTable<xiiHashedString, xiiVariant>                   m_Parameters;
     xiiHashTable<xiiHashedString, xiiTexture2DResourceHandle>   m_Texture2DBindings;
     xiiHashTable<xiiHashedString, xiiTextureCubeResourceHandle> m_TextureCubeBindings;
-    xiiRenderData::Category                                     m_RenderDataCategory;
 
     void Reset();
   };

@@ -2,7 +2,9 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -64,12 +66,13 @@ public:
   static xiiGALResourceFormat::Enum GetGALResourceFormat(vk::Format e);
 
   static vk::ShaderStageFlags          GetShaderStageFlags(xiiBitflags<xiiGALShaderType> e);
+  static vk::ShaderStageFlagBits       GetShaderStageFlagBits(xiiGALShaderType::Enum e);
   static xiiBitflags<xiiGALShaderType> GetGALShaderStageFlags(vk::ShaderStageFlags e);
 
   static vk::Extent2D                        ShadingRateToFragmentSize(xiiBitflags<xiiGALShadingRateFlags> e);
   static xiiBitflags<xiiGALShadingRateFlags> FragmentSizeToShadingRate(vk::Extent2D e);
 
-  static xiiBitflags<xiiGALCommandQueueType> GetGALCommandQueueType(vk::QueueFlags e);
+  static xiiBitflags<xiiGALCommandQueueFlags> GetGALCommandQueueFlags(vk::QueueFlags e);
 
   static vk::SurfaceTransformFlagsKHR GetSurfaceTransform(xiiGALSurfaceTransform::Enum e);
   static xiiGALSurfaceTransform::Enum GetGALSurfaceTransform(vk::SurfaceTransformFlagsKHR e);
@@ -105,6 +108,20 @@ public:
   static void GetPrimitiveTopologyAndControlPatchPointsCount(xiiGALPrimitiveTopology::Enum e, vk::PrimitiveTopology& out_vkPrimitiveTopology, xiiUInt32& out_uiPatchControlPoints);
 
   static vk::DescriptorType GetDescriptorType(xiiGALDescriporTypeVulkan e);
+
+  static vk::IndexType GetIndexType(xiiGALValueType::Enum indexType);
+
+  static vk::ResolveModeFlagBits GetDepthResolveMode(xiiEnum<xiiGALDepthResolveMode> mode);
+
+  static xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
+
+  static xiiUInt32 RankDeviceType(vk::PhysicalDeviceType type);
+
+  static vk::FragmentShadingRateCombinerOpKHR GetFragmentShadingRateCombinerOp(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
+
+  static vk::BuildAccelerationStructureFlagsKHR GetAccelerationStructureFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
+
+  static vk::Format GetTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

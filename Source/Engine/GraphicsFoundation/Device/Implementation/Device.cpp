@@ -29,10 +29,8 @@ namespace
   static constexpr xiiUInt32 s_uiMaxResourcesInSignature = XII_BIT(16) - 1U;
 } // namespace
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 #define XII_GAL_DEVICE_CHECK(expression, ...)  \
   do                                           \
@@ -44,7 +42,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiSharedPtr<xiiGALDevice>                   xiiGALDevice::s_pDefaultDevice;
 xiiEvent<const xiiGALDeviceEvent&, xiiMutex> xiiGALDevice::s_Events;
 
-xiiGALDevice::xiiGALDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& creationDescription) :
+xiiGALDevice::xiiGALDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& creationDescription) :
   xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", pAllocator), m_AllocatorWrapper(&m_Allocator)
 {
 }
@@ -147,23 +145,45 @@ void xiiGALDevice::EndFrame()
   }
 }
 
-#define XII_GAL_DEVICE_CHECK(expression, ...)  \
-  do                                           \
-  {                                            \
-    XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return {}; }          \
-  } while (false)
-
 xiiSharedPtr<xiiGALSwapChain> xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreationDescription& description)
 {
   VerifyMultithreadedAccess();
 
-  XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "The swap chain window handle is invalid.");
-  XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "The swap chain color buffer format is invalid.");
-  XII_GAL_DEVICE_CHECK(!description.m_UsageFlags.IsNoFlagSet(), "The swap chain usage is not set.");
-  XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue > 0.0f, "The swap chain usage is not set.");
+  XII_GAL_DEVICE_CHECK(description.m_pWindow != nullptr, "Swap chain creation failed: Window handle (m_pWindow) is null. A valid window reference is required.");
+  XII_GAL_DEVICE_CHECK(description.m_ColorBufferFormat != xiiGALResourceFormat::Unknown, "Swap chain creation failed: Color buffer format is 'Unknown'. Specify a valid format for rendering output.");
+  XII_GAL_DEVICE_CHECK(!description.m_UsageFlags.IsNoFlagSet(), "Swap chain creation failed: No usage flags specified. Define at least one usage via m_UsageFlags.");
+  XII_GAL_DEVICE_CHECK(description.m_fDefaultDepthValue > 0.0f, "Swap chain creation failed: Default depth value must be greater than zero. Check m_fDefaultDepthValue.");
 
   return CreateSwapChainPlatform(description);
+}
+
+xiiSharedPtr<xiiGALCommandList> xiiGALDevice::CreateCommandList(const xiiGALCommandListCreationDescription& description)
+{
+  VerifyMultithreadedAccess();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  if (description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    if (description.m_pRenderPass)
+    {
+      XII_ASSERT_DEV(description.m_uiSubPassIndex < description.m_pRenderPass->GetDescription().m_SubPasses.GetCount(), "Subpass index is out of bounds for the provided render pass.");
+    }
+    else
+    {
+      XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Secondary command lists should specify a zero subpass index if no render pass is specified.");
+    }
+  }
+  else
+  {
+    XII_ASSERT_DEV(description.m_pRenderPass == nullptr, "Primary command lists should not specify a render pass.");
+    XII_ASSERT_DEV(description.m_pFramebuffer == nullptr, "Primary command lists should not specify a framebuffer.");
+    XII_ASSERT_DEV(description.m_uiSubPassIndex == 0U, "Primary command lists should not specify a non-zero subpass index.");
+  }
+
+  XII_ASSERT_DEV(description.m_QueueFlags != xiiGALCommandQueueFlags::None, "Command list must declare at least one queue capability (Graphics, Compute, Transfer, etc.).");
+#endif
+
+  return CreateCommandListPlatform(description);
 }
 
 xiiSharedPtr<xiiGALBlendState> xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
@@ -258,7 +278,7 @@ xiiSharedPtr<xiiGALShader> xiiGALDevice::CreateShader(const xiiGALShaderCreation
   return CreateShaderPlatform(description);
 }
 
-xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/)
+xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
@@ -294,7 +314,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
   switch (description.m_Usage)
   {
     case xiiGALResourceUsage::Immutable:
-    case xiiGALResourceUsage::Default:
+    case xiiGALResourceUsage::Mutable:
     {
       XII_GAL_DEVICE_CHECK(description.m_CPUAccessFlags.IsNoFlagSet(), "Static and default buffers cannot have any CPU flags set.");
     }
@@ -345,12 +365,12 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
       return {};
   }
 
-  if (description.m_Usage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiCommandQueueMask) > 1U)
+  if (description.m_Usage == xiiGALResourceUsage::Dynamic)
   {
     const bool bNeedsBackingResource = (description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) || description.m_Mode == xiiGALBufferMode::Formatted);
     XII_GAL_DEVICE_CHECK(!bNeedsBackingResource, "xiiGALResourceUsage::Dynamic buffers that use the Unordered Access flag or Formatted mode requires an internal backing resource. "
                                                  "This resource is implicitly transitioned by the device context and thus cannot be relied upon to be safely used in multiple contexts. Create a xiiGALResourceUsage::Dynamic buffer "
-                                                 "without the xiiGALResourceUsage::UnorderedAccess flag and use xiiGALResourceUsage::Undefined mode and copy the contents to a xiiGALResourceUsage::Default buffer with required flags, "
+                                                 "without the xiiGALResourceUsage::UnorderedAccess flag and use xiiGALResourceUsage::Undefined mode and copy the contents to a xiiGALResourceUsage::Mutable buffer with required flags, "
                                                  "which can be shared between device contexts.");
   }
 
@@ -391,7 +411,7 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
 
   if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the buffer with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the buffer with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
   }
 
   if (bHasInitialData)
@@ -399,7 +419,14 @@ xiiSharedPtr<xiiGALBuffer> xiiGALDevice::CreateBuffer(const xiiGALBufferCreation
     XII_GAL_DEVICE_CHECK(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger or equal to the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
-  xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData);
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
+  {
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled, "External memory kind flags cannot be used when the External Memory feature is disabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the Native Fence feature to be enabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
+  }
+
+  xiiSharedPtr<xiiGALBuffer> pBuffer = CreateBufferPlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeBufferInternal(description, pBuffer);
 
@@ -416,11 +443,11 @@ void xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription&
   }
 }
 
-xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
+xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind /*= xiiGALExternalMemoryKind::None*/)
 {
   VerifyMultithreadedAccess();
 
-  const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format);
 
   // Validate texture description.
 
@@ -447,7 +474,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_Size.height != 0U, "The texture height cannot be zero.");
   }
 
-  XII_GAL_DEVICE_CHECK(description.m_Type != xiiGALResourceDimension::Texture3D && description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
+  XII_GAL_DEVICE_CHECK(description.m_Type != xiiGALResourceDimension::Texture3D || description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
 
   if (description.m_Type == xiiGALResourceDimension::Texture1D || description.m_Type == xiiGALResourceDimension::Texture2D)
   {
@@ -486,7 +513,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
   {
     XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet(), "Memoryless textures are not supported by this device.");
     XII_GAL_DEVICE_CHECK(description.m_BindFlags.IsStrictlyAnySet(m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags), "Unsupported bind flags given for memoryless textures.");
-    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Default, "Memoryless attachment requires xiiGALResourceUsage::Default.");
+    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Mutable, "Memoryless attachment requires xiiGALResourceUsage::Mutable.");
     XII_GAL_DEVICE_CHECK(description.m_CPUAccessFlags.IsNoFlagSet(), "Memoryless attachment requires xiiGALCPUAccessFlags::None.");
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::GenerateMips), "Memoryless attachment is not compatible with mip map generation.");
   }
@@ -501,12 +528,6 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
   else if (description.m_Usage == xiiGALResourceUsage::Unified)
   {
     XII_GAL_DEVICE_CHECK(false, "xiiGALResourceUsage::Unified textures are currently not supported.");
-  }
-
-  if (description.m_Usage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiCommandQueueMask) > 1U)
-  {
-    // Dynamic textures always use a backing resource that requires implicit state transitions in map/unmap operations, which is not safe in multiple device contexts.
-    XII_GAL_DEVICE_CHECK(false, "xiiGALResourceUsage::Dynamic textures may only be used in one immediate device context.");
   }
 
   if (description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Subsampled))
@@ -530,7 +551,7 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
       XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureArray), "Shading rate texture arrays require the xiiGALShadingRateCapabilityFlags::TextureArray capability.");
     }
 
-    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Default || description.m_Usage == xiiGALResourceUsage::Immutable, "Shading rate textures only allow xiiGALResourceUsage::Default or xiiGALResourceUsage::Immutable.");
+    XII_GAL_DEVICE_CHECK(description.m_Usage == xiiGALResourceUsage::Mutable || description.m_Usage == xiiGALResourceUsage::Immutable, "Shading rate textures only allow xiiGALResourceUsage::Mutable or xiiGALResourceUsage::Immutable.");
 
     XII_GAL_DEVICE_CHECK(description.m_uiMipLevels == 1U, "Shading rate textures must have a single mip level.");
     XII_GAL_DEVICE_CHECK(description.m_uiMipLevels != 1U, "Shading rate textures must have a single mip level."); // For Direct3D12 and Vulkan with VK_EXT_fragment_density_map
@@ -609,12 +630,49 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::SparseAlias), "The miscellaneous flags must not have xiiGALMiscTextureFlags::SparseAlias if the usage is not xiiGALResourceUsage::Sparse.");
   }
 
-  if (pInitialData != nullptr && pInitialData->m_pCommandList != nullptr)
+  if (externalMemoryKind.IsAnySet(xiiGALExternalMemoryKind::Imported | xiiGALExternalMemoryKind::Exportable))
   {
-    XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueType.IsAnySet(xiiGALCommandQueueType::Graphics | xiiGALCommandQueueType::Transfer | xiiGALCommandQueueType::SparseBinding), "Cannot initialize the texture with the given command list queue type. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalMemory == xiiGALDeviceFeatureState::Enabled, "External memory kind flags cannot be used when the External Memory feature is disabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the Native Fence feature to be enabled.");
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
   }
 
-  xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData);
+  xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 2U> subresourceData;
+  xiiTemporaryArray<xiiUInt8>                               zeroData;
+  xiiGALTextureData                                         textureData;
+
+  if (pInitialData != nullptr)
+  {
+    if (pInitialData->m_pCommandList != nullptr)
+    {
+      XII_GAL_DEVICE_CHECK(pInitialData->m_pCommandList->GetDescription().m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Transfer | xiiGALCommandQueueFlags::SparseBinding), "Cannot initialize the texture with the given command list queue flags. Only Graphics, Transfer, and Sparse Binding queues are supported.");
+    }
+
+    if (pInitialData->m_pSubResources.IsEmpty())
+    {
+      textureData  = xiiGALTextureUtilities::GetZeroMemoryInitialData(description, subresourceData, zeroData);
+      pInitialData = &textureData;
+    }
+
+    const xiiUInt32 uiExpectedSubResourceCount = xiiGALTextureUtilities::GetSubResourceCount(description);
+    XII_GAL_DEVICE_CHECK(pInitialData->m_pSubResources.GetCount() == uiExpectedSubResourceCount, "The number of provided initial data sub-resources ({0}) does not match the expected number of sub-resources ({1}).", pInitialData->m_pSubResources.GetCount(), uiExpectedSubResourceCount);
+
+    xiiUInt32 uiMipLevel = 0U;
+    for (const xiiGALTextureSubResourceData& subResource : pInitialData->m_pSubResources)
+    {
+      XII_GAL_DEVICE_CHECK(!subResource.m_pData.IsEmpty(), "A sub-resource initial data pointer is empty.");
+
+      const xiiUInt32 uiRequiredRowPitch = xiiGALTextureUtilities::GetRequiredRowPitch(description, uiMipLevel);
+      XII_GAL_DEVICE_CHECK(subResource.m_uiStride >= uiRequiredRowPitch, "The sub-resource row pitch ({0}) is smaller than the required row pitch ({1}).", subResource.m_uiStride, uiRequiredRowPitch);
+
+      const xiiUInt32 uiRequiredSlicePitch = xiiGALTextureUtilities::GetRequiredSlicePitch(description, uiMipLevel);
+      XII_GAL_DEVICE_CHECK(subResource.m_uiDepthStride >= uiRequiredSlicePitch, "The sub-resource slice pitch ({0}) is smaller than the required slice pitch ({1}).", subResource.m_uiDepthStride, uiRequiredSlicePitch);
+
+      ++uiMipLevel;
+    }
+  }
+
+  xiiSharedPtr<xiiGALTexture> pTexture = CreateTexturePlatform(description, pInitialData, externalMemoryKind);
 
   FinalizeTextureInternal(description, pTexture);
 
@@ -723,13 +781,13 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
   for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < description.m_Attachments.GetCount(); ++uiAttachmentIndex)
   {
-    const auto& attachment = description.m_Attachments[uiAttachmentIndex];
+    const xiiGALRenderPassAttachmentDescription& attachment = description.m_Attachments[uiAttachmentIndex];
 
     XII_GAL_DEVICE_CHECK(attachment.m_Format != xiiGALResourceFormat::Unknown, "The format of attachment {0} is unknown.", uiAttachmentIndex);
     XII_GAL_DEVICE_CHECK(attachment.m_uiSampleCount != 0U, "The sample count of attachment {0} is zero.", uiAttachmentIndex);
     XII_GAL_DEVICE_CHECK(xiiMath::IsPowerOf2(attachment.m_uiSampleCount), "The sample count ({0}) of attachment {1} is not a power of 2.", attachment.m_uiSampleCount, uiAttachmentIndex);
 
-    const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(attachment.m_Format);
+    const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(attachment.m_Format);
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
     {
       XII_GAL_DEVICE_CHECK(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
@@ -751,11 +809,11 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
   const xiiGALShadingRateAttachmentDescription* pShadingRateAttachment = nullptr;
   for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < description.m_SubPasses.GetCount(); ++uiSubPassIndex)
   {
-    const auto& subpass = description.m_SubPasses[uiSubPassIndex];
+    const xiiGALSubPassDescription& subpass = description.m_SubPasses[uiSubPassIndex];
 
     for (xiiUInt32 uiInputAttachmentIndex = 0U; uiInputAttachmentIndex < subpass.m_InputAttachments.GetCount(); ++uiInputAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
@@ -769,7 +827,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
@@ -780,8 +838,8 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the render target attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
       XII_GAL_DEVICE_CHECK(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
 
-      const auto& format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-      const auto& rtFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+      const xiiEnum<xiiGALResourceFormat>&   format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
+      const xiiGALResourceFormatDescription& rtFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
       XII_GAL_DEVICE_CHECK(rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
     }
 
@@ -789,7 +847,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
     {
       for (xiiUInt32 uiResolveAttachmentIndex = 0U; uiResolveAttachmentIndex < subpass.m_ResolveAttachments.GetCount(); ++uiResolveAttachmentIndex)
       {
-        const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiResolveAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiResolveAttachmentIndex];
 
         if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
           continue;
@@ -803,25 +861,45 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_DepthStencilAttachment.PeekBack();
-
-      if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+      for (xiiUInt32 uiDepthResolveAttachmentIndex = 0U; uiDepthResolveAttachmentIndex < subpass.m_DepthStencilAttachment.GetCount(); ++uiDepthResolveAttachmentIndex)
       {
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment[uiDepthResolveAttachmentIndex];
+
+        if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          continue;
+
         // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
         // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
         XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil attachment reference of sub pass {1} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
         XII_GAL_DEVICE_CHECK(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthRead || attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthWrite || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index ({0}) of the depth-stencil attachment reference of sub pass {1} must be must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite"));
 
-        const auto& format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-        const auto& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+        const xiiEnum<xiiGALResourceFormat>&   format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
+        const xiiGALResourceFormatDescription& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
         XII_GAL_DEVICE_CHECK(depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+      }
+    }
+
+    if (!subpass.m_DepthResolveAttachment.IsEmpty())
+    {
+      for (xiiUInt32 uiDepthResolveAttachmentIndex = 0U; uiDepthResolveAttachmentIndex < subpass.m_DepthResolveAttachment.GetCount(); ++uiDepthResolveAttachmentIndex)
+      {
+        const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthResolveAttachment[uiDepthResolveAttachmentIndex].m_Attachment;
+
+        if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          continue;
+
+        // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
+        // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
+        // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
+        XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil resolve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiDepthResolveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+        XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_DepthStencilResolve == xiiGALDeviceFeatureState::Enabled, "Depth resolve attachment in sub pass {0} requires the DepthStencilResolve device feature.", uiSubPassIndex);
       }
     }
 
     for (xiiUInt32 uiPreserveAttachmentIndex = 0U; uiPreserveAttachmentIndex < subpass.m_PreserveAttachments.GetCount(); ++uiPreserveAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_PreserveAttachments[uiPreserveAttachmentIndex];
+      const xiiUInt32& attachmentReference = subpass.m_PreserveAttachments[uiPreserveAttachmentIndex];
 
       XII_GAL_DEVICE_CHECK(attachmentReference != XII_GAL_ATTACHMENT_UNUSED, "The attachment index of preserve attachment reference {0} of sub pass {1} is XII_GAL_ATTACHMENT_UNUSED.");
       XII_GAL_DEVICE_CHECK(attachmentReference < description.m_Attachments.GetCount(), "The attachment index ({0}) of the preserve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference, uiPreserveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
@@ -831,8 +909,8 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
     {
       for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
       {
-        const auto& attachmentReference       = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
-        const auto& resolveAttacmentReference = subpass.m_ResolveAttachments[uiColorAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& attachmentReference       = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& resolveAttacmentReference = subpass.m_ResolveAttachments[uiColorAttachmentIndex];
 
         if (resolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         {
@@ -864,10 +942,39 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
       }
     }
 
+    if (!subpass.m_DepthResolveAttachment.IsEmpty())
+    {
+      for (xiiUInt32 uiDepthStencilAttachmentIndex = 0U; uiDepthStencilAttachmentIndex < subpass.m_DepthStencilAttachment.GetCount(); ++uiDepthStencilAttachmentIndex)
+      {
+        const xiiGALAttachmentReferenceDescription& depthStencilAttachmentReference = subpass.m_DepthStencilAttachment[uiDepthStencilAttachmentIndex];
+        const xiiGALAttachmentReferenceDescription& depthResolveAttacmentReference  = subpass.m_DepthResolveAttachment[uiDepthStencilAttachmentIndex].m_Attachment;
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && depthStencilAttachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The depth-stencil resolve attachment of sub pass {0} is not unused but the depth-stencil attachment reference {1} is unused.", uiSubPassIndex, uiDepthStencilAttachmentIndex);
+        }
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_uiSampleCount == 1U)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The depth-stencil attachment at index {0} referenced by attachment reference {1} of sub pass {2} is used as the source of a resolve operation, but its sample count is 1.", depthStencilAttachmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex);
+        }
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_uiSampleCount != 1U)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The depth-stencil resolve attachment at index {0} referenced by attachment reference {1} of sub pass {2} must have a sample count of 1.", depthResolveAttacmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex);
+        }
+
+        if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && depthStencilAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format != description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format)
+        {
+          XII_GAL_DEVICE_CHECK(false, "The format ({0}) of depth-stencil attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding depth-stencil resolve attachment at index {5}.", description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format.GetValue(), depthStencilAttachmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex, description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format.GetValue(), depthResolveAttacmentReference.m_uiAttachmentIndex);
+        }
+      }
+    }
+
     if (!subpass.m_ShadingRateAttachment.IsEmpty())
     {
-      pShadingRateAttachment          = pShadingRateAttachment == nullptr ? subpass.m_ShadingRateAttachment.GetData() : pShadingRateAttachment;
-      const auto& attachmentReference = subpass.m_ShadingRateAttachment[0].m_AttachmentReference;
+      pShadingRateAttachment                                          = pShadingRateAttachment == nullptr ? subpass.m_ShadingRateAttachment.GetData() : pShadingRateAttachment;
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_ShadingRateAttachment[0].m_AttachmentReference;
 
       if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
@@ -875,9 +982,9 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
         XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "The sub pass at index {0} uses a shading rate attachment, but the Variable Shading Rate device feature is not enabled.", uiSubPassIndex);
         XII_GAL_DEVICE_CHECK(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::ShadingRate, "The attachment with index {0} referenced as a shading rate attachment in sub pass {1} must be in the xiiGALResourceStateFlags::ShadingRate state.");
 
-        const auto& tileSize    = subpass.m_ShadingRateAttachment[0].m_TileSize;
-        const auto& minTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize;
-        const auto& maxTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize;
+        const xiiSizeU32& tileSize    = subpass.m_ShadingRateAttachment[0].m_TileSize;
+        const xiiSizeU32& minTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MinTileSize;
+        const xiiSizeU32& maxTileSize = m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize;
         if (tileSize.HasNonZeroArea())
         {
           XII_GAL_DEVICE_CHECK(tileSize.width >= minTileSize.width && tileSize.width <= maxTileSize.width, "The sub pass at index {0} uses a shading rate attachment with tile width {1} that is not in te allowed range [{2},{3}]. Check MinTileSize/MaxTileSize members of the Shading Rate Properties.", uiSubPassIndex, tileSize.width, minTileSize.width, maxTileSize.height);
@@ -896,7 +1003,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
   {
     for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < description.m_SubPasses.GetCount(); ++uiSubPassIndex)
     {
-      const auto& subpass = description.m_SubPasses[uiSubPassIndex];
+      const xiiGALSubPassDescription& subpass = description.m_SubPasses[uiSubPassIndex];
 
       XII_GAL_DEVICE_CHECK(!subpass.m_ShadingRateAttachment.IsEmpty(), "Render pass uses a shading rate attachment, but sub pass {0} uses no shading rate attachment. A device with the xiiGALShadingRateCapabilityFlags::SameTextureForWholeRenderPass capability requires that all sub passes of a render pass use the same shading rate attachment.", uiSubPassIndex);
       XII_GAL_DEVICE_CHECK(subpass.m_ShadingRateAttachment == xiiMakeArrayPtr(pShadingRateAttachment, 1U), "The shading rate attachment in sub pass {0} does not match the shading rate attachment used by the previous sub passes. A device with the xiiGALShadingRateCapabilityFlags::SameTextureForWholeRenderPass capability requires that all sub passes of a render pass use the same shading rate attachment.", uiSubPassIndex);
@@ -905,11 +1012,10 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
   for (xiiUInt32 uiDependencyIndex = 0U; uiDependencyIndex < description.m_Dependencies.GetCount(); ++uiDependencyIndex)
   {
-    const auto& dependency = description.m_Dependencies[uiDependencyIndex];
+    const xiiGALSubPassDependencyDescription& dependency = description.m_Dependencies[uiDependencyIndex];
 
-    XII_IGNORE_UNUSED(dependency);
-
-    /// \todo GraphicsFoundation: Check render pass dependency source and destination stage mask is set to the undefined pipeline stage.
+    XII_GAL_DEVICE_CHECK(dependency.m_SourceStageFlags != xiiGALPipelineStageFlags::Undefined, "The source stage mask of subpass dependency {} is undefined.", uiDependencyIndex);
+    XII_GAL_DEVICE_CHECK(dependency.m_DestinationStageFlags != xiiGALPipelineStageFlags::Undefined, "The destination stage mask of subpass dependency {} is undefined.", uiDependencyIndex);
   }
 
   return CreateRenderPassPlatform(description);
@@ -923,22 +1029,22 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
   for (xiiUInt32 i = 0U; i < description.m_Attachments.GetCount(); ++i)
   {
-    const auto& attachment = description.m_Attachments[i];
+    const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[i];
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, and attachmentCount is not 0, pAttachments must be a valid pointer to an array of attachmentCount valid VkImageView handles.
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-flags-02778
-    XII_GAL_DEVICE_CHECK(attachment != nullptr, "The framebuffer attachment at index {0} is invalid.", i);
+    XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The framebuffer attachment at index {0} is invalid.", i);
   }
 
-  const auto& renderPassDescription = description.m_pRenderPass->GetDescription();
+  const xiiGALRenderPassCreationDescription& renderPassDescription = description.m_pRenderPass->GetDescription();
 
   XII_GAL_DEVICE_CHECK(description.m_Attachments.GetCount() == renderPassDescription.m_Attachments.GetCount(), "The number of framebuffer attachments ({0}) must be equal to the number of attachments ({1}) in the render pass.", description.m_Attachments.GetCount(), renderPassDescription.m_Attachments.GetCount());
 
   for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
   {
-    const auto& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
-    const auto& viewDescription       = description.m_Attachments[uiAttachmentIndex]->GetDescription();
-    const auto& textureDescription    = description.m_Attachments[uiAttachmentIndex]->GetTexture()->GetDescription();
+    const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
+    const xiiGALTextureViewCreationDescription&  viewDescription       = description.m_Attachments[uiAttachmentIndex]->GetDescription();
+    const xiiGALTextureCreationDescription&      textureDescription    = description.m_Attachments[uiAttachmentIndex]->GetTexture()->GetDescription();
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a VkFormat value that matches the VkFormat specified by the corresponding VkAttachmentDescription in renderPass.
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00880
@@ -961,12 +1067,12 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
         for (xiiUInt32 j = 0; j < renderPassDescription.m_SubPasses.GetCount(); ++j)
         {
-          const auto& subpass = renderPassDescription.m_SubPasses[j];
+          const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[j];
 
           bool bUsedInSubPass = false;
           for (xiiUInt32 k = 0; k < subpass.m_RenderTargetAttachments.GetCount(); ++k)
           {
-            const auto& attachmentReference = subpass.m_RenderTargetAttachments[k];
+            const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[k];
 
             if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
             {
@@ -975,7 +1081,7 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
           }
           for (xiiUInt32 k = 0; k < subpass.m_InputAttachments.GetCount(); ++k)
           {
-            const auto& attachmentReference = subpass.m_InputAttachments[k];
+            const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_InputAttachments[k];
 
             if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
             {
@@ -1000,21 +1106,21 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
   for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < renderPassDescription.m_SubPasses.GetCount(); ++uiSubPassIndex)
   {
-    const auto& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
+    const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
 
     for (xiiUInt32 uiInputAttachmentIndex = 0U; uiInputAttachmentIndex < subpass.m_InputAttachments.GetCount(); ++uiInputAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
 
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The input attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiInputAttachmentIndex, description.m_Attachments.GetCount());
 
-      const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
       XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as an input attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
       // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as an input attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT.
       // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00879
@@ -1023,20 +1129,20 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
 
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The render target attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, description.m_Attachments.GetCount());
 
-      const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
       XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& viewDescription = pAttachment->GetDescription();
+      const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
       XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::RenderTarget type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
       // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a color attachment or resolve attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT.
       // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00877
@@ -1045,20 +1151,20 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     for (xiiUInt32 uiResolveAttachmentIndex = 0U; uiResolveAttachmentIndex < subpass.m_ResolveAttachments.GetCount(); ++uiResolveAttachmentIndex)
     {
-      const auto& attachmentReference = subpass.m_ResolveAttachments[uiResolveAttachmentIndex];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_ResolveAttachments[uiResolveAttachmentIndex];
 
       if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
         continue;
 
       XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The resolve attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiResolveAttachmentIndex, description.m_Attachments.GetCount());
 
-      const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
       XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& viewDescription = pAttachment->GetDescription();
+      const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
       XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::RenderTarget type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-      const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
       // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a color attachment or resolve attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT.
       // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00877
@@ -1067,19 +1173,19 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_DepthStencilAttachment[0];
+      const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_DepthStencilAttachment[0];
 
       if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
         XII_GAL_DEVICE_CHECK(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The depth-stencil attachment index ({0}) must be less than the attachment count ({1}).", attachmentReference.m_uiAttachmentIndex, description.m_Attachments.GetCount());
 
-        const auto& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+        const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
         XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& viewDescription = pAttachment->GetDescription();
+        const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
         XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::DepthStencil type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+        const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
         // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a depth/stencil attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-02633
@@ -1091,22 +1197,22 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
   bool bIsVRSEnabled = false;
   for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < renderPassDescription.m_SubPasses.GetCount(); ++uiSubPassIndex)
   {
-    const auto& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
+    const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
 
     if (!subpass.m_ShadingRateAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_ShadingRateAttachment[0];
+      const xiiGALShadingRateAttachmentDescription& attachmentReference = subpass.m_ShadingRateAttachment[0];
       if (attachmentReference.m_AttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
         XII_GAL_DEVICE_CHECK(attachmentReference.m_AttachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The shading rate attachment index ({0}) must be less than the attachment count ({1}).", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, description.m_Attachments.GetCount());
 
-        const auto& pAttachment = description.m_Attachments[attachmentReference.m_AttachmentReference.m_uiAttachmentIndex];
+        const xiiSharedPtr<xiiGALTextureView>& pAttachment = description.m_Attachments[attachmentReference.m_AttachmentReference.m_uiAttachmentIndex];
         XII_GAL_DEVICE_CHECK(pAttachment != nullptr, "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass and must be valid.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& viewDescription = pAttachment->GetDescription();
+        const xiiGALTextureViewCreationDescription& viewDescription = pAttachment->GetDescription();
         XII_GAL_DEVICE_CHECK(viewDescription.m_ViewType == xiiGALTextureViewType::ShadingRate, "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass, but is not of the xiiGALTextureViewType::ShadingRate type.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex);
 
-        const auto& textureDescription = pAttachment->GetTexture()->GetDescription();
+        const xiiGALTextureCreationDescription& textureDescription = pAttachment->GetTexture()->GetDescription();
 
         // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a depth/stencil attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-02633
@@ -1123,12 +1229,12 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
     {
-      const auto& pAttachmentReference = description.m_Attachments[uiAttachmentIndex];
+      const xiiSharedPtr<xiiGALTextureView>& pAttachmentReference = description.m_Attachments[uiAttachmentIndex];
 
       if (pAttachmentReference->GetDescription().m_ViewType == xiiGALTextureViewType::ShadingRate)
         continue;
 
-      const auto& textureDescription = pAttachmentReference->GetTexture()->GetDescription();
+      const xiiGALTextureCreationDescription& textureDescription = pAttachmentReference->GetTexture()->GetDescription();
 
       XII_GAL_DEVICE_CHECK(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Subsampled), "The attachment at index {0} must be created with the xiiGALMiscTextureFlags::Subsampled flag. If the xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget capability is not supported, all attachments except the shading rate texture must have been created with a xiiGALMiscTextureFlags::Subsampled flag.");
     }
@@ -1153,7 +1259,7 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 
     for (xiiUInt32 i = 0U; i < description.m_Triangles.GetCount(); ++i)
     {
-      const auto& triangle = description.m_Triangles[i];
+      const xiiGALBLASTriangleDescription& triangle = description.m_Triangles[i];
 
       XII_GAL_DEVICE_CHECK(!triangle.m_sGeometryName.IsEmpty(), "The geometry name at triangle {0} must not be empty.", i);
       XII_GAL_DEVICE_CHECK(triangle.m_VertexValueType == xiiGALValueType::Float32 || triangle.m_VertexValueType == xiiGALValueType::Float16 || triangle.m_VertexValueType == xiiGALValueType::Int32, "The Vertex Value Type specified in triangle {0} is invalid. Allowed types are xiiGALValueType::Float32, xiiGALValueType::Float16 or xiiGALValueType::Int32.", i);
@@ -1173,7 +1279,7 @@ xiiSharedPtr<xiiGALBottomLevelAS> xiiGALDevice::CreateBottomLevelAS(const xiiGAL
 
     for (xiiUInt32 i = 0U; i < description.m_BoundingBoxes.GetCount(); ++i)
     {
-      const auto& boundingBox = description.m_BoundingBoxes[i];
+      const xiiGALBLASBoundingBoxDescription& boundingBox = description.m_BoundingBoxes[i];
 
       XII_GAL_DEVICE_CHECK(!boundingBox.m_sGeometryName.IsEmpty(), "The Geometry Name in bounding box {0} must not be empty.", i);
       XII_GAL_DEVICE_CHECK(boundingBox.m_uiMaxBoxCount > 0U, "The Max Box Count in bounding box {0} must be greater than zero.", i);
@@ -1213,7 +1319,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   xiiMap<xiiHashedString, xiiSet<xiiGALShaderType::StorageType>> usedResourceShaderStages;
   for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
   {
-    const auto& resource = description.m_Resources[i];
+    const xiiGALPipelineResourceDescription& resource = description.m_Resources[i];
 
     XII_GAL_DEVICE_CHECK(!resource.m_sName.IsEmpty(), "The pipeline resource at index '{0}' requires a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!resource.m_ShaderStages.IsNoFlagSet(), "The pipeline resource at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);
@@ -1256,7 +1362,7 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
   xiiMap<xiiHashedString, xiiSet<xiiGALShaderType::StorageType>> usedImmutableSamplerShaderStages;
   for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
   {
-    auto& samplerDescription = description.m_ImmutableSamplers[i];
+    xiiGALImmutableSamplerDescription& samplerDescription = description.m_ImmutableSamplers[i];
 
     XII_GAL_DEVICE_CHECK(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);
@@ -1290,6 +1396,17 @@ xiiSharedPtr<xiiGALPipelineResourceSignature> xiiGALDevice::CreatePipelineResour
 
       usedImmutableSamplerShaderStages.Insert(samplerDescription.m_SamplerOrTextureName, set);
     }
+  }
+
+  // Ensure that push constant ranges are within the device limits.
+  for (const xiiGALPushConstantRange& range : description.m_PushConstantRanges)
+  {
+    XII_GAL_DEVICE_CHECK(range.m_ShaderStages != xiiGALShaderType::Unknown && !range.m_ShaderStages.IsNoFlagSet(), "Push constant range with offset {} and size {} has invalid shader stages. A push constant range must specify at least one valid shader stage.", range.m_uiOffset, range.m_uiSize);
+    XII_GAL_DEVICE_CHECK(range.m_uiOffset < static_cast<xiiUInt64>(m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize), "Push constant range offset ({}) exceeds device limit of {} bytes.", range.m_uiOffset, m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize);
+    XII_GAL_DEVICE_CHECK(range.m_uiSize <= static_cast<xiiUInt64>(m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize), "Push constant range size ({}) exceeds device limit of {} bytes.", range.m_uiSize, m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize);
+    XII_GAL_DEVICE_CHECK(static_cast<xiiUInt64>(range.m_uiOffset) + static_cast<xiiUInt64>(range.m_uiSize) <= static_cast<xiiUInt64>(m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize), "Push constant range (offset {} size {}) exceeds device limit of {} bytes.", range.m_uiOffset, range.m_uiSize, m_AdapterDescription.m_DeviceLimits.m_uiMaxPushConstantsSize);
+    XII_GAL_DEVICE_CHECK(range.m_uiOffset % 4U == 0U, "Push constant range offset ({}) must be a multiple of 4 bytes.", range.m_uiOffset);
+    XII_GAL_DEVICE_CHECK(range.m_uiSize != 0U, "Push constant range size must be greater than zero.");
   }
 
   /// \todo Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.

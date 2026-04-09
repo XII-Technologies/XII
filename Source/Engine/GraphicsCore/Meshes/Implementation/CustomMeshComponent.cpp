@@ -8,10 +8,8 @@
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <GraphicsCore/Meshes/CustomMeshComponent.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
-#include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
-#include <GraphicsCore/Pipeline/RenderPipeline.h>
-#include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiCustomMeshComponent, 2, xiiComponentMode::Static)
@@ -263,77 +261,23 @@ xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;
 
 void xiiCustomMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
-void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
+void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& ref_types) const
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());
 }
 
-void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, xiiSharedPtr<xiiGALCommandList> pCommandList, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-#ifdef CORE_ENABLE
-  xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext, pCommandList);
-  pInstanceData->BindResources(pCommandList);
-
-  const xiiCustomMeshRenderData* pRenderData1st = batch.GetFirstData<xiiCustomMeshRenderData>();
-
-  if (pRenderData1st->m_uiFlipWinding)
-  {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "TRUE");
-  }
-  else
-  {
-    renderViewContext.SetShaderPermutationVariable("FLIP_WINDING", "FALSE");
-  }
-
-  renderViewContext.SetShaderPermutationVariable("VERTEX_SKINNING", "FALSE");
-
-  for (auto it = batch.GetIterator<xiiCustomMeshRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
-  {
-    const xiiCustomMeshRenderData* pRenderData = it;
-
-    xiiResourceLock<xiiDynamicMeshBufferResource> pBuffer(pRenderData->m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
-
-    pRenderContext->BindMaterial(pRenderData->m_hMaterial);
-
-    xiiUInt32                       uiInstanceDataOffset = 0;
-    xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(1, uiInstanceDataOffset);
-
-    instanceData[0].GameObjectID  = pRenderData->m_uiUniqueID;
-    instanceData[0].Color         = pRenderData->m_Color;
-    instanceData[0].ObjectToWorld = pRenderData->m_GlobalTransform;
-
-    if (pRenderData->m_uiUniformScale)
-    {
-      instanceData[0].ObjectToWorldNormal = instanceData[0].ObjectToWorld;
-    }
-    else
-    {
-      xiiMat4 objectToWorld = pRenderData->m_GlobalTransform.GetAsMat4();
-
-      xiiMat3 mInverse = objectToWorld.GetRotationalPart();
-      mInverse.Invert(0.0f).IgnoreResult();
-      // we explicitly ignore the return value here (success / failure)
-      // because when we have a scale of 0 (which happens temporarily during editing) that would be annoying
-      instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
-    }
-
-    pInstanceData->UpdateInstanceData(pRenderContext->GetCommandList(), 1);
-
-    const auto& desc = pBuffer->GetDescriptor();
-    pBuffer->UpdateGpuBuffer(pRenderContext->GetCommandList());
-
-    // redo this after the primitive count has changed
-    pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);
-
-    renderViewContext.m_pRenderContext->DrawMeshBuffer(pRenderData->m_uiNumPrimitives, pRenderData->m_uiFirstPrimitive).IgnoreResult();
-  }
-#endif
+  XII_IGNORE_UNUSED(renderViewContext);
+  XII_IGNORE_UNUSED(pPass);
+  XII_IGNORE_UNUSED(batch);
+  return;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_CustomMeshComponent);

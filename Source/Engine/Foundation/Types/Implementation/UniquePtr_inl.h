@@ -12,7 +12,7 @@ XII_ALWAYS_INLINE xiiUniquePtr<T>::xiiUniquePtr(const xiiInternal::NewInstance<U
 
 template <typename T>
 template <typename U>
-XII_ALWAYS_INLINE xiiUniquePtr<T>::xiiUniquePtr(U* pInstance, xiiAllocatorBase* pAllocator)
+XII_ALWAYS_INLINE xiiUniquePtr<T>::xiiUniquePtr(U* pInstance, xiiAllocator* pAllocator)
 {
   m_pInstance  = pInstance;
   m_pAllocator = pAllocator;
@@ -87,7 +87,7 @@ XII_ALWAYS_INLINE T* xiiUniquePtr<T>::Release()
 }
 
 template <typename T>
-XII_ALWAYS_INLINE T* xiiUniquePtr<T>::Release(xiiAllocatorBase*& out_pAllocator)
+XII_ALWAYS_INLINE T* xiiUniquePtr<T>::Release(xiiAllocator*& out_pAllocator)
 {
   T* pInstance   = m_pInstance;
   out_pAllocator = m_pAllocator;

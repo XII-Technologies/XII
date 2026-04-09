@@ -1,66 +1,42 @@
 #pragma once
 
-#include <Core/Graphics/Camera.h>
-#include <GraphicsCore/Debug/DebugRendererContext.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
-#include <GraphicsCore/Pipeline/RenderDataBatch.h>
-#include <GraphicsCore/Pipeline/ViewData.h>
 
+#include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Threading/Mutex.h>
+
+/// \brief Batch of extracted render data, intended to be populated by component managers sequentially per-batch.
+struct XII_GRAPHICSCORE_DLL xiiRenderDataBatch
+{
+  xiiArrayPtr<xiiRenderData*> m_Data;
+};
+
+/// \brief A thread-safe structure for components to push their extracted render data batches into.
 class XII_GRAPHICSCORE_DLL xiiExtractedRenderData
 {
 public:
   xiiExtractedRenderData();
+  ~xiiExtractedRenderData();
 
-  XII_ALWAYS_INLINE void             SetCamera(const xiiCamera& camera) { m_Camera = camera; }
-  XII_ALWAYS_INLINE const xiiCamera& GetCamera() const { return m_Camera; }
+  /// \brief Pushes a batch of extracted data safely to the internal list.
+  void AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch);
 
-  XII_ALWAYS_INLINE void             SetLodCamera(const xiiCamera& camera) { m_LodCamera = camera; }
-  XII_ALWAYS_INLINE const xiiCamera& GetLodCamera() const { return m_LodCamera; }
-
-  XII_ALWAYS_INLINE void               SetViewData(const xiiViewData& viewData) { m_ViewData = viewData; }
-  XII_ALWAYS_INLINE const xiiViewData& GetViewData() const { return m_ViewData; }
-
-  XII_ALWAYS_INLINE void    SetWorldTime(xiiTime time) { m_WorldTime = time; }
-  XII_ALWAYS_INLINE xiiTime GetWorldTime() const { return m_WorldTime; }
-
-  XII_ALWAYS_INLINE void                           SetWorldDebugContext(const xiiDebugRendererContext& debugContext) { m_WorldDebugContext = debugContext; }
-  XII_ALWAYS_INLINE const xiiDebugRendererContext& GetWorldDebugContext() const { return m_WorldDebugContext; }
-
-  XII_ALWAYS_INLINE void                           SetViewDebugContext(const xiiDebugRendererContext& debugContext) { m_ViewDebugContext = debugContext; }
-  XII_ALWAYS_INLINE const xiiDebugRendererContext& GetViewDebugContext() const { return m_ViewDebugContext; }
-
-  void AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category);
-  void AddFrameData(const xiiRenderData* pFrameData);
-
-  void SortAndBatch();
-
+  /// \brief Clears the internal arrays entirely. Called at the start of extreme frame extraction.
   void Clear();
 
-  xiiRenderDataBatchList GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
+  /// \brief Sorts the underlying render data by sorting key for cache-efficient render execution.
+  void SortAndBatches();
 
-  template <typename T>
-  XII_ALWAYS_INLINE const T* GetFrameData() const
-  {
-    return static_cast<const T*>(GetFrameData(xiiGetStaticRTTI<T>()));
-  }
+  /// \brief Returns the flattened and sorted render data for the given category.
+  xiiArrayPtr<xiiRenderData* const> GetRenderData(xiiRenderDataCategory category) const;
 
 private:
-  const xiiRenderData* GetFrameData(const xiiRTTI* pRtti) const;
+  xiiMutex m_Mutex;
 
-  struct DataPerCategory
-  {
-    xiiDynamicArray<xiiRenderDataBatch>                     m_Batches;
-    xiiDynamicArray<xiiRenderDataBatch::SortableRenderData> m_SortableRenderData;
-  };
+  // Batches submitted concurrently
+  xiiDynamicArray<xiiDynamicArray<xiiRenderDataBatch>> m_BatchesPerCategory;
 
-  xiiCamera   m_Camera;
-  xiiCamera   m_LodCamera; // Temporary until we have a real LOD system
-  xiiViewData m_ViewData;
-  xiiTime     m_WorldTime;
-
-  xiiDebugRendererContext m_WorldDebugContext;
-  xiiDebugRendererContext m_ViewDebugContext;
-
-  xiiHybridArray<DataPerCategory, 16>      m_DataPerCategory;
-  xiiHybridArray<const xiiRenderData*, 16> m_FrameData;
+  // Flattened and sorted array per category, built during SortAndBatches
+  xiiDynamicArray<xiiDynamicArray<xiiRenderData*>> m_SortedRenderData;
 };

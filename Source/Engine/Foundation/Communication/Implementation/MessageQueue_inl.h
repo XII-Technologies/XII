@@ -1,12 +1,12 @@
 
 template <typename MetaDataType>
-xiiMessageQueueBase<MetaDataType>::xiiMessageQueueBase(xiiAllocatorBase* pAllocator) :
+xiiMessageQueueBase<MetaDataType>::xiiMessageQueueBase(xiiAllocator* pAllocator) :
   m_Queue(pAllocator)
 {
 }
 
 template <typename MetaDataType>
-xiiMessageQueueBase<MetaDataType>::xiiMessageQueueBase(const xiiMessageQueueBase& rhs, xiiAllocatorBase* pAllocator) :
+xiiMessageQueueBase<MetaDataType>::xiiMessageQueueBase(const xiiMessageQueueBase& rhs, xiiAllocator* pAllocator) :
   m_Queue(pAllocator)
 {
   m_Queue = rhs.m_Queue;
@@ -154,7 +154,7 @@ xiiMessageQueue<MD, A>::xiiMessageQueue() :
 }
 
 template <typename MD, typename A>
-xiiMessageQueue<MD, A>::xiiMessageQueue(xiiAllocatorBase* pQueueAllocator) :
+xiiMessageQueue<MD, A>::xiiMessageQueue(xiiAllocator* pQueueAllocator) :
   xiiMessageQueueBase<MD>(pQueueAllocator)
 {
 }

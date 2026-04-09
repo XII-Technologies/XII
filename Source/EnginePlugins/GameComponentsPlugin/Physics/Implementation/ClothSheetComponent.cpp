@@ -18,6 +18,7 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 /* TODO:
  * cache render category
@@ -329,7 +330,7 @@ void xiiClothSheetComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     }
   }
 
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::LitOpaque;
+  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
 
   if (m_hMaterial.IsValid())
   {
@@ -439,9 +440,9 @@ xiiClothSheetRenderer::~xiiClothSheetRenderer() = default;
 
 void xiiClothSheetRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
 {
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitOpaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitMasked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
+  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
@@ -450,8 +451,9 @@ void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
   ref_types.PushBack(xiiGetStaticRTTI<xiiClothSheetRenderData>());
 }
 
-void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
+#ifdef CORE_ENABLE
   const bool bNeedsNormals = (renderViewContext.m_pViewData->m_CameraUsageHint != xiiCameraUsageHint::Shadow);
 
   xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
@@ -483,7 +485,7 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     instanceData[0].GameObjectID        = pRenderData->m_uiUniqueID;
     instanceData[0].Color               = pRenderData->m_Color;
 
-    if (auto pGraphicsOrTransferQueue = pDevice->GetDefaultCommandQueue(xiiGALCommandQueueType::Transfer))
+    if (auto pGraphicsOrTransferQueue = pDevice->GetCommandQueue(xiiGALCommandQueueType::Transfer))
     {
       auto pCommandList = pGraphicsOrTransferQueue->BeginCommandList();
 
@@ -576,6 +578,7 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer(uiNumPrimitives).IgnoreResult();
   }
+#endif
 }
 
 void xiiClothSheetRenderer::CreateVertexBuffer()
@@ -618,6 +621,7 @@ void xiiClothSheetComponentManager::Initialize()
     auto desc                        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiClothSheetComponentManager::Update, this);
     desc.m_Phase                     = xiiWorldUpdatePhase::Async;
     desc.m_bOnlyUpdateWhenSimulating = true;
+    desc.m_uiAsyncPhaseBatchSize     = 2U;
 
     this->RegisterUpdateFunction(desc);
   }

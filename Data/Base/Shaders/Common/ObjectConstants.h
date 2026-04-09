@@ -14,7 +14,7 @@ struct XII_SHADER_STRUCT xiiPerInstanceData
   COLOR4F(Color);
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 DECLARE_STRUCTURED_BUFFER_AUTO(perInstanceData, xiiPerInstanceData);
 
 #  if defined(USE_SKINNING)
@@ -35,7 +35,7 @@ DECLARE_CONSTANT_BUFFER(xiiObjectConstants, 2, 0)
   UINT1(InstanceDataOffset);
 };
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 
 // Access to instance should usually go through this macro!
 // It's a macro so it can work with arbitrary input structs (for VS/GS/PS...)

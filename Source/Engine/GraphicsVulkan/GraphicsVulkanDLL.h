@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-#include <Foundation/Types/UniquePtr.h>
 
 // Configure the DLL Import/Export Define
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
@@ -114,32 +113,46 @@ class xiiGALSemaphorePoolVulkan;
 class xiiGALQueryPoolVulkan;
 class xiiGALDescriptorSetPoolVulkan;
 class xiiGALStagingBufferPoolVulkan;
+class xiiGALDynamicBufferPoolVulkan;
 class xiiGALCommandBufferPoolVulkan;
 class xiiGALCpuWaitOnlyFenceVulkan;
+class xiiVulkanMemoryAllocator;
 
-struct xiiGALQueueInformationVulkan
+VK_DEFINE_HANDLE(xiiVulkanAllocation)
+
+struct XII_GRAPHICSVULKAN_DLL xiiGALQueueInformationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
-  vk::Queue m_vkQueue            = VK_NULL_HANDLE;
+  vk::Queue m_vkQueue;
   xiiUInt32 m_uiQueueFamilyIndex = xiiInvalidIndex;
   xiiUInt32 m_uiQueueIndex       = 0U;
 };
 
-struct xiiGALDynamicBufferAllocationVulkan
+struct XII_GRAPHICSVULKAN_DLL xiiGALDynamicBufferAllocationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
-  vk::Buffer              m_vkBuffer;
-  struct VmaAllocation_T* m_VmaAllocation;
-  xiiUInt64               m_uiOffset;
+  vk::Buffer          m_vkBuffer;
+  xiiVulkanAllocation m_VulkanAllocation;
+  xiiUInt64           m_uiOffset;
 };
 
-struct xiiGALStagingBufferAllocationVulkan
+struct XII_GRAPHICSVULKAN_DLL xiiGALStagingBufferAllocationVulkan
 {
   XII_DECLARE_POD_TYPE();
 
-  vk::Buffer              m_vkBuffer;
-  struct VmaAllocation_T* m_VmaAllocation;
-  xiiUInt64               m_uiOffset;
+  vk::Buffer          m_vkBuffer;
+  xiiVulkanAllocation m_VulkanAllocation;
+  xiiUInt64           m_uiOffset;
+};
+
+template <typename T, typename = void>
+struct XII_GRAPHICSVULKAN_DLL HasObjectType : std::false_type
+{
+};
+
+template <typename T>
+struct XII_GRAPHICSVULKAN_DLL HasObjectType<T, std::void_t<decltype(T::objectType)>> : std::true_type
+{
 };

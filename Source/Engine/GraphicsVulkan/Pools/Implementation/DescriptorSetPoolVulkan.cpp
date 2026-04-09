@@ -13,15 +13,13 @@ bool xiiHashHelper<vk::DescriptorType>::Equal(vk::DescriptorType a, vk::Descript
   return a == b;
 }
 
-xiiGALDescriptorSetPoolVulkan::xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize) :
-  m_pDeviceVulkan(pDeviceVulkan), m_DescriptorPools(pDeviceVulkan->GetAllocator()), m_QueuedDescriptorPools(pDeviceVulkan->GetAllocator()), m_uiBaseSize(uiBaseSize)
+xiiGALDescriptorSetPoolVulkan::xiiGALDescriptorSetPoolVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiUInt32 uiBaseSize, xiiUInt32 uiMaxSets) :
+  m_pDeviceVulkan(pDeviceVulkan), m_DescriptorPools(pDeviceVulkan->GetAllocator()), m_QueuedDescriptorPools(pDeviceVulkan->GetAllocator()), m_uiBaseSize(uiBaseSize), m_uiMaxSets(uiMaxSets)
 {
 }
 
 xiiGALDescriptorSetPoolVulkan::~xiiGALDescriptorSetPoolVulkan()
 {
-  XII_LOCK(m_PoolMutex);
-
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 
   for (xiiUInt32 i = 0; i < m_DescriptorPools.GetCount(); ++i)
@@ -40,8 +38,6 @@ xiiGALDescriptorSetPoolVulkan::~xiiGALDescriptorSetPoolVulkan()
 
 vk::DescriptorSet xiiGALDescriptorSetPoolVulkan::RequestDescriptorSet(vk::DescriptorSetLayout vkDescriptorSetLayout)
 {
-  XII_LOCK(m_PoolMutex);
-
   if (!m_vkCurrentDescriptorPool)
   {
     m_vkCurrentDescriptorPool = CreateVulkanDescriptorPool();
@@ -75,7 +71,8 @@ vk::DescriptorSet xiiGALDescriptorSetPoolVulkan::RequestDescriptorSet(vk::Descri
 
   if (bPoolExhausted)
   {
-    m_pDeviceVulkan->ReclaimLater(m_vkCurrentDescriptorPool);
+    // We now create a descriptor set allocator per command list. Thus, we can't necessarily 'reclaim' without more complex tracking.
+    // m_pDeviceVulkan->ReclaimLater(m_vkCurrentDescriptorPool);
 
     m_vkCurrentDescriptorPool = CreateVulkanDescriptorPool();
 
@@ -91,7 +88,7 @@ void xiiGALDescriptorSetPoolVulkan::ReclaimDescriptorPool(vk::DescriptorPool&& v
 {
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
 
-  vkLogicalDevice.resetDescriptorPool(vkDescriptorPool, vk::DescriptorPoolResetFlagBits{}, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  VK_ASSERT_DEV(vkLogicalDevice.resetDescriptorPool(vkDescriptorPool, vk::DescriptorPoolResetFlagBits{}, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_QueuedDescriptorPools.PushBack(vkDescriptorPool);
 }
@@ -105,11 +102,11 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     vk::Device  vkLogicalDevice   = m_pDeviceVulkan->GetVulkanLogicalDevice();
     const auto& extensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
-    xiiHybridArray<vk::DescriptorPoolSize, 17U> descriptorPoolSizes(m_pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::DescriptorPoolSize, 16U> descriptorPoolSizes;
     vk::DescriptorType                          descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
                                                                      vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
 
-    for (const auto& vkDescriptorType : descriptorTypes)
+    for (const vk::DescriptorType& vkDescriptorType : descriptorTypes)
     {
       xiiUInt32 uiDescriptorCount = static_cast<xiiUInt32>(GetDescriptorTypeWeight(vkDescriptorType) * m_uiBaseSize);
 
@@ -125,20 +122,16 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     vk::DescriptorPoolCreateInfo vkDescriptorPoolCreateInfo = {};
     vkDescriptorPoolCreateInfo.pNext                        = nullptr;
     vkDescriptorPoolCreateInfo.flags                        = {};
-    vkDescriptorPoolCreateInfo.maxSets                      = m_uiBaseSize;
+    vkDescriptorPoolCreateInfo.maxSets                      = m_uiMaxSets;
     vkDescriptorPoolCreateInfo.poolSizeCount                = descriptorPoolSizes.GetCount();
     vkDescriptorPoolCreateInfo.pPoolSizes                   = descriptorPoolSizes.GetData();
 
     VK_ASSERT_DEV(vkLogicalDevice.createDescriptorPool(&vkDescriptorPoolCreateInfo, nullptr, &vkDescriptorPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-    XII_LOCK(m_PoolMutex);
-
     m_DescriptorPools.PushBack(vkDescriptorPool);
   }
   else
   {
-    XII_LOCK(m_PoolMutex);
-
     vkDescriptorPool = m_QueuedDescriptorPools.PeekFront();
 
     m_QueuedDescriptorPools.PopFront();

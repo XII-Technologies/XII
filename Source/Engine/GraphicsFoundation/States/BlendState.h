@@ -84,8 +84,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALColorMask
     Blue  = XII_BIT(2), ///< Write to the blue component.
     Alpha = XII_BIT(3), ///< Write to the alpha component.
 
-    ENUM_COUNT = 5U,
-
     RG   = Red | Green,                ///< Write to the red and green components.
     RGB  = Red | Green | Blue,         ///< Write to the red, green and blue components.
     RGBA = Red | Green | Blue | Alpha, ///< Write to the red, green, blue, and alpha components.
@@ -162,13 +160,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
 };
 
 /// \brief This describes the blend state for all render targets in the graphics pipeline.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public xiiHashableStruct<xiiGALBlendStateCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription
 {
-  bool                                                                               m_bAlphaToCoverage     = false;                       ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
-  bool                                                                               m_bIndependentBlend    = false;                       ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
-  bool                                                                               m_LogicOperationEnable = false;                       ///< Enable or disable a logical operation for this render target. The default is false.
-  xiiEnum<xiiGALLogicOperation>                                                      m_LogicOperation       = xiiGALLogicOperation::Clear; ///< Defines logical operation for the render target. The default is xiiGALLogicOperation::Clear.
-  xiiStaticArray<xiiGALRenderTargetBlendDescription, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargets;                                      ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
+  XII_ALWAYS_INLINE bool operator==(const xiiGALBlendStateCreationDescription& rhs) const = default;
+
+  bool                                                   m_bAlphaToCoverage     = false;                       ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
+  bool                                                   m_bIndependentBlend    = false;                       ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
+  bool                                                   m_LogicOperationEnable = false;                       ///< Enable or disable a logical operation for this render target. The default is false.
+  xiiEnum<xiiGALLogicOperation>                          m_LogicOperation       = xiiGALLogicOperation::Clear; ///< Defines logical operation for the render target. The default is xiiGALLogicOperation::Clear.
+  xiiHybridArray<xiiGALRenderTargetBlendDescription, 2U> m_RenderTargets;                                      ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
 };
 
 /// \brief Interface that defines methods to manipulate a blend state object.

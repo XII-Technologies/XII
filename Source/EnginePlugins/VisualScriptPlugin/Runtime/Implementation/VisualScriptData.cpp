@@ -98,7 +98,7 @@ xiiVisualScriptDataStorage::~xiiVisualScriptDataStorage()
   DeallocateStorage();
 }
 
-void xiiVisualScriptDataStorage::AllocateStorage(xiiAllocatorBase* pAllocator)
+void xiiVisualScriptDataStorage::AllocateStorage(xiiAllocator* pAllocator)
 {
   XII_ASSERT_DEV(IsAllocated() == false, "Storage already allocated");
 
@@ -261,7 +261,7 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
   return XII_SUCCESS;
 }
 
-xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream, xiiAllocatorBase* pAllocator)
+xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream, xiiAllocator* pAllocator)
 {
   if (IsAllocated() == false)
   {
@@ -409,7 +409,7 @@ xiiVariant xiiVisualScriptDataStorage::GetDataAsVariant(DataOffset dataOffset, c
       XII_ASSERT_NOT_IMPLEMENTED;
 
     case xiiVisualScriptDataType::Int64:
-      XII_ASSERT_DEBUG(pExpectedType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) || pExpectedType == xiiGetStaticRTTI<xiiInt64>(), "");
+      XII_ASSERT_DEBUG(pExpectedType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) || pExpectedType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) || pExpectedType == xiiGetStaticRTTI<xiiInt64>(), "");
       return GetData<xiiInt64>(dataOffset);
 
     case xiiVisualScriptDataType::Float:
@@ -478,8 +478,15 @@ xiiVariant xiiVisualScriptDataStorage::GetDataAsVariant(DataOffset dataOffset, c
       XII_ASSERT_NOT_IMPLEMENTED;
 
     case xiiVisualScriptDataType::Component:
-      XII_ASSERT_DEBUG(pExpectedType == xiiGetStaticRTTI<xiiComponentHandle>(), "");
-      return GetData<xiiComponentHandle>(dataOffset);
+      if (pExpectedType == nullptr || pExpectedType->IsDerivedFrom<xiiComponent>())
+      {
+        return GetPointerData(dataOffset, uiExecutionCounter);
+      }
+      else if (pExpectedType == xiiGetStaticRTTI<xiiComponentHandle>())
+      {
+        return GetData<xiiComponentHandle>(dataOffset);
+      }
+      XII_ASSERT_NOT_IMPLEMENTED;
 
     case xiiVisualScriptDataType::TypedPointer:
       return GetPointerData(dataOffset, uiExecutionCounter);

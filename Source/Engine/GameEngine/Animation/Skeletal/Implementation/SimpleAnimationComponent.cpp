@@ -17,7 +17,7 @@ using namespace ozz::animation;
 using namespace ozz::math;
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 3, xiiComponentMode::Static);
+XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 1, xiiComponentMode::Static);
 {
   XII_BEGIN_PROPERTIES
   {
@@ -25,7 +25,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSimpleAnimationComponent, 3, xiiComponentMode::Stati
     XII_ENUM_MEMBER_PROPERTY("AnimationMode", xiiPropertyAnimMode, m_AnimationMode),
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_ENUM_MEMBER_PROPERTY("RootMotionMode", xiiRootMotionMode, m_RootMotionMode),
-    XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate),
+    XII_ENUM_MEMBER_PROPERTY("InvisibleUpdateRate", xiiAnimationInvisibleUpdateRate, m_InvisibleUpdateRate)->AddAttributes(new xiiDefaultValueAttribute(xiiAnimationInvisibleUpdateRate::Pause)),
     XII_MEMBER_PROPERTY("EnableIK", m_bEnableIK),
   }
   XII_END_PROPERTIES;
@@ -65,16 +65,8 @@ void xiiSimpleAnimationComponent::DeserializeComponent(xiiWorldReader& inout_str
   s >> m_fSpeed;
   s >> m_hAnimationClip;
   s >> m_RootMotionMode;
-
-  if (uiVersion >= 2)
-  {
-    s >> m_InvisibleUpdateRate;
-  }
-
-  if (uiVersion >= 3)
-  {
-    s >> m_bEnableIK;
-  }
+  s >> m_InvisibleUpdateRate;
+  s >> m_bEnableIK;
 }
 
 void xiiSimpleAnimationComponent::OnSimulationStarted()
@@ -91,7 +83,7 @@ void xiiSimpleAnimationComponent::SetNormalizedPlaybackPosition(float fPosition)
 {
   m_fNormalizedPlaybackPosition = fPosition;
 
-  // force update next time
+  // Force update next time.
   SetUserFlag(1, true);
 }
 
@@ -119,7 +111,9 @@ void xiiSimpleAnimationComponent::Update()
   if (m_ElapsedTimeSinceUpdate < tMinStep)
     return;
 
-  const bool bVisible = visType != xiiVisibilityState::Invisible;
+  // If we did this, the animation would fully stop, when the component is really invisible (not even indirectly visible)
+  // this breaks the setting 'InvisibleUpdateRate', which is supposed to let the user override the update rate for this case.
+  const bool bVisible = true; // visType != xiiVisibilityState::Invisible;
 
   xiiResourceLock<xiiAnimationClipResource> pAnimation(m_hAnimationClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
   if (pAnimation.GetAcquireResult() != xiiResourceAcquireResult::Final)
@@ -128,18 +122,18 @@ void xiiSimpleAnimationComponent::Update()
   const xiiTime tDiff      = m_ElapsedTimeSinceUpdate;
   m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
-  const xiiAnimationClipResourceDescriptor& animDesc = pAnimation->GetDescriptor();
+  const xiiAnimationClipResourceDescriptor& animationClipResourceDescriptor = pAnimation->GetDescriptor();
 
-  m_Duration = animDesc.GetDuration();
+  m_Duration = animationClipResourceDescriptor.GetDuration();
 
   const float fPrevPlaybackPos = m_fNormalizedPlaybackPosition;
 
   xiiAnimPoseEventTrackSampleMode mode = xiiAnimPoseEventTrackSampleMode::None;
 
-  if (!UpdatePlaybackTime(tDiff, animDesc.m_EventTrack, mode))
+  if (!UpdatePlaybackTime(tDiff, animationClipResourceDescriptor.m_EventTrack, mode))
     return;
 
-  if (animDesc.m_EventTrack.IsEmpty())
+  if (animationClipResourceDescriptor.m_EventTrack.IsEmpty())
   {
     mode = xiiAnimPoseEventTrackSampleMode::None;
   }
@@ -166,7 +160,7 @@ void xiiSimpleAnimationComponent::Update()
     auto& cmdL2M                 = poseGen.AllocCommandLocalToModelPose();
     cmdL2M.m_pSendLocalPoseMsgTo = GetOwner();
 
-    if (animDesc.m_bAdditive)
+    if (animationClipResourceDescriptor.m_bAdditive)
     {
       auto& cmdComb = poseGen.AllocCommandCombinePoses();
       cmdComb.m_Inputs.PushBack(cmdSample.GetCommandID());
@@ -187,7 +181,7 @@ void xiiSimpleAnimationComponent::Update()
 
   if (m_RootMotionMode != xiiRootMotionMode::Ignore)
   {
-    xiiVec3 vRootMotion = tDiff.AsFloatInSeconds() * m_fSpeed * animDesc.m_vConstantRootMotion;
+    xiiVec3 vRootMotion = tDiff.AsFloatInSeconds() * m_fSpeed * animationClipResourceDescriptor.m_vConstantRootMotion;
 
     const bool bReverse = GetUserFlag(0);
     if (bReverse)

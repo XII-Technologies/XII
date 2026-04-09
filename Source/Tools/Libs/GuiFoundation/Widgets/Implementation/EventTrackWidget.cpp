@@ -672,7 +672,7 @@ void xiiQtEventTrackWidget::keyPressEvent(QKeyEvent* e)
 {
   QWidget::keyPressEvent(e);
 
-  if (e->modifiers() == Qt::ControlModifier && e->key() == Qt::Key_F)
+  if (e->modifiers() == Qt::ControlModifier && xiiQtUtils::IsEquivalentQtKey(e, Qt::Key_F))
   {
     FrameCurve();
   }

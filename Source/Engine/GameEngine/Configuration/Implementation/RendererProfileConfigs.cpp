@@ -12,11 +12,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelineProfileConfig, 1, xiiRTTIDefau
   XII_BEGIN_PROPERTIES
   {
     // MainRenderPipeline.xiiRenderPipelineAsset
-    XII_MEMBER_PROPERTY("MainRenderPipeline", m_sMainRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ c533e113-2a4c-4f42-a546-653c78f5e8a7 }"))),
+    XII_MEMBER_PROPERTY("MainRenderPipeline", m_sMainRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ 648e92e1-8632-484c-ae37-5071359df451 }"))),
     // EditorRenderPipeline.xiiRenderPipelineAsset
-    //XII_MEMBER_PROPERTY("EditorRenderPipeline", m_sEditorRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ da463c4d-c984-4910-b0b7-a0b3891d0448 }"))),
+    XII_MEMBER_PROPERTY("EditorRenderPipeline", m_sEditorRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ ec0ce8c4-0a42-4346-88af-8b3b23916770 }"))),
     // DebugRenderPipeline.xiiRenderPipelineAsset
-    //XII_MEMBER_PROPERTY("DebugRenderPipeline", m_sDebugRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ 0416eb3e-69c0-4640-be5b-77354e0e37d7 }"))),
+    XII_MEMBER_PROPERTY("DebugRenderPipeline", m_sDebugRenderPipeline)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline"), new xiiDefaultValueAttribute(xiiStringView("{ ed0b59ac-9c15-4fbf-a382-a8854f970cd8 }"))),
 
     XII_MAP_MEMBER_PROPERTY("CameraPipelines", m_CameraPipelines)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_RenderPipeline")),
   }
@@ -30,6 +30,8 @@ void xiiRenderPipelineProfileConfig::SaveRuntimeData(xiiChunkStreamWriter& inout
   inout_stream.BeginChunk("xiiRenderPipelineProfileConfig", 2);
 
   inout_stream << m_sMainRenderPipeline;
+  inout_stream << m_sEditorRenderPipeline;
+  inout_stream << m_sDebugRenderPipeline;
 
   inout_stream << m_CameraPipelines.GetCount();
   for (auto it = m_CameraPipelines.GetIterator(); it.IsValid(); ++it)
@@ -51,12 +53,14 @@ void xiiRenderPipelineProfileConfig::LoadRuntimeData(xiiChunkStreamReader& inout
     xiiRenderWorld::ClearCameraConfigs();
 
     inout_stream >> m_sMainRenderPipeline;
+    inout_stream >> m_sEditorRenderPipeline;
+    inout_stream >> m_sDebugRenderPipeline;
 
     m_CameraPipelines.Clear();
 
-    xiiUInt32 uiNumCamPipes = 0;
-    inout_stream >> uiNumCamPipes;
-    for (xiiUInt32 i = 0; i < uiNumCamPipes; ++i)
+    xiiUInt32 uiCameraPipelineCount = 0U;
+    inout_stream >> uiCameraPipelineCount;
+    for (xiiUInt32 i = 0; i < uiCameraPipelineCount; ++i)
     {
       xiiString sPipeName, sPipeAsset;
 

@@ -141,7 +141,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(*pComponent, 0);
 
       pRenderData->FillSortingKey();
-      ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
+      ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Opaque, xiiRenderData::Caching::Never);
     }
   }
 #endif
@@ -305,66 +305,69 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   auto& skyIrradianceStorage = s_pData->m_SkyIrradianceStorage;
 
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  auto                                           pGALCommandQueue = pDevice->GetDefaultCommandQueue();
-  auto                                           pGALCommandList  = pGALCommandQueue->BeginCommandList();
+  xiiSharedPtr<xiiGALDevice>                     pDevice       = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue*                            pCommandQueue = pDevice->GetCommandQueue();
+  xiiSharedPtr<xiiGALCommandList>                pCommandList  = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 4> atlasToClear;
 
-  pGALCommandList->BeginDebugGroup("Sky Irradiance Texture Update");
+  pCommandList->Begin();
   {
-    for (xiiUInt32 i = 0; i < skyIrradianceStorage.GetCount(); ++i)
+    pCommandList->BeginDebugGroup("Sky Irradiance Texture Update");
     {
-      if ((uiWorldHasSkyLight & XII_BIT(i)) == 0 && (uiSkyIrradianceChanged & XII_BIT(i)) != 0)
+      for (xiiUInt32 i = 0; i < skyIrradianceStorage.GetCount(); ++i)
       {
-        xiiBoundingBoxU32 destBox;
-        destBox.m_vMin.Set(0, i, 0);
-        destBox.m_vMax.Set(6, i + 1, 1);
-
-        xiiGALTextureSubResourceData memDesc;
-        memDesc.m_uiStride = sizeof(xiiAmbientCube<xiiColorLinear16f>);
-        memDesc.m_pData    = xiiMakeByteBlobPtr(&skyIrradianceStorage[i].m_Values[0], static_cast<xiiUInt32>(memDesc.m_uiStride) * 1);
-
-        pGALCommandList->UpdateTexture(s_pData->m_pSkyIrradianceTexture, xiiGALTextureMipLevelData(), destBox, memDesc);
-
-        uiSkyIrradianceChanged &= ~XII_BIT(i);
-
-        if (i < s_pData->m_WorldReflectionData.GetCount() && s_pData->m_WorldReflectionData[i] != nullptr)
+        if ((uiWorldHasSkyLight & XII_BIT(i)) == 0 && (uiSkyIrradianceChanged & XII_BIT(i)) != 0)
         {
-          xiiReflectionPool::Data::WorldReflectionData& data = *s_pData->m_WorldReflectionData[i];
-          atlasToClear.PushBack(data.m_mapping.GetTexture());
+          xiiBoundingBoxU32 destBox;
+          destBox.m_vMin.Set(0, i, 0);
+          destBox.m_vMax.Set(6, i + 1, 1);
+
+          xiiGALTextureSubResourceData memDesc;
+          memDesc.m_uiStride = sizeof(xiiAmbientCube<xiiColorLinear16f>);
+          memDesc.m_pData    = xiiMakeByteBlobPtr(&skyIrradianceStorage[i].m_Values[0], static_cast<xiiUInt32>(memDesc.m_uiStride) * 1);
+
+          pCommandList->UpdateTexture(s_pData->m_pSkyIrradianceTexture, xiiGALTextureMipLevelData(), destBox, memDesc);
+
+          uiSkyIrradianceChanged &= ~XII_BIT(i);
+
+          if (i < s_pData->m_WorldReflectionData.GetCount() && s_pData->m_WorldReflectionData[i] != nullptr)
+          {
+            xiiReflectionPool::Data::WorldReflectionData& data = *s_pData->m_WorldReflectionData[i];
+            atlasToClear.PushBack(data.m_mapping.GetTexture());
+          }
         }
       }
     }
-  }
-  pGALCommandList->EndDebugGroup();
+    pCommandList->EndDebugGroup();
 
-  pGALCommandList->BeginDebugGroup("ClearSkySpecular");
-  {
-    // Clear specular sky reflection to black.
-    const xiiUInt32 uiNumMipMaps = GetMipLevels();
-    for (xiiSharedPtr<xiiGALTexture> pAtlas : atlasToClear)
+    pCommandList->BeginDebugGroup("ClearSkySpecular");
     {
-      for (xiiUInt32 uiMipMapIndex = 0; uiMipMapIndex < uiNumMipMaps; ++uiMipMapIndex)
+      // Clear specular sky reflection to black.
+      const xiiUInt32 uiNumMipMaps = GetMipLevels();
+      for (xiiSharedPtr<xiiGALTexture> pAtlas : atlasToClear)
       {
-        for (xiiUInt32 uiFaceIndex = 0; uiFaceIndex < 6; ++uiFaceIndex)
+        for (xiiUInt32 uiMipMapIndex = 0; uiMipMapIndex < uiNumMipMaps; ++uiMipMapIndex)
         {
-          xiiGALTextureViewCreationDescription desc;
-          desc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
-          desc.m_uiMostDetailedMip         = uiMipMapIndex;
-          desc.m_uiFirstArrayOrDepthSlice  = uiFaceIndex;
-          desc.m_uiArrayOrDepthSlicesCount = 1;
+          for (xiiUInt32 uiFaceIndex = 0; uiFaceIndex < 6; ++uiFaceIndex)
+          {
+            xiiGALTextureViewCreationDescription desc;
+            desc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+            desc.m_uiMostDetailedMip         = uiMipMapIndex;
+            desc.m_uiFirstArrayOrDepthSlice  = uiFaceIndex;
+            desc.m_uiArrayOrDepthSlicesCount = 1;
 
-          xiiSharedPtr<xiiGALTextureView> pRenderTarget = pAtlas->CreateView(desc);
+            xiiSharedPtr<xiiGALTextureView> pRenderTarget = pAtlas->CreateView(desc);
 
-          pGALCommandList->ClearRenderTargetView(pRenderTarget, xiiColor::Black);
+            pCommandList->ClearRenderTargetView(pRenderTarget, xiiColor::Black);
+          }
         }
       }
     }
+    pCommandList->EndDebugGroup();
   }
-  pGALCommandList->EndDebugGroup();
+  pCommandList->End();
 
-  pGALCommandList->Submit();
+  pCommandQueue->Submit(pCommandList);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionPool);

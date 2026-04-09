@@ -1,42 +1,42 @@
 #pragma once
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   Clear();
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const xiiHybridStringBase& rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(const xiiHybridStringBase& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   *this = rhs;
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(xiiHybridStringBase&& rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(xiiHybridStringBase&& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   operator=(std::move(rhs));
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const char* rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(const char* rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   *this = rhs;
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const wchar_t* rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(const wchar_t* rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   *this = rhs;
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const xiiStringView& rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(const xiiStringView& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   *this = rhs;
@@ -161,7 +161,7 @@ XII_ALWAYS_INLINE xiiHybridString<Size, A>::xiiHybridString() :
 }
 
 template <xiiUInt16 Size, typename A>
-XII_ALWAYS_INLINE xiiHybridString<Size, A>::xiiHybridString(xiiAllocatorBase* pAllocator) :
+XII_ALWAYS_INLINE xiiHybridString<Size, A>::xiiHybridString(xiiAllocator* pAllocator) :
   xiiHybridStringBase<Size>(pAllocator)
 {
 }
@@ -253,13 +253,13 @@ XII_ALWAYS_INLINE void xiiHybridString<Size, A>::operator=(const xiiStringView& 
 #if XII_ENABLED(XII_INTEROP_STL_STRINGS)
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const std::string_view& rhs, xiiAllocatorBase* pAllocator)
+xiiHybridStringBase<Size>::xiiHybridStringBase(const std::string_view& rhs, xiiAllocator* pAllocator)
 {
   *this = rhs;
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const std::string& rhs, xiiAllocatorBase* pAllocator)
+xiiHybridStringBase<Size>::xiiHybridStringBase(const std::string& rhs, xiiAllocator* pAllocator)
 {
   *this = rhs;
 }

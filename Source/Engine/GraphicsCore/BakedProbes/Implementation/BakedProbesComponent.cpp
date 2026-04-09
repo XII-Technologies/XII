@@ -12,6 +12,7 @@
 #include <GraphicsCore/BakedProbes/ProbeTreeSectorResource.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
+#include <GraphicsCore/Pipeline/RenderDataManager.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 
@@ -106,13 +107,14 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
     {
       task->m_bHasNewData = false;
 
-      xiiSharedPtr<xiiGALDevice> pGALDevice       = xiiGALDevice::GetDefaultDevice();
-      xiiGALCommandQueue*        pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
+      xiiSharedPtr<xiiGALDevice> pDevice       = xiiGALDevice::GetDefaultDevice();
+      xiiGALCommandQueue*        pCommandQueue = pDevice->GetCommandQueue();
 
-      if (xiiSharedPtr<xiiGALCommandList> pGALCommandList = pGALCommandQueue->BeginCommandList())
+      if (xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}))
       {
+        pCommandList->Begin();
         {
-          xiiGALScopedDebugGroup group(pGALCommandList, "BakingDebugView");
+          xiiGALScopedDebugGroup group(pCommandList, "BakingDebugView");
 
           xiiBoundingBoxU32 destBox;
           destBox.m_vMin.SetZero();
@@ -122,9 +124,11 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
           sourceData.m_pData    = task->m_PixelData.GetByteArrayPtr();
           sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
-          pGALCommandList->UpdateTexture(pComponent->m_pDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+          pCommandList->UpdateTexture(pComponent->m_pDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
         }
-        pGALCommandList->Submit();
+        pCommandList->End();
+
+        pCommandQueue->Submit(pCommandList);
       }
     }
   }
@@ -248,7 +252,7 @@ void xiiBakedProbesComponent::SetShowDebugProbes(bool bShow)
 
     if (IsActiveAndInitialized())
     {
-      xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+      GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
     }
   }
 }
@@ -261,7 +265,7 @@ void xiiBakedProbesComponent::SetUseTestPosition(bool bUse)
 
     if (IsActiveAndInitialized())
     {
-      xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+      GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
     }
   }
 }
@@ -272,7 +276,7 @@ void xiiBakedProbesComponent::SetTestPosition(const xiiVec3& vPos)
 
   if (IsActiveAndInitialized())
   {
-    xiiRenderWorld::DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
+    GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(GetOwner()->GetHandle(), GetHandle());
   }
 }
 
@@ -449,7 +453,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     textureDescription.m_Size.height = uiHeight;
     textureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
     textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource;
-    textureDescription.m_Usage       = xiiGALResourceUsage::Default;
+    textureDescription.m_Usage       = xiiGALResourceUsage::Mutable;
 
     m_pDebugViewTexture = pDevice->CreateTexture(textureDescription);
   }

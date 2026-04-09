@@ -1,11 +1,13 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Core/System/Window.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Tools/ScopedDebugGroup.h>
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
+#include <GraphicsVulkan/Pools/SemaphorePoolVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 #if XII_ENABLED(XII_SUPPORTS_SDL)
@@ -17,15 +19,11 @@
 #  include <wayland-client.h>
 #endif
 
-#ifdef VK_USE_PLATFORM_XCB_KHR
-#  include <xcb/xcb.h>
-#endif
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALSwapChainVulkan::xiiGALSwapChainVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(std::move(pDeviceVulkan), creationDescription), m_ImageAcquiredSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_DrawCompleteSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_ImageAcquiredFences(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImages(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainTextures(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImagesInitialized(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_ImageAcquiredFenceSubmitted(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
+  xiiGALSwapChain(std::move(pDeviceVulkan), creationDescription), m_ImageAcquiredSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_DrawCompleteSemaphores(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainTextures(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator()), m_SwapChainImagesInitialized(static_cast<xiiGALDeviceVulkan*>(m_pDevice.Borrow())->GetAllocator())
 {
 }
 
@@ -64,7 +62,24 @@ xiiResult xiiGALSwapChainVulkan::InitPlatform()
   XII_SUCCEED_OR_RETURN(CreateVulkanSurface());
   XII_SUCCEED_OR_RETURN(CreateVulkanSwapChain());
   XII_SUCCEED_OR_RETURN(CreateBackBufferInternal());
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(AcquireNextImage());
+
+  {
+    xiiGALFenceCreationDescription fenceDescription;
+    fenceDescription.m_Type = xiiGALFenceType::CpuWaitOnly;
+
+    m_pFrameCompleteFence = m_pDevice->CreateFence(fenceDescription);
+
+    if (!m_pFrameCompleteFence)
+    {
+      xiiLog::Error("Failed to create Vulkan SwapChain frame complete fence.");
+      return XII_FAILURE;
+    }
+
+    m_pFrameCompleteFence->SetDebugName("SwapChain frame complete fence.");
+  }
+
+  // Note that the image may be immediately out of date.
+  XII_IGNORE_UNUSED(AcquireNextImage());
 
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
   m_Description.m_pWindow->AddReference();
@@ -101,20 +116,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.hwnd                          = xiiMinWindows::ToNative(m_Description.m_pWindow->GetNativeWindowHandle());
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWin32SurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-  vk::AndroidSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                           = nullptr;
-  vkSurfaceCreateInfo.flags                           = {};
-  vkSurfaceCreateInfo.window                          = m_Description.m_pWindow->GetNativeWindowHandle();
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createAndroidSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_IOS_MVK)
-  vk::IOSSurfaceCreateInfoMVK vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                       = nullptr;
-  vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.pView                       = m_Description.m_pWindow->GetNativeWindowHandle();
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createIOSSurfaceMVK(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
   vk::MacOSSurfaceCreateInfoMVK vkSurfaceCreateInfo = {};
   vkSurfaceCreateInfo.pNext                         = nullptr;
@@ -130,15 +131,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   vkSurfaceCreateInfo.surface                         = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
 
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createWaylandSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-#elif defined(VK_USE_PLATFORM_XCB_KHR)
-
-  vk::XcbSurfaceCreateInfoKHR vkSurfaceCreateInfo = {};
-  vkSurfaceCreateInfo.pNext                       = nullptr;
-  vkSurfaceCreateInfo.flags                       = {};
-  vkSurfaceCreateInfo.window                      = (xcb_window_t)SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, nullptr);
-  vkSurfaceCreateInfo.connection                  = XGetXCBConnection(SDL_GetPointerProperty(SDL_GetWindowProperties(m_Description.m_pWindow->GetNativeWindowHandle()), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr));
-
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkInstance.createXcbSurfaceKHR(&vkSurfaceCreateInfo, nullptr, &m_vkSurface, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 #else
 #  error "Unsupported platform."
 #endif
@@ -146,7 +138,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSurface()
   // Check present support on the graphics queue.
   {
     vk::PhysicalDevice           vkPhysicalDevice         = pDeviceVulkan->GetVulkanPhysicalDevice();
-    xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetGraphicsQueueInformation();
+    xiiGALQueueInformationVulkan graphicsQueueInformation = pDeviceVulkan->GetCommandQueueInformation(xiiGALCommandQueueFlags::Graphics);
     vk::Bool32                   bHasPresentSupport       = vk::False;
 
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceSupportKHR(graphicsQueueInformation.m_uiQueueIndex, m_vkSurface, &bHasPresentSupport, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
@@ -172,14 +164,14 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceFormatsKHR(m_vkSurface, &uiFormatCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiFormatCount > 0U, "");
 
-  xiiDynamicArray<vk::SurfaceFormatKHR> supportedFormats(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::SurfaceFormatKHR, 4U> supportedFormats;
   supportedFormats.SetCountUninitialized(uiFormatCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceFormatsKHR(m_vkSurface, &uiFormatCount, supportedFormats.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiFormatCount == supportedFormats.GetCount(), "");
 
   m_vkColorFormat = xiiVulkanTypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
-  vk::ColorSpaceKHR colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+  vk::ColorSpaceKHR vkColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
   if (uiFormatCount == 1 && supportedFormats.PeekBack().format == vk::Format::eUndefined)
   {
     // If the format list includes just one entry of vk::Format::eUndefined, the surface has no preferred format. Otherwise, at least one supported format will be returned.
@@ -194,7 +186,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       if (surfaceFormat.format == m_vkColorFormat)
       {
         bFormatFound = true;
-        colorSpace   = surfaceFormat.colorSpace;
+        vkColorSpace = surfaceFormat.colorSpace;
+        break;
       }
     }
 
@@ -217,7 +210,8 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
         if (surfaceFormat.format == vkReplacementColorFormat)
         {
           bReplacementFormatFound = true;
-          colorSpace              = surfaceFormat.colorSpace;
+          vkColorSpace            = surfaceFormat.colorSpace;
+          break;
         }
       }
 
@@ -230,19 +224,26 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
       }
       else
       {
-        xiiLog::Warning("Requested color buffer format '{}' is not supported by the surface.", vk::to_string(m_vkColorFormat).data());
+        // Neither the requested format nor the common replacement are supported.
+        // Fall back to the first supported surface format to guarantee a valid swapchain format.
+        const vk::SurfaceFormatKHR& vkFallbackFormat = supportedFormats[0];
+        xiiLog::Dev("Requested color buffer format '{}' is not supported by the surface. Falling back to supported format '{}'.", vk::to_string(m_vkColorFormat).data(), vk::to_string(vkFallbackFormat.format).data());
+
+        vkColorSpace                      = vkFallbackFormat.colorSpace;
+        m_vkColorFormat                   = vkFallbackFormat.format;
+        m_Description.m_ColorBufferFormat = xiiVulkanTypeConversions::GetGALResourceFormat(m_vkColorFormat);
       }
     }
   }
 
-  vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
+  vk::SurfaceCapabilitiesKHR surfaceCapabilities;
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   xiiUInt32 uiPresentModeCount = 0U;
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiPresentModeCount > 0, "");
 
-  xiiDynamicArray<vk::PresentModeKHR> presentModes(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::PresentModeKHR, 4U> presentModes;
   presentModes.SetCountUninitialized(uiPresentModeCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, presentModes.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiPresentModeCount == presentModes.GetCount(), "");
@@ -268,7 +269,6 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   {
     // Use current surface transform to avoid extra cost of presenting the image.
     // If preTransform does not match the currentTransform value returned by vkGetPhysicalDeviceSurfaceCapabilitiesKHR, the presentation engine will transform the image content as part of the presentation operation.
-    // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
     // https://community.arm.com/developer/tools-software/graphics/b/blog/posts/appropriate-use-of-surface-rotation
 
     vkPreTransform               = surfaceCapabilities.currentTransform;
@@ -277,51 +277,37 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     xiiLog::Dev("Using {} swap chain pre-transform.", vk::to_string(vkPreTransform).data());
   }
 
-  vk::Extent2D swapchainExtent = {};
+  xiiSizeU32   windowSize        = m_Description.m_pWindow->GetClientAreaSize();
+  vk::Extent2D vkSwapchainExtent = {};
   // The width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
-  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && m_Description.m_Resolution.width != 0 && m_Description.m_Resolution.height != 0)
+  if (surfaceCapabilities.currentExtent.width == 0xFFFFFFFF && windowSize.HasNonZeroArea())
   {
     // If the surface size is undefined, the size is set to the size of the images requested.
-    swapchainExtent.width  = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
-    swapchainExtent.height = xiiMath::Min(xiiMath::Max(m_Description.m_Resolution.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
+    vkSwapchainExtent.width  = xiiMath::Min(xiiMath::Max(windowSize.width, surfaceCapabilities.minImageExtent.width), surfaceCapabilities.maxImageExtent.width);
+    vkSwapchainExtent.height = xiiMath::Min(xiiMath::Max(windowSize.height, surfaceCapabilities.minImageExtent.height), surfaceCapabilities.maxImageExtent.height);
   }
   else
   {
     // If the surface size is defined, the swap chain size must match.
-    swapchainExtent = surfaceCapabilities.currentExtent;
+    vkSwapchainExtent = surfaceCapabilities.currentExtent;
   }
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  // On Android, vkGetPhysicalDeviceSurfaceCapabilitiesKHR is not reliable and starts reporting incorrect dimensions after few rotations.
-  // To alleviate the problem, we store the surface extent corresponding to identity rotation.
-  // https://android-developers.googleblog.com/2020/02/handling-device-orientation-efficiently.html
-  if (m_vkSurfaceIdentityExtent.width == 0 || m_vkSurfaceIdentityExtent.height == 0)
+  m_CurrentSize.width  = vkSwapchainExtent.width;
+  m_CurrentSize.height = vkSwapchainExtent.height;
+
+  // If the computed swap chain extent has zero area, the window is effectively minimized.
+  // Do not create a swap chain with zero extent as that causes issues when restoring the window.
+  if (m_CurrentSize.width == 0 || m_CurrentSize.height == 0)
   {
-    m_vkSurfaceIdentityExtent = surfaceCapabilities.currentExtent;
-
-    constexpr vk::SurfaceTransformFlagsKHR rotate90TransformFlags = vk::SurfaceTransformFlagBitsKHR::eRotate90 | vk::SurfaceTransformFlagBitsKHR::eRotate270 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
-    if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
-    {
-      xiiMath::Swap(m_vkSurfaceIdentityExtent.width, m_vkSurfaceIdentityExtent.height);
-    }
+    m_bIsMinimized = true;
+    xiiLog::Dev("Swap chain creation skipped because surface extent is 0x0 (minimized).");
+    return XII_SUCCESS;
   }
-
-  if (m_DesiredSurfaceTransform == xiiGALSurfaceTransform::Optimal)
-  {
-    swapchainExtent = m_vkSurfaceIdentityExtent;
-  }
-  m_vkCurrentSurfaceTransform = surfaceCapabilities.currentTransform;
-#endif
-
-  swapchainExtent.width             = xiiMath::Max(swapchainExtent.width, 1U);
-  swapchainExtent.height            = xiiMath::Max(swapchainExtent.height, 1U);
-  m_Description.m_Resolution.width  = swapchainExtent.width;
-  m_Description.m_Resolution.height = swapchainExtent.height;
 
   // The FIFO present mode is guaranteed by the spec to always be supported.
   vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
   {
-    xiiDynamicArray<vk::PresentModeKHR> preferredPresentModes(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::PresentModeKHR, 4U> preferredPresentModes;
 
     if (m_PresentMode == xiiGALPresentMode::VSync)
     {
@@ -368,8 +354,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     m_uiDesiredBufferCount = surfaceCapabilities.maxImageCount;
   }
 
-  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan on Android
-  // may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
+  // We must use m_DesiredBufferCount instead of m_SwapChainDesc.BufferCount, because Vulkan may decide to always add extra buffers, causing infinite growth of the swap chain when it is recreated:
   //                          m_Description.m_uiBufferCount
   // CreateVulkanSwapChain()          2 -> 4
   // CreateVulkanSwapChain()          4 -> 6
@@ -397,15 +382,15 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   swapChainCreateInfo.surface                    = m_vkSurface;
   swapChainCreateInfo.minImageCount              = uiDesiredSwapChainImageCount;
   swapChainCreateInfo.imageFormat                = m_vkColorFormat;
-  swapChainCreateInfo.imageExtent.width          = swapchainExtent.width;
-  swapChainCreateInfo.imageExtent.height         = swapchainExtent.height;
+  swapChainCreateInfo.imageExtent.width          = vkSwapchainExtent.width;
+  swapChainCreateInfo.imageExtent.height         = vkSwapchainExtent.height;
   swapChainCreateInfo.preTransform               = static_cast<vk::SurfaceTransformFlagBitsKHR>(xiiVulkanTypeConversions::GetUnderlyingFlagsValue(vkPreTransform));
   swapChainCreateInfo.compositeAlpha             = compositeAlpha;
   swapChainCreateInfo.imageArrayLayers           = 1U;
   swapChainCreateInfo.presentMode                = presentMode;
   swapChainCreateInfo.oldSwapchain               = vkOldSwapChain;
   swapChainCreateInfo.clipped                    = vk::True;
-  swapChainCreateInfo.imageColorSpace            = colorSpace;
+  swapChainCreateInfo.imageColorSpace            = vkColorSpace;
 
   XII_ASSERT_DEV(m_Description.m_UsageFlags != xiiGALSwapChainUsageFlags::None, "No swap chain flags are defined.");
   if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
@@ -416,6 +401,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eInputAttachment;
   if (m_Description.m_UsageFlags.IsSet(xiiGALSwapChainUsageFlags::CopySource))
     swapChainCreateInfo.imageUsage |= vk::ImageUsageFlagBits::eTransferSrc;
+  swapChainCreateInfo.imageUsage &= surfaceCapabilities.supportedUsageFlags; // Clamp to supported usage flags.
 
   swapChainCreateInfo.imageSharingMode      = vk::SharingMode::eExclusive;
   swapChainCreateInfo.queueFamilyIndexCount = 0U;
@@ -443,16 +429,13 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
 
   m_ImageAcquiredSemaphores.SetCountUninitialized(uiSwapChainImageCount);
   m_DrawCompleteSemaphores.SetCountUninitialized(uiSwapChainImageCount);
-  m_ImageAcquiredFences.SetCountUninitialized(uiSwapChainImageCount);
 
-  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
-  auto pFencePool     = pDeviceVulkan->GetVulkanFencePool();
+  xiiGALSemaphorePoolVulkan* pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
 
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
     m_ImageAcquiredSemaphores[i] = pSemaphorePool->RequestSemaphore();
     m_DrawCompleteSemaphores[i]  = pSemaphorePool->RequestSemaphore();
-    m_ImageAcquiredFences[i]     = pFencePool->RequestFence();
   }
 
   return XII_SUCCESS;
@@ -464,7 +447,7 @@ xiiResult xiiGALSwapChainVulkan::RecreateVulkanSwapChain()
   vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
   vk::Device                       vkLogicalDevice  = pDeviceVulkan->GetVulkanLogicalDevice();
 
-  // Do not release the Vulakn swap chain as we will use use it as oldSwapchain paramter.
+  // Do not release the Vulkan swap chain as we will use use it as old-SwapChain parameter.
   ReleaseSwapChainResources(false);
 
   // Check if the surface is lost.
@@ -496,24 +479,17 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   if (m_vkSwapChain == VK_NULL_HANDLE)
     return;
 
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  // VERIFY: Flush to submit all pending commands and semaphores to the queue.
-
-  // All references to the swap chain must be released before it can be destroyed.
-  for (xiiUInt32 i = 0; i < m_SwapChainTextures.GetCount(); ++i)
-  {
-    m_SwapChainTextures.Clear();
-  }
-  m_pBackBufferTexture.Clear();
-
-  // We need to explicitly wait for all submitted Image Acquired Fences to signal.
   // Just idling the GPU is not enough and results in validation warnings.
   // As a matter of fact, it is only required to check the fence status.
-  WaitForImageAcquiredFences();
+  if (m_uiFrameIndex > 1ULL)
+  {
+    m_pFrameCompleteFence->Wait(m_uiFrameIndex - 1ULL);
+  }
 
-  m_SwapChainImages.Clear();
+  // All references to the swap chain must be released before it can be destroyed.
+  m_pBackBufferTexture.Clear();
   m_SwapChainTextures.Clear();
   m_SwapChainImagesInitialized.Clear();
 
@@ -521,7 +497,7 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   // The semaphores are managed and will be kept alive by the command queue they are submitted to.
   m_uiSemaphoreIndex = 0U;
 
-  auto pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
+  xiiGALSemaphorePoolVulkan* pSemaphorePool = pDeviceVulkan->GetVulkanSemaphorePool();
 
   for (xiiUInt32 i = 0; i < m_DrawCompleteSemaphores.GetCount(); ++i)
   {
@@ -535,21 +511,21 @@ void xiiGALSwapChainVulkan::ReleaseSwapChainResources(bool bReleaseSwapChain)
   }
   m_ImageAcquiredSemaphores.Clear();
 
-  auto pFencePool = pDeviceVulkan->GetVulkanFencePool();
-  for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
-  {
-    pFencePool->ReclaimFence(std::move(m_ImageAcquiredFences[i]));
-
-    m_ImageAcquiredFences[i] = VK_NULL_HANDLE;
-  }
-  m_ImageAcquiredFences.Clear();
-  m_ImageAcquiredFenceSubmitted.Clear();
-
   if (bReleaseSwapChain)
   {
+    vk::Device vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
     vkLogicalDevice.destroySwapchainKHR(m_vkSwapChain, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
 
     m_vkSwapChain = VK_NULL_HANDLE;
+  }
+}
+
+void xiiGALSwapChainVulkan::ThrottleFrameSubmission()
+{
+  if (m_uiFrameIndex > m_Description.m_uiBufferCount)
+  {
+    m_pFrameCompleteFence->Wait(m_uiFrameIndex - m_Description.m_uiBufferCount);
   }
 }
 
@@ -557,6 +533,15 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
+
+  // If there is no Vulkan swap chain (e.g. because the window is minimized), nothing to do.
+  if (m_vkSwapChain == VK_NULL_HANDLE || !m_CurrentSize.HasNonZeroArea())
+  {
+    m_pBackBufferTexture.Clear();
+    m_SwapChainTextures.Clear();
+    m_SwapChainImagesInitialized.Clear();
+    return XII_SUCCESS;
+  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   {
@@ -568,31 +553,32 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   }
 #endif
 
-  m_SwapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
+  xiiTemporaryHybridArray<vk::Image, 2U> swapChainImages;
+  swapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
+
   m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
   m_SwapChainImagesInitialized.SetCount(m_Description.m_uiBufferCount, false);
-  m_ImageAcquiredFenceSubmitted.SetCount(m_Description.m_uiBufferCount, false);
 
   xiiUInt32 uiSwapChainImageCount = m_Description.m_uiBufferCount;
-  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, m_SwapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-  XII_ASSERT_DEV(uiSwapChainImageCount == m_SwapChainImages.GetCount(), "");
+  VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.getSwapchainImagesKHR(m_vkSwapChain, &uiSwapChainImageCount, swapChainImages.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+  XII_ASSERT_DEV(uiSwapChainImageCount == swapChainImages.GetCount(), "");
 
   xiiStringBuilder sb;
   for (xiiUInt32 i = 0; i < uiSwapChainImageCount; ++i)
   {
     xiiGALTextureCreationDescription textureCreationDescription;
     textureCreationDescription.m_Type                  = xiiGALResourceDimension::Texture2D;
-    textureCreationDescription.m_Size.width            = m_Description.m_Resolution.width;
-    textureCreationDescription.m_Size.height           = m_Description.m_Resolution.height;
+    textureCreationDescription.m_Size.width            = m_CurrentSize.width;
+    textureCreationDescription.m_Size.height           = m_CurrentSize.height;
     textureCreationDescription.m_Format                = m_Description.m_ColorBufferFormat;
     textureCreationDescription.m_uiArraySizeOrDepth    = 1U;
     textureCreationDescription.m_uiMipLevels           = 1U;
     textureCreationDescription.m_uiSampleCount         = 1U;
     textureCreationDescription.m_BindFlags             = xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(m_Description.m_UsageFlags);
-    textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Default;
+    textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Mutable;
     textureCreationDescription.m_CPUAccessFlags        = xiiGALCPUAccessFlag::None;
     textureCreationDescription.m_MiscFlags             = xiiGALMiscTextureFlags::None;
-    textureCreationDescription.m_pExistingNativeObject = m_SwapChainImages[i];
+    textureCreationDescription.m_pExistingNativeObject = swapChainImages[i];
 
     m_SwapChainTextures[i] = pDeviceVulkan->CreateTexture(textureCreationDescription);
     XII_ASSERT_RELEASE(m_SwapChainTextures[i] != nullptr, "Failed to create native backbuffer texture object!");
@@ -614,50 +600,51 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
   // and regardless of when queued presentation requests will complete relative to the call. Instead, applications can use fences
   // to meter their frame generation work to match the presentation rate.
 
-  // Explicitly make sure that there are no more pending frames in the command queue than the number of the swap chain images.
-  //
-  // Nsc = 3 - number of the swap chain images
-  //
-  //   N-Ns          N-2           N-1            N (Current frame)
-  //    |             |             |             |
-  //                  |
-  //          Wait for this fence
-  //
-  // When acquiring swap chain image for frame N, we need to make sure that frame N-Nsc has completed. To achieve that, we wait for the image acquire
-  // fence for frame N-Nsc-1. Thus we will have no more than Nsc frames in the queue.
-  xiiUInt32 uiOldestSubmittedImageFenceIndex = (m_uiSemaphoreIndex + 1U) % m_ImageAcquiredFenceSubmitted.GetCount();
-  if (m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex])
-  {
-    const vk::Fence& vkOldestSubmittedFence = m_ImageAcquiredFences[uiOldestSubmittedImageFenceIndex];
-    if (vkLogicalDevice.getFenceStatus(vkOldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
-    {
-      VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkOldestSubmittedFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-    }
+  // vkAcquireNextImageKHR requires that the semaphore is not in use, so we must wait for the frame (FrameIndex - BufferCount) to complete.
+  // This also ensures that there are no more than BufferCount frames in flight at any time.
+  ThrottleFrameSubmission();
 
-    VK_ASSERT_DEV(vkLogicalDevice.resetFences(1U, &vkOldestSubmittedFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-    m_ImageAcquiredFenceSubmitted[uiOldestSubmittedImageFenceIndex] = false;
+  // If there is no swap chain (window minimized) nothing to acquire.
+  if (m_vkSwapChain == VK_NULL_HANDLE || m_bIsMinimized || !m_CurrentSize.HasNonZeroArea())
+  {
+    m_bIsImageAcquired = false;
+    m_pBackBufferTexture.Clear();
+    return vk::Result::eSuccess;
   }
 
-  const vk::Fence&     imageAcquiredFence     = m_ImageAcquiredFences[m_uiSemaphoreIndex];
-  const vk::Semaphore& imageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
+  // Guard against the case where the semaphore pool hasn't been populated yet (e.g. after rapid minimize/restore).
+  if (m_ImageAcquiredSemaphores.GetCount() == 0 || m_uiSemaphoreIndex >= m_ImageAcquiredSemaphores.GetCount())
+  {
+    m_bIsImageAcquired = false;
+    m_pBackBufferTexture.Clear();
+    return vk::Result::eSuccess;
+  }
 
-  vk::Result result = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), imageAcquiredSemaphore, imageAcquiredFence, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  const vk::Semaphore& vkImageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_uiSemaphoreIndex];
 
-  m_ImageAcquiredFenceSubmitted[m_uiSemaphoreIndex] = (result == vk::Result::eSuccess);
-  if (result == vk::Result::eSuccess)
+  vk::Result result  = vkLogicalDevice.acquireNextImageKHR(m_vkSwapChain, xiiMath::MaxValue<xiiUInt64>(), vkImageAcquiredSemaphore, VK_NULL_HANDLE, &m_uiBackBufferIndex, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+  m_bIsImageAcquired = (result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
+
+#if XII_ENABLED(XII_PLATFORM_OSX)
+  if (result == vk::Result::eSuboptimalKHR)
+  {
+    // https://github.com/KhronosGroup/MoltenVK/issues/2542
+    m_bIsImageAcquired = false;
+  }
+#endif
+  if (m_bIsImageAcquired)
   {
     // Next command in the device context must wait for the next image to be acquired.
-    // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2).
-    // Swapchain image may be used as render target or as destination for copy command.
+    // Unlike fences or events, the act of waiting for a semaphore also un-signals that semaphore.
+    // SwapChain image may be used as render target or as destination for copy command.
 
-    xiiGALCommandQueueVulkan* pGraphicsQueueVulkan = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
-
-    if (auto pCommandListVulkan = pGraphicsQueueVulkan->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+    if (auto pCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
     {
+      pCommandListVulkan->Begin();
       {
         xiiGALScopedDebugGroup debugGroup(pCommandListVulkan, "Add Swap Chain Wait Semaphore");
 
-        pCommandListVulkan->AddWaitSemaphore(m_ImageAcquiredSemaphores[m_uiSemaphoreIndex], vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
+        pCommandListVulkan->AddWaitSemaphore(vkImageAcquiredSemaphore, vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer);
 
         // Vulkan validation layers do not like uninitialized memory. Clear back buffer the first time we acquire it.
         if (!m_SwapChainImagesInitialized[m_uiBackBufferIndex])
@@ -667,69 +654,119 @@ vk::Result xiiGALSwapChainVulkan::AcquireNextImage()
           m_SwapChainImagesInitialized[m_uiBackBufferIndex] = true;
         }
       }
+      pCommandListVulkan->End();
 
-      pCommandListVulkan->Submit();
+      auto pCommandQueue = pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+
+      pCommandQueue->Submit(pCommandListVulkan);
     }
   }
 
-  m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  if (m_bIsImageAcquired)
+  {
+    m_pBackBufferTexture = m_SwapChainTextures[m_uiBackBufferIndex];
+  }
+  else
+  {
+    m_pBackBufferTexture.Clear();
+  }
 
   return result;
 }
 
-void xiiGALSwapChainVulkan::WaitForImageAcquiredFences()
-{
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan   = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  vk::Device                       vkLogicalDevice = pDeviceVulkan->GetVulkanLogicalDevice();
-
-  for (xiiUInt32 i = 0; i < m_ImageAcquiredFences.GetCount(); ++i)
-  {
-    if (m_ImageAcquiredFenceSubmitted[i])
-    {
-      const vk::Fence& vkFence = m_ImageAcquiredFences[i];
-
-      if (vkLogicalDevice.getFenceStatus(vkFence, pDeviceVulkan->GetVulkanDynamicDispatchLoader()) == vk::Result::eNotReady)
-      {
-        VK_ASSERT_DEV(vkLogicalDevice.waitForFences(1U, &vkFence, vk::True, xiiMath::MaxValue<xiiUInt64>(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-      }
-    }
-  }
-}
-
 void xiiGALSwapChainVulkan::Present()
 {
-  if (m_bIsMinimized)
-    return;
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  // Do not read m_pBackBufferTexture here because we may recreate the swap chain below
+  // and m_pBackBufferTexture may change. Resolve the current backbuffer after recreation.
 
-  xiiSharedPtr<xiiGALDeviceVulkan>  pDeviceVulkan            = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiGALCommandQueueVulkan*         pGraphicsQueueVulkan     = static_cast<xiiGALCommandQueueVulkan*>(pDeviceVulkan->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
-  xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
-
-  if (auto pCommandListVulkan = pGraphicsQueueVulkan->BeginCommandList().Downcast<xiiGALCommandListVulkan>())
+  // If there is no swap chain (e.g. window minimized) or the surface has zero area, try to detect an unminimize and recreate.
+  if (m_vkSwapChain == VK_NULL_HANDLE || m_bIsMinimized || !m_CurrentSize.HasNonZeroArea())
   {
-    pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
-    pCommandListVulkan->AddSignalSemaphore(m_DrawCompleteSemaphores[m_uiSemaphoreIndex]);
+    // Check if the window was restored without a resize event. If the client area is now non-zero, recreate the swap chain.
+    xiiSizeU32 windowSize = m_Description.m_pWindow->GetClientAreaSize();
+    if (windowSize.HasNonZeroArea())
+    {
+      xiiLog::Dev("Window restored to non-zero size ({}x{}). Recreating swap chain.", windowSize.width, windowSize.height);
 
-    pCommandListVulkan->Submit();
+      // Attempt to recreate the swap chain now that the window has a valid size.
+      RecreateVulkanSwapChain().IgnoreResult();
+      m_bIsMinimized = false;
 
-    pGraphicsQueueVulkan->WaitForIdle(); // Suboptimal, but fixes validation errors.
+      m_uiSemaphoreIndex = m_Description.m_uiBufferCount > 0 ? m_Description.m_uiBufferCount - 1 : 0;
+
+      // Try to acquire the first image for rendering.
+      AcquireNextImage();
+    }
+    else
+    {
+      ThrottleFrameSubmission();
+      return;
+    }
   }
 
+  // Ensure draw-complete semaphores are available and the back buffer index is valid.
+  if (m_DrawCompleteSemaphores.GetCount() == 0 || m_uiBackBufferIndex >= m_DrawCompleteSemaphores.GetCount())
   {
-    // Unlike fences or events, the act of waiting for a semaphore also unsignals that semaphore (6.4.2)
+    xiiLog::Dev("Draw-complete semaphore unavailable (count={} index={}). Attempting to recreate swap chain.", m_DrawCompleteSemaphores.GetCount(), m_uiBackBufferIndex);
+
+    // Try to recreate and acquire a valid image. If that fails, throttle and skip present this frame.
+    RecreateVulkanSwapChain().IgnoreResult();
+    AcquireNextImage();
+    ThrottleFrameSubmission();
+    return;
+  }
+
+  const vk::Semaphore& vkDrawCompleteSemaphore = m_DrawCompleteSemaphores[m_uiBackBufferIndex];
+
+  if (auto pCommandListVulkan = pDeviceVulkan->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListVulkan>())
+  {
+    pCommandListVulkan->Begin();
+    {
+      // To properly handle the case where vkAcquireNextImageKHR returns the same index twice in a row, use
+      // a separate semaphore per swap chain image and index these semaphores using the index of the acquired image.
+      if (m_bIsImageAcquired && !m_bIsMinimized)
+      {
+        xiiSharedPtr<xiiGALTextureVulkan> pCurrentBackbufferVulkan = m_pBackBufferTexture.Downcast<xiiGALTextureVulkan>();
+
+        if (pCurrentBackbufferVulkan)
+        {
+          pCommandListVulkan->TransitionImageLayout(pCurrentBackbufferVulkan, vk::ImageLayout::ePresentSrcKHR);
+          pCommandListVulkan->AddSignalSemaphore(vkDrawCompleteSemaphore);
+        }
+      }
+
+      pCommandListVulkan->EnqueueSignal(m_pFrameCompleteFence, m_uiFrameIndex++);
+    }
+    pCommandListVulkan->End();
+
+    auto pCommandQueue = pDeviceVulkan->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+
+    pCommandQueue->Submit(pCommandListVulkan);
+  }
+
+  if (!m_bIsMinimized)
+  {
     vk::Result result = vk::Result::eSuccess;
 
-    vk::PresentInfoKHR vkPresentInformation = {};
-    vkPresentInformation.pNext              = nullptr;
-    vkPresentInformation.pResults           = &result;
-    vkPresentInformation.pSwapchains        = &m_vkSwapChain;
-    vkPresentInformation.pImageIndices      = &m_uiBackBufferIndex;
-    vkPresentInformation.swapchainCount     = 1U;
-    vkPresentInformation.pWaitSemaphores    = &m_DrawCompleteSemaphores[m_uiSemaphoreIndex];
-    vkPresentInformation.waitSemaphoreCount = 1U;
+    // Only present if the image was acquired successfully.
+    if (m_bIsImageAcquired)
+    {
+      // Unlike fences or events, the act of waiting for a semaphore also un-signals that semaphore.
 
-    vk::Queue vkQueue = pGraphicsQueueVulkan->GetQueueInformation().m_vkQueue;
-    XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      vk::PresentInfoKHR vkPresentInformation = {};
+      vkPresentInformation.pNext              = nullptr;
+      vkPresentInformation.pResults           = &result;
+      vkPresentInformation.pSwapchains        = &m_vkSwapChain;
+      vkPresentInformation.pImageIndices      = &m_uiBackBufferIndex;
+      vkPresentInformation.swapchainCount     = 1U;
+      vkPresentInformation.pWaitSemaphores    = &vkDrawCompleteSemaphore;
+      vkPresentInformation.waitSemaphoreCount = 1U;
+
+      pDeviceVulkan->LockCommandQueueAndRun(xiiGALCommandQueueFlags::Graphics, [&pDeviceVulkan, &vkPresentInformation](const vk::Queue& vkQueue) -> void {
+        XII_IGNORE_UNUSED(vkQueue.presentKHR(&vkPresentInformation, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
+      });
+    }
 
     if (result == vk::Result::eSuboptimalKHR || result == vk::Result::eErrorOutOfDateKHR)
     {
@@ -737,12 +774,15 @@ void xiiGALSwapChainVulkan::Present()
 
       m_uiSemaphoreIndex = m_Description.m_uiBufferCount - 1; // To start with 0 index when acquire next image.
     }
-    else
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    else if (m_bIsImageAcquired)
     {
-      XII_ASSERT_DEV(result == vk::Result::eSuccess, "Swap Chain presentation failed.");
+      XII_ASSERT_DEBUG(result == vk::Result::eSuccess, "Swap Chain presentation failed.");
     }
+#endif
   }
 
+  if (!m_bIsMinimized)
   {
     ++m_uiSemaphoreIndex;
     if (m_uiSemaphoreIndex >= m_Description.m_uiBufferCount)
@@ -771,7 +811,12 @@ void xiiGALSwapChainVulkan::Present()
       }
 #endif
     }
-    XII_ASSERT_DEV(result == vk::Result::eSuccess, "Failed to acquire next swap chain image.");
+
+    // The image may still be out of date if the window keeps changing size.
+  }
+  else
+  {
+    ThrottleFrameSubmission();
   }
 }
 
@@ -779,62 +824,15 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
 {
   bool bRecreateSwapChain = false;
 
-#if XII_ENABLED(XII_PLATFORM_ANDROID)
-  if (m_vkSurface != VK_NULL_HANDLE)
+  // Set minimized flag based on new size early so creation logic can react accordingly.
+  m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
+
+  if (newSize.HasNonZeroArea() && (newSize != m_CurrentSize || m_DesiredSurfaceTransform != newTransform))
   {
-    xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-    vk::PhysicalDevice               vkPhysicalDevice = pDeviceVulkan->GetVulkanPhysicalDevice();
+    m_DesiredSurfaceTransform = newTransform;
+    bRecreateSwapChain        = true;
 
-    // Check orientation.
-    vk::SurfaceCapabilitiesKHR surfaceCapabilities = {};
-    VK_ASSERT_DEV(vkPhysicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface, &surfaceCapabilities, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
-
-    if (m_vkCurrentSurfaceTransform != surfaceCapabilities.currentTransform)
-    {
-      // Surface orientation - we need to recreate the swap chain.
-      bRecreateSwapChain = true;
-    }
-
-    constexpr vk::SurfaceTransformFlagsKHR rotate90TransformFlags = vk::SurfaceTransformFlagBitsKHR::eRotate90 | vk::SurfaceTransformFlagBitsKHR::eRotate270 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate90 | vk::SurfaceTransformFlagBitsKHR::eHorizontalMirrorRotate270;
-
-    if (!newSize.HasNonZeroArea())
-    {
-      newSize.width  = m_vkSurfaceIdentityExtent.width;
-      newSize.height = m_vkSurfaceIdentityExtent.height;
-
-      if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
-      {
-        // Swap to get the logical dimensions as input new width and new height are expected to be logical sizes.
-        xiiMath::Swap(newSize.width, newSize.height);
-      }
-    }
-
-    if (newTransform == xiiGALSurfaceTransform::Optimal)
-    {
-      if (surfaceCapabilities.currentTransform & rotate90TransformFlags)
-      {
-        // Swap to get physical dimensions.
-        xiiMath::Swap(newSize.width, newSize.height);
-      }
-    }
-    else
-    {
-      // Swap if necessary to get the desired sizes after pre-transform.
-      if (newTransform == xiiGALSurfaceTransform::Rotate90 || newTransform == xiiGALSurfaceTransform::Rotate270 || newTransform == xiiGALSurfaceTransform::HorizontalMirrorRotate90 || newTransform == xiiGALSurfaceTransform::HorizontalMirrorRotate270)
-      {
-        xiiMath::Swap(newSize.width, newSize.height);
-      }
-    }
-  }
-#endif
-
-  if (newSize.HasNonZeroArea() && (newSize != m_Description.m_Resolution || m_DesiredSurfaceTransform != newTransform))
-  {
-    m_Description.m_Resolution = newSize;
-    m_DesiredSurfaceTransform  = newTransform;
-    bRecreateSwapChain         = true;
-
-    xiiLog::Dev("Resizing swap chain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    xiiLog::Dev("Resizing swap chain to {}x{}.", newSize.width, newSize.height);
   }
 
   if (bRecreateSwapChain)
@@ -855,20 +853,6 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfac
   m_bIsMinimized = (newSize.width == 0 && newSize.height == 0);
 
   return XII_SUCCESS;
-}
-
-void xiiGALSwapChainVulkan::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
-{
-  XII_IGNORE_UNUSED(displayMode);
-}
-
-void xiiGALSwapChainVulkan::SetWindowedMode()
-{
-}
-
-void xiiGALSwapChainVulkan::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
-{
-  XII_IGNORE_UNUSED(uiMaxLatency);
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_SwapChainVulkan);

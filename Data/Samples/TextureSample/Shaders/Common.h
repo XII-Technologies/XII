@@ -3,7 +3,7 @@
 #include <Shaders/Common/GlobalConstants.h>
 #include "SampleConstantBuffer.h"
 
-#if XII_ENABLED(PLATFORM_SHADER)
+#if XII_ENABLED(XII_SHADER_PLATFORM)
 
 struct VS_IN
 {

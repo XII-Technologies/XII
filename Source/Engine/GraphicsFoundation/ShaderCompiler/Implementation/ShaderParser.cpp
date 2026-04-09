@@ -12,12 +12,15 @@ using namespace xiiTokenParseUtils;
 
 namespace
 {
+  static xiiMutex                                                       s_TableLock;
   static xiiHashTable<xiiStringView, const xiiRTTI*>                    s_NameToTypeTable;
   static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderResourceType>> s_NameToDescriptorTable;
   static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderTextureType>>  s_NameToTextureTable;
 
   void InitializeTables()
   {
+    XII_LOCK(s_TableLock);
+
     if (!s_NameToTypeTable.IsEmpty())
       return;
 
@@ -403,7 +406,7 @@ xiiResult xiiGALShaderParser::PreprocessSection(xiiStreamReader& inout_stream, x
   {
     XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("TRUE 1"));
     XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("FALSE 0"));
-    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("PLATFORM_SHADER ="));
+    XII_SUCCEED_OR_RETURN(pp.AddCustomDefine("XII_SHADER_PLATFORM ="));
 
     for (auto& sDefine : pCustomDefines)
     {
@@ -470,7 +473,7 @@ void xiiGALShaderParser::ParseMaterialParameterSection(xiiStreamReader& inout_st
   xiiGALShaderSections::GetShaderSections(sContent, sections);
 
   xiiUInt32     uiFirstLine = 0;
-  xiiStringView s           = sections.GetSectionContent(xiiGALShaderSections::MATERIALPARAMETER, uiFirstLine);
+  xiiStringView s           = sections.GetSectionContent(xiiGALShaderSections::MaterialParameter, uiFirstLine);
 
   xiiTokenizer tokenizer;
   tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)s.GetStartPointer(), s.GetElementCount()), xiiLog::GetThreadLocalLogSystem());

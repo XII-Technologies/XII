@@ -44,6 +44,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(IsActive),
     XII_SCRIPT_FUNCTION_PROPERTY(SetCreatedByPrefab),
     XII_SCRIPT_FUNCTION_PROPERTY(WasCreatedByPrefab),
+    XII_SCRIPT_FUNCTION_PROPERTY(SetHideShapeIcon),
+    XII_SCRIPT_FUNCTION_PROPERTY(IsShapeIconHidden),
 
     XII_SCRIPT_FUNCTION_PROPERTY(HasName, In, "Name"),
     XII_SCRIPT_FUNCTION_PROPERTY(HasTag, In, "TagName"),
@@ -584,7 +586,7 @@ const xiiGameObject* xiiGameObject::SearchForChildByNameSequence(xiiStringView s
   return pThis->SearchForChildByNameSequence(sObjectSequence, pExpectedComponent);
 }
 
-void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiHybridArray<xiiGameObject*, 8>& out_objects)
+void xiiGameObject::SearchForChildrenByNameSequence(xiiStringView sObjectSequence, const xiiRTTI* pExpectedComponent, xiiDynamicArray<xiiGameObject*>& out_objects)
 {
   if (sObjectSequence.IsEmpty())
   {
@@ -736,10 +738,10 @@ void xiiGameObject::UpdateLocalBounds()
   xiiSpatialSystem* pSpatialSystem = GetWorld()->GetSpatialSystem();
   if (pSpatialSystem != nullptr && (bRecreateSpatialData || m_pTransformationData->m_hSpatialData.IsInvalidated()))
   {
+    // UpdateGlobalBounds is called internally by RecreateSpatialData.
     m_pTransformationData->RecreateSpatialData(*pSpatialSystem);
   }
-
-  if (IsStatic())
+  else if (IsStatic())
   {
     m_pTransformationData->UpdateGlobalBounds(pSpatialSystem);
   }
@@ -1031,7 +1033,7 @@ bool xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
-  xiiHybridArray<xiiComponent*, 4> eventMsgHandlers;
+  xiiTemporaryHybridArray<xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -1059,7 +1061,7 @@ bool xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
-  xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
+  xiiTemporaryHybridArray<const xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
   bool bResult = false;
@@ -1077,7 +1079,7 @@ void xiiGameObject::PostEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
     pEventMsg->FillFromSenderComponent(pSenderComponent);
   }
 
-  xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
+  xiiTemporaryHybridArray<const xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
   for (auto pEventMsgHandler : eventMsgHandlers)
@@ -1239,6 +1241,7 @@ void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& re
   else if (m_localBounds.IsValid())
   {
     UpdateGlobalBounds();
+
     m_hSpatialData = ref_spatialSystem.CreateSpatialData(m_globalBounds, m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
   }
 }

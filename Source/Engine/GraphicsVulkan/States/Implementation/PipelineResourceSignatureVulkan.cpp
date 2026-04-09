@@ -22,7 +22,7 @@ xiiUInt32 FindImmutableSampler(const xiiGALPipelineResourceSignatureCreationDesc
 
   for (xiiUInt32 i = 0; i < pipelineDescription.m_ImmutableSamplers.GetCount(); ++i)
   {
-    const auto& immutableSampler = pipelineDescription.m_ImmutableSamplers[i];
+    const xiiGALImmutableSamplerDescription& immutableSampler = pipelineDescription.m_ImmutableSamplers[i];
 
     sb.SetFormat("{}", immutableSampler.m_SamplerOrTextureName);
 
@@ -63,7 +63,7 @@ xiiGALPipelineResourceSignatureVulkan::~xiiGALPipelineResourceSignatureVulkan()
   {
     if (m_ImmutableSamplers[i])
     {
-      m_ImmutableSamplers[i].DeInitialize(pDeviceVulkan);
+      m_ImmutableSamplers[i].DeInitialize();
     }
   }
 }
@@ -76,7 +76,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   // First build set layout and resource binding description.
   for (xiiUInt32 uiResource = 0; uiResource < m_Description.m_Resources.GetCount(); ++uiResource)
   {
-    const auto& resource = m_Description.m_Resources[uiResource];
+    const xiiGALPipelineResourceDescription& resource = m_Description.m_Resources[uiResource];
 
     m_PipelineResourceSetLayouts.EnsureCount(resource.m_uiBindSet + 1);
 
@@ -118,8 +118,8 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   vkDescriptorSetLayoutCreateInfo.pNext                             = nullptr;
   vkDescriptorSetLayoutCreateInfo.flags                             = {};
 
-  xiiDynamicArray<vk::DescriptorSetLayoutBinding> vkDescriptorSetLayoutBindings(pDeviceVulkan->GetAllocator());
-  xiiDynamicArray<xiiDynamicArray<vk::Sampler>>   vkTempSamplerArrayAssignment(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::DescriptorSetLayoutBinding, 4U>           vkDescriptorSetLayoutBindings;
+  xiiTemporaryHybridArray<xiiTemporaryHybridArray<vk::Sampler, 4U>, 4U> vkTempSamplerArrayAssignment;
 
   for (xiiUInt32 uiSet = 0; uiSet < m_PipelineResourceSetLayouts.GetCount(); ++uiSet)
   {
@@ -129,7 +129,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
     for (xiiUInt32 uiResourceIndex = 0; uiResourceIndex < setLayout.GetCount(); ++uiResourceIndex)
     {
-      const auto& resourceLayout = setLayout[uiResourceIndex];
+      const xiiGALPipelineResourceDescriptionVulkan& resourceLayout = setLayout[uiResourceIndex];
 
       vk::DescriptorSetLayoutBinding& vkDescriptorLayoutBinding = vkDescriptorSetLayoutBindings.ExpandAndGetRef();
       vkDescriptorLayoutBinding.binding                         = resourceLayout.m_uiBindingIndex;
@@ -145,12 +145,12 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
 
         if (!m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex])
         {
-          const auto& immutableSamplerDescription = m_Description.m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex].m_SamplerDescription;
+          const xiiGALSamplerCreationDescription& immutableSamplerDescription = m_Description.m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex].m_SamplerDescription;
 
           m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex].Initialize(pDeviceVulkan, immutableSamplerDescription);
         }
 
-        vkTempSamplerArrayAssignment.PushBack(xiiDynamicArray<vk::Sampler>(pDeviceVulkan->GetAllocator()));
+        vkTempSamplerArrayAssignment.PushBack(xiiTemporaryHybridArray<vk::Sampler, 4U>());
         vkTempSamplerArrayAssignment.PeekBack().SetCount(resourceLayout.m_uiArraySize, m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex].GetVulkanSampler());
 
         pVkImmutableSamplers = vkTempSamplerArrayAssignment.PeekBack().GetData();
@@ -183,7 +183,7 @@ void xiiGALPipelineResourceSignatureVulkan::SetDebugNamePlatform(xiiStringView s
 
 void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::Initialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALSamplerCreationDescription& samplerDescription)
 {
-  XII_ASSERT_DEV(pDeviceVulkan != nullptr, "");
+  XII_ASSERT_DEV(pDeviceVulkan != nullptr, "The Vulkan device is invalidated.");
 
   if (m_pSamplerVulkan == nullptr)
   {
@@ -191,10 +191,8 @@ void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::Initialize(
   }
 }
 
-void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::DeInitialize(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan)
+void xiiGALPipelineResourceSignatureVulkan::ImmutableSamplerStorage::DeInitialize()
 {
-  XII_ASSERT_DEV(pDeviceVulkan != nullptr, "");
-
   m_pSamplerVulkan.Clear();
 }
 

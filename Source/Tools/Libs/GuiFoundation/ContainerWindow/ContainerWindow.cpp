@@ -53,7 +53,7 @@ namespace
 
 xiiQtContainerWindow::xiiQtContainerWindow()
 {
-  setMinimumSize(QSize(800, 600));
+  setMinimumSize(QSize(960, 540));
 
   m_bWindowLayoutRestored         = false;
   m_pStatusBarLabel               = nullptr;
@@ -88,7 +88,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   flags |= ads::CDockManager::RetainTabSizeWhenCloseButtonHidden;
   flags |= ads::CDockManager::DockAreaHideDisabledButtons;
   flags |= ads::CDockManager::DockAreaHasUndockButton;
-  // flags |= ads::CDockManager::DoubleClickUndocksWidget; // don't want this
+  // flags |= ads::CDockManager::DoubleClickUndocksWidget; // This is not ideal.
   flags |= ads::CDockManager::OpaqueSplitterResize;
   ads::CDockManager::setConfigFlags(flags);
 
@@ -97,6 +97,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
   autoHideFlags |= ads::CDockManager::AutoHideHasMinimizeButton;
   autoHideFlags |= ads::CDockManager::AutoHideHasCloseButton;
   autoHideFlags |= ads::CDockManager::AutoHideShowOnMouseOver;
+  autoHideFlags |= ads::CDockManager::AutoHideCloseOnOutsideMouseClick;
   ads::CDockManager::setAutoHideConfigFlags(autoHideFlags);
 
   m_pDockManager = new ads::CDockManager(this);
@@ -136,6 +137,8 @@ void xiiQtContainerWindow::ScheduleRestoreWindowLayout()
 
 void xiiQtContainerWindow::SlotRestoreLayout()
 {
+  XII_LOG_BLOCK("DocumentSlotRestoreLayout");
+
   RestoreWindowLayout();
 }
 
@@ -285,8 +288,8 @@ void xiiQtContainerWindow::RestoreWindowLayout()
     Settings.endGroup();
   }
 
-  for (xiiUInt32 i = 0; i < m_DocumentWindows.GetCount(); ++i)
-    m_DocumentWindows[i]->RestoreWindowLayout(true);
+  // Do NOT restore the layouts of the document windows here.
+  // The window may be too small at this time, and the layout restoration may thus resize the document widgets to the bare minimum and destroy the layout.
 
   m_bWindowLayoutRestored = true;
 }
@@ -403,24 +406,28 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
 
   XII_ASSERT_DEV(pDocWindow->m_pContainerWindow == nullptr, "Implementation error");
 
-  // NOTE: This function is called by the xiiQtDocumentWindow constructor
-  // that means any derived classes are not yet constructed!
-  // therefore calling virtual functions here, like GetDisplayNameShort() will still call
-  // the base class implementation, NOT the derived one !
-  // therefore, we do some stuff in xiiQtContainerWindow::UpdateWindowDecoration() instead
+  // NOTE: This function is called by the xiiQtDocumentWindow constructor that means any derived classes are not yet constructed!
+  // Therefore, calling virtual functions here, like GetDisplayNameShort() will still call the base class implementation, NOT the derived one!
+  // Thus, we do some stuff in xiiQtContainerWindow::UpdateWindowDecoration() instead.
 
+  pDocWindow->m_pContainerWindow = this;
   m_DocumentWindows.PushBack(pDocWindow);
-  xiiString         displayName = pDocWindow->GetDisplayNameShort();
-  ads::CDockWidget* dock        = new ads::CDockWidget(m_pDockManager, xiiMakeQString(displayName));
+
+  xiiString         sDisplayName = pDocWindow->GetDisplayNameShort();
+  ads::CDockWidget* dock         = new ads::CDockWidget(m_pDockManager, xiiMakeQString(sDisplayName));
+
   dock->installEventFilter(pDocWindow);
   dock->setFeature(ads::CDockWidget::CustomCloseHandling, true);
-
   dock->setObjectName(xiiMakeQString(pDocWindow->GetUniqueName()));
+
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
   XII_ASSERT_DEV(!m_DockNames.contains(dock->objectName()), "Dock name must be unique.");
+
   m_DockNames.insert(dock->objectName());
+
   dock->setWidget(pDocWindow);
   dock->tabWidget()->setContextMenuPolicy(Qt::CustomContextMenu);
+
   if (!m_DocumentDocks.IsEmpty())
   {
     ads::CDockAreaWidget* dockArea = m_DocumentDocks.PeekBack()->dockAreaWidget();
@@ -438,8 +445,7 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
 
   pDocWindow->m_pContainerWindow = this;
 
-  // we cannot call virtual functions on pDocWindow here, because the object might still be under construction
-  // so we delay it until later
+  // We cannot call virtual functions on pDocWindow here, because the object might still be under construction so we delay it until later.
   QMetaObject::invokeMethod(this, "SlotUpdateWindowDecoration", Qt::ConnectionType::QueuedConnection, Q_ARG(void*, pDocWindow));
 }
 
@@ -495,7 +501,6 @@ xiiResult xiiQtContainerWindow::EnsureVisible(xiiDocument* pDocument)
     if (doc->GetDocument() == pDocument)
       return EnsureVisible(doc);
   }
-
   return XII_FAILURE;
 }
 
@@ -555,8 +560,7 @@ bool xiiQtContainerWindow::eventFilter(QObject* obj, QEvent* e)
         return true;
       }
 
-      // closing a non-main window should close all documents as well
-      // this will remove them from the recently-open documents list and not restore them next time
+      // Closing a non-main window should close all documents as well this will remove them from the recently-open documents list and not restore them next time.
       for (xiiQtDocumentWindow* pWindow : windows)
       {
         pWindow->CloseDocumentWindow();

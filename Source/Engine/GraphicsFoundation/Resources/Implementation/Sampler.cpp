@@ -4,7 +4,6 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSamplerFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::Subsampled),
   XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::SubsampledCoarseReconstruction),
 XII_END_STATIC_REFLECTED_BITFLAGS;
