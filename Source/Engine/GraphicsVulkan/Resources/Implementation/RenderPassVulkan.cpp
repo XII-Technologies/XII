@@ -134,16 +134,16 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
     uiTotalPreserveAttachmentsCount += xiiSubPass.m_PreserveAttachments.GetCount();
   }
 
-  xiiDynamicArray<AttachmentReferenceType> vkAttachmentReferences(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<AttachmentReferenceType, 4U> vkAttachmentReferences;
   vkAttachmentReferences.SetCount(uiTotalAttachmentReferencesCount + uiTotalShadingRateAttachmentsCount);
 
-  xiiDynamicArray<xiiUInt32> vkPreserveAttachments(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<xiiUInt32, 4U> vkPreserveAttachments;
   vkPreserveAttachments.SetCount(uiTotalPreserveAttachmentsCount);
 
-  xiiDynamicArray<vk::SubpassDescriptionDepthStencilResolve> vkDepthStencilResolve(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::SubpassDescriptionDepthStencilResolve, 4U> vkDepthStencilResolve;
   vkDepthStencilResolve.SetCount(m_Description.m_SubPasses.GetCount());
 
-  xiiDynamicArray<vk::FragmentShadingRateAttachmentInfoKHR> vkShadingRate(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::FragmentShadingRateAttachmentInfoKHR, 4U> vkShadingRate;
   vkShadingRate.SetCount(uiTotalShadingRateAttachmentsCount);
 
   const xiiGALShadingRateAttachmentDescription* pMainShadingRateAttachment = nullptr;
@@ -153,10 +153,10 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
 
   // State flags for every attachment in each subpass.
   // This array is used to detect attachments that are used as render target or depth-stencil, but also as input attachment in the same subpass. Such attachments need to use GENERAL layout.
-  xiiDynamicArray<xiiBitflags<xiiGALResourceStateFlags>> attachmentStates(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<xiiBitflags<xiiGALResourceStateFlags>, 4U> attachmentStates;
   attachmentStates.SetCount(m_Description.m_Attachments.GetCount());
 
-  xiiDynamicArray<SubpassDescriptionType> vkSubPasses(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<SubpassDescriptionType, 4U> vkSubPasses;
   vkSubPasses.SetCount(m_Description.m_SubPasses.GetCount());
 
   for (xiiUInt32 i = 0, uiShadingRateIndex = 0; i < m_Description.m_SubPasses.GetCount(); ++i)
@@ -327,7 +327,7 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
   vkRenderPassCreateInfo.subpassCount = m_Description.m_SubPasses.GetCount();
   vkRenderPassCreateInfo.pSubpasses   = vkSubPasses.GetData();
 
-  xiiDynamicArray<SubpassDependencyType> vkSubPassDependencies(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<SubpassDependencyType, 4U> vkSubPassDependencies;
   vkSubPassDependencies.SetCount(m_Description.m_Dependencies.GetCount());
 
   for (xiiUInt32 i = 0; i < m_Description.m_Dependencies.GetCount(); ++i)

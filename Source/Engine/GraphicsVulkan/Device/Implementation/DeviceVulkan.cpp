@@ -351,7 +351,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         {
           // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
-          xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
+          xiiTemporaryHybridArray<vk::ExtensionProperties, 4U> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
           {
             if (IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
@@ -567,7 +567,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::PostInitializePlatform");
 
-  xiiDynamicArray<const char*> deviceExtensions;
+  xiiTemporaryHybridArray<const char*, 4U> deviceExtensions;
 
   if (IsExtensionEnabled(m_EnabledExtensions, VK_KHR_SURFACE_EXTENSION_NAME))
   {
@@ -583,7 +583,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
 
-  xiiDynamicArray<vk::DeviceQueueCreateInfo> queueDescriptions;
+  xiiTemporaryHybridArray<vk::DeviceQueueCreateInfo, 4U> queueDescriptions;
   float                                      fQueuePriorities = 1.0f;
 
   // Setup device queues.
@@ -1854,7 +1854,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.height = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateAttachmentTexelSize.height;
       }
 
-      xiiDynamicArray<vk::PhysicalDeviceFragmentShadingRateKHR> shadingRates;
+      xiiTemporaryHybridArray<vk::PhysicalDeviceFragmentShadingRateKHR, 4U> shadingRates;
       {
         xiiUInt32 uiShadingRateCount = 0U;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));

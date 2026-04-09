@@ -33,8 +33,8 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     return XII_FAILURE;
   }
 
-  xiiDynamicArray<vk::PipelineShaderStageCreateInfo>      vkShaderStages(pDeviceVulkan->GetAllocator());
-  xiiDynamicArray<vk::RayTracingShaderGroupCreateInfoKHR> vkShaderGroups(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::PipelineShaderStageCreateInfo, 4U>      vkShaderStages;
+  xiiTemporaryHybridArray<vk::RayTracingShaderGroupCreateInfoKHR, 4U> vkShaderGroups;
 
   auto AddShaderStage = [&](xiiSharedPtr<xiiGALShader> pShader, xiiGALShaderType::Enum expectedShaderType) -> xiiUInt32 {
     if (pShader == nullptr)
@@ -164,7 +164,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     vkPipelineLayoutCreateInfo.pSetLayouts    = pDescriptorSetLayouts.GetPtr();
 
     const auto&                            pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
-    xiiDynamicArray<vk::PushConstantRange> vkPushRanges(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::PushConstantRange, 4U> vkPushRanges;
 
     if (!pushConstantRanges.IsEmpty())
     {

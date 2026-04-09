@@ -164,7 +164,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceFormatsKHR(m_vkSurface, &uiFormatCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiFormatCount > 0U, "");
 
-  xiiDynamicArray<vk::SurfaceFormatKHR> supportedFormats(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::SurfaceFormatKHR, 4U> supportedFormats;
   supportedFormats.SetCountUninitialized(uiFormatCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfaceFormatsKHR(m_vkSurface, &uiFormatCount, supportedFormats.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiFormatCount == supportedFormats.GetCount(), "");
@@ -243,7 +243,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, nullptr, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiPresentModeCount > 0, "");
 
-  xiiDynamicArray<vk::PresentModeKHR> presentModes(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::PresentModeKHR, 4U> presentModes;
   presentModes.SetCountUninitialized(uiPresentModeCount);
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkPhysicalDevice.getSurfacePresentModesKHR(m_vkSurface, &uiPresentModeCount, presentModes.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
   XII_ASSERT_DEV(uiPresentModeCount == presentModes.GetCount(), "");
@@ -307,7 +307,7 @@ xiiResult xiiGALSwapChainVulkan::CreateVulkanSwapChain()
   // The FIFO present mode is guaranteed by the spec to always be supported.
   vk::PresentModeKHR presentMode = vk::PresentModeKHR::eFifo;
   {
-    xiiDynamicArray<vk::PresentModeKHR> preferredPresentModes(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::PresentModeKHR, 4U> preferredPresentModes;
 
     if (m_PresentMode == xiiGALPresentMode::VSync)
     {

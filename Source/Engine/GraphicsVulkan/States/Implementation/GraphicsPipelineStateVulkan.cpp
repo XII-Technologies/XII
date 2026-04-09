@@ -43,7 +43,7 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
   vkGraphicsPipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
 #endif
 
-  xiiDynamicArray<vk::PipelineShaderStageCreateInfo> vkShaderStages(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::PipelineShaderStageCreateInfo, 4U> vkShaderStages;
   {
 #define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                              \
   if (xiiSharedPtr<xiiGALShaderVulkan> pShaderVulkan = m_Description.m_p##shaderType.Downcast<xiiGALShaderVulkan>()) \
@@ -240,7 +240,7 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
 
     // Build push constant ranges from the pipeline resource signature description.
     const auto&                            pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
-    xiiDynamicArray<vk::PushConstantRange> vkPushRanges(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::PushConstantRange, 4U> vkPushRanges;
 
     if (!pushConstantRanges.IsEmpty())
     {

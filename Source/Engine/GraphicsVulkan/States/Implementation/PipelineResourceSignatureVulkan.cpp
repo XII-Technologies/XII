@@ -118,8 +118,8 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
   vkDescriptorSetLayoutCreateInfo.pNext                             = nullptr;
   vkDescriptorSetLayoutCreateInfo.flags                             = {};
 
-  xiiDynamicArray<vk::DescriptorSetLayoutBinding> vkDescriptorSetLayoutBindings(pDeviceVulkan->GetAllocator());
-  xiiDynamicArray<xiiDynamicArray<vk::Sampler>>   vkTempSamplerArrayAssignment(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::DescriptorSetLayoutBinding, 4U> vkDescriptorSetLayoutBindings;
+  xiiTemporaryHybridArray<xiiTemporaryHybridArray<vk::Sampler, 4U>, 4U>   vkTempSamplerArrayAssignment;
 
   for (xiiUInt32 uiSet = 0; uiSet < m_PipelineResourceSetLayouts.GetCount(); ++uiSet)
   {
@@ -150,7 +150,7 @@ xiiResult xiiGALPipelineResourceSignatureVulkan::InitPlatform()
           m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex].Initialize(pDeviceVulkan, immutableSamplerDescription);
         }
 
-        vkTempSamplerArrayAssignment.PushBack(xiiDynamicArray<vk::Sampler>(pDeviceVulkan->GetAllocator()));
+        vkTempSamplerArrayAssignment.PushBack(xiiTemporaryHybridArray<vk::Sampler, 4U>());
         vkTempSamplerArrayAssignment.PeekBack().SetCount(resourceLayout.m_uiArraySize, m_ImmutableSamplers[resourceLayout.m_uiSamplerIndex].GetVulkanSampler());
 
         pVkImmutableSamplers = vkTempSamplerArrayAssignment.PeekBack().GetData();
