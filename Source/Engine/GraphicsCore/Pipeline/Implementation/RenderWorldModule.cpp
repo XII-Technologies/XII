@@ -197,7 +197,21 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     description.m_Mode                = xiiGALBufferMode::Structured;
     description.m_Usage               = xiiGALResourceUsage::Mutable;
 
-    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer = pDevice->CreateBuffer(description);
+    PersistentFrameResources::DynamicResolution::ResolutionStateData bufferData = {};
+    bufferData.m_fCurrentScale                                                  = 1.0f;
+    bufferData.m_fSmoothedScale                                                 = 1.0f;
+    bufferData.m_fErrorIntegral                                                 = 0.0f;
+    bufferData.m_fPreviousError                                                 = 0.0f;
+
+    xiiGALBufferData initialData;
+    initialData.m_pData      = &bufferData;
+    initialData.m_uiDataSize = sizeof(bufferData);
+
+    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer = pDevice->CreateBuffer(description, &initialData);
+
+    // Import state buffer as UAV.
+    data.m_hResolutionStateBuffer = builder.ImportBuffer("DynamicResolution_State", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+    data.m_hResolutionStateBuffer = builder.WriteBuffer(data.m_hResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
   }
 
   // CPU-side values.
@@ -208,10 +222,6 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
 
   data.m_fCurrentGpuTimeMs  = data.m_fTargetFrameTimeMs; // TODO.
   data.m_fSmoothedGpuTimeMs = data.m_fTargetFrameTimeMs; // TODO.
-
-  // Import state buffer as UAV.
-  data.m_hResolutionStateBuffer = builder.ImportBuffer("DynamicResolution_State", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hResolutionStateBuffer = builder.WriteBuffer(data.m_hResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
 
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline)
   {
