@@ -103,7 +103,7 @@ xiiResult xiiPreprocessor::HandleDefine(const TokenStream& Tokens, xiiUInt32& ui
     if (Expect(Tokens, uiCurToken, "(").Failed())
       return XII_FAILURE;
 
-    xiiHybridArray<xiiString, 16> parameters;
+    xiiTemporaryHybridArray<xiiString, 16> parameters;
 
     while (!Accept(Tokens, uiCurToken, ")"))
     {
@@ -156,7 +156,7 @@ xiiResult xiiPreprocessor::AddCustomDefine(xiiStringView sDefinition)
   m_CustomDefines.PeekBack().m_Tokenized.Tokenize(m_CustomDefines.PeekBack().m_Content, m_pLog);
 
   xiiUInt32                           uiFirstToken = 0;
-  xiiHybridArray<const xiiToken*, 32> Tokens;
+  xiiTemporaryHybridArray<const xiiToken*, 32> Tokens;
 
   if (m_CustomDefines.PeekBack().m_Tokenized.GetNextLine(uiFirstToken, Tokens).Failed())
     return XII_FAILURE;

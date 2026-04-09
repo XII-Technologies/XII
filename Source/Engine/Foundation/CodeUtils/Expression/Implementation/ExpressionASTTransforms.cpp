@@ -393,7 +393,7 @@ xiiExpressionAST::Node* xiiExpressionAST::ReplaceUnsupportedInstructions(Node* p
       const bool isWholeNumber = fExpValue == xiiMath::Trunc(fExpValue);
       if (isWholeNumber && fExpValue > 1 && fExpValue < XII_ARRAY_SIZE(s_MultiplicationChains))
       {
-        xiiHybridArray<Node*, 8> multiplierStack;
+        xiiTemporaryHybridArray<Node*, 8> multiplierStack;
         multiplierStack.PushBack(pBase);
 
         const auto& chain   = s_MultiplicationChains[(xiiUInt32)fExpValue].m_Chain;

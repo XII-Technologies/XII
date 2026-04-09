@@ -57,7 +57,12 @@ class xiiTemporaryHybridArray : public xiiHybridArray<T, Size>
 public:
   xiiTemporaryHybridArray();
 
-  void operator=(const xiiHybridArray<T, Size>& rhs);
+  template <typename AllocatorWrapper>
+  xiiTemporaryHybridArray(const xiiHybridArray<T, Size, AllocatorWrapper>& other);
+  explicit xiiTemporaryHybridArray(const xiiArrayPtr<const T>& other);
+
+  template <typename AllocatorWrapper>
+  void operator=(const xiiHybridArray<T, Size, AllocatorWrapper>& rhs);
   void operator=(const xiiArrayPtr<const T>& rhs);
 
   void operator=(xiiHybridArray<T, Size>&& rhs) noexcept;

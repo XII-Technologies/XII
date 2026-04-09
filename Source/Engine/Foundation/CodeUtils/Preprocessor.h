@@ -293,7 +293,7 @@ private: // *** #if condition parsing ***
 
 private: // *** Parsing ***
   xiiResult CopyTokensAndEvaluateDefined(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination);
-  void      CopyTokensReplaceParams(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination, const xiiHybridArray<xiiString, 16>& parameters);
+  void      CopyTokensReplaceParams(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination, const xiiArrayPtr<xiiString>& parameters);
 
   xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiStringView sToken, xiiUInt32* pAccepted = nullptr);
   xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiTokenType::Enum Type, xiiUInt32* pAccepted = nullptr);

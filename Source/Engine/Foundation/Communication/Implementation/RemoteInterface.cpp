@@ -362,7 +362,7 @@ xiiResult xiiRemoteInterface::DetermineTargetAddress(xiiStringView sConnectTo0, 
   }
   else if (sConnectTo.FindSubString(".") != nullptr)
   {
-    xiiHybridArray<xiiString, 8> IP;
+    xiiTemporaryHybridArray<xiiString, 8> IP;
     sConnectTo.Split(false, IP, ".");
 
     if (IP.GetCount() != 4)

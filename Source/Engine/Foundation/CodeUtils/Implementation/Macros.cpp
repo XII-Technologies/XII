@@ -4,7 +4,7 @@
 
 using namespace xiiTokenParseUtils;
 
-void xiiPreprocessor::CopyTokensReplaceParams(const TokenStream& Source, xiiUInt32 uiFirstSourceToken, TokenStream& Destination, const xiiHybridArray<xiiString, 16>& parameters)
+void xiiPreprocessor::CopyTokensReplaceParams(const TokenStream& Source, xiiUInt32 uiFirstSourceToken, TokenStream& Destination, const xiiArrayPtr<xiiString>& parameters)
 {
   Destination.Clear();
   Destination.Reserve(Source.GetCount() - uiFirstSourceToken);

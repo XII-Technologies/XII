@@ -829,7 +829,7 @@ namespace
 
 void xiiExpressionAST::PrintGraph(xiiDGMLGraph& ref_graph) const
 {
-  xiiHybridArray<NodeInfo, 64> nodeStack;
+  xiiTemporaryHybridArray<NodeInfo, 64> nodeStack;
 
   xiiStringBuilder sTmp;
   for (auto pOutputNode : m_OutputNodes)
@@ -1128,7 +1128,7 @@ xiiExpressionAST::DataType::Enum xiiExpressionAST::GetExpectedChildDataType(cons
 // static
 void xiiExpressionAST::UpdateHash(Node* pNode)
 {
-  xiiHybridArray<xiiUInt32, 16> valuesToHash;
+  xiiTemporaryHybridArray<xiiUInt32, 16> valuesToHash;
 
   const xiiUInt32* pBaseValues = reinterpret_cast<const xiiUInt32*>(pNode);
   valuesToHash.PushBack(pBaseValues[0]);

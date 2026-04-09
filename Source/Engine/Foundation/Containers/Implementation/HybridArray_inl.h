@@ -59,7 +59,23 @@ xiiTemporaryHybridArray<T, Size>::xiiTemporaryHybridArray() :
 }
 
 template <typename T, xiiUInt32 Size>
-void xiiTemporaryHybridArray<T, Size>::operator=(const xiiHybridArray<T, Size>& rhs)
+template <typename AllocatorWrapper>
+xiiTemporaryHybridArray<T, Size>::xiiTemporaryHybridArray(const xiiHybridArray<T, Size, AllocatorWrapper>& other) :
+  xiiHybridArray<T, Size>(xiiTemporaryAllocator::Get())
+{
+  *this = other;
+}
+
+template <typename T, xiiUInt32 Size>
+xiiTemporaryHybridArray<T, Size>::xiiTemporaryHybridArray(const xiiArrayPtr<const T>& other) :
+  xiiHybridArray<T, Size>(xiiTemporaryAllocator::Get())
+{
+  *this = other;
+}
+
+template <typename T, xiiUInt32 Size>
+template <typename AllocatorWrapper>
+void xiiTemporaryHybridArray<T, Size>::operator=(const xiiHybridArray<T, Size, AllocatorWrapper>& rhs)
 {
   xiiDynamicArray<T>::operator=(rhs);
 }
