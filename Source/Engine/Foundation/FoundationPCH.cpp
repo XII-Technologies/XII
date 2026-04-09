@@ -115,6 +115,7 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_AllocatorWrapper);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_EndianHelper);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_FrameAllocator);
+  XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_TemporaryAllocator);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_MemoryTracker);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_MemoryUtils);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_PageAllocator);

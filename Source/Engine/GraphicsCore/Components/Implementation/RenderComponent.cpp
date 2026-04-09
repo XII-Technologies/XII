@@ -38,8 +38,13 @@ void xiiRenderComponent::OnActivated()
 
 void xiiRenderComponent::OnDeactivated()
 {
-  // Can't call TriggerLocalBoundsUpdate because it checks whether we are active, which is not the case anymore.
-  GetOwner()->UpdateLocalBounds();
+  // Only update the local bounds if the owner is still active, if not no other components are active anymore and the bounds update would be pointless.
+  // The bounds will be updated when the owner is re-activated anyway.
+  if (GetOwner()->IsActive())
+  {
+    // Can't call TriggerLocalBoundsUpdate because it checks whether we are active, which is not the case anymore.
+    GetOwner()->UpdateLocalBounds();
+  }
 }
 
 void xiiRenderComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)

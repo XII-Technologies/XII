@@ -738,10 +738,10 @@ void xiiGameObject::UpdateLocalBounds()
   xiiSpatialSystem* pSpatialSystem = GetWorld()->GetSpatialSystem();
   if (pSpatialSystem != nullptr && (bRecreateSpatialData || m_pTransformationData->m_hSpatialData.IsInvalidated()))
   {
+    // UpdateGlobalBounds is called internally by RecreateSpatialData.
     m_pTransformationData->RecreateSpatialData(*pSpatialSystem);
   }
-
-  if (IsStatic())
+  else if (IsStatic())
   {
     m_pTransformationData->UpdateGlobalBounds(pSpatialSystem);
   }
@@ -1241,6 +1241,7 @@ void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& re
   else if (m_localBounds.IsValid())
   {
     UpdateGlobalBounds();
+
     m_hSpatialData = ref_spatialSystem.CreateSpatialData(m_globalBounds, m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);
   }
 }

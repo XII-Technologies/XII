@@ -196,7 +196,7 @@ private:
   class InstantiationContext : public InstantiationContextBase
   {
   public:
-    InstantiationContext(xiiWorldReader& ref_worldReader, xiiWorld* pWorld, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options);
+    InstantiationContext(xiiWorldReader& ref_worldReader, xiiWorld* pWorld, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options, xiiAllocator* pAllocator);
     ~InstantiationContext();
 
     virtual StepResult Step() override;
@@ -228,6 +228,11 @@ private:
 
     struct ComponentTypeState
     {
+      ComponentTypeState(xiiAllocator* pAllocator) :
+        m_ComponentIndexToHandle(pAllocator)
+      {
+      }
+
       xiiUInt64                           m_uiDataReadOffset = 0;
       xiiDynamicArray<xiiComponentHandle> m_ComponentIndexToHandle;
     };
