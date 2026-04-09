@@ -28,28 +28,28 @@ struct xiiHybridStringBase : public xiiStringBase<xiiHybridStringBase<Size>>
 {
 protected:
   /// \brief Creates an empty string.
-  xiiHybridStringBase(xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const xiiHybridStringBase& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(const xiiHybridStringBase& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Moves the data from \a rhs.
-  xiiHybridStringBase(xiiHybridStringBase&& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(xiiHybridStringBase&& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const char* rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(const char* rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const wchar_t* rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(const wchar_t* rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const xiiStringView& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(const xiiStringView& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const xiiStringBuilder& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(const xiiStringBuilder& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Moves the data from \a rhs.
-  xiiHybridStringBase(xiiStringBuilder&& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiHybridStringBase(xiiStringBuilder&& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiHybridStringBase(); // [tested]
@@ -77,10 +77,10 @@ protected:
 
 #if XII_ENABLED(XII_INTEROP_STL_STRINGS)
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const std::string_view& rhs, xiiAllocatorBase* pAllocator);
+  xiiHybridStringBase(const std::string_view& rhs, xiiAllocator* pAllocator);
 
   /// \brief Copies the data from \a rhs.
-  xiiHybridStringBase(const std::string& rhs, xiiAllocatorBase* pAllocator);
+  xiiHybridStringBase(const std::string& rhs, xiiAllocator* pAllocator);
 
   /// \brief Copies the data from \a rhs.
   void operator=(const std::string_view& rhs);
@@ -146,7 +146,7 @@ struct xiiHybridString : public xiiHybridStringBase<Size>
 {
 public:
   xiiHybridString();
-  xiiHybridString(xiiAllocatorBase* pAllocator);
+  xiiHybridString(xiiAllocator* pAllocator);
 
   xiiHybridString(const xiiHybridString<Size, AllocatorWrapper>& other);
   xiiHybridString(const xiiHybridStringBase<Size>& other);

@@ -3,20 +3,20 @@ template <typename T, xiiUInt16 Size>
 xiiSmallArrayBase<T, Size>::xiiSmallArrayBase() = default;
 
 template <typename T, xiiUInt16 Size>
-XII_ALWAYS_INLINE xiiSmallArrayBase<T, Size>::xiiSmallArrayBase(const xiiSmallArrayBase<T, Size>& other, xiiAllocatorBase* pAllocator)
+XII_ALWAYS_INLINE xiiSmallArrayBase<T, Size>::xiiSmallArrayBase(const xiiSmallArrayBase<T, Size>& other, xiiAllocator* pAllocator)
 {
   CopyFrom((xiiArrayPtr<const T>)other, pAllocator);
   m_uiUserData = other.m_uiUserData;
 }
 
 template <typename T, xiiUInt16 Size>
-XII_ALWAYS_INLINE xiiSmallArrayBase<T, Size>::xiiSmallArrayBase(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator)
+XII_ALWAYS_INLINE xiiSmallArrayBase<T, Size>::xiiSmallArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator)
 {
   CopyFrom(other, pAllocator);
 }
 
 template <typename T, xiiUInt16 Size>
-XII_ALWAYS_INLINE xiiSmallArrayBase<T, Size>::xiiSmallArrayBase(xiiSmallArrayBase<T, Size>&& other, xiiAllocatorBase* pAllocator)
+XII_ALWAYS_INLINE xiiSmallArrayBase<T, Size>::xiiSmallArrayBase(xiiSmallArrayBase<T, Size>&& other, xiiAllocator* pAllocator)
 {
   MoveFrom(std::move(other), pAllocator);
 }
@@ -29,7 +29,7 @@ XII_FORCE_INLINE xiiSmallArrayBase<T, Size>::~xiiSmallArrayBase()
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::CopyFrom(const xiiArrayPtr<const T>& other, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::CopyFrom(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator)
 {
   XII_ASSERT_DEV(other.GetCount() <= xiiSmallInvalidIndex, "Can't copy {} elements to small array. Maximum count is {}", other.GetCount(), xiiSmallInvalidIndex);
 
@@ -68,7 +68,7 @@ void xiiSmallArrayBase<T, Size>::CopyFrom(const xiiArrayPtr<const T>& other, xii
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::MoveFrom(xiiSmallArrayBase<T, Size>&& other, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::MoveFrom(xiiSmallArrayBase<T, Size>&& other, xiiAllocator* pAllocator)
 {
   Clear();
 
@@ -130,7 +130,7 @@ XII_ALWAYS_INLINE T& xiiSmallArrayBase<T, Size>::operator[](const xiiUInt32 uiIn
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, xiiAllocator* pAllocator)
 {
   const xiiUInt32 uiOldCount = m_uiCount;
   const xiiUInt32 uiNewCount = uiCount;
@@ -149,7 +149,7 @@ void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, xiiAllocatorBase* p
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, const T& fillValue, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, const T& fillValue, xiiAllocator* pAllocator)
 {
   const xiiUInt32 uiOldCount = m_uiCount;
   const xiiUInt32 uiNewCount = uiCount;
@@ -168,7 +168,7 @@ void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, const T& fillValue,
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::EnsureCount(xiiUInt16 uiCount, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::EnsureCount(xiiUInt16 uiCount, xiiAllocator* pAllocator)
 {
   if (uiCount > m_uiCount)
   {
@@ -178,7 +178,7 @@ void xiiSmallArrayBase<T, Size>::EnsureCount(xiiUInt16 uiCount, xiiAllocatorBase
 
 template <typename T, xiiUInt16 Size>
 template <typename> // Second template needed so that the compiler does only instantiate it when called. Otherwise the static_assert would trigger early.
-void xiiSmallArrayBase<T, Size>::SetCountUninitialized(xiiUInt16 uiCount, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::SetCountUninitialized(xiiUInt16 uiCount, xiiAllocator* pAllocator)
 {
   static_assert(xiiIsPodType<T>::value == xiiTypeIsPod::value, "SetCountUninitialized is only supported for POD types.");
   const xiiUInt16 uiOldCount = m_uiCount;
@@ -223,7 +223,7 @@ bool xiiSmallArrayBase<T, Size>::Contains(const T& value) const
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::Insert(const T& value, xiiUInt32 uiIndex, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::Insert(const T& value, xiiUInt32 uiIndex, xiiAllocator* pAllocator)
 {
   XII_ASSERT_DEV(uiIndex <= m_uiCount, "Invalid index. Array has {0} elements, trying to insert element at index {1}.", m_uiCount, uiIndex);
 
@@ -234,7 +234,7 @@ void xiiSmallArrayBase<T, Size>::Insert(const T& value, xiiUInt32 uiIndex, xiiAl
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::Insert(T&& value, xiiUInt32 uiIndex, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::Insert(T&& value, xiiUInt32 uiIndex, xiiAllocator* pAllocator)
 {
   XII_ASSERT_DEV(uiIndex <= m_uiCount, "Invalid index. Array has {0} elements, trying to insert element at index {1}.", m_uiCount, uiIndex);
 
@@ -326,7 +326,7 @@ xiiUInt32 xiiSmallArrayBase<T, Size>::LastIndexOf(const T& value, xiiUInt32 uiSt
 }
 
 template <typename T, xiiUInt16 Size>
-T& xiiSmallArrayBase<T, Size>::ExpandAndGetRef(xiiAllocatorBase* pAllocator)
+T& xiiSmallArrayBase<T, Size>::ExpandAndGetRef(xiiAllocator* pAllocator)
 {
   Reserve(m_uiCount + 1, pAllocator);
 
@@ -342,7 +342,7 @@ T& xiiSmallArrayBase<T, Size>::ExpandAndGetRef(xiiAllocatorBase* pAllocator)
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::PushBack(const T& value, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::PushBack(const T& value, xiiAllocator* pAllocator)
 {
   Reserve(m_uiCount + 1, pAllocator);
 
@@ -351,7 +351,7 @@ void xiiSmallArrayBase<T, Size>::PushBack(const T& value, xiiAllocatorBase* pAll
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::PushBack(T&& value, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::PushBack(T&& value, xiiAllocator* pAllocator)
 {
   Reserve(m_uiCount + 1, pAllocator);
 
@@ -378,7 +378,7 @@ void xiiSmallArrayBase<T, Size>::PushBackUnchecked(T&& value)
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::PushBackRange(const xiiArrayPtr<const T>& range, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::PushBackRange(const xiiArrayPtr<const T>& range, xiiAllocator* pAllocator)
 {
   const xiiUInt32 uiRangeCount = range.GetCount();
   Reserve(m_uiCount + uiRangeCount, pAllocator);
@@ -392,7 +392,7 @@ void xiiSmallArrayBase<T, Size>::PopBack(xiiUInt32 uiCountToRemove /* = 1 */)
 {
   XII_ASSERT_DEBUG(m_uiCount >= uiCountToRemove, "Out of bounds access. Array has {0} elements, trying to pop {1} elements.", m_uiCount, uiCountToRemove);
 
-  m_uiCount -= uiCountToRemove;
+  m_uiCount -= static_cast<xiiUInt16>(uiCountToRemove);
   xiiMemoryUtils::Destruct(GetElementsPtr() + m_uiCount, uiCountToRemove);
 }
 
@@ -474,7 +474,7 @@ XII_ALWAYS_INLINE xiiArrayPtr<typename xiiArrayPtr<const T>::ByteType> xiiSmallA
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::Reserve(xiiUInt16 uiCapacity, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::Reserve(xiiUInt16 uiCapacity, xiiAllocator* pAllocator)
 {
   if (m_uiCapacity >= uiCapacity)
     return;
@@ -490,7 +490,7 @@ void xiiSmallArrayBase<T, Size>::Reserve(xiiUInt16 uiCapacity, xiiAllocatorBase*
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::Compact(xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::Compact(xiiAllocator* pAllocator)
 {
   if (IsEmpty())
   {
@@ -536,7 +536,7 @@ XII_ALWAYS_INLINE U& xiiSmallArrayBase<T, Size>::GetUserData()
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::SetCapacity(xiiUInt16 uiCapacity, xiiAllocatorBase* pAllocator)
+void xiiSmallArrayBase<T, Size>::SetCapacity(xiiUInt16 uiCapacity, xiiAllocator* pAllocator)
 {
   if (m_uiCapacity > Size && uiCapacity > m_uiCapacity)
   {

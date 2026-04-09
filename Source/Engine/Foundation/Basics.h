@@ -48,25 +48,26 @@
 // Now declare all fundamental types.
 #include <Foundation/Types/Types.h>
 
-// Finally include the rest of basics
+// Assert macros should always be available.
 #include <Foundation/Basics/Assert.h>
 
+// Type-trait utilities.
 #include <Foundation/Types/TypeTraits.h>
 
-#include <Foundation/Memory/AllocatorBase.h>
+// Memory allocators are needed.
+#include <Foundation/Memory/Allocator.h>
 
-#include <Foundation/Configuration/StaticSubSystem.h>
-
+// String formatting is needed by the asserts.
 #include <Foundation/Strings/FormatString.h>
 
 class XII_FOUNDATION_DLL xiiFoundation
 {
 public:
-  static xiiAllocatorBase* s_pDefaultAllocator;
-  static xiiAllocatorBase* s_pAlignedAllocator;
+  static xiiAllocator* s_pDefaultAllocator;
+  static xiiAllocator* s_pAlignedAllocator;
 
   /// \brief The default allocator can be used for any kind of allocation if no alignment is required
-  XII_ALWAYS_INLINE static xiiAllocatorBase* GetDefaultAllocator()
+  XII_ALWAYS_INLINE static xiiAllocator* GetDefaultAllocator()
   {
     if (s_bIsInitialized)
       return s_pDefaultAllocator;
@@ -75,7 +76,7 @@ public:
   }
 
   /// \brief The aligned allocator should be used for all allocations which need alignment
-  XII_ALWAYS_INLINE static xiiAllocatorBase* GetAlignedAllocator()
+  XII_ALWAYS_INLINE static xiiAllocator* GetAlignedAllocator()
   {
     XII_ASSERT_RELEASE(s_pAlignedAllocator != nullptr, "xiiFoundation must have been initialized before this function can be called. This "
                                                        "error can occur when you have a global variable or a static member variable that "
@@ -85,7 +86,7 @@ public:
   }
 
   /// \brief Returns the allocator that is used by global data and static members before the default allocator is created.
-  static xiiAllocatorBase* GetStaticAllocator();
+  static xiiAllocator* GetStaticAllocator();
 
 private:
   friend class xiiStartup;

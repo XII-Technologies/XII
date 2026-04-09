@@ -18,7 +18,7 @@ xiiListBase<T>::ListElement::ListElement(const T& data) :
 // **** xiiListBase ****
 
 template <typename T>
-xiiListBase<T>::xiiListBase(xiiAllocatorBase* pAllocator) :
+xiiListBase<T>::xiiListBase(xiiAllocator* pAllocator) :
   m_End(reinterpret_cast<ListElement*>(&m_Last)), m_uiCount(0), m_Elements(pAllocator), m_pFreeElementStack(nullptr)
 {
   m_First.m_pNext = reinterpret_cast<ListElement*>(&m_Last);
@@ -26,7 +26,7 @@ xiiListBase<T>::xiiListBase(xiiAllocatorBase* pAllocator) :
 }
 
 template <typename T>
-xiiListBase<T>::xiiListBase(const xiiListBase<T>& cc, xiiAllocatorBase* pAllocator) :
+xiiListBase<T>::xiiListBase(const xiiListBase<T>& cc, xiiAllocator* pAllocator) :
   m_End(reinterpret_cast<ListElement*>(&m_Last)), m_uiCount(0), m_Elements(pAllocator), m_pFreeElementStack(nullptr)
 {
   m_First.m_pNext = reinterpret_cast<ListElement*>(&m_Last);
@@ -344,7 +344,7 @@ xiiList<T, A>::xiiList() :
 }
 
 template <typename T, typename A>
-xiiList<T, A>::xiiList(xiiAllocatorBase* pAllocator) :
+xiiList<T, A>::xiiList(xiiAllocator* pAllocator) :
   xiiListBase<T>(pAllocator)
 {
 }

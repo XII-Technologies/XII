@@ -35,7 +35,7 @@ public:
   ///
   /// \param uiInitialChunkSize - The number of vertices in the first (and minimum) chunk.
   /// \param uiExpansionFactor  - Determines the size of new chunks (e.g. 2 means double the previous chunk).
-  xiiGALVertexBufferPool(xiiStringView sName = {}, xiiAllocatorBase* pAllocator = AllocatorWrapper::GetAllocator(), xiiUInt32 uiInitialChunkSize = 1024, xiiUInt32 uiExpansionFactor = 2U);
+  xiiGALVertexBufferPool(xiiStringView sName = {}, xiiAllocator* pAllocator = AllocatorWrapper::GetAllocator(), xiiUInt32 uiInitialChunkSize = 1024, xiiUInt32 uiExpansionFactor = 2U);
   ~xiiGALVertexBufferPool();
 
   /// \brief Allocates a block of vertices from the pool.
@@ -67,7 +67,7 @@ private:
   /// \brief Represents a single memory chunk in the pool.
   struct Chunk
   {
-    explicit Chunk(xiiAllocatorBase* pAllocator, xiiUInt32 uiCapacity, xiiSharedPtr<xiiGALDevice> pDevice) :
+    explicit Chunk(xiiAllocator* pAllocator, xiiUInt32 uiCapacity, xiiSharedPtr<xiiGALDevice> pDevice) :
       m_Vertices(pAllocator), m_uiUsageCount(0)
     {
       m_Vertices.SetCount(uiCapacity);

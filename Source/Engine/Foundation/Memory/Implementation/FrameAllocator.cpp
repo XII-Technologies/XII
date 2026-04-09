@@ -5,33 +5,35 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Strings/StringBuilder.h>
 
-xiiDoubleBufferedStackAllocator::xiiDoubleBufferedStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent)
+xiiDoubleBufferedLinearAllocator::xiiDoubleBufferedLinearAllocator(xiiStringView sName, xiiAllocator* pParent)
 {
-  xiiStringBuilder sNameBuilder = sName;
-  sNameBuilder.Append("0");
+  constexpr xiiUInt32 uiInitialSize = 1024 * 1024; // 1 MB
 
-  m_pCurrentAllocator = XII_DEFAULT_NEW(StackAllocatorType, sNameBuilder, pParent);
+  xiiStringBuilder sb = sName;
+  sb.Append("0");
 
-  sNameBuilder = sName;
-  sNameBuilder.Append("1");
+  m_pCurrentAllocator = XII_DEFAULT_NEW(LinearAllocatorType, sb, pParent, uiInitialSize);
 
-  m_pOtherAllocator = XII_DEFAULT_NEW(StackAllocatorType, sNameBuilder, pParent);
+  sb = sName;
+  sb.Append("1");
+
+  m_pOtherAllocator = XII_DEFAULT_NEW(LinearAllocatorType, sb, pParent, uiInitialSize);
 }
 
-xiiDoubleBufferedStackAllocator::~xiiDoubleBufferedStackAllocator()
+xiiDoubleBufferedLinearAllocator::~xiiDoubleBufferedLinearAllocator()
 {
   XII_DEFAULT_DELETE(m_pCurrentAllocator);
   XII_DEFAULT_DELETE(m_pOtherAllocator);
 }
 
-void xiiDoubleBufferedStackAllocator::Swap()
+void xiiDoubleBufferedLinearAllocator::Swap()
 {
   xiiMath::Swap(m_pCurrentAllocator, m_pOtherAllocator);
 
   m_pCurrentAllocator->Reset();
 }
 
-void xiiDoubleBufferedStackAllocator::Reset()
+void xiiDoubleBufferedLinearAllocator::Reset()
 {
   m_pCurrentAllocator->Reset();
   m_pOtherAllocator->Reset();
@@ -54,7 +56,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, FrameAllocator)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiDoubleBufferedStackAllocator* xiiFrameAllocator::s_pAllocator;
+xiiDoubleBufferedLinearAllocator* xiiFrameAllocator::s_pAllocator;
 
 // static
 void xiiFrameAllocator::Swap()
@@ -76,7 +78,7 @@ void xiiFrameAllocator::Reset()
 // static
 void xiiFrameAllocator::Startup()
 {
-  s_pAllocator = XII_DEFAULT_NEW(xiiDoubleBufferedStackAllocator, "FrameAllocator", xiiFoundation::GetAlignedAllocator());
+  s_pAllocator = XII_DEFAULT_NEW(xiiDoubleBufferedLinearAllocator, "FrameAllocator", xiiFoundation::GetAlignedAllocator());
 }
 
 // static

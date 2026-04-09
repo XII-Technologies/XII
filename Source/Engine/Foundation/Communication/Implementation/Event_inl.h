@@ -3,7 +3,7 @@
 #include <Foundation/Types/ScopeExit.h>
 
 template <typename EventData, typename MutexType, xiiEventType EventType>
-xiiEventBase<EventData, MutexType, EventType>::xiiEventBase(xiiAllocatorBase* pAllocator) :
+xiiEventBase<EventData, MutexType, EventType>::xiiEventBase(xiiAllocator* pAllocator) :
   m_EventHandlers(pAllocator)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -288,7 +288,7 @@ xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent() :
 }
 
 template <typename EventData, typename MutexType, typename AllocatorWrapper, xiiEventType EventType>
-xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent(xiiAllocatorBase* pAllocator) :
+xiiEvent<EventData, MutexType, AllocatorWrapper, EventType>::xiiEvent(xiiAllocator* pAllocator) :
   xiiEventBase<EventData, MutexType, EventType>(pAllocator)
 {
 }

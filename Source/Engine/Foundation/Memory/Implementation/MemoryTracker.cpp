@@ -3,23 +3,38 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Logging/Log.h>
-#include <Foundation/Memory/Allocator.h>
-#include <Foundation/Memory/Policies/HeapAllocation.h>
+#include <Foundation/Memory/AllocatorWithPolicy.h>
+#include <Foundation/Memory/Policies/AllocationPolicyHeap.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/System/StackTracer.h>
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && TRACY_ENABLE && TRACY_ENABLE_MEMORY_TRACKING
+#  include <tracy/tracy/Tracy.hpp>
+
+#  define XII_TRACY_CALLSTACK_DEPTH           16
+#  define XII_TRACY_ALLOC_CS(ptr, size, name) TracyAllocNS(ptr, size, XII_TRACY_CALLSTACK_DEPTH, name)
+#  define XII_TRACY_FREE_CS(ptr, name)        TracyFreeNS(ptr, XII_TRACY_CALLSTACK_DEPTH, name)
+#  define XII_TRACY_ALLOC(ptr, size, name)    TracyAllocN(ptr, size, name)
+#  define XII_TRACY_FREE(ptr, name)           TracyFreeN(ptr, name)
+#else
+#  define XII_TRACY_ALLOC_CS(ptr, size, name)
+#  define XII_TRACY_FREE_CS(ptr, name)
+#  define XII_TRACY_ALLOC(ptr, size, name)
+#  define XII_TRACY_FREE(ptr, name)
+#endif
+
 namespace
 {
-  // There is no tracking for the tracker data itself.
-  using TrackerDataAllocator = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack>;
+  // No tracking for the tracker data itself.
+  using TrackerDataAllocator = xiiAllocatorWithPolicy<xiiAllocationPolicyHeap, xiiAllocatorTrackingMode::DoNotTrack>;
 
   static TrackerDataAllocator* s_pTrackerDataAllocator;
 
   struct TrackerDataAllocatorWrapper
   {
-    XII_ALWAYS_INLINE static xiiAllocatorBase* GetAllocator() { return s_pTrackerDataAllocator; }
+    XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return s_pTrackerDataAllocator; }
   };
 
 
@@ -32,7 +47,7 @@ namespace
 
     xiiAllocatorId m_ParentId;
 
-    xiiAllocatorBase::Stats m_Stats;
+    xiiAllocator::Stats m_Stats;
 
     xiiHashTable<const void*, xiiMemoryTracker::AllocationInfo, xiiHashHelper<const void*>, TrackerDataAllocatorWrapper> m_Allocations;
   };
@@ -78,11 +93,11 @@ namespace
     s_bIsInitializing = false;
   }
 
-  static void DumpLeak(const xiiMemoryTracker::AllocationInfo& info, xiiStringView sAllocatorName)
+  static void DumpLeak(const xiiMemoryTracker::AllocationInfo& info, const char* szAllocatorName)
   {
     char      szBuffer[512];
     xiiUInt64 uiSize = info.m_uiSize;
-    xiiStringUtils::snprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), "Leaked %llu bytes allocated by '%s'\n", uiSize, sAllocatorName);
+    xiiStringUtils::snprintf(szBuffer, XII_ARRAY_SIZE(szBuffer), "Leaked %llu bytes allocated by '%s'\n", uiSize, szAllocatorName);
 
     xiiLog::Print(szBuffer);
 
@@ -113,7 +128,7 @@ xiiAllocatorId xiiMemoryTracker::Iterator::ParentId() const
   return CAST_ITER(m_pData)->Value().m_ParentId;
 }
 
-const xiiAllocatorBase::Stats& xiiMemoryTracker::Iterator::Stats() const
+const xiiAllocator::Stats& xiiMemoryTracker::Iterator::Stats() const
 {
   return CAST_ITER(m_pData)->Value().m_Stats;
 }
@@ -201,6 +216,15 @@ void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiAllocatorTra
     pInfo->m_uiSize      = uiSize;
     pInfo->m_uiAlignment = (xiiUInt16)uiAlign;
     pInfo->SetStackTrace(stackTrace);
+
+    if (mode >= xiiAllocatorTrackingMode::AllocationStatsAndStacktraces)
+    {
+      XII_TRACY_ALLOC_CS(pPtr, uiSize, data.m_sName.GetData());
+    }
+    else
+    {
+      XII_TRACY_ALLOC(pPtr, uiSize, data.m_sName.GetData());
+    }
   }
 }
 
@@ -221,6 +245,15 @@ void xiiMemoryTracker::RemoveAllocation(xiiAllocatorId allocatorId, const void* 
       data.m_Stats.m_uiAllocationSize -= info.m_uiSize;
 
       stackTrace = info.GetStackTrace();
+
+      if (data.m_TrackingMode >= xiiAllocatorTrackingMode::AllocationStatsAndStacktraces)
+      {
+        XII_TRACY_FREE_CS(pPtr, data.m_sName.GetData());
+      }
+      else
+      {
+        XII_TRACY_FREE(pPtr, data.m_sName.GetData());
+      }
     }
     else
     {
@@ -242,13 +275,30 @@ void xiiMemoryTracker::RemoveAllAllocations(xiiAllocatorId allocatorId)
     data.m_Stats.m_uiNumDeallocations++;
     data.m_Stats.m_uiAllocationSize -= info.m_uiSize;
 
+    if (data.m_TrackingMode >= xiiAllocatorTrackingMode::AllocationStatsAndStacktraces)
+    {
+      for (const auto& alloc : data.m_Allocations)
+      {
+        XII_IGNORE_UNUSED(alloc);
+        XII_TRACY_FREE_CS(alloc.Key(), data.m_sName.GetData());
+      }
+    }
+    else
+    {
+      for (const auto& alloc : data.m_Allocations)
+      {
+        XII_IGNORE_UNUSED(alloc);
+        XII_TRACY_FREE(alloc.Key(), data.m_sName.GetData());
+      }
+    }
+
     XII_DELETE_ARRAY(s_pTrackerDataAllocator, info.GetStackTrace());
   }
   data.m_Allocations.Clear();
 }
 
 // static
-void xiiMemoryTracker::SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocatorBase::Stats& stats)
+void xiiMemoryTracker::SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocator::Stats& stats)
 {
   XII_LOCK(*s_pTrackerData);
 
@@ -277,7 +327,7 @@ xiiStringView xiiMemoryTracker::GetAllocatorName(xiiAllocatorId allocatorId)
 }
 
 // static
-const xiiAllocatorBase::Stats& xiiMemoryTracker::GetAllocatorStats(xiiAllocatorId allocatorId)
+const xiiAllocator::Stats& xiiMemoryTracker::GetAllocatorStats(xiiAllocatorId allocatorId)
 {
   XII_LOCK(*s_pTrackerData);
 
@@ -315,14 +365,14 @@ struct LeakInfo
   XII_DECLARE_POD_TYPE();
 
   xiiAllocatorId m_AllocatorId;
-  size_t         m_uiSize      = 0U;
+  size_t         m_uiSize      = 0;
   bool           m_bIsRootLeak = true;
 };
 
 // static
-xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
+xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printfunc)
 {
-  if (s_pTrackerData == nullptr) // If both tracking and tracing is disabled there is no tracker data.
+  if (s_pTrackerData == nullptr) // if both tracking and tracing is disabled there is no tracker data
     return 0;
 
   XII_LOCK(*s_pTrackerData);
@@ -348,7 +398,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
     }
   }
 
-  // Find dependencies.
+  // find dependencies
   for (auto it = leakTable.GetIterator(); it.IsValid(); ++it)
   {
     const void*     ptr  = it.Key();
@@ -371,7 +421,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
     }
   }
 
-  // Dump leaks.
+  // dump leaks
   xiiUInt32 uiNumLeaks = 0;
 
   for (auto it = leakTable.GetIterator(); it.IsValid(); ++it)
@@ -387,7 +437,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
       {
         if (uiNumLeaks == 0)
         {
-          printFunc("\n\n--------------------------------------------------------------------\n"
+          printfunc("\n\n--------------------------------------------------------------------\n"
                     "Memory Leak Report:"
                     "\n--------------------------------------------------------------------\n\n");
         }
@@ -410,7 +460,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
                                         "\n--------------------------------------------------------------------\n\n",
                              uiNumLeaks);
 
-    printFunc(tmp);
+    printfunc(tmp);
   }
 
   return uiNumLeaks;
@@ -433,5 +483,3 @@ xiiMemoryTracker::Iterator xiiMemoryTracker::GetIterator()
   auto pInnerIt = XII_NEW(s_pTrackerDataAllocator, TrackerData::AllocatorTable::Iterator, s_pTrackerData->m_AllocatorData.GetIterator());
   return Iterator(pInnerIt);
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_MemoryTracker);

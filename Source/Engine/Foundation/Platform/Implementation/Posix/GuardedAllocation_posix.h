@@ -1,7 +1,7 @@
 
 namespace xiiMemoryPolicies
 {
-  xiiGuardedAllocation::xiiGuardedAllocation(xiiAllocatorBase* pParent)
+  xiiGuardedAllocation::xiiGuardedAllocation(xiiAllocator* pParent)
   {
     XII_ASSERT_NOT_IMPLEMENTED;
     XII_IGNORE_UNUSED(m_Mutex);

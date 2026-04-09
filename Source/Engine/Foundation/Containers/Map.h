@@ -216,10 +216,10 @@ private:
 
 protected:
   /// \brief Initializes the map to be empty.
-  xiiMapBase(const Comparer& comparer, xiiAllocatorBase* pAllocator); // [tested]
+  xiiMapBase(const Comparer& comparer, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Copies all key/value pairs from the given map into this one.
-  xiiMapBase(const xiiMapBase<KeyType, ValueType, Comparer>& cc, xiiAllocatorBase* pAllocator); // [tested]
+  xiiMapBase(const xiiMapBase<KeyType, ValueType, Comparer>& cc, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destroys all elements from the map.
   ~xiiMapBase(); // [tested]
@@ -328,7 +328,7 @@ public:
   ConstIterator UpperBound(const CompatibleKeyType& key) const; // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const { return m_Elements.GetAllocator(); }
+  xiiAllocator* GetAllocator() const { return m_Elements.GetAllocator(); }
 
   /// \brief Comparison operator
   bool operator==(const xiiMapBase<KeyType, ValueType, Comparer>& rhs) const; // [tested]
@@ -400,8 +400,8 @@ class xiiMap : public xiiMapBase<KeyType, ValueType, Comparer>
 {
 public:
   xiiMap();
-  explicit xiiMap(xiiAllocatorBase* pAllocator);
-  xiiMap(const Comparer& comparer, xiiAllocatorBase* pAllocator);
+  explicit xiiMap(xiiAllocator* pAllocator);
+  xiiMap(const Comparer& comparer, xiiAllocator* pAllocator);
 
   xiiMap(const xiiMap<KeyType, ValueType, Comparer, AllocatorWrapper>& other);
   xiiMap(const xiiMapBase<KeyType, ValueType, Comparer>& other);

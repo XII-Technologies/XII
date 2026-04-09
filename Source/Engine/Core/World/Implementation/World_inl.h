@@ -437,7 +437,7 @@ XII_ALWAYS_INLINE xiiRandom& xiiWorld::GetRandomNumberGenerator()
   return m_Data.m_Random;
 }
 
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiWorld::GetAllocator()
+XII_ALWAYS_INLINE xiiAllocator* xiiWorld::GetAllocator()
 {
   return &m_Data.m_Allocator;
 }
@@ -447,9 +447,9 @@ XII_ALWAYS_INLINE xiiInternal::WorldLargeBlockAllocator* xiiWorld::GetBlockAlloc
   return &m_Data.m_BlockAllocator;
 }
 
-XII_ALWAYS_INLINE xiiDoubleBufferedStackAllocator* xiiWorld::GetStackAllocator()
+XII_ALWAYS_INLINE xiiDoubleBufferedLinearAllocator* xiiWorld::GetStackAllocator()
 {
-  return &m_Data.m_StackAllocator;
+  return &m_Data.m_LinearAllocator;
 }
 
 XII_ALWAYS_INLINE xiiInternal::WorldData::ReadMarker& xiiWorld::GetReadMarker() const

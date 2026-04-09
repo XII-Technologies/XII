@@ -50,13 +50,13 @@ xiiMutex                                                   xiiBlackboard::s_Glob
 xiiHashTable<xiiHashedString, xiiSharedPtr<xiiBlackboard>> xiiBlackboard::s_GlobalBlackboards;
 
 // static
-xiiSharedPtr<xiiBlackboard> xiiBlackboard::Create(xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::Create(xiiAllocator* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
 {
   return XII_NEW(pAllocator, xiiBlackboard, false);
 }
 
 // static
-xiiSharedPtr<xiiBlackboard> xiiBlackboard::GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
+xiiSharedPtr<xiiBlackboard> xiiBlackboard::GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocator* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
 {
   XII_LOCK(s_GlobalBlackboardsMutex);
 

@@ -18,7 +18,7 @@ XII_ALWAYS_INLINE xiiSharedPtr<T>::xiiSharedPtr(const xiiInternal::NewInstance<U
 
 template <typename T>
 template <typename U>
-XII_ALWAYS_INLINE xiiSharedPtr<T>::xiiSharedPtr(U* pInstance, xiiAllocatorBase* pAllocator)
+XII_ALWAYS_INLINE xiiSharedPtr<T>::xiiSharedPtr(U* pInstance, xiiAllocator* pAllocator)
 {
   m_pInstance  = pInstance;
   m_pAllocator = pAllocator;

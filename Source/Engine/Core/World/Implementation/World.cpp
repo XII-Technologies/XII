@@ -420,7 +420,7 @@ void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiM
   }
   else
   {
-    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_StackAllocator.GetCurrentAllocator());
+    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_LinearAllocator.GetCurrentAllocator());
     m_Data.m_MessageQueues[queueType].Enqueue(pMsgCopy, metaData);
   }
 }
@@ -451,7 +451,7 @@ void xiiWorld::PostMessage(const xiiComponentHandle& hReceiverComponent, const x
   }
   else
   {
-    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_StackAllocator.GetCurrentAllocator());
+    xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, m_Data.m_LinearAllocator.GetCurrentAllocator());
     m_Data.m_MessageQueues[queueType].Enqueue(pMsgCopy, metaData);
   }
 }
@@ -573,8 +573,8 @@ void xiiWorld::Update()
     ProcessQueuedMessages(xiiObjectMsgQueueType::AfterInitialized);
   }
 
-  // Swap our double buffered stack allocator
-  m_Data.m_StackAllocator.Swap();
+  // Swap our double buffered stack allocator.
+  m_Data.m_LinearAllocator.Swap();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

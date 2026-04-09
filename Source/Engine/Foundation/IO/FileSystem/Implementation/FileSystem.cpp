@@ -980,7 +980,7 @@ void xiiFileSystem::StartSearch(xiiFileSystemIterator& ref_iterator, xiiStringVi
 {
   XII_LOCK(s_pData->m_FsMutex);
 
-  xiiHybridArray<xiiString, 16> folders;
+  xiiTemporaryHybridArray<xiiString, 16> folders;
   xiiStringBuilder              sDdPath, sRelPath;
 
   if (sSearchTerm.IsRootedPath())

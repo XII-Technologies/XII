@@ -2,15 +2,18 @@
 
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Memory/LargeBlockAllocator.h>
-#include <Foundation/Memory/StackAllocator.h>
+#include <Foundation/Memory/LinearAllocator.h>
+#include <Foundation/Memory/Policies/AllocationPolicyStack.h>
 
 struct alignas(XII_ALIGNMENT_MINIMUM) NonAlignedVector
 {
   XII_DECLARE_POD_TYPE();
 
-  NonAlignedVector() :
-    x(5.0f), y(6.0f), z(8.0f)
+  NonAlignedVector()
   {
+    x = 5.0f;
+    y = 6.0f;
+    z = 8.0f;
   }
 
   float x;
@@ -22,9 +25,11 @@ struct alignas(16) AlignedVector
 {
   XII_DECLARE_POD_TYPE();
 
-  AlignedVector() :
-    x(5.0f), y(6.0f), z(8.0f)
+  AlignedVector()
   {
+    x = 5.0f;
+    y = 6.0f;
+    z = 8.0f;
   }
 
   float x;
@@ -36,7 +41,7 @@ struct alignas(16) AlignedVector
 template <typename T>
 void TestAlignmentHelper(size_t uiExpectedAlignment)
 {
-  xiiAllocatorBase* pAllocator = xiiFoundation::GetAlignedAllocator();
+  xiiAllocator* pAllocator = xiiFoundation::GetAlignedAllocator();
   XII_TEST_BOOL(pAllocator != nullptr);
 
   size_t uiAlignment = alignof(T);
@@ -62,7 +67,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
   {
     XII_TEST_INT(pAllocator->AllocatedSize(pTestBuffer), uiExpectedSize);
 
-    xiiAllocatorBase::Stats stats = pAllocator->GetStats();
+    xiiAllocator::Stats stats = pAllocator->GetStats();
     XII_TEST_INT(stats.m_uiAllocationSize, uiExpectedSize * 2);
     XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 2);
   }
@@ -72,7 +77,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
 
   if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::Basics)
   {
-    xiiAllocatorBase::Stats stats = pAllocator->GetStats();
+    xiiAllocator::Stats stats = pAllocator->GetStats();
     XII_TEST_INT(stats.m_uiAllocationSize, 0);
     XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 0);
   }
@@ -90,8 +95,11 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LargeBlockAllocator")
   {
-    constexpr xiiUInt32 BLOCK_SIZE_IN_BYTES = 4096 * 4;
-    const xiiUInt32     uiPageSize          = xiiSystemInformation::Get().GetMemoryPageSize();
+    enum
+    {
+      BLOCK_SIZE_IN_BYTES = 4096 * 4
+    };
+    const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();
 
     xiiLargeBlockAllocator<BLOCK_SIZE_IN_BYTES> allocator("Test", xiiFoundation::GetDefaultAllocator(), xiiAllocatorTrackingMode::AllocationStats);
 
@@ -107,7 +115,7 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
       blocks.PushBack(block);
     }
 
-    xiiAllocatorBase::Stats stats = allocator.GetStats();
+    xiiAllocator::Stats stats = allocator.GetStats();
 
     XII_TEST_BOOL(stats.m_uiNumAllocations == 17);
     XII_TEST_BOOL(stats.m_uiNumDeallocations == 0);
@@ -160,9 +168,9 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
     XII_TEST_BOOL(stats.m_uiAllocationSize == 0);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "StackAllocator")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "LinearAllocator")
   {
-    xiiStackAllocator<> allocator("TestStackAllocator", xiiFoundation::GetAlignedAllocator());
+    xiiLinearAllocator<> allocator("TestLinearAllocator", xiiFoundation::GetAlignedAllocator(), 4096);
 
     void* blocks[8];
     for (size_t i = 0; i < XII_ARRAY_SIZE(blocks); i++)
@@ -205,9 +213,9 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
     allocator.Deallocate(allocs[0]);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "StackAllocator with non-PODs")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "LinearAllocator with non-PODs")
   {
-    xiiStackAllocator<> allocator("TestStackAllocator", xiiFoundation::GetAlignedAllocator());
+    xiiLinearAllocator<> allocator("TestLinearAllocator", xiiFoundation::GetAlignedAllocator(), 4096);
 
     xiiDynamicArray<xiiConstructionCounter*> counters;
     counters.Reserve(100);
@@ -234,5 +242,108 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
     allocator.Reset();
 
     XII_TEST_BOOL(xiiConstructionCounter::HasDestructed(50));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "TemporaryAllocator")
+  {
+    using TempAllocatorType = xiiAllocatorWithPolicy<xiiAllocationPolicyStack<true>>;
+
+    // Basic LIFO allocate/deallocate
+    {
+      TempAllocatorType allocator("TestTemporaryAllocator", xiiFoundation::GetAlignedAllocator());
+
+      xiiUInt32* pA = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 64);
+      xiiUInt32* pB = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 128);
+      xiiUInt32* pC = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 256);
+
+      XII_TEST_BOOL(pA != nullptr);
+      XII_TEST_BOOL(pB != nullptr);
+      XII_TEST_BOOL(pC != nullptr);
+
+      // All within the same bucket, so addresses should be ascending
+      XII_TEST_BOOL(pA < pB);
+      XII_TEST_BOOL(pB < pC);
+
+      // make copy of pA to check if it gets reused after deallocation
+      xiiUInt32* pExpectedAlloc = pA;
+
+      // Deallocate in LIFO order
+      XII_DELETE_RAW_BUFFER(&allocator, pC);
+      XII_DELETE_RAW_BUFFER(&allocator, pB);
+      XII_DELETE_RAW_BUFFER(&allocator, pA);
+
+      xiiUInt32* pD = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 64);
+      XII_TEST_BOOL(pD != nullptr);
+      XII_TEST_BOOL(pD == pExpectedAlloc); // should reuse the same memory
+
+      XII_DELETE_RAW_BUFFER(&allocator, pD);
+    }
+
+    // Out-of-order deallocation
+    {
+      TempAllocatorType allocator("TestTemporaryAllocator", xiiFoundation::GetAlignedAllocator());
+
+      xiiUInt32* ptrs[5];
+      for (xiiInt32 i = 0; i < 5; ++i)
+      {
+        ptrs[i] = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 32);
+        XII_TEST_BOOL(ptrs[i] != nullptr);
+      }
+
+      xiiUInt32* pExpectedAlloc = ptrs[1]; // should be reused after free
+
+      // Free indices 1, 2, 3 out of order (all become nullptr entries)
+      XII_DELETE_RAW_BUFFER(&allocator, ptrs[1]);
+      XII_DELETE_RAW_BUFFER(&allocator, ptrs[2]);
+      XII_DELETE_RAW_BUFFER(&allocator, ptrs[3]);
+
+      // Free index 4 (last) - should cascade and also pop the nullptr entries for 3, 2, 1
+      XII_DELETE_RAW_BUFFER(&allocator, ptrs[4]);
+
+      xiiUInt32* pD = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 64);
+      XII_TEST_BOOL(pD != nullptr);
+      XII_TEST_BOOL(pD == pExpectedAlloc); // should reuse the same memory
+
+      XII_DELETE_RAW_BUFFER(&allocator, ptrs[0]);
+      XII_DELETE_RAW_BUFFER(&allocator, pD);
+    }
+
+    // Multiple buckets (allocations that span across bucket boundaries)
+    {
+      TempAllocatorType allocator("TestTemporaryAllocator", xiiFoundation::GetAlignedAllocator());
+
+      // Fill first bucket (1024*1024 bytes max)
+      xiiUInt32* pA = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 128 * 1024);
+      xiiUInt32* pB = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 128 * 1024);
+      XII_TEST_BOOL(pA != nullptr);
+      XII_TEST_BOOL(pB != nullptr);
+
+      // This should trigger a new bucket
+      xiiUInt32* pC = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 64);
+      XII_TEST_BOOL(pC != nullptr);
+
+      // Deallocate in LIFO order - should roll back across bucket boundary
+      XII_DELETE_RAW_BUFFER(&allocator, pC);
+      XII_DELETE_RAW_BUFFER(&allocator, pB);
+      XII_DELETE_RAW_BUFFER(&allocator, pA);
+    }
+
+    // Large allocations that exceed max allocation size (parent allocator fallback)
+    {
+      TempAllocatorType allocator("TestTemporaryAllocator", xiiFoundation::GetAlignedAllocator());
+
+      // This allocation exceeds the max allocation size, so it goes to the parent allocator
+      xiiUInt32* pLarge = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 1024 * 1024);
+      XII_TEST_BOOL(pLarge != nullptr);
+
+      // Mix a normal allocation in between
+      xiiUInt32* pSmall = XII_NEW_RAW_BUFFER(&allocator, xiiUInt32, 64);
+      XII_TEST_BOOL(pSmall != nullptr);
+
+      // Deallocating the large one should go to parent (not found in m_Allocations search, falls through)
+      XII_DELETE_RAW_BUFFER(&allocator, pLarge);
+
+      XII_DELETE_RAW_BUFFER(&allocator, pSmall);
+    }
   }
 }

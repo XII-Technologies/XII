@@ -1548,12 +1548,10 @@ protected:
 
   struct VertexStreamDescription
   {
-    VertexStreamDescription()
-    {
-    }
+    XII_DECLARE_POD_TYPE();
 
-    xiiGALBuffer* m_pBuffer;         ///< Shared reference to the buffer object.
-    xiiUInt64     m_uiOffset = 0ULL; ///< The offset in bytes.
+    xiiGALBuffer* m_pBuffer  = nullptr; ///< Shared reference to the buffer object.
+    xiiUInt64     m_uiOffset = 0ULL;    ///< The offset in bytes.
   };
 
   // Deactivate Doxygen document generation for the following block. (API abstraction only)

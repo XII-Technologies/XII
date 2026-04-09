@@ -86,7 +86,7 @@ private:
 
 struct XII_CORE_DLL xiiScriptAllocator
 {
-  static xiiAllocatorBase* GetAllocator();
+  static xiiAllocator* GetAllocator();
 };
 
 /// \brief creates a new instance of type using the script allocator

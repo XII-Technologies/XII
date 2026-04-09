@@ -16,9 +16,9 @@ class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 private:
   friend class xiiMemoryUtils;
 
-  friend xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
-  xiiGALDeviceVulkan(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  xiiGALDeviceVulkan(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
   virtual ~xiiGALDeviceVulkan();
 
@@ -188,7 +188,7 @@ public:
 
   // Internal objects retrieval.
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase*         GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*             GetAllocator() const { return m_Allocator.GetParent(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiVulkanMemoryAllocator* GetVulkanMemoryAllocator() const { return m_pVulkanMemoryAllocator.Borrow(); }
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::Instance GetVulkanInstance() const { return m_Instance; }

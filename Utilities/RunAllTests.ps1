@@ -9,7 +9,7 @@ param
     [switch] $SkipGraphicsTest
 )
 
-$Path = "$PSScriptRoot/../Output/Bin/WinVs2022$($BuildType)64"
+$Path = "$PSScriptRoot/../Output/Bin/WinVs2026$($BuildType)64"
 
 function RunTest($name) {
 

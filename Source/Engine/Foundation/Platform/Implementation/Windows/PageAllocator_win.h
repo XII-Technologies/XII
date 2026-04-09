@@ -1,6 +1,9 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
+#include <Foundation/Memory/MemoryTracker.h>
+#include <Foundation/Memory/PageAllocator.h>
+#include <Foundation/System/SystemInformation.h>
 #include <Foundation/Time/Time.h>
 
 // static
@@ -16,7 +19,7 @@ void* xiiPageAllocator::AllocatePage(size_t uiSize)
 
   if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::AddAllocation(GetPageAllocatorId(), xiiAllocatorTrackingMode::Default, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(xiiPageAllocator::GetId(), xiiAllocatorTrackingMode::Default, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
 
   return pPtr;
@@ -27,7 +30,7 @@ void xiiPageAllocator::DeallocatePage(void* pPtr)
 {
   if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::RemoveAllocation(GetPageAllocatorId(), pPtr);
+    xiiMemoryTracker::RemoveAllocation(xiiPageAllocator::GetId(), pPtr);
   }
 
   XII_VERIFY(::VirtualFree(pPtr, 0, MEM_RELEASE), "Could not free memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));

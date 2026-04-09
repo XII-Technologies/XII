@@ -70,10 +70,10 @@ public:
 
 protected:
   /// \brief Creates an empty id-table. Does not allocate any data yet.
-  explicit xiiIdTableBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiIdTableBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Creates a copy of the given id-table.
-  xiiIdTableBase(const xiiIdTableBase<IdType, ValueType>& rhs, xiiAllocatorBase* pAllocator); // [tested]
+  xiiIdTableBase(const xiiIdTableBase<IdType, ValueType>& rhs, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destructor.
   ~xiiIdTableBase(); // [tested]
@@ -131,7 +131,7 @@ public:
   ConstIterator GetIterator() const; // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const;
+  xiiAllocator* GetAllocator() const;
 
   /// \brief Returns whether the internal free-list is valid. For testing purpose only.
   bool IsFreelistValid() const;
@@ -156,7 +156,7 @@ private:
   IndexType m_FreelistEnqueue;
   IndexType m_FreelistDequeue;
 
-  xiiAllocatorBase* m_pAllocator;
+  xiiAllocator* m_pAllocator;
 
   void SetCapacity(IndexType uiCapacity);
   void InitializeFreelist(IndexType uiStart, IndexType uiEnd);
@@ -168,7 +168,7 @@ class xiiIdTable : public xiiIdTableBase<IdType, ValueType>
 {
 public:
   xiiIdTable();
-  explicit xiiIdTable(xiiAllocatorBase* pAllocator);
+  explicit xiiIdTable(xiiAllocator* pAllocator);
 
   xiiIdTable(const xiiIdTable<IdType, ValueType, AllocatorWrapper>& other);
   xiiIdTable(const xiiIdTableBase<IdType, ValueType>& other);

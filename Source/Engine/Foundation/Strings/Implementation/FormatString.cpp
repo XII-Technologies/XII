@@ -2,6 +2,7 @@
 
 #include <Foundation/Math/Rational.h>
 #include <Foundation/Math/Size.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 #include <Foundation/Strings/FormatString.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Strings/String.h>
@@ -423,6 +424,15 @@ xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* szTmp, x
   }
 
   return szTmp;
+}
+
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgEnum& arg)
+{
+  xiiStringBuilder sTemp;
+  const auto       mode = arg.m_bFullyQualifiedName ? xiiReflectionUtils::EnumConversionMode::FullyQualifiedName : xiiReflectionUtils::EnumConversionMode::ValueNameOnly;
+  xiiReflectionUtils::EnumerationToString(arg.m_pType, arg.m_iValue, sTemp, mode);
+  xiiStringUtils::Copy(szTmp, uiLength, sTemp.GetData());
+  return xiiStringView(szTmp);
 }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

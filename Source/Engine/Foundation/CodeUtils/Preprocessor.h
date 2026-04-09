@@ -207,12 +207,9 @@ private:
     xiiTokenizer                 m_Tokenized;
   };
 
-  // This class-local allocator is used to get rid of some of the memory allocation
-  // tracking that would otherwise occur for allocations made by the preprocessor.
-  // If changing its position in the class, make sure it always comes before all
-  // other members that depend on it to ensure deallocations in those members
-  // happen before the allocator get destroyed.
-  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack> m_ClassAllocator;
+  // This class-local allocator is used to get rid of some of the memory allocation tracking that would otherwise occur for allocations made by the preprocessor.
+  // If changing its position in the class, make sure it always comes before all other members that depend on it to ensure deallocations in those members happen before the allocator get destroyed.
+  xiiAllocatorWithPolicy<xiiAllocationPolicyHeap, xiiAllocatorTrackingMode::DoNotTrack> m_ClassAllocator;
 
   bool                    m_bPassThroughPragma;
   bool                    m_bPassThroughLine;
@@ -296,7 +293,7 @@ private: // *** #if condition parsing ***
 
 private: // *** Parsing ***
   xiiResult CopyTokensAndEvaluateDefined(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination);
-  void      CopyTokensReplaceParams(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination, const xiiHybridArray<xiiString, 16>& parameters);
+  void      CopyTokensReplaceParams(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination, const xiiArrayPtr<xiiString>& parameters);
 
   xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiStringView sToken, xiiUInt32* pAccepted = nullptr);
   xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiTokenType::Enum Type, xiiUInt32* pAccepted = nullptr);

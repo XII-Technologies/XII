@@ -241,7 +241,7 @@ private:
 class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptExecutionContext
 {
 public:
-  xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc, xiiAllocatorBase* pAllocator);
+  xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc, xiiAllocator* pAllocator);
   ~xiiVisualScriptExecutionContext();
 
   void Initialize(xiiVisualScriptInstance& inout_instance, xiiArrayPtr<xiiVariant> arguments);

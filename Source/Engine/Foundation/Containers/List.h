@@ -112,10 +112,10 @@ public:
 
 protected:
   /// \brief Initializes the list to be empty.
-  explicit xiiListBase(xiiAllocatorBase* pAllocator); // [tested]
+  explicit xiiListBase(xiiAllocator* pAllocator); // [tested]
 
   /// \brief Initializes the list with a copy from another list.
-  xiiListBase(const xiiListBase<T>& cc, xiiAllocatorBase* pAllocator); // [tested]
+  xiiListBase(const xiiListBase<T>& cc, xiiAllocator* pAllocator); // [tested]
 
   /// \brief Destroys the list and all its content.
   ~xiiListBase(); // [tested]
@@ -197,7 +197,7 @@ public:
   ConstIterator GetEndIterator() const; // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
-  xiiAllocatorBase* GetAllocator() const { return m_Elements.GetAllocator(); }
+  xiiAllocator* GetAllocator() const { return m_Elements.GetAllocator(); }
 
   /// \brief Comparison operator
   bool operator==(const xiiListBase<T>& rhs) const; // [tested]
@@ -237,7 +237,7 @@ class xiiList : public xiiListBase<T>
 {
 public:
   xiiList();
-  explicit xiiList(xiiAllocatorBase* pAllocator);
+  explicit xiiList(xiiAllocator* pAllocator);
 
   xiiList(const xiiList<T, AllocatorWrapper>& other);
   xiiList(const xiiListBase<T>& other);

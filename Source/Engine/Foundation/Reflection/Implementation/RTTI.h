@@ -236,24 +236,24 @@ struct XII_FOUNDATION_DLL xiiRTTIAllocator
 
   /// \brief Allocates one instance.
   template <typename T>
-  xiiInternal::NewInstance<T> Allocate(xiiAllocatorBase* pAllocator = nullptr)
+  xiiInternal::NewInstance<T> Allocate(xiiAllocator* pAllocator = nullptr)
   {
     return AllocateInternal(pAllocator).Cast<T>();
   }
 
   /// \brief Clones the given instance.
   template <typename T>
-  xiiInternal::NewInstance<T> Clone(const void* pObject, xiiAllocatorBase* pAllocator = nullptr)
+  xiiInternal::NewInstance<T> Clone(const void* pObject, xiiAllocator* pAllocator = nullptr)
   {
     return CloneInternal(pObject, pAllocator).Cast<T>();
   }
 
   /// \brief Deallocates the given instance.
-  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator = nullptr) = 0; // [tested]
+  virtual void Deallocate(void* pObject, xiiAllocator* pAllocator = nullptr) = 0; // [tested]
 
 private:
-  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) = 0;
-  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocatorBase* pAllocator)
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) = 0;
+  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocator* pAllocator)
   {
     XII_IGNORE_UNUSED(pObject);
     XII_REPORT_FAILURE("Cloning is not supported by this allocator.");
@@ -268,14 +268,14 @@ struct XII_FOUNDATION_DLL xiiRTTINoAllocator : public xiiRTTIAllocator
   virtual bool CanAllocate() const override { return false; } // [tested]
 
   /// \brief Will trigger an assert.
-  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override // [tested]
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override // [tested]
   {
     XII_REPORT_FAILURE("This function should never be called.");
     return xiiInternal::NewInstance<void>(nullptr, pAllocator);
   }
 
   /// \brief Will trigger an assert.
-  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
+  virtual void Deallocate(void* pObject, xiiAllocator* pAllocator) override // [tested]
   {
     XII_IGNORE_UNUSED(pObject);
     XII_IGNORE_UNUSED(pAllocator);
@@ -288,7 +288,7 @@ template <typename CLASS, typename AllocatorWrapper = xiiDefaultAllocatorWrapper
 struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
 {
   /// \brief Returns a new instance that was allocated with the given allocator.
-  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override // [tested]
+  virtual xiiInternal::NewInstance<void> AllocateInternal(xiiAllocator* pAllocator) override // [tested]
   {
     if (pAllocator == nullptr)
     {
@@ -299,7 +299,7 @@ struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
   }
 
   /// \brief Clones the given instance with the given allocator.
-  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
+  virtual xiiInternal::NewInstance<void> CloneInternal(const void* pObject, xiiAllocator* pAllocator) override // [tested]
   {
     if (pAllocator == nullptr)
     {
@@ -318,7 +318,7 @@ struct xiiRTTIDefaultAllocator : public xiiRTTIAllocator
   }
 
   /// \brief Deletes the given instance with the given allocator.
-  virtual void Deallocate(void* pObject, xiiAllocatorBase* pAllocator) override // [tested]
+  virtual void Deallocate(void* pObject, xiiAllocator* pAllocator) override // [tested]
   {
     if (pAllocator == nullptr)
     {

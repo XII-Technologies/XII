@@ -98,7 +98,7 @@ xiiVisualScriptDataStorage::~xiiVisualScriptDataStorage()
   DeallocateStorage();
 }
 
-void xiiVisualScriptDataStorage::AllocateStorage(xiiAllocatorBase* pAllocator)
+void xiiVisualScriptDataStorage::AllocateStorage(xiiAllocator* pAllocator)
 {
   XII_ASSERT_DEV(IsAllocated() == false, "Storage already allocated");
 
@@ -261,7 +261,7 @@ xiiResult xiiVisualScriptDataStorage::Serialize(xiiStreamWriter& inout_stream) c
   return XII_SUCCESS;
 }
 
-xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream, xiiAllocatorBase* pAllocator)
+xiiResult xiiVisualScriptDataStorage::Deserialize(xiiStreamReader& inout_stream, xiiAllocator* pAllocator)
 {
   if (IsAllocated() == false)
   {

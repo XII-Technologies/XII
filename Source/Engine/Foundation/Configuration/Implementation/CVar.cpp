@@ -132,7 +132,7 @@ xiiCommandLineOptionBool opt_NoFileCVars("cvar", "-no-file-cvars", "Disables loa
 
 void xiiCVar::SaveCVarsToFile(xiiStringView sPath, bool bIgnoreSaveFlag)
 {
-  xiiHybridArray<xiiCVar*, 128> allCVars;
+  xiiTemporaryHybridArray<xiiCVar*, 128> allCVars;
 
   for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
   {
@@ -345,7 +345,7 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiD
 
 void xiiCVar::LoadCVarsFromFile(xiiStringView sPath, bool bOnlyNewOnes, bool bSetAsCurrentValue, bool bIgnoreSaveFlag, xiiDynamicArray<xiiCVar*>* pOutCVars)
 {
-  xiiHybridArray<xiiCVar*, 128> allCVars;
+  xiiTemporaryHybridArray<xiiCVar*, 128> allCVars;
 
   for (xiiCVar* pCVar = xiiCVar::GetFirstInstance(); pCVar != nullptr; pCVar = pCVar->GetNextInstance())
   {

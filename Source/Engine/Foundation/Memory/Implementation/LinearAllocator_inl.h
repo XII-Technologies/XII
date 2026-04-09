@@ -1,21 +1,22 @@
-template <xiiAllocatorTrackingMode TrackingMode>
-xiiStackAllocator<TrackingMode>::xiiStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent) :
-  xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingMode>(sName, pParent), m_DestructData(pParent), m_PtrToDestructDataIndexTable(pParent)
+template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
+xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::xiiLinearAllocator(xiiStringView sName, xiiAllocator* pParent, xiiUInt32 uiInitialSize) :
+  SUPER(sName, pParent), m_DestructData(pParent), m_PtrToDestructDataIndexTable(pParent)
 {
+  this->m_allocator.SetNextBucketSize(uiInitialSize);
 }
 
-template <xiiAllocatorTrackingMode TrackingMode>
-xiiStackAllocator<TrackingMode>::~xiiStackAllocator()
+template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
+xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::~xiiLinearAllocator()
 {
   Reset();
 }
 
-template <xiiAllocatorTrackingMode TrackingMode>
-void* xiiStackAllocator<TrackingMode>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
+template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
+void* xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
 {
   XII_LOCK(m_Mutex);
 
-  void* ptr = xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingMode>::Allocate(uiSize, uiAlign, destructorFunc);
+  void* ptr = SUPER::Allocate(uiSize, uiAlign, destructorFunc);
 
   if (destructorFunc != nullptr)
   {
@@ -30,8 +31,8 @@ void* xiiStackAllocator<TrackingMode>::Allocate(size_t uiSize, size_t uiAlign, x
   return ptr;
 }
 
-template <xiiAllocatorTrackingMode TrackingMode>
-void xiiStackAllocator<TrackingMode>::Deallocate(void* pPtr)
+template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
+void xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::Deallocate(void* pPtr)
 {
   XII_LOCK(m_Mutex);
 
@@ -43,7 +44,7 @@ void xiiStackAllocator<TrackingMode>::Deallocate(void* pPtr)
     data.m_Ptr  = nullptr;
   }
 
-  xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingMode>::Deallocate(pPtr);
+  SUPER::Deallocate(pPtr);
 }
 
 XII_MSVC_ANALYSIS_WARNING_PUSH
@@ -52,8 +53,8 @@ XII_MSVC_ANALYSIS_WARNING_PUSH
 // even with the added guard of a check that it can't be 0.
 XII_MSVC_ANALYSIS_WARNING_DISABLE(6313)
 
-template <xiiAllocatorTrackingMode TrackingMode>
-void xiiStackAllocator<TrackingMode>::Reset()
+template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
+void xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::Reset()
 {
   XII_LOCK(m_Mutex);
 
@@ -61,20 +62,23 @@ void xiiStackAllocator<TrackingMode>::Reset()
   {
     auto& data = m_DestructData[i];
     if (data.m_Func != nullptr)
+    {
       data.m_Func(data.m_Ptr);
+    }
   }
+
   m_DestructData.Clear();
   m_PtrToDestructDataIndexTable.Clear();
 
-  this->m_Allocator.Reset();
+  this->m_allocator.Reset();
   if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
     xiiMemoryTracker::RemoveAllAllocations(this->m_Id);
   }
   else if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
   {
-    xiiAllocatorBase::Stats stats;
-    this->m_Allocator.FillStats(stats);
+    xiiAllocator::Stats stats;
+    this->m_allocator.FillStats(stats);
 
     xiiMemoryTracker::SetAllocatorStats(this->m_Id, stats);
   }

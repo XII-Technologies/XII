@@ -43,13 +43,12 @@ XII_FORCE_INLINE T& xiiDataBlock<T, SizeInBytes>::operator[](xiiUInt32 uiIndex) 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <xiiUInt32 BlockSize>
-xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiAllocatorTrackingMode mode) :
+xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocator* pParent, xiiAllocatorTrackingMode mode) :
   m_TrackingMode(mode), m_SuperBlocks(pParent), m_FreeBlocks(pParent)
 {
   static_assert(BlockSize >= 4096, "Block size must be 4096 or bigger");
 
-  m_Id       = xiiMemoryTracker::RegisterAllocator(sName, mode, xiiPageAllocator::GetId());
-  m_ThreadID = xiiThreadUtils::GetCurrentThreadID();
+  m_Id = xiiMemoryTracker::RegisterAllocator(sName, mode, xiiPageAllocator::GetId());
 
   const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();
   XII_IGNORE_UNUSED(uiPageSize);
@@ -60,7 +59,6 @@ xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, x
 template <xiiUInt32 BlockSize>
 xiiLargeBlockAllocator<BlockSize>::~xiiLargeBlockAllocator()
 {
-  XII_ASSERT_RELEASE(m_ThreadID == xiiThreadUtils::GetCurrentThreadID(), "Allocator is deleted from another thread");
   xiiMemoryTracker::DeregisterAllocator(m_Id);
 
   for (xiiUInt32 i = 0; i < m_SuperBlocks.GetCount(); ++i)
@@ -89,11 +87,11 @@ XII_FORCE_INLINE xiiDataBlock<T, BlockSize> xiiLargeBlockAllocator<BlockSize>::A
 
 template <xiiUInt32 BlockSize>
 template <typename T>
-XII_FORCE_INLINE void xiiLargeBlockAllocator<BlockSize>::DeallocateBlock(xiiDataBlock<T, BlockSize>& ref_block)
+XII_FORCE_INLINE void xiiLargeBlockAllocator<BlockSize>::DeallocateBlock(xiiDataBlock<T, BlockSize>& inout_block)
 {
-  Deallocate(ref_block.m_pData);
-  ref_block.m_pData   = nullptr;
-  ref_block.m_uiCount = 0;
+  Deallocate(inout_block.m_pData);
+  inout_block.m_pData   = nullptr;
+  inout_block.m_uiCount = 0;
 }
 
 template <xiiUInt32 BlockSize>
@@ -109,7 +107,7 @@ XII_ALWAYS_INLINE xiiAllocatorId xiiLargeBlockAllocator<BlockSize>::GetId() cons
 }
 
 template <xiiUInt32 BlockSize>
-XII_ALWAYS_INLINE const xiiAllocatorBase::Stats& xiiLargeBlockAllocator<BlockSize>::GetStats() const
+XII_ALWAYS_INLINE const xiiAllocator::Stats& xiiLargeBlockAllocator<BlockSize>::GetStats() const
 {
   return xiiMemoryTracker::GetAllocatorStats(m_Id);
 }
@@ -168,24 +166,24 @@ void* xiiLargeBlockAllocator<BlockSize>::Allocate(size_t uiAlign)
 }
 
 template <xiiUInt32 BlockSize>
-void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* ptr)
+void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* pPtr)
 {
   XII_LOCK(m_Mutex);
 
   if (m_TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::RemoveAllocation(m_Id, ptr);
+    xiiMemoryTracker::RemoveAllocation(m_Id, pPtr);
   }
 
   // find super block
   bool           bFound            = false;
   xiiUInt32      uiSuperBlockIndex = m_SuperBlocks.GetCount();
-  std::ptrdiff_t diff              = 0;
+  std::ptrdiff_t uiPtrDiff         = 0;
 
   for (; uiSuperBlockIndex-- > 0;)
   {
-    diff = (char*)ptr - (char*)m_SuperBlocks[uiSuperBlockIndex].m_pBasePtr;
-    if (diff >= 0 && diff < SuperBlock::SIZE_IN_BYTES)
+    uiPtrDiff = (char*)pPtr - (char*)m_SuperBlocks[uiSuperBlockIndex].m_pBasePtr;
+    if (uiPtrDiff >= 0 && uiPtrDiff < SuperBlock::SIZE_IN_BYTES)
     {
       bFound = true;
       break;
@@ -193,20 +191,20 @@ void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* ptr)
   }
 
   XII_IGNORE_UNUSED(bFound);
-  XII_ASSERT_DEV(bFound, "'{0}' was not allocated with this allocator", xiiArgP(ptr));
+  XII_ASSERT_DEV(bFound, "'{0}' was not allocated with this allocator.", xiiArgP(pPtr));
 
   SuperBlock& superBlock = m_SuperBlocks[uiSuperBlockIndex];
   --superBlock.m_uiUsedBlocks;
 
   if (superBlock.m_uiUsedBlocks == 0 && m_FreeBlocks.GetCount() > SuperBlock::NUM_BLOCKS * 4)
   {
-    // give memory back
+    // Give memory back.
     xiiPageAllocator::DeallocatePage(superBlock.m_pBasePtr);
 
     m_SuperBlocks.RemoveAtAndSwap(uiSuperBlockIndex);
     const xiiUInt32 uiLastSuperBlockIndex = m_SuperBlocks.GetCount();
 
-    // patch free list
+    // Patch free list.
     for (xiiUInt32 i = 0; i < m_FreeBlocks.GetCount(); ++i)
     {
       const xiiUInt32 uiIndex   = m_FreeBlocks[i];
@@ -214,21 +212,21 @@ void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* ptr)
 
       if (uiSBIndex == uiSuperBlockIndex)
       {
-        // points to the block we just removed
+        // Points to the block we just removed.
         m_FreeBlocks.RemoveAtAndSwap(i);
         --i;
       }
       else if (uiSBIndex == uiLastSuperBlockIndex)
       {
-        // points to the block we just swapped
+        // Points to the block we just swapped.
         m_FreeBlocks[i] = uiSuperBlockIndex * SuperBlock::NUM_BLOCKS + (uiIndex & (SuperBlock::NUM_BLOCKS - 1));
       }
     }
   }
   else
   {
-    // add block to free list
-    const xiiUInt32 uiInnerBlockIndex = (xiiUInt32)(diff / BlockSize);
+    // Add block to free list.
+    const xiiUInt32 uiInnerBlockIndex = (xiiUInt32)(uiPtrDiff / BlockSize);
     m_FreeBlocks.PushBack(uiSuperBlockIndex * SuperBlock::NUM_BLOCKS + uiInnerBlockIndex);
   }
 }

@@ -12,7 +12,7 @@ thread_local xiiWorldReader::InstantiationContextBase* tl_pReaderContext = nullp
 xiiWorldReader::xiiWorldReader()  = default;
 xiiWorldReader::~xiiWorldReader() = default;
 
-xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUknownSkip)
+xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUnknownSkip)
 {
   m_pReadStream = &ref_stream;
 
@@ -71,7 +71,7 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool
   }
 
   // read all component data
-  ReadComponentDataToMemStream(bWarningOnUknownSkip);
+  ReadComponentDataToMemStream(bWarningOnUnknownSkip);
   m_pStringDedupReadContext->SetActive(false);
 
   return XII_SUCCESS;
@@ -147,9 +147,6 @@ bool xiiWorldReader::HasComponentOfType(const xiiRTTI* pRtti) const
 
 void xiiWorldReader::ClearAndCompact()
 {
-  // m_IndexToGameObjectHandle.Clear();
-  // m_IndexToGameObjectHandle.Compact();
-
   m_RootObjectsToCreate.Clear();
   m_RootObjectsToCreate.Compact();
 
@@ -171,14 +168,13 @@ void xiiWorldReader::ClearAndCompact()
 
 xiiUInt64 xiiWorldReader::GetHeapMemoryUsage() const
 {
-  return /*m_IndexToGameObjectHandle.GetHeapMemoryUsage() +*/ m_RootObjectsToCreate.GetHeapMemoryUsage() + m_ChildObjectsToCreate.GetHeapMemoryUsage() + m_ComponentTypes.GetHeapMemoryUsage() + m_ComponentTypeVersions.GetHeapMemoryUsage() + m_ComponentCreationStream.GetHeapMemoryUsage() + m_ComponentDataStream.GetHeapMemoryUsage();
+  return m_RootObjectsToCreate.GetHeapMemoryUsage() + m_ChildObjectsToCreate.GetHeapMemoryUsage() + m_ComponentTypes.GetHeapMemoryUsage() + m_ComponentTypeVersions.GetHeapMemoryUsage() + m_ComponentCreationStream.GetHeapMemoryUsage() + m_ComponentDataStream.GetHeapMemoryUsage();
 }
 
 xiiUInt32 xiiWorldReader::GetRootObjectCount() const
 {
   return m_RootObjectsToCreate.GetCount();
 }
-
 
 xiiUInt32 xiiWorldReader::GetChildObjectCount() const
 {
@@ -313,29 +309,37 @@ xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::Instantia
 {
   if (options.m_MaxStepTime <= xiiTime::MakeZero())
   {
-    InstantiationContext context = InstantiationContext(*this, &world, bUseTransform, rootTransform, options);
+    InstantiationContext context = InstantiationContext(*this, &world, bUseTransform, rootTransform, options, xiiTemporaryAllocator::Get());
 
     XII_VERIFY(context.Step() == InstantiationContextBase::StepResult::Finished, "Instantiation should be completed after this call");
     return nullptr;
   }
 
-  xiiUniquePtr<InstantiationContext> pContext = XII_DEFAULT_NEW(InstantiationContext, *this, &world, bUseTransform, rootTransform, options);
+  xiiUniquePtr<InstantiationContext> pContext = XII_DEFAULT_NEW(InstantiationContext, *this, &world, bUseTransform, rootTransform, options, xiiFoundation::GetDefaultAllocator());
 
   return std::move(pContext);
 }
 
-xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& ref_worldReader, xiiWorld* pWorld, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options) :
-  m_WorldReader(ref_worldReader), m_bUseTransform(bUseTransform), m_RootTransform(rootTransform), m_Options(options)
+xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& ref_worldReader, xiiWorld* pWorld, bool bUseTransform, const xiiTransform& rootTransform, const xiiPrefabInstantiationOptions& options, xiiAllocator* pAllocator) :
+  m_WorldReader(ref_worldReader), m_bUseTransform(bUseTransform), m_RootTransform(rootTransform), m_Options(options), m_IndexToGameObjectHandle(pAllocator), m_ComponentTypeStates(pAllocator)
 {
   m_Phase = Phase::CreateRootObjects;
 
   m_pWorld = pWorld;
 
+  const xiiUInt32 uiRootObjectsToCreate  = m_WorldReader.m_RootObjectsToCreate.GetCount();
+  const xiiUInt32 uiChildObjectsToCreate = m_WorldReader.m_ChildObjectsToCreate.GetCount();
+
+  m_IndexToGameObjectHandle.Reserve(uiRootObjectsToCreate + uiChildObjectsToCreate + 1);
   m_IndexToGameObjectHandle.PushBack(xiiGameObjectHandle());
 
-  m_ComponentTypeStates.SetCount(ref_worldReader.m_ComponentTypes.GetCount());
-  for (auto& ct : m_ComponentTypeStates)
+  m_ComponentTypeStates.Reserve(m_WorldReader.m_ComponentTypes.GetCount());
+  for (xiiUInt32 i = 0; i < m_WorldReader.m_ComponentTypes.GetCount(); ++i)
   {
+    m_ComponentTypeStates.PushBack(ComponentTypeState(pAllocator));
+
+    auto& ct = m_ComponentTypeStates.PeekBack();
+    ct.m_ComponentIndexToHandle.Reserve(m_WorldReader.m_ComponentTypes[i].m_uiNumComponents);
     ct.m_ComponentIndexToHandle.PushBack(xiiComponentHandle());
   }
 
@@ -352,8 +356,8 @@ xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& ref_w
   if (options.m_pProgress != nullptr)
   {
     m_pOverallProgressRange = XII_DEFAULT_NEW(xiiProgressRange, "Instantiate", Phase::Count, false, options.m_pProgress);
-    m_pOverallProgressRange->SetStepWeighting(Phase::CreateRootObjects, m_WorldReader.m_RootObjectsToCreate.GetCount() / 100.0f);
-    m_pOverallProgressRange->SetStepWeighting(Phase::CreateChildObjects, m_WorldReader.m_ChildObjectsToCreate.GetCount() / 100.0f);
+    m_pOverallProgressRange->SetStepWeighting(Phase::CreateRootObjects, uiRootObjectsToCreate / 100.0f);
+    m_pOverallProgressRange->SetStepWeighting(Phase::CreateChildObjects, uiChildObjectsToCreate / 100.0f);
     m_pOverallProgressRange->SetStepWeighting(Phase::CreateComponents, m_WorldReader.m_uiTotalNumComponents / 100.0f);
     m_pOverallProgressRange->SetStepWeighting(Phase::DeserializeComponents, m_WorldReader.m_uiTotalNumComponents / 100.0f);
     // Ten times more weight since init components takes way longer than the rest
@@ -391,6 +395,7 @@ xiiWorldReader::InstantiationContext::StepResult xiiWorldReader::InstantiationCo
       if (m_WorldReader.m_RootObjectsToCreate.GetCount() == 1 && m_WorldReader.m_RootObjectsToCreate[0].m_Desc.m_sName == m_Options.m_ReplaceNamedRootWithParent)
       {
         m_uiCurrentIndex = 1;
+        XII_ASSERT_DEBUG(m_IndexToGameObjectHandle.GetCapacity() > m_IndexToGameObjectHandle.GetCount(), "m_IndexToGameObjectHandle should have the enough capacity.");
         m_IndexToGameObjectHandle.PushBack(m_Options.m_hParent);
 
         xiiGameObject* pParent = nullptr;
@@ -574,6 +579,7 @@ bool xiiWorldReader::InstantiationContext::CreateGameObjects(const xiiDynamicArr
     }
 
     xiiGameObject* pObject = nullptr;
+    XII_ASSERT_DEBUG(m_IndexToGameObjectHandle.GetCapacity() > m_IndexToGameObjectHandle.GetCount(), "m_IndexToGameObjectHandle should have the enough capacity.");
     m_IndexToGameObjectHandle.PushBack(m_pWorld->CreateObject(desc, pObject));
 
     if (!godesc.m_sGlobalKey.IsEmpty())
@@ -649,6 +655,7 @@ bool xiiWorldReader::InstantiationContext::CreateComponents(xiiTime endTime)
       }
 
       XII_ASSERT_DEBUG(uiComponentIdx == compTypeState.m_ComponentIndexToHandle.GetCount(), "Component index doesn't match");
+      XII_ASSERT_DEBUG(compTypeState.m_ComponentIndexToHandle.GetCapacity() > compTypeState.m_ComponentIndexToHandle.GetCount(), "m_ComponentIndexToHandle should have the enough capacity.");
       compTypeState.m_ComponentIndexToHandle.PushBack(hComponent);
 
       ++m_uiCurrentIndex;

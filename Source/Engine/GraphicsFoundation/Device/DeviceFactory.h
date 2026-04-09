@@ -15,9 +15,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceImplementationDescription
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFactory
 {
-  using CreatorFunc = xiiDelegate<xiiInternal::NewInstance<xiiGALDevice>(xiiAllocatorBase*, const xiiGALDeviceCreationDescription&)>;
+  using CreatorFunc = xiiDelegate<xiiInternal::NewInstance<xiiGALDevice>(xiiAllocator*, const xiiGALDeviceCreationDescription&)>;
 
-  static xiiSharedPtr<xiiGALDevice> CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  static xiiSharedPtr<xiiGALDevice> CreateDevice(xiiStringView sImplementationName, xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
   static void RegisterImplementation(xiiStringView sImplementationName, const CreatorFunc& func, const xiiGALDeviceImplementationDescription& description);
 

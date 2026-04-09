@@ -5,14 +5,14 @@
 #include <Foundation/Strings/StringBuilder.h>
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(const xiiStringBuilder& rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(const xiiStringBuilder& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   *this = rhs;
 }
 
 template <xiiUInt16 Size>
-xiiHybridStringBase<Size>::xiiHybridStringBase(xiiStringBuilder&& rhs, xiiAllocatorBase* pAllocator) :
+xiiHybridStringBase<Size>::xiiHybridStringBase(xiiStringBuilder&& rhs, xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   *this = std::move(rhs);

@@ -79,7 +79,7 @@ public:
   /// which created the blackboard is already unloaded.
   ///
   /// See https://groups.google.com/g/microsoft.public.vc.language/c/atSh_2VSc2w/m/EgJ3r_7OzVUJ?pli=1
-  static xiiSharedPtr<xiiBlackboard> Create(xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  static xiiSharedPtr<xiiBlackboard> Create(xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   /// \brief Factory method to get access to a globally registered blackboard.
   ///
@@ -90,7 +90,7 @@ public:
   ///
   /// If at some point you want to "remove" a global blackboard, instead call UnregisterAllEntries() to
   /// clear all its values.
-  static xiiSharedPtr<xiiBlackboard> GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+  static xiiSharedPtr<xiiBlackboard> GetOrCreateGlobal(const xiiHashedString& sBlackboardName, xiiAllocator* pAllocator = xiiFoundation::GetDefaultAllocator());
 
   /// \brief Finds a global blackboard with the given name.
   static xiiSharedPtr<xiiBlackboard> FindGlobal(const xiiTempHashedString& sBlackboardName);

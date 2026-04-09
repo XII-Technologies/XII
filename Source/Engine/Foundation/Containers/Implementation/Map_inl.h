@@ -140,14 +140,14 @@ void xiiMapBase<KeyType, ValueType, Comparer>::Constructor()
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiMapBase<KeyType, ValueType, Comparer>::xiiMapBase(const Comparer& comparer, xiiAllocatorBase* pAllocator) :
+xiiMapBase<KeyType, ValueType, Comparer>::xiiMapBase(const Comparer& comparer, xiiAllocator* pAllocator) :
   m_Elements(pAllocator), m_Comparer(comparer)
 {
   Constructor();
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-xiiMapBase<KeyType, ValueType, Comparer>::xiiMapBase(const xiiMapBase<KeyType, ValueType, Comparer>& cc, xiiAllocatorBase* pAllocator) :
+xiiMapBase<KeyType, ValueType, Comparer>::xiiMapBase(const xiiMapBase<KeyType, ValueType, Comparer>& cc, xiiAllocator* pAllocator) :
   m_Elements(pAllocator)
 {
   Constructor();
@@ -855,13 +855,13 @@ xiiMap<KeyType, ValueType, Comparer, AllocatorWrapper>::xiiMap() :
 }
 
 template <typename KeyType, typename ValueType, typename Comparer, typename AllocatorWrapper>
-xiiMap<KeyType, ValueType, Comparer, AllocatorWrapper>::xiiMap(xiiAllocatorBase* pAllocator) :
+xiiMap<KeyType, ValueType, Comparer, AllocatorWrapper>::xiiMap(xiiAllocator* pAllocator) :
   xiiMapBase<KeyType, ValueType, Comparer>(Comparer(), pAllocator)
 {
 }
 
 template <typename KeyType, typename ValueType, typename Comparer, typename AllocatorWrapper>
-xiiMap<KeyType, ValueType, Comparer, AllocatorWrapper>::xiiMap(const Comparer& comparer, xiiAllocatorBase* pAllocator) :
+xiiMap<KeyType, ValueType, Comparer, AllocatorWrapper>::xiiMap(const Comparer& comparer, xiiAllocator* pAllocator) :
   xiiMapBase<KeyType, ValueType, Comparer>(comparer, pAllocator)
 {
 }

@@ -101,14 +101,14 @@ void xiiSetBase<KeyType, Comparer>::Constructor()
 }
 
 template <typename KeyType, typename Comparer>
-xiiSetBase<KeyType, Comparer>::xiiSetBase(const Comparer& comparer, xiiAllocatorBase* pAllocator) :
+xiiSetBase<KeyType, Comparer>::xiiSetBase(const Comparer& comparer, xiiAllocator* pAllocator) :
   m_Elements(pAllocator), m_Comparer(comparer)
 {
   Constructor();
 }
 
 template <typename KeyType, typename Comparer>
-xiiSetBase<KeyType, Comparer>::xiiSetBase(const xiiSetBase<KeyType, Comparer>& cc, xiiAllocatorBase* pAllocator) :
+xiiSetBase<KeyType, Comparer>::xiiSetBase(const xiiSetBase<KeyType, Comparer>& cc, xiiAllocator* pAllocator) :
   m_Elements(pAllocator)
 {
   Constructor();
@@ -737,13 +737,13 @@ xiiSet<KeyType, Comparer, AllocatorWrapper>::xiiSet() :
 }
 
 template <typename KeyType, typename Comparer, typename AllocatorWrapper>
-xiiSet<KeyType, Comparer, AllocatorWrapper>::xiiSet(xiiAllocatorBase* pAllocator) :
+xiiSet<KeyType, Comparer, AllocatorWrapper>::xiiSet(xiiAllocator* pAllocator) :
   xiiSetBase<KeyType, Comparer>(Comparer(), pAllocator)
 {
 }
 
 template <typename KeyType, typename Comparer, typename AllocatorWrapper>
-xiiSet<KeyType, Comparer, AllocatorWrapper>::xiiSet(const Comparer& comparer, xiiAllocatorBase* pAllocator) :
+xiiSet<KeyType, Comparer, AllocatorWrapper>::xiiSet(const Comparer& comparer, xiiAllocator* pAllocator) :
   xiiSetBase<KeyType, Comparer>(comparer, pAllocator)
 {
 }

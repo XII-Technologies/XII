@@ -287,7 +287,7 @@ xiiResult xiiTelemetry::InitializeAsClient(xiiStringView sConnectTo0)
     enet_address_set_host(&g_pServerAddress, "localhost");
   else if (sConnectTo.FindSubString(".") != nullptr)
   {
-    xiiHybridArray<xiiString, 8> IP;
+    xiiTemporaryHybridArray<xiiString, 8> IP;
     sConnectTo.Split(false, IP, ".");
 
     if (IP.GetCount() != 4)
@@ -402,7 +402,7 @@ void xiiTelemetry::Send(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID
   {
     // when we do have a connection, just send the message out
 
-    xiiHybridArray<xiiUInt8, 64> TempData;
+    xiiTemporaryHybridArray<xiiUInt8, 64> TempData;
     TempData.SetCountUninitialized(8 + uiDataBytes);
     *((xiiUInt32*)&TempData[0]) = uiSystemID;
     *((xiiUInt32*)&TempData[4]) = uiMsgID;
@@ -429,7 +429,7 @@ void xiiTelemetry::Send(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID
 
   const xiiUInt32 uiStackSize = 1024;
 
-  xiiHybridArray<xiiUInt8, uiStackSize + 8> TempData;
+  xiiTemporaryHybridArray<xiiUInt8, uiStackSize + 8> TempData;
   TempData.SetCountUninitialized(8);
   *((xiiUInt32*)&TempData[0]) = uiSystemID;
   *((xiiUInt32*)&TempData[4]) = uiMsgID;

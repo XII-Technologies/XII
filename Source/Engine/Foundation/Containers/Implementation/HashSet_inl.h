@@ -81,7 +81,7 @@ XII_ALWAYS_INLINE void xiiHashSetBase<K, H>::ConstIterator::operator++()
 // ***** xiiHashSetBase *****
 
 template <typename K, typename H>
-xiiHashSetBase<K, H>::xiiHashSetBase(xiiAllocatorBase* pAllocator)
+xiiHashSetBase<K, H>::xiiHashSetBase(xiiAllocator* pAllocator)
 {
   m_pEntries    = nullptr;
   m_pEntryFlags = nullptr;
@@ -91,7 +91,7 @@ xiiHashSetBase<K, H>::xiiHashSetBase(xiiAllocatorBase* pAllocator)
 }
 
 template <typename K, typename H>
-xiiHashSetBase<K, H>::xiiHashSetBase(const xiiHashSetBase<K, H>& other, xiiAllocatorBase* pAllocator)
+xiiHashSetBase<K, H>::xiiHashSetBase(const xiiHashSetBase<K, H>& other, xiiAllocator* pAllocator)
 {
   m_pEntries    = nullptr;
   m_pEntryFlags = nullptr;
@@ -103,7 +103,7 @@ xiiHashSetBase<K, H>::xiiHashSetBase(const xiiHashSetBase<K, H>& other, xiiAlloc
 }
 
 template <typename K, typename H>
-xiiHashSetBase<K, H>::xiiHashSetBase(xiiHashSetBase<K, H>&& other, xiiAllocatorBase* pAllocator)
+xiiHashSetBase<K, H>::xiiHashSetBase(xiiHashSetBase<K, H>&& other, xiiAllocator* pAllocator)
 {
   m_pEntries    = nullptr;
   m_pEntryFlags = nullptr;
@@ -467,7 +467,7 @@ XII_FORCE_INLINE typename xiiHashSetBase<K, H>::ConstIterator xiiHashSetBase<K, 
 }
 
 template <typename K, typename H>
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiHashSetBase<K, H>::GetAllocator() const
+XII_ALWAYS_INLINE xiiAllocator* xiiHashSetBase<K, H>::GetAllocator() const
 {
   return m_pAllocator;
 }
@@ -626,7 +626,7 @@ xiiHashSet<K, H, A>::xiiHashSet() :
 }
 
 template <typename K, typename H, typename A>
-xiiHashSet<K, H, A>::xiiHashSet(xiiAllocatorBase* pAllocator) :
+xiiHashSet<K, H, A>::xiiHashSet(xiiAllocator* pAllocator) :
   xiiHashSetBase<K, H>(pAllocator)
 {
 }

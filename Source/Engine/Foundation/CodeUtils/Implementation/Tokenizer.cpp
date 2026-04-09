@@ -23,13 +23,12 @@ const char* xiiTokenType::EnumNames[xiiTokenType::ENUM_COUNT] = {
 
 namespace
 {
-  // This allocator is used to get rid of some of the memory allocation tracking
-  // that would otherwise occur for allocations made by the tokenizer.
-  thread_local xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack> s_ClassAllocator("xiiTokenizer", xiiFoundation::GetDefaultAllocator());
+  // This allocator is used to get rid of some of the memory allocation tracking that would otherwise occur for allocations made by the tokenizer.
+  thread_local xiiAllocatorWithPolicy<xiiAllocationPolicyHeap, xiiAllocatorTrackingMode::DoNotTrack> s_ClassAllocator("xiiTokenizer", xiiFoundation::GetDefaultAllocator());
 } // namespace
 
 
-xiiTokenizer::xiiTokenizer(xiiAllocatorBase* pAllocator) :
+xiiTokenizer::xiiTokenizer(xiiAllocator* pAllocator) :
   m_Tokens(pAllocator != nullptr ? pAllocator : &s_ClassAllocator), m_Data(pAllocator != nullptr ? pAllocator : &s_ClassAllocator)
 {
 }

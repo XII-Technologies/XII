@@ -289,7 +289,7 @@ void xiiRawMemoryStreamWriter::SetDebugSourceInformation(xiiStringView sDebugSou
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiDefaultMemoryStreamStorage::xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity, xiiAllocatorBase* pAllocator) :
+xiiDefaultMemoryStreamStorage::xiiDefaultMemoryStreamStorage(xiiUInt32 uiInitialCapacity, xiiAllocator* pAllocator) :
   m_Chunks(pAllocator)
 {
   Reserve(uiInitialCapacity);

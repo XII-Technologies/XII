@@ -1,13 +1,13 @@
 
 template <typename KEY, typename VALUE>
-inline xiiArrayMapBase<KEY, VALUE>::xiiArrayMapBase(xiiAllocatorBase* pAllocator) :
+inline xiiArrayMapBase<KEY, VALUE>::xiiArrayMapBase(xiiAllocator* pAllocator) :
   m_Data(pAllocator)
 {
   m_bSorted = true;
 }
 
 template <typename KEY, typename VALUE>
-inline xiiArrayMapBase<KEY, VALUE>::xiiArrayMapBase(const xiiArrayMapBase& rhs, xiiAllocatorBase* pAllocator) :
+inline xiiArrayMapBase<KEY, VALUE>::xiiArrayMapBase(const xiiArrayMapBase& rhs, xiiAllocator* pAllocator) :
   m_bSorted(rhs.m_bSorted), m_Data(pAllocator)
 {
   m_Data = rhs.m_Data;
@@ -306,7 +306,7 @@ xiiArrayMap<KEY, VALUE, A>::xiiArrayMap() :
 }
 
 template <typename KEY, typename VALUE, typename A>
-xiiArrayMap<KEY, VALUE, A>::xiiArrayMap(xiiAllocatorBase* pAllocator) :
+xiiArrayMap<KEY, VALUE, A>::xiiArrayMap(xiiAllocator* pAllocator) :
   xiiArrayMapBase<KEY, VALUE>(pAllocator)
 {
 }

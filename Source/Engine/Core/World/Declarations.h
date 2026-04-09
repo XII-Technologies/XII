@@ -84,7 +84,11 @@ struct xiiGameObjectHandle
 template <>
 struct xiiHashHelper<xiiGameObjectHandle>
 {
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiGameObjectHandle value) { return xiiHashHelper<xiiUInt64>::Hash(value.GetInternalID().m_Data); }
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiGameObjectHandle value)
+  {
+    const xiiUInt64 uiData = value.GetInternalID().m_Data;
+    return xiiHashingUtils::xxHash32(&uiData, sizeof(uiData));
+  }
 
   XII_ALWAYS_INLINE static bool Equal(xiiGameObjectHandle a, xiiGameObjectHandle b) { return a == b; }
 };
@@ -177,9 +181,8 @@ struct xiiHashHelper<xiiComponentHandle>
 {
   XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiComponentHandle value)
   {
-    xiiComponentId id   = value.GetInternalID();
-    xiiUInt64      data = *reinterpret_cast<xiiUInt64*>(&id);
-    return xiiHashHelper<xiiUInt64>::Hash(data);
+    const xiiUInt64 uiData = value.GetInternalID().m_Data;
+    return xiiHashingUtils::xxHash32(&uiData, sizeof(uiData));
   }
 
   XII_ALWAYS_INLINE static bool Equal(xiiComponentHandle a, xiiComponentHandle b) { return a == b; }

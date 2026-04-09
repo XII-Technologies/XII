@@ -1,12 +1,16 @@
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Memory/MemoryUtils.h>
+
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
 #endif
 
 void xiiMemoryUtils::ReserveLower4GBAddressSpace()
 {
-#if XII_ENABLED(XII_PLATFORM_WINDOWS) && XII_ENABLED(XII_PLATFORM_64BIT)
+  // TODO: if this ever should be implemented for another platform, it should be moved into a platform-specific implementation file
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP) && XII_ENABLED(XII_PLATFORM_64BIT)
   // The following code was taken from http://randomascii.wordpress.com/2012/02/14/64-bit-made-easy/
   // and adapted to our coding guidelines.
 
@@ -100,5 +104,3 @@ void xiiMemoryUtils::ReserveLower4GBAddressSpace()
   OutputDebugStringA(buffer);
 #endif
 }
-
-XII_STATICLINK_FILE(Foundation, Foundation_Memory_Implementation_MemoryUtils);

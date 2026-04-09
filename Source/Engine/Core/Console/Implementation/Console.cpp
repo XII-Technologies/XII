@@ -423,7 +423,7 @@ void xiiConsole::LoadInputHistory(xiiStringView sFile)
   xiiStringBuilder str;
   str.ReadAll(file);
 
-  xiiHybridArray<xiiStringView, 32> lines;
+  xiiTemporaryHybridArray<xiiStringView, 32> lines;
   str.Split(false, lines, "\n", "\r");
 
   for (xiiUInt32 i = 0; i < lines.GetCount(); ++i)

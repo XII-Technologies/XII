@@ -205,7 +205,7 @@ xiiResult xiiConvexHullGenerator::InitializeHull()
   if (uiMainAxis1 == uiMainAxis2)
     return XII_FAILURE;
 
-  xiiHybridArray<xiiUInt32, 6> testIdx;
+  xiiTemporaryHybridArray<xiiUInt32, 6> testIdx;
   testIdx.PushBack(uiMainAxis1);
   testIdx.PushBack(uiMainAxis2);
 

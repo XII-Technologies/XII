@@ -831,8 +831,8 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
   // cylinder wall
   {
-    xiiHybridArray<xiiUInt32, 512> VertsTop;
-    xiiHybridArray<xiiUInt32, 512> VertsBottom;
+    xiiTemporaryHybridArray<xiiUInt32, 512> VertsTop;
+    xiiTemporaryHybridArray<xiiUInt32, 512> VertsBottom;
 
     for (xiiInt32 i = 0; i <= uiSegments; ++i)
     {
@@ -890,7 +890,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
   if (bCapBottom)
   {
-    xiiHybridArray<xiiUInt32, 512> VertsBottom;
+    xiiTemporaryHybridArray<xiiUInt32, 512> VertsBottom;
 
     if (bIsFraction)
     {
@@ -939,7 +939,7 @@ void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPosi
 
   if (bCapTop)
   {
-    xiiHybridArray<xiiUInt32, 512> VertsTop;
+    xiiTemporaryHybridArray<xiiUInt32, 512> VertsTop;
 
     if (bIsFraction)
     {
@@ -1002,8 +1002,8 @@ void xiiGeometry::AddCylinderOnePiece(float fRadiusTop, float fRadiusBottom, flo
 
   // cylinder wall
   {
-    xiiHybridArray<xiiUInt32, 512> VertsTop;
-    xiiHybridArray<xiiUInt32, 512> VertsBottom;
+    xiiTemporaryHybridArray<xiiUInt32, 512> VertsTop;
+    xiiTemporaryHybridArray<xiiUInt32, 512> VertsBottom;
 
     for (xiiInt32 i = 0; i < uiSegments; ++i)
     {
@@ -1045,7 +1045,7 @@ void xiiGeometry::AddCone(float fRadius, float fHeight, bool bCap, xiiUInt16 uiS
 
   const bool bFlipWinding = options.IsFlipWindingNecessary();
 
-  xiiHybridArray<xiiUInt32, 512> VertsBottom;
+  xiiTemporaryHybridArray<xiiUInt32, 512> VertsBottom;
 
   const xiiAngle fDegStep = xiiAngle::MakeFromDegree(360.0f / uiSegments);
 
@@ -1246,7 +1246,7 @@ void xiiGeometry::AddHalfSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 u
 
   if (bCap)
   {
-    xiiHybridArray<xiiUInt32, 256> uiCap;
+    xiiTemporaryHybridArray<xiiUInt32, 256> uiCap;
 
     for (xiiUInt32 i = uiTopVertex - 1; i >= uiTopVertex - uiSegments; --i)
       uiCap.PushBack(i);
