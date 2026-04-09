@@ -175,65 +175,46 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALBufferCreationDescription bufferDescription;
-  bufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
-  bufferDescription.m_uiElementByteStride = 0U;
-  bufferDescription.m_uiSize              = sizeof(xiiDynamicResolutionPassData);
-  bufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
-  bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-  data.m_hPassConstantsBuffer             = builder.DeclareBuffer("DynamicResolution_PassConstants", bufferDescription);
-
-  if (!m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer)
+  // Pass constants buffer.
   {
     xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(xiiDynamicResolutionPassData);
-    description.m_uiSize              = description.m_uiElementByteStride;
-    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Mutable;
+    description.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+    description.m_uiElementByteStride = 0U;
+    description.m_uiSize              = sizeof(xiiDynamicResolutionPassConstants);
+    description.m_Usage               = xiiGALResourceUsage::Dynamic;
+    description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
-    m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer = pDevice->CreateBuffer(description);
+    data.m_hPassConstantsBuffer = builder.DeclareBuffer("DynamicResolution_PassConstants", description);
   }
 
-  if (!m_PersistentFrameResources.m_DynamicResolution.m_pCameraVelocityInputBuffer)
+  // PID state buffer.
+  if (!m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer)
   {
     xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(PersistentFrameResources::DynamicResolution::CameraVelocityData);
-    description.m_uiSize              = description.m_uiElementByteStride;
-    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Mutable;
-
-    m_PersistentFrameResources.m_DynamicResolution.m_pCameraVelocityInputBuffer = pDevice->CreateBuffer(description);
-  }
-
-  if (!m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(PersistentFrameResources::DynamicResolution::ResolutionScalingData);
+    description.m_uiElementByteStride = sizeof(PersistentFrameResources::DynamicResolution::ResolutionStateData);
     description.m_uiSize              = description.m_uiElementByteStride;
     description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
     description.m_Mode                = xiiGALBufferMode::Structured;
     description.m_Usage               = xiiGALResourceUsage::Mutable;
 
-    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer = pDevice->CreateBuffer(description);
+    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer = pDevice->CreateBuffer(description);
   }
 
-  data.m_fFrameDeltaTimeMs     = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
-  data.m_fTargetFrameTimeMs    = cvar_RenderingDynamicResolutionTargetFrameTimeMs;
-  data.m_fMininimumRenderScale = cvar_RenderingDynamicResolutionMinimumRenderScale;
-  data.m_fMaximumRenderScale   = cvar_RenderingDynamicResolutionMaximumRenderScale;
+  // CPU-side values.
+  data.m_fFrameDeltaTimeMs   = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
+  data.m_fTargetFrameTimeMs  = cvar_RenderingDynamicResolutionTargetFrameTimeMs;
+  data.m_fMinimumRenderScale = cvar_RenderingDynamicResolutionMinimumRenderScale;
+  data.m_fMaximumRenderScale = cvar_RenderingDynamicResolutionMaximumRenderScale;
 
-  data.m_hTimingInputBuffer             = builder.ImportBuffer("DynamicResolution_Timing", m_PersistentFrameResources.m_DynamicResolution.m_pTimingInputBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hTimingInputBuffer             = builder.ReadBuffer(data.m_hTimingInputBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hCameraVelocityInputBuffer     = builder.ImportBuffer("DynamicResolution_Velocity", m_PersistentFrameResources.m_DynamicResolution.m_pCameraVelocityInputBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hCameraVelocityInputBuffer     = builder.ReadBuffer(data.m_hCameraVelocityInputBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hResolutionScalingOutputBuffer = builder.ImportBuffer("DynamicResolution_Scaling", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionScalingBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hResolutionScalingOutputBuffer = builder.WriteBuffer(data.m_hResolutionScalingOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_fCurrentGpuTimeMs  = data.m_fTargetFrameTimeMs; // TODO.
+  data.m_fSmoothedGpuTimeMs = data.m_fTargetFrameTimeMs; // TODO.
+
+  // Import state buffer as UAV.
+  data.m_hResolutionStateBuffer = builder.ImportBuffer("DynamicResolution_State", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hResolutionStateBuffer = builder.WriteBuffer(data.m_hResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
 
   if (!m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline)
   {
-    // Load shader resource and preload a single permutation (no defines).
     xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Passes/DynamicResolution/DynamicResolution.xiiShader");
 
     xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables;
@@ -246,14 +227,16 @@ void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutio
     xiiSharedPtr<xiiGALPipelineResourceSignature> pSignature     = pPermutation->GetPipelineResourceSignature();
 
     xiiGALComputePipelineStateCreationDescription description;
-    description.m_pComputeShader                                      = pComputeShader;
-    description.m_pPipelineResourceSignature                          = pSignature;
+    description.m_pComputeShader             = pComputeShader;
+    description.m_pPipelineResourceSignature = pSignature;
+
     m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline = xiiGALPipelineCache::GetPipeline(description);
+
     XII_ASSERT_DEV(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline, "Failed to create compute pipeline for dynamic resolution pass.");
   }
 
-  builder.SetPassSideEffects(true); // This pass writes to a UAV that may not be read by any other pass, so we need to ensure it runs and isn't culled.
-  builder.SetPassAllowMerge(false); // Do not merge with other passes since this is a logical "start" of the frame and we want it to be a distinct point in GPU profiling.
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context)
@@ -262,35 +245,30 @@ void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicR
 
   cmd.BeginDebugGroup("Dynamic Resolution Scaling");
   {
+    // Update pass constants.
     {
-      xiiGALMapHelper<xiiDynamicResolutionPassData> pDynamicResolutionConstants(cmd, context.GetBuffer(data.m_hTimingInputBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      xiiGALMapHelper<xiiDynamicResolutionPassConstants> pConstants(cmd, context.GetBuffer(data.m_hPassConstantsBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-      pDynamicResolutionConstants->FrameDeltaTimeMs     = data.m_fFrameDeltaTimeMs;
-      pDynamicResolutionConstants->TargetFrameTimeMs    = data.m_fTargetFrameTimeMs;
-      pDynamicResolutionConstants->MininimumRenderScale = data.m_fMininimumRenderScale;
-      pDynamicResolutionConstants->MaximumRenderScale   = data.m_fMaximumRenderScale;
+      pConstants->FrameDeltaTimeMs   = data.m_fFrameDeltaTimeMs;
+      pConstants->TargetFrameTimeMs  = data.m_fTargetFrameTimeMs;
+      pConstants->MinimumRenderScale = data.m_fMinimumRenderScale;
+      pConstants->MaximumRenderScale = data.m_fMaximumRenderScale;
+      pConstants->CurrentGpuTimeMs   = data.m_fCurrentGpuTimeMs;
+      pConstants->SmoothedGpuTimeMs  = data.m_fSmoothedGpuTimeMs;
     }
 
     cmd.SetPipelineState(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline);
 
-    cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiDynamicResolutionPassData), context.GetBuffer(data.m_hPassConstantsBuffer), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiDynamicResolutionPassConstants), context.GetBuffer(data.m_hPassConstantsBuffer), xiiGALShaderType::Compute);
 
-    if (xiiGALBuffer* pTiming = context.GetBuffer(data.m_hTimingInputBuffer))
+    if (xiiGALBuffer* pState = context.GetBuffer(data.m_hResolutionStateBuffer))
     {
-      cmd.ResolveAndSetShaderResourceBufferView("g_FrameTimingData", pTiming->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    }
-    if (xiiGALBuffer* pVelocity = context.GetBuffer(data.m_hCameraVelocityInputBuffer))
-    {
-      cmd.ResolveAndSetShaderResourceBufferView("g_CameraVelocityData", pVelocity->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-    }
-    if (xiiGALBuffer* pScaling = context.GetBuffer(data.m_hResolutionScalingOutputBuffer))
-    {
-      cmd.ResolveAndSetUnorderedAccessBufferView("g_DynamicResolutionScalingData", pScaling->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      cmd.ResolveAndSetUnorderedAccessBufferView("g_DynamicResolutionData", pState->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     }
 
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-    cmd.DispatchCompute({1U, 1U, 1U}); // Only one threadgroup is needed since this shader writes a single scaling factor for the whole frame.
+    cmd.DispatchCompute({1U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }

@@ -62,13 +62,15 @@ private:
   {
     struct DynamicResolutionPassData
     {
-      float             m_fFrameDeltaTimeMs;
-      float             m_fTargetFrameTimeMs;
-      float             m_fMininimumRenderScale;
-      float             m_fMaximumRenderScale;
-      xiiRGBufferHandle m_hTimingInputBuffer;
-      xiiRGBufferHandle m_hCameraVelocityInputBuffer;
-      xiiRGBufferHandle m_hResolutionScalingOutputBuffer;
+      float m_fFrameDeltaTimeMs;
+      float m_fTargetFrameTimeMs;
+      float m_fMinimumRenderScale;
+      float m_fMaximumRenderScale;
+
+      float m_fCurrentGpuTimeMs;
+      float m_fSmoothedGpuTimeMs;
+
+      xiiRGBufferHandle m_hResolutionStateBuffer;
       xiiRGBufferHandle m_hPassConstantsBuffer;
     } m_DynamicResolutionData;
 
@@ -90,35 +92,17 @@ private:
   {
     struct DynamicResolution
     {
-      struct FrameTimingData
+      struct ResolutionStateData
       {
-        float m_fLastGpuTimeMs;     // g_FrameTimingData[0]
-        float m_fSmoothedGpuTimeMs; // g_FrameTimingData[1]
-        float m_fVariance;          // g_FrameTimingData[2]
-        float m_fIntegralTerm;      // g_FrameTimingData[3] (optional PID)
+        float m_fCurrentScale;
+        float m_fErrorIntegral;
+        float m_fPreviousError;
+        float m_fSmoothedScale;
       };
-      xiiSharedPtr<xiiGALBuffer> m_pTimingInputBuffer; ///< CPU-side staging buffer for GPU timing data readback.
-
-      struct CameraVelocityData
-      {
-        float m_fAngularVelocity;         // g_CameraVelocityData[0]
-        float m_fSmoothedAngularVelocity; // g_CameraVelocityData[1]
-        float m_fLinearVelocity;          // g_CameraVelocityData[2]
-        float m_fSmoothedLinearVelocity;  // g_CameraVelocityData[3]
-      };
-      xiiSharedPtr<xiiGALBuffer> m_pCameraVelocityInputBuffer; ///< CPU-side staging buffer for camera velocity data.
-
-      struct ResolutionScalingData
-      {
-        float m_fCurrentScale;  // g_DynamicResolutionScalingData[0]
-        float m_fPreviousScale; // g_DynamicResolutionScalingData[1]
-        float m_fSmoothedScale; // g_DynamicResolutionScalingData[2]
-        float m_fScaleVelocity; // g_DynamicResolutionScalingData[3]
-      };
-      xiiSharedPtr<xiiGALBuffer> m_pResolutionScalingBuffer; ///< GPU buffer storing the calculated dynamic resolution scale for the current frame, read back by the CPU for smoothing and applied in the next frame.
-
+      
       xiiSharedPtr<xiiGALComputePipelineState> m_pComputePipeline;
       xiiShaderPermutationResourceHandle       m_hShaderPermutation;
+      xiiSharedPtr<xiiGALBuffer>               m_pResolutionStateBuffer;
     } m_DynamicResolution;
 
     struct PerFrameBufferUpload
