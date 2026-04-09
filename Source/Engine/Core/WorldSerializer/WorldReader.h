@@ -81,8 +81,8 @@ public:
   /// Call InstantiateWorld() or InstantiatePrefab() afterwards as often as you like
   /// to actually get an objects into a xiiWorld.
   /// By default, the method will warn if it skips bytes in the stream that are of unknown
-  /// types. The warnings can be suppressed by setting warningOnUnkownSkip to false.
-  xiiResult ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUnkownSkip = true);
+  /// types. The warnings can be suppressed by setting warningOnUnknownSkip to false.
+  xiiResult ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUnknownSkip = true);
 
   /// \brief Creates one instance of the world that was previously read by ReadWorldDescription().
   ///

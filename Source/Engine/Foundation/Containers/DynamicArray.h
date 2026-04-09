@@ -3,6 +3,7 @@
 #include <Foundation/Containers/ArrayBase.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
 #include <Foundation/Types/PointerWithFlags.h>
+#include <Foundation/Memory/TemporaryAllocator.h>
 
 /// \brief Implementation of a dynamically growing array.
 ///
@@ -106,6 +107,22 @@ protected:
   }
 };
 
+/// A dynamic array that uses the temporary allocator.
+/// 
+/// This is ideal for temporary arrays that are only used within a short scope.
+/// The temp allocator is optimized for short-lived allocations and can be more efficient than the default allocator for this use case.
+template <typename T>
+class xiiTemporaryArray : public xiiDynamicArray<T>
+{
+public:
+  xiiTemporaryArray();
+
+  void operator=(const xiiDynamicArrayBase<T>& rhs);
+  void operator=(const xiiArrayPtr<const T>& rhs);
+
+  void operator=(xiiDynamicArrayBase<T>&& rhs) noexcept;
+};
+
 /// Overload of xiiMakeArrayPtr for const dynamic arrays of pointer pointing to const type.
 template <typename T, typename AllocatorWrapper>
 xiiArrayPtr<const T* const> xiiMakeArrayPtr(const xiiDynamicArray<T*, AllocatorWrapper>& dynArray);
@@ -118,6 +135,6 @@ xiiArrayPtr<const T> xiiMakeArrayPtr(const xiiDynamicArray<T, AllocatorWrapper>&
 template <typename T, typename AllocatorWrapper>
 xiiArrayPtr<T> xiiMakeArrayPtr(xiiDynamicArray<T, AllocatorWrapper>& ref_dynArray);
 
-static_assert(xiiGetTypeClass<xiiDynamicArray<xiiInt32>>::value == 2, "dynamic array is not memory relocatable");
+static_assert(xiiGetTypeClass<xiiDynamicArray<xiiInt32>>::value == 2, "Dynamic array is not memory relocatable.");
 
 #include <Foundation/Containers/Implementation/DynamicArray_inl.h>

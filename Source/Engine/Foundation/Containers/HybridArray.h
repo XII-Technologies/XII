@@ -47,4 +47,21 @@ protected:
   XII_ALWAYS_INLINE const T* GetStaticArray() const { return reinterpret_cast<const T*>(m_StaticData); }
 };
 
+/// \brief A hybrid array that uses the temp allocator if it exceeds the in-place storage.
+///
+/// This is ideal for temporary arrays that are only used within a short scope and are not expected to grow beyond the in-place storage size in most cases.
+/// The temporary allocator is optimized for short-lived allocations and can be more efficient than the default allocator for this use case.
+template <typename T, xiiUInt32 Size>
+class xiiTemporaryHybridArray : public xiiHybridArray<T, Size>
+{
+public:
+  xiiTemporaryHybridArray();
+
+  void operator=(const xiiHybridArray<T, Size>& rhs);
+  void operator=(const xiiArrayPtr<const T>& rhs);
+
+  void operator=(xiiHybridArray<T, Size>&& rhs) noexcept;
+};
+
+
 #include <Foundation/Containers/Implementation/HybridArray_inl.h>

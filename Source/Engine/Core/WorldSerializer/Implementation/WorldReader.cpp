@@ -12,7 +12,7 @@ thread_local xiiWorldReader::InstantiationContextBase* tl_pReaderContext = nullp
 xiiWorldReader::xiiWorldReader()  = default;
 xiiWorldReader::~xiiWorldReader() = default;
 
-xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUknownSkip)
+xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUnknownSkip)
 {
   m_pReadStream = &ref_stream;
 
@@ -71,7 +71,7 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool
   }
 
   // read all component data
-  ReadComponentDataToMemStream(bWarningOnUknownSkip);
+  ReadComponentDataToMemStream(bWarningOnUnknownSkip);
   m_pStringDedupReadContext->SetActive(false);
 
   return XII_SUCCESS;

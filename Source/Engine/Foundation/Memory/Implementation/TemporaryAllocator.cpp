@@ -10,21 +10,21 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, TempAllocator)
 
   ON_CORESYSTEMS_STARTUP
   {
-    xiiTempAllocator::Startup();
+    xiiTemporaryAllocator::Startup();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    xiiTempAllocator::Shutdown();
+    xiiTemporaryAllocator::Shutdown();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiAllocator* xiiTempAllocator::s_pAllocator;
+xiiAllocator* xiiTemporaryAllocator::s_pAllocator;
 
 // static
-void xiiTempAllocator::Startup()
+void xiiTemporaryAllocator::Startup()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   static constexpr bool OverwriteMemoryOnFree = true;
@@ -33,11 +33,11 @@ void xiiTempAllocator::Startup()
 #endif
   using StackAllocatorType = xiiAllocatorWithPolicy<xiiAllocationPolicyStack<OverwriteMemoryOnFree>, xiiAllocatorTrackingMode::Basics>;
 
-  s_pAllocator = XII_DEFAULT_NEW(StackAllocatorType, "TempAllocator", xiiFoundation::GetAlignedAllocator());
+  s_pAllocator = XII_DEFAULT_NEW(StackAllocatorType, "TemporaryAllocator", xiiFoundation::GetAlignedAllocator());
 }
 
 // static
-void xiiTempAllocator::Shutdown()
+void xiiTemporaryAllocator::Shutdown()
 {
   XII_DEFAULT_DELETE(s_pAllocator);
 }

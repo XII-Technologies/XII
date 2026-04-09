@@ -239,6 +239,8 @@ xiiUInt64 xiiDynamicArrayBase<T>::GetHeapMemoryUsage() const
   return (xiiUInt64)this->m_uiCapacity * (xiiUInt64)sizeof(T);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 template <typename T, typename A>
 xiiDynamicArray<T, A>::xiiDynamicArray() :
   xiiDynamicArrayBase<T>(A::GetAllocator())
@@ -310,6 +312,34 @@ void xiiDynamicArray<T, A>::operator=(xiiDynamicArrayBase<T>&& rhs) noexcept
 {
   xiiDynamicArrayBase<T>::operator=(std::move(rhs));
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+xiiTemporaryArray<T>::xiiTemporaryArray() :
+  xiiDynamicArray<T>(xiiTemporaryAllocator::Get())
+{
+}
+
+template <typename T>
+void xiiTemporaryArray<T>::operator=(const xiiDynamicArrayBase<T>& rhs)
+{
+  xiiDynamicArrayBase<T>::operator=(rhs);
+}
+
+template <typename T>
+void xiiTemporaryArray<T>::operator=(const xiiArrayPtr<const T>& rhs)
+{
+  xiiArrayBase<T, xiiDynamicArrayBase<T>>::operator=(rhs);
+}
+
+template <typename T>
+void xiiTemporaryArray<T>::operator=(xiiDynamicArrayBase<T>&& rhs) noexcept
+{
+  xiiDynamicArrayBase<T>::operator=(std::move(rhs));
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename AllocatorWrapper>
 xiiArrayPtr<const T* const> xiiMakeArrayPtr(const xiiDynamicArray<T*, AllocatorWrapper>& dynArray)

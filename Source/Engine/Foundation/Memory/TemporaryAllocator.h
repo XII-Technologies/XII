@@ -5,7 +5,7 @@
 /// \brief Stack-based allocator for temporary allocations.
 ///
 /// This allocator is designed for short-lived allocations that ideally follow a LIFO pattern but can also handle out-of-order deallocations.
-class XII_FOUNDATION_DLL xiiTempAllocator
+class XII_FOUNDATION_DLL xiiTemporaryAllocator
 {
 public:
   XII_ALWAYS_INLINE static xiiAllocator* Get() { return s_pAllocator; }
@@ -20,7 +20,7 @@ private:
 };
 
 /// \brief Wrapper for the allocator that is used for temporary allocations.
-struct xiiTempAllocatorWrapper
+struct xiiTemporaryAllocatorWrapper
 {
-  XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiTempAllocator::Get(); }
+  XII_ALWAYS_INLINE static xiiAllocator* GetAllocator() { return xiiTemporaryAllocator::Get(); }
 };
