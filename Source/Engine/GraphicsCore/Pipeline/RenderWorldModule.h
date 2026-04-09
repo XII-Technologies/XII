@@ -99,7 +99,7 @@ private:
         float m_fPreviousError;
         float m_fSmoothedScale;
       };
-      
+
       xiiSharedPtr<xiiGALComputePipelineState> m_pComputePipeline;
       xiiShaderPermutationResourceHandle       m_hShaderPermutation;
       xiiSharedPtr<xiiGALBuffer>               m_pResolutionStateBuffer;
