@@ -553,7 +553,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal()
   }
 #endif
 
-  xiiHybridArray<vk::Image, 2U> swapChainImages(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::Image, 2U> swapChainImages;
   swapChainImages.SetCountUninitialized(m_Description.m_uiBufferCount);
 
   m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);

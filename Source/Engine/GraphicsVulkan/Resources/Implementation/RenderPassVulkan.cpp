@@ -90,7 +90,7 @@ vk::Result xiiGALRenderPassVulkan::CreateRenderPassForVersion()
   vkRenderPassCreateInfo.pNext            = nullptr;
   vkRenderPassCreateInfo.flags            = {};
 
-  xiiHybridArray<AttachmentDescriptionType, 2U> vkAttachments(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<AttachmentDescriptionType, 2U> vkAttachments;
   for (xiiUInt32 i = 0; i < m_Description.m_Attachments.GetCount(); ++i)
   {
     const auto& xiiAttachment = m_Description.m_Attachments[i];

@@ -406,7 +406,7 @@ xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
 
   const xiiUInt32 uiHeapCount = m_pImplementation->m_VmaAllocator->GetMemoryHeapCount();
 
-  xiiHybridArray<VmaBudget, 4U> vmaBudgets;
+  xiiTemporaryHybridArray<VmaBudget, 4U> vmaBudgets;
   vmaBudgets.SetCount(uiHeapCount);
 
   vmaGetHeapBudgets(m_pImplementation->m_VmaAllocator, vmaBudgets.GetData());

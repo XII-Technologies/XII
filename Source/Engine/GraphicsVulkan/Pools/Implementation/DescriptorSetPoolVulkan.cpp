@@ -102,7 +102,7 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     vk::Device  vkLogicalDevice   = m_pDeviceVulkan->GetVulkanLogicalDevice();
     const auto& extensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
-    xiiHybridArray<vk::DescriptorPoolSize, 17U> descriptorPoolSizes(m_pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::DescriptorPoolSize, 16U> descriptorPoolSizes;
     vk::DescriptorType                          descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
                                                                      vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
 

@@ -38,7 +38,7 @@ xiiResult xiiGALComputePipelineStateVulkan::InitPlatform()
   vkComputePipelineCreateInfo.flags |= vk::PipelineCreateFlagBits::eDisableOptimization;
 #endif
 
-  xiiHybridArray<vk::PipelineShaderStageCreateInfo, 1U> vkShaderStages(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::PipelineShaderStageCreateInfo, 1U> vkShaderStages;
   {
 #define DEFINE_VULKAN_SHADER_IF_EXISTS(shaderType, shaderStageFlagBits)                                              \
   if (xiiSharedPtr<xiiGALShaderVulkan> pShaderVulkan = m_Description.m_p##shaderType.Downcast<xiiGALShaderVulkan>()) \

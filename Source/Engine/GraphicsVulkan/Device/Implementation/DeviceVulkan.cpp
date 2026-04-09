@@ -474,7 +474,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   // Enumerate physical devices and select a suitable device.
   {
-    xiiHybridArray<vk::PhysicalDevice, 4U> physicalDevices;
+    xiiTemporaryHybridArray<vk::PhysicalDevice, 2U> physicalDevices;
 
     xiiUInt32 uiPhysicalDeviceCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, nullptr, m_InstanceDispatchLoader));

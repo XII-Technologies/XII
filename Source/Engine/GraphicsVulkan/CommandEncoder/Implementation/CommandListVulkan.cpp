@@ -766,7 +766,7 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  xiiHybridArray<vk::Viewport, 2U> vkViewPorts(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::Viewport, 2U> vkViewPorts;
   vkViewPorts.SetCountUninitialized(pViewports.GetCount());
 
   for (xiiUInt32 uiViewPortIndex = 0; uiViewPortIndex < pViewports.GetCount(); ++uiViewPortIndex)
@@ -813,7 +813,7 @@ void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pR
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  xiiHybridArray<vk::Rect2D, 2U> vkScissorRects(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::Rect2D, 2U> vkScissorRects;
   vkScissorRects.SetCountUninitialized(pRects.GetCount());
 
   for (xiiUInt32 uiScissorRectIndex = 0; uiScissorRectIndex < pRects.GetCount(); ++uiScissorRectIndex)
@@ -1606,7 +1606,7 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
 
     FlushBarriers();
 
-    xiiHybridArray<vk::ClearValue, 8U> clearColorValues;
+    xiiTemporaryHybridArray<vk::ClearValue, 8U> clearColorValues;
 
     for (xiiUInt32 i = 0; i < xiiMath::Min(renderPassDescription.m_Attachments.GetCount(), pOptimizedClearValues.GetCount()); ++i)
     {
@@ -3493,10 +3493,10 @@ void xiiGALCommandListVulkan::PrepareForDraw()
   {
     xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-    xiiHybridArray<vk::Buffer, 2U> vkVertexBuffers(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::Buffer, 2U> vkVertexBuffers;
     vkVertexBuffers.SetCountUninitialized(m_VertexStreams.GetCount());
 
-    xiiHybridArray<vk::DeviceSize, 2U> vkVertexBufferOffsets(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::DeviceSize, 2U> vkVertexBufferOffsets;
     vkVertexBufferOffsets.SetCountUninitialized(m_VertexStreams.GetCount());
 
     for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
