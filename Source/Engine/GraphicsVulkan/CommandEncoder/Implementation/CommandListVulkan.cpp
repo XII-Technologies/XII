@@ -766,7 +766,7 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  xiiHybridArray<vk::Viewport, 2U> vkViewPorts(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::Viewport, 2U> vkViewPorts;
   vkViewPorts.SetCountUninitialized(pViewports.GetCount());
 
   for (xiiUInt32 uiViewPortIndex = 0; uiViewPortIndex < pViewports.GetCount(); ++uiViewPortIndex)
@@ -813,7 +813,7 @@ void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pR
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  xiiHybridArray<vk::Rect2D, 2U> vkScissorRects(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::Rect2D, 2U> vkScissorRects;
   vkScissorRects.SetCountUninitialized(pRects.GetCount());
 
   for (xiiUInt32 uiScissorRectIndex = 0; uiScissorRectIndex < pRects.GetCount(); ++uiScissorRectIndex)
@@ -1606,7 +1606,7 @@ void xiiGALCommandListVulkan::BeginRenderPassPlatform(xiiGALRenderPass* pRenderP
 
     FlushBarriers();
 
-    xiiHybridArray<vk::ClearValue, 8U> clearColorValues;
+    xiiTemporaryHybridArray<vk::ClearValue, 8U> clearColorValues;
 
     for (xiiUInt32 i = 0; i < xiiMath::Min(renderPassDescription.m_Attachments.GetCount(), pOptimizedClearValues.GetCount()); ++i)
     {
@@ -1817,7 +1817,7 @@ void xiiGALCommandListVulkan::MultiDrawPlatform(const xiiGALMultiDrawDescription
 
     if (m_bNativeMultiDrawSupported)
     {
-      xiiDynamicArray<vk::MultiDrawInfoEXT> multiDrawItems(pDeviceVulkan->GetAllocator());
+      xiiTemporaryHybridArray<vk::MultiDrawInfoEXT, 4U> multiDrawItems;
       multiDrawItems.SetCountUninitialized(description.m_pDrawItems.GetCount());
 
       for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
@@ -1864,7 +1864,7 @@ void xiiGALCommandListVulkan::MultiDrawIndexedPlatform(const xiiGALMultiDrawInde
 
     if (m_bNativeMultiDrawSupported)
     {
-      xiiDynamicArray<vk::MultiDrawIndexedInfoEXT> multiDrawIndexedItems(pDeviceVulkan->GetAllocator());
+      xiiTemporaryHybridArray<vk::MultiDrawIndexedInfoEXT, 4U> multiDrawIndexedItems;
       multiDrawIndexedItems.SetCountUninitialized(description.m_pDrawItems.GetCount());
 
       for (xiiUInt32 i = 0; i < description.m_pDrawItems.GetCount(); ++i)
@@ -2038,7 +2038,7 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
     xiiUInt32 m_uiGroupIndex        = 0U;
   };
 
-  xiiDynamicArray<RecordWrite> recordWrites(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<RecordWrite, 4U> recordWrites;
 
   auto CollectRecordWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex, const char* szRegionName) {
     if (region.m_uiSize == 0U)
@@ -2080,7 +2080,7 @@ void xiiGALCommandListVulkan::UpdateSBTPlatform(const xiiGALUpdateSBTDescription
 
   pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
 
-  xiiDynamicArray<vk::BufferCopy> vkCopyRegions(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::BufferCopy, 4U> vkCopyRegions;
   vkCopyRegions.SetCountUninitialized(recordWrites.GetCount());
 
   for (xiiUInt32 i = 0U; i < recordWrites.GetCount(); ++i)
@@ -2120,9 +2120,9 @@ void xiiGALCommandListVulkan::BuildBLASPlatform(const xiiGALBuildBLASDescription
 
   TransitionOrVerifyBufferState(pScratchBufferVulkan, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, vk::AccessFlagBits::eAccelerationStructureWriteKHR, "Using scratch buffer for BLAS build");
 
-  xiiDynamicArray<vk::AccelerationStructureGeometryKHR>              vkGeometries(pDeviceVulkan->GetAllocator());
-  xiiDynamicArray<vk::AccelerationStructureBuildRangeInfoKHR>        vkBuildRanges(pDeviceVulkan->GetAllocator());
-  xiiDynamicArray<const vk::AccelerationStructureBuildRangeInfoKHR*> vkBuildRangePointers(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::AccelerationStructureGeometryKHR, 4U>              vkGeometries;
+  xiiTemporaryHybridArray<vk::AccelerationStructureBuildRangeInfoKHR, 4U>        vkBuildRanges;
+  xiiTemporaryHybridArray<const vk::AccelerationStructureBuildRangeInfoKHR*, 4U> vkBuildRangePointers;
 
   const xiiUInt32 uiTotalGeometryCount = blasDescription.m_Triangles.GetCount() + blasDescription.m_BoundingBoxes.GetCount();
   vkGeometries.Reserve(uiTotalGeometryCount);
@@ -3493,10 +3493,10 @@ void xiiGALCommandListVulkan::PrepareForDraw()
   {
     xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-    xiiHybridArray<vk::Buffer, 2U> vkVertexBuffers(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::Buffer, 2U> vkVertexBuffers;
     vkVertexBuffers.SetCountUninitialized(m_VertexStreams.GetCount());
 
-    xiiHybridArray<vk::DeviceSize, 2U> vkVertexBufferOffsets(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::DeviceSize, 2U> vkVertexBufferOffsets;
     vkVertexBufferOffsets.SetCountUninitialized(m_VertexStreams.GetCount());
 
     for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)

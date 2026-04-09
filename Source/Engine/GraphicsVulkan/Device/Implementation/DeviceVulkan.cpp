@@ -131,7 +131,7 @@ namespace
 } // namespace
 
 xiiGALDeviceVulkan::xiiGALDeviceVulkan(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
-  xiiGALDevice(pAllocator, description), m_Layers(GetAllocator()), m_Extensions(GetAllocator()), m_EnabledExtensions(GetAllocator()), m_PhysicalDevices(GetAllocator()), m_PhysicalDeviceQueueFamilyProperties(GetAllocator()), m_PhysicalDeviceSupportedExtensions(GetAllocator()), m_LogicalDeviceEnabledExtensions(GetAllocator()), m_LogicalDeviceSupportedStagesFlags(GetAllocator()), m_LogicalDeviceSupportedAccessFlags(GetAllocator())
+  xiiGALDevice(pAllocator, description), m_PhysicalDeviceQueueFamilyProperties(GetAllocator()), m_PhysicalDeviceSupportedExtensions(GetAllocator()), m_LogicalDeviceEnabledExtensions(GetAllocator()), m_LogicalDeviceSupportedStagesFlags(GetAllocator()), m_LogicalDeviceSupportedAccessFlags(GetAllocator())
 {
 }
 
@@ -199,44 +199,22 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   m_InstanceDispatchLoader.init();
 
-  // Enumerate available layers.
-  {
-    xiiUInt32 uiLayerCount = 0U;
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
-
-    m_Layers.SetCountUninitialized(uiLayerCount);
-
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, m_Layers.GetData(), m_InstanceDispatchLoader));
-
-    XII_ASSERT_DEV(m_Layers.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, m_Layers.GetCount());
-  }
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  {
-    XII_LOG_BLOCK("Available Vulkan Instance Layers");
-
-    for (const vk::LayerProperties& layer : m_Layers)
-    {
-      xiiLog::Dev("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
-    }
-  }
-#endif
-
   // Enumerate available instance extensions.
+  xiiTemporaryArray<vk::ExtensionProperties> extensionProperties;
   {
     XII_LOG_BLOCK("Supported Vulkan Instance Extensions");
 
     xiiUInt32 uiExtensionCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, nullptr, m_InstanceDispatchLoader));
 
-    m_Extensions.SetCountUninitialized(uiExtensionCount);
+    extensionProperties.SetCountUninitialized(uiExtensionCount);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, m_Extensions.GetData(), m_InstanceDispatchLoader));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceExtensionProperties(nullptr, &uiExtensionCount, extensionProperties.GetData(), m_InstanceDispatchLoader));
 
-    XII_ASSERT_DEV(m_Extensions.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, m_Extensions.GetCount());
+    XII_ASSERT_DEV(extensionProperties.GetCount() == uiExtensionCount, "Expected extension count ({0}) does not match the retrieved extension count ({1}).", uiExtensionCount, extensionProperties.GetCount());
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    for (const vk::ExtensionProperties& extension : m_Extensions)
+    for (const vk::ExtensionProperties& extension : extensionProperties)
     {
       xiiLog::Dev("{} {}.{}.{}", extension.extensionName, VK_API_VERSION_MAJOR(extension.specVersion), VK_API_VERSION_MINOR(extension.specVersion), VK_API_VERSION_PATCH(extension.specVersion));
     }
@@ -250,10 +228,9 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   constexpr bool bUsePortabilityEnumeration = false;
 #endif
 
-  // Request instance extensions.
-  xiiHybridArray<const char*, 6U> instanceExtensions;
+  xiiTemporaryHybridArray<const char*, 6U> instanceExtensions;
   {
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_SURFACE_EXTENSION_NAME))
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_SURFACE_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_SURFACE_EXTENSION_NAME);
 
@@ -277,26 +254,26 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       instanceExtensions.PushBack(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
     }
 
-    // This extension added to core in 1.1, but current version is 1.0
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+    // This extension added to core in 1.1, but current version is 1.0.
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     }
 
     // External memory extensions (required for interop with other APIs).
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME);
 
       m_InstanceFlags.m_bExternalFenceCapabilities = true;
     }
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME))
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_EXTERNAL_SEMAPHORE_CAPABILITIES_EXTENSION_NAME);
 
       m_InstanceFlags.m_bExternalSemaphoreCapabilities = true;
     }
-    if (IsExtensionAvailable(m_Extensions, VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME))
+    if (IsExtensionAvailable(extensionProperties, VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME))
     {
       instanceExtensions.PushBack(VK_KHR_EXTERNAL_FENCE_CAPABILITIES_EXTENSION_NAME);
 
@@ -305,22 +282,43 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
     for (const auto* szExtensionName : instanceExtensions)
     {
-      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(m_Extensions, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
+      XII_SUCCEED_OR_RETURN_FAILURE(IsExtensionAvailable(extensionProperties, szExtensionName), "Required extension ({}) is not available.", szExtensionName);
     }
   }
 
-  // Request instance layers.
-  xiiHybridArray<const char*, 6U> instanceLayers;
+
+  // Add required instance extensions and layers for debugging if validation is enabled.
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  xiiTemporaryHybridArray<const char*, 6U> instanceLayers;
   {
-    // Validation instance layers.
+    xiiTemporaryArray<vk::LayerProperties> layerProperties;
+
+    xiiUInt32 uiLayerCount = 0U;
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, nullptr, m_InstanceDispatchLoader));
+
+    layerProperties.SetCountUninitialized(uiLayerCount);
+
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(vk::enumerateInstanceLayerProperties(&uiLayerCount, layerProperties.GetData(), m_InstanceDispatchLoader));
+
+    XII_ASSERT_DEV(layerProperties.GetCount() == uiLayerCount, "Expected layer count ({0}) does not match the retrieved layer count ({1}).", uiLayerCount, layerProperties.GetCount());
+
+    {
+      XII_LOG_BLOCK("Available Vulkan Instance Layers");
+
+      for (const vk::LayerProperties& layer : layerProperties)
+      {
+        xiiLog::Dev("{} {}.{}.{}", layer.layerName, VK_API_VERSION_MAJOR(layer.specVersion), VK_API_VERSION_MINOR(layer.specVersion), VK_API_VERSION_PATCH(layer.specVersion));
+      }
+    }
+
     if (m_Description.m_ValidationLevel > xiiGALDeviceValidationLevel::Disabled)
     {
-      if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+      if (IsExtensionAvailable(extensionProperties, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
       {
         // Prefer VK_EXT_debug_utils.
         m_InstanceFlags.m_DebugMode = DebugMode::Utils;
       }
-      else if (IsExtensionAvailable(m_Extensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+      else if (IsExtensionAvailable(extensionProperties, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
       {
         // If debug utils are unavailable, use VK_EXT_debug_report.
         m_InstanceFlags.m_DebugMode = DebugMode::Report;
@@ -333,7 +331,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       for (const char* szValidationLayerName : validationLayerNames)
       {
         xiiUInt32 uiLayerVersion = 0xFFFFFFFFU;
-        if (!IsLayerAvailable(m_Layers, szValidationLayerName, &uiLayerVersion))
+        if (!IsLayerAvailable(layerProperties, szValidationLayerName, &uiLayerVersion))
         {
           xiiLog::Error("Instance layer ({0}) is not available.", szValidationLayerName);
           continue;
@@ -353,7 +351,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         {
           // VK_EXT_debug_utils extension may not be supported by the loader, but supported by the layer.
 
-          xiiDynamicArray<vk::ExtensionProperties> layerExtensions;
+          xiiTemporaryHybridArray<vk::ExtensionProperties, 4U> layerExtensions;
           if (EnumerateInstanceExtensions(szValidationLayerName, layerExtensions))
           {
             if (IsExtensionAvailable(layerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
@@ -390,6 +388,7 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
       }
     }
   }
+#endif
 
   // Create Vulkan Instance.
   {
@@ -423,9 +422,12 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     instanceCreateInformation.pApplicationInfo        = &applicationInformation;
     instanceCreateInformation.enabledExtensionCount   = instanceExtensions.GetCount();
     instanceCreateInformation.ppEnabledExtensionNames = instanceExtensions.GetData();
-    instanceCreateInformation.enabledLayerCount       = instanceLayers.GetCount();
-    instanceCreateInformation.ppEnabledLayerNames     = instanceLayers.GetData();
     instanceCreateInformation.flags                   = {};
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    instanceCreateInformation.enabledLayerCount   = instanceLayers.GetCount();
+    instanceCreateInformation.ppEnabledLayerNames = instanceLayers.GetData();
+#endif
 
     if (bUsePortabilityEnumeration)
     {
@@ -470,23 +472,22 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.createDebugReportCallbackEXT(&debugReportCallbackCreateInfo, nullptr, &m_DebugCallback, m_InstanceDispatchLoader));
   }
 
-  // Enumerate physical devices.
+  // Enumerate physical devices and select a suitable device.
   {
+    xiiTemporaryHybridArray<vk::PhysicalDevice, 2U> physicalDevices;
+
     xiiUInt32 uiPhysicalDeviceCount = 0U;
     VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, nullptr, m_InstanceDispatchLoader));
 
     XII_ASSERT_ALWAYS(uiPhysicalDeviceCount != 0U, "No physical devices are found on the system.");
 
-    m_PhysicalDevices.SetCountUninitialized(uiPhysicalDeviceCount);
+    physicalDevices.SetCountUninitialized(uiPhysicalDeviceCount);
 
-    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, m_PhysicalDevices.GetData(), m_InstanceDispatchLoader));
+    VK_SUCCEED_OR_RETURN_XII_FAILURE(m_Instance.enumeratePhysicalDevices(&uiPhysicalDeviceCount, physicalDevices.GetData(), m_InstanceDispatchLoader));
 
-    XII_ASSERT_DEV(m_PhysicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, m_PhysicalDevices.GetCount());
-  }
+    XII_ASSERT_DEV(physicalDevices.GetCount() == uiPhysicalDeviceCount, "Expected physical device count ({0}) does not match the retrieved physical device count ({1}).", uiPhysicalDeviceCount, physicalDevices.GetCount());
 
-  // Select physical device.
-  {
-    m_PhysicalDevice = SelectPhysicalDevice(m_Description.m_uiAdapterID);
+    m_PhysicalDevice = SelectPhysicalDevice(physicalDevices, m_Description.m_uiAdapterID);
 
     m_PhysicalDevice.getProperties(&m_PhysicalDeviceProperties, m_InstanceDispatchLoader);
     m_PhysicalDevice.getFeatures(&m_PhysicalDeviceFeatures, m_InstanceDispatchLoader);
@@ -566,9 +567,9 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceVulkan::PostInitializePlatform");
 
-  xiiDynamicArray<const char*> deviceExtensions;
+  xiiTemporaryHybridArray<const char*, 4U> deviceExtensions;
 
-  if (IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
+  if (IsExtensionEnabled(m_EnabledExtensions, VK_KHR_SURFACE_EXTENSION_NAME))
   {
     deviceExtensions.PushBack(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   }
@@ -582,12 +583,12 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
     xiiLog::Warning("{} is not supported.", VK_KHR_MAINTENANCE1_EXTENSION_NAME);
   }
 
-  xiiDynamicArray<vk::DeviceQueueCreateInfo> queueDescriptions;
+  xiiTemporaryHybridArray<vk::DeviceQueueCreateInfo, 4U> queueDescriptions;
   float                                      fQueuePriorities = 1.0f;
 
   // Setup device queues.
   {
-    xiiHybridArray<xiiUInt32, 3U> excludedQueueIndices;
+    xiiTemporaryHybridArray<xiiUInt32, 3U> excludedQueueIndices;
 
     // If an implementation exposes any queue family that supports graphics operations, at least one queue family of at least one physical device exposed by the implementation
     // must support both graphics and compute operations.
@@ -718,7 +719,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   ExtensionFeatures enabledExtensionFeatures = {};
 
   // To enable some device extensions you must enable instance extension VK_KHR_get_physical_device_properties2 and add feature description to DeviceCreateInfo.pNext.
-  const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+  const bool bSupportsDeviceFeatures2 = IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
   if (bSupportsDeviceFeatures2)
   {
     void** pNextExtension = const_cast<void**>(&deviceCreationDescription.pNext);
@@ -1853,7 +1854,7 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
         m_AdapterDescription.m_ShadingRateProperties.m_MaxTileSize.height = m_PhysicalDeviceExtensionProperties.m_ShadingRate.maxFragmentShadingRateAttachmentTexelSize.height;
       }
 
-      xiiDynamicArray<vk::PhysicalDeviceFragmentShadingRateKHR> shadingRates;
+      xiiTemporaryHybridArray<vk::PhysicalDeviceFragmentShadingRateKHR, 4U> shadingRates;
       {
         xiiUInt32 uiShadingRateCount = 0U;
         VK_SUCCEED_OR_RETURN_XII_FAILURE(m_PhysicalDevice.getFragmentShadingRatesKHR(&uiShadingRateCount, nullptr, m_InstanceDispatchLoader));
@@ -2194,14 +2195,14 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   return XII_SUCCESS;
 }
 
-vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterID) const
+vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiArrayPtr<vk::PhysicalDevice> pPhysicalDevices, xiiUInt32 uiAdapterID) const
 {
   auto FindGraphicsComputeQueueFamily = [&instanceDispatchLoader = this->m_InstanceDispatchLoader](const vk::PhysicalDevice& physicalDevice) -> xiiUInt32 {
     xiiUInt32 uiQueueFamilyCount = 0U;
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, nullptr, instanceDispatchLoader);
     XII_ASSERT_DEV(uiQueueFamilyCount > 0U, "No queue families available");
 
-    xiiHybridArray<vk::QueueFamilyProperties, 8U> queueFamilies;
+    xiiTemporaryHybridArray<vk::QueueFamilyProperties, 8U> queueFamilies;
     queueFamilies.SetCountUninitialized(uiQueueFamilyCount);
     physicalDevice.getQueueFamilyProperties(&uiQueueFamilyCount, queueFamilies.GetData(), instanceDispatchLoader);
 
@@ -2218,9 +2219,9 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   };
 
   // Direct adapter selection if valid.
-  if (uiAdapterID < m_PhysicalDevices.GetCount())
+  if (uiAdapterID < pPhysicalDevices.GetCount())
   {
-    const vk::PhysicalDevice& vkPhysicalDeviceCandidate = m_PhysicalDevices[uiAdapterID];
+    const vk::PhysicalDevice& vkPhysicalDeviceCandidate = pPhysicalDevices[uiAdapterID];
 
     if (FindGraphicsComputeQueueFamily(vkPhysicalDeviceCandidate) != xiiInvalidIndex)
       return vkPhysicalDeviceCandidate;
@@ -2230,7 +2231,7 @@ vk::PhysicalDevice xiiGALDeviceVulkan::SelectPhysicalDevice(xiiUInt32 uiAdapterI
   vk::PhysicalDevice     vkBestDevice = VK_NULL_HANDLE;
   vk::PhysicalDeviceType vkBestType   = vk::PhysicalDeviceType::eOther;
 
-  for (const vk::PhysicalDevice& vkPhysicalDevice : m_PhysicalDevices)
+  for (const vk::PhysicalDevice& vkPhysicalDevice : pPhysicalDevices)
   {
     vk::PhysicalDeviceProperties vkPhysicalDeviceProperties;
     vkPhysicalDevice.getProperties(&vkPhysicalDeviceProperties, m_InstanceDispatchLoader);
@@ -2256,7 +2257,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   if (m_PhysicalDevice == VK_NULL_HANDLE)
     return XII_FAILURE;
 
-  if (!IsExtensionEnabled(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+  if (!IsExtensionEnabled(m_EnabledExtensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
     return XII_SUCCESS;
 
   vk::PhysicalDeviceFeatures2 features2    = {};
@@ -2659,9 +2660,9 @@ bool xiiGALDeviceVulkan::IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionPro
   return false;
 }
 
-bool xiiGALDeviceVulkan::IsExtensionEnabled(const char* szExtensionName) const
+bool xiiGALDeviceVulkan::IsExtensionEnabled(xiiArrayPtr<const char*> pEnabledExtensions, const char* szExtensionName) const
 {
-  for (const auto* szEnabledExtension : m_EnabledExtensions)
+  for (const auto* szEnabledExtension : pEnabledExtensions)
   {
     if (strcmp(szExtensionName, szEnabledExtension) == 0)
     {

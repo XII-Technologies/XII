@@ -35,7 +35,7 @@ xiiResult xiiGALFramebufferVulkan::InitPlatform()
   xiiSharedPtr<xiiGALRenderPassVulkan> pRenderPassVulkan = m_Description.m_pRenderPass.Downcast<xiiGALRenderPassVulkan>();
   framebufferCreateInfo.renderPass                       = pRenderPassVulkan->GetVulkanRenderPass();
 
-  xiiHybridArray<vk::ImageView, 8U> vkImageViews(pDeviceVulkan->GetAllocator());
+  xiiTemporaryHybridArray<vk::ImageView, 8U> vkImageViews;
   for (xiiUInt32 i = 0; i < m_Description.m_Attachments.GetCount(); ++i)
   {
     xiiSharedPtr<xiiGALTextureViewVulkan> pAttachmentView = m_Description.m_Attachments[i].Downcast<xiiGALTextureViewVulkan>();

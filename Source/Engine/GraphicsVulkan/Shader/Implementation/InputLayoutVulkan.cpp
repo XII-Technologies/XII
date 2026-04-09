@@ -19,7 +19,7 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALShader* pShader)
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALShaderVulkan*              pShaderVulkan = static_cast<xiiGALShaderVulkan*>(pShader);
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());
+  xiiTemporaryHybridArray<xiiGALVertexInputLayout, 8U> vertexInputAttributes(pShaderVulkan->GetVertexInputLayout());
   auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum semantic, xiiGALResourceFormat::Enum) -> xiiUInt32 {
     for (xiiUInt32 i = 0U; i < vertexInputAttributes.GetCount(); ++i)
     {

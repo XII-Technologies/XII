@@ -196,10 +196,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE const vk::detail::DispatchLoaderDynamic& GetVulkanDynamicDispatchLoader() const { return m_InstanceDispatchLoader; }
 
   [[nodiscard]] XII_ALWAYS_INLINE const xiiGALDeviceVulkan::InstanceFlags& GetVulkanInstanceFlags() const { return m_InstanceFlags; }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::LayerProperties> GetVulkanInstanceLayers() const { return m_Layers; }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::ExtensionProperties> GetVulkanInstanceExtensionProperties() const { return m_Extensions; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const char* const> GetVulkanInstanceEnabledExtensions() const { return m_EnabledExtensions; }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const vk::PhysicalDevice> GetVulkanPhysicalDevices() const { return m_PhysicalDevices; }
 
   [[nodiscard]] XII_ALWAYS_INLINE vk::PhysicalDevice GetVulkanPhysicalDevice() const { return m_PhysicalDevice; }
   [[nodiscard]] XII_ALWAYS_INLINE const vk::PhysicalDeviceProperties& GetVulkanPhysicalDeviceProperties() const { return m_PhysicalDeviceProperties; }
@@ -342,11 +339,8 @@ private:
   vk::detail::DispatchLoaderDynamic m_InstanceDispatchLoader;
 
   // Vulkan Instance Objects.
-  xiiDynamicArray<vk::LayerProperties>     m_Layers;
-  xiiDynamicArray<vk::ExtensionProperties> m_Extensions;
-  xiiDynamicArray<const char*>             m_EnabledExtensions;
-  xiiDynamicArray<vk::PhysicalDevice>      m_PhysicalDevices;
-  InstanceFlags                            m_InstanceFlags;
+  InstanceFlags                m_InstanceFlags;
+  xiiDynamicArray<const char*> m_EnabledExtensions;
 
   // Vulkan Physical Device Objects.
   vk::PhysicalDevice                         m_PhysicalDevice;
@@ -402,13 +396,13 @@ private:
   xiiUniquePtr<DeferredDeletionQueue> m_pDeferredDeletionQueue;
 
 private:
-  vk::PhysicalDevice SelectPhysicalDevice(xiiUInt32 uiAdapterID) const;
+  vk::PhysicalDevice SelectPhysicalDevice(xiiArrayPtr<vk::PhysicalDevice> pPhysicalDevices, xiiUInt32 uiAdapterID) const;
   xiiResult          InitializePhysicalDeviceProperties();
 
   bool EnumerateInstanceExtensions(const char* szLayerName, xiiDynamicArray<vk::ExtensionProperties>& extensions);
   bool IsLayerAvailable(xiiArrayPtr<const vk::LayerProperties> pLayers, const char* szLayerName, xiiUInt32* pVersion = nullptr) const;
   bool IsExtensionAvailable(xiiArrayPtr<const vk::ExtensionProperties> pExtensions, const char* szExtensionName) const;
-  bool IsExtensionEnabled(const char* szExtensionName) const;
+  bool IsExtensionEnabled(xiiArrayPtr<const char*> pEnabledExtensions, const char* szExtensionName) const;
   bool IsLogicalDeviceExtensionEnabled(const char* szExtensionName) const;
 
   xiiGALDeviceFeatures ConvertVulkanFeaturesToDeviceFeatures(xiiUInt32 uiVulkanVersion, const vk::PhysicalDeviceFeatures& vkFeatures, const vk::PhysicalDeviceProperties& vkDeviceProperties, const ExtensionFeatures& extensionFeatures, const ExtensionProperties& extensionProperties, xiiGALDeviceFeatureState::Enum optionalState = xiiGALDeviceFeatureState::Enabled);

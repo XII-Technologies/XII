@@ -47,8 +47,8 @@ xiiResult xiiGALBottomLevelASVulkan::InitPlatform()
 
   if (uiAccelerationStructureSize == 0U)
   {
-    xiiDynamicArray<vk::AccelerationStructureGeometryKHR> vkGeometries(pDeviceVulkan->GetAllocator());
-    xiiDynamicArray<xiiUInt32>                            primitiveCounts(pDeviceVulkan->GetAllocator());
+    xiiTemporaryHybridArray<vk::AccelerationStructureGeometryKHR, 4U> vkGeometries;
+    xiiTemporaryHybridArray<xiiUInt32, 4U>                            primitiveCounts;
 
     vkGeometries.Reserve(m_Description.m_Triangles.GetCount() + m_Description.m_BoundingBoxes.GetCount());
     primitiveCounts.Reserve(vkGeometries.GetCount());

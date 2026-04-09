@@ -91,7 +91,7 @@ xiiGALCommandBufferPoolVulkan::ThreadPool& xiiGALCommandBufferPoolVulkan::GetOrC
     if (m_uiInitialReserveCount > 0U)
     {
       // Allocate primary buffers.
-      xiiHybridArray<vk::CommandBuffer, 16U> tmp;
+      xiiTemporaryHybridArray<vk::CommandBuffer, 4U> tmp;
       tmp.SetCountUninitialized(m_uiInitialReserveCount);
 
       vk::CommandBufferAllocateInfo vkCommandBufferAllocationInfo = {};
