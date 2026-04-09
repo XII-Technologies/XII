@@ -637,9 +637,9 @@ xiiSharedPtr<xiiGALTexture> xiiGALDevice::CreateTexture(const xiiGALTextureCreat
     XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_ExternalSemaphore == xiiGALDeviceFeatureState::Enabled, "External memory kind flags require the External Semaphore feature to be enabled.");
   }
 
-  xiiHybridArray<xiiGALTextureSubResourceData, 2U> subresourceData;
-  xiiDynamicArray<xiiUInt8>                        zeroData;
-  xiiGALTextureData                                textureData;
+  xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 2U> subresourceData;
+  xiiTemporaryArray<xiiUInt8>                               zeroData;
+  xiiGALTextureData                                         textureData;
 
   if (pInitialData != nullptr)
   {
