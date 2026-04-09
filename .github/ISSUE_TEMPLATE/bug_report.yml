@@ -43,19 +43,3 @@ body:
       render: shell
     validations:
       required: false
-
-  - type: dropdown
-    id: subsystems
-    attributes:
-      label: Affected Area
-      multiple: true
-      options:
-        - Area: Graphics
-        - Area: Compute
-        - Area: Scripting
-        - Area: UI
-        - Area: I/O
-        - Area: Core
-        - Area: Platform
-    validations:
-      required: true
