@@ -21,12 +21,12 @@
 
 // Atlas dimensions (shared across all shadow passes this frame)
 static constexpr xiiUInt32 k_uiDirAtlasWidth  = 4096u;
-static constexpr xiiUInt32 k_uiDirAtlasHeight  = 4096u; // array[4]
-static constexpr xiiUInt32 k_uiLocalAtlasSize  = 4096u; // single 2D atlas for spot+point
+static constexpr xiiUInt32 k_uiDirAtlasHeight = 4096u; // array[4]
+static constexpr xiiUInt32 k_uiLocalAtlasSize = 4096u; // single 2D atlas for spot+point
 
-// 
+//
 // Shadow cascade setup (compute - writes cascade matrices to a structured buffer)
-// 
+//
 namespace
 {
   struct ShadowCascadeSetupData
@@ -37,7 +37,7 @@ namespace
     float             m_fNearPlane       = 0.1f;
     float             m_fFarPlane        = 1000.0f;
   };
-}
+} // namespace
 
 static void SetupShadowCascadeSetup(xiiView& view, ShadowCascadeSetupData& data, xiiRGBuilder& builder)
 {
@@ -83,7 +83,7 @@ static void SetupShadowCascadeSetup(xiiView& view, ShadowCascadeSetupData& data,
 static void ExecuteShadowCascadeSetup(xiiView& view, const ShadowCascadeSetupData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   cmd.BeginDebugGroup("ShadowCascadeSetup");
   {
@@ -94,7 +94,7 @@ static void ExecuteShadowCascadeSetup(xiiView& view, const ShadowCascadeSetupDat
     const float fRange = data.m_fFarPlane - data.m_fNearPlane;
     for (xiiUInt32 i = 0; i < 4; ++i)
     {
-      const float t = static_cast<float>(i + 1) / 4.0f;
+      const float t                            = static_cast<float>(i + 1) / 4.0f;
       pConsts->CascadeSplitDepths.GetData()[i] = data.m_fNearPlane + fRange * t * t; // quadratic split
     }
     // Cascade view-projection matrices are computed on CPU; written once per directional light.
@@ -110,9 +110,9 @@ static void ExecuteShadowCascadeSetup(xiiView& view, const ShadowCascadeSetupDat
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Directional cascaded shadow map (graphics, one sub-pass per cascade)
-// 
+//
 namespace
 {
   struct DirShadowData
@@ -122,7 +122,7 @@ namespace
     xiiRGTextureHandle m_hDirShadowAtlas;
     xiiUInt32          m_uiActiveCascades = 3u;
   };
-}
+} // namespace
 
 static void SetupDirShadow(xiiView& view, DirShadowData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -132,14 +132,14 @@ static void SetupDirShadow(xiiView& view, DirShadowData& data, xiiRGBuilder& bui
   if (!sp.m_pDirectionalShadowAtlas)
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_TextureType     = xiiGALTextureType::Texture2DArray;
-    desc.m_Format          = xiiGALTextureFormat::D32Float;
-    desc.m_uiWidth         = k_uiDirAtlasWidth;
-    desc.m_uiHeight        = k_uiDirAtlasHeight;
-    desc.m_uiArraySizeOrDepth = 4u;
-    desc.m_uiMipLevels     = 1u;
-    desc.m_BindFlags       = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    desc.m_Usage           = xiiGALResourceUsage::Default;
+    desc.m_TextureType           = xiiGALTextureType::Texture2DArray;
+    desc.m_Format                = xiiGALTextureFormat::D32Float;
+    desc.m_uiWidth               = k_uiDirAtlasWidth;
+    desc.m_uiHeight              = k_uiDirAtlasHeight;
+    desc.m_uiArraySizeOrDepth    = 4u;
+    desc.m_uiMipLevels           = 1u;
+    desc.m_BindFlags             = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    desc.m_Usage                 = xiiGALResourceUsage::Default;
     sp.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
   }
 
@@ -151,8 +151,8 @@ static void SetupDirShadow(xiiView& view, DirShadowData& data, xiiRGBuilder& bui
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_DrawShadowCasterCommands), hCasters);
   data.m_hShadowCasterCommands = builder.ReadBuffer(hCasters, xiiGALResourceStateFlags::IndirectArgument);
 
-  data.m_hDirShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, sp.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
-  data.m_hDirShadowAtlas = builder.WriteTexture(data.m_hDirShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDirShadowAtlas  = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, sp.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDirShadowAtlas  = builder.WriteTexture(data.m_hDirShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_uiActiveCascades = 3u;
 
   builder.SetPassAllowMerge(false);
@@ -161,7 +161,7 @@ static void SetupDirShadow(xiiView& view, DirShadowData& data, xiiRGBuilder& bui
 static void ExecuteDirShadow(xiiView& view, const DirShadowData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   cmd.BeginDebugGroup("DirectionalShadowMaps");
   xiiGALTexture* pAtlas = ctx.GetTexture(data.m_hDirShadowAtlas);
@@ -172,7 +172,7 @@ static void ExecuteDirShadow(xiiView& view, const DirShadowData& data, xiiRGPass
 
     // Bind atlas slice as depth-stencil.
     xiiGALTextureViewCreationDescription viewDesc;
-    viewDesc.m_ViewType        = xiiGALTextureViewType::DepthStencil;
+    viewDesc.m_ViewType          = xiiGALTextureViewType::DepthStencil;
     viewDesc.m_uiFirstArraySlice = uiCascade;
     viewDesc.m_uiNumArraySlices  = 1u;
 
@@ -192,9 +192,9 @@ static void ExecuteDirShadow(xiiView& view, const DirShadowData& data, xiiRGPass
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Spot light shadow maps (graphics)
-// 
+//
 namespace
 {
   struct SpotShadowData
@@ -203,7 +203,7 @@ namespace
     xiiRGTextureHandle m_hLocalShadowAtlas;
     xiiUInt32          m_uiSpotLightCount = 0;
   };
-}
+} // namespace
 
 static void SetupSpotShadow(xiiView& view, SpotShadowData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -212,13 +212,13 @@ static void SetupSpotShadow(xiiView& view, SpotShadowData& data, xiiRGBuilder& b
   if (!sp.m_pLocalShadowAtlas)
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_TextureType = xiiGALTextureType::Texture2D;
-    desc.m_Format      = xiiGALTextureFormat::D32Float;
-    desc.m_uiWidth     = k_uiLocalAtlasSize;
-    desc.m_uiHeight    = k_uiLocalAtlasSize;
-    desc.m_uiMipLevels = 1u;
-    desc.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-    desc.m_Usage       = xiiGALResourceUsage::Default;
+    desc.m_TextureType     = xiiGALTextureType::Texture2D;
+    desc.m_Format          = xiiGALTextureFormat::D32Float;
+    desc.m_uiWidth         = k_uiLocalAtlasSize;
+    desc.m_uiHeight        = k_uiLocalAtlasSize;
+    desc.m_uiMipLevels     = 1u;
+    desc.m_BindFlags       = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    desc.m_Usage           = xiiGALResourceUsage::Default;
     sp.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
   }
 
@@ -239,7 +239,7 @@ static void SetupSpotShadow(xiiView& view, SpotShadowData& data, xiiRGBuilder& b
 static void ExecuteSpotShadow(xiiView& view, const SpotShadowData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   if (data.m_uiSpotLightCount == 0u || !sp.m_pShadowDepthPipeline)
     return;
@@ -257,18 +257,18 @@ static void ExecuteSpotShadow(xiiView& view, const SpotShadowData& data, xiiRGPa
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Point light cube-face shadow maps (graphics, 6 faces per light)
-// 
+//
 namespace
 {
   struct PointShadowData
   {
     xiiRGBufferHandle  m_hShadowCasterCommands;
-    xiiRGTextureHandle m_hLocalShadowAtlas;    // same atlas as spot lights, different tiles
+    xiiRGTextureHandle m_hLocalShadowAtlas; // same atlas as spot lights, different tiles
     xiiUInt32          m_uiPointLightCount = 0;
   };
-}
+} // namespace
 
 static void SetupPointShadow(xiiView& view, PointShadowData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -289,7 +289,7 @@ static void SetupPointShadow(xiiView& view, PointShadowData& data, xiiRGBuilder&
 static void ExecutePointShadow(xiiView& view, const PointShadowData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   if (data.m_uiPointLightCount == 0u || !sp.m_pShadowDepthPipeline)
     return;
@@ -304,9 +304,9 @@ static void ExecutePointShadow(xiiView& view, const PointShadowData& data, xiiRG
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Ray-traced shadows
-// 
+//
 namespace
 {
   struct RTShadowData
@@ -315,13 +315,13 @@ namespace
     xiiRGTextureHandle m_hSceneDepth;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupRTShadow(xiiView& view, RTShadowData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& sp = view.m_ViewPassResources.m_ShadowPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   // Depth as input (written by depth prepass = Stage 3, but RT shadows are dispatched after HiZ
@@ -333,13 +333,13 @@ static void SetupRTShadow(xiiView& view, RTShadowData& data, xiiRGBuilder& build
     data.m_hSceneDepth = builder.ReadTexture(hDepth, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription desc;
-  desc.m_TextureType = xiiGALTextureType::Texture2D;
-  desc.m_Format      = xiiGALTextureFormat::R8Unorm;
-  desc.m_uiWidth     = data.m_uiRenderW;
-  desc.m_uiHeight    = data.m_uiRenderH;
-  desc.m_uiMipLevels = 1u;
-  desc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage       = xiiGALResourceUsage::Default;
+  desc.m_TextureType      = xiiGALTextureType::Texture2D;
+  desc.m_Format           = xiiGALTextureFormat::R8Unorm;
+  desc.m_uiWidth          = data.m_uiRenderW;
+  desc.m_uiHeight         = data.m_uiRenderH;
+  desc.m_uiMipLevels      = 1u;
+  desc.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  desc.m_Usage            = xiiGALResourceUsage::Default;
   data.m_hRTRawShadowMask = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, desc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(sp.m_pShadowDenoisePipeline, "Shaders/Pipeline/RTShadow.xiiShader");
@@ -349,7 +349,7 @@ static void SetupRTShadow(xiiView& view, RTShadowData& data, xiiRGBuilder& build
 static void ExecuteRTShadow(xiiView& view, const RTShadowData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   cmd.BeginDebugGroup("RTShadows");
   cmd.SetPipelineState(sp.m_pShadowDenoisePipeline); // reusing slot for RT pipeline
@@ -361,9 +361,9 @@ static void ExecuteRTShadow(xiiView& view, const RTShadowData& data, xiiRGPassCo
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Shadow denoiser (bilateral blur on raw RT shadow mask)
-// 
+//
 namespace
 {
   struct ShadowDenoiseData
@@ -372,13 +372,13 @@ namespace
     xiiRGTextureHandle m_hRTFinalShadowMask;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupShadowDenoise(xiiView& view, ShadowDenoiseData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& sp = view.m_ViewPassResources.m_ShadowPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   xiiRGTextureHandle hRaw;
@@ -386,13 +386,13 @@ static void SetupShadowDenoise(xiiView& view, ShadowDenoiseData& data, xiiRGBuil
   data.m_hRTRawShadowMask = builder.ReadTexture(hRaw, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription desc;
-  desc.m_TextureType = xiiGALTextureType::Texture2D;
-  desc.m_Format      = xiiGALTextureFormat::R8Unorm;
-  desc.m_uiWidth     = data.m_uiRenderW;
-  desc.m_uiHeight    = data.m_uiRenderH;
-  desc.m_uiMipLevels = 1u;
-  desc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage       = xiiGALResourceUsage::Default;
+  desc.m_TextureType        = xiiGALTextureType::Texture2D;
+  desc.m_Format             = xiiGALTextureFormat::R8Unorm;
+  desc.m_uiWidth            = data.m_uiRenderW;
+  desc.m_uiHeight           = data.m_uiRenderH;
+  desc.m_uiMipLevels        = 1u;
+  desc.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  desc.m_Usage              = xiiGALResourceUsage::Default;
   data.m_hRTFinalShadowMask = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, desc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(sp.m_pShadowDenoisePipeline, "Shaders/Pipeline/SeparatedBilateralBlur.xiiShader");
@@ -401,20 +401,20 @@ static void SetupShadowDenoise(xiiView& view, ShadowDenoiseData& data, xiiRGBuil
 static void ExecuteShadowDenoise(xiiView& view, const ShadowDenoiseData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   cmd.BeginDebugGroup("ShadowDenoise");
   cmd.SetPipelineState(sp.m_pShadowDenoisePipeline);
-  cmd.ResolveAndSetShaderResourceView("g_Input",  ctx.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource),    xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceView("g_Input", ctx.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
   cmd.ResolveAndSetUnorderedAccessView("g_Output", ctx.GetTexture(data.m_hRTFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Contact shadows (screen-space ray march)
-// 
+//
 namespace
 {
   struct ContactShadowData
@@ -423,13 +423,13 @@ namespace
     xiiRGTextureHandle m_hContactShadow;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupContactShadow(xiiView& view, ContactShadowData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& sp = view.m_ViewPassResources.m_ShadowPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   xiiRGTextureHandle hDepth;
@@ -438,13 +438,13 @@ static void SetupContactShadow(xiiView& view, ContactShadowData& data, xiiRGBuil
     data.m_hSceneDepth = builder.ReadTexture(hDepth, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription desc;
-  desc.m_TextureType = xiiGALTextureType::Texture2D;
-  desc.m_Format      = xiiGALTextureFormat::R8Unorm;
-  desc.m_uiWidth     = data.m_uiRenderW;
-  desc.m_uiHeight    = data.m_uiRenderH;
-  desc.m_uiMipLevels = 1u;
-  desc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage       = xiiGALResourceUsage::Default;
+  desc.m_TextureType    = xiiGALTextureType::Texture2D;
+  desc.m_Format         = xiiGALTextureFormat::R8Unorm;
+  desc.m_uiWidth        = data.m_uiRenderW;
+  desc.m_uiHeight       = data.m_uiRenderH;
+  desc.m_uiMipLevels    = 1u;
+  desc.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  desc.m_Usage          = xiiGALResourceUsage::Default;
   data.m_hContactShadow = builder.WriteTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, desc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(sp.m_pContactShadowPipeline, "Shaders/Pipeline/ContactShadows.xiiShader");
@@ -453,7 +453,7 @@ static void SetupContactShadow(xiiView& view, ContactShadowData& data, xiiRGBuil
 static void ExecuteContactShadow(xiiView& view, const ContactShadowData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& sp               = view.m_ViewPassResources.m_ShadowPasses;
+  auto&              sp  = view.m_ViewPassResources.m_ShadowPasses;
 
   cmd.BeginDebugGroup("ContactShadows");
   cmd.SetPipelineState(sp.m_pContactShadowPipeline);
@@ -465,9 +465,9 @@ static void ExecuteContactShadow(xiiView& view, const ContactShadowData& data, x
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // BuildStage2_Shadows - entry point called from BuildDefaultRenderGraph
-// 
+//
 
 void xiiView::BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
 {

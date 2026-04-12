@@ -163,7 +163,7 @@ xiiResult xiiGALRayTracingPipelineStateVulkan::InitPlatform()
     vkPipelineLayoutCreateInfo.setLayoutCount = pDescriptorSetLayouts.GetCount();
     vkPipelineLayoutCreateInfo.pSetLayouts    = pDescriptorSetLayouts.GetPtr();
 
-    const auto&                            pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
+    const auto&                                        pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
     xiiTemporaryHybridArray<vk::PushConstantRange, 4U> vkPushRanges;
 
     if (!pushConstantRanges.IsEmpty())

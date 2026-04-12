@@ -19,16 +19,16 @@ extern xiiCVarInt cvar_ClusterX;
 extern xiiCVarInt cvar_ClusterY;
 extern xiiCVarInt cvar_ClusterZ;
 
-// 
+//
 // Shared constants (sizes of persistent GPU buffers, aligned to typical instance budgets)
-// 
+//
 static constexpr xiiUInt32 k_uiMaxInstances    = 65536u; // max drawable objects in one frame
 static constexpr xiiUInt32 k_uiMaxLights       = 1024u;
-static constexpr xiiUInt32 k_uiMaxMaterialBins = 512u;   // distinct (mesh × material) draw bins
+static constexpr xiiUInt32 k_uiMaxMaterialBins = 512u; // distinct (mesh × material) draw bins
 
-// 
+//
 // GPU occlusion readback
-// 
+//
 // Reads the oldest staging buffer in the 3-frame ring (from 2 frames ago).
 // This provides the GPU frame time used by the PID (the result has already been applied by
 // RunDynamicResolutionPID before BeginSetup, so this pass simply keeps the readback ring rotating).
@@ -43,7 +43,7 @@ namespace
 
 static void SetupOcclusionReadback(xiiView& view, OcclusionReadbackData& data, xiiRGBuilder& builder)
 {
-  auto& ring     = view.m_ViewPassResources.m_VisibilityPasses;
+  auto& ring        = view.m_ViewPassResources.m_VisibilityPasses;
   data.m_uiReadSlot = (ring.m_uiReadbackWriteSlot + 1u) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
 
   builder.SetPassSideEffects(true);
@@ -52,7 +52,7 @@ static void SetupOcclusionReadback(xiiView& view, OcclusionReadbackData& data, x
 
 static void ExecuteOcclusionReadback(xiiView& view, const OcclusionReadbackData& data, xiiRGPassContext& ctx)
 {
-  auto& ring        = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&                       ring     = view.m_ViewPassResources.m_VisibilityPasses;
   xiiSharedPtr<xiiGALBuffer>& pStaging = ring.m_pOcclusionReadbackRing[data.m_uiReadSlot];
 
   if (pStaging == nullptr)
@@ -64,7 +64,7 @@ static void ExecuteOcclusionReadback(xiiView& view, const OcclusionReadbackData&
   }
 
   // Map the staging buffer (CPU readable, GPU wrote 2 frames ago).
-  xiiGALCommandList& cmd = ctx.GetCommandList();
+  xiiGALCommandList& cmd   = ctx.GetCommandList();
   const void*        pData = nullptr;
   if (cmd.MapBuffer(pStaging, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pData))
   {
@@ -78,19 +78,19 @@ static void ExecuteOcclusionReadback(xiiView& view, const OcclusionReadbackData&
   ring.m_uiReadbackWriteSlot = (ring.m_uiReadbackWriteSlot + 1u) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
 }
 
-// 
+//
 // Frustum culling
-// 
+//
 namespace
 {
   struct FrustumCullData
   {
-    xiiRGBufferHandle m_hInstanceBounds;      // SRV in
-    xiiRGBufferHandle m_hLODMetadata;         // SRV in
-    xiiRGBufferHandle m_hVisibleCandidates;   // UAV out ([0]=count, [1..]=indices)
+    xiiRGBufferHandle m_hInstanceBounds;    // SRV in
+    xiiRGBufferHandle m_hLODMetadata;       // SRV in
+    xiiRGBufferHandle m_hVisibleCandidates; // UAV out ([0]=count, [1..]=indices)
     xiiUInt32         m_uiInstanceCount = 0;
   };
-}
+} // namespace
 
 static void SetupFrustumCulling(xiiView& view, FrustumCullData& data, xiiRGBuilder& builder)
 {
@@ -109,8 +109,8 @@ static void SetupFrustumCulling(xiiView& view, FrustumCullData& data, xiiRGBuild
   }
 
   // Import persistent instance bounds as read-only SRV.
-  data.m_hInstanceBounds    = builder.ImportBuffer("InstanceBoundsIn", vp.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hInstanceBounds    = builder.ReadBuffer(data.m_hInstanceBounds, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceBounds = builder.ImportBuffer("InstanceBoundsIn", vp.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceBounds = builder.ReadBuffer(data.m_hInstanceBounds, xiiGALResourceStateFlags::ShaderResource);
 
   // LOD metadata (also persistent, updated by CPU each frame before dispatch).
   if (!vp.m_pInstanceMatrixBuffer)
@@ -128,7 +128,7 @@ static void SetupFrustumCulling(xiiView& view, FrustumCullData& data, xiiRGBuild
 
   // Transient visible candidate buffer.
   xiiGALBufferCreationDescription visDesc;
-  visDesc.m_uiElementByteStride = 4u; // uint
+  visDesc.m_uiElementByteStride = 4u;                         // uint
   visDesc.m_uiSize              = 4u + 4u * k_uiMaxInstances; // [0]=count + indices
   visDesc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
   visDesc.m_Mode                = xiiGALBufferMode::Structured;
@@ -144,12 +144,12 @@ static void SetupFrustumCulling(xiiView& view, FrustumCullData& data, xiiRGBuild
 static void ExecuteFrustumCulling(xiiView& view, const FrustumCullData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("FrustumCulling");
   cmd.SetPipelineState(vp.m_pFrustumCullPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds",      ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_LODMetadata", ctx.GetBuffer(data.m_hLODMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource),    xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_LODMetadata", ctx.GetBuffer(data.m_hLODMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
   cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleOut", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -158,9 +158,9 @@ static void ExecuteFrustumCulling(xiiView& view, const FrustumCullData& data, xi
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // LOD selection
-// 
+//
 namespace
 {
   struct LODSelectData
@@ -170,7 +170,7 @@ namespace
     xiiRGBufferHandle m_hInstanceLOD;
     xiiUInt32         m_uiInstanceCount = 0;
   };
-}
+} // namespace
 
 static void SetupLODSelection(xiiView& view, LODSelectData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -196,13 +196,13 @@ static void SetupLODSelection(xiiView& view, LODSelectData& data, xiiRGBuilder& 
 static void ExecuteLODSelection(xiiView& view, const LODSelectData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("LODSelection");
   cmd.SetPipelineState(vp.m_pLODSelectPipeline);
   cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds",            ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource),    xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_InstanceLODOut",   ctx.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),      xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_InstanceLODOut", ctx.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
   const xiiUInt32 uiGroups = (data.m_uiInstanceCount + 63u) / 64u;
@@ -210,9 +210,9 @@ static void ExecuteLODSelection(xiiView& view, const LODSelectData& data, xiiRGP
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Instance update (world-matrix transform buffer write)
-// 
+//
 namespace
 {
   struct InstanceUpdateData
@@ -222,7 +222,7 @@ namespace
     xiiRGBufferHandle m_hInstanceBoundsOut;
     xiiUInt32         m_uiInstanceCount = 0;
   };
-}
+} // namespace
 
 static void SetupInstanceUpdate(xiiView& view, InstanceUpdateData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -262,32 +262,32 @@ static void SetupInstanceUpdate(xiiView& view, InstanceUpdateData& data, xiiRGBu
 static void ExecuteInstanceUpdate(xiiView& view, const InstanceUpdateData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("InstanceUpdate");
   cmd.SetPipelineState(vp.m_pInstanceUpdatePipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_VisibleIn",      ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource),   xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_MatricesOut",   ctx.GetBuffer(data.m_hInstanceMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),   xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_BoundsOut",     ctx.GetBuffer(data.m_hInstanceBoundsOut)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),  xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_VisibleIn", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_MatricesOut", ctx.GetBuffer(data.m_hInstanceMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_BoundsOut", ctx.GetBuffer(data.m_hInstanceBoundsOut)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(data.m_uiInstanceCount + 63u) / 64u, 1u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Draw command build (GPU-driven indirect args)
-// 
+//
 namespace
 {
   struct DrawBuildData
   {
-    xiiRGBufferHandle m_hSurvivors;          // surviving instance list
-    xiiRGBufferHandle m_hInstanceLOD;        // LOD selection
-    xiiRGBufferHandle m_hDrawCommands;       // DrawIndexedIndirect args output
-    xiiRGBufferHandle m_hDrawCounts;         // per-bin draw counts
+    xiiRGBufferHandle m_hSurvivors;    // surviving instance list
+    xiiRGBufferHandle m_hInstanceLOD;  // LOD selection
+    xiiRGBufferHandle m_hDrawCommands; // DrawIndexedIndirect args output
+    xiiRGBufferHandle m_hDrawCounts;   // per-bin draw counts
     xiiUInt32         m_uiInstanceCount = 0;
   };
-}
+} // namespace
 
 static void SetupDrawBuild(xiiView& view, DrawBuildData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -304,7 +304,7 @@ static void SetupDrawBuild(xiiView& view, DrawBuildData& data, xiiRGBuilder& bui
 
   xiiRGBufferHandle hLOD;
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_InstanceLODBuffer), hLOD);
-  data.m_hInstanceLOD = builder.ReadBuffer(hLOD, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceLOD    = builder.ReadBuffer(hLOD, xiiGALResourceStateFlags::ShaderResource);
   data.m_uiInstanceCount = k_uiMaxInstances;
 
   // Persistent indirect arg buffer (resized lazily).
@@ -312,11 +312,11 @@ static void SetupDrawBuild(xiiView& view, DrawBuildData& data, xiiRGBuilder& bui
   if (!vp.m_pDrawIndirectArgBuffer)
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride = uiArgStride;
-    desc.m_uiSize              = uiArgStride * k_uiMaxMaterialBins;
-    desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
-    desc.m_Mode                = xiiGALBufferMode::Formatted;
-    desc.m_Usage               = xiiGALResourceUsage::Default;
+    desc.m_uiElementByteStride  = uiArgStride;
+    desc.m_uiSize               = uiArgStride * k_uiMaxMaterialBins;
+    desc.m_BindFlags            = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+    desc.m_Mode                 = xiiGALBufferMode::Formatted;
+    desc.m_Usage                = xiiGALResourceUsage::Default;
     vp.m_pDrawIndirectArgBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }
   data.m_hDrawCommands = builder.ImportBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, vp.m_pDrawIndirectArgBuffer, xiiGALResourceStateFlags::UnorderedAccess);
@@ -335,22 +335,22 @@ static void SetupDrawBuild(xiiView& view, DrawBuildData& data, xiiRGBuilder& bui
 static void ExecuteDrawBuild(xiiView& view, const DrawBuildData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("DrawCommandBuild");
   cmd.SetPipelineState(vp.m_pDrawBuildPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Survivors",   ctx.GetBuffer(data.m_hSurvivors)->GetDefaultView(xiiGALBufferViewType::ShaderResource),     xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_InstanceLOD", ctx.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource),    xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawArgs",   ctx.GetBuffer(data.m_hDrawCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),  xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawCounts", ctx.GetBuffer(data.m_hDrawCounts)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),    xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Survivors", ctx.GetBuffer(data.m_hSurvivors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_InstanceLOD", ctx.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawArgs", ctx.GetBuffer(data.m_hDrawCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawCounts", ctx.GetBuffer(data.m_hDrawCounts)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(data.m_uiInstanceCount + 63u) / 64u, 1u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Shadow caster list build
-// 
+//
 namespace
 {
   struct ShadowCasterBuildData
@@ -358,7 +358,7 @@ namespace
     xiiRGBufferHandle m_hVisibleCandidates;
     xiiRGBufferHandle m_hShadowCasterCommands;
   };
-}
+} // namespace
 
 static void SetupShadowCasterBuild(xiiView& view, ShadowCasterBuildData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -369,10 +369,10 @@ static void SetupShadowCasterBuild(xiiView& view, ShadowCasterBuildData& data, x
   data.m_hVisibleCandidates = builder.ReadBuffer(hCandidates, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = 20u; // DrawIndexedIndirectArguments per cascade-per-bin
-  desc.m_uiSize              = desc.m_uiElementByteStride * k_uiMaxMaterialBins * 4u; // 4 cascades
-  desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
-  desc.m_Mode                = xiiGALBufferMode::Formatted;
+  desc.m_uiElementByteStride   = 20u;                                                   // DrawIndexedIndirectArguments per cascade-per-bin
+  desc.m_uiSize                = desc.m_uiElementByteStride * k_uiMaxMaterialBins * 4u; // 4 cascades
+  desc.m_BindFlags             = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+  desc.m_Mode                  = xiiGALBufferMode::Formatted;
   data.m_hShadowCasterCommands = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, desc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(vp.m_pShadowCasterBuildPipeline, "Shaders/Pipeline/ShadowCasterCulling.xiiShader");
@@ -381,20 +381,20 @@ static void SetupShadowCasterBuild(xiiView& view, ShadowCasterBuildData& data, x
 static void ExecuteShadowCasterBuild(xiiView& view, const ShadowCasterBuildData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("ShadowCasterListBuild");
   cmd.SetPipelineState(vp.m_pShadowCasterBuildPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource),       xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_ShadowDrawArgs",   ctx.GetBuffer(data.m_hShadowCasterCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_ShadowDrawArgs", ctx.GetBuffer(data.m_hShadowCasterCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(k_uiMaxInstances + 63u) / 64u, 1u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Cluster grid build
-// 
+//
 namespace
 {
   struct ClusterBuildData
@@ -403,7 +403,7 @@ namespace
     xiiUInt32         m_uiClusterX = 16u, m_uiClusterY = 9u, m_uiClusterZ = 24u;
     float             m_fNearPlane = 0.1f, m_fFarPlane = 1000.0f;
   };
-}
+} // namespace
 
 static void SetupClusterBuild(xiiView& view, ClusterBuildData& data, xiiRGBuilder& builder)
 {
@@ -421,7 +421,7 @@ static void SetupClusterBuild(xiiView& view, ClusterBuildData& data, xiiRGBuilde
   const xiiUInt32 uiTotalClusters = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
 
   xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = 32u;  // float4 min + float4 max per cluster AABB
+  desc.m_uiElementByteStride = 32u; // float4 min + float4 max per cluster AABB
   desc.m_uiSize              = desc.m_uiElementByteStride * uiTotalClusters;
   desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
   desc.m_Mode                = xiiGALBufferMode::Structured;
@@ -433,7 +433,7 @@ static void SetupClusterBuild(xiiView& view, ClusterBuildData& data, xiiRGBuilde
 static void ExecuteClusterBuild(xiiView& view, const ClusterBuildData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("ClusterGridBuild");
   cmd.SetPipelineState(vp.m_pClusterBuildPipeline);
@@ -448,9 +448,9 @@ static void ExecuteClusterBuild(xiiView& view, const ClusterBuildData& data, xii
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Light list build
-// 
+//
 namespace
 {
   struct LightListData
@@ -460,7 +460,7 @@ namespace
     xiiRGBufferHandle m_hLightGridBuffer;
     xiiUInt32         m_uiActiveLightCount = 0;
   };
-}
+} // namespace
 
 static void SetupLightListBuild(xiiView& view, LightListData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -470,8 +470,8 @@ static void SetupLightListBuild(xiiView& view, LightListData& data, xiiRGBuilder
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_ClusterDescriptors), hClusters);
   data.m_hClusterDescriptors = builder.ReadBuffer(hClusters, xiiGALResourceStateFlags::ShaderResource);
 
-  const xiiUInt32 uiMaxClusters     = 16u * 9u * 24u; // worst case
-  const xiiUInt32 uiMaxLightsPerCl  = 256u;
+  const xiiUInt32 uiMaxClusters    = 16u * 9u * 24u; // worst case
+  const xiiUInt32 uiMaxLightsPerCl = 256u;
 
   xiiGALBufferCreationDescription idxDesc;
   idxDesc.m_uiElementByteStride = 4u;
@@ -481,7 +481,7 @@ static void SetupLightListBuild(xiiView& view, LightListData& data, xiiRGBuilder
   data.m_hLightIndexBuffer      = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, idxDesc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription gridDesc;
-  gridDesc.m_uiElementByteStride = 8u;  // uint2 (offset, count) per cluster
+  gridDesc.m_uiElementByteStride = 8u; // uint2 (offset, count) per cluster
   gridDesc.m_uiSize              = gridDesc.m_uiElementByteStride * uiMaxClusters;
   gridDesc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
   gridDesc.m_Mode                = xiiGALBufferMode::Structured;
@@ -495,13 +495,13 @@ static void SetupLightListBuild(xiiView& view, LightListData& data, xiiRGBuilder
 static void ExecuteLightListBuild(xiiView& view, const LightListData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("LightListBuild");
   cmd.SetPipelineState(vp.m_pLightListPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Clusters",     ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource),   xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex",  ctx.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),    xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid",   ctx.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),     xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex", ctx.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", ctx.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
   const xiiUInt32 uiGroups = (data.m_uiActiveLightCount + 63u) / 64u;
@@ -509,9 +509,9 @@ static void ExecuteLightListBuild(xiiView& view, const LightListData& data, xiiR
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Reflection probe selection
-// 
+//
 namespace
 {
   struct ReflProbeSelectData
@@ -519,7 +519,7 @@ namespace
     xiiRGBufferHandle m_hClusterDescriptors;
     xiiRGBufferHandle m_hProbeMask;
   };
-}
+} // namespace
 
 static void SetupReflProbeSelect(xiiView& view, ReflProbeSelectData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -542,20 +542,20 @@ static void SetupReflProbeSelect(xiiView& view, ReflProbeSelectData& data, xiiRG
 static void ExecuteReflProbeSelect(xiiView& view, const ReflProbeSelectData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("ReflectionProbeSelection");
   cmd.SetPipelineState(vp.m_pProbeSelectPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Clusters",   ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_ProbeMask", ctx.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),         xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_ProbeMask", ctx.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA + 63u) / 64u, 1u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Volumetric grid allocation (froxel setup)
-// 
+//
 namespace
 {
   struct FroxelAllocData
@@ -564,31 +564,31 @@ namespace
     xiiRGTextureHandle m_hFroxelScattering;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupFroxelAlloc(xiiView& view, FroxelAllocData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& vp = view.m_ViewPassResources.m_VisibilityPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   xiiGALBufferCreationDescription metaDesc;
-  metaDesc.m_uiElementByteStride = 32u; // per-froxel density + phase + absorption
+  metaDesc.m_uiElementByteStride = 32u;                                               // per-froxel density + phase + absorption
   metaDesc.m_uiSize              = metaDesc.m_uiElementByteStride * 128u * 72u * 64u; // froxel volume
   metaDesc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
   metaDesc.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hFroxelMetadata         = builder.WriteBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, metaDesc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALTextureCreationDescription scatDesc;
-  scatDesc.m_TextureType = xiiGALTextureType::Texture3D;
-  scatDesc.m_Format      = xiiGALTextureFormat::RGBA16Float;
-  scatDesc.m_uiWidth     = 128u;
-  scatDesc.m_uiHeight    = 72u;
-  scatDesc.m_uiDepth     = 64u;
-  scatDesc.m_uiMipLevels = 1u;
-  scatDesc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  scatDesc.m_Usage       = xiiGALResourceUsage::Default;
+  scatDesc.m_TextureType   = xiiGALTextureType::Texture3D;
+  scatDesc.m_Format        = xiiGALTextureFormat::RGBA16Float;
+  scatDesc.m_uiWidth       = 128u;
+  scatDesc.m_uiHeight      = 72u;
+  scatDesc.m_uiDepth       = 64u;
+  scatDesc.m_uiMipLevels   = 1u;
+  scatDesc.m_BindFlags     = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  scatDesc.m_Usage         = xiiGALResourceUsage::Default;
   data.m_hFroxelScattering = builder.WriteTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, scatDesc, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(vp.m_pFroxelSetupPipeline, "Shaders/Pipeline/FroxelSetup.xiiShader");
@@ -597,20 +597,20 @@ static void SetupFroxelAlloc(xiiView& view, FroxelAllocData& data, xiiRGBuilder&
 static void ExecuteFroxelAlloc(xiiView& view, const FroxelAllocData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& vp               = view.m_ViewPassResources.m_VisibilityPasses;
+  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
 
   cmd.BeginDebugGroup("VolumetricGridAlloc");
   cmd.SetPipelineState(vp.m_pFroxelSetupPipeline);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_FroxelMetaOut",     ctx.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),      xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_FroxelScatteringOut",     ctx.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_FroxelMetaOut", ctx.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessView("g_FroxelScatteringOut", ctx.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(128u + 7u) / 8u, (72u + 7u) / 8u, 8u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // BuildStage1_Visibility - entry point called from BuildDefaultRenderGraph
-// 
+//
 
 void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
 {

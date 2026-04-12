@@ -239,7 +239,7 @@ xiiResult xiiGALGraphicsPipelineStateVulkan::InitPlatform()
     vkPipelineLayoutCreateInfo.pSetLayouts    = pDescriptorSetLayouts.GetPtr();
 
     // Build push constant ranges from the pipeline resource signature description.
-    const auto&                            pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
+    const auto&                                        pushConstantRanges = pPipelineResourceSignatureVulkan->GetDescription().m_PushConstantRanges;
     xiiTemporaryHybridArray<vk::PushConstantRange, 4U> vkPushRanges;
 
     if (!pushConstantRanges.IsEmpty())

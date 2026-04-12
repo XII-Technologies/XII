@@ -61,7 +61,7 @@ public:
   const xiiCamera* GetLodCamera() const;
 
   xiiEnum<xiiCameraUsageHint> GetCameraUsageHint() const;
-  void SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> val);
+  void                        SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> val);
 
   void                       SetViewRenderMode(xiiEnum<xiiViewRenderMode> value);
   xiiEnum<xiiViewRenderMode> GetViewRenderMode() const;
@@ -89,9 +89,9 @@ public:
   void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
   using RenderGraphBuilder = xiiDelegate<void(xiiView&, xiiRenderGraph&, xiiRenderGraphBlackboard&)>;
-  void                       SetRenderGraphBuilder(RenderGraphBuilder builder);
-  const RenderGraphBuilder&  GetRenderGraphBuilder() const;
-  xiiUInt32                  GetRenderGraphBuilderVersion() const;
+  void                      SetRenderGraphBuilder(RenderGraphBuilder builder);
+  const RenderGraphBuilder& GetRenderGraphBuilder() const;
+  xiiUInt32                 GetRenderGraphBuilderVersion() const;
 
   xiiTagSet m_IncludeTags;
   xiiTagSet m_ExcludeTags;
@@ -139,7 +139,7 @@ private:
   /// Set via SetSwapChain(); may be nullptr for off-screen views.
   xiiGALSwapChain* m_pSwapChain = nullptr;
 
-  xiiRenderGraphBlackboard   m_Blackboard;
+  xiiRenderGraphBlackboard    m_Blackboard;
   xiiRenderGraphResourceCache m_ResourceCache;
 
   // ============================================================
@@ -150,7 +150,7 @@ private:
     // GPU timestamp profiler (Duration queries, 3-frame ring)
     xiiRenderGraphTimestampProfiler m_Profiler;
 
-    //  CPU PID state for dynamic resolution 
+    //  CPU PID state for dynamic resolution
     struct DynamicResolution
     {
       float m_fCurrentScale       = 1.0f;
@@ -160,16 +160,16 @@ private:
       float m_fLastGpuFrameTimeMs = 0.0f; // resolved GPU time from profiler (2 frames ago)
     } m_DynamicResolution;
 
-    //  Stage 1 - Visibility & Setup 
+    //  Stage 1 - Visibility & Setup
     struct VisibilityPasses
     {
       static constexpr xiiUInt32 s_uiReadbackRingSize = 3U;
-      xiiSharedPtr<xiiGALBuffer>  m_pOcclusionReadbackRing[s_uiReadbackRingSize];
-      xiiUInt32                   m_uiReadbackWriteSlot = 0U;
+      xiiSharedPtr<xiiGALBuffer> m_pOcclusionReadbackRing[s_uiReadbackRingSize];
+      xiiUInt32                  m_uiReadbackWriteSlot = 0U;
 
-      xiiSharedPtr<xiiGALBuffer>  m_pDrawIndirectArgBuffer;  // persistent, resized on demand
-      xiiSharedPtr<xiiGALBuffer>  m_pInstanceBoundsBuffer;   // StructuredBuffer<InstanceBounds>
-      xiiSharedPtr<xiiGALBuffer>  m_pInstanceMatrixBuffer;   // StructuredBuffer<float4x3>
+      xiiSharedPtr<xiiGALBuffer> m_pDrawIndirectArgBuffer; // persistent, resized on demand
+      xiiSharedPtr<xiiGALBuffer> m_pInstanceBoundsBuffer;  // StructuredBuffer<InstanceBounds>
+      xiiSharedPtr<xiiGALBuffer> m_pInstanceMatrixBuffer;  // StructuredBuffer<float4x3>
 
       xiiSharedPtr<xiiGALComputePipelineState> m_pFrustumCullPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pLODSelectPipeline;
@@ -182,7 +182,7 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelSetupPipeline;
     } m_VisibilityPasses;
 
-    //  Stage 2 - Shadows 
+    //  Stage 2 - Shadows
     struct ShadowPasses
     {
       xiiSharedPtr<xiiGALComputePipelineState>  m_pCascadeSetupPipeline;
@@ -193,7 +193,7 @@ private:
       xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096×4096
     } m_ShadowPasses;
 
-    //  Stage 3 - Depth & Hi-Z 
+    //  Stage 3 - Depth & Hi-Z
     struct DepthPasses
     {
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pDepthPrepassPipeline;
@@ -203,59 +203,59 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pVelocityDilationPipeline;
     } m_DepthPasses;
 
-    //  Stage 4 - G-Buffer 
+    //  Stage 4 - G-Buffer
     struct GBufferPasses
     {
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pGBufferPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pNormalRoughnessPipeline;
     } m_GBufferPasses;
 
-    //  Stage 5 - Lighting Preparation 
+    //  Stage 5 - Lighting Preparation
     struct LightingPrepPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pBRDFLutPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pAtmTransmittancePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pAtmMultiScatterPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSkyIrradiancePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pReflProbeConvPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pFroxelFogInitPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pDDGIProbePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pGTAOPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pGTAODenoisePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pBRDFLutPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pAtmTransmittancePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pAtmMultiScatterPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSkyIrradiancePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pReflProbeConvPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelFogInitPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pDDGIProbePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pGTAOPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pGTAODenoisePipeline;
       // Persistent once-generated textures
-      xiiSharedPtr<xiiGALTexture>               m_pBRDFLut;             // 256×256 R16G16F, generated once
-      xiiSharedPtr<xiiGALTexture>               m_pAtmTransmittanceLUT; // 256×64 R16G16B16A16F
-      xiiSharedPtr<xiiGALTexture>               m_pAtmMultiScatterLUT;  // 32×32  R16G16B16A16F
-      bool                                      m_bBRDFLutGenerated  = false;
-      bool                                      m_bAtmLutsGenerated  = false;
+      xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256×256 R16G16F, generated once
+      xiiSharedPtr<xiiGALTexture> m_pAtmTransmittanceLUT; // 256×64 R16G16B16A16F
+      xiiSharedPtr<xiiGALTexture> m_pAtmMultiScatterLUT;  // 32×32  R16G16B16A16F
+      bool                        m_bBRDFLutGenerated = false;
+      bool                        m_bAtmLutsGenerated = false;
     } m_LightingPrepPasses;
 
-    //  Stage 6 - Main Lighting 
+    //  Stage 6 - Main Lighting
     struct LightingPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pDirectLightingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pIndirectLightingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSRPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pVolumetricIntegratePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pVolumetricTemporalPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pAtmosphereCompositePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pRTGIPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pRTReflectionPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pFroxelHistoryBuffer; // prev-frame froxel
+      xiiSharedPtr<xiiGALComputePipelineState> m_pDirectLightingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pIndirectLightingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSRPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricIntegratePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pVolumetricTemporalPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pAtmosphereCompositePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pRTGIPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pRTReflectionPipeline;
+      xiiSharedPtr<xiiGALTexture>              m_pFroxelHistoryBuffer; // prev-frame froxel
     } m_LightingPasses;
 
-    //  Stage 7 - Forward Passes 
+    //  Stage 7 - Forward Passes
     struct ForwardPasses
     {
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pForwardOpaquePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pForwardMaskedPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pHairPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pWaterPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSSComputePipeline;  // screen-space SSS blur
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSSComputePipeline; // screen-space SSS blur
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pEyePipeline;
     } m_ForwardPasses;
 
-    //  Stage 8 - Transparency & Special 
+    //  Stage 8 - Transparency & Special
     struct TransparencyPasses
     {
       xiiSharedPtr<xiiGALComputePipelineState>  m_pParticleSimulatePipeline;
@@ -268,49 +268,49 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pRTTransparencyPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pSSTranslucencyPipeline;
       // Persistent particle simulation state
-      xiiSharedPtr<xiiGALBuffer>                m_pParticleStateBuffer;
-      xiiUInt32                                 m_uiParticleCapacity = 0U;
+      xiiSharedPtr<xiiGALBuffer> m_pParticleStateBuffer;
+      xiiUInt32                  m_uiParticleCapacity = 0U;
     } m_TransparencyPasses;
 
-    //  Stage 9 - Screen-Space Effects 
+    //  Stage 9 - Screen-Space Effects
     struct ScreenSpacePasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSGIPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSRefractionPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSSSPipeline;       // screen-space SSS
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSSCausticsPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pPlanarReflectionTarget;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSGIPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSRefractionPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSSSPipeline; // screen-space SSS
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSSCausticsPipeline;
+      xiiSharedPtr<xiiGALTexture>              m_pPlanarReflectionTarget;
     } m_ScreenSpacePasses;
 
-    //  Stage 10 - Temporal Reconstruction 
+    //  Stage 10 - Temporal Reconstruction
     struct TemporalPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pLuminanceHistogramPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pAutoExposurePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pTAAPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pUpscalePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pSharpenPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pTAAHistoryBuffer;   // prev-frame resolved color
-      xiiSharedPtr<xiiGALBuffer>                m_pExposureBuffer;     // persistent float EV100
+      xiiSharedPtr<xiiGALComputePipelineState> m_pLuminanceHistogramPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pAutoExposurePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pTAAPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pUpscalePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pSharpenPipeline;
+      xiiSharedPtr<xiiGALTexture>              m_pTAAHistoryBuffer; // prev-frame resolved color
+      xiiSharedPtr<xiiGALBuffer>               m_pExposureBuffer;   // persistent float EV100
     } m_TemporalPasses;
 
-    //  Stage 11 - Post-Processing 
+    //  Stage 11 - Post-Processing
     struct PostProcessPasses
     {
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pBloomPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pLensDirtPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pLensFlarePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pChromaticAberrPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pVignettePipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pColorGradingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pToneMappingPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pFilmGrainPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pDepthOfFieldPipeline;
-      xiiSharedPtr<xiiGALComputePipelineState>  m_pMotionBlurPipeline;
-      xiiTexture2DResourceHandle                m_hLensDirtTexture;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pBloomPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pLensDirtPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pLensFlarePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pChromaticAberrPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pVignettePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pColorGradingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pToneMappingPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pFilmGrainPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pDepthOfFieldPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState> m_pMotionBlurPipeline;
+      xiiTexture2DResourceHandle               m_hLensDirtTexture;
     } m_PostProcessPasses;
 
-    //  Stage 12 - Final Output 
+    //  Stage 12 - Final Output
     struct OutputPasses
     {
       xiiSharedPtr<xiiGALComputePipelineState>  m_pHDRtoSDRPipeline;
@@ -349,7 +349,7 @@ private:
   ///        If the pipeline already exists this is a no-op.
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(
     xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline,
-    xiiStringView sShaderPath);
+    xiiStringView                             sShaderPath);
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

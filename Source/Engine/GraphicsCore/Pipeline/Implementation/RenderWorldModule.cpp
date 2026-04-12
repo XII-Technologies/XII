@@ -113,9 +113,9 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     if (!pView->IsValid())
       continue;
 
-    xiiRenderGraph*               pGraph        = pView->GetRenderGraph();
-    xiiRenderGraphBlackboard&     blackboard    = pView->GetBlackboard();
-    xiiRenderGraphResourceCache&  resourceCache = pView->GetResourceCache();
+    xiiRenderGraph*              pGraph        = pView->GetRenderGraph();
+    xiiRenderGraphBlackboard&    blackboard    = pView->GetBlackboard();
+    xiiRenderGraphResourceCache& resourceCache = pView->GetResourceCache();
 
     // Clear the per-view blackboard at the start of each frame so passes start clean.
     // History data lives in persistent GPU resources inside ViewPassResources, not here.
@@ -140,8 +140,8 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     pGraph->EndSetup();
 
     xiiRGCompileSettings compileSettings;
-    compileSettings.m_bEnableGPUProfiling = true;
-    compileSettings.m_bEnablePassCulling  = true;
+    compileSettings.m_bEnableGPUProfiling  = true;
+    compileSettings.m_bEnablePassCulling   = true;
     compileSettings.m_bEnableSplitBarriers = true;
     compileSettings.m_bEnableAsyncQueues   = true;
 

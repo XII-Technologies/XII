@@ -155,7 +155,7 @@ xiiResult xiiPreprocessor::AddCustomDefine(xiiStringView sDefinition)
   xiiMemoryUtils::Copy(&m_CustomDefines.PeekBack().m_Content[0], (xiiUInt8*)sDefinition.GetStartPointer(), m_CustomDefines.PeekBack().m_Content.GetCount());
   m_CustomDefines.PeekBack().m_Tokenized.Tokenize(m_CustomDefines.PeekBack().m_Content, m_pLog);
 
-  xiiUInt32                           uiFirstToken = 0;
+  xiiUInt32                                    uiFirstToken = 0;
   xiiTemporaryHybridArray<const xiiToken*, 32> Tokens;
 
   if (m_CustomDefines.PeekBack().m_Tokenized.GetNextLine(uiFirstToken, Tokens).Failed())

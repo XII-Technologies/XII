@@ -12,9 +12,9 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-// 
+//
 // CVars for dynamic resolution
-// 
+//
 
 xiiCVarFloat cvar_DrTargetMs(
   "Rendering.DynamicResolution.TargetFrameTimeMs",
@@ -34,24 +34,24 @@ xiiCVarFloat cvar_DrMaxScale(
   xiiCVarFlags::Default,
   "Maximum allowed render scale (1.0 = native resolution).");
 
-// 
+//
 // CVars for 3D light clustering
-// 
+//
 
 xiiCVarInt cvar_ClusterX("Rendering.Clustering.CountX", 16, xiiCVarFlags::Default, "Cluster grid X count.");
-xiiCVarInt cvar_ClusterY("Rendering.Clustering.CountY",  9, xiiCVarFlags::Default, "Cluster grid Y count.");
+xiiCVarInt cvar_ClusterY("Rendering.Clustering.CountY", 9, xiiCVarFlags::Default, "Cluster grid Y count.");
 xiiCVarInt cvar_ClusterZ("Rendering.Clustering.CountZ", 24, xiiCVarFlags::Default, "Cluster grid Z count.");
 
-// 
+//
 // Reflection
-// 
+//
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-// 
+//
 // Construction / destruction
-// 
+//
 
 xiiView::xiiView()
 {
@@ -72,13 +72,13 @@ xiiView::~xiiView()
   m_ResourceCache.Shutdown();
 }
 
-// 
+//
 // Utility: lazy-load a compute pipeline
-// 
+//
 
 /*static*/ xiiSharedPtr<xiiGALComputePipelineState> xiiView::EnsureComputePipeline(
   xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline,
-  xiiStringView sShaderPath)
+  xiiStringView                             sShaderPath)
 {
   if (inout_pPipeline != nullptr)
     return inout_pPipeline;
@@ -101,25 +101,25 @@ xiiView::~xiiView()
   return inout_pPipeline;
 }
 
-// 
+//
 // CPU PID dynamic resolution (runs before BeginSetup)
-// 
+//
 
 void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
 {
   auto& pid = m_ViewPassResources.m_DynamicResolution;
 
-  //  Timing source 
+  //  Timing source
   // Try the GPU profiler's resolved duration from 2 frames ago.
   // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
   const xiiHashedString sFrameTotal = xiiMakeHashedString("FrameTotal");
-  float fGpuTimeMs                  = m_ViewPassResources.m_Profiler.GetPassDurationMs(sFrameTotal);
+  float                 fGpuTimeMs  = m_ViewPassResources.m_Profiler.GetPassDurationMs(sFrameTotal);
   if (fGpuTimeMs <= 0.0f)
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
 
   pid.m_fLastGpuFrameTimeMs = fGpuTimeMs;
 
-  //  PID controller 
+  //  PID controller
   const float fMin    = xiiMath::Max(cvar_DrMinScale.GetValue(), 0.25f);
   const float fMax    = xiiMath::Min(cvar_DrMaxScale.GetValue(), 1.0f);
   const float fTarget = xiiMath::Max(cvar_DrTargetMs.GetValue(), 0.1f);
@@ -130,8 +130,8 @@ void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
   // Anti-windup clamp on integral.
   pid.m_fErrorIntegral = xiiMath::Clamp(pid.m_fErrorIntegral + fError * fDt, -1.0f, 1.0f);
 
-  const float fDeriv  = (fError - pid.m_fPreviousError) / xiiMath::Max(fDt, 0.001f);
-  const float fPID    = 0.35f * fError + 0.05f * pid.m_fErrorIntegral + 0.15f * fDeriv;
+  const float fDeriv = (fError - pid.m_fPreviousError) / xiiMath::Max(fDt, 0.001f);
+  const float fPID   = 0.35f * fError + 0.05f * pid.m_fErrorIntegral + 0.15f * fDeriv;
 
   // Clamp per-frame delta to avoid oscillation.
   const float fDesired = xiiMath::Clamp(pid.m_fCurrentScale + fPID, fMin, fMax);
@@ -144,31 +144,31 @@ void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
   const float fScale = pid.m_fSmoothedScale;
 
   // Align to even pixels to satisfy 2×2 tile constraints.
-  const auto uiW = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width  * fScale) & ~1u;
+  const auto uiW = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width * fScale) & ~1u;
   const auto uiH = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height * fScale) & ~1u;
 
-  //  Publish to blackboard 
+  //  Publish to blackboard
   blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_DynamicResolutionScale), fScale);
-  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),            xiiMath::Max(uiW, 2u));
-  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight),           xiiMath::Max(uiH, 2u));
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), xiiMath::Max(uiW, 2u));
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), xiiMath::Max(uiH, 2u));
 }
 
-// 
+//
 // BuildDefaultRenderGraph - main dispatcher
-// 
+//
 
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  //  Stage 0: CPU dynamic resolution PID (pre-graph, writes to blackboard) 
+  //  Stage 0: CPU dynamic resolution PID (pre-graph, writes to blackboard)
   // Must happen before BeginSetup so passes see the correct render dimensions.
   RunDynamicResolutionPID(blackboard);
 
   // Retrieve render dimensions for use in resource declarations.
   xiiUInt32 uiW = 1920u, uiH = 1080u;
-  blackboard.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  uiW);
+  blackboard.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), uiW);
   blackboard.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), uiH);
 
-  //  Stages 1–12 
+  //  Stages 1–12
   // Each stage adds its passes to the graph. Dependency ordering is handled by
   // the render graph compiler (topological sort + culling).
 

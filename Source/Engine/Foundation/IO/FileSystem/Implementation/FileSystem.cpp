@@ -981,7 +981,7 @@ void xiiFileSystem::StartSearch(xiiFileSystemIterator& ref_iterator, xiiStringVi
   XII_LOCK(s_pData->m_FsMutex);
 
   xiiTemporaryHybridArray<xiiString, 16> folders;
-  xiiStringBuilder              sDdPath, sRelPath;
+  xiiStringBuilder                       sDdPath, sRelPath;
 
   if (sSearchTerm.IsRootedPath())
   {

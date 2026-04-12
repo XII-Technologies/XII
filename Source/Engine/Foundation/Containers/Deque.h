@@ -245,16 +245,16 @@ private:
   /// \brief Deallocates all data, resets the deque to the state after construction.
   void DeallocateAll();
 
-  xiiAllocator*     m_pAllocator;
-  T**               m_pChunks;           ///< The chunk index array for redirecting accesses. Not all chunks must be allocated.
-  xiiUInt32         m_uiChunks;          ///< The size of the m_pChunks array. Determines how many elements could theoretically be stored in the deque.
-  xiiUInt32         m_uiFirstElement;    ///< Which element (across all chunks) is considered to be the first.
-  xiiUInt32         m_uiCount;           ///< How many elements are actually active at the moment.
-  xiiUInt32         m_uiAllocatedChunks; ///< How many entries in the m_pChunks array are allocated at the moment.
-  xiiInt32          m_iReduceSizeTimer;  ///< Every time this counter reaches zero, a 'garbage collection' step is performed, which might deallocate
-                                         ///< chunks.
-  xiiUInt32 m_uiMaxCount;                ///< How many elements were maximally active since the last 'garbage collection' to prevent deallocating too much
-                                         ///< memory.
+  xiiAllocator* m_pAllocator;
+  T**           m_pChunks;           ///< The chunk index array for redirecting accesses. Not all chunks must be allocated.
+  xiiUInt32     m_uiChunks;          ///< The size of the m_pChunks array. Determines how many elements could theoretically be stored in the deque.
+  xiiUInt32     m_uiFirstElement;    ///< Which element (across all chunks) is considered to be the first.
+  xiiUInt32     m_uiCount;           ///< How many elements are actually active at the moment.
+  xiiUInt32     m_uiAllocatedChunks; ///< How many entries in the m_pChunks array are allocated at the moment.
+  xiiInt32      m_iReduceSizeTimer;  ///< Every time this counter reaches zero, a 'garbage collection' step is performed, which might deallocate
+                                     ///< chunks.
+  xiiUInt32 m_uiMaxCount;            ///< How many elements were maximally active since the last 'garbage collection' to prevent deallocating too much
+                                     ///< memory.
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   xiiUInt32 m_uiChunkSize; // needed for debugger visualization

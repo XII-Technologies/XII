@@ -2,11 +2,11 @@
 /// \brief [Internal] Storage for lambdas with captures in xiiDelegate.
 struct XII_FOUNDATION_DLL xiiLambdaDelegateStorageBase
 {
-  xiiLambdaDelegateStorageBase()                                                  = default;
-  virtual ~xiiLambdaDelegateStorageBase()                                         = default;
-  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const     = 0;
-  virtual void                          InplaceCopy(xiiUInt8* pBuffer) const      = 0;
-  virtual void                          InplaceMove(xiiUInt8* pBuffer)            = 0;
+  xiiLambdaDelegateStorageBase()                                              = default;
+  virtual ~xiiLambdaDelegateStorageBase()                                     = default;
+  virtual xiiLambdaDelegateStorageBase* Clone(xiiAllocator* pAllocator) const = 0;
+  virtual void                          InplaceCopy(xiiUInt8* pBuffer) const  = 0;
+  virtual void                          InplaceMove(xiiUInt8* pBuffer)        = 0;
 
 private:
   xiiLambdaDelegateStorageBase(const xiiLambdaDelegateStorageBase&)            = delete;

@@ -15,9 +15,9 @@
 
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 
-// 
+//
 // Depth prepass (graphics - writes reversed-Z depth)
-// 
+//
 namespace
 {
   struct DepthPrepassData
@@ -26,13 +26,13 @@ namespace
     xiiRGBufferHandle  m_hDrawIndirectCommands;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupDepthPrepass(xiiView& view, DepthPrepassData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& dp = view.m_ViewPassResources.m_DepthPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   // Declare transient reversed-Z depth buffer.
@@ -58,16 +58,16 @@ static void SetupDepthPrepass(xiiView& view, DepthPrepassData& data, xiiRGBuilde
 static void ExecuteDepthPrepass(xiiView& view, const DepthPrepassData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& dp               = view.m_ViewPassResources.m_DepthPasses;
+  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
 
   cmd.BeginDebugGroup("DepthPrepass");
 
   xiiGALTexture* pDepth = ctx.GetTexture(data.m_hSceneDepth);
   cmd.ClearDepthStencil(pDepth->GetDefaultView(xiiGALTextureViewType::DepthStencil), xiiGALClearValueFlags::Depth,
-    /*reversed-Z clear value = 0.0*/ 0.0f, 0u, xiiGALStateTransitionMode::Transition);
+                        /*reversed-Z clear value = 0.0*/ 0.0f, 0u, xiiGALStateTransitionMode::Transition);
 
   cmd.SetViewports({{0.0f, 0.0f, static_cast<float>(data.m_uiRenderW), static_cast<float>(data.m_uiRenderH), 0.0f, 1.0f}},
-    data.m_uiRenderW, data.m_uiRenderH);
+                   data.m_uiRenderW, data.m_uiRenderH);
 
   if (dp.m_pDepthPrepassPipeline && data.m_hDrawIndirectCommands.IsValid())
   {
@@ -79,33 +79,38 @@ static void ExecuteDepthPrepass(xiiView& view, const DepthPrepassData& data, xii
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Hi-Z pyramid generation (compute - per-mip loop in execute)
-// 
+//
 namespace
 {
   struct HiZPyramidData
   {
-    xiiRGTextureHandle m_hSceneDepth;   // source: scene depth (mip 0 input)
-    xiiRGTextureHandle m_hHiZPyramid;   // output: R32F max-depth pyramid
-    xiiUInt32          m_uiRenderW    = 1920u;
-    xiiUInt32          m_uiRenderH    = 1080u;
-    xiiUInt32          m_uiMipLevels  = 1u;
+    xiiRGTextureHandle m_hSceneDepth; // source: scene depth (mip 0 input)
+    xiiRGTextureHandle m_hHiZPyramid; // output: R32F max-depth pyramid
+    xiiUInt32          m_uiRenderW   = 1920u;
+    xiiUInt32          m_uiRenderH   = 1080u;
+    xiiUInt32          m_uiMipLevels = 1u;
   };
-}
+} // namespace
 
 static void SetupHiZPyramid(xiiView& view, HiZPyramidData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& dp = view.m_ViewPassResources.m_DepthPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   // Compute mip count for the Hi-Z pyramid.
   data.m_uiMipLevels = 1u;
   {
     xiiUInt32 uiW = data.m_uiRenderW, uiH = data.m_uiRenderH;
-    while (uiW > 1u || uiH > 1u) { uiW = xiiMath::Max(uiW >> 1u, 1u); uiH = xiiMath::Max(uiH >> 1u, 1u); ++data.m_uiMipLevels; }
+    while (uiW > 1u || uiH > 1u)
+    {
+      uiW = xiiMath::Max(uiW >> 1u, 1u);
+      uiH = xiiMath::Max(uiH >> 1u, 1u);
+      ++data.m_uiMipLevels;
+    }
   }
 
   xiiRGTextureHandle hDepth;
@@ -129,7 +134,7 @@ static void SetupHiZPyramid(xiiView& view, HiZPyramidData& data, xiiRGBuilder& b
 static void ExecuteHiZPyramid(xiiView& view, const HiZPyramidData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& dp               = view.m_ViewPassResources.m_DepthPasses;
+  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
 
   cmd.BeginDebugGroup("HiZPyramid");
   cmd.SetPipelineState(dp.m_pHiZBuildPipeline);
@@ -147,8 +152,10 @@ static void ExecuteHiZPyramid(xiiView& view, const HiZPyramidData& data, xiiRGPa
 
     // Upload per-mip constants.
     xiiHiZBuildConstants constants;
-    constants.SrcSize[0] = uiSrcW; constants.SrcSize[1] = uiSrcH;
-    constants.DstSize[0] = uiDstW; constants.DstSize[1] = uiDstH;
+    constants.SrcSize[0] = uiSrcW;
+    constants.SrcSize[1] = uiSrcH;
+    constants.DstSize[0] = uiDstW;
+    constants.DstSize[1] = uiDstH;
     constants.SrcMip     = uiMip;
     // (In a real implementation, upload via a dynamic cbuffer / push constant here)
 
@@ -176,9 +183,9 @@ static void ExecuteHiZPyramid(xiiView& view, const HiZPyramidData& data, xiiRGPa
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Hi-Z occlusion culling (compute - 2nd phase: prunes visible-candidate list)
-// 
+//
 namespace
 {
   struct HiZOccCullData
@@ -189,7 +196,7 @@ namespace
     xiiRGBufferHandle  m_hInstanceBounds;
     xiiUInt32          m_uiInstanceCount = 0;
   };
-}
+} // namespace
 
 static void SetupHiZOccCull(xiiView& view, HiZOccCullData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
@@ -221,22 +228,22 @@ static void SetupHiZOccCull(xiiView& view, HiZOccCullData& data, xiiRGBuilder& b
 static void ExecuteHiZOccCull(xiiView& view, const HiZOccCullData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& dp               = view.m_ViewPassResources.m_DepthPasses;
+  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
 
   cmd.BeginDebugGroup("HiZOcclusionCull");
   cmd.SetPipelineState(dp.m_pHiZOcclusionCullPipeline);
-  cmd.ResolveAndSetShaderResourceView("g_HiZPyramid",       ctx.GetTexture(data.m_hHiZPyramid)->GetDefaultView(xiiGALTextureViewType::ShaderResource),              xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Candidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource),          xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds",     ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource),             xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_Survivors", ctx.GetBuffer(data.m_hSurvivingInstances)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess),        xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceView("g_HiZPyramid", ctx.GetTexture(data.m_hHiZPyramid)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Candidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+  cmd.ResolveAndSetUnorderedAccessBufferView("g_Survivors", ctx.GetBuffer(data.m_hSurvivingInstances)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(data.m_uiInstanceCount + 63u) / 64u, 1u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Motion vectors (graphics - renders per-object velocity to R16G16F buffer)
-// 
+//
 namespace
 {
   struct MotionVecData
@@ -246,13 +253,13 @@ namespace
     xiiRGBufferHandle  m_hDrawCommands;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupMotionVectors(xiiView& view, MotionVecData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& dp = view.m_ViewPassResources.m_DepthPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   xiiRGTextureHandle hDepth;
@@ -265,13 +272,13 @@ static void SetupMotionVectors(xiiView& view, MotionVecData& data, xiiRGBuilder&
     data.m_hDrawCommands = builder.ReadBuffer(hDraw, xiiGALResourceStateFlags::IndirectArgument);
 
   xiiGALTextureCreationDescription desc;
-  desc.m_TextureType = xiiGALTextureType::Texture2D;
-  desc.m_Format      = xiiGALTextureFormat::RG16Float;
-  desc.m_uiWidth     = data.m_uiRenderW;
-  desc.m_uiHeight    = data.m_uiRenderH;
-  desc.m_uiMipLevels = 1u;
-  desc.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage       = xiiGALResourceUsage::Default;
+  desc.m_TextureType     = xiiGALTextureType::Texture2D;
+  desc.m_Format          = xiiGALTextureFormat::RG16Float;
+  desc.m_uiWidth         = data.m_uiRenderW;
+  desc.m_uiHeight        = data.m_uiRenderH;
+  desc.m_uiMipLevels     = 1u;
+  desc.m_BindFlags       = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  desc.m_Usage           = xiiGALResourceUsage::Default;
   data.m_hVelocityBuffer = builder.WriteTexture(xiiRGBlackboardKeys::k_VelocityBuffer, desc, xiiGALResourceStateFlags::RenderTarget);
 
   builder.SetPassAllowMerge(false);
@@ -280,7 +287,7 @@ static void SetupMotionVectors(xiiView& view, MotionVecData& data, xiiRGBuilder&
 static void ExecuteMotionVectors(xiiView& view, const MotionVecData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& dp               = view.m_ViewPassResources.m_DepthPasses;
+  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
 
   cmd.BeginDebugGroup("MotionVectors");
 
@@ -298,9 +305,9 @@ static void ExecuteMotionVectors(xiiView& view, const MotionVecData& data, xiiRG
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // Velocity dilation (compute - max-filter to push velocity at object edges)
-// 
+//
 namespace
 {
   struct VelocityDilateData
@@ -309,13 +316,13 @@ namespace
     xiiRGTextureHandle m_hVelocityDilated;
     xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
   };
-}
+} // namespace
 
 static void SetupVelocityDilation(xiiView& view, VelocityDilateData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
 {
   auto& dp = view.m_ViewPassResources.m_DepthPasses;
 
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  data.m_uiRenderW);
+  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   xiiRGTextureHandle hVel;
@@ -339,20 +346,20 @@ static void SetupVelocityDilation(xiiView& view, VelocityDilateData& data, xiiRG
 static void ExecuteVelocityDilation(xiiView& view, const VelocityDilateData& data, xiiRGPassContext& ctx)
 {
   xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto& dp               = view.m_ViewPassResources.m_DepthPasses;
+  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
 
   cmd.BeginDebugGroup("VelocityDilation");
   cmd.SetPipelineState(dp.m_pVelocityDilationPipeline);
-  cmd.ResolveAndSetShaderResourceView("g_Input",  ctx.GetTexture(data.m_hVelocityIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource),      xiiGALShaderType::Compute);
+  cmd.ResolveAndSetShaderResourceView("g_Input", ctx.GetTexture(data.m_hVelocityIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
   cmd.ResolveAndSetUnorderedAccessView("g_Output", ctx.GetTexture(data.m_hVelocityDilated)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
   cmd.EndDebugGroup();
 }
 
-// 
+//
 // BuildStage3_Depth - entry point
-// 
+//
 
 void xiiView::BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
 {
