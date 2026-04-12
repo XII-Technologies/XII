@@ -3,8 +3,6 @@
 #include <Core/World/WorldModule.h>
 #include <GraphicsCore/Declarations.h>
 
-class xiiGALComputePipelineState;
-
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
 class xiiView;
@@ -12,19 +10,20 @@ class xiiView;
 /// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
 ///
 /// ## Render graph construction
-/// The module owns the default pass list and builds each view's render graph directly every frame.
-/// A view may override this by assigning xiiView::SetRenderGraphBuilder(), allowing per-view graph layouts.
+/// Each frame, for views that do not have a custom RenderGraphBuilder set, the module delegates to
+/// xiiView::BuildDefaultRenderGraph() which populates the graph from the view's own pipeline resources.
+/// External code may override this by calling xiiView::SetRenderGraphBuilder().
 ///
 /// ## Render data
 /// During the Async world-update phase, xiiRenderWorldModule walks all world objects and sends
 /// xiiMsgExtractRenderData. Components handling this message submit data into the view's
-/// xiiExtractedRenderData, which is then sorted by category and sort key via radix sort before
-/// the render graph runs.
+/// xiiExtractedRenderData, which is radix-sorted by category and sort key before the render graph runs.
 ///
 /// ## Per-view blackboard and resource cache
-/// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache. The blackboard is cleared
-/// at the start of each frame and repopulated by the passes in order. Cross-frame data (e.g. history buffers)
-/// must be written through the resource cache or kept as persistent GPU buffers inside the pass.
+/// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache.
+/// The blackboard is cleared at the start of each frame and repopulated by the passes in order.
+/// Cross-frame data (TAA history, exposure, particle state, etc.) lives in persistent GPU buffers
+/// inside the view's ViewPassResources struct.
 class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
@@ -53,52 +52,10 @@ public:
   void DestroyView(xiiView* pView);
 
 private:
-  void BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
-  struct PassData
-  {
-    struct DynamicResolutionPassData
-    {
-      float m_fFrameDeltaTimeMs;
-      float m_fTargetFrameTimeMs;
-      float m_fMinimumRenderScale;
-      float m_fMaximumRenderScale;
-      float m_fCurrentGpuTimeMs;
-      float m_fSmoothedGpuTimeMs;
-
-      xiiRGBufferHandle m_hResolutionStateBuffer;
-      xiiRGBufferHandle m_hCameraConstantsBuffer;
-      xiiRGBufferHandle m_hGlobalConstantsBuffer;
-      xiiRGBufferHandle m_hPassConstantsBuffer;
-    } m_DynamicResolutionData;
-  };
-
-  void SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder);
-  void ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context);
-
-private:
-  struct PersistentFrameResources
-  {
-    struct DynamicResolution
-    {
-      struct ResolutionStateData
-      {
-        float m_fCurrentScale;
-        float m_fErrorIntegral;
-        float m_fPreviousError;
-        float m_fSmoothedScale;
-      };
-
-      xiiSharedPtr<xiiGALComputePipelineState> m_pComputePipeline;
-      xiiShaderPermutationResourceHandle       m_hShaderPermutation;
-      xiiSharedPtr<xiiGALBuffer>               m_pResolutionStateBuffer;
-    } m_DynamicResolution;
-  } m_PersistentFrameResources;
-
   xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
-  PassData                               m_PassData;
-  xiiUInt32                              m_uiRenderFrameIndex = 0;
+  xiiUInt64                              m_uiRenderFrameIndex = 0;
 };

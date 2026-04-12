@@ -1,4 +1,4 @@
-// XII Engine — HiZOcclusionCulling.xiiShader  [REWRITTEN]
+// XII Engine - HiZOcclusionCulling.xiiShader  [REWRITTEN]
 // Pass 10: Per-instance AABB projected onto screen, sampled against Hi-Z pyramid.
 // Dispatch: ceil(InstanceCount/64) × 1 × 1
 

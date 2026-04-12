@@ -1,0 +1,44 @@
+// XII Engine - OITResolve.xiiShader
+// Stage 8: Weighted Blended OIT composite.
+// Reads WBOIT accumulation (RGBA16F) and reveal (R8) targets and composites
+// the result over the opaque HDR scene color in-place.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1.
+
+#include "PipelineCommon.xiiShader"
+
+Texture2D<float4>   g_OITAccum   : register(t0); // sum( alpha * color * weight )
+Texture2D<float>    g_OITReveal  : register(t1); // product of (1 - alpha)
+RWTexture2D<float4> g_HDROut     : register(u0); // in/out: opaque scene color
+
+// WBOIT weight function (McGuire & Bavoil 2013, Eq. 7).
+// weight = alpha * max(1e-2, min(3e3, 10 / (1e-5 + |z/5|^2 + |z/200|^6)))
+// z is view-space depth of the transparent surface.
+// Simplified: we rely on the rasteriser writing the correct weight into g_OITAccum
+// during the translucent pass, so here we just perform the final resolve.
+
+[numthreads(8, 8, 1)]
+void CS_OITResolve(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims;
+    g_HDROut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float4 accum  = g_OITAccum.Load(int3(tid.xy, 0));
+    float  reveal = g_OITReveal.Load(int3(tid.xy, 0));
+
+    // Early-out when no transparent geometry covered this pixel.
+    // reveal == 1 means nothing wrote to the accumulation buffer.
+    if (reveal >= (1.0f - 1e-4f) || accum.a < 1e-6f)
+        return;
+
+    // Compute average colour: accum.rgb / accum.a cancels the weight.
+    // Then composite over opaque using the coverage factor (1 - reveal).
+    float3 avgColor  = accum.rgb / max(accum.a, 1e-5f);
+    float  coverage  = 1.0f - reveal;
+
+    float4 opaque = g_HDROut[tid.xy];
+    // Porter-Duff "over" composite: dst = src * coverage + dst * (1 - coverage).
+    float3 result = avgColor * coverage + opaque.rgb * (1.0f - coverage);
+
+    g_HDROut[tid.xy] = float4(result, opaque.a);
+}

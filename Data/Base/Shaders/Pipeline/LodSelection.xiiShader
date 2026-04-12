@@ -1,4 +1,4 @@
-// XII Engine — LodSelection.xiiShader  [REWRITTEN]
+// XII Engine - LodSelection.xiiShader  [REWRITTEN]
 // Pass 7: Per-instance LOD selection based on sphere screen-coverage.
 // Dispatch: ceil(InstanceCount/64) × 1 × 1
 

@@ -1,5 +1,5 @@
-// XII Engine — TAA.xiiShader  [NEW]
-// Pass 55: Temporal Anti-Aliasing — YCoCg AABB neighbour clamping + velocity reprojection.
+// XII Engine - TAA.xiiShader  [NEW]
+// Pass 55: Temporal Anti-Aliasing - YCoCg AABB neighbour clamping + velocity reprojection.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"
@@ -18,9 +18,9 @@ Texture2D<float2> g_VelocityBuf  : register(t2);
 Texture2D<float>  g_DepthBuf     : register(t3);
 RWTexture2D<float4> g_Resolved   : register(u0);
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Colour-space conversion for luminance-based neighbourhood clamping.
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 float3 RGBtoYCoCg(float3 c)
 {
     return float3(

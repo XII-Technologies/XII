@@ -1,4 +1,4 @@
-// XII Engine — ToneMapping.xiiShader  [NEW]
+// XII Engine - ToneMapping.xiiShader  [NEW]
 // Pass 60: HDR → LDR tone mapping with multiple operator support + bloom composite.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
@@ -17,9 +17,9 @@ Texture2D<float4>          g_BloomTex  : register(t1);
 StructuredBuffer<float>    g_Exposure  : register(t2); // [0]=exposure scalar
 RWTexture2D<float4>        g_LDROut    : register(u0);
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // ACES fitted (Krzysztof Narkowicz approximation)
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 float3 ACES_Narkowicz(float3 x)
 {
     const float a = 2.51f, b = 0.03f, c = 2.43f, d = 0.59f, e = 0.14f;

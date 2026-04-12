@@ -1,5 +1,5 @@
-// XII Engine — ExposureAdaptation.xiiShader  [NEW]
-// Pass 54: Eye adaptation — reads histogram, emits adapted exposure value.
+// XII Engine - ExposureAdaptation.xiiShader  [NEW]
+// Pass 54: Eye adaptation - reads histogram, emits adapted exposure value.
 // Dispatch: 1 × 1 × 1
 
 #include "PipelineCommon.xiiShader"

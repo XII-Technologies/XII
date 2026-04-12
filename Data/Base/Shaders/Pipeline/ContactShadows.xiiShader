@@ -1,4 +1,4 @@
-// XII Engine — ContactShadow.xiiShader  [REWRITTEN]
+// XII Engine - ContactShadow.xiiShader  [REWRITTEN]
 // Pass 20: Screen-space contact shadow ray march in view space.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 

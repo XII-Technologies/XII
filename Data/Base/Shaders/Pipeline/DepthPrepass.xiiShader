@@ -1,6 +1,6 @@
-// XII Engine — DepthPrepass.xiiShader  [NEW]
+// XII Engine - DepthPrepass.xiiShader  [NEW]
 // Pass 13: Full-resolution reversed-Z depth prepass via GPU-driven indirect draw.
-// Minimal VS+PS — no colour output, only depth writes.
+// Minimal VS+PS - no colour output, only depth writes.
 
 #include "PipelineCommon.xiiShader"
 
@@ -26,5 +26,5 @@ VS_Out VS_DepthPrepass(VS_In In)
     return o;
 }
 
-// No pixel shader output — depth only. Clip alpha-masked surfaces here if needed.
+// No pixel shader output - depth only. Clip alpha-masked surfaces here if needed.
 void PS_DepthPrepass(VS_Out In) {}

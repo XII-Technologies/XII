@@ -1,6 +1,6 @@
-// XII Engine — AtmosphereMultiScatter.xiiShader  [NEW]
+// XII Engine - AtmosphereMultiScatter.xiiShader  [NEW]
 // Pass 25b: Precompute multiple-scattering approximation LUT (32 × 32 × RGBA16F).
-// Method: Hillaire 2020 — single 2D LUT approximating higher-order scattering.
+// Method: Hillaire 2020 - single 2D LUT approximating higher-order scattering.
 // Dispatch: ceil(32/8) × ceil(32/8) × 1
 
 #include "PipelineCommon.xiiShader"
@@ -42,7 +42,7 @@ void CS_AtmosphereMultiScatter(uint3 tid : SV_DispatchThreadID)
     float  cosView = uv.x * 2.0f - 1.0f;
     float  height  = lerp(g_PlanetRadiusKm, g_AtmosphereRadiusKm, uv.y);
 
-    // Integrate sphere of directions — approximation for multiple scatter luminance.
+    // Integrate sphere of directions - approximation for multiple scatter luminance.
     float3 L2 = float3(0,0,0);
     float  dOmega = 4.0f * 3.14159265f / float(g_SqrtSamples * g_SqrtSamples);
 
@@ -64,7 +64,7 @@ void CS_AtmosphereMultiScatter(uint3 tid : SV_DispatchThreadID)
         L2 += scatter * dOmega;
     }
 
-    // Final fms coefficient — used in sky composite to add higher-order scatter.
+    // Final fms coefficient - used in sky composite to add higher-order scatter.
     float3 fms = L2 / (4.0f * 3.14159265f);
     g_MultiScatterLUT[tid.xy] = float4(fms, 1.0f);
 }

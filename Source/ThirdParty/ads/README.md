@@ -710,20 +710,20 @@ The LabPlot project recently switched to the Qt Advanced Docking System for thei
 
 ### [Scrutiny Debugger](https://scrutinydebugger.com/)
 
-Scrutiny is an [open source](https://github.com/scrutinydebugger/) non-intrusive, real-time debugger for embedded systems, built for fast introspection, memory access, and signal visualization—without stopping your application. It uses the Qt Advanced Docking System (ADS) to provide fully customizable dashboards for monitoring and control.
+Scrutiny is an [open source](https://github.com/scrutinydebugger/) non-intrusive, real-time debugger for embedded systems, built for fast introspection, memory access, and signal visualization-without stopping your application. It uses the Qt Advanced Docking System (ADS) to provide fully customizable dashboards for monitoring and control.
 
 Some of the highlights are:
 
-- **Debug without interfering** — Inspect C++ memory live without disrupting execution flow.
-- **HIL testing made easy** — Write to variables through the GUI or SDK to simulate conditions.
-- **Configure during production** — Access and tweak variables anytime via GUI or Python.
-- **Catch fast events** — Embedded graphs sample at task-level frequency, even with multithreading.
-- **Build your dashboard** — Use ADS to create and save custom layouts for your debug sessions.
-- **No JTAG needed** — Communicates over serial, CAN, or network interfaces.
-- **Compact C++11 library** — Lightweight and easy to integrate into your firmware.
-- **Live graphs and runtime values** — Visualize variables, RPVs, and aliases in real time.
+- **Debug without interfering** - Inspect C++ memory live without disrupting execution flow.
+- **HIL testing made easy** - Write to variables through the GUI or SDK to simulate conditions.
+- **Configure during production** - Access and tweak variables anytime via GUI or Python.
+- **Catch fast events** - Embedded graphs sample at task-level frequency, even with multithreading.
+- **Build your dashboard** - Use ADS to create and save custom layouts for your debug sessions.
+- **No JTAG needed** - Communicates over serial, CAN, or network interfaces.
+- **Compact C++11 library** - Lightweight and easy to integrate into your firmware.
+- **Live graphs and runtime values** - Visualize variables, RPVs, and aliases in real time.
 
-ADS powers Scrutiny’s flexible interface, letting users organize views and data panels to suit their workflow — ideal for real-time monitoring, testing, and debugging.
+ADS powers Scrutiny’s flexible interface, letting users organize views and data panels to suit their workflow - ideal for real-time monitoring, testing, and debugging.
 
 [read more...](https://scrutinydebugger.com/)
 

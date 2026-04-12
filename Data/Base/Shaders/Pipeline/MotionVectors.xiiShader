@@ -1,5 +1,5 @@
-// XII Engine — MotionVectors.xiiShader  [NEW]
-// Pass 14: Fullscreen triangle — reconstruct world position, reproject with previous VP matrix.
+// XII Engine - MotionVectors.xiiShader  [NEW]
+// Pass 14: Fullscreen triangle - reconstruct world position, reproject with previous VP matrix.
 // Produces screen-space velocity in normalised device coordinates [-1,1].
 
 #include "PipelineCommon.xiiShader"
@@ -34,7 +34,7 @@ PS_Out PS_MotionVectors(FullscreenInterpolators In)
     float2 prevNDC  = prevClip.xy / max(prevClip.w, 1e-7f);
     float2 currNDC  = clipPos.xy;
 
-    // Subtract jitter — ensures TAA gets clean subpixel velocity.
+    // Subtract jitter - ensures TAA gets clean subpixel velocity.
     float2 velocity = (currNDC - g_JitterCurrent) - (prevNDC - g_JitterPrevious);
 
     PS_Out o;

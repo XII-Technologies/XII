@@ -1,4 +1,14 @@
 
+XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
+{
+  m_pSwapChain = pSwapChain;
+}
+
+XII_ALWAYS_INLINE xiiGALSwapChain* xiiView::GetSwapChain() const
+{
+  return m_pSwapChain;
+}
+
 XII_ALWAYS_INLINE xiiStringView xiiView::GetName() const
 {
   return m_sName.GetView();

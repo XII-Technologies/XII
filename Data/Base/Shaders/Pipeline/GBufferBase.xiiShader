@@ -1,12 +1,12 @@
-// XII Engine — GBufferBase.xiiShader  [NEW]
-// Pass 27: G-Buffer MRT base pass — albedo, oct-normal, material (roughness/metallic/AO), emissive.
+// XII Engine - GBufferBase.xiiShader  [NEW]
+// Pass 27: G-Buffer MRT base pass - albedo, oct-normal, material (roughness/metallic/AO), emissive.
 // Indirect geometry-driven draw via DrawIndexedIndirect.
 
 #include "PipelineCommon.xiiShader"
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Vertex Input
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 struct VS_In
 {
     float3 Position  : POSITION;
@@ -48,9 +48,9 @@ VS_Out VS_GBufferBase(VS_In In)
     return o;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Pixel / Fragment Output
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 struct PS_Out
 {
     float4 Albedo   : SV_Target0; // rgb=albedo, a=opacity

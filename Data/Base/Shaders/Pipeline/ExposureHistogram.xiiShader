@@ -1,4 +1,4 @@
-// XII Engine — ExposureHistogram.xiiShader  [NEW]
+// XII Engine - ExposureHistogram.xiiShader  [NEW]
 // Pass 53: Build a 256-bucket log2-luminance histogram via LDS atomics.
 // Dispatch: ceil(W/16) × ceil(H/16) × 1  (each thread handles one pixel tile)
 

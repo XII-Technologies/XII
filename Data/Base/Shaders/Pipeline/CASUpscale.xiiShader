@@ -1,4 +1,4 @@
-// XII Engine — CASUpscale.xiiShader  [NEW]
+// XII Engine - CASUpscale.xiiShader  [NEW]
 // Pass 56: Contrast-Adaptive Sharpening spatial upscaler (AMD CAS algorithm).
 // Handles both sharpening-only and upscale modes in one pass.
 // Dispatch: ceil(DstW/8) × ceil(DstH/8) × 1

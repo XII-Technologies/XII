@@ -1,12 +1,12 @@
-// XII Engine — RTShadow.xiiShader  [NEW]
-// Pass 36: DXR ray-generation shader — traces one (or more) shadow rays per pixel.
+// XII Engine - RTShadow.xiiShader  [NEW]
+// Pass 36: DXR ray-generation shader - traces one (or more) shadow rays per pixel.
 // Compiled as a DXR ray-tracing pipeline, not a compute shader.
 
 #include "PipelineCommon.xiiShader"
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // DXR resources
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 RaytracingAccelerationStructure g_TLAS         : register(t0);
 Texture2D<float>                g_SceneDepth   : register(t1);
 Texture2D<float2>               g_NRBuffer     : register(t2);
@@ -21,7 +21,7 @@ cbuffer RTShadowConstants : register(b3)
 
 struct ShadowPayload { float visibility; };
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 [shader("raygeneration")]
 void RGS_RTShadow()
 {

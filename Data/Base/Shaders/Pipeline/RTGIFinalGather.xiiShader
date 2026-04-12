@@ -1,4 +1,4 @@
-// XII Engine — RTGIFinalGather.xiiShader  [NEW]
+// XII Engine - RTGIFinalGather.xiiShader  [NEW]
 // Pass 42: DXR ReSTIR-inspired global illumination gather.
 // Traces diffuse rays, stores reservoirs for temporal reuse in the next pass.
 
@@ -102,7 +102,7 @@ void MISS_RTGIGather(inout GIPayload payload)
 [shader("closesthit")]
 void CHS_RTGIGather(inout GIPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    // Simplified direct lighting at hit point — real implementation reads material and re-shades.
+    // Simplified direct lighting at hit point - real implementation reads material and re-shades.
     float3 fakeAlbedo = float3(0.5f, 0.5f, 0.5f);
     float3 L = normalize(float3(0.5f, 1.0f, 0.3f));
     float NoL = saturate(dot(payload.hitNormal, L));

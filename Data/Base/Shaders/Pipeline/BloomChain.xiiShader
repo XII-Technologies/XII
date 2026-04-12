@@ -1,4 +1,4 @@
-// XII Engine — BloomChain.xiiShader  [NEW]
+// XII Engine - BloomChain.xiiShader  [NEW]
 // Passes 57-59: Soft-knee prefilter, 13-tap downsample, tent upsample.
 // Three entry points, selected via pipeline permutation.
 
@@ -18,9 +18,9 @@ cbuffer BloomConstants : register(b3)
 Texture2D<float4>   g_SrcTex  : register(t0);
 RWTexture2D<float4> g_DstTex  : register(u0);
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Soft-knee threshold function (Siggraph 2015 Frostbite).
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 float3 SoftKnee(float3 c)
 {
     float lum = dot(c, float3(0.2126f, 0.7152f, 0.0722f));
@@ -32,9 +32,9 @@ float3 SoftKnee(float3 c)
     return c * weight;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Pass 57: Prefilter
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 [numthreads(8, 8, 1)]
 void CS_BloomPrefilter(uint3 tid : SV_DispatchThreadID)
 {
@@ -45,9 +45,9 @@ void CS_BloomPrefilter(uint3 tid : SV_DispatchThreadID)
     g_DstTex[tid.xy] = float4(SoftKnee(col), 1.0f);
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Pass 58: Downsample — Dual-Kawase 13-tap filter (Call of Duty 2014).
-// ──────────────────────────────────────────────────────────────────────────────
+// 
+// Pass 58: Downsample - Dual-Kawase 13-tap filter (Call of Duty 2014).
+// 
 [numthreads(8, 8, 1)]
 void CS_BloomDownsample(uint3 tid : SV_DispatchThreadID)
 {
@@ -80,9 +80,9 @@ void CS_BloomDownsample(uint3 tid : SV_DispatchThreadID)
     g_DstTex[tid.xy] = float4(result, 1.0f);
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Pass 59: Upsample — tent filter (Jimenez 2014) + additive intensity blend.
-// ──────────────────────────────────────────────────────────────────────────────
+// 
+// Pass 59: Upsample - tent filter (Jimenez 2014) + additive intensity blend.
+// 
 [numthreads(8, 8, 1)]
 void CS_BloomUpsample(uint3 tid : SV_DispatchThreadID)
 {

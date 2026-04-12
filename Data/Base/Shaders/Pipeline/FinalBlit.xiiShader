@@ -1,4 +1,4 @@
-// XII Engine — FinalBlit.xiiShader  [NEW]
+// XII Engine - FinalBlit.xiiShader  [NEW]
 // Pass 65: Copy final colour target to swap-chain back buffer with display colour-space correction.
 // Supports sRGB and HDR10/PQ output modes.
 

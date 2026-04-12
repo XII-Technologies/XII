@@ -1,188 +1,187 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Foundation/Math/Frustum.h>
-#include <Foundation/Reflection/ReflectionUtils.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
+#include <Core/ResourceManager/ResourceManager.h>
+#include <Foundation/Configuration/CVar.h>
+#include <Foundation/Math/Math.h>
+#include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
+#include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
+#include <GraphicsFoundation/Device/Device.h>
 
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiShadingQualityLevel, 1)
-  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Low),
-  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Medium),
-  XII_ENUM_CONSTANT(xiiShadingQualityLevel::High),
-  XII_ENUM_CONSTANT(xiiShadingQualityLevel::Ultra),
-XII_END_STATIC_REFLECTED_ENUM;
+// 
+// CVars for dynamic resolution
+// 
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiCameraUsageHint, 1)
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::None)->AddAttributes(new xiiGroupAttribute("Default")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::MainView)->AddAttributes(new xiiGroupAttribute("Primary")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::EditorView),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::CinematicView),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::RenderTarget)->AddAttributes(new xiiGroupAttribute("Offscreen")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::Thumbnail),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::UIOverlay),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::ShadowMap)->AddAttributes(new xiiGroupAttribute("Shadows")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::ShadowCascade),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::ShadowProbe),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::ReflectionProbe)->AddAttributes(new xiiGroupAttribute("Reflection")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::IrradianceProbe),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::SpecularProbe),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::SkyCapture),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::CullingOnly)->AddAttributes(new xiiGroupAttribute("Visibility")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::VisibilityBuffer),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::MeshletCulling),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::RayTracingCulling),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::DebugView)->AddAttributes(new xiiGroupAttribute("Debug")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::GPUProfilerView),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::LightingDebug),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::MaterialDebug),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::MotionVectorsDebug),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::RayTracingView)->AddAttributes(new xiiGroupAttribute("Special")),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::PathTracingView),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::ComputeView),
-  XII_ENUM_CONSTANT(xiiCameraUsageHint::LowFrequencyView),
-XII_END_STATIC_REFLECTED_ENUM;
+xiiCVarFloat cvar_DrTargetMs(
+  "Rendering.DynamicResolution.TargetFrameTimeMs",
+  16.0f,
+  xiiCVarFlags::Default,
+  "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewRenderMode, 1)
-  XII_ENUM_CONSTANT(xiiViewRenderMode::None)->AddAttributes(new xiiGroupAttribute("Default")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Wireframe)->AddAttributes(new xiiGroupAttribute("Geometry")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Overdraw),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::TriangleSize),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexNormals),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexTangents),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexBitangents),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::VertexColors),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::UV0),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::UV1),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::UVDensity),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::LODLevel),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::StaticVsDynamic),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::VisibilityBuffer)->AddAttributes(new xiiGroupAttribute("Culling")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::InstanceID),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::MeshletID),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ClusterID),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::CullingOutcome),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::OcclusionHeatmap),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::BaseColor)->AddAttributes(new xiiGroupAttribute("Material")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Metallic),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Roughness),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Specular),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Emissive),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::AmbientOcclusion),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::NormalMap),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::DepthLinear),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::DepthNonLinear),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::MotionVectors),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ShadingModelID),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::LightingOnly)->AddAttributes(new xiiGroupAttribute("Lighting")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::DiffuseOnly),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::SpecularOnly),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::LightComplexity),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ShadowCascadeIndex),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ShadowMask),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::IndirectLighting),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ReflectionContribution),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingRayCount)->AddAttributes(new xiiGroupAttribute("RayTracing")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingBVHTraversal),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingHitDistance),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingMissShaderID),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::RayTracingInstanceMask),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Exposure)->AddAttributes(new xiiGroupAttribute("PostProcessing")),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::Bloom),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ToneMappingCurve),
-  XII_ENUM_CONSTANT(xiiViewRenderMode::ColorGradingLUT),
-XII_END_STATIC_REFLECTED_ENUM;
+xiiCVarFloat cvar_DrMinScale(
+  "Rendering.DynamicResolution.MinimumRenderScale",
+  0.5f,
+  xiiCVarFlags::Default,
+  "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
+
+xiiCVarFloat cvar_DrMaxScale(
+  "Rendering.DynamicResolution.MaximumRenderScale",
+  1.0f,
+  xiiCVarFlags::Default,
+  "Maximum allowed render scale (1.0 = native resolution).");
+
+// 
+// CVars for 3D light clustering
+// 
+
+xiiCVarInt cvar_ClusterX("Rendering.Clustering.CountX", 16, xiiCVarFlags::Default, "Cluster grid X count.");
+xiiCVarInt cvar_ClusterY("Rendering.Clustering.CountY",  9, xiiCVarFlags::Default, "Cluster grid Y count.");
+xiiCVarInt cvar_ClusterZ("Rendering.Clustering.CountZ", 24, xiiCVarFlags::Default, "Cluster grid Z count.");
+
+// 
+// Reflection
+// 
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
+
+// 
+// Construction / destruction
+// 
 
 xiiView::xiiView()
 {
   m_pRenderGraph   = XII_DEFAULT_NEW(xiiRenderGraph);
   m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
-}
 
-xiiView::~xiiView() = default;
-
-void xiiView::SetName(xiiStringView sName)
-{
-  m_sName.Assign(sName);
-}
-
-void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> val)
-{
-  m_Data.m_CameraUsageHint = val;
-}
-
-void xiiView::SetViewRenderMode(xiiEnum<xiiViewRenderMode> value)
-{
-  m_Data.m_ViewRenderMode = value;
-}
-
-void xiiView::SetViewport(const xiiRectFloat& viewport)
-{
-  m_Data.m_ViewPortRect = viewport;
-}
-
-void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
-{
-  const xiiCamera* pCamera              = GetCullingCamera();
-  const float      fViewportAspectRatio = m_Data.m_ViewPortRect.width / m_Data.m_ViewPortRect.height;
-
-  xiiMat4 viewMatrix = pCamera->GetViewMatrix();
-
-  xiiMat4 projectionMatrix;
-  pCamera->GetProjectionMatrix(fViewportAspectRatio, projectionMatrix);
-
-  out_frustum = xiiFrustum::MakeFromMVP(projectionMatrix * viewMatrix);
-}
-
-void xiiView::UpdateCachedMatrices() const
-{
-  const xiiCamera* pCamera = GetCamera();
-
-  bool bUpdateVP = false;
-
-  if (m_uiLastCameraOrientationModification != pCamera->GetOrientationModificationCounter())
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+  if (pDevice != nullptr)
   {
-    bUpdateVP                             = true;
-    m_uiLastCameraOrientationModification = pCamera->GetOrientationModificationCounter();
-
-    m_Data.m_ViewMatrix[0] = pCamera->GetViewMatrix(xiiCameraEye::Left);
-    m_Data.m_ViewMatrix[1] = pCamera->GetViewMatrix(xiiCameraEye::Right);
-
-    // Some of our matrices contain very small values so that the matrix inversion will fall below the default epsilon.
-    // We pass zero as epsilon here since all view and projection matrices are invertible.
-    m_Data.m_InverseViewMatrix[0] = m_Data.m_ViewMatrix[0].GetInverse(0.0f);
-    m_Data.m_InverseViewMatrix[1] = m_Data.m_ViewMatrix[1].GetInverse(0.0f);
-  }
-
-  const float fViewportAspectRatio = m_Data.m_ViewPortRect.HasNonZeroArea() ? m_Data.m_ViewPortRect.width / m_Data.m_ViewPortRect.height : 1.0f;
-  if (m_uiLastCameraSettingsModification != pCamera->GetSettingsModificationCounter() || m_fLastViewportAspectRatio != fViewportAspectRatio)
-  {
-    bUpdateVP                          = true;
-    m_uiLastCameraSettingsModification = pCamera->GetSettingsModificationCounter();
-    m_fLastViewportAspectRatio         = fViewportAspectRatio;
-
-
-    pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[0], xiiCameraEye::Left);
-    m_Data.m_InverseProjectionMatrix[0] = m_Data.m_ProjectionMatrix[0].GetInverse(0.0f);
-
-    pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[1], xiiCameraEye::Right);
-    m_Data.m_InverseProjectionMatrix[1] = m_Data.m_ProjectionMatrix[1].GetInverse(0.0f);
-  }
-
-  if (bUpdateVP)
-  {
-    for (int i = 0; i < 2; ++i)
-    {
-      m_Data.m_ViewProjectionMatrix[i]        = m_Data.m_ProjectionMatrix[i] * m_Data.m_ViewMatrix[i];
-      m_Data.m_InverseViewProjectionMatrix[i] = m_Data.m_ViewProjectionMatrix[i].GetInverse(0.0f);
-    }
+    m_ViewPassResources.m_Profiler.Initialize(pDevice);
+    m_ResourceCache.Initialize(pDevice);
   }
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_View);
+xiiView::~xiiView()
+{
+  m_ViewPassResources.m_Profiler.Shutdown();
+  m_ResourceCache.Shutdown();
+}
+
+// 
+// Utility: lazy-load a compute pipeline
+// 
+
+/*static*/ xiiSharedPtr<xiiGALComputePipelineState> xiiView::EnsureComputePipeline(
+  xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline,
+  xiiStringView sShaderPath)
+{
+  if (inout_pPipeline != nullptr)
+    return inout_pPipeline;
+
+  xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>(sShaderPath);
+
+  xiiHashTable<xiiHashedString, xiiHashedString> permutationVars;
+  xiiShaderPermutationResourceHandle             hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVars, /*bBlockTillLoaded=*/true);
+
+  xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+  XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load shader permutation: '{}'.", sShaderPath);
+
+  xiiGALComputePipelineStateCreationDescription desc;
+  desc.m_pComputeShader             = pPermutation->GetGALShader(xiiGALShaderType::Compute);
+  desc.m_pPipelineResourceSignature = pPermutation->GetPipelineResourceSignature();
+
+  inout_pPipeline = xiiGALPipelineCache::GetPipeline(desc);
+  XII_ASSERT_DEV(inout_pPipeline != nullptr, "Failed to create compute pipeline: '{}'.", sShaderPath);
+
+  return inout_pPipeline;
+}
+
+// 
+// CPU PID dynamic resolution (runs before BeginSetup)
+// 
+
+void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
+{
+  auto& pid = m_ViewPassResources.m_DynamicResolution;
+
+  //  Timing source 
+  // Try the GPU profiler's resolved duration from 2 frames ago.
+  // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
+  const xiiHashedString sFrameTotal = xiiMakeHashedString("FrameTotal");
+  float fGpuTimeMs                  = m_ViewPassResources.m_Profiler.GetPassDurationMs(sFrameTotal);
+  if (fGpuTimeMs <= 0.0f)
+    fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
+
+  pid.m_fLastGpuFrameTimeMs = fGpuTimeMs;
+
+  //  PID controller 
+  const float fMin    = xiiMath::Max(cvar_DrMinScale.GetValue(), 0.25f);
+  const float fMax    = xiiMath::Min(cvar_DrMaxScale.GetValue(), 1.0f);
+  const float fTarget = xiiMath::Max(cvar_DrTargetMs.GetValue(), 0.1f);
+  const float fDt     = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
+
+  const float fError = (fTarget - fGpuTimeMs) / fTarget;
+
+  // Anti-windup clamp on integral.
+  pid.m_fErrorIntegral = xiiMath::Clamp(pid.m_fErrorIntegral + fError * fDt, -1.0f, 1.0f);
+
+  const float fDeriv  = (fError - pid.m_fPreviousError) / xiiMath::Max(fDt, 0.001f);
+  const float fPID    = 0.35f * fError + 0.05f * pid.m_fErrorIntegral + 0.15f * fDeriv;
+
+  // Clamp per-frame delta to avoid oscillation.
+  const float fDesired = xiiMath::Clamp(pid.m_fCurrentScale + fPID, fMin, fMax);
+  const float fDelta   = xiiMath::Clamp(fDesired - pid.m_fCurrentScale, -0.10f, 0.10f);
+
+  pid.m_fCurrentScale  = pid.m_fCurrentScale + fDelta;
+  pid.m_fSmoothedScale = xiiMath::Lerp(pid.m_fSmoothedScale, pid.m_fCurrentScale, 0.20f);
+  pid.m_fPreviousError = fError;
+
+  const float fScale = pid.m_fSmoothedScale;
+
+  // Align to even pixels to satisfy 2×2 tile constraints.
+  const auto uiW = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width  * fScale) & ~1u;
+  const auto uiH = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height * fScale) & ~1u;
+
+  //  Publish to blackboard 
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_DynamicResolutionScale), fScale);
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),            xiiMath::Max(uiW, 2u));
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight),           xiiMath::Max(uiH, 2u));
+}
+
+// 
+// BuildDefaultRenderGraph - main dispatcher
+// 
+
+void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+{
+  //  Stage 0: CPU dynamic resolution PID (pre-graph, writes to blackboard) 
+  // Must happen before BeginSetup so passes see the correct render dimensions.
+  RunDynamicResolutionPID(blackboard);
+
+  // Retrieve render dimensions for use in resource declarations.
+  xiiUInt32 uiW = 1920u, uiH = 1080u;
+  blackboard.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth),  uiW);
+  blackboard.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), uiH);
+
+  //  Stages 1–12 
+  // Each stage adds its passes to the graph. Dependency ordering is handled by
+  // the render graph compiler (topological sort + culling).
+
+  BuildStage1_Visibility(graph, blackboard);
+  BuildStage2_Shadows(graph, blackboard);
+  BuildStage3_Depth(graph, blackboard);
+  BuildStage4_GBuffer(graph, blackboard);
+  BuildStage5_LightingPrep(graph, blackboard);
+  BuildStage6_MainLighting(graph, blackboard);
+  BuildStage7_Forward(graph, blackboard);
+  BuildStage8_Transparency(graph, blackboard);
+  BuildStage9_ScreenSpace(graph, blackboard);
+  BuildStage10_Temporal(graph, blackboard);
+  BuildStage11_PostProcess(graph, blackboard);
+  BuildStage12_Output(graph, blackboard);
+}

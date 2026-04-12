@@ -1,4 +1,4 @@
-// XII Engine — NormalRoughnessPrepass.xiiShader  [NEW]
+// XII Engine - NormalRoughnessPrepass.xiiShader  [NEW]
 // Pass 15: Write oct-packed normals + material roughness into R8G8B8A8 buffer for denoisers.
 // Used as an earlier-available input for GTAO and RT denoising without waiting for full GBuffer.
 
