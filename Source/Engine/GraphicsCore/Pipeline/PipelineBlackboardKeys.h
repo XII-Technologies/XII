@@ -75,10 +75,10 @@ namespace xiiRGBlackboardKeys
 
   // Stage 5 - Lighting Preparation.
 
-  constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;          ///< xiiRGTextureHandle - 256×256 R16G16F GGX split-sum BRDF LUT (persistent).
+  constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;          ///< xiiRGTextureHandle - 256x256 R16G16F GGX split-sum BRDF LUT (persistent).
   constexpr xiiStringView k_DDGIIrradiance             = "DDGIIrradiance"_xiisv;   ///< xiiRGTextureHandle - DDGI probe irradiance atlas (if DDGI enabled).
-  constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv; ///< xiiRGTextureHandle - 256×64 R16G16B16A16F atmosphere transmittance LUT.
-  constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;  ///< xiiRGTextureHandle - 32×32 R16G16B16A16F multiple-scattering LUT.
+  constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv; ///< xiiRGTextureHandle - 256x64 R16G16B16A16F atmosphere transmittance LUT.
+  constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;  ///< xiiRGTextureHandle - 32x32 R16G16B16A16F multiple-scattering LUT.
   constexpr xiiStringView k_RawAOTexture               = "RawAO"_xiisv;            ///< xiiRGTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
   constexpr xiiStringView k_StableAOTexture            = "StableAO"_xiisv;         ///< xiiRGTextureHandle - temporally-denoised AO (R8_UNORM).
 

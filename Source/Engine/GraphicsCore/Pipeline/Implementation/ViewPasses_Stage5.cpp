@@ -31,7 +31,7 @@ static void SetupBRDFLut(xiiView& view, BRDFLutData& data, xiiRGBuilder& builder
 
   if (!lp.m_pBRDFLut)
   {
-    // First frame - create the persistent 256×256 R16G16F texture.
+    // First frame - create the persistent 256x256 R16G16F texture.
     xiiGALTextureCreationDescription desc;
     desc.m_TextureType      = xiiGALTextureType::Texture2D;
     desc.m_Format           = xiiGALTextureFormat::RG16Float;
@@ -65,7 +65,7 @@ static void ExecuteBRDFLut(xiiView& view, const BRDFLutData& data, xiiRGPassCont
   cmd.SetPipelineState(lp.m_pBRDFLutPipeline);
   cmd.ResolveAndSetUnorderedAccessView("g_BRDFLutOut", ctx.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({32u, 32u, 1u}); // 256/8 × 256/8
+  cmd.DispatchCompute({32u, 32u, 1u}); // 256/8 x 256/8
   lp.m_bBRDFLutGenerated = true;
   cmd.EndDebugGroup();
 }
@@ -120,7 +120,7 @@ static void ExecuteAtmTransmittance(xiiView& view, const AtmTransmittanceData& d
   cmd.SetPipelineState(lp.m_pAtmTransmittancePipeline);
   cmd.ResolveAndSetUnorderedAccessView("g_TransmittanceOut", ctx.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({32u, 8u, 1u}); // 256/8 × 64/8
+  cmd.DispatchCompute({32u, 8u, 1u}); // 256/8 x 64/8
   cmd.EndDebugGroup();
 }
 
@@ -182,7 +182,7 @@ static void ExecuteAtmMultiScatter(xiiView& view, const AtmMultiScatterData& dat
     cmd.ResolveAndSetShaderResourceView("g_Transmittance", ctx.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
   cmd.ResolveAndSetUnorderedAccessView("g_MultiScatterOut", ctx.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({4u, 4u, 1u}); // 32/8 × 32/8
+  cmd.DispatchCompute({4u, 4u, 1u}); // 32/8 x 32/8
   lp.m_bAtmLutsGenerated = true;
   cmd.EndDebugGroup();
 }
@@ -285,7 +285,7 @@ static void ExecuteReflProbeConv(xiiView& view, const ReflProbeConvData& data, x
   if (data.m_hProbeMask.IsValid())
     cmd.ResolveAndSetShaderResourceBufferView("g_ProbeMask", ctx.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({8u, 8u, 6u}); // 6 faces × 8×8 mip dispatch
+  cmd.DispatchCompute({8u, 8u, 6u}); // 6 faces x 8x8 mip dispatch
   cmd.EndDebugGroup();
 }
 

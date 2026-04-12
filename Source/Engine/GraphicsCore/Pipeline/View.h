@@ -19,11 +19,15 @@
 class xiiFrustum;
 class xiiWorld;
 class xiiRenderGraph;
+class xiiRGBuilder;
+class xiiRGPassContext;
 class xiiExtractedRenderData;
 class xiiGALBuffer;
 class xiiGALTexture;
 class xiiGALComputePipelineState;
 class xiiGALGraphicsPipelineState;
+
+struct xiiOcclusionReadbackData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -113,7 +117,6 @@ public:
 
 private:
   friend class xiiRenderWorldModule;
-  friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
 
   void UpdateCachedMatrices() const;
@@ -124,6 +127,9 @@ private:
 
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard);
+
+  void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder);
+  void ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
   void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
@@ -212,8 +218,8 @@ private:
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pShadowDepthPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pShadowDenoisePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pContactShadowPipeline;
-      xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096×4096
-      xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096×4096
+      xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
+      xiiSharedPtr<xiiGALTexture>               m_pLocalShadowAtlas;       // D32F 2D 4096x4096
     } m_ShadowPasses;
 
     //  Stage 3 - Depth & Hi-Z
@@ -246,9 +252,9 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pGTAOPipeline;
       xiiSharedPtr<xiiGALComputePipelineState> m_pGTAODenoisePipeline;
       // Persistent once-generated textures
-      xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256×256 R16G16F, generated once
-      xiiSharedPtr<xiiGALTexture> m_pAtmTransmittanceLUT; // 256×64 R16G16B16A16F
-      xiiSharedPtr<xiiGALTexture> m_pAtmMultiScatterLUT;  // 32×32  R16G16B16A16F
+      xiiSharedPtr<xiiGALTexture> m_pBRDFLut;             // 256x256 R16G16F, generated once
+      xiiSharedPtr<xiiGALTexture> m_pAtmTransmittanceLUT; // 256x64 R16G16B16A16F
+      xiiSharedPtr<xiiGALTexture> m_pAtmMultiScatterLUT;  // 32x32  R16G16B16A16F
       bool                        m_bBRDFLutGenerated = false;
       bool                        m_bAtmLutsGenerated = false;
     } m_LightingPrepPasses;

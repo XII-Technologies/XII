@@ -20,6 +20,14 @@ xiiCVarInt cvar_ClusterX("Rendering.Clustering.CountX", 16, xiiCVarFlags::Defaul
 xiiCVarInt cvar_ClusterY("Rendering.Clustering.CountY", 9, xiiCVarFlags::Default, "Cluster grid Y count.");
 xiiCVarInt cvar_ClusterZ("Rendering.Clustering.CountZ", 24, xiiCVarFlags::Default, "Cluster grid Z count.");
 
+namespace
+{
+  // Shared constants (sizes of persistent GPU buffers, aligned to typical instance budgets)
+  static constexpr xiiUInt32 k_uiMaxInstances    = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
+  static constexpr xiiUInt32 k_uiMaxLights       = 1024U;  ///< The maximum number of active lights in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
+  static constexpr xiiUInt32 k_uiMaxMaterialBins = 512U;   ///< The maximum number of distinct (mesh x material) draw bins in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
+} // namespace
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -40,7 +48,6 @@ xiiView::~xiiView()
   m_ViewPassResources.m_Profiler.Shutdown();
   m_ResourceCache.Shutdown();
 }
-
 
 void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
 {
@@ -78,7 +85,7 @@ void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
 
   const float fScale = m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale;
 
-  // Align to even pixels to satisfy 2×2 tile constraints.
+  // Align to even pixels to satisfy 2x2 tile constraints.
   const xiiUInt32 uiWidth  = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width * fScale) & ~1U;
   const xiiUInt32 uiHeight = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height * fScale) & ~1U;
 
@@ -86,6 +93,133 @@ void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
   blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), xiiMath::Max(uiWidth, 2U));
   blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), xiiMath::Max(uiHeight, 2U));
 }
+
+////////// GPU occlusion readback //////////
+//
+// Reads the oldest staging buffer in the 3-frame ring (from 2 frames ago).
+// This provides the GPU frame time used by the PID (the result has already been applied by RunDynamicResolutionPID before BeginSetup, so this pass simply keeps the readback ring rotating).
+
+struct xiiOcclusionReadbackData
+{
+  xiiUInt32 m_uiReadSlot = 0; ///< Index into the 3-frame ring of staging buffers to read from this frame (the one written by the GPU 2 frames ago).
+};
+
+void xiiView::SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder)
+{
+  data.m_uiReadSlot = (m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1u) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
+
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRGPassContext& context)
+{
+  xiiSharedPtr<xiiGALBuffer>& pStaging = m_ViewPassResources.m_VisibilityPasses.m_pOcclusionReadbackRing[data.m_uiReadSlot];
+
+  if (pStaging == nullptr)
+  {
+    // Buffer not yet populated - skip.
+    // Advance the write slot so the next stage can write into it next frame.
+    m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot = (m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1U) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
+    return;
+  }
+
+  // Map the staging buffer (CPU readable, GPU wrote 2 frames ago).
+  xiiGALCommandList& cmd   = context.GetCommandList();
+  void*              pData = nullptr;
+  if (cmd.MapBuffer(pStaging, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, pData).Succeeded())
+  {
+    // The staging buffer holds a single float: total GPU frame time in nanoseconds.
+    // (Written by the previous frame's FrameTotal sentinel query readback.)
+    // We don't store it here, the profiler's GetPassDurationMs("FrameTotal") path already does it.
+    xiiLog::Debug("Occlusion readback: GPU frame time from 2 frames ago = {0} ms", *static_cast<float*>(pData) / 1'000'000.0f);
+    cmd.UnmapBuffer(pStaging, xiiGALMapType::Read);
+  }
+
+  // Advance ring.
+  m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot = (m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1U) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
+}
+
+
+void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
+{
+  graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
+
+#if 0
+  xiiView* self = this; // captured by [this] lambdas
+
+  // 1a. GPU occlusion readback (rotates ring buffer, side-effects = true)
+  graph.AddPass<OcclusionReadbackData>(
+    "GpuOcclusionReadback",
+    xiiGALCommandQueueFlags::Compute,
+    [self](OcclusionReadbackData& data, xiiRGBuilder& b) { SetupOcclusionReadback(*self, data, b); },
+    [self](const OcclusionReadbackData& data, xiiRGPassContext& c) { ExecuteOcclusionReadback(*self, data, c); });
+
+  // 1b. Frustum culling
+  graph.AddPass<FrustumCullData>(
+    "FrustumCulling",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](FrustumCullData& data, xiiRGBuilder& b) { SetupFrustumCulling(*self, data, b); },
+    [self](const FrustumCullData& data, xiiRGPassContext& c) { ExecuteFrustumCulling(*self, data, c); });
+
+  // 1c. LOD selection
+  graph.AddPass<LODSelectData>(
+    "LODSelection",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](LODSelectData& data, xiiRGBuilder& b) { SetupLODSelection(*self, data, b, blackboard); },
+    [self](const LODSelectData& data, xiiRGPassContext& c) { ExecuteLODSelection(*self, data, c); });
+
+  // 1d. Instance update (world matrices & bounds)
+  graph.AddPass<InstanceUpdateData>(
+    "InstanceUpdate",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](InstanceUpdateData& data, xiiRGBuilder& b) { SetupInstanceUpdate(*self, data, b, blackboard); },
+    [self](const InstanceUpdateData& data, xiiRGPassContext& c) { ExecuteInstanceUpdate(*self, data, c); });
+
+  // 1e. Draw command build (GPU-driven indirect args)
+  graph.AddPass<DrawBuildData>(
+    "DrawCommandBuild",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](DrawBuildData& data, xiiRGBuilder& b) { SetupDrawBuild(*self, data, b, blackboard); },
+    [self](const DrawBuildData& data, xiiRGPassContext& c) { ExecuteDrawBuild(*self, data, c); });
+
+  // 1f. Shadow caster list build
+  graph.AddPass<ShadowCasterBuildData>(
+    "ShadowCasterListBuild",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](ShadowCasterBuildData& data, xiiRGBuilder& b) { SetupShadowCasterBuild(*self, data, b, blackboard); },
+    [self](const ShadowCasterBuildData& data, xiiRGPassContext& c) { ExecuteShadowCasterBuild(*self, data, c); });
+
+  // 1g. Cluster grid build
+  graph.AddPass<ClusterBuildData>(
+    "ClusterGridBuild",
+    xiiGALCommandQueueFlags::Compute,
+    [self](ClusterBuildData& data, xiiRGBuilder& b) { SetupClusterBuild(*self, data, b); },
+    [self](const ClusterBuildData& data, xiiRGPassContext& c) { ExecuteClusterBuild(*self, data, c); });
+
+  // 1h. Light list build
+  graph.AddPass<LightListData>(
+    "LightListBuild",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](LightListData& data, xiiRGBuilder& b) { SetupLightListBuild(*self, data, b, blackboard); },
+    [self](const LightListData& data, xiiRGPassContext& c) { ExecuteLightListBuild(*self, data, c); });
+
+  // 1i. Reflection probe selection
+  graph.AddPass<ReflProbeSelectData>(
+    "ReflectionProbeSelection",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](ReflProbeSelectData& data, xiiRGBuilder& b) { SetupReflProbeSelect(*self, data, b, blackboard); },
+    [self](const ReflProbeSelectData& data, xiiRGPassContext& c) { ExecuteReflProbeSelect(*self, data, c); });
+
+  // 1j. Volumetric froxel grid allocation
+  graph.AddPass<FroxelAllocData>(
+    "VolumetricGridAlloc",
+    xiiGALCommandQueueFlags::Compute,
+    [self, &blackboard](FroxelAllocData& data, xiiRGBuilder& b) { SetupFroxelAlloc(*self, data, b, blackboard); },
+    [self](const FroxelAllocData& data, xiiRGPassContext& c) { ExecuteFroxelAlloc(*self, data, c); });
+#endif
+}
+
 
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {

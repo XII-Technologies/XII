@@ -24,7 +24,7 @@ extern xiiCVarInt cvar_ClusterZ;
 //
 static constexpr xiiUInt32 k_uiMaxInstances    = 65536u; // max drawable objects in one frame
 static constexpr xiiUInt32 k_uiMaxLights       = 1024u;
-static constexpr xiiUInt32 k_uiMaxMaterialBins = 512u; // distinct (mesh × material) draw bins
+static constexpr xiiUInt32 k_uiMaxMaterialBins = 512u; // distinct (mesh x material) draw bins
 
 //
 // GPU occlusion readback
@@ -237,7 +237,7 @@ static void SetupInstanceUpdate(xiiView& view, InstanceUpdateData& data, xiiRGBu
   if (!vp.m_pInstanceMatrixBuffer)
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride = 48u; // float4x3 (3 rows × 4 floats)
+    desc.m_uiElementByteStride = 48u; // float4x3 (3 rows x 4 floats)
     desc.m_uiSize              = desc.m_uiElementByteStride * k_uiMaxInstances;
     desc.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
     desc.m_Mode                = xiiGALBufferMode::Structured;
@@ -308,7 +308,7 @@ static void SetupDrawBuild(xiiView& view, DrawBuildData& data, xiiRGBuilder& bui
   data.m_uiInstanceCount = k_uiMaxInstances;
 
   // Persistent indirect arg buffer (resized lazily).
-  const xiiUInt32 uiArgStride = 20u; // DrawIndexedIndirectArguments: 5 × uint
+  const xiiUInt32 uiArgStride = 20u; // DrawIndexedIndirectArguments: 5 x uint
   if (!vp.m_pDrawIndirectArgBuffer)
   {
     xiiGALBufferCreationDescription desc;
