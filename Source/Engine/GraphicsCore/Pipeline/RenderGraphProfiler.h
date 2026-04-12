@@ -22,10 +22,10 @@ public:
   virtual ~xiiRenderGraphProfiler() = default;
 
   /// \brief Called immediately before a pass records its commands. Insert a begin-query here.
-  virtual void OnPassBegin(xiiGALCommandList& commandList, xiiHashedString sPassName, xiiUInt32 uiPassIndex) = 0;
+  virtual void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) = 0;
 
   /// \brief Called immediately after a pass records its commands. Insert an end-query here.
-  virtual void OnPassEnd(xiiGALCommandList& commandList, xiiHashedString sPassName, xiiUInt32 uiPassIndex) = 0;
+  virtual void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) = 0;
 
   /// \brief Called once per frame after all passes have been submitted.
   ///        Implementations should schedule result readback here (with appropriate frame delay).
@@ -33,7 +33,7 @@ public:
 
   /// \brief Returns the last resolved GPU duration for the given pass in milliseconds.
   ///        Returns 0.0f if no data is yet available (warmup frames).
-  [[nodiscard]] virtual float GetPassDurationMs(xiiHashedString sPassName) const = 0;
+  [[nodiscard]] virtual float GetPassDurationMs(xiiStringView sPassName) const = 0;
 };
 
 /// \brief A concrete render graph profiler that uses GPU Duration queries.
@@ -58,11 +58,11 @@ public:
   void Shutdown();
 
   // xiiRenderGraphProfiler interface
-  void OnPassBegin(xiiGALCommandList& commandList, xiiHashedString sPassName, xiiUInt32 uiPassIndex) override;
-  void OnPassEnd(xiiGALCommandList& commandList, xiiHashedString sPassName, xiiUInt32 uiPassIndex) override;
+  void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
+  void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnFrameEnd(xiiUInt64 uiFrameIndex) override;
 
-  [[nodiscard]] float GetPassDurationMs(xiiHashedString sPassName) const override;
+  [[nodiscard]] float GetPassDurationMs(xiiStringView sPassName) const override;
 
 private:
   struct PassQueries

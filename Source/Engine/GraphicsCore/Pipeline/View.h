@@ -116,6 +116,34 @@ private:
   friend class xiiRenderWorld;
   friend class xiiMemoryUtils;
 
+  void UpdateCachedMatrices() const;
+
+  /// \brief Populates the render graph for default (non-custom) views.
+  ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
+  void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+
+  // CPU PID dynamic resolution (runs before BeginSetup)
+  void RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard);
+
+  // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
+  void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage4_GBuffer(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage5_LightingPrep(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage6_MainLighting(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage7_Forward(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage8_Transparency(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage9_ScreenSpace(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage10_Temporal(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage11_PostProcess(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void BuildStage12_Output(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+
+  /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
+  ///        If the pipeline already exists this is a no-op.
+  static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
+
+private:
   xiiHashedString m_sName;
 
   xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
@@ -123,8 +151,6 @@ private:
   const xiiCamera*   m_pCullingCamera              = nullptr;
   const xiiCamera*   m_pLodCamera                  = nullptr;
   RenderGraphBuilder m_RenderGraphBuilder;
-
-  void UpdateCachedMatrices() const;
 
   mutable xiiUInt32 m_uiLastCameraSettingsModification    = 0;
   mutable xiiUInt32 m_uiLastCameraOrientationModification = 0;
@@ -142,9 +168,6 @@ private:
   xiiRenderGraphBlackboard    m_Blackboard;
   xiiRenderGraphResourceCache m_ResourceCache;
 
-  // ============================================================
-  // Per-view render pass resources - owned for the view lifetime
-  // ============================================================
   struct ViewPassResources
   {
     // GPU timestamp profiler (Duration queries, 3-frame ring)
@@ -319,37 +342,6 @@ private:
     } m_OutputPasses;
 
   } m_ViewPassResources;
-
-  // ============================================================
-  // Per-frame render graph construction - dispatches to per-stage methods
-  // ============================================================
-
-  /// \brief Populates the render graph for default (non-custom) views.
-  ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
-  void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
-
-  // CPU PID dynamic resolution (runs before BeginSetup)
-  void RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard);
-
-  // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
-  void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage4_GBuffer(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage5_LightingPrep(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage6_MainLighting(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage7_Forward(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage8_Transparency(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage9_ScreenSpace(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage10_Temporal(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage11_PostProcess(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage12_Output(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-
-  /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
-  ///        If the pipeline already exists this is a no-op.
-  static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(
-    xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline,
-    xiiStringView                             sShaderPath);
 };
 
 #include <GraphicsCore/Pipeline/Implementation/View_inl.h>

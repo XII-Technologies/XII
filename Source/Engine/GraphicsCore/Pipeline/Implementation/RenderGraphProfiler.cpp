@@ -14,7 +14,7 @@ void xiiRenderGraphTimestampProfiler::Initialize(xiiSharedPtr<xiiGALDevice> pDev
 {
   XII_ASSERT_DEV(pDevice != nullptr, "Device must not be null.");
 
-  m_pDevice = std::move(pDevice);
+  m_pDevice = pDevice;
 }
 
 void xiiRenderGraphTimestampProfiler::Shutdown()
@@ -27,7 +27,7 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   m_pDevice = nullptr;
 }
 
-void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList, xiiHashedString sPassName, xiiUInt32 uiPassIndex)
+void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
@@ -39,8 +39,8 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   }
 
   PassQueries& pass = frame.m_PassQueries[uiPassIndex];
-  pass.m_sPassName  = sPassName;
   pass.m_bActive    = true;
+  pass.m_sPassName.Assign(sPassName);
 
   if (pass.m_pDurationQuery == nullptr)
   {
@@ -56,8 +56,10 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   }
 }
 
-void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, xiiHashedString sPassName, xiiUInt32 uiPassIndex)
+void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex)
 {
+  XII_IGNORE_UNUSED(sPassName);
+
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
 
   if (uiPassIndex >= frame.m_PassQueries.GetCount())
@@ -75,7 +77,7 @@ void xiiRenderGraphTimestampProfiler::OnFrameEnd(xiiUInt64 uiFrameIndex)
   m_FrameRing[m_uiCurrentRingSlot].m_uiFrameIndex = uiFrameIndex;
   m_uiCurrentRingSlot                             = (m_uiCurrentRingSlot + 1U) % s_uiRingFrameCount;
 
-  // Attempt readback on the oldest slot (2-frame delay minimum before read)
+  // Attempt readback on the oldest slot (2-frame delay minimum before read).
   FrameData& oldestFrame = m_FrameRing[m_uiCurrentRingSlot];
   if (oldestFrame.m_uiFrameIndex != xiiInvalidIndex)
   {
@@ -105,12 +107,12 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
   }
 }
 
-float xiiRenderGraphTimestampProfiler::GetPassDurationMs(xiiHashedString sPassName) const
+float xiiRenderGraphTimestampProfiler::GetPassDurationMs(xiiStringView sPassName) const
 {
   XII_LOCK(m_ResultMutex);
 
   float fResult = 0.0f;
-  m_ResolvedDurationsMs.TryGetValue(sPassName, fResult);
+  m_ResolvedDurationsMs.TryGetValue(xiiTempHashedString(sPassName), fResult);
 
   return fResult;
 }
