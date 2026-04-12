@@ -1,6 +1,6 @@
 // XII Engine - ViewPasses_Stage7.cpp
 // Stage 7: Forward passes (all Graphics).
-// ForwardOpaque → ForwardMasked → Hair → Water → Subsurface Scattering → Eye
+// ForwardOpaque -> ForwardMasked -> Hair -> Water -> Subsurface Scattering -> Eye
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 

@@ -1,7 +1,7 @@
 // XII Engine - ViewPasses_Stage6.cpp
 // Stage 6: Main lighting (all compute / RT).
-// Deferred direct → indirect lighting → RT GI → RT reflections → SSR →
-// Volumetric integrate → Volumetric temporal reprojection → Atmosphere composite.
+// Deferred direct -> indirect lighting -> RT GI -> RT reflections -> SSR ->
+// Volumetric integrate -> Volumetric temporal reprojection -> Atmosphere composite.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
@@ -427,7 +427,7 @@ static void ExecuteVolumetricTemporal(xiiView& view, const VolumetricTemporalDat
 }
 
 //
-// Atmosphere composite → sky radiance accumulation
+// Atmosphere composite -> sky radiance accumulation
 //
 namespace
 {

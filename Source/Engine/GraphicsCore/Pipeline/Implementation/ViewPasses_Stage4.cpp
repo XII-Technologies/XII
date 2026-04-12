@@ -1,6 +1,6 @@
 // XII Engine - ViewPasses_Stage4.cpp
 // Stage 4: G-Buffer generation (graphics - native render pass with merged sub-passes).
-// GBufferBase: albedo / normal / material / emissive → merged with depth from Stage 3.
+// GBufferBase: albedo / normal / material / emissive -> merged with depth from Stage 3.
 // NormalRoughnessPrepass: compact normal+roughness for GTAO early access.
 
 #include <GraphicsCore/GraphicsCorePCH.h>

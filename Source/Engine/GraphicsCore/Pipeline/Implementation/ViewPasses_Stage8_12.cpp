@@ -114,7 +114,7 @@ static void ExecuteParticleSim(xiiView& view, const ParticleSimData& data, xiiRG
   auto&              tp  = view.m_ViewPassResources.m_TransparencyPasses;
   cmd.BeginDebugGroup("GPUParticleSimulate");
   cmd.SetPipelineState(tp.m_pParticleSimulatePipeline);
-  BIND_UAV_TEX("g_Particles", data.m_hParticleState); // intentional buffer → UAV via buffer view
+  BIND_UAV_TEX("g_Particles", data.m_hParticleState); // intentional buffer -> UAV via buffer view
   cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
   cmd.DispatchCompute({(data.m_uiParticleCount + 63u) / 64u, 1u, 1u});
   cmd.EndDebugGroup();

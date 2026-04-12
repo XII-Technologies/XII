@@ -6,135 +6,119 @@
 /// Keys with a (*) suffix have a corresponding typed helper written by the named pass.
 namespace xiiRGBlackboardKeys
 {
-  //
-  // Stage 0 - Dynamic Resolution (CPU, pre-graph)
-  //
-  constexpr const char* k_DynamicResolutionScale = "DynamicResolutionScale"; ///< float - [MinScale, 1.0] current PID-smoothed render scale.
-  constexpr const char* k_RenderWidth            = "RenderWidth";            ///< uint32 - scaled render width in pixels (aligned to 2).
-  constexpr const char* k_RenderHeight           = "RenderHeight";           ///< uint32 - scaled render height in pixels (aligned to 2).
+  // Stage 0 - Dynamic Resolution (CPU, pre-graph).
 
-  //
-  // Stage 1 - Visibility & Setup
-  //
-  constexpr const char* k_FrameIndex                = "FrameIndex";               ///< uint32 - monotonically increasing frame counter.
-  constexpr const char* k_ActiveLightCount          = "ActiveLightCount";         ///< uint32 - number of valid light entries in the light data buffer.
-  constexpr const char* k_InstanceWorldMatrixBuffer = "InstanceWorldMatrices";    ///< xiiRGBufferHandle - per-instance world matrices (float4x3 structs).
-  constexpr const char* k_InstanceBoundsBuffer      = "InstanceBounds";           ///< xiiRGBufferHandle - per-instance AABB (center + extents + radius).
-  constexpr const char* k_InstanceLODBuffer         = "InstanceLOD";              ///< xiiRGBufferHandle - per-instance LOD level + meshlet metadata.
-  constexpr const char* k_VisibleCandidateBuffer    = "VisibleCandidates";        ///< xiiRGBufferHandle - coarse-frustum-culled instance index list [0]=count.
-  constexpr const char* k_SurvivingInstanceBuffer   = "SurvivingInstances";       ///< xiiRGBufferHandle - Hi-Z occlusion-culled instance index list [0]=count.
-  constexpr const char* k_DrawIndirectCommands      = "DrawIndirectCommands";     ///< xiiRGBufferHandle - packed DrawIndexedIndirect args, one per material bin.
-  constexpr const char* k_DrawCountBuffer           = "DrawCounts";               ///< xiiRGBufferHandle - per-material-bin indirect draw count.
-  constexpr const char* k_DrawShadowCasterCommands  = "DrawShadowCasterCommands"; ///< xiiRGBufferHandle - packed indirect args for shadow depth renders.
-  constexpr const char* k_ReflectionProbeMask       = "ReflectionProbeMask";      ///< xiiRGBufferHandle - per-probe visibility bits (bitfield of active probes).
-  constexpr const char* k_SkinnedVertexBuffer       = "SkinnedVertexBuffer";      ///< xiiRGBufferHandle - deformed vertex streams (written by skinning pass).
-  constexpr const char* k_ParticleVertexBuffer      = "ParticleVertexBuffer";     ///< xiiRGBufferHandle - particle vertex data (written by GPU particle sim).
-  constexpr const char* k_ParticleIndexBuffer       = "ParticleIndexBuffer";      ///< xiiRGBufferHandle - particle index data (written by GPU particle sim).
+  constexpr xiiStringView k_DynamicResolutionScale = "DynamicResolutionScale"_xiisv; ///< float - [MinScale, 1.0] current PID-smoothed render scale.
+  constexpr xiiStringView k_RenderWidth            = "RenderWidth"_xiisv;            ///< uint32 - scaled render width in pixels (aligned to 2).
+  constexpr xiiStringView k_RenderHeight           = "RenderHeight"_xiisv;           ///< uint32 - scaled render height in pixels (aligned to 2).
 
-  //
-  // Stage 1 - Per-Frame Constant Buffers (uploaded once, read by all passes)
-  //
-  constexpr const char* k_PerFrameCameraBuffer = "PerFrameCameraBuffer"; ///< xiiGALBuffer* - camera constants structured buffer.
-  constexpr const char* k_PerFrameLightBuffer  = "PerFrameLightBuffer";  ///< xiiGALBuffer* - global light constants buffer.
-  constexpr const char* k_PerFrameGlobalBuffer = "PerFrameGlobalBuffer"; ///< xiiGALBuffer* - global frame constants buffer.
+  // Stage 1 - Visibility & Setup.
 
-  //
-  // Stage 1 - Clustering
-  //
-  constexpr const char* k_ClusterDescriptors = "ClusterDescriptors"; ///< xiiRGBufferHandle - frustum cluster AABB descriptors (float4 per cluster).
-  constexpr const char* k_LightIndexBuffer   = "LightIndexBuffer";   ///< xiiRGBufferHandle - per-cluster compact light index list.
-  constexpr const char* k_LightGridBuffer    = "LightGrid";          ///< xiiRGBufferHandle - cluster → (offset, count) pairs (uint2 per cluster).
+  constexpr xiiStringView k_FrameIndex                = "FrameIndex"_xiisv;               ///< uint32 - monotonically increasing frame counter.
+  constexpr xiiStringView k_ActiveLightCount          = "ActiveLightCount"_xiisv;         ///< uint32 - number of valid light entries in the light data buffer.
+  constexpr xiiStringView k_InstanceWorldMatrixBuffer = "InstanceWorldMatrices"_xiisv;    ///< xiiRGBufferHandle - per-instance world matrices (float4x3 structs).
+  constexpr xiiStringView k_InstanceBoundsBuffer      = "InstanceBounds"_xiisv;           ///< xiiRGBufferHandle - per-instance AABB (center + extents + radius).
+  constexpr xiiStringView k_InstanceLODBuffer         = "InstanceLOD"_xiisv;              ///< xiiRGBufferHandle - per-instance LOD level + meshlet metadata.
+  constexpr xiiStringView k_VisibleCandidateBuffer    = "VisibleCandidates"_xiisv;        ///< xiiRGBufferHandle - coarse-frustum-culled instance index list [0]=count.
+  constexpr xiiStringView k_SurvivingInstanceBuffer   = "SurvivingInstances"_xiisv;       ///< xiiRGBufferHandle - Hi-Z occlusion-culled instance index list [0]=count.
+  constexpr xiiStringView k_DrawIndirectCommands      = "DrawIndirectCommands"_xiisv;     ///< xiiRGBufferHandle - packed DrawIndexedIndirect args, one per material bin.
+  constexpr xiiStringView k_DrawCountBuffer           = "DrawCounts"_xiisv;               ///< xiiRGBufferHandle - per-material-bin indirect draw count.
+  constexpr xiiStringView k_DrawShadowCasterCommands  = "DrawShadowCasterCommands"_xiisv; ///< xiiRGBufferHandle - packed indirect args for shadow depth renders.
+  constexpr xiiStringView k_ReflectionProbeMask       = "ReflectionProbeMask"_xiisv;      ///< xiiRGBufferHandle - per-probe visibility bits (bitfield of active probes).
+  constexpr xiiStringView k_SkinnedVertexBuffer       = "SkinnedVertexBuffer"_xiisv;      ///< xiiRGBufferHandle - deformed vertex streams (written by skinning pass).
+  constexpr xiiStringView k_ParticleVertexBuffer      = "ParticleVertexBuffer"_xiisv;     ///< xiiRGBufferHandle - particle vertex data (written by GPU particle sim).
+  constexpr xiiStringView k_ParticleIndexBuffer       = "ParticleIndexBuffer"_xiisv;      ///< xiiRGBufferHandle - particle index data (written by GPU particle sim).
 
-  //
+  // Stage 1 - Per-Frame Constant Buffers (uploaded once, read by all passes).
+
+  constexpr xiiStringView k_PerFrameCameraBuffer = "PerFrameCameraBuffer"_xiisv; ///< xiiGALBuffer* - camera constants structured buffer.
+  constexpr xiiStringView k_PerFrameLightBuffer  = "PerFrameLightBuffer"_xiisv;  ///< xiiGALBuffer* - global light constants buffer.
+  constexpr xiiStringView k_PerFrameGlobalBuffer = "PerFrameGlobalBuffer"_xiisv; ///< xiiGALBuffer* - global frame constants buffer.
+
+  // Stage 1 - Clustering.
+
+  constexpr xiiStringView k_ClusterDescriptors = "ClusterDescriptors"_xiisv; ///< xiiRGBufferHandle - frustum cluster AABB descriptors (float4 per cluster).
+  constexpr xiiStringView k_LightIndexBuffer   = "LightIndexBuffer"_xiisv;   ///< xiiRGBufferHandle - per-cluster compact light index list.
+  constexpr xiiStringView k_LightGridBuffer    = "LightGrid"_xiisv;          ///< xiiRGBufferHandle - cluster -> (offset, count) pairs (uint2 per cluster).
+
   // Stage 1 - Froxel / Volumetric
-  //
-  constexpr const char* k_FroxelMetadataBuffer   = "FroxelMetadata";   ///< xiiRGBufferHandle - froxel bounds + phase + density terms.
-  constexpr const char* k_FroxelScatteringBuffer = "FroxelScattering"; ///< xiiRGTextureHandle - 3D froxel scattering/extinction (R16G16B16A16F vol texture).
-  constexpr const char* k_FroxelDepthRange       = "FroxelDepthRange"; ///< xiiRGBufferHandle - (near, far, sliceCount, pad) packed into float4.
 
-  //
-  // Stage 2 - Shadows
-  //
-  constexpr const char* k_ShadowCascadeMatrices  = "ShadowCascadeMatrices"; ///< xiiRGBufferHandle - cascade view-proj matrices (float4x4[4]).
-  constexpr const char* k_ShadowCascadeCount     = "ShadowCascadeCount";    ///< uint32 - active cascade count (0–4).
-  constexpr const char* k_DirectionalShadowAtlas = "DirShadowAtlas";        ///< xiiRGTextureHandle - cascaded shadow map texture (D32F array).
-  constexpr const char* k_LocalShadowAtlas       = "LocalShadowAtlas";      ///< xiiRGTextureHandle - spot/point shadow atlas (D32F).
-  constexpr const char* k_LocalShadowAtlasDescs  = "LocalShadowAtlasDescs"; ///< xiiRGBufferHandle - per-light atlas placement data.
-  constexpr const char* k_RTRawShadowMask        = "RTRawShadows";          ///< xiiRGTextureHandle - raw RT shadow mask per light (R8_UNORM).
-  constexpr const char* k_RTFinalShadowMask      = "RTFinalShadows";        ///< xiiRGTextureHandle - denoised RT shadow mask.
-  constexpr const char* k_ContactShadowTerm      = "ContactShadows";        ///< xiiRGTextureHandle - screen-space contact shadow mask (R8_UNORM).
+  constexpr xiiStringView k_FroxelMetadataBuffer   = "FroxelMetadata"_xiisv;   ///< xiiRGBufferHandle - froxel bounds + phase + density terms.
+  constexpr xiiStringView k_FroxelScatteringBuffer = "FroxelScattering"_xiisv; ///< xiiRGTextureHandle - 3D froxel scattering/extinction (R16G16B16A16F vol texture).
+  constexpr xiiStringView k_FroxelDepthRange       = "FroxelDepthRange"_xiisv; ///< xiiRGBufferHandle - (near, far, sliceCount, pad) packed into float4.
 
-  //
-  // Stage 3 - Depth & Motion
-  //
-  constexpr const char* k_OccluderDepthTexture  = "OccluderDepth";   ///< xiiRGTextureHandle - occluder-only depth prepass output (D32F).
-  constexpr const char* k_SceneDepthTexture     = "SceneDepth";      ///< xiiRGTextureHandle - full-resolution scene depth buffer (D32F reversed-Z).
-  constexpr const char* k_HiZPyramid            = "HiZPyramid";      ///< xiiRGTextureHandle - R32F max-depth pyramid covering all mip levels.
-  constexpr const char* k_VelocityBuffer        = "VelocityBuffer";  ///< xiiRGTextureHandle - screen-space velocity (R16G16F).
-  constexpr const char* k_NormalRoughnessBuffer = "NormalRoughness"; ///< xiiRGTextureHandle - compact R8G8B8A8 oct-encoded normal + roughness.
+  // Stage 2 - Shadows.
 
-  //
-  // Stage 4 - G-Buffer
-  //
-  constexpr const char* k_GBufferAlbedo   = "GBufferAlbedo";   ///< xiiRGTextureHandle - R8G8B8A8_UNORM albedo (rgb) + AO (a).
-  constexpr const char* k_GBufferNormal   = "GBufferNormal";   ///< xiiRGTextureHandle - R16G16_SNORM oct-encoded world-space normals.
-  constexpr const char* k_GBufferMaterial = "GBufferMaterial"; ///< xiiRGTextureHandle - R8G8B8A8: r=roughness, g=metallic, b=specular, a=matID.
-  constexpr const char* k_GBufferEmissive = "GBufferEmissive"; ///< xiiRGTextureHandle - R16G16B16A16F emissive + special-purpose channel.
+  constexpr xiiStringView k_ShadowCascadeMatrices  = "ShadowCascadeMatrices"_xiisv; ///< xiiRGBufferHandle - cascade view-proj matrices (float4x4[4]).
+  constexpr xiiStringView k_ShadowCascadeCount     = "ShadowCascadeCount"_xiisv;    ///< uint32 - active cascade count (0–4).
+  constexpr xiiStringView k_DirectionalShadowAtlas = "DirShadowAtlas"_xiisv;        ///< xiiRGTextureHandle - cascaded shadow map texture (D32F array).
+  constexpr xiiStringView k_LocalShadowAtlas       = "LocalShadowAtlas"_xiisv;      ///< xiiRGTextureHandle - spot/point shadow atlas (D32F).
+  constexpr xiiStringView k_LocalShadowAtlasDescs  = "LocalShadowAtlasDescs"_xiisv; ///< xiiRGBufferHandle - per-light atlas placement data.
+  constexpr xiiStringView k_RTRawShadowMask        = "RTRawShadows"_xiisv;          ///< xiiRGTextureHandle - raw RT shadow mask per light (R8_UNORM).
+  constexpr xiiStringView k_RTFinalShadowMask      = "RTFinalShadows"_xiisv;        ///< xiiRGTextureHandle - denoised RT shadow mask.
+  constexpr xiiStringView k_ContactShadowTerm      = "ContactShadows"_xiisv;        ///< xiiRGTextureHandle - screen-space contact shadow mask (R8_UNORM).
 
-  //
-  // Stage 5 - Lighting Preparation
-  //
-  constexpr const char* k_BRDFLut                    = "BRDFLut";          ///< xiiRGTextureHandle - 256×256 R16G16F GGX split-sum BRDF LUT (persistent).
-  constexpr const char* k_DDGIIrradiance             = "DDGIIrradiance";   ///< xiiRGTextureHandle - DDGI probe irradiance atlas (if DDGI enabled).
-  constexpr const char* k_AtmosphereTransmittanceLUT = "AtmTransmittance"; ///< xiiRGTextureHandle - 256×64 R16G16B16A16F atmosphere transmittance LUT.
-  constexpr const char* k_AtmosphereMultiScatterLUT  = "AtmMultiScatter";  ///< xiiRGTextureHandle - 32×32 R16G16B16A16F multiple-scattering LUT.
-  constexpr const char* k_RawAOTexture               = "RawAO";            ///< xiiRGTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
-  constexpr const char* k_StableAOTexture            = "StableAO";         ///< xiiRGTextureHandle - temporally-denoised AO (R8_UNORM).
+  // Stage 3 - Depth & Motion.
 
-  //
-  // Stage 6 - Main Lighting
-  //
-  constexpr const char* k_DirectLightingBuffer   = "DirectLighting";       ///< xiiRGTextureHandle - direct lighting HDR (R16G16B16A16F).
-  constexpr const char* k_IndirectLightingBuffer = "IndirectLighting";     ///< xiiRGTextureHandle - indirect lighting HDR (R16G16B16A16F).
-  constexpr const char* k_SSRTexture             = "SSRTerm";              ///< xiiRGTextureHandle - screen-space reflection radiance (R16G16B16A16F).
-  constexpr const char* k_RTRawGI                = "RTRawGI";              ///< xiiRGTextureHandle - raw RT indirect diffuse before denoising.
-  constexpr const char* k_RTFinalGI              = "RTFinalGI";            ///< xiiRGTextureHandle - denoised RT GI.
-  constexpr const char* k_RTRawReflections       = "RTRawReflections";     ///< xiiRGTextureHandle - raw RT reflection radiance.
-  constexpr const char* k_RTFinalReflections     = "RTFinalReflections";   ///< xiiRGTextureHandle - denoised RT reflections.
-  constexpr const char* k_VolumetricScattering   = "VolumetricScattering"; ///< xiiRGTextureHandle - integrated volumetric light contribution.
-  constexpr const char* k_SkyRadiance            = "SkyRadiance";          ///< xiiRGTextureHandle - sky + atmosphere contribution.
+  constexpr xiiStringView k_OccluderDepthTexture  = "OccluderDepth"_xiisv;   ///< xiiRGTextureHandle - occluder-only depth prepass output (D32F).
+  constexpr xiiStringView k_SceneDepthTexture     = "SceneDepth"_xiisv;      ///< xiiRGTextureHandle - full-resolution scene depth buffer (D32F reversed-Z).
+  constexpr xiiStringView k_HiZPyramid            = "HiZPyramid"_xiisv;      ///< xiiRGTextureHandle - R32F max-depth pyramid covering all mip levels.
+  constexpr xiiStringView k_VelocityBuffer        = "VelocityBuffer"_xiisv;  ///< xiiRGTextureHandle - screen-space velocity (R16G16F).
+  constexpr xiiStringView k_NormalRoughnessBuffer = "NormalRoughness"_xiisv; ///< xiiRGTextureHandle - compact R8G8B8A8 oct-encoded normal + roughness.
 
-  //
-  // Stage 7 - Forward / Composite
-  //
-  constexpr const char* k_HDRSceneColor = "HDRSceneColor"; ///< xiiRGTextureHandle - combined HDR scene color after opaque (R16G16B16A16F).
+  // Stage 4 - G-Buffer.
 
-  //
-  // Stage 8 - Transparency
-  //
-  constexpr const char* k_OITAccumulateBuffer = "OITAccumulate"; ///< xiiRGTextureHandle - WBOIT weighted accumulation target (R16G16B16A16F).
-  constexpr const char* k_OITRevealBuffer     = "OITReveal";     ///< xiiRGTextureHandle - WBOIT reveal (transmittance) target (R8_UNORM).
-  constexpr const char* k_DecalTileList       = "DecalTileList"; ///< xiiRGBufferHandle - per-tile decal index list.
+  constexpr xiiStringView k_GBufferAlbedo   = "GBufferAlbedo"_xiisv;   ///< xiiRGTextureHandle - R8G8B8A8_UNORM albedo (rgb) + AO (a).
+  constexpr xiiStringView k_GBufferNormal   = "GBufferNormal"_xiisv;   ///< xiiRGTextureHandle - R16G16_SNORM oct-encoded world-space normals.
+  constexpr xiiStringView k_GBufferMaterial = "GBufferMaterial"_xiisv; ///< xiiRGTextureHandle - R8G8B8A8: r=roughness, g=metallic, b=specular, a=matID.
+  constexpr xiiStringView k_GBufferEmissive = "GBufferEmissive"_xiisv; ///< xiiRGTextureHandle - R16G16B16A16F emissive + special-purpose channel.
 
-  //
-  // Stage 9 - Screen-Space Effects
-  //
-  constexpr const char* k_PlanarReflectionMap = "PlanarReflectionMap"; ///< xiiRGTextureHandle - planar reflection render target.
+  // Stage 5 - Lighting Preparation.
 
-  //
-  // Stage 10 - Temporal Reconstruction
-  //
-  constexpr const char* k_LuminanceHistogram = "LuminanceHistogram"; ///< xiiRGBufferHandle - 256-bin log-luminance histogram.
-  constexpr const char* k_CurrentExposure    = "CurrentExposure";    ///< xiiRGBufferHandle - single float EV100 exposure value.
-  constexpr const char* k_TAAResolvedColor   = "TAAResolved";        ///< xiiRGTextureHandle - temporally-resolved color (R16G16B16A16F).
-  constexpr const char* k_UpscaledColor      = "UpscaledColor";      ///< xiiRGTextureHandle - upscaled output at native resolution.
+  constexpr xiiStringView k_BRDFLut                    = "BRDFLut"_xiisv;          ///< xiiRGTextureHandle - 256×256 R16G16F GGX split-sum BRDF LUT (persistent).
+  constexpr xiiStringView k_DDGIIrradiance             = "DDGIIrradiance"_xiisv;   ///< xiiRGTextureHandle - DDGI probe irradiance atlas (if DDGI enabled).
+  constexpr xiiStringView k_AtmosphereTransmittanceLUT = "AtmTransmittance"_xiisv; ///< xiiRGTextureHandle - 256×64 R16G16B16A16F atmosphere transmittance LUT.
+  constexpr xiiStringView k_AtmosphereMultiScatterLUT  = "AtmMultiScatter"_xiisv;  ///< xiiRGTextureHandle - 32×32 R16G16B16A16F multiple-scattering LUT.
+  constexpr xiiStringView k_RawAOTexture               = "RawAO"_xiisv;            ///< xiiRGTextureHandle - raw GTAO / HBAO+ term (R8_UNORM).
+  constexpr xiiStringView k_StableAOTexture            = "StableAO"_xiisv;         ///< xiiRGTextureHandle - temporally-denoised AO (R8_UNORM).
 
-  //
-  // Stage 11 - Post-Processing
-  //
-  constexpr const char* k_BloomTexture   = "BloomTexture";   ///< xiiRGTextureHandle - bloom-composited HDR result.
-  constexpr const char* k_GradedColor    = "GradedColor";    ///< xiiRGTextureHandle - color-graded + filmic output.
-  constexpr const char* k_LDRSceneColor  = "LDRSceneColor";  ///< xiiRGTextureHandle - tone-mapped LDR output.
-  constexpr const char* k_SharpenedColor = "SharpenedColor"; ///< xiiRGTextureHandle - final sharpened LDR output.
+  // Stage 6 - Main Lighting.
 
+  constexpr xiiStringView k_DirectLightingBuffer   = "DirectLighting"_xiisv;       ///< xiiRGTextureHandle - direct lighting HDR (R16G16B16A16F).
+  constexpr xiiStringView k_IndirectLightingBuffer = "IndirectLighting"_xiisv;     ///< xiiRGTextureHandle - indirect lighting HDR (R16G16B16A16F).
+  constexpr xiiStringView k_SSRTexture             = "SSRTerm"_xiisv;              ///< xiiRGTextureHandle - screen-space reflection radiance (R16G16B16A16F).
+  constexpr xiiStringView k_RTRawGI                = "RTRawGI"_xiisv;              ///< xiiRGTextureHandle - raw RT indirect diffuse before denoising.
+  constexpr xiiStringView k_RTFinalGI              = "RTFinalGI"_xiisv;            ///< xiiRGTextureHandle - denoised RT GI.
+  constexpr xiiStringView k_RTRawReflections       = "RTRawReflections"_xiisv;     ///< xiiRGTextureHandle - raw RT reflection radiance.
+  constexpr xiiStringView k_RTFinalReflections     = "RTFinalReflections"_xiisv;   ///< xiiRGTextureHandle - denoised RT reflections.
+  constexpr xiiStringView k_VolumetricScattering   = "VolumetricScattering"_xiisv; ///< xiiRGTextureHandle - integrated volumetric light contribution.
+  constexpr xiiStringView k_SkyRadiance            = "SkyRadiance"_xiisv;          ///< xiiRGTextureHandle - sky + atmosphere contribution.
+
+  // Stage 7 - Forward / Composite.
+
+  constexpr xiiStringView k_HDRSceneColor = "HDRSceneColor"_xiisv; ///< xiiRGTextureHandle - combined HDR scene color after opaque (R16G16B16A16F).
+
+  // Stage 8 - Transparency.
+
+  constexpr xiiStringView k_OITAccumulateBuffer = "OITAccumulate"_xiisv; ///< xiiRGTextureHandle - WBOIT weighted accumulation target (R16G16B16A16F).
+  constexpr xiiStringView k_OITRevealBuffer     = "OITReveal"_xiisv;     ///< xiiRGTextureHandle - WBOIT reveal (transmittance) target (R8_UNORM).
+  constexpr xiiStringView k_DecalTileList       = "DecalTileList"_xiisv; ///< xiiRGBufferHandle - per-tile decal index list.
+
+  // Stage 9 - Screen-Space Effects.
+
+  constexpr xiiStringView k_PlanarReflectionMap = "PlanarReflectionMap"_xiisv; ///< xiiRGTextureHandle - planar reflection render target.
+
+  // Stage 10 - Temporal Reconstruction.
+
+  constexpr xiiStringView k_LuminanceHistogram = "LuminanceHistogram"_xiisv; ///< xiiRGBufferHandle - 256-bin log-luminance histogram.
+  constexpr xiiStringView k_CurrentExposure    = "CurrentExposure"_xiisv;    ///< xiiRGBufferHandle - single float EV100 exposure value.
+  constexpr xiiStringView k_TAAResolvedColor   = "TAAResolved"_xiisv;        ///< xiiRGTextureHandle - temporally-resolved color (R16G16B16A16F).
+  constexpr xiiStringView k_UpscaledColor      = "UpscaledColor"_xiisv;      ///< xiiRGTextureHandle - upscaled output at native resolution.
+
+  // Stage 11 - Post-Processing.
+
+  constexpr xiiStringView k_BloomTexture   = "BloomTexture"_xiisv;   ///< xiiRGTextureHandle - bloom-composited HDR result.
+  constexpr xiiStringView k_GradedColor    = "GradedColor"_xiisv;    ///< xiiRGTextureHandle - color-graded + filmic output.
+  constexpr xiiStringView k_LDRSceneColor  = "LDRSceneColor"_xiisv;  ///< xiiRGTextureHandle - tone-mapped LDR output.
+  constexpr xiiStringView k_SharpenedColor = "SharpenedColor"_xiisv; ///< xiiRGTextureHandle - final sharpened LDR output.
 } // namespace xiiRGBlackboardKeys

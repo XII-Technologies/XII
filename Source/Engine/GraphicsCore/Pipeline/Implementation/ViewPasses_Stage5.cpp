@@ -1,7 +1,7 @@
 // XII Engine - ViewPasses_Stage5.cpp
 // Stage 5: Lighting preparation (all compute).
-// BRDF LUT (once) → Atmosphere LUTs (once) → Sky irradiance → Reflection probe conv →
-// Volumetric fog init → DDGI probe gather → GTAO → GTAO denoise.
+// BRDF LUT (once) -> Atmosphere LUTs (once) -> Sky irradiance -> Reflection probe conv ->
+// Volumetric fog init -> DDGI probe gather -> GTAO -> GTAO denoise.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 

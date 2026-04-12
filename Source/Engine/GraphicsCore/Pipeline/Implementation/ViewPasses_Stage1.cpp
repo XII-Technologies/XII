@@ -1,7 +1,7 @@
 // XII Engine - ViewPasses_Stage1.cpp
 // Stage 1: Frame setup & visibility passes.
-// All passes on the Compute queue. Frustum cull → LOD → instance update → draw-command build →
-// shadow-caster list → cluster grid → light list → reflection probe selection → froxel grid alloc.
+// All passes on the Compute queue. Frustum cull -> LOD -> instance update -> draw-command build ->
+// shadow-caster list -> cluster grid -> light list -> reflection probe selection -> froxel grid alloc.
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 

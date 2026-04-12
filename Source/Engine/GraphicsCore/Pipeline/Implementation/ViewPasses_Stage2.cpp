@@ -1,7 +1,7 @@
 // XII Engine - ViewPasses_Stage2.cpp
 // Stage 2: Shadow map generation.
-// Cascade setup (compute) → directional shadows (graphics) → spot/point shadows (graphics) →
-// ray-traced shadows (RT compute) → shadow denoise (compute) → contact shadows (compute).
+// Cascade setup (compute) -> directional shadows (graphics) -> spot/point shadows (graphics) ->
+// ray-traced shadows (RT compute) -> shadow denoise (compute) -> contact shadows (compute).
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
@@ -325,7 +325,7 @@ static void SetupRTShadow(xiiView& view, RTShadowData& data, xiiRGBuilder& build
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
 
   // Depth as input (written by depth prepass = Stage 3, but RT shadows are dispatched after HiZ
-  // and before deferred lighting, so the dependency is correct: Stage 3 → Stage 2 RT shadow
+  // and before deferred lighting, so the dependency is correct: Stage 3 -> Stage 2 RT shadow
   // is handled by the graph compiler via resource version tracking).
   xiiRGTextureHandle hDepth;
   bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_SceneDepthTexture), hDepth);

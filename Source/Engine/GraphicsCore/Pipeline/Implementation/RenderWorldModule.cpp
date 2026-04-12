@@ -102,7 +102,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
 void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (!pDevice)
     return;
 
@@ -120,7 +120,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     // Clear the per-view blackboard at the start of each frame so passes start clean.
     // History data lives in persistent GPU resources inside ViewPassResources, not here.
     blackboard.Clear();
-    blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_FrameIndex), static_cast<xiiUInt32>(uiFrameIndex));
+    blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(uiFrameIndex));
 
     // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);

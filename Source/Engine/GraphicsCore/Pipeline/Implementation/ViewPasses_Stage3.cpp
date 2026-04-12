@@ -1,7 +1,7 @@
 // XII Engine - ViewPasses_Stage3.cpp
 // Stage 3: Depth & motion preparation.
-// DepthPrepass (graphics) → HiZ pyramid (compute, per-mip) → HiZ occlusion cull (compute) →
-// Motion vectors (graphics) → Velocity dilation (compute).
+// DepthPrepass (graphics) -> HiZ pyramid (compute, per-mip) -> HiZ occlusion cull (compute) ->
+// Motion vectors (graphics) -> Velocity dilation (compute).
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
