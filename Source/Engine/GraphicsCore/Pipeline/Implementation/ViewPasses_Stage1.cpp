@@ -17,58 +17,6 @@
 
 
 //
-// LOD selection
-//
-namespace
-{
-  struct LODSelectData
-  {
-    xiiRGBufferHandle m_hVisibleCandidates;
-    xiiRGBufferHandle m_hInstanceBounds;
-    xiiRGBufferHandle m_hInstanceLOD;
-    xiiUInt32         m_uiInstanceCount = 0;
-  };
-} // namespace
-
-static void SetupLODSelection(xiiView& view, LODSelectData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& vp = view.m_ViewPassResources.m_VisibilityPasses;
-
-  xiiRGBufferHandle hCandidates;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_VisibleCandidateBuffer), hCandidates);
-
-  data.m_hVisibleCandidates = builder.ReadBuffer(hCandidates, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hInstanceBounds    = builder.ReadBuffer(builder.ImportBuffer("InstanceBoundsLOD", view.m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
-  data.m_uiInstanceCount    = k_uiMaxInstances;
-
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = 4u; // packed uint: LOD level + meshlet offset
-  desc.m_uiSize              = desc.m_uiElementByteStride * k_uiMaxInstances;
-  desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hInstanceLOD        = builder.WriteBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(vp.m_pLODSelectPipeline, "Shaders/Pipeline/LodSelection.xiiShader");
-}
-
-static void ExecuteLODSelection(xiiView& view, const LODSelectData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
-
-  cmd.BeginDebugGroup("LODSelection");
-  cmd.SetPipelineState(vp.m_pLODSelectPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_InstanceLODOut", ctx.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-
-  const xiiUInt32 uiGroups = (data.m_uiInstanceCount + 63u) / 64u;
-  cmd.DispatchCompute({uiGroups, 1u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // Instance update (world-matrix transform buffer write)
 //
 namespace

@@ -29,6 +29,7 @@ class xiiGALGraphicsPipelineState;
 
 struct xiiOcclusionReadbackData;
 struct xiiFrustumCullData;
+struct xiiLODSelectData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -134,6 +135,9 @@ private:
 
   void SetupFrustumCull(xiiFrustumCullData& data, xiiRGBuilder& builder);
   void ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRGPassContext& context);
+
+  void SetupLODSelect(xiiLODSelectData& data, xiiRGBuilder& builder);
+  void ExecuteLODSelect(const xiiLODSelectData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
   void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);

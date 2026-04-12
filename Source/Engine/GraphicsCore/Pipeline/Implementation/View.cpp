@@ -219,35 +219,59 @@ void xiiView::ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRGPassContex
   cmd.EndDebugGroup();
 }
 
+////////// GPU LOD Selection //////////
+//
+// Selects LOD levels for visible instances on the GPU, using instance bounds from the previous frame (updated by the Instance Update pass) and LOD metadata from the previous frame (updated by the previous frame's LOD Selection pass).
+
+struct xiiLODSelectData
+{
+  xiiRGBufferHandle m_hVisibleCandidates;  ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
+  xiiRGBufferHandle m_hInstanceBounds;     ///< SRV in (structured buffer of xiiBoundingSphere, one per instance, from previous frame's Instance Update).
+  xiiRGBufferHandle m_hInstanceLOD;        ///< UAV out (structured buffer of uint, one per instance, packed LOD level + meshlet offset, consumed by Draw Build).
+  xiiUInt32         m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+};
+
+void xiiView::SetupLODSelect(xiiLODSelectData& data, xiiRGBuilder& builder)
+{
+  data.m_hVisibleCandidates = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceBounds    = builder.ReadBuffer(builder.ImportBuffer("InstanceBoundsLOD", m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
+  data.m_uiInstanceCount    = k_uiMaxInstances;
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = 4U; // packed uint: LOD level + meshlet offset
+  description.m_uiSize              = description.m_uiElementByteStride * k_uiMaxInstances;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hInstanceLOD               = builder.WriteBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pLODSelectPipeline, "Shaders/Pipeline/LodSelection.xiiShader");
+}
+
+void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("LODSelection");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pLODSelectPipeline);
+    cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_InstanceLODOut", context.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+    const xiiUInt32 uiGroups = (data.m_uiInstanceCount + 63U) / 64U;
+    cmd.DispatchCompute({uiGroups, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
 {
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
   graph.AddPass<xiiFrustumCullData>("FrustumCulling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFrustumCull, this), xiiMakeDelegate(&xiiView::ExecuteFrustumCull, this));
+  graph.AddPass<xiiLODSelectData>("LODSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLODSelect, this), xiiMakeDelegate(&xiiView::ExecuteLODSelect, this));
 
 #if 0
-  xiiView* self = this; // captured by [this] lambdas
-
-  // 1a. GPU occlusion readback (rotates ring buffer, side-effects = true)
-  graph.AddPass<OcclusionReadbackData>(
-    "GpuOcclusionReadback",
-    xiiGALCommandQueueFlags::Compute,
-    [self](OcclusionReadbackData& data, xiiRGBuilder& b) { SetupOcclusionReadback(*self, data, b); },
-    [self](const OcclusionReadbackData& data, xiiRGPassContext& c) { ExecuteOcclusionReadback(*self, data, c); });
-
-  // 1b. Frustum culling
-  graph.AddPass<FrustumCullData>(
-    "FrustumCulling",
-    xiiGALCommandQueueFlags::Compute,
-    [self, &blackboard](FrustumCullData& data, xiiRGBuilder& b) { SetupFrustumCulling(*self, data, b); },
-    [self](const FrustumCullData& data, xiiRGPassContext& c) { ExecuteFrustumCulling(*self, data, c); });
-
-  // 1c. LOD selection
-  graph.AddPass<LODSelectData>(
-    "LODSelection",
-    xiiGALCommandQueueFlags::Compute,
-    [self, &blackboard](LODSelectData& data, xiiRGBuilder& b) { SetupLODSelection(*self, data, b, blackboard); },
-    [self](const LODSelectData& data, xiiRGPassContext& c) { ExecuteLODSelection(*self, data, c); });
-
   // 1d. Instance update (world matrices & bounds)
   graph.AddPass<InstanceUpdateData>(
     "InstanceUpdate",
