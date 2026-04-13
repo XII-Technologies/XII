@@ -15,63 +15,6 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-
-//
-// Cluster grid build
-//
-namespace
-{
-  struct ClusterBuildData
-  {
-    xiiRGBufferHandle m_hClusterDescriptors;
-    xiiUInt32         m_uiClusterX = 16u, m_uiClusterY = 9u, m_uiClusterZ = 24u;
-    float             m_fNearPlane = 0.1f, m_fFarPlane = 1000.0f;
-  };
-} // namespace
-
-static void SetupClusterBuild(xiiView& view, ClusterBuildData& data, xiiRGBuilder& builder)
-{
-  auto& vp          = view.m_ViewPassResources.m_VisibilityPasses;
-  data.m_uiClusterX = static_cast<xiiUInt32>(cvar_ClusterX.GetValue());
-  data.m_uiClusterY = static_cast<xiiUInt32>(cvar_ClusterY.GetValue());
-  data.m_uiClusterZ = static_cast<xiiUInt32>(cvar_ClusterZ.GetValue());
-
-  if (const xiiCamera* cam = view.GetCamera())
-  {
-    data.m_fNearPlane = cam->GetNearPlane();
-    data.m_fFarPlane  = cam->GetFarPlane();
-  }
-
-  const xiiUInt32 uiTotalClusters = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
-
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = 32u; // float4 min + float4 max per cluster AABB
-  desc.m_uiSize              = desc.m_uiElementByteStride * uiTotalClusters;
-  desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hClusterDescriptors = builder.WriteBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(vp.m_pClusterBuildPipeline, "Shaders/Pipeline/ClusterGridBuild.xiiShader");
-}
-
-static void ExecuteClusterBuild(xiiView& view, const ClusterBuildData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
-
-  cmd.BeginDebugGroup("ClusterGridBuild");
-  cmd.SetPipelineState(vp.m_pClusterBuildPipeline);
-  // Constant buffer with clustering params (uploaded inline via map).
-  // TODO: upload xiiLightClusteringConstants here.
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_ClustersOut", ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-
-  const xiiUInt32 uiTotal  = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
-  const xiiUInt32 uiGroups = (uiTotal + 63u) / 64u;
-  cmd.DispatchCompute({uiGroups, 1u, 1u});
-  cmd.EndDebugGroup();
-}
-
 //
 // Light list build
 //

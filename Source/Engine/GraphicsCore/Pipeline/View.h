@@ -33,6 +33,7 @@ struct xiiLODSelectData;
 struct xiiInstanceUpdateData;
 struct xiiDrawBuildData;
 struct xiiShadowCasterBuildData;
+struct xiiClusterBuildData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -150,6 +151,9 @@ private:
 
   void SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRGBuilder& builder);
   void ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xiiRGPassContext& context);
+
+  void SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder);
+  void ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
   void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);

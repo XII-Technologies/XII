@@ -11,6 +11,9 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
+
+#include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -422,6 +425,68 @@ void xiiView::ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xii
   cmd.EndDebugGroup();
 }
 
+////////// GPU Cluster Build Data //////////
+//
+// Builds a cluster grid for clustered shading on the GPU, using the depth buffer from the current frame's Depth Pre-Pass.
+// This is a compute pass that writes out a structured buffer of cluster descriptors, which is then consumed by the main lighting pass for light culling and shading.
+
+struct xiiClusterBuildData
+{
+  xiiRGBufferHandle m_hClusterDescriptors;  ///< UAV out (structured buffer of cluster descriptors, one per cluster, consumed by main lighting pass).
+  xiiUInt32         m_uiClusterX = 16U;     ///< Number of clusters in X dimension (tiled based on screen width and a fixed tile size, e.g. 16x16 pixels).
+  xiiUInt32         m_uiClusterY = 9U;      ///< Number of clusters in Y dimension (tiled based on screen height and a fixed tile size, e.g. 16x16 pixels).
+  xiiUInt32         m_uiClusterZ = 24U;     ///< Number of clusters in Z dimension (tiled based on depth range and a fixed slice count, e.g. 24 slices).
+  float             m_fNearPlane = 0.1f;    ///< Near plane distance for cluster grid.
+  float             m_fFarPlane  = 1000.0f; ///< Far plane distance for cluster grid.
+};
+
+void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder)
+{
+  data.m_uiClusterX = static_cast<xiiUInt32>(cvar_ClusterX.GetValue());
+  data.m_uiClusterY = static_cast<xiiUInt32>(cvar_ClusterY.GetValue());
+  data.m_uiClusterZ = static_cast<xiiUInt32>(cvar_ClusterZ.GetValue());
+  data.m_fNearPlane = m_pCamera->GetNearPlane();
+  data.m_fFarPlane  = m_pCamera->GetFarPlane();
+
+  const xiiUInt32 uiTotalClusters = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = 32U; // float4 min + float4 max per cluster AABB
+  description.m_uiSize              = description.m_uiElementByteStride * uiTotalClusters;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hClusterDescriptors        = builder.WriteBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pClusterBuildPipeline, "Shaders/Pipeline/ClusterGridBuild.xiiShader");
+}
+
+void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ClusterGridBuild");
+  {
+    {
+      xiiGALMapHelper<xiiLightClusteringConstants> pClusteringConstants(cmd, context.GetBuffer(data.m_hClusterDescriptors), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      pClusteringConstants->ClusterCountX = data.m_uiClusterX;
+      pClusteringConstants->ClusterCountY = data.m_uiClusterY;
+      pClusteringConstants->ClusterCountZ = data.m_uiClusterZ;
+      pClusteringConstants->NearPlane     = data.m_fNearPlane;
+      pClusteringConstants->FarPlane      = data.m_fFarPlane;
+    }
+
+    cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pClusterBuildPipeline);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_ClustersOut", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+    const xiiUInt32 uiTotal  = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
+    const xiiUInt32 uiGroups = (uiTotal + 63U) / 64U;
+    cmd.DispatchCompute({uiGroups, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
 {
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
@@ -430,16 +495,10 @@ void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraph
   graph.AddPass<xiiDrawBuildData>("DrawCommandBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDrawBuild, this), xiiMakeDelegate(&xiiView::ExecuteDrawBuild, this));
   graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiView::ExecuteInstanceUpdate, this));
+  graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
 
 
 #if 0
-  // 1g. Cluster grid build
-  graph.AddPass<ClusterBuildData>(
-    "ClusterGridBuild",
-    xiiGALCommandQueueFlags::Compute,
-    [self](ClusterBuildData& data, xiiRGBuilder& b) { SetupClusterBuild(*self, data, b); },
-    [self](const ClusterBuildData& data, xiiRGPassContext& c) { ExecuteClusterBuild(*self, data, c); });
-
   // 1h. Light list build
   graph.AddPass<LightListData>(
     "LightListBuild",
