@@ -89,49 +89,6 @@ static void ExecuteDrawBuild(xiiView& view, const DrawBuildData& data, xiiRGPass
   cmd.EndDebugGroup();
 }
 
-//
-// Shadow caster list build
-//
-namespace
-{
-  struct ShadowCasterBuildData
-  {
-    xiiRGBufferHandle m_hVisibleCandidates;
-    xiiRGBufferHandle m_hShadowCasterCommands;
-  };
-} // namespace
-
-static void SetupShadowCasterBuild(xiiView& view, ShadowCasterBuildData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& vp = view.m_ViewPassResources.m_VisibilityPasses;
-
-  xiiRGBufferHandle hCandidates;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_VisibleCandidateBuffer), hCandidates);
-  data.m_hVisibleCandidates = builder.ReadBuffer(hCandidates, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride   = 20u;                                                   // DrawIndexedIndirectArguments per cascade-per-bin
-  desc.m_uiSize                = desc.m_uiElementByteStride * k_uiMaxMaterialBins * 4u; // 4 cascades
-  desc.m_BindFlags             = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
-  desc.m_Mode                  = xiiGALBufferMode::Formatted;
-  data.m_hShadowCasterCommands = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(vp.m_pShadowCasterBuildPipeline, "Shaders/Pipeline/ShadowCasterCulling.xiiShader");
-}
-
-static void ExecuteShadowCasterBuild(xiiView& view, const ShadowCasterBuildData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
-
-  cmd.BeginDebugGroup("ShadowCasterListBuild");
-  cmd.SetPipelineState(vp.m_pShadowCasterBuildPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_VisibleCandidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_ShadowDrawArgs", ctx.GetBuffer(data.m_hShadowCasterCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(k_uiMaxInstances + 63u) / 64u, 1u, 1u});
-  cmd.EndDebugGroup();
-}
 
 //
 // Cluster grid build
