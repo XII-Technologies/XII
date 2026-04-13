@@ -4,6 +4,7 @@
 
 #define XII_MAX_LIGHTS_PER_CLUSTER 128U
 #define XII_CLUSTER_TILE_SIZE      16U
+#define XII_CLUSTER_Z_SLICES       24U
 
 /// \brief Constants shared by ClusterGridBuild and LightListBuild passes.
 ///

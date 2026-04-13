@@ -434,22 +434,13 @@ struct xiiClusterBuildData
 {
   xiiRGBufferHandle m_hClusterConstants;    ///< SRV in (structured buffer of cluster build constants, including cluster counts and depth range, consumed by the Cluster Build pass).
   xiiRGBufferHandle m_hClusterDescriptors;  ///< UAV out (structured buffer of cluster descriptors, one per cluster, consumed by main lighting pass).
-  xiiUInt32         m_uiClusterX = 16U;     ///< Number of clusters in X dimension (tiled based on screen width and a fixed tile size, e.g. 16x16 pixels).
-  xiiUInt32         m_uiClusterY = 9U;      ///< Number of clusters in Y dimension (tiled based on screen height and a fixed tile size, e.g. 16x16 pixels).
-  xiiUInt32         m_uiClusterZ = 24U;     ///< Number of clusters in Z dimension (tiled based on depth range and a fixed slice count, e.g. 24 slices).
-  float             m_fNearPlane = 0.1f;    ///< Near plane distance for cluster grid.
-  float             m_fFarPlane  = 1000.0f; ///< Far plane distance for cluster grid.
 };
 
 void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder)
 {
-  data.m_uiClusterX = static_cast<xiiUInt32>(cvar_ClusterX.GetValue());
-  data.m_uiClusterY = static_cast<xiiUInt32>(cvar_ClusterY.GetValue());
-  data.m_uiClusterZ = static_cast<xiiUInt32>(cvar_ClusterZ.GetValue());
-  data.m_fNearPlane = m_pCamera->GetNearPlane();
-  data.m_fFarPlane  = m_pCamera->GetFarPlane();
-
-  const xiiUInt32 uiTotalClusters = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
+  const xiiUInt32 uiClusterCountX = (m_Data.m_ViewPortRect.width + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+  const xiiUInt32 uiClusterCountY = (m_Data.m_ViewPortRect.height + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+  const xiiUInt32 uiTotalClusters = uiClusterCountX * uiClusterCountY * XII_CLUSTER_Z_SLICES;
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 32U; // float4 min + float4 max per cluster AABB
@@ -476,18 +467,23 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
 
   cmd.BeginDebugGroup("ClusterGridBuild");
   {
+    xiiUInt32 uiClusterCountX = (m_Data.m_ViewPortRect.width + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+    xiiUInt32 uiClusterCountY = (m_Data.m_ViewPortRect.height + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+    xiiUInt32 uiClusterCountZ = XII_CLUSTER_Z_SLICES;
+    xiiUInt32 uiTotalClusters = uiClusterCountX * uiClusterCountY * uiClusterCountZ;
+
     {
       xiiGALMapHelper<xiiLightClusteringConstants> pClusteringConstants(cmd, context.GetBuffer(data.m_hClusterConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-      pClusteringConstants->ClusterCountX       = data.m_uiClusterX;
-      pClusteringConstants->ClusterCountY       = data.m_uiClusterY;
-      pClusteringConstants->ClusterCountZ       = data.m_uiClusterZ;
-      pClusteringConstants->TotalClusters       = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
-      pClusteringConstants->NearPlane           = data.m_fNearPlane;
-      pClusteringConstants->FarPlane            = data.m_fFarPlane;
-      pClusteringConstants->LogFarOverNear      = xiiMath::Log2(data.m_fFarPlane / data.m_fNearPlane);
-      pClusteringConstants->TilePixelsX         = (data.m_uiClusterX * XII_CLUSTER_TILE_SIZE + m_Data.m_ViewPortRect.width - 1U) / m_Data.m_ViewPortRect.width;
-      pClusteringConstants->TilePixelsY         = (data.m_uiClusterY * XII_CLUSTER_TILE_SIZE + m_Data.m_ViewPortRect.height - 1U) / m_Data.m_ViewPortRect.height;
+      pClusteringConstants->ClusterCountX       = uiClusterCountX;
+      pClusteringConstants->ClusterCountY       = uiClusterCountY;
+      pClusteringConstants->ClusterCountZ       = uiClusterCountZ;
+      pClusteringConstants->TotalClusters       = uiTotalClusters;
+      pClusteringConstants->NearPlane           = m_pCamera->GetNearPlane();
+      pClusteringConstants->FarPlane            = m_pCamera->GetFarPlane();
+      pClusteringConstants->LogFarOverNear      = xiiMath::Log2(pClusteringConstants->FarPlane / pClusteringConstants->NearPlane);
+      pClusteringConstants->TilePixelsX         = XII_CLUSTER_TILE_SIZE;
+      pClusteringConstants->TilePixelsY         = XII_CLUSTER_TILE_SIZE;
       pClusteringConstants->MaxLightsPerCluster = XII_MAX_LIGHTS_PER_CLUSTER;
       pClusteringConstants->ActiveLightCount    = 0; ///< \todo : write actual count of active lights from extraction.
     }
@@ -497,8 +493,7 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
     cmd.ResolveAndSetUnorderedAccessBufferView("g_ClustersOut", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
-    const xiiUInt32 uiTotal  = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
-    const xiiUInt32 uiGroups = (uiTotal + 63U) / 64U;
+    const xiiUInt32 uiGroups = (uiTotalClusters + 63U) / 64U;
     cmd.DispatchCompute({uiGroups, 1U, 1U});
   }
   cmd.EndDebugGroup();
