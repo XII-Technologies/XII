@@ -212,9 +212,7 @@ void xiiView::ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRGPassContex
     cmd.ResolveAndSetShaderResourceBufferView("g_LODMetadata", context.GetBuffer(data.m_hLODMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_VisibleOut", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-
-    const xiiUInt32 uiGroups = (data.m_uiInstanceCount + 63U) / 64U;
-    cmd.DispatchCompute({uiGroups, 1U, 1U});
+    cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -258,9 +256,66 @@ void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRGPassContext& c
     cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", context.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_InstanceLODOut", context.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
 
-    const xiiUInt32 uiGroups = (data.m_uiInstanceCount + 63U) / 64U;
-    cmd.DispatchCompute({uiGroups, 1U, 1U});
+////////// GPU Instance Update //////////
+//
+// Updates instance data on the GPU, including world matrices and bounds, for the next frame's LOD selection and rendering passes.
+
+struct xiiInstanceUpdateData
+{
+  xiiRGBufferHandle m_hVisibleCandidates;  ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
+  xiiRGBufferHandle m_hInstanceMatrices;   ///< UAV out (structured buffer of instance world matrices, one per instance, consumed by next frame's LOD Selection and Frustum Culling).
+  xiiRGBufferHandle m_hInstanceBoundsOut;  ///< UAV out (structured buffer of xiiBoundingSphere, one per instance, consumed by next frame's Frustum Culling).
+  xiiUInt32         m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+};
+
+void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRGBuilder& builder)
+{
+  data.m_hVisibleCandidates = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_uiInstanceCount    = k_uiMaxInstances;
+
+  // Ensure persistent matrix buffer.
+  if (!m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride                              = 48U; // float4x3 (3 rows x 4 floats)
+    description.m_uiSize                                           = description.m_uiElementByteStride * k_uiMaxInstances;
+    description.m_BindFlags                                        = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+    description.m_Mode                                             = xiiGALBufferMode::Structured;
+    description.m_Usage                                            = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+  }
+
+  data.m_hInstanceMatrices = builder.ImportBuffer("InstanceWorldMatrices", m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hInstanceMatrices = builder.WriteBuffer(data.m_hInstanceMatrices, xiiGALResourceStateFlags::UnorderedAccess);
+
+  // Output AABB buffer for HiZ culling.
+  xiiGALBufferCreationDescription boundsBufferDescription;
+  boundsBufferDescription.m_uiElementByteStride = 32U;
+  boundsBufferDescription.m_uiSize              = boundsBufferDescription.m_uiElementByteStride * k_uiMaxInstances;
+  boundsBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  boundsBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hInstanceBoundsOut                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_InstanceBoundsBuffer, boundsBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pInstanceUpdatePipeline, "Shaders/Pipeline/InstanceUpdate.xiiShader");
+}
+
+void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("InstanceUpdate");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pInstanceUpdatePipeline);
+    cmd.ResolveAndSetShaderResourceBufferView("g_VisibleIn", context.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_MatricesOut", context.GetBuffer(data.m_hInstanceMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_BoundsOut", context.GetBuffer(data.m_hInstanceBoundsOut)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(data.m_uiInstanceCount + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -270,15 +325,9 @@ void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraph
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
   graph.AddPass<xiiFrustumCullData>("FrustumCulling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFrustumCull, this), xiiMakeDelegate(&xiiView::ExecuteFrustumCull, this));
   graph.AddPass<xiiLODSelectData>("LODSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLODSelect, this), xiiMakeDelegate(&xiiView::ExecuteLODSelect, this));
+  graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiView::ExecuteInstanceUpdate, this));
 
 #if 0
-  // 1d. Instance update (world matrices & bounds)
-  graph.AddPass<InstanceUpdateData>(
-    "InstanceUpdate",
-    xiiGALCommandQueueFlags::Compute,
-    [self, &blackboard](InstanceUpdateData& data, xiiRGBuilder& b) { SetupInstanceUpdate(*self, data, b, blackboard); },
-    [self](const InstanceUpdateData& data, xiiRGPassContext& c) { ExecuteInstanceUpdate(*self, data, c); });
-
   // 1e. Draw command build (GPU-driven indirect args)
   graph.AddPass<DrawBuildData>(
     "DrawCommandBuild",
