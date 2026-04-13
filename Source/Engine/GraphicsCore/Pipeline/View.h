@@ -31,6 +31,7 @@ struct xiiOcclusionReadbackData;
 struct xiiFrustumCullData;
 struct xiiLODSelectData;
 struct xiiInstanceUpdateData;
+struct xiiDrawBuildData;
 struct xiiShadowCasterBuildData;
 
 /// \brief Encapsulates a view on the given world through the given camera
@@ -143,6 +144,9 @@ private:
 
   void SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRGBuilder& builder);
   void ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRGPassContext& context);
+
+  void SetupDrawBuild(xiiDrawBuildData& data, xiiRGBuilder& builder);
+  void ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRGPassContext& context);
 
   void SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRGBuilder& builder);
   void ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xiiRGPassContext& context);

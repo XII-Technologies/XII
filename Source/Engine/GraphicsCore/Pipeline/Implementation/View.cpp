@@ -320,11 +320,72 @@ void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRGPass
   cmd.EndDebugGroup();
 }
 
+////////// GPU Draw Command Build //////////
+//
+// Builds indirect draw command buffers on the GPU, using the visible instance list from this frame's Frustum Culling and LOD selection from this frame's LOD Selection.
+// This is a compute pass that writes out a DrawIndexedIndirectArguments buffer for each draw bin (mesh x material), which is then consumed by the main GBuffer and Shadow Passes to execute GPU-driven indirect draws.
+
+struct xiiDrawBuildData
+{
+  xiiRGBufferHandle m_hSurvivors;          ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
+  xiiRGBufferHandle m_hInstanceLOD;        ///< SRV in (structured buffer of uint, one per instance, packed LOD level + meshlet offset, from this frame's LOD Selection).
+  xiiRGBufferHandle m_hDrawCommands;       ///< UAV out (structured buffer of DrawIndexedIndirectArguments, one per draw bin, consumed by GBuffer and Shadow Passes).
+  xiiRGBufferHandle m_hDrawCounts;         ///< UAV out (structured buffer of uint, one per draw bin, used for indirect count in multi-draw scenarios).
+  xiiUInt32         m_uiInstanceCount = 0; ///< Number of instances to process (from previous frame's Instance Update). This is used to avoid processing the entire buffer when only a subset is populated.
+};
+
+void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRGBuilder& builder)
+{
+  data.m_hSurvivors      = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceLOD    = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_uiInstanceCount = k_uiMaxInstances;
+
+  // Persistent indirect argument buffer (resized lazily).
+  const xiiUInt32 uiArgStride = 20U; // DrawIndexedIndirectArguments: 5 x uint
+  if (!m_ViewPassResources.m_VisibilityPasses.m_pDrawIndirectArgBuffer)
+  {
+    xiiGALBufferCreationDescription description;
+    description.m_uiElementByteStride                               = uiArgStride;
+    description.m_uiSize                                            = uiArgStride * k_uiMaxMaterialBins;
+    description.m_BindFlags                                         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments;
+    description.m_Mode                                              = xiiGALBufferMode::Formatted;
+    description.m_Usage                                             = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_VisibilityPasses.m_pDrawIndirectArgBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+  }
+  data.m_hDrawCommands = builder.ImportBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, m_ViewPassResources.m_VisibilityPasses.m_pDrawIndirectArgBuffer, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hDrawCommands = builder.WriteBuffer(data.m_hDrawCommands, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALBufferCreationDescription counterBufferDescription;
+  counterBufferDescription.m_uiElementByteStride = 4U;
+  counterBufferDescription.m_uiSize              = 4U * k_uiMaxMaterialBins;
+  counterBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  counterBufferDescription.m_Mode                = xiiGALBufferMode::Formatted;
+  data.m_hDrawCounts                             = builder.WriteBuffer(xiiRGBlackboardKeys::k_DrawCountBuffer, counterBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pDrawBuildPipeline, "Shaders/Pipeline/DrawCommandBuild.xiiShader");
+}
+
+void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("DrawCommandBuild");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pDrawBuildPipeline);
+    cmd.ResolveAndSetShaderResourceBufferView("g_Survivors", context.GetBuffer(data.m_hSurvivors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_InstanceLOD", context.GetBuffer(data.m_hInstanceLOD)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawArgs", context.GetBuffer(data.m_hDrawCommands)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_DrawCounts", context.GetBuffer(data.m_hDrawCounts)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(data.m_uiInstanceCount + 63u) / 64u, 1u, 1u});
+  }
+  cmd.EndDebugGroup();
+}
+
 ////////// GPU Shadow Caster List Build //////////
 //
 // Builds a list of shadow-casting instances for the current frame on the GPU, using the visible instance list from the current frame's Frustum Culling pass.
 // This is a compute pass that writes out a compact list of shadow-casting instance indices for the current frame, which is then consumed by the Shadow Passes.
-
 
 struct xiiShadowCasterBuildData
 {
@@ -366,6 +427,7 @@ void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraph
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
   graph.AddPass<xiiFrustumCullData>("FrustumCulling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFrustumCull, this), xiiMakeDelegate(&xiiView::ExecuteFrustumCull, this));
   graph.AddPass<xiiLODSelectData>("LODSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLODSelect, this), xiiMakeDelegate(&xiiView::ExecuteLODSelect, this));
+  graph.AddPass<xiiShadowCasterBuildData>("ShadowCasterListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCasterBuild, this), xiiMakeDelegate(&xiiView::ExecuteShadowCasterBuild, this));
   graph.AddPass<xiiInstanceUpdateData>("InstanceUpdate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupInstanceUpdate, this), xiiMakeDelegate(&xiiView::ExecuteInstanceUpdate, this));
 
 
