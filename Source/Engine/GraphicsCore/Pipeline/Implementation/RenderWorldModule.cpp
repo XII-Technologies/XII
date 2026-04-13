@@ -86,9 +86,10 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     msg.m_pView                = pView.Borrow();
     msg.m_pExtractedRenderData = pExtractedData;
 
-    // Broadcast to all objects; each object routes to matching component message handlers.
+    // Broadcast to all objects, each object routes to matching component message handlers.
     {
       XII_LOCK(GetWorld()->GetReadMarker());
+
       for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
       {
         it->SendMessage(msg);

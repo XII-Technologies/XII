@@ -667,7 +667,7 @@ XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::InsertAt(xiiUIn
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
 XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::InsertAt(xiiUInt32 uiIndex, T&& value)
 {
-  SUPER::Insert(value, uiIndex, AllocatorWrapper::GetAllocator());
+  SUPER::Insert(std::move(value), uiIndex, AllocatorWrapper::GetAllocator());
 }
 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>

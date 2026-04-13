@@ -432,6 +432,7 @@ void xiiView::ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xii
 
 struct xiiClusterBuildData
 {
+  xiiRGBufferHandle m_hClusterConstants;    ///< SRV in (structured buffer of cluster build constants, including cluster counts and depth range, consumed by the Cluster Build pass).
   xiiRGBufferHandle m_hClusterDescriptors;  ///< UAV out (structured buffer of cluster descriptors, one per cluster, consumed by main lighting pass).
   xiiUInt32         m_uiClusterX = 16U;     ///< Number of clusters in X dimension (tiled based on screen width and a fixed tile size, e.g. 16x16 pixels).
   xiiUInt32         m_uiClusterY = 9U;      ///< Number of clusters in Y dimension (tiled based on screen height and a fixed tile size, e.g. 16x16 pixels).
@@ -458,6 +459,15 @@ void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder
   data.m_hClusterDescriptors        = builder.WriteBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pClusterBuildPipeline, "Shaders/Pipeline/ClusterGridBuild.xiiShader");
+
+  description.m_uiElementByteStride = 0;
+  description.m_uiSize              = sizeof(xiiLightClusteringConstants);
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Undefined;
+  description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  description.m_Usage               = xiiGALResourceUsage::Dynamic;
+
+  data.m_hClusterConstants = builder.WriteBuffer("xiiLightClusteringConstants", description, xiiGALResourceStateFlags::ShaderResource);
 }
 
 void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context)
@@ -467,16 +477,23 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
   cmd.BeginDebugGroup("ClusterGridBuild");
   {
     {
-      xiiGALMapHelper<xiiLightClusteringConstants> pClusteringConstants(cmd, context.GetBuffer(data.m_hClusterDescriptors), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      xiiGALMapHelper<xiiLightClusteringConstants> pClusteringConstants(cmd, context.GetBuffer(data.m_hClusterConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-      pClusteringConstants->ClusterCountX = data.m_uiClusterX;
-      pClusteringConstants->ClusterCountY = data.m_uiClusterY;
-      pClusteringConstants->ClusterCountZ = data.m_uiClusterZ;
-      pClusteringConstants->NearPlane     = data.m_fNearPlane;
-      pClusteringConstants->FarPlane      = data.m_fFarPlane;
+      pClusteringConstants->ClusterCountX       = data.m_uiClusterX;
+      pClusteringConstants->ClusterCountY       = data.m_uiClusterY;
+      pClusteringConstants->ClusterCountZ       = data.m_uiClusterZ;
+      pClusteringConstants->TotalClusters       = data.m_uiClusterX * data.m_uiClusterY * data.m_uiClusterZ;
+      pClusteringConstants->NearPlane           = data.m_fNearPlane;
+      pClusteringConstants->FarPlane            = data.m_fFarPlane;
+      pClusteringConstants->LogFarOverNear      = xiiMath::Log2(data.m_fFarPlane / data.m_fNearPlane);
+      pClusteringConstants->TilePixelsX         = (data.m_uiClusterX * XII_CLUSTER_TILE_SIZE + m_Data.m_ViewPortRect.width - 1U) / m_Data.m_ViewPortRect.width;
+      pClusteringConstants->TilePixelsY         = (data.m_uiClusterY * XII_CLUSTER_TILE_SIZE + m_Data.m_ViewPortRect.height - 1U) / m_Data.m_ViewPortRect.height;
+      pClusteringConstants->MaxLightsPerCluster = XII_MAX_LIGHTS_PER_CLUSTER;
+      pClusteringConstants->ActiveLightCount    = 0; ///< \todo : write actual count of active lights from extraction.
     }
 
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pClusterBuildPipeline);
+    cmd.ResolveAndSetShaderResourceBufferView("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_ClustersOut", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
