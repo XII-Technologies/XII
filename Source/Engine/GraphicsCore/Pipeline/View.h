@@ -34,6 +34,7 @@ struct xiiInstanceUpdateData;
 struct xiiDrawBuildData;
 struct xiiShadowCasterBuildData;
 struct xiiClusterBuildData;
+struct xiiLightListData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -154,6 +155,9 @@ private:
 
   void SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder);
   void ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context);
+
+  void SetupLightListBuild(xiiLightListData& data, xiiRGBuilder& builder);
+  void ExecuteLightListBuild(const xiiLightListData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
   void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);

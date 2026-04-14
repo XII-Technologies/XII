@@ -16,67 +16,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// Light list build
-//
-namespace
-{
-  struct LightListData
-  {
-    xiiRGBufferHandle m_hClusterDescriptors;
-    xiiRGBufferHandle m_hLightIndexBuffer;
-    xiiRGBufferHandle m_hLightGridBuffer;
-    xiiUInt32         m_uiActiveLightCount = 0;
-  };
-} // namespace
-
-static void SetupLightListBuild(xiiView& view, LightListData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& vp = view.m_ViewPassResources.m_VisibilityPasses;
-
-  xiiRGBufferHandle hClusters;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_ClusterDescriptors), hClusters);
-  data.m_hClusterDescriptors = builder.ReadBuffer(hClusters, xiiGALResourceStateFlags::ShaderResource);
-
-  const xiiUInt32 uiMaxClusters    = 16u * 9u * 24u; // worst case
-  const xiiUInt32 uiMaxLightsPerCl = 256u;
-
-  xiiGALBufferCreationDescription idxDesc;
-  idxDesc.m_uiElementByteStride = 4u;
-  idxDesc.m_uiSize              = 4u * uiMaxClusters * uiMaxLightsPerCl;
-  idxDesc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  idxDesc.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hLightIndexBuffer      = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, idxDesc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiGALBufferCreationDescription gridDesc;
-  gridDesc.m_uiElementByteStride = 8u; // uint2 (offset, count) per cluster
-  gridDesc.m_uiSize              = gridDesc.m_uiElementByteStride * uiMaxClusters;
-  gridDesc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  gridDesc.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hLightGridBuffer        = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, gridDesc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  data.m_uiActiveLightCount = xiiClusteredDataCPU::MAX_LIGHT_DATA;
-
-  xiiView::EnsureComputePipeline(vp.m_pLightListPipeline, "Shaders/Pipeline/LightListBuild.xiiShader");
-}
-
-static void ExecuteLightListBuild(xiiView& view, const LightListData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
-
-  cmd.BeginDebugGroup("LightListBuild");
-  cmd.SetPipelineState(vp.m_pLightListPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex", ctx.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", ctx.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-
-  const xiiUInt32 uiGroups = (data.m_uiActiveLightCount + 63u) / 64u;
-  cmd.DispatchCompute({uiGroups, 1u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // Reflection probe selection
 //
 namespace
