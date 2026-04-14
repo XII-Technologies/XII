@@ -16,50 +16,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// Reflection probe selection
-//
-namespace
-{
-  struct ReflProbeSelectData
-  {
-    xiiRGBufferHandle m_hClusterDescriptors;
-    xiiRGBufferHandle m_hProbeMask;
-  };
-} // namespace
-
-static void SetupReflProbeSelect(xiiView& view, ReflProbeSelectData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& vp = view.m_ViewPassResources.m_VisibilityPasses;
-
-  xiiRGBufferHandle hClusters;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_ClusterDescriptors), hClusters);
-  data.m_hClusterDescriptors = builder.ReadBuffer(hClusters, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = 4u;
-  desc.m_uiSize              = 4u * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
-  desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hProbeMask          = builder.WriteBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(vp.m_pProbeSelectPipeline, "Shaders/Pipeline/GpuDrivenVisibilityCulling.xiiShader");
-}
-
-static void ExecuteReflProbeSelect(xiiView& view, const ReflProbeSelectData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              vp  = view.m_ViewPassResources.m_VisibilityPasses;
-
-  cmd.BeginDebugGroup("ReflectionProbeSelection");
-  cmd.SetPipelineState(vp.m_pProbeSelectPipeline);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", ctx.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_ProbeMask", ctx.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA + 63u) / 64u, 1u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // Volumetric grid allocation (froxel setup)
 //
 namespace
