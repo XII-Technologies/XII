@@ -39,6 +39,7 @@ struct xiiReflectionProbeSelectData;
 struct xiiFroxelAllocationData;
 
 struct xiiShadowCascadeSetupData;
+struct xiiDirectionalShadowData;
 
 
 /// \brief Encapsulates a view on the given world through the given camera
@@ -173,6 +174,9 @@ private:
 
   void SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuilder& builder);
   void ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, xiiRGPassContext& context);
+
+  void SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRGBuilder& builder);
+  void ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders.
   void BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);

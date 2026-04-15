@@ -727,6 +727,87 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
   cmd.EndDebugGroup();
 }
 
+////////// GPU Directional Shadow Data //////////
+//
+// Collects all GPU resources related to directional shadow rendering for the current frame, including cascade matrices, shadow caster lists, and shadow atlases.
+
+struct xiiDirectionalShadowData
+{
+  xiiRGBufferHandle  m_hCascadeMatrices;        ///< SRV in (structured buffer of float4x4 cascade view-projection matrices, one per cascade, from this frame's Shadow Cascade Setup pass).
+  xiiRGBufferHandle  m_hShadowCasterCommands;   ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per cascade-per-bin, from this frame's Shadow Caster Build pass).
+  xiiRGTextureHandle m_hDirectionalShadowAtlas; ///< SRV in (texture atlas for directional shadow maps, written by Shadow Passes, read by main lighting pass).
+  xiiUInt32          m_uiActiveCascades = 3U;   ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes and main lighting pass.
+};
+
+void xiiView::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRGBuilder& builder)
+{
+  // Persistent directional shadow atlas (D32 float array of 4 slices).
+  if (!m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                           = xiiGALResourceDimension::Texture2DArray;
+    description.m_Format                                         = xiiGALResourceFormat::D32Float;
+    description.m_Size.width                                     = k_uiDirectionalShadowAtlasWidth;
+    description.m_Size.height                                    = k_uiDirectionalShadowAtlasHeight;
+    description.m_uiArraySizeOrDepth                             = 4U;
+    description.m_uiMipLevels                                    = 1U;
+    description.m_BindFlags                                      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                          = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  }
+
+  data.m_hCascadeMatrices        = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hShadowCasterCommands   = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, {}), xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDirectionalShadowAtlas = builder.WriteTexture(data.m_hDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_uiActiveCascades        = 3U;
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("DirectionalShadowMaps");
+  {
+    xiiGALTexture* pAtlas = context.GetTexture(data.m_hDirectionalShadowAtlas);
+
+    xiiStringBuilder sb;
+    for (xiiUInt32 uiCascade = 0; uiCascade < data.m_uiActiveCascades; ++uiCascade)
+    {
+      xiiGALScopedDebugGroup debugGroup(cmd, sb);
+
+      // Bind atlas slice as depth-stencil.
+      xiiGALTextureViewCreationDescription viewDescription;
+      viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
+      viewDescription.m_uiFirstArrayOrDepthSlice  = uiCascade;
+      viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+
+      // Set viewport matching atlas tile.
+      cmd.SetViewport({0.0f, 0.0f, static_cast<float>(k_uiDirectionalShadowAtlasWidth), static_cast<float>(k_uiDirectionalShadowAtlasHeight), 0.0f, 1.0f});
+      cmd.ClearDepthStencilView(pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
+
+      if (m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline)
+      {
+        cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline);
+
+        xiiGALDrawIndexedIndirectDescription indexedIndirectDrawDescription;
+        indexedIndirectDrawDescription.m_IndexType             = xiiGALValueType::UInt32;
+        indexedIndirectDrawDescription.m_pBuffer               = context.GetBuffer(data.m_hShadowCasterCommands);
+        indexedIndirectDrawDescription.m_uiDrawArgumentOffset  = uiCascade * 20U; // offset per cascade DrawIndexedIndirectArguments (uint index count, uint instance count, uint start index location, int base vertex location, uint start instance location).
+        indexedIndirectDrawDescription.m_uiDrawArgumentStride  = 20U;             // stride per cascade DrawIndexedIndirectArguments (uint index count, uint instance count, uint start index location, int base vertex location, uint start instance location).
+        indexedIndirectDrawDescription.m_uiDrawCount           = 1U;              // one draw call per cascade, with instance count in argument buffer specifying how many instances to draw for that cascade.
+        indexedIndirectDrawDescription.m_BufferStateTransition = xiiGALStateTransitionMode::Transition;
+
+        // Cascade index uploaded via push constant / cbuffer update.
+        cmd.DrawIndexedIndirect(indexedIndirectDrawDescription);
+      }
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -750,6 +831,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
+  graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));
 }
 
 // static
