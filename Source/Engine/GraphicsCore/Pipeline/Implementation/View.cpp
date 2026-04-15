@@ -886,7 +886,7 @@ void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& build
 void xiiView::ExecutePointShadowData(const xiiPointShadowData& data, xiiRGPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
-  
+
   if (data.m_uiPointLightCount == 0U || !m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline)
     return;
 
@@ -903,18 +903,48 @@ void xiiView::ExecutePointShadowData(const xiiPointShadowData& data, xiiRGPassCo
   cmd.EndDebugGroup();
 }
 
+////////// GPU Ray-Traced Shadow Data //////////
+//
+// Collects all GPU resources related to ray-traced shadow rendering for the current frame, including raw shadow masks and scene depth.
+
 struct xiiRayTracedShadowData
 {
-  xiiRGTextureHandle m_hRTRawShadowMask;
-  xiiRGTextureHandle m_hSceneDepth;
+  xiiRGTextureHandle m_hRTRawShadowMask; ///< UAV out (texture containing raw ray-traced shadow masks, written by Ray-Traced Shadow Pass, read by Shadow Denoise Pass).
+  xiiRGTextureHandle m_hSceneDepth;      ///< SRV in (depth texture from main render pass, used for ray-traced shadow ray generation and occlusion testing).
 };
 
 void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilder& builder)
 {
+  data.m_hSceneDepth = builder.ReadTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, {}), xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::R8UNormalized;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1u;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hRTRawShadowMask   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pShadowDenoisePipeline, "Shaders/Pipeline/RTShadow.xiiShader");
+
+  builder.SetPassAllowMerge(false);
 }
 
 void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xiiRGPassContext& context)
 {
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("Ray-Traced Shadows");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDenoisePipeline); // reusing slot for RT pipeline
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_RTShadowOut", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(context.GetBlackboard().GetRef<xiiUInt32>(xiiRGBlackboardKeys::k_RenderWidth) + 7U) / 8U, (context.GetBlackboard().GetRef<xiiUInt32>(xiiRGBlackboardKeys::k_RenderHeight) + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
 }
 
 struct xiiShadowDenoiseData
