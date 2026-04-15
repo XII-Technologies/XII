@@ -38,6 +38,9 @@ struct xiiLightListData;
 struct xiiReflectionProbeSelectData;
 struct xiiFroxelAllocationData;
 
+struct xiiShadowCascadeSetupData;
+
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -166,6 +169,10 @@ private:
 
   void SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRGBuilder& builder);
   void ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRGPassContext& context);
+
+
+  void SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuilder& builder);
+  void ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders.
   void BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);

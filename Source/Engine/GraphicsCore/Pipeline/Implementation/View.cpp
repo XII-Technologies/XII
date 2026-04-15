@@ -25,6 +25,12 @@ namespace
   static constexpr xiiUInt32 k_uiMaxInstances    = 65536U; ///< The maximum number of drawable objects in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
   static constexpr xiiUInt32 k_uiMaxLights       = 1024U;  ///< The maximum number of active lights in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
   static constexpr xiiUInt32 k_uiMaxMaterialBins = 512U;   ///< The maximum number of distinct (mesh x material) draw bins in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
+
+  static constexpr xiiUInt32 k_uiMaxReflectionProbes = 64U; ///< The maximum number of active reflection probes in one frame. This is used to dimension GPU buffers, so it should be set generously to avoid out-of-memory situations, but not excessively to avoid wasting memory.
+
+  static constexpr xiiUInt32 k_uiDirectionalShadowAtlasWidth  = 4096U; ///< The width of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The height will be the same as the width, and each cascade will be allocated a quadrant of the atlas.
+  static constexpr xiiUInt32 k_uiDirectionalShadowAtlasHeight = 4096U; ///< The height of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The width will be the same as the height, and each cascade will be allocated a quadrant of the atlas.
+  static constexpr xiiUInt32 k_uiLocalShadowAtlasSize         = 4096U; ///< The size of the local shadow atlas. This should be sized to fit the maximum number of local shadows in one frame. The atlas will be a single 2D texture for spot and point lights.
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
@@ -561,8 +567,6 @@ struct xiiReflectionProbeSelectData
   xiiRGBufferHandle m_hProbeMask;          ///< UAV out (structured buffer of uint, one per instance, bitmask of which reflection probes affect each instance, consumed by main lighting pass).
 };
 
-constexpr xiiUInt32 k_uiMaxReflectionProbes = 64U;
-
 void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRGBuilder& builder)
 {
   data.m_hClusterDescriptors = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, {}), xiiGALResourceStateFlags::ShaderResource);
@@ -643,10 +647,89 @@ void xiiView::ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRG
   cmd.EndDebugGroup();
 }
 
+////////// GPU Shadow Cascade Setup Data //////////
+//
+// Sets up shadow cascades for the current frame on the GPU, using the visible instance list from the current frame's Frustum Culling pass and instance bounds from the previous frame's Instance Update pass.
+// This is a compute pass that writes out a structured buffer of cascade matrices and a texture of froxel scattering, which are then consumed by the main lighting pass for froxel-based lighting.
+
+struct xiiShadowCascadeSetupData
+{
+  xiiRGBufferHandle m_hCascadeMatrices;                              ///< UAV out (structured buffer of float4x4 cascade view-projection matrices, one per cascade, consumed by Shadow Passes).
+  xiiUInt32         m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
+  xiiVec3           m_vLightDir        = xiiVec3(0.0f, -1.0f, 0.0f); ///< Direction of the main directional light, used for computing cascade splits and matrices.
+  float             m_fNearPlane       = 0.1f;                       ///< Near plane distance for shadow cascades, used for computing cascade splits and matrices.
+  float             m_fFarPlane        = 1000.0f;                    ///< Far plane distance for shadow cascades, used for computing cascade splits and matrices.
+};
+
+void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuilder& builder)
+{
+  data.m_uiActiveCascades = 3U;
+  data.m_vLightDir        = xiiVec3(0.0f, -1.0f, 0.0f);
+  data.m_fNearPlane       = m_pCamera->GetNearPlane();
+  data.m_fFarPlane        = m_pCamera->GetFarPlane();
+
+  // Walk extracted data to find directional light.
+  xiiArrayPtr<xiiRenderData* const> pLightRenderData = m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light);
+  for (xiiRenderData* pRenderData : pLightRenderData)
+  {
+    if (auto pDirectionalLightRenderData = xiiDynamicCast<const xiiDirectionalLightRenderData*>(pRenderData))
+    {
+      data.m_vLightDir        = -pDirectionalLightRenderData->m_GlobalTransform.GetColumn(2).GetAsVec3().GetNormalized();
+      data.m_uiActiveCascades = 3U; // Could read from component property via msg if exposed.
+      break;
+    }
+  }
+
+  // GPU buffer: ShadowCascadeConstants (float4x4[4] + float4 + uint + pad3)
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = sizeof(xiiShadowCascadeConstants);
+  description.m_uiSize              = description.m_uiElementByteStride;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hCascadeMatrices           = builder.WriteBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pCascadeSetupPipeline, "Shaders/Pipeline/ShadowCascadeSetup.xiiShader");
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ShadowCascadeSetup");
+  {
+    {
+      xiiGALMapHelper<xiiShadowCascadeConstants> pConstants(cmd, context.GetBuffer(data.m_hCascadeMatrices), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+      pConstants->ActiveCascadeCount = data.m_uiActiveCascades;
+
+      // Cascade split depths: practical split scheme based on camera range.
+      const float fRange = data.m_fFarPlane - data.m_fNearPlane;
+      for (xiiUInt32 i = 0; i < 4; ++i)
+      {
+        const float t                               = static_cast<float>(i + 1) / 4.0f;
+        pConstants->CascadeSplitDepths.GetData()[i] = data.m_fNearPlane + fRange * t * t; // quadratic split
+      }
+
+      // Cascade view-projection matrices are computed on CPU, written once per directional light.
+      // (Full implementation would call xiiView::ComputeCascadeViewProjection; simplified for now.)
+      for (xiiUInt32 i = 0; i < 4; ++i)
+      {
+        pConstants->CascadeViewProjection[i] = xiiMat4::MakeIdentity();
+      }
+    }
+
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pCascadeSetupPipeline);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_CascadeOut", context.GetBuffer(data.m_hCascadeMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({1U, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  // Stage 0: CPU dynamic resolution PID (pre-graph, writes to blackboard).
-  // Must happen before BeginSetup so passes see the correct render dimensions.
+  // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
   RunDynamicResolutionPID(blackboard);
 
   XII_ASSERT_DEV(blackboard.Contains(xiiRGBlackboardKeys::k_RenderWidth) && blackboard.Contains(xiiRGBlackboardKeys::k_RenderHeight), "Dynamic resolution PID did not write render dimensions to the blackboard.");
@@ -665,17 +748,8 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiReflectionProbeSelectData>("ReflectionProbeSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeSelect, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeSelect, this));
   graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiView::ExecuteFroxelAllocation, this));
 
-  BuildStage2_Shadows(graph, blackboard);
-  BuildStage3_Depth(graph, blackboard);
-  BuildStage4_GBuffer(graph, blackboard);
-  BuildStage5_LightingPrep(graph, blackboard);
-  BuildStage6_MainLighting(graph, blackboard);
-  BuildStage7_Forward(graph, blackboard);
-  BuildStage8_Transparency(graph, blackboard);
-  BuildStage9_ScreenSpace(graph, blackboard);
-  BuildStage10_Temporal(graph, blackboard);
-  BuildStage11_PostProcess(graph, blackboard);
-  BuildStage12_Output(graph, blackboard);
+  // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
+  graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
 }
 
 // static
