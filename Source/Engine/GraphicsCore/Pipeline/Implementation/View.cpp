@@ -808,6 +808,143 @@ void xiiView::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data,
   cmd.EndDebugGroup();
 }
 
+////////// GPU Spot Shadow Data //////////
+//
+// Collects all GPU resources related to spot shadow rendering for the current frame, including shadow caster lists and shadow atlases.
+
+struct xiiSpotShadowData
+{
+  xiiRGBufferHandle  m_hShadowCasterCommands; ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per spot light, from this frame's Shadow Caster Build pass).
+  xiiRGTextureHandle m_hLocalShadowAtlas;     ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
+  xiiUInt32          m_uiSpotLightCount = 0;  ///< Number of active spot lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
+};
+
+void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                     = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                   = xiiGALResourceFormat::D32Float;
+    description.m_Size.width                               = k_uiLocalShadowAtlasSize;
+    description.m_Size.height                              = k_uiLocalShadowAtlasSize;
+    description.m_uiMipLevels                              = 1U;
+    description.m_BindFlags                                = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                    = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  }
+
+  data.m_hShadowCasterCommands = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, {}), xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hLocalShadowAtlas     = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hLocalShadowAtlas     = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_uiSpotLightCount      = static_cast<xiiUInt32>(m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light).GetCount()); // \todo: actual spotlight count from extraction, not just total light count.
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  if (data.m_uiSpotLightCount == 0u || !m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline)
+    return;
+
+  cmd.BeginDebugGroup("SpotLightShadows");
+  {
+    xiiGALTexture* pAtlas = context.GetTexture(data.m_hLocalShadowAtlas);
+
+    // For each spot light, render into its atlas tile.
+    // Atlas allocation managed by LocalLightShadowAtlasAllocation pass (deferred to full impl).
+    cmd.ClearDepthStencilView(pAtlas->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline);
+    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(k_uiLocalShadowAtlasSize), static_cast<float>(k_uiLocalShadowAtlasSize), 0.0f, 1.0f});
+    cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands)}); // // Indirect multi-draw from shadow caster argument buffer.
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Point Shadow Data //////////
+//
+// Collects all GPU resources related to point shadow rendering for the current frame, including shadow caster lists and shadow atlases.
+
+struct xiiPointShadowData
+{
+  xiiRGBufferHandle  m_hShadowCasterCommands; ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per point light, from this frame's Shadow Caster Build pass).
+  xiiRGTextureHandle m_hLocalShadowAtlas;     ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
+  xiiUInt32          m_uiPointLightCount = 0; ///< Number of active point lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
+};
+
+void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& builder)
+{
+  data.m_hShadowCasterCommands = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, {}), xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hLocalShadowAtlas     = builder.WriteTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, {}), xiiGALResourceStateFlags::DepthWrite);
+  data.m_uiPointLightCount     = static_cast<xiiUInt32>(m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light).GetCount()); // \todo: actual point light count from extraction, not just total light count.
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecutePointShadowData(const xiiPointShadowData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+  
+  if (data.m_uiPointLightCount == 0U || !m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline)
+    return;
+
+  cmd.BeginDebugGroup("PointLightCubeShadows");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDepthPipeline);
+
+    // Each point light: 6 draw calls placing results into 6 atlas tiles.
+    for (xiiUInt32 uiFace = 0; uiFace < data.m_uiPointLightCount * 6U; ++uiFace)
+    {
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hShadowCasterCommands), 1U, uiFace * 20U});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
+struct xiiRayTracedShadowData
+{
+  xiiRGTextureHandle m_hRTRawShadowMask;
+  xiiRGTextureHandle m_hSceneDepth;
+};
+
+void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilder& builder)
+{
+}
+
+void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xiiRGPassContext& context)
+{
+}
+
+struct xiiShadowDenoiseData
+{
+  xiiRGTextureHandle m_hRTRawShadowMask;
+  xiiRGTextureHandle m_hRTFinalShadowMask;
+};
+
+void xiiView::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRGBuilder& builder)
+{
+}
+
+void xiiView::ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRGPassContext& context)
+{
+}
+
+struct xiiContactShadowData
+{
+  xiiRGTextureHandle m_hSceneDepth;
+  xiiRGTextureHandle m_hContactShadow;
+};
+
+void xiiView::SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& builder)
+{
+}
+
+void xiiView::ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPassContext& context)
+{
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -832,6 +969,11 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
   graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));
+  graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
+  graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPointShadowData, this), xiiMakeDelegate(&xiiView::ExecutePointShadowData, this));
+  graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
+  graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
+  graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
 }
 
 // static

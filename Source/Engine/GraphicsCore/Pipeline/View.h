@@ -40,7 +40,11 @@ struct xiiFroxelAllocationData;
 
 struct xiiShadowCascadeSetupData;
 struct xiiDirectionalShadowData;
-
+struct xiiSpotShadowData;
+struct xiiPointShadowData;
+struct xiiRayTracedShadowData;
+struct xiiShadowDenoiseData;
+struct xiiContactShadowData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -141,6 +145,7 @@ private:
   // CPU PID dynamic resolution (runs before BeginSetup)
   void RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard);
 
+
   void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder);
   void ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xiiRGPassContext& context);
 
@@ -178,18 +183,21 @@ private:
   void SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRGBuilder& builder);
   void ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRGPassContext& context);
 
-  // Per-stage graph builders.
-  void BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage4_GBuffer(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage5_LightingPrep(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage6_MainLighting(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage7_Forward(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage8_Transparency(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage9_ScreenSpace(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage10_Temporal(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage11_PostProcess(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
-  void BuildStage12_Output(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  void SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder);
+  void ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRGPassContext& context);
+
+  void SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& builder);
+  void ExecutePointShadowData(const xiiPointShadowData& data, xiiRGPassContext& context);
+
+  void SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilder& builder);
+  void ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xiiRGPassContext& context);
+
+  void SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRGBuilder& builder);
+  void ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRGPassContext& context);
+
+  void SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& builder);
+  void ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPassContext& context);
+
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
