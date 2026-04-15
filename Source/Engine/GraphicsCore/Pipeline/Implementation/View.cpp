@@ -561,13 +561,15 @@ struct xiiReflectionProbeSelectData
   xiiRGBufferHandle m_hProbeMask;          ///< UAV out (structured buffer of uint, one per instance, bitmask of which reflection probes affect each instance, consumed by main lighting pass).
 };
 
+constexpr xiiUInt32 k_uiMaxReflectionProbes = 64U;
+
 void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRGBuilder& builder)
 {
   data.m_hClusterDescriptors = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, {}), xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 4U;
-  description.m_uiSize              = 4U * 1024; ///< \todo : use a well defined constant for a reasonable upper limit.
+  description.m_uiSize              = 4U * k_uiMaxReflectionProbes; ///< \todo : use a well defined constant for a reasonable upper limit.
   description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
   description.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hProbeMask                 = builder.WriteBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, description, xiiGALResourceStateFlags::UnorderedAccess);
@@ -585,7 +587,7 @@ void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& d
     cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_ProbeMask", context.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA + 63U) / 64U, 1U, 1U});
+    cmd.DispatchCompute({(k_uiMaxReflectionProbes + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
