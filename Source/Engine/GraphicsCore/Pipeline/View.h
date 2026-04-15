@@ -36,6 +36,7 @@ struct xiiShadowCasterBuildData;
 struct xiiClusterBuildData;
 struct xiiLightListData;
 struct xiiReflectionProbeSelectData;
+struct xiiFroxelAllocationData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -162,6 +163,9 @@ private:
 
   void SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRGBuilder& builder);
   void ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& data, xiiRGPassContext& context);
+
+  void SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRGBuilder& builder);
+  void ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRGPassContext& context);
 
   // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
   void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);

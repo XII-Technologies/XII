@@ -590,6 +590,57 @@ void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& d
   cmd.EndDebugGroup();
 }
 
+////////// GPU Froxel Allocation Data //////////
+//
+// Allocates froxels for the current frame on the GPU, using the visible instance list from the current frame's Frustum Culling pass and instance bounds from the previous frame's Instance Update pass.
+// This is a compute pass that writes out a structured buffer of froxel metadata and a texture of froxel scattering, which are then consumed by the main lighting pass for froxel-based lighting.
+
+struct xiiFroxelAllocationData
+{
+  xiiRGBufferHandle  m_hFroxelMetadata;
+  xiiRGTextureHandle m_hFroxelScattering;
+  xiiUInt32          m_uiRenderWidth  = 1920U;
+  xiiUInt32          m_uiRenderHeight = 1080U;
+};
+
+void xiiView::SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRGBuilder& builder)
+{
+  xiiGALBufferCreationDescription froxelMetadataBufferDescription;
+  froxelMetadataBufferDescription.m_uiElementByteStride = 32U;                                                                      // per-froxel density + phase + absorption
+  froxelMetadataBufferDescription.m_uiSize              = froxelMetadataBufferDescription.m_uiElementByteStride * 128U * 72U * 64U; // froxel volume
+  froxelMetadataBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  froxelMetadataBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
+  data.m_hFroxelMetadata                                = builder.WriteBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, froxelMetadataBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiGALTextureCreationDescription scatteringBufferDescription;
+  scatteringBufferDescription.m_Type               = xiiGALResourceDimension::Texture3D;
+  scatteringBufferDescription.m_Format             = xiiGALResourceFormat::RGBA16Float;
+  scatteringBufferDescription.m_Size.width         = 128U;
+  scatteringBufferDescription.m_Size.height        = 72U;
+  scatteringBufferDescription.m_uiArraySizeOrDepth = 64U;
+  scatteringBufferDescription.m_uiMipLevels        = 1U;
+  scatteringBufferDescription.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  scatteringBufferDescription.m_Usage              = xiiGALResourceUsage::Default;
+  data.m_hFroxelScattering                         = builder.WriteTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, scatteringBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pFroxelSetupPipeline, "Shaders/Pipeline/FroxelSetup.xiiShader");
+}
+
+void xiiView::ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("VolumetricGridAllocation");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pFroxelSetupPipeline);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_FroxelMetaOut", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScatteringOut", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(128u + 7U) / 8U, (72U + 7U) / 8U, 8U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard)
 {
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
@@ -601,24 +652,8 @@ void xiiView::BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraph
   graph.AddPass<xiiClusterBuildData>("ClusterGridBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupClusterBuild, this), xiiMakeDelegate(&xiiView::ExecuteClusterBuild, this));
   graph.AddPass<xiiLightListData>("LightListBuild", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightListBuild, this), xiiMakeDelegate(&xiiView::ExecuteLightListBuild, this));
   graph.AddPass<xiiReflectionProbeSelectData>("ReflectionProbeSelection", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeSelect, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeSelect, this));
-
-#if 0
-  // 1i. Reflection probe selection
-  graph.AddPass<ReflProbeSelectData>(
-    "ReflectionProbeSelection",
-    xiiGALCommandQueueFlags::Compute,
-    [self, &blackboard](ReflProbeSelectData& data, xiiRGBuilder& b) { SetupReflProbeSelect(*self, data, b, blackboard); },
-    [self](const ReflProbeSelectData& data, xiiRGPassContext& c) { ExecuteReflProbeSelect(*self, data, c); });
-
-  // 1j. Volumetric froxel grid allocation
-  graph.AddPass<FroxelAllocData>(
-    "VolumetricGridAlloc",
-    xiiGALCommandQueueFlags::Compute,
-    [self, &blackboard](FroxelAllocData& data, xiiRGBuilder& b) { SetupFroxelAlloc(*self, data, b, blackboard); },
-    [self](const FroxelAllocData& data, xiiRGPassContext& c) { ExecuteFroxelAlloc(*self, data, c); });
-#endif
+  graph.AddPass<xiiFroxelAllocationData>("VolumetricGridAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupFroxelAllocation, this), xiiMakeDelegate(&xiiView::ExecuteFroxelAllocation, this));
 }
-
 
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
