@@ -167,8 +167,7 @@ private:
   void SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRGBuilder& builder);
   void ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRGPassContext& context);
 
-  // Per-stage graph builders (implemented in ViewPasses_Stage*.cpp)
-  void BuildStage1_Visibility(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
+  // Per-stage graph builders.
   void BuildStage2_Shadows(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
   void BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
   void BuildStage4_GBuffer(xiiRenderGraph& graph, const xiiRenderGraphBlackboard& blackboard);
