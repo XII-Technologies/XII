@@ -32,12 +32,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitOpaqueWithoutSelection", xiiDefaultRenderDataCategories::OpaqueStatic);
-static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitMaskedWithoutSelection", xiiDefaultRenderDataCategories::MaskedStatic);
-static xiiRenderData::Category s_LitMaskedDynamicWithoutSelection = xiiRenderData::RegisterDerivedCategory("LitMaskedDynamicWithoutSelection", xiiDefaultRenderDataCategories::MaskedDynamic);
-
-static xiiRenderData::Category s_LitTransparentWithoutSelection    = xiiRenderData::RegisterDerivedCategory("LitTransparentWithoutSelection", xiiDefaultRenderDataCategories::Transparent);
-static xiiRenderData::Category s_SimpleTransparentWithoutSelection = xiiRenderData::RegisterDerivedCategory("SimpleTransparentWithoutSelection", xiiDefaultRenderDataCategories::SimpleTransparent);
+static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterCategory("LitOpaqueWithoutSelection");
+static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterCategory("LitMaskedWithoutSelection");
+static xiiRenderData::Category s_LitTransparentWithoutSelection   = xiiRenderData::RegisterCategory("LitTransparentWithoutSelection");
+static xiiRenderData::Category s_SimpleTransparentWithoutSelection = xiiRenderData::RegisterCategory("SimpleTransparentWithoutSelection");
 
 xiiPickingRenderPass::xiiPickingRenderPass() :
   xiiGraphicsPipelinePass("EditorPickingRenderPass", xiiRenderPipelinePassCapabilityFlags::None)
@@ -404,22 +402,30 @@ void xiiPickingRenderPass::ReadBackPropertiesMarqueePick(xiiView* pView)
 
 void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData)
 {
+  const xiiArrayPtr<xiiRenderData* const> allRenderData = extractedRenderData.GetAllRenderData();
+
   // Copy selection to set for faster checks.
   m_SelectionSet.Clear();
   {
-    auto renderDataList = extractedRenderData.GetRawRenderDataWithCategory(xiiDefaultRenderDataCategories::Selection);
-    for (auto& sortableRenderData : renderDataList)
+    for (xiiRenderData* pRenderData : allRenderData)
     {
-      m_SelectionSet.Insert(sortableRenderData.m_pRenderData->m_hOwner);
+      if (pRenderData == nullptr || pRenderData->m_Category != xiiDefaultRenderDataCategories::Selection)
+        continue;
+
+      if (pRenderData->m_hOwnerObject.IsInvalidated())
+        continue;
+
+      m_SelectionSet.Insert(pRenderData->m_hOwnerObject);
     }
   }
 
   auto Filter = [&](xiiRenderData::Category originalCategory, xiiRenderData::Category filteredCategory) {
-    auto renderDataList = extractedRenderData.GetRawRenderDataWithCategory(originalCategory);
-    for (auto& sortableRenderData : renderDataList)
+    for (xiiRenderData* pRenderData : allRenderData)
     {
-      auto pRenderData = sortableRenderData.m_pRenderData;
-      if (m_SelectionSet.Contains(pRenderData->m_hOwner) || pRenderData->IsInstanceOf(m_pGridRenderDataType))
+      if (pRenderData == nullptr || pRenderData->m_Category != originalCategory)
+        continue;
+
+      if ((!pRenderData->m_hOwnerObject.IsInvalidated() && m_SelectionSet.Contains(pRenderData->m_hOwnerObject)) || pRenderData->IsInstanceOf(m_pGridRenderDataType))
         continue;
 
       extractedRenderData.AddRenderData(pRenderData, filteredCategory);

@@ -2,11 +2,17 @@
 
 #include <Core/World/WorldModule.h>
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
+
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/Types/UniquePtr.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
 class xiiExtractedRenderData;
+struct xiiMsgExtractRenderData;
 class xiiView;
+class xiiGameObject;
 
 /// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
 ///
@@ -19,7 +25,8 @@ class xiiView;
 /// During the Async world-update phase, xiiRenderWorldModule walks all world objects and sends
 /// xiiMsgExtractRenderData. Components handling this message submit data as usual, but the extracted
 /// data cache is owned by xiiRenderWorldModule (not by xiiView) and keeps static/dynamic streams.
-/// Before execution, the module finalizes and sorts those streams for graph consumers.
+/// Static-only objects are persisted per-view and reused across frames until invalidated through the
+/// cache invalidation API. Before execution, the module finalizes and sorts those streams for graph consumers.
 ///
 /// ## Per-view blackboard and resource cache
 /// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache.
@@ -53,12 +60,51 @@ public:
   /// \brief Destroys a view. The view must have been created by this module.
   void DestroyView(xiiView* pView);
 
+  /// \brief Invalidates cached static render data for one object.
+  ///
+  /// The component handle is accepted for compatibility with existing call sites.
+  /// Static cache invalidation is keyed by object identity.
+  void DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent);
+
+  /// \brief Invalidates cached static render data for an object and all children.
+  void DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pObject);
+
+  /// \brief Clears all cached static render data for every view.
+  void DeleteAllCachedRenderData();
+
 private:
+  struct CachedStaticObjectData
+  {
+    xiiDynamicArray<xiiUniquePtr<xiiRenderData>> m_StaticRenderData;
+    bool                                         m_bStaticOnly = false;
+  };
+
+  struct ExtractedObjectFrameData
+  {
+    xiiDynamicArray<xiiRenderData*> m_StaticRenderData;
+    bool                            m_bHasDynamicRenderData = false;
+  };
+
+  struct ViewExtractionCache
+  {
+    xiiHashTable<xiiGameObjectHandle, CachedStaticObjectData>  m_StaticObjectCache;
+    xiiHashTable<xiiGameObjectHandle, ExtractedObjectFrameData> m_FrameObjectData;
+  };
+
+  static void SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching);
+
+  void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching);
+  bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
+  void FinalizeViewExtractionCache(ViewExtractionCache& cache);
+  void RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject);
+  void RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject);
+
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
-  xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
+  xiiDynamicArray<xiiUniquePtr<xiiView>>              m_Views;
   xiiDynamicArray<xiiUniquePtr<xiiExtractedRenderData>> m_ViewExtractedData;
-  xiiUInt64                              m_uiRenderFrameIndex = 0;
+  xiiDynamicArray<ViewExtractionCache>                m_ViewExtractionCaches;
+  xiiUInt64                                           m_uiRenderFrameIndex = 0;
 };

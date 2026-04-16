@@ -40,13 +40,6 @@ public:
   /// \brief Returns extracted render data marked dynamic during extraction, sorted by sorting key.
   xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const;
 
-  /// \brief Returns the flattened and sorted render data for the given category.
-  ///        Kept for compatibility with category-driven consumers.
-  xiiArrayPtr<xiiRenderData* const> GetRenderData(xiiRenderDataCategory category) const;
-
-  /// \brief Compatibility alias used by legacy callers.
-  xiiArrayPtr<xiiRenderData* const> GetRawRenderDataWithCategory(xiiRenderDataCategory category) const { return GetRenderData(category); }
-
 private:
   void AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching);
 
@@ -60,5 +53,4 @@ private:
   xiiDynamicArray<xiiRenderData*>                  m_SortedStaticRenderData;
   xiiDynamicArray<xiiRenderData*>                  m_SortedDynamicRenderData;
   xiiDynamicArray<xiiRenderData*>                  m_SortedAllRenderData;
-  xiiDynamicArray<xiiDynamicArray<xiiRenderData*>> m_SortedRenderDataByCategory;
 };

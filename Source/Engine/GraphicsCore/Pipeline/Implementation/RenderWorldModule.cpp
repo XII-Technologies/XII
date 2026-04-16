@@ -1,5 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/World/GameObject.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
@@ -13,6 +14,29 @@
 XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule)
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+namespace
+{
+  static xiiUniquePtr<xiiRenderData> CloneRenderDataForCache(const xiiRenderData* pRenderData)
+  {
+    if (pRenderData == nullptr)
+      return nullptr;
+
+    const xiiRTTI* pType = pRenderData->GetDynamicRTTI();
+    if (pType == nullptr)
+      return nullptr;
+
+    xiiRTTIAllocator* pAllocator = pType->GetAllocator();
+    if (pAllocator == nullptr)
+      return nullptr;
+
+    xiiInternal::NewInstance<xiiRenderData> pClone = pAllocator->Clone<xiiRenderData>(pRenderData);
+    if (pClone == nullptr)
+      return nullptr;
+
+    return xiiUniquePtr<xiiRenderData>(pClone);
+  }
+} // namespace
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
@@ -45,6 +69,7 @@ void xiiRenderWorldModule::Deinitialize()
   // Destroying views releases all per-view GPU resources (ViewPassResources, profiler, etc.)
   m_Views.Clear();
   m_ViewExtractedData.Clear();
+  m_ViewExtractionCaches.Clear();
   m_uiRenderFrameIndex = 0;
 }
 
@@ -54,7 +79,7 @@ void xiiRenderWorldModule::OnSimulationStarted()
 
 xiiView* xiiRenderWorldModule::CreateView(xiiStringView sName)
 {
-  xiiUniquePtr<xiiView>              pView          = XII_DEFAULT_NEW(xiiView);
+  xiiUniquePtr<xiiView>                pView          = XII_DEFAULT_NEW(xiiView);
   xiiUniquePtr<xiiExtractedRenderData> pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
 
   pView->SetName(sName);
@@ -64,6 +89,7 @@ xiiView* xiiRenderWorldModule::CreateView(xiiStringView sName)
 
   m_Views.PushBack(std::move(pView));
   m_ViewExtractedData.PushBack(std::move(pExtractedData));
+  m_ViewExtractionCaches.ExpandAndGetRef();
 
   return pRet;
 }
@@ -77,8 +103,155 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
       m_Views[i]->SetExtractedRenderData(nullptr);
       m_Views.RemoveAtAndCopy(i);
       m_ViewExtractedData.RemoveAtAndCopy(i);
+      m_ViewExtractionCaches.RemoveAtAndCopy(i);
       return;
     }
+  }
+}
+
+void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
+{
+  if (pContext == nullptr)
+    return;
+
+  static_cast<xiiRenderWorldModule*>(pContext)->OnRenderDataSubmitted(msg, pRenderData, category, caching);
+}
+
+void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
+{
+  if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
+    return;
+
+  msg.m_pExtractedRenderData->AddRenderData(pRenderData, category, caching);
+
+  if (msg.m_uiViewIndex >= m_ViewExtractionCaches.GetCount())
+    return;
+
+  if (msg.m_hCurrentObject.IsInvalidated())
+    return;
+
+  ViewExtractionCache&     cache     = m_ViewExtractionCaches[msg.m_uiViewIndex];
+  ExtractedObjectFrameData& frameData = cache.m_FrameObjectData[msg.m_hCurrentObject];
+
+  if (caching == xiiRenderData::Caching::IfStatic)
+  {
+    frameData.m_StaticRenderData.PushBack(pRenderData);
+  }
+  else
+  {
+    frameData.m_bHasDynamicRenderData = true;
+  }
+}
+
+bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const
+{
+  const CachedStaticObjectData* pCachedData = nullptr;
+  if (!cache.m_StaticObjectCache.TryGetValue(hObject, pCachedData) || pCachedData == nullptr)
+    return false;
+
+  if (!pCachedData->m_bStaticOnly)
+    return false;
+
+  for (const auto& pCachedRenderData : pCachedData->m_StaticRenderData)
+  {
+    if (pCachedRenderData == nullptr)
+      continue;
+
+    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), pCachedRenderData->m_Category, xiiRenderData::Caching::IfStatic);
+  }
+
+  return true;
+}
+
+void xiiRenderWorldModule::FinalizeViewExtractionCache(ViewExtractionCache& cache)
+{
+  for (auto it = cache.m_FrameObjectData.GetIterator(); it.IsValid(); ++it)
+  {
+    const xiiGameObjectHandle       hObject    = it.Key();
+    const ExtractedObjectFrameData& frameData  = it.Value();
+
+    if (frameData.m_bHasDynamicRenderData || frameData.m_StaticRenderData.IsEmpty())
+    {
+      RemoveCachedRenderDataForObject(cache, hObject);
+      continue;
+    }
+
+    CachedStaticObjectData newCachedData;
+    newCachedData.m_bStaticOnly = true;
+
+    bool bCloningSucceeded = true;
+    for (const xiiRenderData* pStaticRenderData : frameData.m_StaticRenderData)
+    {
+      xiiUniquePtr<xiiRenderData> pClone = CloneRenderDataForCache(pStaticRenderData);
+      if (pClone == nullptr)
+      {
+        bCloningSucceeded = false;
+        break;
+      }
+
+      newCachedData.m_StaticRenderData.PushBack(std::move(pClone));
+    }
+
+    if (!bCloningSucceeded || newCachedData.m_StaticRenderData.IsEmpty())
+    {
+      RemoveCachedRenderDataForObject(cache, hObject);
+      continue;
+    }
+
+    cache.m_StaticObjectCache.Insert(hObject, std::move(newCachedData));
+  }
+
+  cache.m_FrameObjectData.Clear();
+}
+
+void xiiRenderWorldModule::RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject)
+{
+  cache.m_StaticObjectCache.Remove(hObject);
+}
+
+void xiiRenderWorldModule::RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject)
+{
+  if (pObject == nullptr)
+    return;
+
+  RemoveCachedRenderDataForObject(cache, pObject->GetHandle());
+
+  for (auto it = pObject->GetChildren(); it.IsValid(); ++it)
+  {
+    RemoveCachedRenderDataForObjectRecursive(cache, it);
+  }
+}
+
+void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
+{
+  XII_IGNORE_UNUSED(hComponent);
+
+  if (hOwnerObject.IsInvalidated())
+    return;
+
+  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  {
+    RemoveCachedRenderDataForObject(cache, hOwnerObject);
+  }
+}
+
+void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pObject)
+{
+  if (pObject == nullptr)
+    return;
+
+  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  {
+    RemoveCachedRenderDataForObjectRecursive(cache, pObject);
+  }
+}
+
+void xiiRenderWorldModule::DeleteAllCachedRenderData()
+{
+  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  {
+    cache.m_StaticObjectCache.Clear();
+    cache.m_FrameObjectData.Clear();
   }
 }
 
@@ -94,11 +267,17 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     xiiExtractedRenderData* pExtractedData = m_ViewExtractedData[i].Borrow();
     XII_ASSERT_DEV(pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
 
+    ViewExtractionCache& viewCache = m_ViewExtractionCaches[i];
+    viewCache.m_FrameObjectData.Clear();
+
     pExtractedData->Clear();
 
     xiiMsgExtractRenderData msg;
-    msg.m_pView                = pView;
-    msg.m_pExtractedRenderData = pExtractedData;
+    msg.m_pView                    = pView;
+    msg.m_pExtractedRenderData     = pExtractedData;
+    msg.m_uiViewIndex              = i;
+    msg.m_SubmitRenderDataFunction = &xiiRenderWorldModule::SubmitRenderData;
+    msg.m_pSubmitRenderDataContext = this;
 
     // Broadcast to all objects, each object routes to matching component message handlers.
     {
@@ -106,9 +285,20 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
       for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
       {
+        const xiiGameObjectHandle hObject = it->GetHandle();
+
+        if (ReuseCachedStaticRenderData(viewCache, hObject, *pExtractedData))
+          continue;
+
+        msg.m_hCurrentObject = hObject;
         it->SendMessage(msg);
+
+        msg.m_hCurrentObject = xiiGameObjectHandle();
+        msg.m_hCurrentComponent = xiiComponentHandle();
       }
     }
+
+    FinalizeViewExtractionCache(viewCache);
 
     // Finalize and sort extracted data for this view.
     pExtractedData->SortAndBatches();

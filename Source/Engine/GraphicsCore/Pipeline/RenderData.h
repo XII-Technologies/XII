@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <Core/World/Declarations.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Reflection/Reflection.h>
@@ -59,6 +60,9 @@ public:
 
   xiiMat4              m_GlobalTransform = xiiMat4::MakeIdentity();
   xiiBoundingBoxSphere m_GlobalBounds;
+
+  xiiGameObjectHandle m_hOwnerObject;
+  xiiComponentHandle  m_hOwnerComponent;
 
   xiiUInt64             m_uiSortingKey = 0;
   xiiRenderDataCategory m_Category;

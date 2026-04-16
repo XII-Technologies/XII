@@ -177,11 +177,6 @@ void xiiExtractedRenderData::Clear()
   m_SortedStaticRenderData.Clear();
   m_SortedDynamicRenderData.Clear();
   m_SortedAllRenderData.Clear();
-
-  for (auto& sortedData : m_SortedRenderDataByCategory)
-  {
-    sortedData.Clear();
-  }
 }
 
 void xiiExtractedRenderData::SortAndBatches()
@@ -214,22 +209,6 @@ void xiiExtractedRenderData::SortAndBatches()
   m_SortedAllRenderData = m_SortedStaticRenderData;
   m_SortedAllRenderData.PushBackRange(m_SortedDynamicRenderData);
   sortByKey(m_SortedAllRenderData);
-
-  // Build compatibility category slices from the unified list.
-  m_SortedRenderDataByCategory.Clear();
-  for (xiiRenderData* pRenderData : m_SortedAllRenderData)
-  {
-    if (pRenderData == nullptr || !pRenderData->m_Category.IsValid())
-      continue;
-
-    const xiiUInt16 uiCategory = pRenderData->m_Category.m_uiValue;
-    if (uiCategory >= m_SortedRenderDataByCategory.GetCount())
-    {
-      m_SortedRenderDataByCategory.SetCount(uiCategory + 1);
-    }
-
-    m_SortedRenderDataByCategory[uiCategory].PushBack(pRenderData);
-  }
 }
 
 xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetAllRenderData() const
@@ -245,14 +224,4 @@ xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetStaticRenderData() 
 xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetDynamicRenderData() const
 {
   return m_SortedDynamicRenderData;
-}
-
-xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetRenderData(xiiRenderDataCategory category) const
-{
-  if (category.m_uiValue < m_SortedRenderDataByCategory.GetCount())
-  {
-    return m_SortedRenderDataByCategory[category.m_uiValue];
-  }
-
-  return xiiArrayPtr<xiiRenderData* const>();
 }
