@@ -127,16 +127,17 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     pRenderData->FillSortingKey();
   }
 
-  // Determine render data category.
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
+  // Determine route flags for type + predicate pass selection.
+  xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Opaque;
 
   if (hMaterial.IsValid())
   {
     xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-    category = pMaterial->GetRenderDataCategory();
+    routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
   }
 
-  msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::Never);
+  pRenderData->m_RoutingFlags = routingFlags;
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 
   if (cvar_FeatureRopesVisBones)
   {

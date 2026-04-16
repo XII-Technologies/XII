@@ -93,7 +93,8 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
   {
     // Index and flags are stored in m_uiIndex so we can't just overwrite it.
     pRenderData0->m_uiIndex |= (xiiUInt32)iMappedIndex;
-    ref_msg.AddRenderData(pRenderData0, xiiDefaultRenderDataCategories::ReflectionProbe, xiiRenderData::Caching::Never);
+    pRenderData0->m_RoutingFlags = xiiRenderDataRoutingFlags::ReflectionProbe;
+    ref_msg.AddRenderData(pRenderData0, xiiRenderData::Caching::Never);
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -141,7 +142,8 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(*pComponent, 0);
 
       pRenderData->FillSortingKey();
-      ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Opaque, xiiRenderData::Caching::Never);
+      pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Opaque;
+      ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
     }
   }
 #endif

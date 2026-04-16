@@ -4,12 +4,107 @@
 #include <GraphicsCore/Pipeline/RenderData.h>
 
 #include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Math/Math.h>
 #include <Foundation/Threading/Mutex.h>
 
 /// \brief Batch of extracted render data, intended to be populated by component managers sequentially per-batch.
 struct XII_GRAPHICSCORE_DLL xiiRenderDataBatch
 {
   xiiArrayPtr<xiiRenderData*> m_Data;
+
+  XII_ALWAYS_INLINE xiiUInt32 GetCount() const
+  {
+    return m_Data.GetCount();
+  }
+
+  template <typename T>
+  XII_ALWAYS_INLINE const T* GetFirstData() const
+  {
+    const xiiRTTI* pType = xiiGetStaticRTTI<T>();
+    for (xiiRenderData* pRenderData : m_Data)
+    {
+      if (pRenderData != nullptr && pRenderData->GetDynamicRTTI() != nullptr && pRenderData->GetDynamicRTTI()->IsDerivedFrom(pType))
+      {
+        return static_cast<const T*>(pRenderData);
+      }
+    }
+
+    return nullptr;
+  }
+
+  template <typename T>
+  class Iterator
+  {
+  public:
+    Iterator(xiiArrayPtr<xiiRenderData* const> data, xiiUInt32 uiStartIndex, xiiUInt32 uiCount) :
+      m_Data(data)
+    {
+      const xiiUInt32 uiDataCount = m_Data.GetCount();
+      m_uiCurrentIndex            = xiiMath::Min(uiStartIndex, uiDataCount);
+
+      const xiiUInt32 uiRemaining = uiDataCount - m_uiCurrentIndex;
+      if (uiCount >= uiRemaining)
+      {
+        m_uiEndIndex = uiDataCount;
+      }
+      else
+      {
+        m_uiEndIndex = m_uiCurrentIndex + uiCount;
+      }
+
+      FindNextValid();
+    }
+
+    XII_ALWAYS_INLINE bool IsValid() const { return m_uiCurrentIndex < m_uiEndIndex; }
+
+    XII_ALWAYS_INLINE void operator++()
+    {
+      ++m_uiCurrentIndex;
+      FindNextValid();
+    }
+
+    XII_ALWAYS_INLINE operator const T*() const
+    {
+      return static_cast<const T*>(m_Data[m_uiCurrentIndex]);
+    }
+
+    XII_ALWAYS_INLINE const T& operator*() const
+    {
+      return *static_cast<const T*>(m_Data[m_uiCurrentIndex]);
+    }
+
+    XII_ALWAYS_INLINE const T* operator->() const
+    {
+      return static_cast<const T*>(m_Data[m_uiCurrentIndex]);
+    }
+
+  private:
+    XII_ALWAYS_INLINE void FindNextValid()
+    {
+      const xiiRTTI* pType = xiiGetStaticRTTI<T>();
+
+      while (m_uiCurrentIndex < m_uiEndIndex)
+      {
+        xiiRenderData* pRenderData = m_Data[m_uiCurrentIndex];
+        if (pRenderData != nullptr && pRenderData->GetDynamicRTTI() != nullptr && pRenderData->GetDynamicRTTI()->IsDerivedFrom(pType))
+        {
+          return;
+        }
+
+        ++m_uiCurrentIndex;
+      }
+    }
+
+    xiiArrayPtr<xiiRenderData* const> m_Data;
+    xiiUInt32                         m_uiCurrentIndex = 0;
+    xiiUInt32                         m_uiEndIndex     = 0;
+  };
+
+  template <typename T>
+  XII_ALWAYS_INLINE Iterator<T> GetIterator(xiiUInt32 uiStartIndex = 0, xiiUInt32 uiCount = xiiMath::MaxValue<xiiUInt32>()) const
+  {
+    return Iterator<T>(m_Data, uiStartIndex, uiCount);
+  }
 };
 
 /// \brief A thread-safe structure for components to push their extracted render data batches into.

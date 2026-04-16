@@ -106,7 +106,8 @@ void xiiSkyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->FillSortingKey();
   }
 
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Sky, xiiRenderData::Caching::Never);
+  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Sky;
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 
 void xiiSkyBoxComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

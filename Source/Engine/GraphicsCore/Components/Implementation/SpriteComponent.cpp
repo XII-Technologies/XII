@@ -115,14 +115,15 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->FillSortingKey();
   }
 
-  // Determine render data category.
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Transparent;
+  // Determine route flags for type + predicate pass selection.
+  xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Transparent;
   if (m_BlendMode == xiiSpriteBlendMode::Masked)
   {
-    category = xiiDefaultRenderDataCategories::Masked;
+    routingFlags = xiiRenderDataRoutingFlags::Masked;
   }
 
-  msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);
+  pRenderData->m_RoutingFlags = routingFlags;
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }
 
 void xiiSpriteComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

@@ -123,7 +123,8 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   pRenderData->FillBatchIdAndSortingKey(1.0f);
 
   xiiRenderData::Caching::Enum caching = m_bCastShadows ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
+  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Light;
+  msg.AddRenderData(pRenderData, caching);
 }
 
 void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

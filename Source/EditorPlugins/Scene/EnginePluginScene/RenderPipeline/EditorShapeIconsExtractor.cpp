@@ -50,7 +50,7 @@ void xiiEditorShapeIconsExtractor::Extract(const xiiView& view, const xiiDynamic
     if (frustum.GetObjectPosition(sphere) == xiiVolumePosition::Outside)
       continue;
 
-    ExtractShapeIcon(pObject, view, ref_extractedRenderData, xiiDefaultRenderDataCategories::SimpleOpaque);
+    ExtractShapeIcon(pObject, view, ref_extractedRenderData, xiiRenderDataRoutingFlags::SimpleOpaque);
   }
 
   if (m_pSceneContext != nullptr)
@@ -69,7 +69,7 @@ void xiiEditorShapeIconsExtractor::Extract(const xiiView& view, const xiiDynamic
         if (frustum.GetObjectPosition(sphere) == xiiVolumePosition::Outside)
           continue;
 
-        ExtractShapeIcon(pObject, view, ref_extractedRenderData, xiiDefaultRenderDataCategories::Selection);
+        ExtractShapeIcon(pObject, view, ref_extractedRenderData, xiiRenderDataRoutingFlags::Selection);
       }
     }
   }
@@ -93,7 +93,7 @@ xiiResult xiiEditorShapeIconsExtractor::Deserialize(xiiStreamReader& inout_strea
   return XII_SUCCESS;
 }
 
-void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject, const xiiView& view, xiiExtractedRenderData& extractedRenderData, xiiRenderData::Category category)
+void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject, const xiiView& view, xiiExtractedRenderData& extractedRenderData, xiiBitflags<xiiRenderDataRoutingFlags> routingFlags)
 {
   static const xiiTag& tagHidden = xiiTagRegistry::GetGlobalRegistry().RegisterTag("EditorHidden");
   static const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
@@ -157,7 +157,8 @@ void xiiEditorShapeIconsExtractor::ExtractShapeIcon(const xiiGameObject* pObject
       pRenderData->FillSortingKey();
     }
 
-    extractedRenderData.AddRenderData(pRenderData, category);
+    pRenderData->m_RoutingFlags = routingFlags;
+    extractedRenderData.AddRenderData(pRenderData);
   }
 }
 

@@ -1,8 +1,12 @@
 #pragma once
 
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/Containers/HybridArray.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
+
+class xiiRenderer;
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiGraphicsPipelinePass
 {
@@ -44,6 +48,9 @@ private:
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
   void ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
+  void BuildRendererLookup();
+  const xiiRenderer* FindRendererForRenderData(const xiiRenderData* pRenderData) const;
+  void RenderDataBatch(const xiiRenderViewContext& renderViewContext, xiiArrayPtr<xiiRenderData* const> renderData) const;
 
 private:
   xiiRectFloat   m_TargetRect;
@@ -51,6 +58,17 @@ private:
 
   xiiSharedPtr<xiiGALTexture> m_pPickingIdRT;
   xiiSharedPtr<xiiGALTexture> m_pPickingDepthRT;
+
+  xiiHybridArray<xiiRenderer*, 32>             m_Renderers;
+  xiiHashTable<const xiiRTTI*, xiiRenderer*>   m_RenderersByRenderDataType;
+
+  xiiDynamicArray<xiiRenderData*> m_LitOpaqueWithoutSelection;
+  xiiDynamicArray<xiiRenderData*> m_LitMaskedWithoutSelection;
+  xiiDynamicArray<xiiRenderData*> m_LitTransparentWithoutSelection;
+  xiiDynamicArray<xiiRenderData*> m_SimpleOpaque;
+  xiiDynamicArray<xiiRenderData*> m_SimpleTransparentWithoutSelection;
+  xiiDynamicArray<xiiRenderData*> m_Foreground;
+  xiiDynamicArray<xiiRenderData*> m_Selection;
 
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
 

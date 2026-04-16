@@ -166,7 +166,8 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   pRenderData->FillBatchIdAndSortingKey(fScreenSpaceSize);
 
   xiiRenderData::Caching::Enum caching = m_bCastShadows ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
+  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Light;
+  msg.AddRenderData(pRenderData, caching);
 }
 
 void xiiSpotLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

@@ -314,7 +314,8 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
       pRenderData->FillSortingKey();
     }
 
-    msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Transparent, pLightComponent != nullptr ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
+    pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Transparent;
+    msg.AddRenderData(pRenderData, pLightComponent != nullptr ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
   }
 }
 

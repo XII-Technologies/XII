@@ -30,6 +30,11 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
     if (m_pExtractedRenderData == nullptr || pRenderData == nullptr)
       return;
 
+    if (m_OverrideCategory.IsValid())
+    {
+      pRenderData->m_RoutingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(m_OverrideCategory);
+    }
+
     if (!m_hCurrentObject.IsInvalidated())
     {
       pRenderData->m_hOwnerObject = m_hCurrentObject;
@@ -56,6 +61,8 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 
     const xiiRenderDataCategory effectiveCategory = m_OverrideCategory.IsValid() ? m_OverrideCategory : category;
 
+    pRenderData->m_RoutingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(effectiveCategory);
+
     if (!m_hCurrentObject.IsInvalidated())
     {
       pRenderData->m_hOwnerObject = m_hCurrentObject;
@@ -66,19 +73,13 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
       pRenderData->m_hOwnerComponent = m_hCurrentComponent;
     }
 
-    if (!effectiveCategory.IsValid())
-    {
-      AddRenderData(pRenderData, caching);
-      return;
-    }
-
     if (m_SubmitRenderDataFunction != nullptr)
     {
-      m_SubmitRenderDataFunction(m_pSubmitRenderDataContext, *this, pRenderData, effectiveCategory, caching);
+      m_SubmitRenderDataFunction(m_pSubmitRenderDataContext, *this, pRenderData, xiiInvalidRenderDataCategory, caching);
       return;
     }
 
-    m_pExtractedRenderData->AddRenderData(pRenderData, effectiveCategory, caching);
+    m_pExtractedRenderData->AddRenderData(pRenderData, caching);
   }
 
   XII_ALWAYS_INLINE void AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)

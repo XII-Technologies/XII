@@ -123,14 +123,9 @@ void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& 
   if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
     return;
 
-  if (category.IsValid())
-  {
-    msg.m_pExtractedRenderData->AddRenderData(pRenderData, category, caching);
-  }
-  else
-  {
-    msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
-  }
+  XII_IGNORE_UNUSED(category);
+
+  msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
 
   if (msg.m_uiViewIndex >= m_ViewExtractionCaches.GetCount())
     return;

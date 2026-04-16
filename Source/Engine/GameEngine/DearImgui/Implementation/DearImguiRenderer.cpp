@@ -112,7 +112,8 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
         }
       }
 
-      ref_extractedRenderData.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::GUI);
+      pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::GUI;
+      ref_extractedRenderData.AddRenderData(pRenderData);
     }
   }
 }

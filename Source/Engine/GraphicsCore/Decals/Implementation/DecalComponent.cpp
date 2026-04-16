@@ -466,7 +466,8 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
   xiiGALShaderUtilities::Float4ToRGBA16F(ormAtlasScaleOffset, pRenderData->m_uiORMAtlasScale, pRenderData->m_uiORMAtlasOffset);
 
   xiiRenderData::Caching::Enum caching = (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0) ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Decal, caching);
+  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Decal;
+  msg.AddRenderData(pRenderData, caching);
 }
 
 void xiiDecalComponent::SetApplyToRef(const char* szReference)

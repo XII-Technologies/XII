@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <Core/World/Declarations.h>
+#include <Foundation/Types/Bitflags.h>
 #include <Foundation/Math/BoundingBoxSphere.h>
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Reflection/Reflection.h>
@@ -18,6 +19,52 @@ struct XII_GRAPHICSCORE_DLL xiiRenderDataCategory
 };
 
 inline constexpr xiiRenderDataCategory xiiInvalidRenderDataCategory = xiiRenderDataCategory{};
+
+/// \brief Bitflags that describe where a render-data instance participates in type + predicate pass routing.
+struct XII_GRAPHICSCORE_DLL xiiRenderDataRoutingFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    None = 0,
+
+    Light             = XII_BIT(0),
+    Decal             = XII_BIT(1),
+    ReflectionProbe   = XII_BIT(2),
+    Sky               = XII_BIT(3),
+    Opaque            = XII_BIT(4),
+    Masked            = XII_BIT(5),
+    Transparent       = XII_BIT(6),
+    Foreground        = XII_BIT(7),
+    ScreenFX          = XII_BIT(8),
+    SimpleOpaque      = XII_BIT(9),
+    SimpleTransparent = XII_BIT(10),
+    Selection         = XII_BIT(11),
+    GUI               = XII_BIT(12),
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType Light : 1;
+    StorageType Decal : 1;
+    StorageType ReflectionProbe : 1;
+    StorageType Sky : 1;
+    StorageType Opaque : 1;
+    StorageType Masked : 1;
+    StorageType Transparent : 1;
+    StorageType Foreground : 1;
+    StorageType ScreenFX : 1;
+    StorageType SimpleOpaque : 1;
+    StorageType SimpleTransparent : 1;
+    StorageType Selection : 1;
+    StorageType GUI : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiRenderDataRoutingFlags);
 
 /// \brief Base class for components to push generic render data.
 class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
@@ -55,6 +102,9 @@ public:
   /// \brief Clears all registered categories. Should be called during engine shutdown.
   static void ClearAllCategories();
 
+  /// \brief Converts a legacy category value into route flags used by type + predicate pass selection.
+  static xiiBitflags<xiiRenderDataRoutingFlags> RoutingFlagsFromLegacyCategory(xiiRenderDataCategory category);
+
   xiiRenderData()          = default;
   virtual ~xiiRenderData() = default;
 
@@ -64,31 +114,6 @@ public:
   xiiGameObjectHandle m_hOwnerObject;
   xiiComponentHandle  m_hOwnerComponent;
 
-  xiiUInt64             m_uiSortingKey = 0;
-  xiiRenderDataCategory m_Category;
-};
-
-/// \brief Structure containing the standard predefined categories.
-struct XII_GRAPHICSCORE_DLL xiiDefaultRenderDataCategories
-{
-  static xiiRenderDataCategory Light;
-  static xiiRenderDataCategory Decal;
-  static xiiRenderDataCategory ReflectionProbe;
-  static xiiRenderDataCategory Sky;
-  static xiiRenderDataCategory OpaqueStatic;
-  static xiiRenderDataCategory OpaqueDynamic;
-  static xiiRenderDataCategory Opaque;
-  static xiiRenderDataCategory MaskedStatic;
-  static xiiRenderDataCategory MaskedDynamic;
-  static xiiRenderDataCategory Masked;
-  static xiiRenderDataCategory Transparent;
-  static xiiRenderDataCategory Foreground;
-  static xiiRenderDataCategory ScreenFX;
-  static xiiRenderDataCategory SimpleOpaque;
-  static xiiRenderDataCategory SimpleTransparent;
-  static xiiRenderDataCategory Selection;
-  static xiiRenderDataCategory GUI;
-
-  /// \brief Registers the default categories internally. Called by the renderer startup.
-  static void RegisterDefaultCategories();
+  xiiUInt64                               m_uiSortingKey = 0;
+  xiiBitflags<xiiRenderDataRoutingFlags> m_RoutingFlags;
 };

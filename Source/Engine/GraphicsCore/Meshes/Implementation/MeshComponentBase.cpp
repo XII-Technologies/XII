@@ -185,8 +185,8 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) 
 
     bool bDontCacheYet = false;
 
-    // Determine render data category.
-    xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
+    // Determine route flags for type + predicate pass selection.
+    xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Opaque;
     if (hMaterial.IsValid())
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
@@ -194,10 +194,11 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) 
       if (pMaterial.GetAcquireResult() == xiiResourceAcquireResult::LoadingFallback)
         bDontCacheYet = true;
 
-      category = pMaterial->GetRenderDataCategory();
+      routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
     }
 
-    msg.AddRenderData(pRenderData, category, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
+    pRenderData->m_RoutingFlags = routingFlags;
+    msg.AddRenderData(pRenderData, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
   }
 }
 

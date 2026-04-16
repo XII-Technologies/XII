@@ -23,7 +23,7 @@ public:
   xiiSceneContext* GetSceneContext() const { return m_pSceneContext; }
 
 private:
-  void                                           ExtractShapeIcon(const xiiGameObject* pObject, const xiiView& view, xiiExtractedRenderData& extractedRenderData, xiiRenderData::Category category);
+  void                                           ExtractShapeIcon(const xiiGameObject* pObject, const xiiView& view, xiiExtractedRenderData& extractedRenderData, xiiBitflags<xiiRenderDataRoutingFlags> routingFlags);
   const xiiTypedMemberProperty<xiiColor>*        FindColorProperty(const xiiRTTI* pRtti) const;
   const xiiTypedMemberProperty<xiiColorGammaUB>* FindColorGammaProperty(const xiiRTTI* pRtti) const;
   void                                           FillShapeIconInfo();

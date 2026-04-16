@@ -321,7 +321,8 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
       pRenderData->FillSortingKey();
     }
 
-    ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::SimpleOpaque, caching);
+    pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::SimpleOpaque;
+    ref_msg.AddRenderData(pRenderData, caching);
   };
 
   if (m_bUseTestPosition)
