@@ -134,7 +134,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     }
     else
     {
-      // Standard full-featured pipeline: 12 stage render graph built by xiiView.
+      // Standard full-featured pipeline.
       pView->BuildDefaultRenderGraph(*pGraph, blackboard);
     }
 
@@ -145,6 +145,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     compileSettings.m_bEnablePassCulling   = true;
     compileSettings.m_bEnableSplitBarriers = true;
     compileSettings.m_bEnableAsyncQueues   = true;
+    compileSettings.m_bEnableCompileCache  = true;
 
     if (pGraph->Compile(compileSettings).Succeeded())
     {

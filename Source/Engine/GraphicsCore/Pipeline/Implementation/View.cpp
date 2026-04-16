@@ -14,6 +14,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
+#include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -947,32 +948,88 @@ void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xii
   cmd.EndDebugGroup();
 }
 
+////////// GPU Shadow Denoise Data //////////
+//
+// Collects all GPU resources related to shadow denoising for the current frame, including raw shadow masks and final shadow masks.
+
 struct xiiShadowDenoiseData
 {
-  xiiRGTextureHandle m_hRTRawShadowMask;
-  xiiRGTextureHandle m_hRTFinalShadowMask;
+  xiiRGTextureHandle m_hRTRawShadowMask;   ///< SRV in (texture containing raw ray-traced shadow masks, written by Ray-Traced Shadow Pass, read by this pass).
+  xiiRGTextureHandle m_hRTFinalShadowMask; ///< UAV out (texture containing final denoised ray-traced shadow masks, written by this pass, read by main lighting pass).
 };
 
 void xiiView::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRGBuilder& builder)
 {
+  data.m_hRTRawShadowMask = builder.ReadTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, {}), xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::R8UNormalized;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hRTFinalShadowMask = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pShadowDenoisePipeline, "Shaders/Pipeline/SeparatedBilateralBlur.xiiShader");
 }
 
 void xiiView::ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRGPassContext& context)
 {
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ShadowDenoise");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDenoisePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Input", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Output", context.GetTexture(data.m_hRTFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
 }
+
+////////// GPU Contact Shadow Data //////////
+//
+// Collects all GPU resources related to contact shadow rendering for the current frame, including scene depth and contact shadow masks.
 
 struct xiiContactShadowData
 {
-  xiiRGTextureHandle m_hSceneDepth;
-  xiiRGTextureHandle m_hContactShadow;
+  xiiRGTextureHandle m_hSceneDepth;    ///< SRV in (depth texture from main render pass, used for contact shadow ray generation and occlusion testing).
+  xiiRGTextureHandle m_hContactShadow; ///< UAV out (texture containing contact shadow masks, written by this pass, read by main lighting pass).
 };
 
 void xiiView::SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& builder)
 {
+  data.m_hSceneDepth = builder.ReadTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, {}), xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription desc;
+  desc.m_Type           = xiiGALResourceDimension::Texture2D;
+  desc.m_Format         = xiiGALResourceFormat::R8UNormalized;
+  desc.m_Size.width     = m_Data.m_ViewPortRect.width;
+  desc.m_Size.height    = m_Data.m_ViewPortRect.height;
+  desc.m_uiMipLevels    = 1U;
+  desc.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  desc.m_Usage          = xiiGALResourceUsage::Default;
+  data.m_hContactShadow = builder.WriteTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, desc, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pContactShadowPipeline, "Shaders/Pipeline/ContactShadows.xiiShader");
 }
 
 void xiiView::ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPassContext& context)
 {
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ContactShadows");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pContactShadowPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_ContactShadowOut", context.GetTexture(data.m_hContactShadow)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
 }
 
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
