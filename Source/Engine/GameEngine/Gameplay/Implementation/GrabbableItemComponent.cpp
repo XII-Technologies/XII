@@ -130,10 +130,6 @@ void xiiGrabbableItemComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg
       msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return;
 
-  // Don't extract render data for selection.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
-    return;
-
   const xiiTransform globalTransform = GetOwner()->GetGlobalTransform();
 
   for (auto& grabPoint : m_GrabPoints)

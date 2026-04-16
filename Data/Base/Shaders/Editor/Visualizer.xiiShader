@@ -13,10 +13,6 @@ FillMode = FillMode_Wireframe
 CullMode = CullMode_None
 ComparisonDepthFunction = ComparisonFunction_Less
 
-[MATERIALCONFIG]
-
-RenderDataCategory = SimpleOpaque
-
 [VERTEXSHADER]
 
 #define USE_COLOR0

@@ -632,11 +632,11 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
       }
     }
 
-    // Render data category
+    // Reserved legacy field.
     if (uiVersion >= 7)
     {
-      xiiStringBuilder sRenderDataCategoryName;
-      s >> sRenderDataCategoryName;
+      xiiStringBuilder sUnusedLegacyField;
+      s >> sUnusedLegacyField;
     }
 
     if (uiVersion >= 5)

@@ -363,10 +363,6 @@ xiiGameObjectHandle xiiDecalComponent::GetApplyOnlyTo() const
 
 void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  // Don't extract decal render data for selection.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
-    return;
-
   if (m_Decals.IsEmpty())
     return;
 
@@ -466,7 +462,6 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
   xiiGALShaderUtilities::Float4ToRGBA16F(ormAtlasScaleOffset, pRenderData->m_uiORMAtlasScale, pRenderData->m_uiORMAtlasOffset);
 
   xiiRenderData::Caching::Enum caching = (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0) ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
-  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Decal;
   msg.AddRenderData(pRenderData, caching);
 }
 

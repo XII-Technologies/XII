@@ -93,7 +93,6 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
   {
     // Index and flags are stored in m_uiIndex so we can't just overwrite it.
     pRenderData0->m_uiIndex |= (xiiUInt32)iMappedIndex;
-    pRenderData0->m_RoutingFlags = xiiRenderDataRoutingFlags::ReflectionProbe;
     ref_msg.AddRenderData(pRenderData0, xiiRenderData::Caching::Never);
   }
 
@@ -101,20 +100,17 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
   const xiiUInt32 uiMipLevels = GetMipLevels();
   if (probeData.m_desc.m_bShowDebugInfo && s_pData->m_hDebugMaterial.GetCount() == uiMipLevels * s_uiNumReflectionProbeCubeMaps)
   {
-    if (ref_msg.m_OverrideCategory == xiiInvalidRenderDataCategory)
+    xiiInt32 activeIndex = 0;
+    if (s_pData->m_ActiveDynamicUpdate.Contains(xiiReflectionProbeRef{uiWorldIndex, id}))
     {
-      xiiInt32 activeIndex = 0;
-      if (s_pData->m_ActiveDynamicUpdate.Contains(xiiReflectionProbeRef{uiWorldIndex, id}))
-      {
-        activeIndex = 1;
-      }
-
-      xiiStringBuilder sEnum;
-      xiiReflectionUtils::BitflagsToString(probeData.m_Flags, sEnum, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
-      xiiStringBuilder s;
-      s.SetFormat("\n RefIdx: {}\nUpdating: {}\nFlags: {}\n", iMappedIndex, activeIndex, sEnum);
-      xiiDebugRenderer::Draw3DText(pWorld, s, pComponent->GetOwner()->GetGlobalPosition(), xiiColorScheme::LightUI(xiiColorScheme::Violet));
+      activeIndex = 1;
     }
+
+    xiiStringBuilder sEnum;
+    xiiReflectionUtils::BitflagsToString(probeData.m_Flags, sEnum, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
+    xiiStringBuilder s;
+    s.SetFormat("\n RefIdx: {}\nUpdating: {}\nFlags: {}\n", iMappedIndex, activeIndex, sEnum);
+    xiiDebugRenderer::Draw3DText(pWorld, s, pComponent->GetOwner()->GetGlobalPosition(), xiiColorScheme::LightUI(xiiColorScheme::Violet));
 
     // Not mapped in the atlas - cannot render it.
     if (iMappedIndex < 0)
@@ -142,7 +138,6 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       pRenderData->m_uiUniqueID     = xiiRenderComponent::GetUniqueIdForRendering(*pComponent, 0);
 
       pRenderData->FillSortingKey();
-      pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Opaque;
       ref_msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
     }
   }

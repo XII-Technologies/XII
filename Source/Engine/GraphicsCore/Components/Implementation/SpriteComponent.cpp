@@ -115,14 +115,6 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->FillSortingKey();
   }
 
-  // Determine route flags for type + predicate pass selection.
-  xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Transparent;
-  if (m_BlendMode == xiiSpriteBlendMode::Masked)
-  {
-    routingFlags = xiiRenderDataRoutingFlags::Masked;
-  }
-
-  pRenderData->m_RoutingFlags = routingFlags;
   msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }
 

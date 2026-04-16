@@ -158,11 +158,6 @@ void xiiBeamComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) cons
     pRenderData->FillSortingKey();
   }
 
-  // Determine route flags for type + predicate pass selection.
-  xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-  xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
-
-  pRenderData->m_RoutingFlags = routingFlags;
   msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 

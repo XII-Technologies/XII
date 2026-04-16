@@ -292,7 +292,6 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
     pRenderData->m_iLastLine2  = iNumLines;
   }
 
-  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::SimpleTransparent;
   ref_extractedRenderData.AddRenderData(pRenderData);
 }
 

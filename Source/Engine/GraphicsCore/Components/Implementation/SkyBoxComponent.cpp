@@ -89,8 +89,8 @@ xiiResult xiiSkyBoxComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, b
 
 void xiiSkyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  // Don't extract sky render data for selection or in orthographic views.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory || msg.m_pView->GetCamera()->IsOrthographic())
+  // Don't extract sky render data in orthographic views.
+  if (msg.m_pView->GetCamera()->IsOrthographic())
     return;
 
   xiiMeshRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiMeshRenderData>(GetOwner());
@@ -106,7 +106,6 @@ void xiiSkyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->FillSortingKey();
   }
 
-  pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Sky;
   msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 

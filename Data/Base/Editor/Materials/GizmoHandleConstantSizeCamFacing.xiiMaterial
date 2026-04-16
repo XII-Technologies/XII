@@ -1,5 +1,4 @@
 string %Shader { "Shaders/Editor/GizmoHandle.xiiShader" }
-string %RenderDataCategory { "SimpleForeground" }
 
 Permutation
 {

@@ -230,10 +230,6 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
     return;
 
-  // Don't extract render data for selection.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
-    return;
-
   if (m_fIntensity <= 0.0f)
     return;
 
@@ -314,7 +310,6 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
       pRenderData->FillSortingKey();
     }
 
-    pRenderData->m_RoutingFlags = xiiRenderDataRoutingFlags::Transparent;
     msg.AddRenderData(pRenderData, pLightComponent != nullptr ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
   }
 }

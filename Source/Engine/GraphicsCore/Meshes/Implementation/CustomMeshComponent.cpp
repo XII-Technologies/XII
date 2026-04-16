@@ -176,10 +176,8 @@ void xiiCustomMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
   }
 
   xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-  xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
-  bool                                   bDontCacheYet = pMaterial.GetAcquireResult() == xiiResourceAcquireResult::LoadingFallback;
+  bool                                 bDontCacheYet = pMaterial.GetAcquireResult() == xiiResourceAcquireResult::LoadingFallback;
 
-  pRenderData->m_RoutingFlags = routingFlags;
   msg.AddRenderData(pRenderData, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
 }
 

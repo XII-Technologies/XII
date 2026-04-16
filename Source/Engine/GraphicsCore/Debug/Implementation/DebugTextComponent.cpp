@@ -71,7 +71,7 @@ void xiiDebugTextComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
 void xiiDebugTextComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory || msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
+  if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
     return;
 
   if (!m_sText.IsEmpty())

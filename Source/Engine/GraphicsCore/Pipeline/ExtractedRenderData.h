@@ -117,14 +117,8 @@ public:
   /// \brief Adds a single extracted render data item without assigning a category.
   void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
-  /// \brief Adds a single extracted render data item.
-  void AddRenderData(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
-
   /// \brief Pushes a batch of extracted data safely to the internal list without assigning a category.
   void AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
-
-  /// \brief Pushes a batch of extracted data safely to the internal list.
-  void AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
   /// \brief Clears the internal arrays entirely. Called at the start of extreme frame extraction.
   void Clear();

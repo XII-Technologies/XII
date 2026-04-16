@@ -185,19 +185,14 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) 
 
     bool bDontCacheYet = false;
 
-    // Determine route flags for type + predicate pass selection.
-    xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Opaque;
     if (hMaterial.IsValid())
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
 
       if (pMaterial.GetAcquireResult() == xiiResourceAcquireResult::LoadingFallback)
         bDontCacheYet = true;
-
-      routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
     }
 
-    pRenderData->m_RoutingFlags = routingFlags;
     msg.AddRenderData(pRenderData, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
   }
 }

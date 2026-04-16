@@ -330,15 +330,6 @@ void xiiClothSheetComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     }
   }
 
-  xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Opaque;
-
-  if (m_hMaterial.IsValid())
-  {
-    xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-    routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
-  }
-
-  pRenderData->m_RoutingFlags = routingFlags;
   msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 

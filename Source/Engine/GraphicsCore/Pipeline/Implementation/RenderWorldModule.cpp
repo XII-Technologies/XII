@@ -110,20 +110,18 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
   }
 }
 
-void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
+void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
 {
   if (pContext == nullptr)
     return;
 
-  static_cast<xiiRenderWorldModule*>(pContext)->OnRenderDataSubmitted(msg, pRenderData, category, caching);
+  static_cast<xiiRenderWorldModule*>(pContext)->OnRenderDataSubmitted(msg, pRenderData, caching);
 }
 
-void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
+void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
 {
   if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
     return;
-
-  XII_IGNORE_UNUSED(category);
 
   msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
 

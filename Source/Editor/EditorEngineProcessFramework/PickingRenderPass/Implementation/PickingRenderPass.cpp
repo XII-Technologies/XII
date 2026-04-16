@@ -117,36 +117,6 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   BuildRendererLookup();
 
   RenderDataBatch(renderViewContext, m_LitOpaqueWithoutSelection);
-  RenderDataBatch(renderViewContext, m_LitMaskedWithoutSelection);
-
-  if (m_bPickTransparent)
-  {
-    RenderDataBatch(renderViewContext, m_LitTransparentWithoutSelection);
-
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-    RenderDataBatch(renderViewContext, m_Foreground);
-
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-    RenderDataBatch(renderViewContext, m_Foreground);
-  }
-
-  if (m_bPickSelected)
-  {
-    RenderDataBatch(renderViewContext, m_Selection);
-  }
-
-  RenderDataBatch(renderViewContext, m_SimpleOpaque);
-
-  if (m_bPickTransparent)
-  {
-    RenderDataBatch(renderViewContext, m_SimpleTransparentWithoutSelection);
-  }
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataBatch(renderViewContext, m_Foreground);
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataBatch(renderViewContext, m_Foreground);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
 
@@ -480,74 +450,12 @@ void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extr
   const xiiArrayPtr<xiiRenderData* const> allRenderData = extractedRenderData.GetAllRenderData();
 
   m_LitOpaqueWithoutSelection.Clear();
-  m_LitMaskedWithoutSelection.Clear();
-  m_LitTransparentWithoutSelection.Clear();
-  m_SimpleOpaque.Clear();
-  m_SimpleTransparentWithoutSelection.Clear();
-  m_Foreground.Clear();
-  m_Selection.Clear();
-
-  // Copy selection to set for faster checks.
-  m_SelectionSet.Clear();
-  {
-    for (xiiRenderData* pRenderData : allRenderData)
-    {
-      if (pRenderData == nullptr || !pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::Selection))
-        continue;
-
-      if (pRenderData->m_hOwnerObject.IsInvalidated())
-        continue;
-
-      m_SelectionSet.Insert(pRenderData->m_hOwnerObject);
-    }
-  }
 
   for (xiiRenderData* pRenderData : allRenderData)
   {
     if (pRenderData == nullptr || pRenderData->IsInstanceOf(m_pGridRenderDataType))
       continue;
 
-    const bool bIsSelection = pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::Selection);
-    if (bIsSelection)
-    {
-      if (m_bPickSelected)
-      {
-        m_Selection.PushBack(pRenderData);
-      }
-      continue;
-    }
-
-    if (!pRenderData->m_hOwnerObject.IsInvalidated() && m_SelectionSet.Contains(pRenderData->m_hOwnerObject))
-      continue;
-
-    if (pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::Opaque))
-    {
-      m_LitOpaqueWithoutSelection.PushBack(pRenderData);
-    }
-
-    if (pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::Masked))
-    {
-      m_LitMaskedWithoutSelection.PushBack(pRenderData);
-    }
-
-    if (m_bPickTransparent && pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::Transparent))
-    {
-      m_LitTransparentWithoutSelection.PushBack(pRenderData);
-    }
-
-    if (pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::SimpleOpaque))
-    {
-      m_SimpleOpaque.PushBack(pRenderData);
-    }
-
-    if (m_bPickTransparent && pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::SimpleTransparent))
-    {
-      m_SimpleTransparentWithoutSelection.PushBack(pRenderData);
-    }
-
-    if (pRenderData->m_RoutingFlags.IsAnySet(xiiRenderDataRoutingFlags::Foreground))
-    {
-      m_Foreground.PushBack(pRenderData);
-    }
+    m_LitOpaqueWithoutSelection.PushBack(pRenderData);
   }
 }

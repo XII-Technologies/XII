@@ -63,14 +63,6 @@ private:
   xiiHashTable<const xiiRTTI*, xiiRenderer*>   m_RenderersByRenderDataType;
 
   xiiDynamicArray<xiiRenderData*> m_LitOpaqueWithoutSelection;
-  xiiDynamicArray<xiiRenderData*> m_LitMaskedWithoutSelection;
-  xiiDynamicArray<xiiRenderData*> m_LitTransparentWithoutSelection;
-  xiiDynamicArray<xiiRenderData*> m_SimpleOpaque;
-  xiiDynamicArray<xiiRenderData*> m_SimpleTransparentWithoutSelection;
-  xiiDynamicArray<xiiRenderData*> m_Foreground;
-  xiiDynamicArray<xiiRenderData*> m_Selection;
-
-  xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
 
   struct PickingReadback
   {

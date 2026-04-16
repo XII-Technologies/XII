@@ -174,16 +174,6 @@ void xiiLodMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) c
       pRenderData->FillSortingKey();
     }
 
-    // Determine route flags for type + predicate pass selection.
-    xiiBitflags<xiiRenderDataRoutingFlags> routingFlags = xiiRenderDataRoutingFlags::Opaque;
-    if (hMaterial.IsValid())
-    {
-      xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-
-      routingFlags = xiiRenderData::RoutingFlagsFromLegacyCategory(pMaterial->GetRenderDataCategory());
-    }
-
-    pRenderData->m_RoutingFlags = routingFlags;
     msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
   }
 }

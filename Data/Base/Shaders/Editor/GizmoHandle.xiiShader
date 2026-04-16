@@ -37,10 +37,6 @@ GIZMO_FACE_CAMERA
   DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #endif
 
-[MATERIALCONFIG]
-
-RenderDataCategory = SimpleForeground
-
 [VERTEXSHADER]
 
 #define USE_COLOR0
