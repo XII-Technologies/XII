@@ -259,14 +259,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiCustomMeshRenderer::xiiCustomMeshRenderer()  = default;
 xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;
 
-void xiiCustomMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
-{
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
-}
-
 void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& ref_types) const
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());

@@ -436,7 +436,7 @@ void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extr
   Filter(xiiDefaultRenderDataCategories::OpaqueDynamic, s_LitOpaqueWithoutSelection);
 
   Filter(xiiDefaultRenderDataCategories::MaskedStatic, s_LitMaskedWithoutSelection);
-  Filter(xiiDefaultRenderDataCategories::MaskedDynamic, s_LitOpaqueWithoutSelection);
+  Filter(xiiDefaultRenderDataCategories::MaskedDynamic, s_LitMaskedWithoutSelection);
 
   if (m_bPickTransparent)
   {

@@ -123,7 +123,14 @@ void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& 
   if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
     return;
 
-  msg.m_pExtractedRenderData->AddRenderData(pRenderData, category, caching);
+  if (category.IsValid())
+  {
+    msg.m_pExtractedRenderData->AddRenderData(pRenderData, category, caching);
+  }
+  else
+  {
+    msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
+  }
 
   if (msg.m_uiViewIndex >= m_ViewExtractionCaches.GetCount())
     return;
@@ -167,7 +174,7 @@ bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache
     if (pCachedRenderData == nullptr)
       continue;
 
-    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), pCachedRenderData->m_Category, xiiRenderData::Caching::IfStatic);
+    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), xiiRenderData::Caching::IfStatic);
   }
 
   return true;
@@ -184,7 +191,7 @@ bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache
     if (pCachedRenderData == nullptr)
       continue;
 
-    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), pCachedRenderData->m_Category, xiiRenderData::Caching::IfStatic);
+    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), xiiRenderData::Caching::IfStatic);
   }
 
   return true;

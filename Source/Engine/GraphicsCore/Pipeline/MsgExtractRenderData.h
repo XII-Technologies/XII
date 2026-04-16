@@ -25,6 +25,30 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
   xiiComponentHandle  m_hCurrentComponent;
   xiiUInt32           m_uiViewIndex = xiiInvalidIndex;
 
+  XII_ALWAYS_INLINE void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)
+  {
+    if (m_pExtractedRenderData == nullptr || pRenderData == nullptr)
+      return;
+
+    if (!m_hCurrentObject.IsInvalidated())
+    {
+      pRenderData->m_hOwnerObject = m_hCurrentObject;
+    }
+
+    if (!m_hCurrentComponent.IsInvalidated())
+    {
+      pRenderData->m_hOwnerComponent = m_hCurrentComponent;
+    }
+
+    if (m_SubmitRenderDataFunction != nullptr)
+    {
+      m_SubmitRenderDataFunction(m_pSubmitRenderDataContext, *this, pRenderData, xiiInvalidRenderDataCategory, caching);
+      return;
+    }
+
+    m_pExtractedRenderData->AddRenderData(pRenderData, caching);
+  }
+
   XII_ALWAYS_INLINE void AddRenderData(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)
   {
     if (m_pExtractedRenderData == nullptr || pRenderData == nullptr)
@@ -42,6 +66,12 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
       pRenderData->m_hOwnerComponent = m_hCurrentComponent;
     }
 
+    if (!effectiveCategory.IsValid())
+    {
+      AddRenderData(pRenderData, caching);
+      return;
+    }
+
     if (m_SubmitRenderDataFunction != nullptr)
     {
       m_SubmitRenderDataFunction(m_pSubmitRenderDataContext, *this, pRenderData, effectiveCategory, caching);
@@ -49,6 +79,17 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
     }
 
     m_pExtractedRenderData->AddRenderData(pRenderData, effectiveCategory, caching);
+  }
+
+  XII_ALWAYS_INLINE void AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)
+  {
+    if (m_pExtractedRenderData == nullptr)
+      return;
+
+    for (xiiRenderData* pRenderData : batch.m_Data)
+    {
+      AddRenderData(pRenderData, caching);
+    }
   }
 
   XII_ALWAYS_INLINE void AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)

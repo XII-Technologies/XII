@@ -13,7 +13,6 @@ public:
 
   // xiiRenderer implementation
   virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& inout_types) const override;
-  virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& inout_categories) const override;
   virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
   static float s_fGizmoScale;

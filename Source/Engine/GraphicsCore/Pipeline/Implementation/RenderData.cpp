@@ -132,14 +132,12 @@ xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
 xiiExtractedRenderData::~xiiExtractedRenderData() = default;
 
-void xiiExtractedRenderData::AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
+void xiiExtractedRenderData::AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
 {
   if (pRenderData == nullptr)
   {
     return;
   }
-
-  pRenderData->m_Category = category;
 
   if (caching == xiiRenderData::Caching::IfStatic)
   {
@@ -151,10 +149,32 @@ void xiiExtractedRenderData::AddRenderDataInternal(xiiRenderData* pRenderData, x
   }
 }
 
+void xiiExtractedRenderData::AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
+{
+  XII_LOCK(m_Mutex);
+  AddRenderDataInternal(pRenderData, caching);
+}
+
 void xiiExtractedRenderData::AddRenderData(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
 {
   XII_LOCK(m_Mutex);
-  AddRenderDataInternal(pRenderData, category, caching);
+
+  if (pRenderData != nullptr)
+  {
+    pRenderData->m_Category = category;
+  }
+
+  AddRenderDataInternal(pRenderData, caching);
+}
+
+void xiiExtractedRenderData::AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching)
+{
+  XII_LOCK(m_Mutex);
+
+  for (xiiRenderData* pRenderData : batch.m_Data)
+  {
+    AddRenderDataInternal(pRenderData, caching);
+  }
 }
 
 void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching)
@@ -163,7 +183,12 @@ void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderDataCategory category, 
 
   for (xiiRenderData* pRenderData : batch.m_Data)
   {
-    AddRenderDataInternal(pRenderData, category, caching);
+    if (pRenderData != nullptr)
+    {
+      pRenderData->m_Category = category;
+    }
+
+    AddRenderDataInternal(pRenderData, caching);
   }
 }
 

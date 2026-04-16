@@ -27,12 +27,6 @@ void xiiGizmoRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*
   inout_types.PushBack(xiiGetStaticRTTI<xiiGizmoRenderData>());
 }
 
-void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& inout_categories) const
-{
-  inout_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
-  inout_categories.PushBack(xiiDefaultRenderDataCategories::Foreground);
-}
-
 void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

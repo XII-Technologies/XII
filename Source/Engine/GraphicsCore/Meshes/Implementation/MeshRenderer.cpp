@@ -19,19 +19,6 @@ void xiiMeshRenderer::GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*
   ref_types.PushBack(xiiGetStaticRTTI<xiiInstancedMeshRenderData>());
 }
 
-void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
-{
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Sky);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Foreground);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleOpaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
-}
-
 void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   const xiiMeshRenderData* pRenderData = batch.GetFirstData<xiiMeshRenderData>();

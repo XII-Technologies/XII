@@ -43,11 +43,6 @@ void xiiGridRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*,
   ref_types.PushBack(xiiGetStaticRTTI<xiiGridRenderData>());
 }
 
-void xiiGridRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
-{
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
-}
-
 void xiiGridRenderer::CreateVertexBuffer()
 {
   if (m_pVertexBuffer)
