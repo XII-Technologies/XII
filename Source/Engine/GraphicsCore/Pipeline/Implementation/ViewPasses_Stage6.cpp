@@ -13,6 +13,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
+#if 0
+
 //
 // Helper: declare a full-resolution RGBA16F UAV output texture.
 //
@@ -523,3 +525,4 @@ void xiiView::BuildStage6_MainLighting(xiiRenderGraph& graph, const xiiRenderGra
     [self, &blackboard](AtmCompositeData& d, xiiRGBuilder& b) { SetupAtmComposite(*self, d, b, blackboard); },
     [self](const AtmCompositeData& d, xiiRGPassContext& c) { ExecuteAtmComposite(*self, d, c); });
 }
+#endif

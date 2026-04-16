@@ -13,40 +13,40 @@ static xiiDynamicArray<xiiStringView> s_CategoryNames;
 // ----------------------------------------------------------------------------------------------------------------
 // xiiRenderData
 
-xiiRenderDataCategory xiiRenderData::RegisterCategory(const char* szCategoryName)
+xiiRenderDataCategory xiiRenderData::RegisterCategory(xiiStringView sCategoryName)
 {
   XII_LOCK(s_CategoryMutex);
 
   for (xiiUInt32 i = 0; i < s_CategoryNames.GetCount(); ++i)
   {
-    if (s_CategoryNames[i].IsEqual_NoCase(szCategoryName))
+    if (s_CategoryNames[i].IsEqual_NoCase(sCategoryName))
     {
       return xiiRenderDataCategory{static_cast<xiiUInt16>(i)};
     }
   }
 
   // Create new category
-  xiiUInt32 newIdx = s_CategoryNames.GetCount();
-  XII_ASSERT_DEV(newIdx < 0xFFFF, "Maximum number of render data categories reached.");
+  xiiUInt32 uiNewIndex = s_CategoryNames.GetCount();
+  XII_ASSERT_DEV(uiNewIndex < 0xFFFF, "Maximum number of render data categories reached.");
 
   // Store persistent string for the view. Easiest way is to just keep it in another array if necessary,
-  // but usually szCategoryName is a static string literal. However, to be safe, we can deep copy or assume it's stable.
+  // but usually sCategoryName is a static string literal. However, to be safe, we can deep copy or assume it's stable.
   // Wait, xiiStringView doesn't own memory. If it's a static constant, it's fine.
   // If we need to own it, we should use xiiHashedString or allocate it.
   static xiiDynamicArray<xiiString> s_CategoryStringData;
-  s_CategoryStringData.PushBack(szCategoryName);
+  s_CategoryStringData.PushBack(sCategoryName);
   s_CategoryNames.PushBack(s_CategoryStringData.PeekBack());
 
-  return xiiRenderDataCategory{static_cast<xiiUInt16>(newIdx)};
+  return xiiRenderDataCategory{static_cast<xiiUInt16>(uiNewIndex)};
 }
 
-xiiRenderDataCategory xiiRenderData::FindCategory(const char* szCategoryName)
+xiiRenderDataCategory xiiRenderData::FindCategory(xiiStringView sCategoryName)
 {
   XII_LOCK(s_CategoryMutex);
 
   for (xiiUInt32 i = 0; i < s_CategoryNames.GetCount(); ++i)
   {
-    if (s_CategoryNames[i].IsEqual_NoCase(szCategoryName))
+    if (s_CategoryNames[i].IsEqual_NoCase(sCategoryName))
     {
       return xiiRenderDataCategory{static_cast<xiiUInt16>(i)};
     }
@@ -128,13 +128,9 @@ void xiiDefaultRenderDataCategories::RegisterDefaultCategories()
 
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
-xiiExtractedRenderData::xiiExtractedRenderData()
-{
-}
+xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
-xiiExtractedRenderData::~xiiExtractedRenderData()
-{
-}
+xiiExtractedRenderData::~xiiExtractedRenderData() = default;
 
 void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch)
 {

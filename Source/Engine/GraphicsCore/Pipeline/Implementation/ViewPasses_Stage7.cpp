@@ -11,6 +11,8 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
+#if 0
+
 //
 // Forward opaque (graphics - produces HDRSceneColor by compositing lighting)
 //
@@ -382,3 +384,5 @@ void xiiView::BuildStage7_Forward(xiiRenderGraph& graph, const xiiRenderGraphBla
     [self, &blackboard](EyeData& d, xiiRGBuilder& b) { SetupEye(*self, d, b, blackboard); },
     [self](const EyeData& d, xiiRGPassContext& c) { ExecuteEye(*self, d, c); });
 }
+
+#endif

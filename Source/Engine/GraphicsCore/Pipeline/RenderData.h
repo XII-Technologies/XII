@@ -14,7 +14,6 @@ struct XII_GRAPHICSCORE_DLL xiiRenderDataCategory
 
   XII_ALWAYS_INLINE bool IsValid() const { return m_uiValue != 0xFFFF; }
   XII_ALWAYS_INLINE bool operator==(const xiiRenderDataCategory& other) const { return m_uiValue == other.m_uiValue; }
-  XII_ALWAYS_INLINE bool operator!=(const xiiRenderDataCategory& other) const { return m_uiValue != other.m_uiValue; }
 };
 
 /// \brief Base class for components to push generic render data.
@@ -24,10 +23,10 @@ class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
 
 public:
   /// \brief Registers a custom category with a given name. Categories are automatically assigned sequential IDs.
-  static xiiRenderDataCategory RegisterCategory(const char* szCategoryName);
+  static xiiRenderDataCategory RegisterCategory(xiiStringView sCategoryName);
 
   /// \brief Finds an existing category by name. Note that this requires a string lookup.
-  static xiiRenderDataCategory FindCategory(const char* szCategoryName);
+  static xiiRenderDataCategory FindCategory(xiiStringView sCategoryName);
 
   /// \brief Returns the name of the given category.
   static xiiStringView GetCategoryName(xiiRenderDataCategory category);

@@ -15,6 +15,8 @@
 
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 
+#if 0
+
 //
 // Depth prepass (graphics - writes reversed-Z depth)
 //
@@ -395,3 +397,4 @@ void xiiView::BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlack
     [self, &blackboard](VelocityDilateData& d, xiiRGBuilder& b) { SetupVelocityDilation(*self, d, b, blackboard); },
     [self](const VelocityDilateData& d, xiiRGPassContext& c) { ExecuteVelocityDilation(*self, d, c); });
 }
+#endif
