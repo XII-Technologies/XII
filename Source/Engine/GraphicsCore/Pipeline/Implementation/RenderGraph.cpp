@@ -86,6 +86,25 @@ xiiRGTextureHandle xiiRGBuilder::ReadTexture(xiiRGTextureHandle hTexture, xiiBit
   return hTexture;
 }
 
+xiiRGTextureHandle xiiRGBuilder::ReadTexture(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
+{
+  xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
+  const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
+  XII_ASSERT_DEV(bFound, "Cannot read texture '{}' because it was not declared or imported.", sName);
+  if (!bFound)
+    return xiiRGTextureHandle();
+
+  const bool bIsTexture = m_Graph.m_Resources[uiTextureResourceIndex].m_bIsTexture;
+  XII_ASSERT_DEV(bIsTexture, "Resource '{}' was already declared as a buffer.", sName);
+  if (!bIsTexture)
+    return xiiRGTextureHandle();
+
+  xiiRGTextureHandle hTexture;
+  hTexture.m_uiIndex   = uiTextureResourceIndex;
+  hTexture.m_uiVersion = m_Graph.m_Resources[uiTextureResourceIndex].m_uiCurrentVersion;
+  return ReadTexture(hTexture, requiredState);
+}
+
 xiiRGTextureHandle xiiRGBuilder::WriteTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
   XII_ASSERT_DEV(hTexture.IsValid(), "Invalid texture handle.");
@@ -182,6 +201,25 @@ xiiRGBufferHandle xiiRGBuilder::ReadBuffer(xiiRGBufferHandle hBuffer, xiiBitflag
   m_Graph.m_Passes[m_uiPassIndex].m_Reads.PushBack(resourceUsage);
 
   return hBuffer;
+}
+
+xiiRGBufferHandle xiiRGBuilder::ReadBuffer(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
+{
+  xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
+  const bool bFound               = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
+  XII_ASSERT_DEV(bFound, "Cannot read buffer '{}' because it was not declared or imported.", sName);
+  if (!bFound)
+    return xiiRGBufferHandle();
+
+  const bool bIsBuffer = !m_Graph.m_Resources[uiBufferResourceIndex].m_bIsTexture;
+  XII_ASSERT_DEV(bIsBuffer, "Resource '{}' was already declared as a texture.", sName);
+  if (!bIsBuffer)
+    return xiiRGBufferHandle();
+
+  xiiRGBufferHandle hBuffer;
+  hBuffer.m_uiIndex   = uiBufferResourceIndex;
+  hBuffer.m_uiVersion = m_Graph.m_Resources[uiBufferResourceIndex].m_uiCurrentVersion;
+  return ReadBuffer(hBuffer, requiredState);
 }
 
 xiiRGBufferHandle xiiRGBuilder::WriteBuffer(xiiRGBufferHandle handle, xiiBitflags<xiiGALResourceStateFlags> requiredState)

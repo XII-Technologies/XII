@@ -237,7 +237,7 @@ struct xiiLODSelectData
 
 void xiiView::SetupLODSelect(xiiLODSelectData& data, xiiRGBuilder& builder)
 {
-  data.m_hVisibleCandidates = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hInstanceBounds    = builder.ReadBuffer(builder.ImportBuffer("InstanceBoundsLOD", m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer, xiiGALResourceStateFlags::ShaderResource), xiiGALResourceStateFlags::ShaderResource);
   data.m_uiInstanceCount    = k_uiMaxInstances;
 
@@ -281,7 +281,7 @@ struct xiiInstanceUpdateData
 
 void xiiView::SetupInstanceUpdate(xiiInstanceUpdateData& data, xiiRGBuilder& builder)
 {
-  data.m_hVisibleCandidates = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_uiInstanceCount    = k_uiMaxInstances;
 
   // Ensure persistent matrix buffer.
@@ -342,8 +342,8 @@ struct xiiDrawBuildData
 
 void xiiView::SetupDrawBuild(xiiDrawBuildData& data, xiiRGBuilder& builder)
 {
-  data.m_hSurvivors      = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hInstanceLOD    = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSurvivors      = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hInstanceLOD    = builder.ReadBuffer(xiiRGBlackboardKeys::k_InstanceLODBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_uiInstanceCount = k_uiMaxInstances;
 
   // Persistent indirect argument buffer (resized lazily).
@@ -401,7 +401,7 @@ struct xiiShadowCasterBuildData
 
 void xiiView::SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRGBuilder& builder)
 {
-  data.m_hVisibleCandidates = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVisibleCandidates = builder.ReadBuffer(xiiRGBlackboardKeys::k_VisibleCandidateBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 20U;                                                          // DrawIndexedIndirectArguments per cascade-per-bin
@@ -517,7 +517,7 @@ struct xiiLightListData
 
 void xiiView::SetupLightListBuild(xiiLightListData& data, xiiRGBuilder& builder)
 {
-  data.m_hClusterDescriptors = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
 
   const xiiUInt32 uiMaxClusters    = 16U * 9U * 24U; // worst case
   const xiiUInt32 uiMaxLightsPerCl = 256U;
@@ -570,7 +570,7 @@ struct xiiReflectionProbeSelectData
 
 void xiiView::SetupReflectionProbeSelect(xiiReflectionProbeSelectData& data, xiiRGBuilder& builder)
 {
-  data.m_hClusterDescriptors = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 4U;
@@ -757,8 +757,8 @@ void xiiView::SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRGBu
     m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
-  data.m_hCascadeMatrices        = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, {}), xiiGALResourceStateFlags::ShaderResource);
-  data.m_hShadowCasterCommands   = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, {}), xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hCascadeMatrices        = builder.ReadBuffer(xiiRGBlackboardKeys::k_ShadowCascadeMatrices, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hShadowCasterCommands   = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hDirectionalShadowAtlas = builder.ImportTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_hDirectionalShadowAtlas = builder.WriteTexture(data.m_hDirectionalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_uiActiveCascades        = 3U;
@@ -835,7 +835,7 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder
     m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
-  data.m_hShadowCasterCommands = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, {}), xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hShadowCasterCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlas     = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_hLocalShadowAtlas     = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_uiSpotLightCount      = static_cast<xiiUInt32>(m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light).GetCount()); // \todo: actual spotlight count from extraction, not just total light count.
@@ -877,7 +877,7 @@ struct xiiPointShadowData
 
 void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& builder)
 {
-  data.m_hShadowCasterCommands = builder.ReadBuffer(builder.DeclareBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, {}), xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hShadowCasterCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlas     = builder.WriteTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, {}), xiiGALResourceStateFlags::DepthWrite);
   data.m_uiPointLightCount     = static_cast<xiiUInt32>(m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light).GetCount()); // \todo: actual point light count from extraction, not just total light count.
 
@@ -916,7 +916,7 @@ struct xiiRayTracedShadowData
 
 void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilder& builder)
 {
-  data.m_hSceneDepth = builder.ReadTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -960,7 +960,7 @@ struct xiiShadowDenoiseData
 
 void xiiView::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRGBuilder& builder)
 {
-  data.m_hRTRawShadowMask = builder.ReadTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hRTRawShadowMask = builder.ReadTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -1002,7 +1002,7 @@ struct xiiContactShadowData
 
 void xiiView::SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& builder)
 {
-  data.m_hSceneDepth = builder.ReadTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, {}), xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription desc;
   desc.m_Type           = xiiGALResourceDimension::Texture2D;
