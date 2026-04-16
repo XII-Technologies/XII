@@ -5,6 +5,7 @@
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
+class xiiExtractedRenderData;
 class xiiView;
 
 /// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
@@ -16,8 +17,9 @@ class xiiView;
 ///
 /// ## Render data
 /// During the Async world-update phase, xiiRenderWorldModule walks all world objects and sends
-/// xiiMsgExtractRenderData. Components handling this message submit data into the view's
-/// xiiExtractedRenderData, which is radix-sorted by category and sort key before the render graph runs.
+/// xiiMsgExtractRenderData. Components handling this message submit data as usual, but the extracted
+/// data cache is owned by xiiRenderWorldModule (not by xiiView) and keeps static/dynamic streams.
+/// Before execution, the module finalizes and sorts those streams for graph consumers.
 ///
 /// ## Per-view blackboard and resource cache
 /// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache.
@@ -57,5 +59,6 @@ private:
 
 private:
   xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
+  xiiDynamicArray<xiiUniquePtr<xiiExtractedRenderData>> m_ViewExtractedData;
   xiiUInt64                              m_uiRenderFrameIndex = 0;
 };

@@ -44,6 +44,7 @@ void xiiRenderWorldModule::Deinitialize()
 {
   // Destroying views releases all per-view GPU resources (ViewPassResources, profiler, etc.)
   m_Views.Clear();
+  m_ViewExtractedData.Clear();
   m_uiRenderFrameIndex = 0;
 }
 
@@ -53,10 +54,17 @@ void xiiRenderWorldModule::OnSimulationStarted()
 
 xiiView* xiiRenderWorldModule::CreateView(xiiStringView sName)
 {
-  xiiUniquePtr<xiiView> pView = XII_DEFAULT_NEW(xiiView);
+  xiiUniquePtr<xiiView>              pView          = XII_DEFAULT_NEW(xiiView);
+  xiiUniquePtr<xiiExtractedRenderData> pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+
   pView->SetName(sName);
+  pView->SetExtractedRenderData(pExtractedData.Borrow());
+
   xiiView* pRet = pView.Borrow();
+
   m_Views.PushBack(std::move(pView));
+  m_ViewExtractedData.PushBack(std::move(pExtractedData));
+
   return pRet;
 }
 
@@ -66,7 +74,9 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
   {
     if (m_Views[i].Borrow() == pView)
     {
+      m_Views[i]->SetExtractedRenderData(nullptr);
       m_Views.RemoveAtAndCopy(i);
+      m_ViewExtractedData.RemoveAtAndCopy(i);
       return;
     }
   }
@@ -74,16 +84,20 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
-  for (auto& pView : m_Views)
+  for (xiiUInt32 i = 0; i < m_Views.GetCount(); ++i)
   {
+    xiiView* pView = m_Views[i].Borrow();
+
     if (!pView->IsValid())
       continue;
 
-    xiiExtractedRenderData* pExtractedData = pView->GetExtractedRenderData();
+    xiiExtractedRenderData* pExtractedData = m_ViewExtractedData[i].Borrow();
+    XII_ASSERT_DEV(pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
+
     pExtractedData->Clear();
 
     xiiMsgExtractRenderData msg;
-    msg.m_pView                = pView.Borrow();
+    msg.m_pView                = pView;
     msg.m_pExtractedRenderData = pExtractedData;
 
     // Broadcast to all objects, each object routes to matching component message handlers.
@@ -96,7 +110,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
       }
     }
 
-    // Flatten concurrent batches, then radix-sort each category by sort key.
+    // Finalize and sort extracted data for this view.
     pExtractedData->SortAndBatches();
   }
 }

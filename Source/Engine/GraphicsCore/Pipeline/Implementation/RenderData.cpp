@@ -132,24 +132,53 @@ xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
 xiiExtractedRenderData::~xiiExtractedRenderData() = default;
 
-void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch)
+void xiiExtractedRenderData::AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
+{
+  if (pRenderData == nullptr)
+  {
+    return;
+  }
+
+  pRenderData->m_Category = category;
+
+  if (caching == xiiRenderData::Caching::IfStatic)
+  {
+    m_SubmittedStaticRenderData.PushBack(pRenderData);
+  }
+  else
+  {
+    m_SubmittedDynamicRenderData.PushBack(pRenderData);
+  }
+}
+
+void xiiExtractedRenderData::AddRenderData(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching)
 {
   XII_LOCK(m_Mutex);
-  if (category.m_uiValue >= m_BatchesPerCategory.GetCount())
+  AddRenderDataInternal(pRenderData, category, caching);
+}
+
+void xiiExtractedRenderData::AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching)
+{
+  XII_LOCK(m_Mutex);
+
+  for (xiiRenderData* pRenderData : batch.m_Data)
   {
-    m_BatchesPerCategory.SetCount(category.m_uiValue + 1);
+    AddRenderDataInternal(pRenderData, category, caching);
   }
-  m_BatchesPerCategory[category.m_uiValue].PushBack(batch);
 }
 
 void xiiExtractedRenderData::Clear()
 {
   XII_LOCK(m_Mutex);
-  for (auto& batches : m_BatchesPerCategory)
-  {
-    batches.Clear();
-  }
-  for (auto& sortedData : m_SortedRenderData)
+
+  m_SubmittedStaticRenderData.Clear();
+  m_SubmittedDynamicRenderData.Clear();
+
+  m_SortedStaticRenderData.Clear();
+  m_SortedDynamicRenderData.Clear();
+  m_SortedAllRenderData.Clear();
+
+  for (auto& sortedData : m_SortedRenderDataByCategory)
   {
     sortedData.Clear();
   }
@@ -159,52 +188,71 @@ void xiiExtractedRenderData::SortAndBatches()
 {
   XII_LOCK(m_Mutex);
 
-  // Resize sorted data array to match the maximum category ID we have received batches for
-  m_SortedRenderData.SetCount(m_BatchesPerCategory.GetCount());
-
   xiiDynamicArray<xiiRenderData*> sortScratchBuffer;
 
-  for (xiiUInt32 i = 0; i < m_BatchesPerCategory.GetCount(); ++i)
+  auto sortByKey = [&sortScratchBuffer](xiiDynamicArray<xiiRenderData*>& data) {
+    if (data.IsEmpty())
+      return;
+
+    if (sortScratchBuffer.GetCount() != data.GetCount())
+    {
+      sortScratchBuffer.SetCountUninitialized(data.GetCount());
+    }
+
+    xiiArrayPtr<xiiRenderData*> dataPtr = data;
+    xiiSorting::RadixSort(dataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64 {
+      return pRenderData->m_uiSortingKey;
+    });
+  };
+
+  m_SortedStaticRenderData  = m_SubmittedStaticRenderData;
+  m_SortedDynamicRenderData = m_SubmittedDynamicRenderData;
+
+  sortByKey(m_SortedStaticRenderData);
+  sortByKey(m_SortedDynamicRenderData);
+
+  m_SortedAllRenderData = m_SortedStaticRenderData;
+  m_SortedAllRenderData.PushBackRange(m_SortedDynamicRenderData);
+  sortByKey(m_SortedAllRenderData);
+
+  // Build compatibility category slices from the unified list.
+  m_SortedRenderDataByCategory.Clear();
+  for (xiiRenderData* pRenderData : m_SortedAllRenderData)
   {
-    auto& batches    = m_BatchesPerCategory[i];
-    auto& sortedData = m_SortedRenderData[i];
+    if (pRenderData == nullptr || !pRenderData->m_Category.IsValid())
+      continue;
 
-    sortedData.Clear();
-
-    // Flatten
-    xiiUInt32 uiTotalElements = 0;
-    for (const auto& batch : batches)
+    const xiiUInt16 uiCategory = pRenderData->m_Category.m_uiValue;
+    if (uiCategory >= m_SortedRenderDataByCategory.GetCount())
     {
-      uiTotalElements += batch.m_Data.GetCount();
+      m_SortedRenderDataByCategory.SetCount(uiCategory + 1);
     }
 
-    if (uiTotalElements > 0)
-    {
-      sortedData.Reserve(uiTotalElements);
-      for (const auto& batch : batches)
-      {
-        sortedData.PushBackRange(batch.m_Data);
-      }
-
-      if (sortScratchBuffer.GetCount() < uiTotalElements)
-      {
-        sortScratchBuffer.SetCountUninitialized(uiTotalElements);
-      }
-
-      // Sort
-      xiiArrayPtr<xiiRenderData*> sortedDataPtr = sortedData;
-      xiiSorting::RadixSort(sortedDataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64 {
-        return pRenderData->m_uiSortingKey;
-      });
-    }
+    m_SortedRenderDataByCategory[uiCategory].PushBack(pRenderData);
   }
+}
+
+xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetAllRenderData() const
+{
+  return m_SortedAllRenderData;
+}
+
+xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetStaticRenderData() const
+{
+  return m_SortedStaticRenderData;
+}
+
+xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetDynamicRenderData() const
+{
+  return m_SortedDynamicRenderData;
 }
 
 xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetRenderData(xiiRenderDataCategory category) const
 {
-  if (category.m_uiValue < m_SortedRenderData.GetCount())
+  if (category.m_uiValue < m_SortedRenderDataByCategory.GetCount())
   {
-    return m_SortedRenderData[category.m_uiValue];
+    return m_SortedRenderDataByCategory[category.m_uiValue];
   }
+
   return xiiArrayPtr<xiiRenderData* const>();
 }

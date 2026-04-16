@@ -4,6 +4,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -32,6 +33,26 @@ namespace
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasWidth  = 4096U; ///< The width of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The height will be the same as the width, and each cascade will be allocated a quadrant of the atlas.
   static constexpr xiiUInt32 k_uiDirectionalShadowAtlasHeight = 4096U; ///< The height of the directional shadow atlas. This should be sized to fit the maximum number of cascades per directional light (currently 4) at the desired resolution (e.g. 1024x1024 per cascade). The width will be the same as the height, and each cascade will be allocated a quadrant of the atlas.
   static constexpr xiiUInt32 k_uiLocalShadowAtlasSize         = 4096U; ///< The size of the local shadow atlas. This should be sized to fit the maximum number of local shadows in one frame. The atlas will be a single 2D texture for spot and point lights.
+
+  static bool IsRenderDataTypeName(const xiiRenderData* pRenderData, xiiStringView sTypeName)
+  {
+    const xiiRTTI* pType = pRenderData != nullptr ? pRenderData->GetDynamicRTTI() : nullptr;
+    return pType != nullptr && pType->GetTypeName().IsEqual_NoCase(sTypeName);
+  }
+
+  static xiiUInt32 CountRenderDataByTypeName(const xiiArrayPtr<xiiRenderData* const>& renderData, xiiStringView sTypeName)
+  {
+    xiiUInt32 uiCount = 0;
+    for (const xiiRenderData* pRenderData : renderData)
+    {
+      if (IsRenderDataTypeName(pRenderData, sTypeName))
+      {
+        ++uiCount;
+      }
+    }
+
+    return uiCount;
+  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
@@ -39,8 +60,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiView::xiiView()
 {
-  m_pRenderGraph   = XII_DEFAULT_NEW(xiiRenderGraph);
-  m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+  m_pRenderGraph = XII_DEFAULT_NEW(xiiRenderGraph);
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
@@ -112,7 +132,7 @@ struct xiiOcclusionReadbackData
 
 void xiiView::SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder)
 {
-  data.m_uiReadSlot = (m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1u) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
+  data.m_uiReadSlot = (m_ViewPassResources.m_VisibilityPasses.m_uiReadbackWriteSlot + 1U) % ViewPassResources::VisibilityPasses::s_uiReadbackRingSize;
 
   builder.SetPassSideEffects(true);
   builder.SetPassAllowMerge(false);
@@ -669,13 +689,13 @@ void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuil
   data.m_fNearPlane       = m_pCamera->GetNearPlane();
   data.m_fFarPlane        = m_pCamera->GetFarPlane();
 
-  // Walk extracted data to find directional light.
-  xiiArrayPtr<xiiRenderData* const> pLightRenderData = m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light);
-  for (xiiRenderData* pRenderData : pLightRenderData)
+  // Walk extracted data to find the first directional light.
+  const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
+  for (xiiRenderData* pRenderData : renderData)
   {
-    if (auto pDirectionalLightRenderData = xiiDynamicCast<const xiiDirectionalLightRenderData*>(pRenderData))
+    if (IsRenderDataTypeName(pRenderData, "xiiDirectionalLightRenderData"))
     {
-      data.m_vLightDir        = -pDirectionalLightRenderData->m_GlobalTransform.GetColumn(2).GetAsVec3().GetNormalized();
+      data.m_vLightDir        = -pRenderData->m_GlobalTransform.GetColumn(2).GetAsVec3().GetNormalized();
       data.m_uiActiveCascades = 3U; // Could read from component property via msg if exposed.
       break;
     }
@@ -838,7 +858,9 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder
   data.m_hShadowCasterCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlas     = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
   data.m_hLocalShadowAtlas     = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
-  data.m_uiSpotLightCount      = static_cast<xiiUInt32>(m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light).GetCount()); // \todo: actual spotlight count from extraction, not just total light count.
+
+  const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
+  data.m_uiSpotLightCount = CountRenderDataByTypeName(renderData, "xiiSpotLightRenderData");
 
   builder.SetPassAllowMerge(false);
 }
@@ -879,7 +901,9 @@ void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& build
 {
   data.m_hShadowCasterCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
   data.m_hLocalShadowAtlas     = builder.WriteTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, {}), xiiGALResourceStateFlags::DepthWrite);
-  data.m_uiPointLightCount     = static_cast<xiiUInt32>(m_pExtractedData->GetRenderData(xiiDefaultRenderDataCategories::Light).GetCount()); // \todo: actual point light count from extraction, not just total light count.
+
+  const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
+  data.m_uiPointLightCount = CountRenderDataByTypeName(renderData, "xiiPointLightRenderData");
 
   builder.SetPassAllowMerge(false);
 }

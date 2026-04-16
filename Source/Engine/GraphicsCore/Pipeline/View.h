@@ -120,8 +120,8 @@ public:
   xiiRenderGraph*       GetRenderGraph() { return m_pRenderGraph.Borrow(); }
   const xiiRenderGraph* GetRenderGraph() const { return m_pRenderGraph.Borrow(); }
 
-  xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData.Borrow(); }
-  const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData.Borrow(); }
+  xiiExtractedRenderData*       GetExtractedRenderData() { return m_pExtractedData; }
+  const xiiExtractedRenderData* GetExtractedRenderData() const { return m_pExtractedData; }
 
   xiiRenderGraphBlackboard&       GetBlackboard() { return m_Blackboard; }
   const xiiRenderGraphBlackboard& GetBlackboard() const { return m_Blackboard; }
@@ -135,6 +135,8 @@ public:
 private:
   friend class xiiRenderWorldModule;
   friend class xiiMemoryUtils;
+
+  void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
   void UpdateCachedMatrices() const;
 
@@ -218,8 +220,10 @@ private:
 
   mutable xiiViewData m_Data;
 
-  xiiUniquePtr<xiiRenderGraph>         m_pRenderGraph;
-  xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
+  xiiUniquePtr<xiiRenderGraph> m_pRenderGraph;
+
+  /// Non-owning pointer. The extracted data lifetime is managed by xiiRenderWorldModule.
+  xiiExtractedRenderData* m_pExtractedData = nullptr;
 
   /// Non-owning pointer to the swapchain this view renders into.
   /// Set via SetSwapChain(); may be nullptr for off-screen views.

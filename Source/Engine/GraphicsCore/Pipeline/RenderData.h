@@ -16,12 +16,29 @@ struct XII_GRAPHICSCORE_DLL xiiRenderDataCategory
   XII_ALWAYS_INLINE bool operator==(const xiiRenderDataCategory& other) const { return m_uiValue == other.m_uiValue; }
 };
 
+inline constexpr xiiRenderDataCategory xiiInvalidRenderDataCategory = xiiRenderDataCategory{};
+
 /// \brief Base class for components to push generic render data.
 class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderData, xiiReflectedClass);
 
 public:
+  using Category = xiiRenderDataCategory;
+
+  struct Caching
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      Never,
+      IfStatic,
+
+      Default = Never
+    };
+  };
+
   /// \brief Registers a custom category with a given name. Categories are automatically assigned sequential IDs.
   static xiiRenderDataCategory RegisterCategory(xiiStringView sCategoryName);
 

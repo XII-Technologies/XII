@@ -19,8 +19,11 @@ public:
   xiiExtractedRenderData();
   ~xiiExtractedRenderData();
 
+  /// \brief Adds a single extracted render data item.
+  void AddRenderData(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
+
   /// \brief Pushes a batch of extracted data safely to the internal list.
-  void AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch);
+  void AddRenderDataBatch(xiiRenderDataCategory category, const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never);
 
   /// \brief Clears the internal arrays entirely. Called at the start of extreme frame extraction.
   void Clear();
@@ -28,15 +31,34 @@ public:
   /// \brief Sorts the underlying render data by sorting key for cache-efficient render execution.
   void SortAndBatches();
 
+  /// \brief Returns all extracted render data, sorted by sorting key.
+  xiiArrayPtr<xiiRenderData* const> GetAllRenderData() const;
+
+  /// \brief Returns extracted render data marked static during extraction, sorted by sorting key.
+  xiiArrayPtr<xiiRenderData* const> GetStaticRenderData() const;
+
+  /// \brief Returns extracted render data marked dynamic during extraction, sorted by sorting key.
+  xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const;
+
   /// \brief Returns the flattened and sorted render data for the given category.
+  ///        Kept for compatibility with category-driven consumers.
   xiiArrayPtr<xiiRenderData* const> GetRenderData(xiiRenderDataCategory category) const;
 
+  /// \brief Compatibility alias used by legacy callers.
+  xiiArrayPtr<xiiRenderData* const> GetRawRenderDataWithCategory(xiiRenderDataCategory category) const { return GetRenderData(category); }
+
 private:
+  void AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching);
+
   xiiMutex m_Mutex;
 
-  // Batches submitted concurrently
-  xiiDynamicArray<xiiDynamicArray<xiiRenderDataBatch>> m_BatchesPerCategory;
+  // Render data submitted concurrently in the current extraction.
+  xiiDynamicArray<xiiRenderData*> m_SubmittedStaticRenderData;
+  xiiDynamicArray<xiiRenderData*> m_SubmittedDynamicRenderData;
 
-  // Flattened and sorted array per category, built during SortAndBatches
-  xiiDynamicArray<xiiDynamicArray<xiiRenderData*>> m_SortedRenderData;
+  // Flattened and sorted arrays built during SortAndBatches.
+  xiiDynamicArray<xiiRenderData*>                  m_SortedStaticRenderData;
+  xiiDynamicArray<xiiRenderData*>                  m_SortedDynamicRenderData;
+  xiiDynamicArray<xiiRenderData*>                  m_SortedAllRenderData;
+  xiiDynamicArray<xiiDynamicArray<xiiRenderData*>> m_SortedRenderDataByCategory;
 };
