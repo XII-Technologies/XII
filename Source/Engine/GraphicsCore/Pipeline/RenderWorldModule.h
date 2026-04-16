@@ -76,35 +76,50 @@ private:
   struct CachedStaticObjectData
   {
     xiiDynamicArray<xiiUniquePtr<xiiRenderData>> m_StaticRenderData;
-    bool                                         m_bStaticOnly = false;
   };
 
-  struct ExtractedObjectFrameData
+  struct CachedStaticComponentData
+  {
+    xiiDynamicArray<xiiUniquePtr<xiiRenderData>> m_StaticRenderData;
+  };
+
+  struct ExtractedComponentFrameData
   {
     xiiDynamicArray<xiiRenderData*> m_StaticRenderData;
     bool                            m_bHasDynamicRenderData = false;
   };
 
+  struct ExtractedObjectFrameData
+  {
+    xiiHashTable<xiiComponentHandle, ExtractedComponentFrameData> m_ComponentFrameData;
+    xiiDynamicArray<xiiRenderData*>                               m_ObjectLevelStaticRenderData;
+    bool                                                          m_bHasDynamicRenderData = false;
+  };
+
   struct ViewExtractionCache
   {
-    xiiHashTable<xiiGameObjectHandle, CachedStaticObjectData>  m_StaticObjectCache;
-    xiiHashTable<xiiGameObjectHandle, ExtractedObjectFrameData> m_FrameObjectData;
+    xiiHashTable<xiiGameObjectHandle, CachedStaticObjectData>              m_StaticObjectCache;
+    xiiHashTable<xiiComponentHandle, CachedStaticComponentData>            m_StaticComponentCache;
+    xiiHashTable<xiiGameObjectHandle, xiiDynamicArray<xiiComponentHandle>> m_ObjectToCachedComponents;
+    xiiHashTable<xiiGameObjectHandle, ExtractedObjectFrameData>            m_FrameObjectData;
   };
 
   static void SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching);
 
   void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderDataCategory category, xiiRenderData::Caching::Enum caching);
   bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
+  bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiComponentHandle hComponent, xiiExtractedRenderData& out_extractedRenderData) const;
   void FinalizeViewExtractionCache(ViewExtractionCache& cache);
   void RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject);
+  void RemoveCachedRenderDataForComponent(ViewExtractionCache& cache, xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent);
   void RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject);
 
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
-  xiiDynamicArray<xiiUniquePtr<xiiView>>              m_Views;
+  xiiDynamicArray<xiiUniquePtr<xiiView>>                m_Views;
   xiiDynamicArray<xiiUniquePtr<xiiExtractedRenderData>> m_ViewExtractedData;
-  xiiDynamicArray<ViewExtractionCache>                m_ViewExtractionCaches;
-  xiiUInt64                                           m_uiRenderFrameIndex = 0;
+  xiiDynamicArray<ViewExtractionCache>                  m_ViewExtractionCaches;
+  xiiUInt64                                             m_uiRenderFrameIndex = 0;
 };

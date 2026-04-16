@@ -1,5 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/World/Component.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
@@ -130,16 +131,28 @@ void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& 
   if (msg.m_hCurrentObject.IsInvalidated())
     return;
 
-  ViewExtractionCache&     cache     = m_ViewExtractionCaches[msg.m_uiViewIndex];
+  ViewExtractionCache&      cache     = m_ViewExtractionCaches[msg.m_uiViewIndex];
   ExtractedObjectFrameData& frameData = cache.m_FrameObjectData[msg.m_hCurrentObject];
 
   if (caching == xiiRenderData::Caching::IfStatic)
   {
-    frameData.m_StaticRenderData.PushBack(pRenderData);
+    if (!msg.m_hCurrentComponent.IsInvalidated())
+    {
+      frameData.m_ComponentFrameData[msg.m_hCurrentComponent].m_StaticRenderData.PushBack(pRenderData);
+    }
+    else
+    {
+      frameData.m_ObjectLevelStaticRenderData.PushBack(pRenderData);
+    }
   }
   else
   {
     frameData.m_bHasDynamicRenderData = true;
+
+    if (!msg.m_hCurrentComponent.IsInvalidated())
+    {
+      frameData.m_ComponentFrameData[msg.m_hCurrentComponent].m_bHasDynamicRenderData = true;
+    }
   }
 }
 
@@ -149,7 +162,21 @@ bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache
   if (!cache.m_StaticObjectCache.TryGetValue(hObject, pCachedData) || pCachedData == nullptr)
     return false;
 
-  if (!pCachedData->m_bStaticOnly)
+  for (const auto& pCachedRenderData : pCachedData->m_StaticRenderData)
+  {
+    if (pCachedRenderData == nullptr)
+      continue;
+
+    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), pCachedRenderData->m_Category, xiiRenderData::Caching::IfStatic);
+  }
+
+  return true;
+}
+
+bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiComponentHandle hComponent, xiiExtractedRenderData& out_extractedRenderData) const
+{
+  const CachedStaticComponentData* pCachedData = nullptr;
+  if (!cache.m_StaticComponentCache.TryGetValue(hComponent, pCachedData) || pCachedData == nullptr)
     return false;
 
   for (const auto& pCachedRenderData : pCachedData->m_StaticRenderData)
@@ -165,40 +192,96 @@ bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache
 
 void xiiRenderWorldModule::FinalizeViewExtractionCache(ViewExtractionCache& cache)
 {
+  auto AppendClones = [](const xiiDynamicArray<xiiRenderData*>& sourceData, xiiDynamicArray<xiiUniquePtr<xiiRenderData>>& out_clonedData) {
+    for (const xiiRenderData* pRenderData : sourceData)
+    {
+      xiiUniquePtr<xiiRenderData> pClone = CloneRenderDataForCache(pRenderData);
+      if (pClone == nullptr)
+        return false;
+
+      out_clonedData.PushBack(std::move(pClone));
+    }
+
+    return true;
+  };
+
   for (auto it = cache.m_FrameObjectData.GetIterator(); it.IsValid(); ++it)
   {
-    const xiiGameObjectHandle       hObject    = it.Key();
-    const ExtractedObjectFrameData& frameData  = it.Value();
+    const xiiGameObjectHandle       hObject   = it.Key();
+    const ExtractedObjectFrameData& frameData = it.Value();
 
-    if (frameData.m_bHasDynamicRenderData || frameData.m_StaticRenderData.IsEmpty())
+    bool bHasStaticRenderData = !frameData.m_ObjectLevelStaticRenderData.IsEmpty();
+    if (!bHasStaticRenderData)
+    {
+      for (auto componentIt = frameData.m_ComponentFrameData.GetIterator(); componentIt.IsValid(); ++componentIt)
+      {
+        if (!componentIt.Value().m_StaticRenderData.IsEmpty())
+        {
+          bHasStaticRenderData = true;
+          break;
+        }
+      }
+    }
+
+    if (!bHasStaticRenderData)
     {
       RemoveCachedRenderDataForObject(cache, hObject);
       continue;
     }
 
-    CachedStaticObjectData newCachedData;
-    newCachedData.m_bStaticOnly = true;
-
-    bool bCloningSucceeded = true;
-    for (const xiiRenderData* pStaticRenderData : frameData.m_StaticRenderData)
+    if (!frameData.m_bHasDynamicRenderData)
     {
-      xiiUniquePtr<xiiRenderData> pClone = CloneRenderDataForCache(pStaticRenderData);
-      if (pClone == nullptr)
+      CachedStaticObjectData newCachedData;
+
+      bool bCloningSucceeded = AppendClones(frameData.m_ObjectLevelStaticRenderData, newCachedData.m_StaticRenderData);
+      if (bCloningSucceeded)
       {
-        bCloningSucceeded = false;
-        break;
+        for (auto componentIt = frameData.m_ComponentFrameData.GetIterator(); componentIt.IsValid(); ++componentIt)
+        {
+          bCloningSucceeded = AppendClones(componentIt.Value().m_StaticRenderData, newCachedData.m_StaticRenderData);
+          if (!bCloningSucceeded)
+            break;
+        }
       }
 
-      newCachedData.m_StaticRenderData.PushBack(std::move(pClone));
-    }
+      if (!bCloningSucceeded || newCachedData.m_StaticRenderData.IsEmpty())
+      {
+        RemoveCachedRenderDataForObject(cache, hObject);
+        continue;
+      }
 
-    if (!bCloningSucceeded || newCachedData.m_StaticRenderData.IsEmpty())
-    {
       RemoveCachedRenderDataForObject(cache, hObject);
+      cache.m_StaticObjectCache.Insert(hObject, std::move(newCachedData));
       continue;
     }
 
-    cache.m_StaticObjectCache.Insert(hObject, std::move(newCachedData));
+    // Mixed object: keep per-component static cache and skip object-wide cache.
+    RemoveCachedRenderDataForObject(cache, hObject);
+
+    xiiDynamicArray<xiiComponentHandle> cachedComponents;
+
+    for (auto componentIt = frameData.m_ComponentFrameData.GetIterator(); componentIt.IsValid(); ++componentIt)
+    {
+      const xiiComponentHandle           hComponent         = componentIt.Key();
+      const ExtractedComponentFrameData& componentFrameData = componentIt.Value();
+
+      if (componentFrameData.m_bHasDynamicRenderData || componentFrameData.m_StaticRenderData.IsEmpty())
+        continue;
+
+      CachedStaticComponentData newCachedData;
+      const bool                bCloningSucceeded = AppendClones(componentFrameData.m_StaticRenderData, newCachedData.m_StaticRenderData);
+
+      if (!bCloningSucceeded || newCachedData.m_StaticRenderData.IsEmpty())
+        continue;
+
+      cache.m_StaticComponentCache.Insert(hComponent, std::move(newCachedData));
+      cachedComponents.PushBack(hComponent);
+    }
+
+    if (!cachedComponents.IsEmpty())
+    {
+      cache.m_ObjectToCachedComponents.Insert(hObject, std::move(cachedComponents));
+    }
   }
 
   cache.m_FrameObjectData.Clear();
@@ -207,6 +290,37 @@ void xiiRenderWorldModule::FinalizeViewExtractionCache(ViewExtractionCache& cach
 void xiiRenderWorldModule::RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject)
 {
   cache.m_StaticObjectCache.Remove(hObject);
+
+  xiiDynamicArray<xiiComponentHandle>* pCachedComponents = nullptr;
+  if (cache.m_ObjectToCachedComponents.TryGetValue(hObject, pCachedComponents) && pCachedComponents != nullptr)
+  {
+    for (xiiComponentHandle hCachedComponent : *pCachedComponents)
+    {
+      cache.m_StaticComponentCache.Remove(hCachedComponent);
+    }
+  }
+
+  cache.m_ObjectToCachedComponents.Remove(hObject);
+}
+
+void xiiRenderWorldModule::RemoveCachedRenderDataForComponent(ViewExtractionCache& cache, xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
+{
+  cache.m_StaticComponentCache.Remove(hComponent);
+
+  xiiDynamicArray<xiiComponentHandle>* pCachedComponents = nullptr;
+  if (!cache.m_ObjectToCachedComponents.TryGetValue(hOwnerObject, pCachedComponents) || pCachedComponents == nullptr)
+    return;
+
+  const xiiUInt32 uiComponentIndex = pCachedComponents->IndexOf(hComponent);
+  if (uiComponentIndex != xiiInvalidIndex)
+  {
+    pCachedComponents->RemoveAtAndCopy(uiComponentIndex);
+  }
+
+  if (pCachedComponents->IsEmpty())
+  {
+    cache.m_ObjectToCachedComponents.Remove(hOwnerObject);
+  }
 }
 
 void xiiRenderWorldModule::RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject)
@@ -224,14 +338,19 @@ void xiiRenderWorldModule::RemoveCachedRenderDataForObjectRecursive(ViewExtracti
 
 void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
 {
-  XII_IGNORE_UNUSED(hComponent);
-
   if (hOwnerObject.IsInvalidated())
     return;
 
   for (ViewExtractionCache& cache : m_ViewExtractionCaches)
   {
-    RemoveCachedRenderDataForObject(cache, hOwnerObject);
+    if (!hComponent.IsInvalidated() && !cache.m_StaticObjectCache.Contains(hOwnerObject))
+    {
+      RemoveCachedRenderDataForComponent(cache, hOwnerObject, hComponent);
+    }
+    else
+    {
+      RemoveCachedRenderDataForObject(cache, hOwnerObject);
+    }
   }
 }
 
@@ -251,6 +370,8 @@ void xiiRenderWorldModule::DeleteAllCachedRenderData()
   for (ViewExtractionCache& cache : m_ViewExtractionCaches)
   {
     cache.m_StaticObjectCache.Clear();
+    cache.m_StaticComponentCache.Clear();
+    cache.m_ObjectToCachedComponents.Clear();
     cache.m_FrameObjectData.Clear();
   }
 }
@@ -285,16 +406,40 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
       for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
       {
-        const xiiGameObjectHandle hObject = it->GetHandle();
+        xiiGameObject*            pObject = it;
+        const xiiGameObjectHandle hObject = pObject->GetHandle();
+
+        msg.m_hCurrentObject    = hObject;
+        msg.m_hCurrentComponent = xiiComponentHandle();
 
         if (ReuseCachedStaticRenderData(viewCache, hObject, *pExtractedData))
+        {
+          msg.m_hCurrentObject = xiiGameObjectHandle();
           continue;
+        }
 
-        msg.m_hCurrentObject = hObject;
-        it->SendMessage(msg);
+        // Dispatch to object-level handlers explicitly; component dispatch is handled below.
+        if (const xiiRTTI* pObjectType = pObject->GetDynamicRTTI(); pObjectType != nullptr)
+        {
+          pObjectType->DispatchMessage(pObject, msg);
+        }
+
+        for (xiiComponent* pComponent : pObject->GetComponents())
+        {
+          if (pComponent == nullptr)
+            continue;
+
+          const xiiComponentHandle hComponent = pComponent->GetHandle();
+
+          if (ReuseCachedStaticRenderData(viewCache, hComponent, *pExtractedData))
+            continue;
+
+          msg.m_hCurrentComponent = hComponent;
+          pComponent->SendMessage(msg);
+          msg.m_hCurrentComponent = xiiComponentHandle();
+        }
 
         msg.m_hCurrentObject = xiiGameObjectHandle();
-        msg.m_hCurrentComponent = xiiComponentHandle();
       }
     }
 

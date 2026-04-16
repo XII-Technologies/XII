@@ -50,7 +50,7 @@ private:
   xiiDynamicArray<xiiRenderData*> m_SubmittedDynamicRenderData;
 
   // Flattened and sorted arrays built during SortAndBatches.
-  xiiDynamicArray<xiiRenderData*>                  m_SortedStaticRenderData;
-  xiiDynamicArray<xiiRenderData*>                  m_SortedDynamicRenderData;
-  xiiDynamicArray<xiiRenderData*>                  m_SortedAllRenderData;
+  xiiDynamicArray<xiiRenderData*> m_SortedStaticRenderData;
+  xiiDynamicArray<xiiRenderData*> m_SortedDynamicRenderData;
+  xiiDynamicArray<xiiRenderData*> m_SortedAllRenderData;
 };

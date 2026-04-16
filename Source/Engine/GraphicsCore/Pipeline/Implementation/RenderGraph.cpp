@@ -88,8 +88,8 @@ xiiRGTextureHandle xiiRGBuilder::ReadTexture(xiiRGTextureHandle hTexture, xiiBit
 
 xiiRGTextureHandle xiiRGBuilder::ReadTexture(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
-  xiiUInt32 uiTextureResourceIndex = xiiInvalidIndex;
-  const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
+  xiiUInt32  uiTextureResourceIndex = xiiInvalidIndex;
+  const bool bFound                 = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiTextureResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read texture '{}' because it was not declared or imported.", sName);
   if (!bFound)
     return xiiRGTextureHandle();
@@ -205,8 +205,8 @@ xiiRGBufferHandle xiiRGBuilder::ReadBuffer(xiiRGBufferHandle hBuffer, xiiBitflag
 
 xiiRGBufferHandle xiiRGBuilder::ReadBuffer(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState)
 {
-  xiiUInt32 uiBufferResourceIndex = xiiInvalidIndex;
-  const bool bFound               = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
+  xiiUInt32  uiBufferResourceIndex = xiiInvalidIndex;
+  const bool bFound                = m_Graph.m_ResourceNameIndex.TryGetValue(xiiTempHashedString(sName), uiBufferResourceIndex);
   XII_ASSERT_DEV(bFound, "Cannot read buffer '{}' because it was not declared or imported.", sName);
   if (!bFound)
     return xiiRGBufferHandle();

@@ -17,61 +17,61 @@
 //
 // Helper macros shared across stages in this file
 //
-#define READ_TEX(hOut, key)                                                                     \
-  do                                                                                            \
-  {                                                                                             \
-    xiiRGTextureHandle _h;                                                                      \
-    bb.TryGetValue(xiiMakeHashedString(key), _h);                                               \
-    if (_h.IsValid()) hOut = builder.ReadTexture(_h, xiiGALResourceStateFlags::ShaderResource); \
-  } while (false)
+#  define READ_TEX(hOut, key)                                                                     \
+    do                                                                                            \
+    {                                                                                             \
+      xiiRGTextureHandle _h;                                                                      \
+      bb.TryGetValue(xiiMakeHashedString(key), _h);                                               \
+      if (_h.IsValid()) hOut = builder.ReadTexture(_h, xiiGALResourceStateFlags::ShaderResource); \
+    } while (false)
 
-#define WRITE_TEX_HDR(hOut, key, w, h)                                                           \
-  do                                                                                             \
-  {                                                                                              \
-    xiiGALTextureCreationDescription _d;                                                         \
-    _d.m_TextureType = xiiGALTextureType::Texture2D;                                             \
-    _d.m_Format      = xiiGALTextureFormat::RGBA16Float;                                         \
-    _d.m_uiWidth     = (w);                                                                      \
-    _d.m_uiHeight    = (h);                                                                      \
-    _d.m_uiMipLevels = 1u;                                                                       \
-    _d.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;       \
-    _d.m_Usage       = xiiGALResourceUsage::Default;                                             \
-    hOut             = builder.WriteTexture(key, _d, xiiGALResourceStateFlags::UnorderedAccess); \
-  } while (false)
+#  define WRITE_TEX_HDR(hOut, key, w, h)                                                           \
+    do                                                                                             \
+    {                                                                                              \
+      xiiGALTextureCreationDescription _d;                                                         \
+      _d.m_TextureType = xiiGALTextureType::Texture2D;                                             \
+      _d.m_Format      = xiiGALTextureFormat::RGBA16Float;                                         \
+      _d.m_uiWidth     = (w);                                                                      \
+      _d.m_uiHeight    = (h);                                                                      \
+      _d.m_uiMipLevels = 1u;                                                                       \
+      _d.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;       \
+      _d.m_Usage       = xiiGALResourceUsage::Default;                                             \
+      hOut             = builder.WriteTexture(key, _d, xiiGALResourceStateFlags::UnorderedAccess); \
+    } while (false)
 
-#define WRITE_TEX_R8(hOut, key, w, h)                                                            \
-  do                                                                                             \
-  {                                                                                              \
-    xiiGALTextureCreationDescription _d;                                                         \
-    _d.m_TextureType = xiiGALTextureType::Texture2D;                                             \
-    _d.m_Format      = xiiGALTextureFormat::R8Unorm;                                             \
-    _d.m_uiWidth     = (w);                                                                      \
-    _d.m_uiHeight    = (h);                                                                      \
-    _d.m_uiMipLevels = 1u;                                                                       \
-    _d.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;       \
-    _d.m_Usage       = xiiGALResourceUsage::Default;                                             \
-    hOut             = builder.WriteTexture(key, _d, xiiGALResourceStateFlags::UnorderedAccess); \
-  } while (false)
+#  define WRITE_TEX_R8(hOut, key, w, h)                                                            \
+    do                                                                                             \
+    {                                                                                              \
+      xiiGALTextureCreationDescription _d;                                                         \
+      _d.m_TextureType = xiiGALTextureType::Texture2D;                                             \
+      _d.m_Format      = xiiGALTextureFormat::R8Unorm;                                             \
+      _d.m_uiWidth     = (w);                                                                      \
+      _d.m_uiHeight    = (h);                                                                      \
+      _d.m_uiMipLevels = 1u;                                                                       \
+      _d.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;       \
+      _d.m_Usage       = xiiGALResourceUsage::Default;                                             \
+      hOut             = builder.WriteTexture(key, _d, xiiGALResourceStateFlags::UnorderedAccess); \
+    } while (false)
 
-#define BIND_SRV_TEX(slot, h)                                                                                                                                          \
-  do                                                                                                                                                                   \
-  {                                                                                                                                                                    \
-    if ((h).IsValid()) cmd.ResolveAndSetShaderResourceView(slot, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute); \
-  } while (false)
+#  define BIND_SRV_TEX(slot, h)                                                                                                                                          \
+    do                                                                                                                                                                   \
+    {                                                                                                                                                                    \
+      if ((h).IsValid()) cmd.ResolveAndSetShaderResourceView(slot, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute); \
+    } while (false)
 
-#define BIND_SRV_BUF(slot, h)                                                                                                                                              \
-  do                                                                                                                                                                       \
-  {                                                                                                                                                                        \
-    if ((h).IsValid()) cmd.ResolveAndSetShaderResourceBufferView(slot, ctx.GetBuffer(h)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute); \
-  } while (false)
+#  define BIND_SRV_BUF(slot, h)                                                                                                                                              \
+    do                                                                                                                                                                       \
+    {                                                                                                                                                                        \
+      if ((h).IsValid()) cmd.ResolveAndSetShaderResourceBufferView(slot, ctx.GetBuffer(h)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute); \
+    } while (false)
 
-#define BIND_UAV_TEX(slot, h)                                                                                                                                            \
-  do                                                                                                                                                                     \
-  {                                                                                                                                                                      \
-    if ((h).IsValid()) cmd.ResolveAndSetUnorderedAccessView(slot, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute); \
-  } while (false)
+#  define BIND_UAV_TEX(slot, h)                                                                                                                                            \
+    do                                                                                                                                                                     \
+    {                                                                                                                                                                      \
+      if ((h).IsValid()) cmd.ResolveAndSetUnorderedAccessView(slot, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute); \
+    } while (false)
 
-#define DISPATCH(W, H) cmd.DispatchCompute({((W) + 7u) / 8u, ((H) + 7u) / 8u, 1u})
+#  define DISPATCH(W, H) cmd.DispatchCompute({((W) + 7u) / 8u, ((H) + 7u) / 8u, 1u})
 
 // ═════════════════════════════════════════════════════════════════════════════
 // STAGE 8 - Transparency & special materials

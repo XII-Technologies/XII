@@ -32,9 +32,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterCategory("LitOpaqueWithoutSelection");
-static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterCategory("LitMaskedWithoutSelection");
-static xiiRenderData::Category s_LitTransparentWithoutSelection   = xiiRenderData::RegisterCategory("LitTransparentWithoutSelection");
+static xiiRenderData::Category s_LitOpaqueWithoutSelection         = xiiRenderData::RegisterCategory("LitOpaqueWithoutSelection");
+static xiiRenderData::Category s_LitMaskedWithoutSelection         = xiiRenderData::RegisterCategory("LitMaskedWithoutSelection");
+static xiiRenderData::Category s_LitTransparentWithoutSelection    = xiiRenderData::RegisterCategory("LitTransparentWithoutSelection");
 static xiiRenderData::Category s_SimpleTransparentWithoutSelection = xiiRenderData::RegisterCategory("SimpleTransparentWithoutSelection");
 
 xiiPickingRenderPass::xiiPickingRenderPass() :

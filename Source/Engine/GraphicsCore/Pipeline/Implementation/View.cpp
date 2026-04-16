@@ -860,7 +860,7 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder
   data.m_hLocalShadowAtlas     = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
 
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
-  data.m_uiSpotLightCount = CountRenderDataByTypeName(renderData, "xiiSpotLightRenderData");
+  data.m_uiSpotLightCount                            = CountRenderDataByTypeName(renderData, "xiiSpotLightRenderData");
 
   builder.SetPassAllowMerge(false);
 }
@@ -903,7 +903,7 @@ void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& build
   data.m_hLocalShadowAtlas     = builder.WriteTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, {}), xiiGALResourceStateFlags::DepthWrite);
 
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
-  data.m_uiPointLightCount = CountRenderDataByTypeName(renderData, "xiiPointLightRenderData");
+  data.m_uiPointLightCount                           = CountRenderDataByTypeName(renderData, "xiiPointLightRenderData");
 
   builder.SetPassAllowMerge(false);
 }
