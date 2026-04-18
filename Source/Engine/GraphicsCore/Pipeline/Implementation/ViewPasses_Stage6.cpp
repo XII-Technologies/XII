@@ -13,8 +13,6 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-#if 0
-
 //
 // Helper: declare a full-resolution RGBA16F UAV output texture.
 //
@@ -31,84 +29,6 @@ static xiiRGTextureHandle DeclareHDROutput(xiiRGBuilder& builder, const char* sz
   return builder.WriteTexture(szKey, desc, xiiGALResourceStateFlags::UnorderedAccess);
 }
 
-//
-// Deferred direct lighting
-//
-namespace
-{
-  struct DirectLightData
-  {
-    xiiRGTextureHandle m_hAlbedo, m_hNormal, m_hMaterial, m_hSceneDepth;
-    xiiRGTextureHandle m_hAO, m_hRTShadow, m_hContactShadow, m_hDirShadowAtlas;
-    xiiRGBufferHandle  m_hLightGrid, m_hLightIndex;
-    xiiRGTextureHandle m_hDirectOut;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupDirectLighting(xiiView& view, DirectLightData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  auto readTex = [&](xiiRGTextureHandle& hOut, const char* szKey) {
-    xiiRGTextureHandle h;
-    bb.TryGetValue(xiiMakeHashedString(szKey), h);
-    if (h.IsValid()) hOut = builder.ReadTexture(h, xiiGALResourceStateFlags::ShaderResource);
-  };
-  auto readBuf = [&](xiiRGBufferHandle& hOut, const char* szKey) {
-    xiiRGBufferHandle h;
-    bb.TryGetValue(xiiMakeHashedString(szKey), h);
-    if (h.IsValid()) hOut = builder.ReadBuffer(h, xiiGALResourceStateFlags::ShaderResource);
-  };
-
-  readTex(data.m_hAlbedo, xiiRGBlackboardKeys::k_GBufferAlbedo);
-  readTex(data.m_hNormal, xiiRGBlackboardKeys::k_GBufferNormal);
-  readTex(data.m_hMaterial, xiiRGBlackboardKeys::k_GBufferMaterial);
-  readTex(data.m_hSceneDepth, xiiRGBlackboardKeys::k_SceneDepthTexture);
-  readTex(data.m_hAO, xiiRGBlackboardKeys::k_StableAOTexture);
-  readTex(data.m_hRTShadow, xiiRGBlackboardKeys::k_RTFinalShadowMask);
-  readTex(data.m_hContactShadow, xiiRGBlackboardKeys::k_ContactShadowTerm);
-  readTex(data.m_hDirShadowAtlas, xiiRGBlackboardKeys::k_DirectionalShadowAtlas);
-  readBuf(data.m_hLightGrid, xiiRGBlackboardKeys::k_LightGridBuffer);
-  readBuf(data.m_hLightIndex, xiiRGBlackboardKeys::k_LightIndexBuffer);
-
-  data.m_hDirectOut = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_DirectLightingBuffer, data.m_uiRenderW, data.m_uiRenderH);
-
-  xiiView::EnsureComputePipeline(lp.m_pDirectLightingPipeline, "Shaders/Pipeline/DirectLighting.xiiShader");
-}
-
-static void ExecuteDirectLighting(xiiView& view, const DirectLightData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPasses;
-
-  cmd.BeginDebugGroup("DeferredDirectLighting");
-  cmd.SetPipelineState(lp.m_pDirectLightingPipeline);
-
-  auto bindSRV = [&](const char* szSlot, xiiRGTextureHandle h) {
-    if (h.IsValid()) cmd.ResolveAndSetShaderResourceView(szSlot, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  };
-  auto bindBufSRV = [&](const char* szSlot, xiiRGBufferHandle h) {
-    if (h.IsValid()) cmd.ResolveAndSetShaderResourceBufferView(szSlot, ctx.GetBuffer(h)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  };
-
-  bindSRV("g_GBufAlbedo", data.m_hAlbedo);
-  bindSRV("g_GBufNormal", data.m_hNormal);
-  bindSRV("g_GBufMaterial", data.m_hMaterial);
-  bindSRV("g_SceneDepth", data.m_hSceneDepth);
-  bindSRV("g_AOTerm", data.m_hAO);
-  bindSRV("g_RTShadow", data.m_hRTShadow);
-  bindSRV("g_ContactShadow", data.m_hContactShadow);
-  bindSRV("g_ShadowAtlas", data.m_hDirShadowAtlas);
-  bindBufSRV("g_LightGrid", data.m_hLightGrid);
-  bindBufSRV("g_LightIndex", data.m_hLightIndex);
-  cmd.ResolveAndSetUnorderedAccessView("g_DirectOut", ctx.GetTexture(data.m_hDirectOut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
 
 //
 // Deferred indirect lighting
@@ -525,4 +445,3 @@ void xiiView::BuildStage6_MainLighting(xiiRenderGraph& graph, const xiiRenderGra
     [self, &blackboard](AtmCompositeData& d, xiiRGBuilder& b) { SetupAtmComposite(*self, d, b, blackboard); },
     [self](const AtmCompositeData& d, xiiRGPassContext& c) { ExecuteAtmComposite(*self, d, c); });
 }
-#endif

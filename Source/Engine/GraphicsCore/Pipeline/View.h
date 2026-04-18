@@ -65,6 +65,8 @@ struct xiiDDGIProbeSamplingData;
 struct xiiGroundTruthAmbientOcclusionData;
 struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
+struct xiiDeferredDirectLightingData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -269,6 +271,10 @@ private:
 
   void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGBuilder& builder);
   void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGPassContext& context);
+
+
+  void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuilder& builder);
+  void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
