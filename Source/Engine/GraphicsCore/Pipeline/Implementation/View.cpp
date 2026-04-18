@@ -2802,6 +2802,94 @@ void xiiView::ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIll
   cmd.EndDebugGroup();
 }
 
+////////// GPU Screen-Space Refraction Data //////////
+//
+// Collects all GPU resources related to screen-space refraction.
+
+struct xiiScreenSpaceRefractionData
+{
+  xiiRGTextureHandle m_hSceneDepth;    ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferNormal; ///< ShaderResource in (G-Buffer normal texture).
+  xiiRGTextureHandle m_hHDRIn;         ///< ShaderResource in (current HDR scene color).
+  xiiRGTextureHandle m_hHDROut;        ///< UnorderedAccess in/out (HDR scene color target).
+};
+
+void xiiView::SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRIn         = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDROut        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ScreenSpacePasses.m_pSSRefractionPipeline, "Shaders/Pipeline/SSRefraction.xiiShader");
+}
+
+void xiiView::ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd            = context.GetCommandList();
+  const xiiUInt32    uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32    uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  cmd.BeginDebugGroup("SSRefraction");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ScreenSpacePasses.m_pSSRefractionPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_HDROut", context.GetTexture(data.m_hHDROut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Planar Reflections Data //////////
+//
+// Collects all GPU resources related to planar reflection rendering.
+
+struct xiiPlanarReflectionsData
+{
+  xiiRGTextureHandle m_hPlanarTarget; ///< RenderTarget out (planar reflection render target).
+};
+
+void xiiView::SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRGBuilder& builder)
+{
+  const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  if (!m_ViewPassResources.m_ScreenSpacePasses.m_pPlanarReflectionTarget)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type        = xiiGALResourceDimension::Texture2D;
+    description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+    description.m_Size.width  = xiiMath::Max(1U, uiRenderWidth / 2U);
+    description.m_Size.height = xiiMath::Max(1U, uiRenderHeight / 2U);
+    description.m_uiMipLevels = 1U;
+    description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+    description.m_Usage       = xiiGALResourceUsage::Default;
+
+    m_ViewPassResources.m_ScreenSpacePasses.m_pPlanarReflectionTarget = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  }
+
+  data.m_hPlanarTarget = builder.ImportTexture(xiiRGBlackboardKeys::k_PlanarReflectionMap, m_ViewPassResources.m_ScreenSpacePasses.m_pPlanarReflectionTarget, xiiGALResourceStateFlags::RenderTarget);
+  data.m_hPlanarTarget = builder.WriteTexture(data.m_hPlanarTarget, xiiGALResourceStateFlags::RenderTarget);
+
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("PlanarReflections");
+  {
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hPlanarTarget)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+    // Secondary view reflection rendering is scheduled by the render world module.
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2879,6 +2967,8 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Screen-space effects.
   graph.AddPass<xiiScreenSpaceGlobalIlluminationData>("SSGI", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceGlobalIllumination, this));
+  graph.AddPass<xiiScreenSpaceRefractionData>("SSRefraction", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceRefraction, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceRefraction, this));
+  graph.AddPass<xiiPlanarReflectionsData>("PlanarReflections", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPlanarReflections, this), xiiMakeDelegate(&xiiView::ExecutePlanarReflections, this));
 }
 
 // static

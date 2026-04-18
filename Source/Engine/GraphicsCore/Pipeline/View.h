@@ -84,7 +84,10 @@ struct xiiEyeShaderData;
 struct xiiGPUParticleSimulateData;
 struct xiiScreenSpaceDecalsData;
 struct xiiWeightedBlendedOITData;
+
 struct xiiScreenSpaceGlobalIlluminationData;
+struct xiiScreenSpaceRefractionData;
+struct xiiPlanarReflectionsData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -345,8 +348,15 @@ private:
   void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRGBuilder& builder);
   void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRGPassContext& context);
 
+
   void SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRGBuilder& builder);
   void ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIlluminationData& data, xiiRGPassContext& context);
+
+  void SetupScreenSpaceRefraction(xiiScreenSpaceRefractionData& data, xiiRGBuilder& builder);
+  void ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& data, xiiRGPassContext& context);
+
+  void SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRGBuilder& builder);
+  void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
