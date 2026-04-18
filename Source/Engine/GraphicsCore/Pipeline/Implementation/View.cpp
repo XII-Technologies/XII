@@ -2279,6 +2279,287 @@ void xiiView::ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data,
   cmd.EndDebugGroup();
 }
 
+////////// GPU Forward Opaque Data //////////
+//
+// Collects all GPU resources related to the forward opaque pass.
+
+struct xiiForwardOpaqueData
+{
+  xiiRGTextureHandle m_hSceneDepth;                ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hDirectLighting;            ///< ShaderResource in (direct lighting texture).
+  xiiRGTextureHandle m_hIndirectLighting;          ///< ShaderResource in (indirect lighting texture).
+  xiiRGTextureHandle m_hRayTracedFinalGI;          ///< ShaderResource in (final ray-traced global illumination texture).
+  xiiRGTextureHandle m_hRayTracedFinalReflections; ///< ShaderResource in (final ray-traced reflections texture).
+  xiiRGTextureHandle m_hScreenSpaceReflections;    ///< ShaderResource in (screen-space reflections texture).
+  xiiRGTextureHandle m_hVolumetricScattering;      ///< ShaderResource in (volumetric scattering texture).
+  xiiRGTextureHandle m_hStableAmbientOcclusion;    ///< ShaderResource in (stable ambient occlusion texture).
+  xiiRGBufferHandle  m_hLightGridBuffer;           ///< ShaderResource in (cluster light grid buffer).
+  xiiRGBufferHandle  m_hLightIndexBuffer;          ///< ShaderResource in (cluster light index buffer).
+  xiiRGBufferHandle  m_hDrawIndirectCommands;      ///< IndirectArgument in (draw indirect commands).
+  xiiRGTextureHandle m_hHDRSceneColor;             ///< RenderTarget out (composited HDR scene color).
+};
+
+void xiiView::SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth                = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDirectLighting            = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hIndirectLighting          = builder.ReadTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hRayTracedFinalGI          = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalGI, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hRayTracedFinalReflections = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalReflections, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hScreenSpaceReflections    = builder.ReadTexture(xiiRGBlackboardKeys::k_SSRTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hVolumetricScattering      = builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScattering, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hStableAmbientOcclusion    = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightGridBuffer           = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer          = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDrawIndirectCommands      = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hHDRSceneColor     = builder.WriteTexture(xiiRGBlackboardKeys::k_HDRSceneColor, description, xiiGALResourceStateFlags::RenderTarget);
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ForwardOpaque");
+  {
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pForwardOpaquePipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pForwardOpaquePipeline);
+
+      cmd.ResolveAndSetShaderResourceTextureView("g_DirectLight", context.GetTexture(data.m_hDirectLighting)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_IndirectLight", context.GetTexture(data.m_hIndirectLighting)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_RTRefl", context.GetTexture(data.m_hRayTracedFinalReflections)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_RTGI", context.GetTexture(data.m_hRayTracedFinalGI)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_SSR", context.GetTexture(data.m_hScreenSpaceReflections)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_Volumetric", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.ResolveAndSetShaderResourceTextureView("g_AO", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Forward Masked Data //////////
+//
+// Collects all GPU resources related to the forward masked pass.
+
+struct xiiForwardMaskedData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
+};
+
+void xiiView::SetupForwardMasked(xiiForwardMaskedData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ForwardMasked");
+  {
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pForwardMaskedPipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pForwardMaskedPipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Hair Rendering Data //////////
+//
+// Collects all GPU resources related to the hair rendering pass.
+
+struct xiiHairRenderingData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
+};
+
+void xiiView::SetupHairRendering(xiiHairRenderingData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteHairRendering(const xiiHairRenderingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("HairRendering");
+  {
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pHairPipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pHairPipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Water Rendering Data //////////
+//
+// Collects all GPU resources related to the water rendering pass.
+
+struct xiiWaterRenderingData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
+  xiiRGTextureHandle m_hPlanarReflectionMap;  ///< ShaderResource in (planar reflection map).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
+};
+
+void xiiView::SetupWaterRendering(xiiWaterRenderingData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hPlanarReflectionMap  = builder.ReadTexture(xiiRGBlackboardKeys::k_PlanarReflectionMap, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("WaterRendering");
+  {
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pWaterPipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pWaterPipeline);
+      if (data.m_hPlanarReflectionMap.IsValid())
+      {
+        cmd.ResolveAndSetShaderResourceTextureView("g_PlanarRefl", context.GetTexture(data.m_hPlanarReflectionMap)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      }
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Subsurface Scattering Data //////////
+//
+// Collects all GPU resources related to the screen-space subsurface scattering pass.
+
+struct xiiSubsurfaceScatteringData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;   ///< UnorderedAccess in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material G-Buffer).
+};
+
+void xiiView::SetupSubsurfaceScattering(xiiSubsurfaceScatteringData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor   = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+}
+
+void xiiView::ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("SubsurfaceScattering");
+  {
+    if (m_ViewPassResources.m_ForwardPasses.m_pSSSComputePipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pSSSComputePipeline);
+      if (data.m_hSceneDepth.IsValid())
+      {
+        cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      }
+      if (data.m_hGBufferMaterial.IsValid())
+      {
+        cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      }
+      if (data.m_hHDRSceneColor.IsValid())
+      {
+        cmd.ResolveAndSetUnorderedAccessTextureView("g_HDRInOut", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      }
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+      const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+      const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+      cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Eye Shader Data //////////
+//
+// Collects all GPU resources related to the eye shading pass.
+
+struct xiiEyeShaderData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
+};
+
+void xiiView::SetupEyeShader(xiiEyeShaderData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteEyeShader(const xiiEyeShaderData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("EyeShader");
+  {
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pEyePipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pEyePipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2340,6 +2621,14 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiVolumetricFogIntegrationData>("VolumetricFogIntegrate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogIntegration, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogIntegration, this));
   graph.AddPass<xiiVolumetricFogTemporalReprojectionData>("VolumetricFogTemporalRep", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogTemporalReprojection, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogTemporalReprojection, this));
   graph.AddPass<xiiAtmosphereCompositeData>("VolumetricLightAccumulate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereComposite, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereComposite, this));
+
+  // Forward rendering passes, which composite main scene color from lighting buffers and forward geometry.
+  graph.AddPass<xiiForwardOpaqueData>("ForwardOpaque", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardOpaque, this), xiiMakeDelegate(&xiiView::ExecuteForwardOpaque, this));
+  graph.AddPass<xiiForwardMaskedData>("ForwardMasked", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardMasked, this), xiiMakeDelegate(&xiiView::ExecuteForwardMasked, this));
+  graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupHairRendering, this), xiiMakeDelegate(&xiiView::ExecuteHairRendering, this));
+  graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupWaterRendering, this), xiiMakeDelegate(&xiiView::ExecuteWaterRendering, this));
+  graph.AddPass<xiiSubsurfaceScatteringData>("SubsurfaceScattering", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSubsurfaceScattering, this), xiiMakeDelegate(&xiiView::ExecuteSubsurfaceScattering, this));
+  graph.AddPass<xiiEyeShaderData>("EyeShader", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupEyeShader, this), xiiMakeDelegate(&xiiView::ExecuteEyeShader, this));
 }
 
 // static
