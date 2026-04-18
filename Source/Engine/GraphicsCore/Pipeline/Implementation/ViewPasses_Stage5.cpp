@@ -13,62 +13,6 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-//
-// BRDF LUT generation (once, persisted across frames)
-//
-namespace
-{
-  struct BRDFLutData
-  {
-    xiiRGTextureHandle m_hBRDFLut;
-    bool               m_bNeedsGeneration = false;
-  };
-} // namespace
-
-static void SetupBRDFLut(xiiView& view, BRDFLutData& data, xiiRGBuilder& builder)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  if (!lp.m_pBRDFLut)
-  {
-    // First frame - create the persistent 256x256 R16G16F texture.
-    xiiGALTextureCreationDescription desc;
-    desc.m_TextureType      = xiiGALTextureType::Texture2D;
-    desc.m_Format           = xiiGALTextureFormat::RG16Float;
-    desc.m_uiWidth          = 256u;
-    desc.m_uiHeight         = 256u;
-    desc.m_uiMipLevels      = 1u;
-    desc.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    desc.m_Usage            = xiiGALResourceUsage::Default;
-    lp.m_pBRDFLut           = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
-    data.m_bNeedsGeneration = true;
-  }
-
-  // Import as persistent resource; mark as UAV only on the generation frame, SRV afterwards.
-  data.m_hBRDFLut = builder.ImportTexture(xiiRGBlackboardKeys::k_BRDFLut, lp.m_pBRDFLut,
-                                          data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
-  if (data.m_bNeedsGeneration)
-    data.m_hBRDFLut = builder.WriteTexture(data.m_hBRDFLut, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(lp.m_pBRDFLutPipeline, "Shaders/Pipeline/BRDFLUTGenerate.xiiShader");
-}
-
-static void ExecuteBRDFLut(xiiView& view, const BRDFLutData& data, xiiRGPassContext& ctx)
-{
-  if (!data.m_bNeedsGeneration)
-    return;
-
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  cmd.BeginDebugGroup("BRDFLUTGenerate");
-  cmd.SetPipelineState(lp.m_pBRDFLutPipeline);
-  cmd.ResolveAndSetUnorderedAccessView("g_BRDFLutOut", ctx.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({32u, 32u, 1u}); // 256/8 x 256/8
-  lp.m_bBRDFLutGenerated = true;
-  cmd.EndDebugGroup();
-}
 
 //
 // Atmosphere transmittance LUT (once, persistent)

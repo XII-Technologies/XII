@@ -1499,6 +1499,59 @@ void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xii
   cmd.EndDebugGroup();
 }
 
+////////// GPU Atmosphere Transmittance Data //////////
+//
+// Collects all GPU resources related to atmosphere transmittance LUT generation, persisted across frames.
+
+struct xiiAtmosphereTransmittanceData
+{
+  xiiRGTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
+  bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
+};
+
+void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                              = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                            = xiiGALResourceFormat::RGBA16Float;
+    description.m_Size.width                                        = 256U;
+    description.m_Size.height                                       = 64U;
+    description.m_uiMipLevels                                       = 1U;
+    description.m_BindFlags                                         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                             = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    data.m_bNeedsGeneration                                         = true;
+  }
+
+  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bNeedsGeneration)
+  {
+    data.m_hTransmittanceLUT = builder.WriteTexture(data.m_hTransmittanceLUT, xiiGALResourceStateFlags::UnorderedAccess);
+  }
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline, "Shaders/Pipeline/AtmosphereTransmittance.xiiShader");
+}
+
+void xiiView::ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceData& data, xiiRGPassContext& context)
+{
+  if (!data.m_bNeedsGeneration)
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("AtmosphereTransmittanceLUT");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_TransmittanceOut", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({32U, 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1542,6 +1595,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Lighting preparation passes, which generate lookup textures and lighting auxiliaries.
   graph.AddPass<xiiBRDFLutGenerationData>("BRDFLUTGenerate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBRDFLutGeneration, this), xiiMakeDelegate(&xiiView::ExecuteBRDFLutGeneration, this));
+  graph.AddPass<xiiAtmosphereTransmittanceData>("AtmosphereTransmittanceLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereTransmittance, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereTransmittance, this));
 }
 
 // static
