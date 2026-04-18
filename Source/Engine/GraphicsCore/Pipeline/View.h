@@ -49,6 +49,7 @@ struct xiiContactShadowData;
 struct xiiDepthPrepassData;
 struct xiiHiZPyramidData;
 struct xiiHiZOcclusionCullData;
+struct xiiMotionVectorsData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -213,6 +214,9 @@ private:
 
   void SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRGBuilder& builder);
   void ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRGPassContext& context);
+
+  void SetupMotionVectors(xiiMotionVectorsData& data, xiiRGBuilder& builder);
+  void ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

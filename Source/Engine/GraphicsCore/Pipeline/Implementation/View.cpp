@@ -1238,6 +1238,54 @@ void xiiView::ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRG
   cmd.EndDebugGroup();
 }
 
+////////// GPU Motion Vectors Data //////////
+//
+// Collects all GPU resources related to motion vector rendering for the current frame, including scene depth and the velocity render target.
+
+struct xiiMotionVectorsData
+{
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthStencil inout (scene depth target reused for depth-tested motion vector rendering).
+  xiiRGTextureHandle m_hVelocityBuffer;       ///< RenderTarget out (screen-space velocity buffer written by this pass).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
+};
+
+void xiiView::SetupMotionVectors(xiiMotionVectorsData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type            = xiiGALResourceDimension::Texture2D;
+  description.m_Format          = xiiGALResourceFormat::RG16Float;
+  description.m_Size.width      = m_Data.m_ViewPortRect.width;
+  description.m_Size.height     = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels     = 1U;
+  description.m_BindFlags       = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  description.m_Usage           = xiiGALResourceUsage::Default;
+  data.m_hVelocityBuffer        = builder.WriteTexture(xiiRGBlackboardKeys::k_VelocityBuffer, description, xiiGALResourceStateFlags::RenderTarget);
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("MotionVectors");
+  {
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hVelocityBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_Data.m_ViewPortRect.width), static_cast<float>(m_Data.m_ViewPortRect.height), 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1272,6 +1320,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
   graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));
   graph.AddPass<xiiHiZOcclusionCullData>("HiZOcclusionCull", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZOcclusionCull, this), xiiMakeDelegate(&xiiView::ExecuteHiZOcclusionCull, this));
+  graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));
 }
 
 // static
