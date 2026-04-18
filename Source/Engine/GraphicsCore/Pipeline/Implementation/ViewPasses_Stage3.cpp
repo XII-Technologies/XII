@@ -16,64 +16,6 @@
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 
 //
-// Hi-Z occlusion culling (compute - 2nd phase: prunes visible-candidate list)
-//
-namespace
-{
-  struct HiZOccCullData
-  {
-    xiiRGTextureHandle m_hHiZPyramid;
-    xiiRGBufferHandle  m_hVisibleCandidates;
-    xiiRGBufferHandle  m_hSurvivingInstances;
-    xiiRGBufferHandle  m_hInstanceBounds;
-    xiiUInt32          m_uiInstanceCount = 0;
-  };
-} // namespace
-
-static void SetupHiZOccCull(xiiView& view, HiZOccCullData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& dp = view.m_ViewPassResources.m_DepthPasses;
-
-  xiiRGTextureHandle hHiZ;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_HiZPyramid), hHiZ);
-  data.m_hHiZPyramid = builder.ReadTexture(hHiZ, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiRGBufferHandle hCandidates;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_VisibleCandidateBuffer), hCandidates);
-  data.m_hVisibleCandidates = builder.ReadBuffer(hCandidates, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiRGBufferHandle hBounds;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_InstanceBoundsBuffer), hBounds);
-  data.m_hInstanceBounds = builder.ReadBuffer(hBounds, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiElementByteStride = 4u;
-  desc.m_uiSize              = 4u + 4u * 65536u;
-  desc.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-  desc.m_Mode                = xiiGALBufferMode::Structured;
-  data.m_hSurvivingInstances = builder.WriteBuffer(xiiRGBlackboardKeys::k_SurvivingInstanceBuffer, desc, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_uiInstanceCount     = 65536u;
-
-  xiiView::EnsureComputePipeline(dp.m_pHiZOcclusionCullPipeline, "Shaders/Pipeline/HiZOcclusionCulling.xiiShader");
-}
-
-static void ExecuteHiZOccCull(xiiView& view, const HiZOccCullData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
-
-  cmd.BeginDebugGroup("HiZOcclusionCull");
-  cmd.SetPipelineState(dp.m_pHiZOcclusionCullPipeline);
-  cmd.ResolveAndSetShaderResourceView("g_HiZPyramid", ctx.GetTexture(data.m_hHiZPyramid)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Candidates", ctx.GetBuffer(data.m_hVisibleCandidates)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetShaderResourceBufferView("g_Bounds", ctx.GetBuffer(data.m_hInstanceBounds)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessBufferView("g_Survivors", ctx.GetBuffer(data.m_hSurvivingInstances)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiInstanceCount + 63u) / 64u, 1u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // Motion vectors (graphics - renders per-object velocity to R16G16F buffer)
 //
 namespace
