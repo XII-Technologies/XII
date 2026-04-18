@@ -76,6 +76,7 @@ struct xiiAtmosphereCompositeData;
 
 struct xiiForwardOpaqueData;
 struct xiiForwardMaskedData;
+struct xiiHairRenderingData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -313,6 +314,9 @@ private:
 
   void SetupForwardMasked(xiiForwardMaskedData& data, xiiRGBuilder& builder);
   void ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRGPassContext& context);
+
+  void SetupHairRendering(xiiHairRenderingData& data, xiiRGBuilder& builder);
+  void ExecuteHairRendering(const xiiHairRenderingData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
