@@ -15,72 +15,6 @@
 
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 
-#if 0
-
-//
-// Depth prepass (graphics - writes reversed-Z depth)
-//
-namespace
-{
-  struct DepthPrepassData
-  {
-    xiiRGTextureHandle m_hSceneDepth;
-    xiiRGBufferHandle  m_hDrawIndirectCommands;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupDepthPrepass(xiiView& view, DepthPrepassData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& dp = view.m_ViewPassResources.m_DepthPasses;
-
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  // Declare transient reversed-Z depth buffer.
-  xiiGALTextureCreationDescription desc;
-  desc.m_TextureType = xiiGALTextureType::Texture2D;
-  desc.m_Format      = xiiGALTextureFormat::D32Float;
-  desc.m_uiWidth     = data.m_uiRenderW;
-  desc.m_uiHeight    = data.m_uiRenderH;
-  desc.m_uiMipLevels = 1u;
-  desc.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hSceneDepth = builder.WriteTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, desc, xiiGALResourceStateFlags::DepthWrite);
-
-  // Read indirect draw args from Stage 1.
-  xiiRGBufferHandle hDrawCmds;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_DrawIndirectCommands), hDrawCmds);
-  if (hDrawCmds.IsValid())
-    data.m_hDrawIndirectCommands = builder.ReadBuffer(hDrawCmds, xiiGALResourceStateFlags::IndirectArgument);
-
-  builder.SetPassAllowMerge(false); // First graphics pass - cannot merge
-}
-
-static void ExecuteDepthPrepass(xiiView& view, const DepthPrepassData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              dp  = view.m_ViewPassResources.m_DepthPasses;
-
-  cmd.BeginDebugGroup("DepthPrepass");
-
-  xiiGALTexture* pDepth = ctx.GetTexture(data.m_hSceneDepth);
-  cmd.ClearDepthStencil(pDepth->GetDefaultView(xiiGALTextureViewType::DepthStencil), xiiGALClearValueFlags::Depth,
-                        /*reversed-Z clear value = 0.0*/ 0.0f, 0u, xiiGALStateTransitionMode::Transition);
-
-  cmd.SetViewports({{0.0f, 0.0f, static_cast<float>(data.m_uiRenderW), static_cast<float>(data.m_uiRenderH), 0.0f, 1.0f}},
-                   data.m_uiRenderW, data.m_uiRenderH);
-
-  if (dp.m_pDepthPrepassPipeline && data.m_hDrawIndirectCommands.IsValid())
-  {
-    cmd.SetPipelineState(dp.m_pDepthPrepassPipeline);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DrawIndexedIndirect(ctx.GetBuffer(data.m_hDrawIndirectCommands), 0u);
-  }
-
-  cmd.EndDebugGroup();
-}
-
 //
 // Hi-Z pyramid generation (compute - per-mip loop in execute)
 //
@@ -397,4 +331,3 @@ void xiiView::BuildStage3_Depth(xiiRenderGraph& graph, const xiiRenderGraphBlack
     [self, &blackboard](VelocityDilateData& d, xiiRGBuilder& b) { SetupVelocityDilation(*self, d, b, blackboard); },
     [self](const VelocityDilateData& d, xiiRGPassContext& c) { ExecuteVelocityDilation(*self, d, c); });
 }
-#endif

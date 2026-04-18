@@ -16,6 +16,7 @@
 
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
+#include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -1056,6 +1057,53 @@ void xiiView::ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPa
   cmd.EndDebugGroup();
 }
 
+////////// GPU Depth Prepass Data //////////
+//
+// Collects all GPU resources related to depth prepass rendering for the current frame, including the scene depth target and indirect draw commands.
+
+struct xiiDepthPrepassData
+{
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthStencil out (full-resolution reversed-Z scene depth, written by this pass and consumed by later depth-dependent passes).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin, from this frame's Draw Build pass).
+};
+
+void xiiView::SetupDepthPrepass(xiiDepthPrepassData& data, xiiRGBuilder& builder)
+{
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::D32Float;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hSceneDepth        = builder.WriteTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, description, xiiGALResourceStateFlags::DepthWrite);
+
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("DepthPrepass");
+  {
+    xiiGALTexture* pDepth = context.GetTexture(data.m_hSceneDepth);
+    cmd.ClearDepthStencilView(pDepth->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
+    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_Data.m_ViewPortRect.width), static_cast<float>(m_Data.m_ViewPortRect.height), 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_DepthPasses.m_pDepthPrepassPipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pDepthPrepassPipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1085,6 +1133,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
   graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
   graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
+
+  // Depth and motion prepasses, which produce depth and motion data consumed by later passes.
+  graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
 }
 
 // static
