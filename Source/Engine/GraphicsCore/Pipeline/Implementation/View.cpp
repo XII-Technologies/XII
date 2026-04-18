@@ -1444,6 +1444,414 @@ void xiiView::ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData&
   cmd.EndDebugGroup();
 }
 
+////////// GPU BRDF LUT Generation Data //////////
+//
+// Collects all GPU resources related to BRDF LUT generation, persisted across frames.
+
+struct xiiBRDFLutGenerationData
+{
+  xiiRGTextureHandle m_hBRDFLut;                 ///< Imported persistent BRDF LUT texture.
+  bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch BRDF LUT generation.
+};
+
+void xiiView::SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                  = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                = xiiGALResourceFormat::RG16Float;
+    description.m_Size.width                            = 256U;
+    description.m_Size.height                           = 256U;
+    description.m_uiMipLevels                           = 1U;
+    description.m_BindFlags                             = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                 = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  }
+
+  data.m_bNeedsGeneration = !m_ViewPassResources.m_LightingPrepPasses.m_bBRDFLutGenerated;
+
+  data.m_hBRDFLut = builder.ImportTexture(xiiRGBlackboardKeys::k_BRDFLut, m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bNeedsGeneration)
+  {
+    data.m_hBRDFLut = builder.WriteTexture(data.m_hBRDFLut, xiiGALResourceStateFlags::UnorderedAccess);
+  }
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLutPipeline, "Shaders/Pipeline/BRDFLUTGenerate.xiiShader");
+}
+
+void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xiiRGPassContext& context)
+{
+  if (!data.m_bNeedsGeneration)
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("BRDFLUTGenerate");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLutPipeline);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_BRDFLutOut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({32U, 32U, 1U});
+    m_ViewPassResources.m_LightingPrepPasses.m_bBRDFLutGenerated = true;
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Atmosphere Transmittance Data //////////
+//
+// Collects all GPU resources related to atmosphere transmittance LUT generation, persisted across frames.
+
+struct xiiAtmosphereTransmittanceData
+{
+  xiiRGTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
+  bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
+};
+
+void xiiView::SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                              = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                            = xiiGALResourceFormat::RGBA16Float;
+    description.m_Size.width                                        = 256U;
+    description.m_Size.height                                       = 64U;
+    description.m_uiMipLevels                                       = 1U;
+    description.m_BindFlags                                         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                             = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    data.m_bNeedsGeneration                                         = true;
+  }
+
+  data.m_hTransmittanceLUT = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittanceLUT, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bNeedsGeneration)
+  {
+    data.m_hTransmittanceLUT = builder.WriteTexture(data.m_hTransmittanceLUT, xiiGALResourceStateFlags::UnorderedAccess);
+  }
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline, "Shaders/Pipeline/AtmosphereTransmittance.xiiShader");
+}
+
+void xiiView::ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceData& data, xiiRGPassContext& context)
+{
+  if (!data.m_bNeedsGeneration)
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("AtmosphereTransmittanceLUT");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAtmTransmittancePipeline);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_TransmittanceOut", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({32U, 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Atmosphere Multi-Scatter Data //////////
+//
+// Collects all GPU resources related to atmosphere multi-scatter LUT generation, persisted across frames.
+
+struct xiiAtmosphereMultiScatterData
+{
+  xiiRGTextureHandle m_hMultiScatterLUT;         ///< Imported persistent atmosphere multi-scatter LUT texture.
+  xiiRGTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
+  bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
+};
+
+void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                             = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                           = xiiGALResourceFormat::RGBA16Float;
+    description.m_Size.width                                       = 32U;
+    description.m_Size.height                                      = 32U;
+    description.m_uiMipLevels                                      = 1U;
+    description.m_BindFlags                                        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                            = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    data.m_bNeedsGeneration                                        = true;
+  }
+
+  data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bNeedsGeneration)
+  {
+    data.m_hMultiScatterLUT = builder.WriteTexture(data.m_hMultiScatterLUT, xiiGALResourceStateFlags::UnorderedAccess);
+  }
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline, "Shaders/Pipeline/AtmosphereMultiScatter.xiiShader");
+}
+
+void xiiView::ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData& data, xiiRGPassContext& context)
+{
+  if (!data.m_bNeedsGeneration)
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("AtmosphereMultiScatterLUT");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterOut", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({4U, 4U, 1U});
+    m_ViewPassResources.m_LightingPrepPasses.m_bAtmLutsGenerated = true;
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Sky Irradiance Convolution Data //////////
+//
+// Collects all GPU resources related to sky irradiance convolution.
+
+struct xiiSkyIrradianceConvolutionData
+{
+  xiiRGTextureHandle m_hTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
+  xiiRGTextureHandle m_hMultiScatterLUT;  ///< ShaderResource in (atmosphere multi-scatter LUT).
+  xiiRGTextureHandle m_hSkyRadiance;      ///< UnorderedAccess out (sky radiance texture used by later lighting passes).
+};
+
+void xiiView::SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRGBuilder& builder)
+{
+  data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hMultiScatterLUT  = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hSkyRadiance       = builder.WriteTexture(xiiRGBlackboardKeys::k_SkyRadiance, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pSkyIrradiancePipeline, "Shaders/Pipeline/ReflectionIrradiance.xiiShader");
+}
+
+void xiiView::ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("SkyIrradianceConvolution");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pSkyIrradiancePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_MultiScatter", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_SkyOut", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Reflection Probe Convolution Data //////////
+//
+// Collects all GPU resources related to reflection probe specular convolution.
+
+struct xiiReflectionProbeConvolutionData
+{
+  xiiRGBufferHandle  m_hReflectionProbeMask; ///< ShaderResource in (per-probe visibility/selection mask).
+  xiiRGTextureHandle m_hBRDFLut;             ///< ShaderResource in (precomputed BRDF LUT for filtered specular).
+};
+
+void xiiView::SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRGBuilder& builder)
+{
+  data.m_hReflectionProbeMask = builder.ReadBuffer(xiiRGBlackboardKeys::k_ReflectionProbeMask, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBRDFLut             = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pReflProbeConvPipeline, "Shaders/Pipeline/ReflectionFilteredSpecular.xiiShader");
+}
+
+void xiiView::ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("ReflectionProbeConvolution");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pReflProbeConvPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_BRDFLut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_ProbeMask", context.GetBuffer(data.m_hReflectionProbeMask)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({8U, 8U, 6U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Volumetric Fog Initialization Data //////////
+//
+// Collects all GPU resources related to volumetric fog froxel initialization.
+
+struct xiiVolumetricFogInitializationData
+{
+  xiiRGBufferHandle  m_hFroxelMetadata;   ///< ShaderResource in (froxel metadata buffer).
+  xiiRGTextureHandle m_hFroxelScattering; ///< UnorderedAccess inout (froxel scattering texture).
+};
+
+void xiiView::SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRGBuilder& builder)
+{
+  data.m_hFroxelMetadata   = builder.ReadBuffer(xiiRGBlackboardKeys::k_FroxelMetadataBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFroxelScattering = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pFroxelFogInitPipeline, "Shaders/Pipeline/FroxelSetup.xiiShader");
+}
+
+void xiiView::ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("VolumetricFogInitialization");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pFroxelFogInitPipeline);
+    cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScatterOut", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({16U, 9U, 8U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU DDGI Probe Sampling Data //////////
+//
+// Collects all GPU resources related to DDGI final gather probe sampling.
+
+struct xiiDDGIProbeSamplingData
+{
+  xiiRGTextureHandle m_hDDGIIrradiance; ///< UnorderedAccess out (DDGI irradiance result texture).
+  xiiRGTextureHandle m_hSceneDepth;     ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferNormal;  ///< ShaderResource in (GBuffer normal texture).
+};
+
+void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hDDGIIrradiance    = builder.WriteTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
+}
+
+void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("DDGIProbeSampling");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIOut", context.GetTexture(data.m_hDDGIIrradiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Ground Truth Ambient Occlusion Data //////////
+//
+// Collects all GPU resources related to ground-truth ambient occlusion generation.
+
+struct xiiGroundTruthAmbientOcclusionData
+{
+  xiiRGTextureHandle m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
+  xiiRGTextureHandle m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
+};
+
+void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hNormalRoughness = builder.ReadTexture(xiiRGBlackboardKeys::k_NormalRoughnessBuffer, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type          = xiiGALResourceDimension::Texture2D;
+  description.m_Format        = xiiGALResourceFormat::R8UNormalized;
+  description.m_Size.width    = m_Data.m_ViewPortRect.width;
+  description.m_Size.height   = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels   = 1U;
+  description.m_BindFlags     = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage         = xiiGALResourceUsage::Default;
+  data.m_hRawAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_RawAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pGTAOPipeline, "Shaders/Pipeline/GTAO.xiiShader");
+}
+
+void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("GroundTruthAmbientOcclusion");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pGTAOPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Ground Truth Ambient Occlusion Denoise Data //////////
+//
+// Collects all GPU resources related to denoising ground-truth ambient occlusion.
+
+struct xiiGroundTruthAmbientOcclusionDenoiseData
+{
+  xiiRGTextureHandle m_hRawAmbientOcclusion;    ///< ShaderResource in (raw ambient occlusion texture).
+  xiiRGTextureHandle m_hStableAmbientOcclusion; ///< UnorderedAccess out (denoised ambient occlusion texture).
+};
+
+void xiiView::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGBuilder& builder)
+{
+  data.m_hRawAmbientOcclusion = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type             = xiiGALResourceDimension::Texture2D;
+  description.m_Format           = xiiGALResourceFormat::R8UNormalized;
+  description.m_Size.width       = m_Data.m_ViewPortRect.width;
+  description.m_Size.height      = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels      = 1U;
+  description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage            = xiiGALResourceUsage::Default;
+  data.m_hStableAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_StableAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pGTAODenoisePipeline, "Shaders/Pipeline/SeparatedBilateralBlur.xiiShader");
+}
+
+void xiiView::ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("GroundTruthAmbientOcclusionDenoise");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pGTAODenoisePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Input", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Output", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1484,6 +1892,17 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // G-Buffer generation passes, which produce material surfaces consumed by lighting stages.
   graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
   graph.AddPass<xiiNormalRoughnessPrepassData>("NormalRoughnessPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupNormalRoughnessPrepass, this), xiiMakeDelegate(&xiiView::ExecuteNormalRoughnessPrepass, this));
+
+  // Lighting preparation passes, which generate lookup textures and lighting auxiliaries.
+  graph.AddPass<xiiBRDFLutGenerationData>("BRDFLUTGenerate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBRDFLutGeneration, this), xiiMakeDelegate(&xiiView::ExecuteBRDFLutGeneration, this));
+  graph.AddPass<xiiAtmosphereTransmittanceData>("AtmosphereTransmittanceLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereTransmittance, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereTransmittance, this));
+  graph.AddPass<xiiAtmosphereMultiScatterData>("AtmosphereMultiScatterLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereMultiScatter, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereMultiScatter, this));
+  graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiView::ExecuteSkyIrradianceConvolution, this));
+  graph.AddPass<xiiReflectionProbeConvolutionData>("ReflectionProbeConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeConvolution, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeConvolution, this));
+  graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogInitialization, this));
+  graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiView::ExecuteDDGIProbeSampling, this));
+  graph.AddPass<xiiGroundTruthAmbientOcclusionData>("GroundTruthAmbientOcclusion", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusion, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusion, this));
+  graph.AddPass<xiiGroundTruthAmbientOcclusionDenoiseData>("GroundTruthAmbientOcclusionDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupGroundTruthAmbientOcclusionDenoise, this), xiiMakeDelegate(&xiiView::ExecuteGroundTruthAmbientOcclusionDenoise, this));
 }
 
 // static

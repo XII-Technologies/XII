@@ -55,6 +55,16 @@ struct xiiVelocityDilationData;
 struct xiiGBufferBaseData;
 struct xiiNormalRoughnessPrepassData;
 
+struct xiiBRDFLutGenerationData;
+struct xiiAtmosphereTransmittanceData;
+struct xiiAtmosphereMultiScatterData;
+struct xiiSkyIrradianceConvolutionData;
+struct xiiReflectionProbeConvolutionData;
+struct xiiVolumetricFogInitializationData;
+struct xiiDDGIProbeSamplingData;
+struct xiiGroundTruthAmbientOcclusionData;
+struct xiiGroundTruthAmbientOcclusionDenoiseData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -231,6 +241,34 @@ private:
 
   void SetupNormalRoughnessPrepass(xiiNormalRoughnessPrepassData& data, xiiRGBuilder& builder);
   void ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData& data, xiiRGPassContext& context);
+
+
+  void SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRGBuilder& builder);
+  void ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xiiRGPassContext& context);
+
+  void SetupAtmosphereTransmittance(xiiAtmosphereTransmittanceData& data, xiiRGBuilder& builder);
+  void ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceData& data, xiiRGPassContext& context);
+
+  void SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRGBuilder& builder);
+  void ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData& data, xiiRGPassContext& context);
+
+  void SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRGBuilder& builder);
+  void ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRGPassContext& context);
+
+  void SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRGBuilder& builder);
+  void ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRGPassContext& context);
+
+  void SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRGBuilder& builder);
+  void ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRGPassContext& context);
+
+  void SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRGBuilder& builder);
+  void ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRGPassContext& context);
+
+  void SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRGBuilder& builder);
+  void ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRGPassContext& context);
+
+  void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGBuilder& builder);
+  void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
