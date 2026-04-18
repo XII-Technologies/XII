@@ -14,63 +14,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// DDGI final gather
-//
-namespace
-{
-  struct DDGIData
-  {
-    xiiRGTextureHandle m_hDDGIIrradiance;
-    xiiRGTextureHandle m_hSceneDepth;
-    xiiRGTextureHandle m_hGBufferNormal;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupDDGI(xiiView& view, DDGIData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  xiiRGTextureHandle hDepth, hNormal;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_SceneDepthTexture), hDepth);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_GBufferNormal), hNormal);
-  if (hDepth.IsValid()) data.m_hSceneDepth = builder.ReadTexture(hDepth, xiiGALResourceStateFlags::ShaderResource);
-  if (hNormal.IsValid()) data.m_hGBufferNormal = builder.ReadTexture(hNormal, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALTextureCreationDescription desc;
-  desc.m_TextureType     = xiiGALTextureType::Texture2D;
-  desc.m_Format          = xiiGALTextureFormat::RGBA16Float;
-  desc.m_uiWidth         = data.m_uiRenderW;
-  desc.m_uiHeight        = data.m_uiRenderH;
-  desc.m_uiMipLevels     = 1u;
-  desc.m_BindFlags       = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage           = xiiGALResourceUsage::Default;
-  data.m_hDDGIIrradiance = builder.WriteTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(lp.m_pDDGIProbePipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
-}
-
-static void ExecuteDDGI(xiiView& view, const DDGIData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  cmd.BeginDebugGroup("DDGIProbeSample");
-  cmd.SetPipelineState(lp.m_pDDGIProbePipeline);
-  if (data.m_hSceneDepth.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_SceneDepth", ctx.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hGBufferNormal.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_GBufNormal", ctx.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_DDGIOut", ctx.GetTexture(data.m_hDDGIIrradiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // GTAO (ground truth ambient occlusion)
 //
 namespace

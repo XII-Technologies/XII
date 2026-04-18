@@ -1720,6 +1720,51 @@ void xiiView::ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializ
   cmd.EndDebugGroup();
 }
 
+////////// GPU DDGI Probe Sampling Data //////////
+//
+// Collects all GPU resources related to DDGI final gather probe sampling.
+
+struct xiiDDGIProbeSamplingData
+{
+  xiiRGTextureHandle m_hDDGIIrradiance; ///< UnorderedAccess out (DDGI irradiance result texture).
+  xiiRGTextureHandle m_hSceneDepth;     ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferNormal;  ///< ShaderResource in (GBuffer normal texture).
+};
+
+void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth    = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hDDGIIrradiance    = builder.WriteTexture(xiiRGBlackboardKeys::k_DDGIIrradiance, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
+}
+
+void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("DDGIProbeSampling");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pDDGIProbePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIOut", context.GetTexture(data.m_hDDGIIrradiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1768,6 +1813,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiSkyIrradianceConvolutionData>("SkyIrradianceConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSkyIrradianceConvolution, this), xiiMakeDelegate(&xiiView::ExecuteSkyIrradianceConvolution, this));
   graph.AddPass<xiiReflectionProbeConvolutionData>("ReflectionProbeConvolution", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupReflectionProbeConvolution, this), xiiMakeDelegate(&xiiView::ExecuteReflectionProbeConvolution, this));
   graph.AddPass<xiiVolumetricFogInitializationData>("VolumetricFogInitialization", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogInitialization, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogInitialization, this));
+  graph.AddPass<xiiDDGIProbeSamplingData>("DDGIProbeSampling", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDDGIProbeSampling, this), xiiMakeDelegate(&xiiView::ExecuteDDGIProbeSampling, this));
 }
 
 // static
