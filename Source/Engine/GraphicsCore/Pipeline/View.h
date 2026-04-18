@@ -391,6 +391,7 @@ private:
   void SetupToneMapping(xiiToneMappingData& data, xiiRGBuilder& builder);
   void ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContext& context);
 
+
   void SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder);
   void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& context);
 
