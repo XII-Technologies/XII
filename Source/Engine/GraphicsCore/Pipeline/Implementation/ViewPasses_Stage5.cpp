@@ -14,63 +14,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// GTAO (ground truth ambient occlusion)
-//
-namespace
-{
-  struct GTAOData
-  {
-    xiiRGTextureHandle m_hSceneDepth;
-    xiiRGTextureHandle m_hNormalRoughness;
-    xiiRGTextureHandle m_hRawAO;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupGTAO(xiiView& view, GTAOData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  xiiRGTextureHandle hDepth, hNR;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_SceneDepthTexture), hDepth);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_NormalRoughnessBuffer), hNR);
-  if (hDepth.IsValid()) data.m_hSceneDepth = builder.ReadTexture(hDepth, xiiGALResourceStateFlags::ShaderResource);
-  if (hNR.IsValid()) data.m_hNormalRoughness = builder.ReadTexture(hNR, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALTextureCreationDescription desc;
-  desc.m_TextureType = xiiGALTextureType::Texture2D;
-  desc.m_Format      = xiiGALTextureFormat::R8Unorm;
-  desc.m_uiWidth     = data.m_uiRenderW;
-  desc.m_uiHeight    = data.m_uiRenderH;
-  desc.m_uiMipLevels = 1u;
-  desc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage       = xiiGALResourceUsage::Default;
-  data.m_hRawAO      = builder.WriteTexture(xiiRGBlackboardKeys::k_RawAOTexture, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(lp.m_pGTAOPipeline, "Shaders/Pipeline/GTAO.xiiShader");
-}
-
-static void ExecuteGTAO(xiiView& view, const GTAOData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  cmd.BeginDebugGroup("GTAO");
-  cmd.SetPipelineState(lp.m_pGTAOPipeline);
-  if (data.m_hSceneDepth.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_SceneDepth", ctx.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hNormalRoughness.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_NormalRoughness", ctx.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_AOOut", ctx.GetTexture(data.m_hRawAO)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // GTAO denoise (bilateral blur on raw AO)
 //
 namespace

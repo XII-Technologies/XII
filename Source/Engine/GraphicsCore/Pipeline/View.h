@@ -62,6 +62,7 @@ struct xiiSkyIrradianceConvolutionData;
 struct xiiReflectionProbeConvolutionData;
 struct xiiVolumetricFogInitializationData;
 struct xiiDDGIProbeSamplingData;
+struct xiiGroundTruthAmbientOcclusionData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -261,6 +262,9 @@ private:
 
   void SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRGBuilder& builder);
   void ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xiiRGPassContext& context);
+
+  void SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRGBuilder& builder);
+  void ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOcclusionData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
