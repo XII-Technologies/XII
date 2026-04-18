@@ -89,6 +89,10 @@ struct xiiScreenSpaceGlobalIlluminationData;
 struct xiiScreenSpaceRefractionData;
 struct xiiPlanarReflectionsData;
 
+struct xiiLuminanceHistogramData;
+struct xiiAutoExposureData;
+struct xiiTemporalAntiAliasingData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -357,6 +361,16 @@ private:
 
   void SetupPlanarReflections(xiiPlanarReflectionsData& data, xiiRGBuilder& builder);
   void ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xiiRGPassContext& context);
+
+
+  void SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRGBuilder& builder);
+  void ExecuteLuminanceHistogram(const xiiLuminanceHistogramData& data, xiiRGPassContext& context);
+
+  void SetupAutoExposure(xiiAutoExposureData& data, xiiRGBuilder& builder);
+  void ExecuteAutoExposure(const xiiAutoExposureData& data, xiiRGPassContext& context);
+
+  void SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRGBuilder& builder);
+  void ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
