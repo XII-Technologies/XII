@@ -960,7 +960,7 @@ void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilde
 
 void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xiiRGPassContext& context)
 {
-  xiiGALCommandList& cmd = context.GetCommandList();
+  xiiGALCommandList& cmd            = context.GetCommandList();
   const xiiUInt32    uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
   const xiiUInt32    uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
 
@@ -2898,8 +2898,8 @@ void xiiView::ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xii
 
 struct xiiLuminanceHistogramData
 {
-  xiiRGTextureHandle m_hHDRIn;      ///< ShaderResource in (current HDR scene color).
-  xiiRGBufferHandle  m_hHistogram;  ///< UnorderedAccess out (256-bin luminance histogram).
+  xiiRGTextureHandle m_hHDRIn;     ///< ShaderResource in (current HDR scene color).
+  xiiRGBufferHandle  m_hHistogram; ///< UnorderedAccess out (256-bin luminance histogram).
 };
 
 void xiiView::SetupLuminanceHistogram(xiiLuminanceHistogramData& data, xiiRGBuilder& builder)
@@ -3050,6 +3050,197 @@ void xiiView::ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& dat
   cmd.EndDebugGroup();
 }
 
+////////// GPU Upscale Data //////////
+//
+// Collects all GPU resources related to temporal upscaling.
+
+struct xiiUpscaleData
+{
+  xiiRGTextureHandle m_hTAAIn;    ///< ShaderResource in (TAA resolved color).
+  xiiRGTextureHandle m_hUpscaled; ///< UnorderedAccess out (upscaled HDR color).
+};
+
+void xiiView::SetupUpscale(xiiUpscaleData& data, xiiRGBuilder& builder)
+{
+  const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  data.m_hTAAIn = builder.ReadTexture(xiiRGBlackboardKeys::k_TAAResolvedColor, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = uiRenderWidth;
+  description.m_Size.height = uiRenderHeight;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hUpscaled          = builder.WriteTexture(xiiRGBlackboardKeys::k_UpscaledColor, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_TemporalPasses.m_pUpscalePipeline, "Shaders/Pipeline/CASUpscale.xiiShader");
+}
+
+void xiiView::ExecuteUpscale(const xiiUpscaleData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd            = context.GetCommandList();
+  const xiiUInt32    uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32    uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  cmd.BeginDebugGroup("Upscale");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_TemporalPasses.m_pUpscalePipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_TAAIn", context.GetTexture(data.m_hTAAIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Upscaled", context.GetTexture(data.m_hUpscaled)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Bloom Data //////////
+//
+// Collects all GPU resources related to bloom generation.
+
+struct xiiBloomData
+{
+  xiiRGTextureHandle m_hHDRIn; ///< ShaderResource in (upscaled HDR input).
+  xiiRGTextureHandle m_hBloom; ///< UnorderedAccess out (bloom result).
+};
+
+void xiiView::SetupBloom(xiiBloomData& data, xiiRGBuilder& builder)
+{
+  const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  data.m_hHDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = uiRenderWidth;
+  description.m_Size.height = uiRenderHeight;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hBloom             = builder.WriteTexture(xiiRGBlackboardKeys::k_BloomTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_PostProcessPasses.m_pBloomPipeline, "Shaders/Pipeline/BloomChain.xiiShader");
+}
+
+void xiiView::ExecuteBloom(const xiiBloomData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd            = context.GetCommandList();
+  const xiiUInt32    uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32    uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  cmd.BeginDebugGroup("Bloom");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_PostProcessPasses.m_pBloomPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_BloomOut", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Color Grading Data //////////
+//
+// Collects all GPU resources related to color grading.
+
+struct xiiColorGradingData
+{
+  xiiRGTextureHandle m_hHDRIn;  ///< ShaderResource in (upscaled HDR input).
+  xiiRGTextureHandle m_hBloom;  ///< ShaderResource in (bloom result).
+  xiiRGTextureHandle m_hGraded; ///< UnorderedAccess out (graded HDR output).
+};
+
+void xiiView::SetupColorGrading(xiiColorGradingData& data, xiiRGBuilder& builder)
+{
+  const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  data.m_hHDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_UpscaledColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBloom = builder.ReadTexture(xiiRGBlackboardKeys::k_BloomTexture, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width  = uiRenderWidth;
+  description.m_Size.height = uiRenderHeight;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hGraded            = builder.WriteTexture(xiiRGBlackboardKeys::k_GradedColor, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_PostProcessPasses.m_pColorGradingPipeline, "Shaders/Pipeline/ColorGrading.xiiShader");
+}
+
+void xiiView::ExecuteColorGrading(const xiiColorGradingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd            = context.GetCommandList();
+  const xiiUInt32    uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32    uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  cmd.BeginDebugGroup("ColorGrading");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_PostProcessPasses.m_pColorGradingPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HDRIn", context.GetTexture(data.m_hHDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Bloom", context.GetTexture(data.m_hBloom)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_Graded", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Tone Mapping Data //////////
+//
+// Collects all GPU resources related to tone mapping from HDR to LDR.
+
+struct xiiToneMappingData
+{
+  xiiRGTextureHandle m_hGraded; ///< ShaderResource in (graded HDR input).
+  xiiRGTextureHandle m_hLDROut; ///< UnorderedAccess out (tone-mapped LDR output).
+};
+
+void xiiView::SetupToneMapping(xiiToneMappingData& data, xiiRGBuilder& builder)
+{
+  const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  data.m_hGraded = builder.ReadTexture(xiiRGBlackboardKeys::k_GradedColor, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+  description.m_Size.width  = uiRenderWidth;
+  description.m_Size.height = uiRenderHeight;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hLDROut            = builder.WriteTexture(xiiRGBlackboardKeys::k_LDRSceneColor, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_PostProcessPasses.m_pToneMappingPipeline, "Shaders/Pipeline/ToneMapping.xiiShader");
+}
+
+void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd            = context.GetCommandList();
+  const xiiUInt32    uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  const xiiUInt32    uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+
+  cmd.BeginDebugGroup("ToneMapping");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_PostProcessPasses.m_pToneMappingPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_HDRGraded", context.GetTexture(data.m_hGraded)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_LDROut", context.GetTexture(data.m_hLDROut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -3134,6 +3325,12 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiLuminanceHistogramData>("LuminanceHistogram", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLuminanceHistogram, this), xiiMakeDelegate(&xiiView::ExecuteLuminanceHistogram, this));
   graph.AddPass<xiiAutoExposureData>("AutoExposure", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAutoExposure, this), xiiMakeDelegate(&xiiView::ExecuteAutoExposure, this));
   graph.AddPass<xiiTemporalAntiAliasingData>("TAA", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupTemporalAntiAliasing, this), xiiMakeDelegate(&xiiView::ExecuteTemporalAntiAliasing, this));
+  graph.AddPass<xiiUpscaleData>("Upscale", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupUpscale, this), xiiMakeDelegate(&xiiView::ExecuteUpscale, this));
+
+  // Post-processing passes.
+  graph.AddPass<xiiBloomData>("Bloom", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBloom, this), xiiMakeDelegate(&xiiView::ExecuteBloom, this));
+  graph.AddPass<xiiColorGradingData>("ColorGrading", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupColorGrading, this), xiiMakeDelegate(&xiiView::ExecuteColorGrading, this));
+  graph.AddPass<xiiToneMappingData>("ToneMapping", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupToneMapping, this), xiiMakeDelegate(&xiiView::ExecuteToneMapping, this));
 }
 
 // static

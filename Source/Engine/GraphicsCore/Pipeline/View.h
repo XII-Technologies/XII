@@ -92,6 +92,11 @@ struct xiiPlanarReflectionsData;
 struct xiiLuminanceHistogramData;
 struct xiiAutoExposureData;
 struct xiiTemporalAntiAliasingData;
+struct xiiUpscaleData;
+
+struct xiiBloomData;
+struct xiiColorGradingData;
+struct xiiToneMappingData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -371,6 +376,18 @@ private:
 
   void SetupTemporalAntiAliasing(xiiTemporalAntiAliasingData& data, xiiRGBuilder& builder);
   void ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& data, xiiRGPassContext& context);
+
+  void SetupUpscale(xiiUpscaleData& data, xiiRGBuilder& builder);
+  void ExecuteUpscale(const xiiUpscaleData& data, xiiRGPassContext& context);
+
+  void SetupBloom(xiiBloomData& data, xiiRGBuilder& builder);
+  void ExecuteBloom(const xiiBloomData& data, xiiRGPassContext& context);
+
+  void SetupColorGrading(xiiColorGradingData& data, xiiRGBuilder& builder);
+  void ExecuteColorGrading(const xiiColorGradingData& data, xiiRGPassContext& context);
+
+  void SetupToneMapping(xiiToneMappingData& data, xiiRGBuilder& builder);
+  void ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
