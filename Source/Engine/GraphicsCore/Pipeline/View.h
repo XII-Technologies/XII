@@ -65,6 +65,15 @@ struct xiiDDGIProbeSamplingData;
 struct xiiGroundTruthAmbientOcclusionData;
 struct xiiGroundTruthAmbientOcclusionDenoiseData;
 
+struct xiiDeferredDirectLightingData;
+struct xiiDeferredIndirectLightingData;
+struct xiiRayTracedGlobalIlluminationData;
+struct xiiRayTracedReflectionsData;
+struct xiiScreenSpaceReflectionsData;
+struct xiiVolumetricFogIntegrationData;
+struct xiiVolumetricFogTemporalReprojectionData;
+struct xiiAtmosphereCompositeData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -269,6 +278,31 @@ private:
 
   void SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGBuilder& builder);
   void ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbientOcclusionDenoiseData& data, xiiRGPassContext& context);
+
+
+  void SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuilder& builder);
+  void ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, xiiRGPassContext& context);
+
+  void SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRGBuilder& builder);
+  void ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& data, xiiRGPassContext& context);
+
+  void SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRGBuilder& builder);
+  void ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIlluminationData& data, xiiRGPassContext& context);
+
+  void SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRGBuilder& builder);
+  void ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRGPassContext& context);
+
+  void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRGBuilder& builder);
+  void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRGPassContext& context);
+
+  void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRGBuilder& builder);
+  void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRGPassContext& context);
+
+  void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRGBuilder& builder);
+  void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRGPassContext& context);
+
+  void SetupAtmosphereComposite(xiiAtmosphereCompositeData& data, xiiRGBuilder& builder);
+  void ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
