@@ -1552,6 +1552,63 @@ void xiiView::ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceDat
   cmd.EndDebugGroup();
 }
 
+////////// GPU Atmosphere Multi-Scatter Data //////////
+//
+// Collects all GPU resources related to atmosphere multi-scatter LUT generation, persisted across frames.
+
+struct xiiAtmosphereMultiScatterData
+{
+  xiiRGTextureHandle m_hMultiScatterLUT;         ///< Imported persistent atmosphere multi-scatter LUT texture.
+  xiiRGTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
+  bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
+};
+
+void xiiView::SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                             = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                           = xiiGALResourceFormat::RGBA16Float;
+    description.m_Size.width                                       = 32U;
+    description.m_Size.height                                      = 32U;
+    description.m_uiMipLevels                                      = 1U;
+    description.m_BindFlags                                        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                            = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+    data.m_bNeedsGeneration                                        = true;
+  }
+
+  data.m_hTransmittanceLUT = builder.ReadTexture(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hMultiScatterLUT  = builder.ImportTexture(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT, m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterLUT, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bNeedsGeneration)
+  {
+    data.m_hMultiScatterLUT = builder.WriteTexture(data.m_hMultiScatterLUT, xiiGALResourceStateFlags::UnorderedAccess);
+  }
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline, "Shaders/Pipeline/AtmosphereMultiScatter.xiiShader");
+}
+
+void xiiView::ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData& data, xiiRGPassContext& context)
+{
+  if (!data.m_bNeedsGeneration)
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("AtmosphereMultiScatterLUT");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pAtmMultiScatterPipeline);
+    cmd.ResolveAndSetShaderResourceTextureView("g_Transmittance", context.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_MultiScatterOut", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({4U, 4U, 1U});
+    m_ViewPassResources.m_LightingPrepPasses.m_bAtmLutsGenerated = true;
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1596,6 +1653,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // Lighting preparation passes, which generate lookup textures and lighting auxiliaries.
   graph.AddPass<xiiBRDFLutGenerationData>("BRDFLUTGenerate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBRDFLutGeneration, this), xiiMakeDelegate(&xiiView::ExecuteBRDFLutGeneration, this));
   graph.AddPass<xiiAtmosphereTransmittanceData>("AtmosphereTransmittanceLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereTransmittance, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereTransmittance, this));
+  graph.AddPass<xiiAtmosphereMultiScatterData>("AtmosphereMultiScatterLUT", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupAtmosphereMultiScatter, this), xiiMakeDelegate(&xiiView::ExecuteAtmosphereMultiScatter, this));
 }
 
 // static
