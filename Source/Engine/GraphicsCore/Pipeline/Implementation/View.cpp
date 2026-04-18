@@ -3241,6 +3241,53 @@ void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContex
   cmd.EndDebugGroup();
 }
 
+////////// GPU Final Blit Data //////////
+//
+// Collects all GPU resources related to final backbuffer presentation.
+
+struct xiiFinalBlitData
+{
+  xiiRGTextureHandle m_hLDRIn;      ///< ShaderResource in (final LDR scene color).
+  xiiRGTextureHandle m_hBackbuffer; ///< RenderTarget out (swapchain backbuffer).
+};
+
+void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder)
+{
+  data.m_hLDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_LDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
+
+  if (xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
+  {
+    xiiSharedPtr<xiiGALTexture> pBackbufferTexture = pSwapChain->GetBackBufferTexture();
+    if (pBackbufferTexture)
+    {
+      data.m_hBackbuffer = builder.ImportTexture("Backbuffer", pBackbufferTexture, xiiGALResourceStateFlags::RenderTarget);
+      data.m_hBackbuffer = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
+    }
+  }
+
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("BackbufferPresent");
+  {
+    if (data.m_hLDRIn.IsValid() && data.m_hBackbuffer.IsValid() && m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline)
+    {
+      cmd.ClearRenderTargetView(context.GetTexture(data.m_hBackbuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
+      cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+      cmd.SetPipelineState(m_ViewPassResources.m_OutputPasses.m_pFinalBlitPipeline);
+      cmd.ResolveAndSetShaderResourceTextureView("g_LDRIn", context.GetTexture(data.m_hLDRIn)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.Draw({3U, 1U, 0U, 0U});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -3331,6 +3378,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiBloomData>("Bloom", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBloom, this), xiiMakeDelegate(&xiiView::ExecuteBloom, this));
   graph.AddPass<xiiColorGradingData>("ColorGrading", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupColorGrading, this), xiiMakeDelegate(&xiiView::ExecuteColorGrading, this));
   graph.AddPass<xiiToneMappingData>("ToneMapping", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupToneMapping, this), xiiMakeDelegate(&xiiView::ExecuteToneMapping, this));
+
+  // Final output pass.
+  graph.AddPass<xiiFinalBlitData>("BackbufferPresent", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupFinalBlit, this), xiiMakeDelegate(&xiiView::ExecuteFinalBlit, this));
 }
 
 // static
