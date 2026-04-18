@@ -2359,15 +2359,15 @@ void xiiView::ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRGPassCo
 
 struct xiiForwardMaskedData
 {
-  xiiRGTextureHandle m_hHDRSceneColor;       ///< RenderTarget in/out (HDR scene color).
-  xiiRGTextureHandle m_hSceneDepth;          ///< DepthWrite in/out (scene depth texture).
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
 };
 
 void xiiView::SetupForwardMasked(xiiForwardMaskedData& data, xiiRGBuilder& builder)
 {
-  data.m_hHDRSceneColor       = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-  data.m_hSceneDepth          = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
   data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
 
   builder.SetPassAllowMerge(true);
@@ -2404,8 +2404,8 @@ struct xiiHairRenderingData
 
 void xiiView::SetupHairRendering(xiiHairRenderingData& data, xiiRGBuilder& builder)
 {
-  data.m_hHDRSceneColor       = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-  data.m_hSceneDepth          = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
   data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
 
   builder.SetPassAllowMerge(true);
@@ -2443,9 +2443,9 @@ struct xiiWaterRenderingData
 
 void xiiView::SetupWaterRendering(xiiWaterRenderingData& data, xiiRGBuilder& builder)
 {
-  data.m_hHDRSceneColor       = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
-  data.m_hSceneDepth          = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
-  data.m_hPlanarReflectionMap = builder.ReadTexture(xiiRGBlackboardKeys::k_PlanarReflectionMap, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hPlanarReflectionMap  = builder.ReadTexture(xiiRGBlackboardKeys::k_PlanarReflectionMap, xiiGALResourceStateFlags::ShaderResource);
   data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
 
   builder.SetPassAllowMerge(true);
@@ -2473,6 +2473,54 @@ void xiiView::ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRGPass
   cmd.EndDebugGroup();
 }
 
+////////// GPU Subsurface Scattering Data //////////
+//
+// Collects all GPU resources related to the screen-space subsurface scattering pass.
+
+struct xiiSubsurfaceScatteringData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;   ///< UnorderedAccess in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material G-Buffer).
+};
+
+void xiiView::SetupSubsurfaceScattering(xiiSubsurfaceScatteringData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor   = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+}
+
+void xiiView::ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("SubsurfaceScattering");
+  {
+    if (m_ViewPassResources.m_ForwardPasses.m_pSSSComputePipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pSSSComputePipeline);
+      if (data.m_hSceneDepth.IsValid())
+      {
+        cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      }
+      if (data.m_hGBufferMaterial.IsValid())
+      {
+        cmd.ResolveAndSetShaderResourceTextureView("g_GBufMaterial", context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+      }
+      if (data.m_hHDRSceneColor.IsValid())
+      {
+        cmd.ResolveAndSetUnorderedAccessTextureView("g_HDRInOut", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+      }
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+
+      const xiiUInt32 uiRenderWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+      const xiiUInt32 uiRenderHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+      cmd.DispatchCompute({(uiRenderWidth + 7U) / 8U, (uiRenderHeight + 7U) / 8U, 1U});
+    }
+  }
+  cmd.EndDebugGroup();
+}
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2540,6 +2588,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiForwardMaskedData>("ForwardMasked", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardMasked, this), xiiMakeDelegate(&xiiView::ExecuteForwardMasked, this));
   graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupHairRendering, this), xiiMakeDelegate(&xiiView::ExecuteHairRendering, this));
   graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupWaterRendering, this), xiiMakeDelegate(&xiiView::ExecuteWaterRendering, this));
+  graph.AddPass<xiiSubsurfaceScatteringData>("SubsurfaceScattering", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSubsurfaceScattering, this), xiiMakeDelegate(&xiiView::ExecuteSubsurfaceScattering, this));
 }
 
 // static
