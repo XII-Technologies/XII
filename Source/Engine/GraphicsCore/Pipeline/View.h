@@ -79,6 +79,7 @@ struct xiiForwardMaskedData;
 struct xiiHairRenderingData;
 struct xiiWaterRenderingData;
 struct xiiSubsurfaceScatteringData;
+struct xiiEyeShaderData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -325,6 +326,9 @@ private:
 
   void SetupSubsurfaceScattering(xiiSubsurfaceScatteringData& data, xiiRGBuilder& builder);
   void ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& data, xiiRGPassContext& context);
+
+  void SetupEyeShader(xiiEyeShaderData& data, xiiRGBuilder& builder);
+  void ExecuteEyeShader(const xiiEyeShaderData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

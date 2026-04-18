@@ -2521,6 +2521,45 @@ void xiiView::ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& dat
   }
   cmd.EndDebugGroup();
 }
+
+////////// GPU Eye Shader Data //////////
+//
+// Collects all GPU resources related to the eye shading pass.
+
+struct xiiEyeShaderData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
+};
+
+void xiiView::SetupEyeShader(xiiEyeShaderData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor        = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth           = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteEyeShader(const xiiEyeShaderData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("EyeShader");
+  {
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pEyePipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pEyePipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2589,6 +2628,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupHairRendering, this), xiiMakeDelegate(&xiiView::ExecuteHairRendering, this));
   graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupWaterRendering, this), xiiMakeDelegate(&xiiView::ExecuteWaterRendering, this));
   graph.AddPass<xiiSubsurfaceScatteringData>("SubsurfaceScattering", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupSubsurfaceScattering, this), xiiMakeDelegate(&xiiView::ExecuteSubsurfaceScattering, this));
+  graph.AddPass<xiiEyeShaderData>("EyeShader", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupEyeShader, this), xiiMakeDelegate(&xiiView::ExecuteEyeShader, this));
 }
 
 // static
