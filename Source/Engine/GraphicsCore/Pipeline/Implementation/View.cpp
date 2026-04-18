@@ -1396,6 +1396,54 @@ void xiiView::ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRGPassContex
   cmd.EndDebugGroup();
 }
 
+////////// GPU Normal Roughness Prepass Data //////////
+//
+// Collects all GPU resources related to compact normal-roughness generation for the current frame.
+
+struct xiiNormalRoughnessPrepassData
+{
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth generated in Stage 3, used for depth-tested rendering).
+  xiiRGTextureHandle m_hNormalRoughness;      ///< RenderTarget out (compact normal/roughness/specular buffer consumed by GTAO and lighting prep passes).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
+};
+
+void xiiView::SetupNormalRoughnessPrepass(xiiNormalRoughnessPrepassData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthRead);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hNormalRoughness   = builder.WriteTexture(xiiRGBlackboardKeys::k_NormalRoughnessBuffer, description, xiiGALResourceStateFlags::RenderTarget);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("NormalRoughnessPrepass");
+  {
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.5f, 1.0f));
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_GBufferPasses.m_pNormalRoughnessPipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_GBufferPasses.m_pNormalRoughnessPipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1435,6 +1483,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // G-Buffer generation passes, which produce material surfaces consumed by lighting stages.
   graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
+  graph.AddPass<xiiNormalRoughnessPrepassData>("NormalRoughnessPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupNormalRoughnessPrepass, this), xiiMakeDelegate(&xiiView::ExecuteNormalRoughnessPrepass, this));
 }
 
 // static
