@@ -2145,6 +2145,52 @@ void xiiView::ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData&
   cmd.EndDebugGroup();
 }
 
+////////// GPU Volumetric Fog Integration Data //////////
+//
+// Collects all GPU resources related to volumetric fog integration.
+
+struct xiiVolumetricFogIntegrationData
+{
+  xiiRGTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (froxel scattering buffer).
+  xiiRGBufferHandle  m_hLightGridBuffer;        ///< ShaderResource in (cluster light grid).
+  xiiRGTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
+};
+
+void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRGBuilder& builder)
+{
+  data.m_hFroxelScatteringBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightGridBuffer        = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type              = xiiGALResourceDimension::Texture2D;
+  description.m_Format            = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width        = m_Data.m_ViewPortRect.width;
+  description.m_Size.height       = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels       = 1U;
+  description.m_BindFlags         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage             = xiiGALResourceUsage::Default;
+  data.m_hVolumetricScattering    = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScattering, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pVolumetricIntegratePipeline, "Shaders/Pipeline/VolumetricLightIntegration.xiiShader");
+}
+
+void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("VolumetricFogIntegrate");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pVolumetricIntegratePipeline);
+
+    cmd.ResolveAndSetShaderResourceTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScatteringBuffer)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2203,6 +2249,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiRayTracedGlobalIlluminationData>("RTGIFinalGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedGlobalIllumination, this));
   graph.AddPass<xiiRayTracedReflectionsData>("RTReflections", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedReflections, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedReflections, this));
   graph.AddPass<xiiScreenSpaceReflectionsData>("SSR", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupScreenSpaceReflections, this), xiiMakeDelegate(&xiiView::ExecuteScreenSpaceReflections, this));
+  graph.AddPass<xiiVolumetricFogIntegrationData>("VolumetricFogIntegrate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVolumetricFogIntegration, this), xiiMakeDelegate(&xiiView::ExecuteVolumetricFogIntegration, this));
 }
 
 // static

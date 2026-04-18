@@ -29,64 +29,6 @@ static xiiRGTextureHandle DeclareHDROutput(xiiRGBuilder& builder, const char* sz
   return builder.WriteTexture(szKey, desc, xiiGALResourceStateFlags::UnorderedAccess);
 }
 
-//
-// Screen-space reflections
-//
-namespace
-{
-  struct SSRData
-  {
-    xiiRGTextureHandle m_hSceneDepth, m_hGBufNormal, m_hGBufMaterial, m_hHDRIn, m_hSSR;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-
-//
-// Volumetric fog integration
-//
-namespace
-{
-  struct VolumetricIntegrateData
-  {
-    xiiRGTextureHandle m_hFroxelScattering, m_hLightGrid, m_hVolumetricOut;
-    xiiRGBufferHandle  m_hLightIndex;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupVolumetricIntegrate(xiiView& view, VolumetricIntegrateData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  xiiRGTextureHandle hScat;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_FroxelScatteringBuffer), hScat);
-  if (hScat.IsValid()) data.m_hFroxelScattering = builder.ReadTexture(hScat, xiiGALResourceStateFlags::ShaderResource);
-  xiiRGBufferHandle hGrid;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_LightGridBuffer), hGrid);
-  if (hGrid.IsValid()) data.m_hLightIndex = builder.ReadBuffer(hGrid, xiiGALResourceStateFlags::ShaderResource);
-
-  data.m_hVolumetricOut = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_VolumetricScattering, data.m_uiRenderW, data.m_uiRenderH);
-  xiiView::EnsureComputePipeline(lp.m_pVolumetricIntegratePipeline, "Shaders/Pipeline/VolumetricLightIntegration.xiiShader");
-}
-
-static void ExecuteVolumetricIntegrate(xiiView& view, const VolumetricIntegrateData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPasses;
-  cmd.BeginDebugGroup("VolumetricFogIntegrate");
-  cmd.SetPipelineState(lp.m_pVolumetricIntegratePipeline);
-  if (data.m_hFroxelScattering.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_FroxelScattering", ctx.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hLightIndex.IsValid())
-    cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", ctx.GetBuffer(data.m_hLightIndex)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_VolumetricOut", ctx.GetTexture(data.m_hVolumetricOut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
 
 //
 // Volumetric fog temporal reprojection
