@@ -418,7 +418,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
           continue;
         }
 
-        // Dispatch to object-level handlers explicitly; component dispatch is handled below.
+        // Dispatch to object-level handlers explicitly, component dispatch is handled below.
         if (const xiiRTTI* pObjectType = pObject->GetDynamicRTTI(); pObjectType != nullptr)
         {
           pObjectType->DispatchMessage(pObject, msg);

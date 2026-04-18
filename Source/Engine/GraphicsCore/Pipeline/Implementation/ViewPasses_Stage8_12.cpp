@@ -12,8 +12,6 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-#if 0
-
 //
 // Helper macros shared across stages in this file
 //
@@ -735,5 +733,3 @@ void xiiView::BuildStage12_Output(xiiRenderGraph& graph, const xiiRenderGraphBla
     [self, &bb](FinalBlitData& d, xiiRGBuilder& b) { SetupFinalBlit(*self, d, b, bb); },
     [self](const FinalBlitData& d, xiiRGPassContext& c) { ExecuteFinalBlit(*self, d, c); });
 }
-
-#endif

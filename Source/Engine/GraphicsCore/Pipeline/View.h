@@ -81,6 +81,11 @@ struct xiiWaterRenderingData;
 struct xiiSubsurfaceScatteringData;
 struct xiiEyeShaderData;
 
+struct xiiGPUParticleSimulateData;
+struct xiiScreenSpaceDecalsData;
+struct xiiWeightedBlendedOITData;
+struct xiiScreenSpaceGlobalIlluminationData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -329,6 +334,19 @@ private:
 
   void SetupEyeShader(xiiEyeShaderData& data, xiiRGBuilder& builder);
   void ExecuteEyeShader(const xiiEyeShaderData& data, xiiRGPassContext& context);
+
+
+  void SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRGBuilder& builder);
+  void ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data, xiiRGPassContext& context);
+
+  void SetupScreenSpaceDecals(xiiScreenSpaceDecalsData& data, xiiRGBuilder& builder);
+  void ExecuteScreenSpaceDecals(const xiiScreenSpaceDecalsData& data, xiiRGPassContext& context);
+
+  void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRGBuilder& builder);
+  void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRGPassContext& context);
+
+  void SetupScreenSpaceGlobalIllumination(xiiScreenSpaceGlobalIlluminationData& data, xiiRGBuilder& builder);
+  void ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIlluminationData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
