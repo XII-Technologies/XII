@@ -1771,9 +1771,9 @@ void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xii
 
 struct xiiGroundTruthAmbientOcclusionData
 {
-  xiiRGTextureHandle m_hSceneDepth;             ///< ShaderResource in (scene depth texture).
-  xiiRGTextureHandle m_hNormalRoughness;        ///< ShaderResource in (normal/roughness buffer).
-  xiiRGTextureHandle m_hRawAmbientOcclusion;    ///< UnorderedAccess out (raw ambient occlusion result).
+  xiiRGTextureHandle m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
+  xiiRGTextureHandle m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
 };
 
 void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionData& data, xiiRGBuilder& builder)
@@ -1782,13 +1782,13 @@ void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionDat
   data.m_hNormalRoughness = builder.ReadTexture(xiiRGBlackboardKeys::k_NormalRoughnessBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Format      = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels = 1U;
-  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage       = xiiGALResourceUsage::Default;
+  description.m_Type          = xiiGALResourceDimension::Texture2D;
+  description.m_Format        = xiiGALResourceFormat::R8UNormalized;
+  description.m_Size.width    = m_Data.m_ViewPortRect.width;
+  description.m_Size.height   = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels   = 1U;
+  description.m_BindFlags     = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage         = xiiGALResourceUsage::Default;
   data.m_hRawAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_RawAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pGTAOPipeline, "Shaders/Pipeline/GTAO.xiiShader");
@@ -1825,13 +1825,13 @@ void xiiView::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclu
   data.m_hRawAmbientOcclusion = builder.ReadTexture(xiiRGBlackboardKeys::k_RawAOTexture, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Format      = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels = 1U;
-  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage       = xiiGALResourceUsage::Default;
+  description.m_Type             = xiiGALResourceDimension::Texture2D;
+  description.m_Format           = xiiGALResourceFormat::R8UNormalized;
+  description.m_Size.width       = m_Data.m_ViewPortRect.width;
+  description.m_Size.height      = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels      = 1U;
+  description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage            = xiiGALResourceUsage::Default;
   data.m_hStableAmbientOcclusion = builder.WriteTexture(xiiRGBlackboardKeys::k_StableAOTexture, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pGTAODenoisePipeline, "Shaders/Pipeline/SeparatedBilateralBlur.xiiShader");
