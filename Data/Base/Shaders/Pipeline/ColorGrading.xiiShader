@@ -1,4 +1,4 @@
-// XII Engine — ColorGrading.xiiShader  [NEW]
+// XII Engine - ColorGrading.xiiShader  [NEW]
 // Pass 61: 33³ 3D LUT sample + vignette + film grain + gamut compression.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 

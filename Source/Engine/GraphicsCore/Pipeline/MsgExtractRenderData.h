@@ -12,6 +12,50 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractRenderData, xiiMessage);
 
+  using SubmitRenderDataFunction = void (*)(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+
   const xiiView*          m_pView                = nullptr;
   xiiExtractedRenderData* m_pExtractedRenderData = nullptr;
+
+  SubmitRenderDataFunction m_SubmitRenderDataFunction = nullptr;
+  void*                    m_pSubmitRenderDataContext = nullptr;
+
+  xiiGameObjectHandle m_hCurrentObject;
+  xiiComponentHandle  m_hCurrentComponent;
+  xiiUInt32           m_uiViewIndex = xiiInvalidIndex;
+
+  XII_ALWAYS_INLINE void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)
+  {
+    if (m_pExtractedRenderData == nullptr || pRenderData == nullptr)
+      return;
+
+    if (!m_hCurrentObject.IsInvalidated())
+    {
+      pRenderData->m_hOwnerObject = m_hCurrentObject;
+    }
+
+    if (!m_hCurrentComponent.IsInvalidated())
+    {
+      pRenderData->m_hOwnerComponent = m_hCurrentComponent;
+    }
+
+    if (m_SubmitRenderDataFunction != nullptr)
+    {
+      m_SubmitRenderDataFunction(m_pSubmitRenderDataContext, *this, pRenderData, caching);
+      return;
+    }
+
+    m_pExtractedRenderData->AddRenderData(pRenderData, caching);
+  }
+
+  XII_ALWAYS_INLINE void AddRenderDataBatch(const xiiRenderDataBatch& batch, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)
+  {
+    if (m_pExtractedRenderData == nullptr)
+      return;
+
+    for (xiiRenderData* pRenderData : batch.m_Data)
+    {
+      AddRenderData(pRenderData, caching);
+    }
+  }
 };

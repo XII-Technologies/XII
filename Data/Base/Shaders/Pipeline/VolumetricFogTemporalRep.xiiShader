@@ -1,0 +1,61 @@
+// XII Engine - VolumetricFogTemporalRep.xiiShader
+// Stage 6: Blend current froxel scattering volume with persistent history.
+// Dispatch: 16 × 9 × 8 (froxel grid 128×72×64, each thread handles one froxel column slice).
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer VolumetricTemporalConstants : register(b3)
+{
+    float4x4 g_PrevViewProjection; // reprojection matrix for history lookup
+    float    g_TemporalBlend;       // 0.1 = 10% new, 90% history
+    float    g_FrustumNear;
+    float    g_FrustumFar;
+    float    _pad;
+};
+
+Texture3D<float4>   g_FroxelHistory    : register(t0); // previous-frame accumulated volume
+RWTexture3D<float4> g_FroxelBlended    : register(u0); // in-out: current frame integrate, output
+
+// Linear depth to froxel Z slice (exponential distribution).
+float DepthToFroxelZ(float linearDepth, float near, float far, float numSlices)
+{
+    return log2(linearDepth / near) / log2(far / near) * numSlices;
+}
+
+[numthreads(8, 8, 1)]
+void CS_VolumetricFogTemporalRep(uint3 tid : SV_DispatchThreadID)
+{
+    uint3 dims;
+    g_FroxelBlended.GetDimensions(dims.x, dims.y, dims.z);
+    if (any(tid >= dims)) return;
+
+    // Current frame froxel data (already integrated by VolumetricLightIntegration).
+    float4 curr = g_FroxelBlended[tid];
+
+    // Compute froxel world-space centre for reprojection.
+    float3 uvw = (float3(tid) + 0.5f) / float3(dims);
+
+    // Exponential froxel depth.
+    float linDepth = g_FrustumNear * pow(g_FrustumFar / g_FrustumNear, uvw.z);
+
+    // NDC xy for this froxel at screen UV.
+    float2 ndc = uvw.xy * 2.0f - 1.0f;
+    float4 worldPos4 = mul(g_InverseViewProjectionMatrix, float4(ndc, 0.5f /* mid-depth */, 1.0f));
+    float3 worldPos  = worldPos4.xyz / worldPos4.w;
+
+    // Reproject to previous frame.
+    float4 prevClip = mul(g_PrevViewProjection, float4(worldPos, 1.0f));
+    prevClip.xyz /= prevClip.w;
+    float3 prevUVW = float3(prevClip.xy * 0.5f + 0.5f,
+                            DepthToFroxelZ(linDepth, g_FrustumNear, g_FrustumFar, float(dims.z)) / float(dims.z));
+
+    // Boundary check (discard history outside frustum).
+    bool valid = all(prevUVW >= 0.0f) && all(prevUVW <= 1.0f);
+
+    float4 history = valid ? g_FroxelHistory.SampleLevel(g_sLinearClamp, prevUVW, 0) : curr;
+
+    // Temporal blend.
+    float4 blended = lerp(history, curr, saturate(g_TemporalBlend));
+
+    g_FroxelBlended[tid] = blended;
+}

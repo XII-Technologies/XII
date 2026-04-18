@@ -1,30 +1,43 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/Component.h>
+#include <Core/World/GameObject.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
-#include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
-#include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
-#include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
+#include <GraphicsFoundation/Device/Device.h>
 
-#include <Shaders/Pipeline/Passes/DynamicResolution/DynamicResolutionConstants.h>
-#include <Shaders/Pipeline/Passes/PerFrameBufferUpload/PerFrameConstants.h>
-
-xiiCVarFloat cvar_RenderingDynamicResolutionTargetFrameTimeMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "The target frame time in milliseconds for dynamic resolution to aim for. The system will adjust the render resolution each frame to try to match this target time as closely as possible.");
-xiiCVarFloat cvar_RenderingDynamicResolutionMinimumRenderScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "The minimum render scale that dynamic resolution can use. This is a multiplier for the render resolution relative to the native resolution. For example, a value of 0.5 means the render resolution can go down to 50% of the native resolution.");
-xiiCVarFloat cvar_RenderingDynamicResolutionMaximumRenderScale("Rendering.DynamicResolution.MaximumRenderScale", 1.0f, xiiCVarFlags::Default, "The maximum render scale that dynamic resolution can use. This is a multiplier for the render resolution relative to the native resolution. For example, a value of 1.0 means the render resolution can go up to 100% of the native resolution.");
-
-XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule);
+XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule)
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+namespace
+{
+  static xiiUniquePtr<xiiRenderData> CloneRenderDataForCache(const xiiRenderData* pRenderData)
+  {
+    if (pRenderData == nullptr)
+      return nullptr;
+
+    const xiiRTTI* pType = pRenderData->GetDynamicRTTI();
+    if (pType == nullptr)
+      return nullptr;
+
+    xiiRTTIAllocator* pAllocator = pType->GetAllocator();
+    if (pAllocator == nullptr)
+      return nullptr;
+
+    xiiInternal::NewInstance<xiiRenderData> pClone = pAllocator->Clone<xiiRenderData>(pRenderData);
+    if (pClone == nullptr)
+      return nullptr;
+
+    return xiiUniquePtr<xiiRenderData>(pClone);
+  }
+} // namespace
 
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
@@ -54,8 +67,10 @@ void xiiRenderWorldModule::Initialize()
 
 void xiiRenderWorldModule::Deinitialize()
 {
+  // Destroying views releases all per-view GPU resources (ViewPassResources, profiler, etc.)
   m_Views.Clear();
-
+  m_ViewExtractedData.Clear();
+  m_ViewExtractionCaches.Clear();
   m_uiRenderFrameIndex = 0;
 }
 
@@ -65,10 +80,18 @@ void xiiRenderWorldModule::OnSimulationStarted()
 
 xiiView* xiiRenderWorldModule::CreateView(xiiStringView sName)
 {
-  xiiUniquePtr<xiiView> pView = XII_DEFAULT_NEW(xiiView);
+  xiiUniquePtr<xiiView>                pView          = XII_DEFAULT_NEW(xiiView);
+  xiiUniquePtr<xiiExtractedRenderData> pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+
   pView->SetName(sName);
+  pView->SetExtractedRenderData(pExtractedData.Borrow());
+
   xiiView* pRet = pView.Borrow();
+
   m_Views.PushBack(std::move(pView));
+  m_ViewExtractedData.PushBack(std::move(pExtractedData));
+  m_ViewExtractionCaches.ExpandAndGetRef();
+
   return pRet;
 }
 
@@ -78,54 +101,358 @@ void xiiRenderWorldModule::DestroyView(xiiView* pView)
   {
     if (m_Views[i].Borrow() == pView)
     {
+      m_Views[i]->SetExtractedRenderData(nullptr);
       m_Views.RemoveAtAndCopy(i);
+      m_ViewExtractedData.RemoveAtAndCopy(i);
+      m_ViewExtractionCaches.RemoveAtAndCopy(i);
       return;
     }
   }
 }
 
-void xiiRenderWorldModule::BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
+void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
 {
-  auto [pDynamicResolutionData, hDynamicResolutionPass] = graph.AddPass<PassData::DynamicResolutionPassData>("DynamicResolution", xiiGALCommandQueueFlags::Compute,
-                                                                                                             xiiMakeDelegate(&xiiRenderWorldModule::SetupDynamicResolutionPass, this),
-                                                                                                             xiiMakeDelegate(&xiiRenderWorldModule::ExecuteDynamicResolutionPass, this));
+  if (pContext == nullptr)
+    return;
 
-  auto [pPerFrameBufferUploadData, hPerFrameBufferUploadPass] = graph.AddPass<PassData::PerFrameBufferUploadPassData>("PerFrameBufferUpload", xiiGALCommandQueueFlags::Graphics,
-                                                                                                                      xiiMakeDelegate(&xiiRenderWorldModule::SetupPerFrameBufferUploadPass, this),
-                                                                                                                      xiiMakeDelegate(&xiiRenderWorldModule::ExecutePerFrameBufferUploadPass, this));
+  static_cast<xiiRenderWorldModule*>(pContext)->OnRenderDataSubmitted(msg, pRenderData, caching);
+}
+
+void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
+{
+  if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
+    return;
+
+  msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
+
+  if (msg.m_uiViewIndex >= m_ViewExtractionCaches.GetCount())
+    return;
+
+  if (msg.m_hCurrentObject.IsInvalidated())
+    return;
+
+  ViewExtractionCache&      cache     = m_ViewExtractionCaches[msg.m_uiViewIndex];
+  ExtractedObjectFrameData& frameData = cache.m_FrameObjectData[msg.m_hCurrentObject];
+
+  if (caching == xiiRenderData::Caching::IfStatic)
+  {
+    if (!msg.m_hCurrentComponent.IsInvalidated())
+    {
+      frameData.m_ComponentFrameData[msg.m_hCurrentComponent].m_StaticRenderData.PushBack(pRenderData);
+    }
+    else
+    {
+      frameData.m_ObjectLevelStaticRenderData.PushBack(pRenderData);
+    }
+  }
+  else
+  {
+    frameData.m_bHasDynamicRenderData = true;
+
+    if (!msg.m_hCurrentComponent.IsInvalidated())
+    {
+      frameData.m_ComponentFrameData[msg.m_hCurrentComponent].m_bHasDynamicRenderData = true;
+    }
+  }
+}
+
+bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const
+{
+  const CachedStaticObjectData* pCachedData = nullptr;
+  if (!cache.m_StaticObjectCache.TryGetValue(hObject, pCachedData) || pCachedData == nullptr)
+    return false;
+
+  for (const auto& pCachedRenderData : pCachedData->m_StaticRenderData)
+  {
+    if (pCachedRenderData == nullptr)
+      continue;
+
+    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), xiiRenderData::Caching::IfStatic);
+  }
+
+  return true;
+}
+
+bool xiiRenderWorldModule::ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiComponentHandle hComponent, xiiExtractedRenderData& out_extractedRenderData) const
+{
+  const CachedStaticComponentData* pCachedData = nullptr;
+  if (!cache.m_StaticComponentCache.TryGetValue(hComponent, pCachedData) || pCachedData == nullptr)
+    return false;
+
+  for (const auto& pCachedRenderData : pCachedData->m_StaticRenderData)
+  {
+    if (pCachedRenderData == nullptr)
+      continue;
+
+    out_extractedRenderData.AddRenderData(pCachedRenderData.Borrow(), xiiRenderData::Caching::IfStatic);
+  }
+
+  return true;
+}
+
+void xiiRenderWorldModule::FinalizeViewExtractionCache(ViewExtractionCache& cache)
+{
+  auto AppendClones = [](const xiiDynamicArray<xiiRenderData*>& sourceData, xiiDynamicArray<xiiUniquePtr<xiiRenderData>>& out_clonedData) {
+    for (const xiiRenderData* pRenderData : sourceData)
+    {
+      xiiUniquePtr<xiiRenderData> pClone = CloneRenderDataForCache(pRenderData);
+      if (pClone == nullptr)
+        return false;
+
+      out_clonedData.PushBack(std::move(pClone));
+    }
+
+    return true;
+  };
+
+  for (auto it = cache.m_FrameObjectData.GetIterator(); it.IsValid(); ++it)
+  {
+    const xiiGameObjectHandle       hObject   = it.Key();
+    const ExtractedObjectFrameData& frameData = it.Value();
+
+    bool bHasStaticRenderData = !frameData.m_ObjectLevelStaticRenderData.IsEmpty();
+    if (!bHasStaticRenderData)
+    {
+      for (auto componentIt = frameData.m_ComponentFrameData.GetIterator(); componentIt.IsValid(); ++componentIt)
+      {
+        if (!componentIt.Value().m_StaticRenderData.IsEmpty())
+        {
+          bHasStaticRenderData = true;
+          break;
+        }
+      }
+    }
+
+    if (!bHasStaticRenderData)
+    {
+      RemoveCachedRenderDataForObject(cache, hObject);
+      continue;
+    }
+
+    if (!frameData.m_bHasDynamicRenderData)
+    {
+      CachedStaticObjectData newCachedData;
+
+      bool bCloningSucceeded = AppendClones(frameData.m_ObjectLevelStaticRenderData, newCachedData.m_StaticRenderData);
+      if (bCloningSucceeded)
+      {
+        for (auto componentIt = frameData.m_ComponentFrameData.GetIterator(); componentIt.IsValid(); ++componentIt)
+        {
+          bCloningSucceeded = AppendClones(componentIt.Value().m_StaticRenderData, newCachedData.m_StaticRenderData);
+          if (!bCloningSucceeded)
+            break;
+        }
+      }
+
+      if (!bCloningSucceeded || newCachedData.m_StaticRenderData.IsEmpty())
+      {
+        RemoveCachedRenderDataForObject(cache, hObject);
+        continue;
+      }
+
+      RemoveCachedRenderDataForObject(cache, hObject);
+      cache.m_StaticObjectCache.Insert(hObject, std::move(newCachedData));
+      continue;
+    }
+
+    // Mixed object: keep per-component static cache and skip object-wide cache.
+    RemoveCachedRenderDataForObject(cache, hObject);
+
+    xiiDynamicArray<xiiComponentHandle> cachedComponents;
+
+    for (auto componentIt = frameData.m_ComponentFrameData.GetIterator(); componentIt.IsValid(); ++componentIt)
+    {
+      const xiiComponentHandle           hComponent         = componentIt.Key();
+      const ExtractedComponentFrameData& componentFrameData = componentIt.Value();
+
+      if (componentFrameData.m_bHasDynamicRenderData || componentFrameData.m_StaticRenderData.IsEmpty())
+        continue;
+
+      CachedStaticComponentData newCachedData;
+      const bool                bCloningSucceeded = AppendClones(componentFrameData.m_StaticRenderData, newCachedData.m_StaticRenderData);
+
+      if (!bCloningSucceeded || newCachedData.m_StaticRenderData.IsEmpty())
+        continue;
+
+      cache.m_StaticComponentCache.Insert(hComponent, std::move(newCachedData));
+      cachedComponents.PushBack(hComponent);
+    }
+
+    if (!cachedComponents.IsEmpty())
+    {
+      cache.m_ObjectToCachedComponents.Insert(hObject, std::move(cachedComponents));
+    }
+  }
+
+  cache.m_FrameObjectData.Clear();
+}
+
+void xiiRenderWorldModule::RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject)
+{
+  cache.m_StaticObjectCache.Remove(hObject);
+
+  xiiDynamicArray<xiiComponentHandle>* pCachedComponents = nullptr;
+  if (cache.m_ObjectToCachedComponents.TryGetValue(hObject, pCachedComponents) && pCachedComponents != nullptr)
+  {
+    for (xiiComponentHandle hCachedComponent : *pCachedComponents)
+    {
+      cache.m_StaticComponentCache.Remove(hCachedComponent);
+    }
+  }
+
+  cache.m_ObjectToCachedComponents.Remove(hObject);
+}
+
+void xiiRenderWorldModule::RemoveCachedRenderDataForComponent(ViewExtractionCache& cache, xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
+{
+  cache.m_StaticComponentCache.Remove(hComponent);
+
+  xiiDynamicArray<xiiComponentHandle>* pCachedComponents = nullptr;
+  if (!cache.m_ObjectToCachedComponents.TryGetValue(hOwnerObject, pCachedComponents) || pCachedComponents == nullptr)
+    return;
+
+  const xiiUInt32 uiComponentIndex = pCachedComponents->IndexOf(hComponent);
+  if (uiComponentIndex != xiiInvalidIndex)
+  {
+    pCachedComponents->RemoveAtAndCopy(uiComponentIndex);
+  }
+
+  if (pCachedComponents->IsEmpty())
+  {
+    cache.m_ObjectToCachedComponents.Remove(hOwnerObject);
+  }
+}
+
+void xiiRenderWorldModule::RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject)
+{
+  if (pObject == nullptr)
+    return;
+
+  RemoveCachedRenderDataForObject(cache, pObject->GetHandle());
+
+  for (auto it = pObject->GetChildren(); it.IsValid(); ++it)
+  {
+    RemoveCachedRenderDataForObjectRecursive(cache, it);
+  }
+}
+
+void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent)
+{
+  if (hOwnerObject.IsInvalidated())
+    return;
+
+  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  {
+    if (!hComponent.IsInvalidated() && !cache.m_StaticObjectCache.Contains(hOwnerObject))
+    {
+      RemoveCachedRenderDataForComponent(cache, hOwnerObject, hComponent);
+    }
+    else
+    {
+      RemoveCachedRenderDataForObject(cache, hOwnerObject);
+    }
+  }
+}
+
+void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pObject)
+{
+  if (pObject == nullptr)
+    return;
+
+  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  {
+    RemoveCachedRenderDataForObjectRecursive(cache, pObject);
+  }
+}
+
+void xiiRenderWorldModule::DeleteAllCachedRenderData()
+{
+  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  {
+    cache.m_StaticObjectCache.Clear();
+    cache.m_StaticComponentCache.Clear();
+    cache.m_ObjectToCachedComponents.Clear();
+    cache.m_FrameObjectData.Clear();
+  }
 }
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
-  for (auto& pView : m_Views)
+  for (xiiUInt32 i = 0; i < m_Views.GetCount(); ++i)
   {
+    xiiView* pView = m_Views[i].Borrow();
+
     if (!pView->IsValid())
       continue;
 
-    xiiExtractedRenderData* pExtractedData = pView->GetExtractedRenderData();
+    xiiExtractedRenderData* pExtractedData = m_ViewExtractedData[i].Borrow();
+    XII_ASSERT_DEV(pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
+
+    ViewExtractionCache& viewCache = m_ViewExtractionCaches[i];
+    viewCache.m_FrameObjectData.Clear();
+
     pExtractedData->Clear();
 
     xiiMsgExtractRenderData msg;
-    msg.m_pView                = pView.Borrow();
-    msg.m_pExtractedRenderData = pExtractedData;
+    msg.m_pView                    = pView;
+    msg.m_pExtractedRenderData     = pExtractedData;
+    msg.m_uiViewIndex              = i;
+    msg.m_SubmitRenderDataFunction = &xiiRenderWorldModule::SubmitRenderData;
+    msg.m_pSubmitRenderDataContext = this;
 
-    // Broadcast to all objects; each object routes to matching component message handlers.
+    // Broadcast to all objects, each object routes to matching component message handlers.
     {
       XII_LOCK(GetWorld()->GetReadMarker());
+
       for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
       {
-        it->SendMessage(msg);
+        xiiGameObject*            pObject = it;
+        const xiiGameObjectHandle hObject = pObject->GetHandle();
+
+        msg.m_hCurrentObject    = hObject;
+        msg.m_hCurrentComponent = xiiComponentHandle();
+
+        if (ReuseCachedStaticRenderData(viewCache, hObject, *pExtractedData))
+        {
+          msg.m_hCurrentObject = xiiGameObjectHandle();
+          continue;
+        }
+
+        // Dispatch to object-level handlers explicitly; component dispatch is handled below.
+        if (const xiiRTTI* pObjectType = pObject->GetDynamicRTTI(); pObjectType != nullptr)
+        {
+          pObjectType->DispatchMessage(pObject, msg);
+        }
+
+        for (xiiComponent* pComponent : pObject->GetComponents())
+        {
+          if (pComponent == nullptr)
+            continue;
+
+          const xiiComponentHandle hComponent = pComponent->GetHandle();
+
+          if (ReuseCachedStaticRenderData(viewCache, hComponent, *pExtractedData))
+            continue;
+
+          msg.m_hCurrentComponent = hComponent;
+          pComponent->SendMessage(msg);
+          msg.m_hCurrentComponent = xiiComponentHandle();
+        }
+
+        msg.m_hCurrentObject = xiiGameObjectHandle();
       }
     }
 
-    // Flatten concurrent batches, then radix-sort each category by sort key.
+    FinalizeViewExtractionCache(viewCache);
+
+    // Finalize and sort extracted data for this view.
     pExtractedData->SortAndBatches();
   }
 }
 
 void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context)
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (!pDevice)
     return;
 
@@ -140,10 +467,10 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiRenderGraphBlackboard&    blackboard    = pView->GetBlackboard();
     xiiRenderGraphResourceCache& resourceCache = pView->GetResourceCache();
 
-    // Clear the per-view blackboard at the start of each frame so passes start with a clean slate.
-    // History data must live inside persistent GPU buffers owned by each pass.
+    // Clear the per-view blackboard at the start of each frame so passes start clean.
+    // History data lives in persistent GPU resources inside ViewPassResources, not here.
     blackboard.Clear();
-    blackboard.Set(xiiMakeHashedString("FrameIndex"), static_cast<xiiUInt32>(uiFrameIndex));
+    blackboard.Set(xiiRGBlackboardKeys::k_FrameIndex, static_cast<xiiUInt32>(uiFrameIndex));
 
     // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);
@@ -151,210 +478,32 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     const xiiView::RenderGraphBuilder& graphBuilder = pView->GetRenderGraphBuilder();
     if (graphBuilder.IsValid())
     {
+      // Application-supplied custom graph (e.g. editor, headless, cinematic passes).
       graphBuilder(*pView, *pGraph, blackboard);
     }
     else
     {
-      BuildDefaultRenderGraph(*pView, *pGraph, blackboard);
+      // Standard full-featured pipeline.
+      pView->BuildDefaultRenderGraph(*pGraph, blackboard);
     }
 
     pGraph->EndSetup();
 
     xiiRGCompileSettings compileSettings;
-    compileSettings.m_bEnableGPUProfiling = true;
+    compileSettings.m_bEnableGPUProfiling  = true;
+    compileSettings.m_bEnablePassCulling   = true;
+    compileSettings.m_bEnableSplitBarriers = true;
+    compileSettings.m_bEnableAsyncQueues   = true;
+    compileSettings.m_bEnableCompileCache  = true;
 
     if (pGraph->Compile(compileSettings).Succeeded())
     {
-      const xiiResult executeResult = pGraph->Execute(pDevice, pView.Borrow(), &blackboard, &resourceCache);
+      // Pass the view's per-view profiler into the executor so every pass gets Duration bracketed.
+      const xiiResult executeResult = pGraph->Execute(pDevice, pView.Borrow(), &blackboard, &resourceCache, &pView->GetProfiler());
       XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", pView->GetName());
+
+      // Tick the profiler so it advances its ring and schedules readback on the oldest slot.
+      pView->GetProfiler().OnFrameEnd(uiFrameIndex);
     }
   }
-}
-
-void xiiRenderWorldModule::SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder)
-{
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  // Pass constants buffer.
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
-    description.m_uiElementByteStride = 0U;
-    description.m_uiSize              = sizeof(xiiDynamicResolutionPassConstants);
-    description.m_Usage               = xiiGALResourceUsage::Dynamic;
-    description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-
-    data.m_hPassConstantsBuffer = builder.DeclareBuffer("DynamicResolution_PassConstants", description);
-  }
-
-  // PID state buffer.
-  if (!m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(PersistentFrameResources::DynamicResolution::ResolutionStateData);
-    description.m_uiSize              = description.m_uiElementByteStride;
-    description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Mutable;
-
-    PersistentFrameResources::DynamicResolution::ResolutionStateData bufferData = {};
-    bufferData.m_fCurrentScale                                                  = 1.0f;
-    bufferData.m_fSmoothedScale                                                 = 1.0f;
-    bufferData.m_fErrorIntegral                                                 = 0.0f;
-    bufferData.m_fPreviousError                                                 = 0.0f;
-
-    xiiGALBufferData initialData;
-    initialData.m_pData      = &bufferData;
-    initialData.m_uiDataSize = sizeof(bufferData);
-
-    m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer = pDevice->CreateBuffer(description, &initialData);
-
-    // Import state buffer as UAV.
-    data.m_hResolutionStateBuffer = builder.ImportBuffer("DynamicResolution_State", m_PersistentFrameResources.m_DynamicResolution.m_pResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-    data.m_hResolutionStateBuffer = builder.WriteBuffer(data.m_hResolutionStateBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  }
-
-  // CPU-side values.
-  data.m_fFrameDeltaTimeMs   = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
-  data.m_fTargetFrameTimeMs  = cvar_RenderingDynamicResolutionTargetFrameTimeMs;
-  data.m_fMinimumRenderScale = cvar_RenderingDynamicResolutionMinimumRenderScale;
-  data.m_fMaximumRenderScale = cvar_RenderingDynamicResolutionMaximumRenderScale;
-
-  data.m_fCurrentGpuTimeMs  = data.m_fTargetFrameTimeMs; // TODO.
-  data.m_fSmoothedGpuTimeMs = data.m_fTargetFrameTimeMs; // TODO.
-
-  if (!m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline)
-  {
-    xiiShaderResourceHandle hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Passes/DynamicResolution/DynamicResolution.xiiShader");
-
-    xiiHashTable<xiiHashedString, xiiHashedString> permutationVariables;
-    m_PersistentFrameResources.m_DynamicResolution.m_hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
-
-    xiiResourceLock<xiiShaderPermutationResource> pPermutation(m_PersistentFrameResources.m_DynamicResolution.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
-    XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load shader permutation for dynamic resolution pass.");
-
-    xiiSharedPtr<xiiGALShader>                    pComputeShader = pPermutation->GetGALShader(xiiGALShaderType::Compute);
-    xiiSharedPtr<xiiGALPipelineResourceSignature> pSignature     = pPermutation->GetPipelineResourceSignature();
-
-    xiiGALComputePipelineStateCreationDescription description;
-    description.m_pComputeShader             = pComputeShader;
-    description.m_pPipelineResourceSignature = pSignature;
-
-    m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline = xiiGALPipelineCache::GetPipeline(description);
-
-    XII_ASSERT_DEV(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline, "Failed to create compute pipeline for dynamic resolution pass.");
-  }
-
-  builder.SetPassSideEffects(true);
-  builder.SetPassAllowMerge(false);
-}
-
-void xiiRenderWorldModule::ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("Dynamic Resolution Scaling");
-  {
-    // Update pass constants.
-    {
-      xiiGALMapHelper<xiiDynamicResolutionPassConstants> pConstants(cmd, context.GetBuffer(data.m_hPassConstantsBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
-
-      pConstants->FrameDeltaTimeMs   = data.m_fFrameDeltaTimeMs;
-      pConstants->TargetFrameTimeMs  = data.m_fTargetFrameTimeMs;
-      pConstants->MinimumRenderScale = data.m_fMinimumRenderScale;
-      pConstants->MaximumRenderScale = data.m_fMaximumRenderScale;
-      pConstants->CurrentGpuTimeMs   = data.m_fCurrentGpuTimeMs;
-      pConstants->SmoothedGpuTimeMs  = data.m_fSmoothedGpuTimeMs;
-    }
-
-    cmd.SetPipelineState(m_PersistentFrameResources.m_DynamicResolution.m_pComputePipeline);
-
-    cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiDynamicResolutionPassConstants), context.GetBuffer(data.m_hPassConstantsBuffer), xiiGALShaderType::Compute);
-
-    if (xiiGALBuffer* pState = context.GetBuffer(data.m_hResolutionStateBuffer))
-    {
-      cmd.ResolveAndSetUnorderedAccessBufferView("g_DynamicResolutionData", pState->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    }
-
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-
-    cmd.DispatchCompute({1U, 1U, 1U});
-  }
-  cmd.EndDebugGroup();
-}
-
-void xiiRenderWorldModule::SetupPerFrameBufferUploadPass(PassData::PerFrameBufferUploadPassData& data, xiiRGBuilder& builder)
-{
-  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(xiiPerFrameGlobalUploadData);
-    description.m_uiSize              = description.m_uiElementByteStride;
-    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Mutable;
-
-    m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer = pDevice->CreateBuffer(description);
-  }
-
-  if (!m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer)
-  {
-    xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = sizeof(xiiPerFrameCameraUploadData);
-    description.m_uiSize              = description.m_uiElementByteStride;
-    description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-    description.m_Mode                = xiiGALBufferMode::Structured;
-    description.m_Usage               = xiiGALResourceUsage::Mutable;
-
-    m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer = pDevice->CreateBuffer(description);
-  }
-
-  data.m_hCameraConstantsOutputBuffer = builder.ImportBuffer("PerFrame_CameraConstants", m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hCameraConstantsOutputBuffer = builder.WriteBuffer(data.m_hCameraConstantsOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hGlobalConstantsOutputBuffer = builder.ImportBuffer("PerFrame_GlobalConstants", m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hGlobalConstantsOutputBuffer = builder.WriteBuffer(data.m_hGlobalConstantsOutputBuffer, xiiGALResourceStateFlags::UnorderedAccess);
-
-  builder.SetPassSideEffects(true);
-  builder.SetPassAllowMerge(false);
-}
-
-void xiiRenderWorldModule::ExecutePerFrameBufferUploadPass(const PassData::PerFrameBufferUploadPassData& data, xiiRGPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("Per-Frame Buffer Upload");
-  {
-    // This pass is responsible for uploading per-frame constants that are used by multiple passes throughout the frame, such as camera matrices, light data, and global parameters.
-    // The data is gathered and prepared on the CPU during the Execute phase of this pass, then written to GPU buffers that are accessible to other passes.
-    {
-      xiiGALMapHelper<xiiPerFrameGlobalUploadData> pGlobalConstants(cmd, m_PersistentFrameResources.m_PerFrameBufferUpload.m_pGlobalConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-
-      // Wrap around to prevent floating point issues. A wrap around of 1000 allows all frequencies with 3 digits after the decimal.
-      constexpr double fWrapAround        = 1000.0;
-      pGlobalConstants->FrameIndex        = context.GetBlackboard().GetRef<xiiUInt32>("FrameIndex");
-      pGlobalConstants->DeltaTime         = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds());
-      pGlobalConstants->GlobalTime        = static_cast<float>(xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), fWrapAround));
-      pGlobalConstants->WorldTime         = static_cast<float>(xiiMath::Mod(GetWorld()->GetClock().GetAccumulatedTime().GetSeconds(), fWrapAround));
-      pGlobalConstants->RenderScaleJitter = xiiVec4::MakeZero(); // TODO.
-    }
-    {
-      xiiGALMapHelper<xiiPerFrameCameraUploadData> pCameraConstants(cmd, m_PersistentFrameResources.m_PerFrameBufferUpload.m_pCameraConstantsBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard);
-
-      const xiiViewData& viewData = context.GetView()->GetData();
-      const xiiCamera*   pCamera  = context.GetView()->GetCamera();
-
-      pCameraConstants->ViewProjectionMatrix[0]       = viewData.m_ViewProjectionMatrix[0];
-      pCameraConstants->InverseProjectionMatrix[0]    = viewData.m_InverseProjectionMatrix[0];
-      pCameraConstants->CameraDirectionAndFarPlane[0] = xiiVec4(pCamera->GetDirForwards(xiiCameraEye::Left), pCamera->GetFarPlane());
-      pCameraConstants->CameraPositionAndNearPlane[0] = xiiVec4(pCamera->GetPosition(xiiCameraEye::Left), pCamera->GetNearPlane());
-
-      pCameraConstants->ViewProjectionMatrix[1]       = viewData.m_ViewProjectionMatrix[1];
-      pCameraConstants->InverseProjectionMatrix[1]    = viewData.m_InverseProjectionMatrix[1];
-      pCameraConstants->CameraDirectionAndFarPlane[1] = xiiVec4(pCamera->GetDirForwards(xiiCameraEye::Right), pCamera->GetFarPlane());
-      pCameraConstants->CameraPositionAndNearPlane[1] = xiiVec4(pCamera->GetPosition(xiiCameraEye::Right), pCamera->GetNearPlane());
-    }
-  }
-  cmd.EndDebugGroup();
 }

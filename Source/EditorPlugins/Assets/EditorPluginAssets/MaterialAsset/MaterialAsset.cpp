@@ -1060,18 +1060,9 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
       }
     }
 
-    // render data category
+    // Reserved legacy field.
     {
-      xiiVariantDictionary materialConfig;
-      if (pObject != nullptr)
-      {
-        XII_SUCCEED_OR_RETURN(ParseMaterialConfig(sRelativeShaderPath, pObject, materialConfig));
-      }
-
-      xiiVariant renderDataCategory;
-      materialConfig.TryGetValue("RenderDataCategory", renderDataCategory);
-
-      stream << renderDataCategory.ConvertTo<xiiString>();
+      stream << xiiStringView();
     }
 
     // find and embed low res texture data

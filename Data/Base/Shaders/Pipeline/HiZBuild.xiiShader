@@ -1,4 +1,4 @@
-// XII Engine — HiZBuild.xiiShader
+// XII Engine - HiZBuild.xiiShader
 // Pass 8: Hierarchical-Z max depth pyramid reduction.
 // Dispatch: ceil(W/8) × ceil(H/8) per mip, iterated in C++ per mip level.
 

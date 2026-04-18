@@ -1,11 +1,11 @@
-// XII Engine — Pipeline Shared Definitions
+// XII Engine - Pipeline Shared Definitions
 // Included by every pipeline shader via PCH or explicit include.
 // Matches the CPU-side PerFrameUploadData.h exactly.
 #pragma once
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Constant Buffer Slots (bound globally by RenderWorldModule pass execution)
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 cbuffer PerFrameCamera : register(b0)
 {
     float4x4 g_ViewProjectionMatrix;
@@ -32,18 +32,18 @@ cbuffer PerFrameGlobal : register(b2)
     float4   g_RenderScaleJitter; // x=scale, yzw=halton jitter (normalized [-0.5,0.5])
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Common samplers (bound globally)
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 SamplerState g_sPointClamp    : register(s0);
 SamplerState g_sLinearClamp   : register(s1);
 SamplerState g_sLinearWrap    : register(s2);
 SamplerState g_sAnisotropicWrap: register(s3);
 SamplerComparisonState g_sShadowPCF : register(s4);
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // Math helpers
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 
 // Reversed-Z NDC → linear view-space depth.
 float LinearizeDepth(float ndcDepth)
@@ -90,7 +90,7 @@ float EV100ToExposure(float ev100)
     return 1.0f / maxLum;
 }
 
-// Interleaved gradient noise (Jimenez 2014) — great for temporal stability.
+// Interleaved gradient noise (Jimenez 2014) - great for temporal stability.
 float InterleavedGradientNoise(float2 pos, uint frameIndex)
 {
     pos += float(frameIndex) * 5.588238f;

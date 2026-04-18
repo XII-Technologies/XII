@@ -96,8 +96,8 @@ xiiStringView xiiPointLightComponent::GetProjectedTextureFile() const
 
 void xiiPointLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  // Don't extract light render data for selection or in shadow views.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory || msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
+  // Don't extract light render data in shadow views.
+  if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
     return;
 
   if (m_fIntensity <= 0.0f || m_fEffectiveRange <= 0.0f)
@@ -119,7 +119,7 @@ void xiiPointLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
   pRenderData->FillBatchIdAndSortingKey(fScreenSpaceSize);
 
   xiiRenderData::Caching::Enum caching = m_bCastShadows ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
+  msg.AddRenderData(pRenderData, caching);
 }
 
 void xiiPointLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

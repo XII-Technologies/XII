@@ -1,4 +1,4 @@
-// XII Engine — AtmosphereTransmittance.xiiShader  [NEW]
+// XII Engine - AtmosphereTransmittance.xiiShader  [NEW]
 // Pass 25a: Precompute atmospheric transmittance LUT  (256 × 64 × RGBA16F).
 // Each texel stores T(viewHeight, sunZenithCos) = exp(-optical depth integral).
 // Dispatch: ceil(256/8) × ceil(64/8) × 1

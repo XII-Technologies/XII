@@ -584,7 +584,7 @@ xiiResult xiiGALDeviceVulkan::PostInitializePlatform()
   }
 
   xiiTemporaryHybridArray<vk::DeviceQueueCreateInfo, 4U> queueDescriptions;
-  float                                      fQueuePriorities = 1.0f;
+  float                                                  fQueuePriorities = 1.0f;
 
   // Setup device queues.
   {

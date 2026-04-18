@@ -1,0 +1,91 @@
+// XII Engine - BRDFLUTGenerate.xiiShader
+// Pass: Split-sum BRDF LUT generation (GGX Smith).
+// Generated once into a 256×256 R16G16F texture.
+// uv.x = NdotV (cosine of viewing angle), uv.y = roughness (perceptual).
+// Output: x=DFG1 (Schlick fresnel term), y=DFG2 (full integral term).
+// Dispatch: 32 × 32 × 1 (each thread covers an 8×8 region).
+
+#include "PipelineCommon.xiiShader"
+
+RWTexture2D<float2> g_BRDFLutOut : register(u0);
+
+// Hammersley low-discrepancy sequence.
+float2 Hammersley(uint i, uint n)
+{
+    uint bits = i;
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float2(float(i) / float(n), float(bits) * 2.3283064365386963e-10f);
+}
+
+// GGX importance sample direction.
+float3 ImportanceSampleGGX(float2 xi, float roughness, float3 N)
+{
+    float a    = roughness * roughness;
+    float phi  = 2.0f * 3.14159265f * xi.x;
+    float cosT = sqrt((1.0f - xi.y) / (1.0f + (a*a - 1.0f) * xi.y));
+    float sinT = sqrt(1.0f - cosT * cosT);
+
+    float3 H = float3(sinT * cos(phi), sinT * sin(phi), cosT);
+
+    // Tangent-space to world.
+    float3 up    = abs(N.z) < 0.999f ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 T     = normalize(cross(up, N));
+    float3 B     = cross(N, T);
+    return T * H.x + B * H.y + N * H.z;
+}
+
+// Geometry term - Smith GGX correlated.
+float GeometrySmith(float NdotV, float NdotL, float roughness)
+{
+    float k   = roughness * roughness * 0.5f;
+    float GV  = NdotV / (NdotV * (1.0f - k) + k);
+    float GL  = NdotL / (NdotL * (1.0f - k) + k);
+    return GV * GL;
+}
+
+static const uint k_uiSampleCount = 1024u;
+
+[numthreads(8, 8, 1)]
+void CS_BRDFLutGenerate(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims;
+    g_BRDFLutOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    // NdotV = x-axis, roughness = y-axis.
+    float NdotV    = saturate((float(tid.x) + 0.5f) / float(dims.x));
+    float roughness = saturate((float(tid.y) + 0.5f) / float(dims.y));
+    roughness       = roughness * roughness; // perceptual → linear
+
+    float3 V = float3(sqrt(1.0f - NdotV * NdotV), 0.0f, NdotV);
+    float3 N = float3(0.0f, 0.0f, 1.0f);
+
+    float A = 0.0f, B = 0.0f;
+    [loop]
+    for (uint i = 0u; i < k_uiSampleCount; ++i)
+    {
+        float2 xi  = Hammersley(i, k_uiSampleCount);
+        float3 H   = ImportanceSampleGGX(xi, roughness, N);
+        float3 L   = normalize(2.0f * dot(V, H) * H - V);
+
+        float NdotL = saturate(L.z);
+        float NdotH = saturate(H.z);
+        float VdotH = saturate(dot(V, H));
+
+        if (NdotL > 0.0f)
+        {
+            float G   = GeometrySmith(NdotV, NdotL, roughness);
+            float Gvis = (G * VdotH) / (NdotH * NdotV);
+            float Fc  = pow(1.0f - VdotH, 5.0f);
+            A += (1.0f - Fc) * Gvis;
+            B += Fc * Gvis;
+        }
+    }
+
+    g_BRDFLutOut[tid.xy] = float2(A / float(k_uiSampleCount),
+                                   B / float(k_uiSampleCount));
+}

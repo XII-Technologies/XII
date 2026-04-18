@@ -1,6 +1,6 @@
 ## Reporting a Vulnerability
 
-XII Technologies is committed to protecting the integrity and resilience of our systems, libraries, and user-facing APIs. If you believe you have discovered a security vulnerability, we strongly encourage you to report it in a responsible and confidential manner. This allows us to investigate, resolve, and disclose issues thoughtfully and transparently—prioritizing the security of our community and users.
+XII Technologies is committed to protecting the integrity and resilience of our systems, libraries, and user-facing APIs. If you believe you have discovered a security vulnerability, we strongly encourage you to report it in a responsible and confidential manner. This allows us to investigate, resolve, and disclose issues thoughtfully and transparently-prioritizing the security of our community and users.
 
 To report a potential vulnerability:
 

@@ -1,8 +1,12 @@
 #pragma once
 
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/Containers/HybridArray.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/RenderContext/RenderTargetSetup.h>
+
+class xiiRenderer;
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiGraphicsPipelinePass
 {
@@ -44,6 +48,9 @@ private:
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
   void ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
+  void               BuildRendererLookup();
+  const xiiRenderer* FindRendererForRenderData(const xiiRenderData* pRenderData) const;
+  void               RenderDataBatch(const xiiRenderViewContext& renderViewContext, xiiArrayPtr<xiiRenderData* const> renderData) const;
 
 private:
   xiiRectFloat   m_TargetRect;
@@ -52,7 +59,10 @@ private:
   xiiSharedPtr<xiiGALTexture> m_pPickingIdRT;
   xiiSharedPtr<xiiGALTexture> m_pPickingDepthRT;
 
-  xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
+  xiiHybridArray<xiiRenderer*, 32>           m_Renderers;
+  xiiHashTable<const xiiRTTI*, xiiRenderer*> m_RenderersByRenderDataType;
+
+  xiiDynamicArray<xiiRenderData*> m_LitOpaqueWithoutSelection;
 
   struct PickingReadback
   {

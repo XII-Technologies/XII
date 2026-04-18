@@ -1,4 +1,4 @@
-// XII Engine — CoarseFrustumCulling.xiiShader  [REWRITTEN]
+// XII Engine - CoarseFrustumCulling.xiiShader  [REWRITTEN]
 // Pass 9: Per-instance sphere test against 6 camera frustum planes.
 // Dispatch: ceil(InstanceCount/64) × 1 × 1
 

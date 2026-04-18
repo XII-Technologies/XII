@@ -2,6 +2,7 @@
 
 #include <EditorEngineProcessFramework/PickingRenderPass/PickingRenderPass.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
+#include <GraphicsCore/Pipeline/Renderer.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
@@ -32,13 +33,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocato
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-static xiiRenderData::Category s_LitOpaqueWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitOpaqueWithoutSelection", xiiDefaultRenderDataCategories::OpaqueStatic);
-static xiiRenderData::Category s_LitMaskedWithoutSelection        = xiiRenderData::RegisterDerivedCategory("LitMaskedWithoutSelection", xiiDefaultRenderDataCategories::MaskedStatic);
-static xiiRenderData::Category s_LitMaskedDynamicWithoutSelection = xiiRenderData::RegisterDerivedCategory("LitMaskedDynamicWithoutSelection", xiiDefaultRenderDataCategories::MaskedDynamic);
-
-static xiiRenderData::Category s_LitTransparentWithoutSelection    = xiiRenderData::RegisterDerivedCategory("LitTransparentWithoutSelection", xiiDefaultRenderDataCategories::Transparent);
-static xiiRenderData::Category s_SimpleTransparentWithoutSelection = xiiRenderData::RegisterDerivedCategory("SimpleTransparentWithoutSelection", xiiDefaultRenderDataCategories::SimpleTransparent);
-
 xiiPickingRenderPass::xiiPickingRenderPass() :
   xiiGraphicsPipelinePass("EditorPickingRenderPass", xiiRenderPipelinePassCapabilityFlags::None)
 {
@@ -46,7 +40,19 @@ xiiPickingRenderPass::xiiPickingRenderPass() :
   XII_ASSERT_DEV(m_pGridRenderDataType != nullptr, "xiiGridRenderData type not found. Type renamed?");
 }
 
-xiiPickingRenderPass::~xiiPickingRenderPass() = default;
+xiiPickingRenderPass::~xiiPickingRenderPass()
+{
+  for (xiiRenderer* pRenderer : m_Renderers)
+  {
+    if (pRenderer != nullptr)
+    {
+      pRenderer->GetDynamicRTTI()->GetAllocator()->Deallocate(pRenderer);
+    }
+  }
+
+  m_Renderers.Clear();
+  m_RenderersByRenderDataType.Clear();
+}
 
 xiiSharedPtr<xiiGALTexture> xiiPickingRenderPass::GetPickingIdRT() const
 {
@@ -108,37 +114,9 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   xiiClusteredDataGPU* pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
   pClusteredData->BindResources(renderViewContext.m_pRenderContext);
 
-  RenderDataWithCategory(renderViewContext, s_LitOpaqueWithoutSelection);
-  RenderDataWithCategory(renderViewContext, s_LitMaskedWithoutSelection);
+  BuildRendererLookup();
 
-  if (m_bPickTransparent)
-  {
-    RenderDataWithCategory(renderViewContext, s_LitTransparentWithoutSelection);
-
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
-
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
-  }
-
-  if (m_bPickSelected)
-  {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Selection);
-  }
-
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
-
-  if (m_bPickTransparent)
-  {
-    RenderDataWithCategory(renderViewContext, s_SimpleTransparentWithoutSelection);
-  }
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Foreground);
+  RenderDataBatch(renderViewContext, m_LitOpaqueWithoutSelection);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
 
@@ -402,39 +380,82 @@ void xiiPickingRenderPass::ReadBackPropertiesMarqueePick(xiiView* pView)
   pView->SetRenderPassReadBackProperty(GetName(), "MarqueeResult", resArray);
 }
 
-void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData)
+void xiiPickingRenderPass::BuildRendererLookup()
 {
-  // Copy selection to set for faster checks.
-  m_SelectionSet.Clear();
+  if (!m_Renderers.IsEmpty())
+    return;
+
+  xiiRTTI::ForEachDerivedType<xiiRenderer>(
+    [&](const xiiRTTI* pRtti) {
+      if (pRtti == nullptr || pRtti->GetAllocator() == nullptr)
+        return;
+
+      xiiRenderer* pRenderer = pRtti->GetAllocator()->Allocate<xiiRenderer>();
+      if (pRenderer == nullptr)
+        return;
+
+      m_Renderers.PushBack(pRenderer);
+
+      xiiHybridArray<const xiiRTTI*, 8> supportedTypes;
+      pRenderer->GetSupportedRenderDataTypes(supportedTypes);
+      for (const xiiRTTI* pSupportedType : supportedTypes)
+      {
+        if (pSupportedType == nullptr || m_RenderersByRenderDataType.Contains(pSupportedType))
+          continue;
+
+        m_RenderersByRenderDataType.Insert(pSupportedType, pRenderer);
+      }
+    },
+    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+}
+
+const xiiRenderer* xiiPickingRenderPass::FindRendererForRenderData(const xiiRenderData* pRenderData) const
+{
+  if (pRenderData == nullptr)
+    return nullptr;
+
+  const xiiRTTI* pRenderDataType = pRenderData->GetDynamicRTTI();
+  while (pRenderDataType != nullptr)
   {
-    auto renderDataList = extractedRenderData.GetRawRenderDataWithCategory(xiiDefaultRenderDataCategories::Selection);
-    for (auto& sortableRenderData : renderDataList)
+    xiiRenderer* pRenderer = nullptr;
+    if (m_RenderersByRenderDataType.TryGetValue(pRenderDataType, pRenderer))
     {
-      m_SelectionSet.Insert(sortableRenderData.m_pRenderData->m_hOwner);
+      return pRenderer;
     }
+
+    pRenderDataType = pRenderDataType->GetParentType();
   }
 
-  auto Filter = [&](xiiRenderData::Category originalCategory, xiiRenderData::Category filteredCategory) {
-    auto renderDataList = extractedRenderData.GetRawRenderDataWithCategory(originalCategory);
-    for (auto& sortableRenderData : renderDataList)
-    {
-      auto pRenderData = sortableRenderData.m_pRenderData;
-      if (m_SelectionSet.Contains(pRenderData->m_hOwner) || pRenderData->IsInstanceOf(m_pGridRenderDataType))
-        continue;
+  return nullptr;
+}
 
-      extractedRenderData.AddRenderData(pRenderData, filteredCategory);
-    }
-  };
-
-  Filter(xiiDefaultRenderDataCategories::OpaqueStatic, s_LitOpaqueWithoutSelection);
-  Filter(xiiDefaultRenderDataCategories::OpaqueDynamic, s_LitOpaqueWithoutSelection);
-
-  Filter(xiiDefaultRenderDataCategories::MaskedStatic, s_LitMaskedWithoutSelection);
-  Filter(xiiDefaultRenderDataCategories::MaskedDynamic, s_LitOpaqueWithoutSelection);
-
-  if (m_bPickTransparent)
+void xiiPickingRenderPass::RenderDataBatch(const xiiRenderViewContext& renderViewContext, xiiArrayPtr<xiiRenderData* const> renderData) const
+{
+  for (xiiRenderData* pRenderData : renderData)
   {
-    Filter(xiiDefaultRenderDataCategories::Transparent, s_LitTransparentWithoutSelection);
-    Filter(xiiDefaultRenderDataCategories::SimpleTransparent, s_SimpleTransparentWithoutSelection);
+    const xiiRenderer* pRenderer = FindRendererForRenderData(pRenderData);
+    if (pRenderer == nullptr)
+      continue;
+
+    xiiRenderData*     pSingleRenderData = pRenderData;
+    xiiRenderDataBatch batch;
+    batch.m_Data = xiiMakeArrayPtr(&pSingleRenderData, 1);
+
+    pRenderer->RenderBatch(renderViewContext, this, batch);
+  }
+}
+
+void xiiPickingRenderPass::ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData)
+{
+  const xiiArrayPtr<xiiRenderData* const> allRenderData = extractedRenderData.GetAllRenderData();
+
+  m_LitOpaqueWithoutSelection.Clear();
+
+  for (xiiRenderData* pRenderData : allRenderData)
+  {
+    if (pRenderData == nullptr || pRenderData->IsInstanceOf(m_pGridRenderDataType))
+      continue;
+
+    m_LitOpaqueWithoutSelection.PushBack(pRenderData);
   }
 }

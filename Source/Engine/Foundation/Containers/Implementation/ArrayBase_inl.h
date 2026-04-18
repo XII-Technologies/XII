@@ -142,8 +142,7 @@ void xiiArrayBase<T, Derived>::EnsureCount(xiiUInt32 uiCount)
 }
 
 template <typename T, typename Derived>
-template <typename> // Second template needed so that the compiler does only instantiate it when called. Otherwise the static_assert would trigger
-// early.
+template <typename> // Second template needed so that the compiler does only instantiate it when called. Otherwise the static_assert would trigger early.
 void xiiArrayBase<T, Derived>::SetCountUninitialized(xiiUInt32 uiCount)
 {
   static_assert(xiiIsPodType<T>::value == xiiTypeIsPod::value, "SetCountUninitialized is only supported for POD types.");

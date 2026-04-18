@@ -106,8 +106,8 @@ float xiiDirectionalLightComponent::GetNearPlaneOffset() const
 
 void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  // Don't extract light render data for selection or in shadow views.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory || msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
+  // Don't extract light render data in shadow views.
+  if (msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow)
     return;
 
   if (m_fIntensity <= 0.0f)
@@ -123,7 +123,7 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   pRenderData->FillBatchIdAndSortingKey(1.0f);
 
   xiiRenderData::Caching::Enum caching = m_bCastShadows ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, caching);
+  msg.AddRenderData(pRenderData, caching);
 }
 
 void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

@@ -1,4 +1,4 @@
-// XII Engine — VolumetricLightIntegration.xiiShader  [NEW]
+// XII Engine - VolumetricLightIntegration.xiiShader  [NEW]
 // Pass 49: Integrate per-froxel scattering/extinction along view ray (front-to-back).
 // Converts 3D froxel grid into a full-res 2D in-scattering buffer.
 // Dispatch: ceil(FroxW/8) × ceil(FroxH/8) × 1

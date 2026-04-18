@@ -115,14 +115,7 @@ void xiiSpriteComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) co
     pRenderData->FillSortingKey();
   }
 
-  // Determine render data category.
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Transparent;
-  if (m_BlendMode == xiiSpriteBlendMode::Masked)
-  {
-    category = xiiDefaultRenderDataCategories::Masked;
-  }
-
-  msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::IfStatic);
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }
 
 void xiiSpriteComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

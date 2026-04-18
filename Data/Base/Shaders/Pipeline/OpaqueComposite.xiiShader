@@ -1,4 +1,4 @@
-// XII Engine — OpaqueComposite.xiiShader  [NEW]
+// XII Engine - OpaqueComposite.xiiShader  [NEW]
 // Pass 51: Fuse direct + indirect + emissive + volumetric + sky into authoritative HDR buffer.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 

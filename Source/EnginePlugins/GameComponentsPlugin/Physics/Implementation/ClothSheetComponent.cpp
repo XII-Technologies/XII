@@ -330,15 +330,7 @@ void xiiClothSheetComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
     }
   }
 
-  xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
-
-  if (m_hMaterial.IsValid())
-  {
-    xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-    category = pMaterial->GetRenderDataCategory();
-  }
-
-  msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::Never);
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 
 void xiiClothSheetComponent::SetFlags(xiiBitflags<xiiClothSheetFlags> flags)
@@ -437,14 +429,6 @@ xiiClothSheetRenderer::xiiClothSheetRenderer()
 }
 
 xiiClothSheetRenderer::~xiiClothSheetRenderer() = default;
-
-void xiiClothSheetRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
-{
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
-}
 
 void xiiClothSheetRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {

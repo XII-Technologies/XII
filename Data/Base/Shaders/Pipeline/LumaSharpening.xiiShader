@@ -1,4 +1,4 @@
-// XII Engine — LumaSharpening.xiiShader  [NEW]
+// XII Engine - LumaSharpening.xiiShader  [NEW]
 // Pass 62: Luminance-channel unsharp mask sharpening (CAS-inspired single-pass).
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 

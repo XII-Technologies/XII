@@ -139,9 +139,6 @@ void xiiFogComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
 
 void xiiFogComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
-    return;
-
   auto pRenderData = xiiCreateRenderDataForThisFrame<xiiFogRenderData>(GetOwner());
 
   pRenderData->m_GlobalTransform = GetOwner()->GetGlobalTransform();
@@ -150,7 +147,7 @@ void xiiFogComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
   pRenderData->m_fHeightFalloff  = m_fHeightFalloff;
   pRenderData->m_fInvSkyDistance = m_bModulateWithSkyColor ? 1.0f / m_fSkyDistance : 0.0f;
 
-  msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Light, xiiRenderData::Caching::IfStatic);
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::IfStatic);
 }
 
 void xiiFogComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

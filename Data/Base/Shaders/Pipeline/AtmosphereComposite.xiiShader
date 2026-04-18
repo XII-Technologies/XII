@@ -1,5 +1,5 @@
-// XII Engine — AtmosphereComposite.xiiShader  [NEW]
-// Pass 50: Apply sky radiance to HDRI scene — Bruneton atmosphere at sky pixels, aerial perspective on geometry.
+// XII Engine - AtmosphereComposite.xiiShader  [NEW]
+// Pass 50: Apply sky radiance to HDRI scene - Bruneton atmosphere at sky pixels, aerial perspective on geometry.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"

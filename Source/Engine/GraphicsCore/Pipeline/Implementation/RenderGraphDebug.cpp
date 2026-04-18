@@ -25,7 +25,7 @@ xiiResult xiiRenderGraphDebug::DumpToDot(xiiArrayPtr<const xiiRGCompiledPass> pC
     const xiiUInt32             uiQueueIndex = submission.m_uiQueueIndex < 3U ? submission.m_uiQueueIndex : 0U;
 
     out_sDot.AppendFormat("  submissiongraph cluster_q{0} {{\n", uiQueueSubmissionIndex);
-    out_sDot.AppendFormat("    label=\"Submission {0} — {1}\";\n", uiQueueSubmissionIndex, QueueNames[uiQueueIndex]);
+    out_sDot.AppendFormat("    label=\"Submission {0} - {1}\";\n", uiQueueSubmissionIndex, QueueNames[uiQueueIndex]);
     out_sDot.AppendFormat("    style=filled; color=\"{0}22\"; fontcolor=\"{0}\";\n", QueueColors[uiQueueIndex]);
 
     // Merge group clusters inside this queue cluster.

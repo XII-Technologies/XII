@@ -246,10 +246,6 @@ void xiiBlackboardComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) c
       msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return;
 
-  // Don't extract render data for selection.
-  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
-    return;
-
   auto& entries = m_pBoard->GetAllEntries();
   if (entries.IsEmpty())
     return;

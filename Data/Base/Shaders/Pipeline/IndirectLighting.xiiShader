@@ -1,4 +1,4 @@
-// XII Engine — IndirectLighting.xiiShader  [NEW]
+// XII Engine - IndirectLighting.xiiShader  [NEW]
 // Pass 47: Combine RT GI / IBL + RT reflections + SSR into indirect lighting buffer.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
@@ -28,7 +28,7 @@ RWTexture2D<float4> g_IndirectOut : register(u0);
 // Diffuse wrap GI from RT or SH-based IBL.
 float3 DiffuseIBL(float3 N, float3 albedo, float metallic, float ao)
 {
-    // Simplified directional IBL — full implementation uses SH/irradiance cube.
+    // Simplified directional IBL - full implementation uses SH/irradiance cube.
     float3 baseColor = albedo * (1.0f - metallic);
     return baseColor * g_SpecularIBL.SampleLevel(g_sLinearClamp, N, 8.0f).rgb * g_IBLIntensity * ao;
 }

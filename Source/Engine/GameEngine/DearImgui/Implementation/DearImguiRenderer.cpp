@@ -112,7 +112,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
         }
       }
 
-      ref_extractedRenderData.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::GUI);
+      ref_extractedRenderData.AddRenderData(pRenderData);
     }
   }
 }
@@ -148,11 +148,6 @@ xiiImguiRenderer::~xiiImguiRenderer()
 void xiiImguiRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiImguiRenderData>());
-}
-
-void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
-{
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
 void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiGraphicsPipelinePass* pPass, const xiiRenderDataBatch& batch) const

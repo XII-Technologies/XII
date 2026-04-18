@@ -1,4 +1,4 @@
-// XII Engine — Skinning.xiiShader
+// XII Engine - Skinning.xiiShader
 // Pass 4: GPU skinning and morph target application.
 // Dispatch: ceil(VertexCount/64) × 1 × 1
 

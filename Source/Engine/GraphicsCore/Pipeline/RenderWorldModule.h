@@ -2,29 +2,37 @@
 
 #include <Core/World/WorldModule.h>
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
 
-class xiiGALComputePipelineState;
+#include <Foundation/Containers/HashTable.h>
+#include <Foundation/Types/UniquePtr.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
+class xiiExtractedRenderData;
+struct xiiMsgExtractRenderData;
 class xiiView;
+class xiiGameObject;
 
 /// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
 ///
 /// ## Render graph construction
-/// The module owns the default pass list and builds each view's render graph directly every frame.
-/// A view may override this by assigning xiiView::SetRenderGraphBuilder(), allowing per-view graph layouts.
+/// Each frame, for views that do not have a custom RenderGraphBuilder set, the module delegates to
+/// xiiView::BuildDefaultRenderGraph() which populates the graph from the view's own pipeline resources.
+/// External code may override this by calling xiiView::SetRenderGraphBuilder().
 ///
 /// ## Render data
 /// During the Async world-update phase, xiiRenderWorldModule walks all world objects and sends
-/// xiiMsgExtractRenderData. Components handling this message submit data into the view's
-/// xiiExtractedRenderData, which is then sorted by category and sort key via radix sort before
-/// the render graph runs.
+/// xiiMsgExtractRenderData. Components handling this message submit data as usual, but the extracted
+/// data cache is owned by xiiRenderWorldModule (not by xiiView) and keeps static/dynamic streams.
+/// Static-only objects are persisted per-view and reused across frames until invalidated through the
+/// cache invalidation API. Before execution, the module finalizes and sorts those streams for graph consumers.
 ///
 /// ## Per-view blackboard and resource cache
-/// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache. The blackboard is cleared
-/// at the start of each frame and repopulated by the passes in order. Cross-frame data (e.g. history buffers)
-/// must be written through the resource cache or kept as persistent GPU buffers inside the pass.
+/// Every xiiView owns its own xiiRenderGraphBlackboard and xiiRenderGraphResourceCache.
+/// The blackboard is cleared at the start of each frame and repopulated by the passes in order.
+/// Cross-frame data (TAA history, exposure, particle state, etc.) lives in persistent GPU buffers
+/// inside the view's ViewPassResources struct.
 class XII_GRAPHICSCORE_DLL xiiRenderWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
@@ -52,67 +60,66 @@ public:
   /// \brief Destroys a view. The view must have been created by this module.
   void DestroyView(xiiView* pView);
 
+  /// \brief Invalidates cached static render data for one object.
+  ///
+  /// The component handle is accepted for compatibility with existing call sites.
+  /// Static cache invalidation is keyed by object identity.
+  void DeleteCachedRenderData(xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent);
+
+  /// \brief Invalidates cached static render data for an object and all children.
+  void DeleteCachedRenderDataForObjectRecursive(const xiiGameObject* pObject);
+
+  /// \brief Clears all cached static render data for every view.
+  void DeleteAllCachedRenderData();
+
 private:
-  void BuildDefaultRenderGraph(xiiView& view, xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
+  struct CachedStaticObjectData
+  {
+    xiiDynamicArray<xiiUniquePtr<xiiRenderData>> m_StaticRenderData;
+  };
+
+  struct CachedStaticComponentData
+  {
+    xiiDynamicArray<xiiUniquePtr<xiiRenderData>> m_StaticRenderData;
+  };
+
+  struct ExtractedComponentFrameData
+  {
+    xiiDynamicArray<xiiRenderData*> m_StaticRenderData;
+    bool                            m_bHasDynamicRenderData = false;
+  };
+
+  struct ExtractedObjectFrameData
+  {
+    xiiHashTable<xiiComponentHandle, ExtractedComponentFrameData> m_ComponentFrameData;
+    xiiDynamicArray<xiiRenderData*>                               m_ObjectLevelStaticRenderData;
+    bool                                                          m_bHasDynamicRenderData = false;
+  };
+
+  struct ViewExtractionCache
+  {
+    xiiHashTable<xiiGameObjectHandle, CachedStaticObjectData>              m_StaticObjectCache;
+    xiiHashTable<xiiComponentHandle, CachedStaticComponentData>            m_StaticComponentCache;
+    xiiHashTable<xiiGameObjectHandle, xiiDynamicArray<xiiComponentHandle>> m_ObjectToCachedComponents;
+    xiiHashTable<xiiGameObjectHandle, ExtractedObjectFrameData>            m_FrameObjectData;
+  };
+
+  static void SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+
+  void OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
+  bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiGameObjectHandle hObject, xiiExtractedRenderData& out_extractedRenderData) const;
+  bool ReuseCachedStaticRenderData(const ViewExtractionCache& cache, xiiComponentHandle hComponent, xiiExtractedRenderData& out_extractedRenderData) const;
+  void FinalizeViewExtractionCache(ViewExtractionCache& cache);
+  void RemoveCachedRenderDataForObject(ViewExtractionCache& cache, xiiGameObjectHandle hObject);
+  void RemoveCachedRenderDataForComponent(ViewExtractionCache& cache, xiiGameObjectHandle hOwnerObject, xiiComponentHandle hComponent);
+  void RemoveCachedRenderDataForObjectRecursive(ViewExtractionCache& cache, const xiiGameObject* pObject);
+
   void ExtractRenderData(const xiiWorldModule::UpdateContext& context);
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
-  struct PassData
-  {
-    struct DynamicResolutionPassData
-    {
-      float m_fFrameDeltaTimeMs;
-      float m_fTargetFrameTimeMs;
-      float m_fMinimumRenderScale;
-      float m_fMaximumRenderScale;
-
-      float m_fCurrentGpuTimeMs;
-      float m_fSmoothedGpuTimeMs;
-
-      xiiRGBufferHandle m_hResolutionStateBuffer;
-      xiiRGBufferHandle m_hPassConstantsBuffer;
-    } m_DynamicResolutionData;
-
-    struct PerFrameBufferUploadPassData
-    {
-      xiiRGBufferHandle m_hCameraConstantsOutputBuffer;
-      xiiRGBufferHandle m_hGlobalConstantsOutputBuffer;
-    } m_PerFrameBufferUploadData;
-  };
-
-  void SetupDynamicResolutionPass(PassData::DynamicResolutionPassData& data, xiiRGBuilder& builder);
-  void ExecuteDynamicResolutionPass(const PassData::DynamicResolutionPassData& data, xiiRGPassContext& context);
-
-  void SetupPerFrameBufferUploadPass(PassData::PerFrameBufferUploadPassData& data, xiiRGBuilder& builder);
-  void ExecutePerFrameBufferUploadPass(const PassData::PerFrameBufferUploadPassData& data, xiiRGPassContext& context);
-
-private:
-  struct PersistentFrameResources
-  {
-    struct DynamicResolution
-    {
-      struct ResolutionStateData
-      {
-        float m_fCurrentScale;
-        float m_fErrorIntegral;
-        float m_fPreviousError;
-        float m_fSmoothedScale;
-      };
-
-      xiiSharedPtr<xiiGALComputePipelineState> m_pComputePipeline;
-      xiiShaderPermutationResourceHandle       m_hShaderPermutation;
-      xiiSharedPtr<xiiGALBuffer>               m_pResolutionStateBuffer;
-    } m_DynamicResolution;
-
-    struct PerFrameBufferUpload
-    {
-      xiiSharedPtr<xiiGALBuffer> m_pCameraConstantsBuffer;
-      xiiSharedPtr<xiiGALBuffer> m_pGlobalConstantsBuffer;
-    } m_PerFrameBufferUpload;
-  } m_PersistentFrameResources;
-
-  xiiDynamicArray<xiiUniquePtr<xiiView>> m_Views;
-  PassData                               m_PassData;
-  xiiUInt32                              m_uiRenderFrameIndex = 0;
+  xiiDynamicArray<xiiUniquePtr<xiiView>>                m_Views;
+  xiiDynamicArray<xiiUniquePtr<xiiExtractedRenderData>> m_ViewExtractedData;
+  xiiDynamicArray<ViewExtractionCache>                  m_ViewExtractionCaches;
+  xiiUInt64                                             m_uiRenderFrameIndex = 0;
 };

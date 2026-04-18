@@ -176,10 +176,9 @@ void xiiCustomMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
   }
 
   xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-  xiiRenderData::Category              category      = pMaterial->GetRenderDataCategory();
   bool                                 bDontCacheYet = pMaterial.GetAcquireResult() == xiiResourceAcquireResult::LoadingFallback;
 
-  msg.AddRenderData(pRenderData, category, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
+  msg.AddRenderData(pRenderData, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
 }
 
 void xiiCustomMeshComponent::OnActivated()
@@ -259,15 +258,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiCustomMeshRenderer::xiiCustomMeshRenderer()  = default;
 xiiCustomMeshRenderer::~xiiCustomMeshRenderer() = default;
 
-void xiiCustomMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const
-{
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Opaque);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Masked);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Transparent);
-  ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
-}
-
-void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiDynamicArray<const xiiRTTI*>& ref_types) const
+void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
 {
   ref_types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());
 }

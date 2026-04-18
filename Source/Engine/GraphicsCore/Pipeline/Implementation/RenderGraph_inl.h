@@ -1,4 +1,3 @@
-
 #include <Foundation/Memory/FrameAllocator.h>
 
 XII_ALWAYS_INLINE xiiGALCommandList& xiiRGPassContext::GetCommandList() const
@@ -36,7 +35,6 @@ XII_ALWAYS_INLINE xiiHashedString xiiRGPassContext::GetPassName() const
 {
   return m_sPassName;
 }
-
 
 XII_ALWAYS_INLINE xiiGALTexture* xiiRGPassContext::GetTexture(xiiRGTextureHandle hTexture) const
 {

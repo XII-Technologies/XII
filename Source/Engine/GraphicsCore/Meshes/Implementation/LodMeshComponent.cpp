@@ -174,16 +174,7 @@ void xiiLodMeshComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) c
       pRenderData->FillSortingKey();
     }
 
-    // Determine render data category.
-    xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
-    if (hMaterial.IsValid())
-    {
-      xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-
-      category = pMaterial->GetRenderDataCategory();
-    }
-
-    msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::Never);
+    msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
   }
 }
 

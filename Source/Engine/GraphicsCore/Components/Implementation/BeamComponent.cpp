@@ -158,11 +158,7 @@ void xiiBeamComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) cons
     pRenderData->FillSortingKey();
   }
 
-  // Determine render data category.
-  xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
-  xiiRenderData::Category              category = pMaterial->GetRenderDataCategory();
-
-  msg.AddRenderData(pRenderData, category, xiiRenderData::Caching::Never);
+  msg.AddRenderData(pRenderData, xiiRenderData::Caching::Never);
 }
 
 void xiiBeamComponent::SetTargetObject(const char* szReference)

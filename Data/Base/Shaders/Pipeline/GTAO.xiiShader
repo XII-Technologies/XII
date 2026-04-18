@@ -1,5 +1,5 @@
-// XII Engine — GTAO.xiiShader  [NEW]
-// Pass 29: Ground Truth Ambient Occlusion — horizon-based integration.
+// XII Engine - GTAO.xiiShader  [NEW]
+// Pass 29: Ground Truth Ambient Occlusion - horizon-based integration.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"

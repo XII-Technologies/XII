@@ -1,4 +1,4 @@
-// XII Engine — RTReflection.xiiShader  [NEW]
+// XII Engine - RTReflection.xiiShader  [NEW]
 // Pass 39: DXR ray-generation for glossy reflections.
 // Budget-based: rougher pixels fire fewer rays, smoother pixels fire more.
 

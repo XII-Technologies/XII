@@ -37,43 +37,43 @@ float ClampStep(float fDesired, float fCurrent, float fMaxStep)
 [numthreads(1, 1, 1)]
 void main(uint3 vThreadID : SV_DispatchThreadID)
 {
-    // Read PID state.
-    float fCurrentScale  = g_DynamicResolutionData[0];
-    float fIntegral      = g_DynamicResolutionData[1];
-    float fPreviousError = g_DynamicResolutionData[2];
-    float fSmoothedScale = g_DynamicResolutionData[3];
-
-    // Time step (ms). Gains assume ms units.
-    float fDeltaTime = max(FrameDeltaTimeMs, 0.001f);
-
-    // Error: positive means we are faster than target (can increase scale).
-    float fError = (TargetFrameTimeMs - SmoothedGpuTimeMs) / TargetFrameTimeMs;
-
-    // Integral term with anti-windup.
-    fIntegral += fError * fDeltaTime;
-    fIntegral = clamp(fIntegral, -kIntegralLimit, kIntegralLimit);
-
-    // Derivative term.
-    float fDerivative = (fError - fPreviousError) / fDeltaTime;
-
-    // PID output.
-    float fControl = kP * fError + kI * fIntegral + kD * fDerivative;
-
-    // Apply control additively.
-    float fDesiredScale = fCurrentScale + fControl;
-
-    // Clamp to allowed range.
-    fDesiredScale = clamp(fDesiredScale, MininimumRenderScale, MaximumRenderScale);
-
-    // Limit per-frame change.
-    float fLimitedScale = ClampStep(fDesiredScale, fCurrentScale, kMaxScaleStep);
-
-    // Smooth final scale.
-    float fNewSmoothedScale = lerp(fSmoothedScale, fLimitedScale, kSmoothingAlpha);
-
-    // Write back state.
-    g_DynamicResolutionData[0] = fLimitedScale;     // CurrentScale
-    g_DynamicResolutionData[1] = fIntegral;         // ErrorIntegral
-    g_DynamicResolutionData[2] = fError;            // PreviousError
-    g_DynamicResolutionData[3] = fNewSmoothedScale; // SmoothedScale
+  // Read PID state.
+  float fCurrentScale  = g_DynamicResolutionData[0];
+  float fIntegral      = g_DynamicResolutionData[1];
+  float fPreviousError = g_DynamicResolutionData[2];
+  float fSmoothedScale = g_DynamicResolutionData[3];
+  
+  // Time step (ms). Gains assume ms units.
+  float fDeltaTime = max(FrameDeltaTimeMs, 0.001f);
+  
+  // Error: positive means we are faster than target (can increase scale).
+  float fError = (TargetFrameTimeMs - SmoothedGpuTimeMs) / TargetFrameTimeMs;
+  
+  // Integral term with anti-windup.
+  fIntegral += fError * fDeltaTime;
+  fIntegral = clamp(fIntegral, -kIntegralLimit, kIntegralLimit);
+  
+  // Derivative term.
+  float fDerivative = (fError - fPreviousError) / fDeltaTime;
+  
+  // PID output.
+  float fControl = kP * fError + kI * fIntegral + kD * fDerivative;
+  
+  // Apply control additively.
+  float fDesiredScale = fCurrentScale + fControl;
+  
+  // Clamp to allowed range.
+  fDesiredScale = clamp(fDesiredScale, MininimumRenderScale, MaximumRenderScale);
+  
+  // Limit per-frame change.
+  float fLimitedScale = ClampStep(fDesiredScale, fCurrentScale, kMaxScaleStep);
+  
+  // Smooth final scale.
+  float fNewSmoothedScale = lerp(fSmoothedScale, fLimitedScale, kSmoothingAlpha);
+  
+  // Write back state.
+  g_DynamicResolutionData[0] = fLimitedScale;     // CurrentScale
+  g_DynamicResolutionData[1] = fIntegral;         // ErrorIntegral
+  g_DynamicResolutionData[2] = fError;            // PreviousError
+  g_DynamicResolutionData[3] = fNewSmoothedScale; // SmoothedScale
 }

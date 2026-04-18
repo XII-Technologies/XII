@@ -1,4 +1,4 @@
-// XII Engine — DrawCommandBuild.xiiShader  [REWRITTEN]
+// XII Engine - DrawCommandBuild.xiiShader  [REWRITTEN]
 // Pass 12: Build DrawIndexedIndirect args per material bin from surviving instances.
 // Dispatch: ceil(InstanceCount/64) × 1 × 1
 
@@ -60,6 +60,6 @@ void CS_DrawCommandBuild(uint3 tid : SV_DispatchThreadID)
         g_DrawArgs[matBin] = cmd;
     }
 
-    // Bump InstanceCount (this is a benign race — all values are identical).
+    // Bump InstanceCount (this is a benign race - all values are identical).
     InterlockedAdd(g_DrawArgs[matBin].InstanceCount, 1u, instSlot);
 }

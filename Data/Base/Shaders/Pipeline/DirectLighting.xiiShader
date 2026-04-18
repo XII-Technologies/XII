@@ -1,5 +1,5 @@
-// XII Engine — DirectLighting.xiiShader  [NEW]
-// Pass 46: Deferred direct lighting — GGX BRDF + cluster lights + cascade shadow sample.
+// XII Engine - DirectLighting.xiiShader  [NEW]
+// Pass 46: Deferred direct lighting - GGX BRDF + cluster lights + cascade shadow sample.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
 #include "PipelineCommon.xiiShader"
@@ -13,9 +13,9 @@ cbuffer DirectLightingConstants : register(b3)
     float2 _pad;
 };
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // GBuffer inputs
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 Texture2D<float4> g_GBufAlbedo   : register(t0);
 Texture2D<float2> g_GBufNormal   : register(t1);
 Texture2D<float4> g_GBufMaterial : register(t2);  // r=rough, g=metal, b=AO
@@ -29,9 +29,9 @@ StructuredBuffer<uint>    g_LightGrid  : register(t8);  // (offset, count) per c
 StructuredBuffer<uint>    g_LightIndex : register(t9);  // light index list
 RWTexture2D<float4>       g_DirectOut  : register(u0);
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 // GGX BRDF terms
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 float D_GGX(float NoH, float roughness)
 {
     float a  = roughness * roughness;
@@ -70,7 +70,7 @@ float3 BRDF(float3 albedo, float roughness, float metallic, float3 N, float3 L, 
     return (diff + spec) * NoL;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
+// 
 [numthreads(8, 8, 1)]
 void CS_DirectLighting(uint3 tid : SV_DispatchThreadID)
 {
@@ -114,7 +114,7 @@ void CS_DirectLighting(uint3 tid : SV_DispatchThreadID)
     uint offset = g_LightGrid[clusterIdx * 2u + 0u];
     uint count  = g_LightGrid[clusterIdx * 2u + 1u];
 
-    // (Local light evaluation elided here — would read per-light struct and evaluate BRDF.)
+    // (Local light evaluation elided here - would read per-light struct and evaluate BRDF.)
 
     g_DirectOut[tid.xy] = float4(direct, 1.0f);
 }

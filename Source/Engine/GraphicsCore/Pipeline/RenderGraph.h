@@ -219,11 +219,14 @@ public:
   ///        Creates a dependency edge: this pass depends on the last writer.
   [[nodiscard]] xiiRGTextureHandle ReadTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
+  /// \brief Read a previously declared/imported texture by name. This is less efficient than using the handle directly, so prefer to store the handle if you need to read the same resource multiple times.
+  [[nodiscard]] xiiRGTextureHandle ReadTexture(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+
   /// \brief Declares a write to the given texture, bumping its version.
   ///        Returns the new versioned handle - store this, not the input handle.
   [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiRGTextureHandle hTexture, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Shorthand: declare transient texture AND register first write.
+  /// \brief Declares a new transient texture resource owned by the graph and registers the first write in one call.
   [[nodiscard]] xiiRGTextureHandle WriteTexture(xiiStringView sName, const xiiGALTextureCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
 
@@ -238,11 +241,14 @@ public:
   ///        Creates a dependency edge: this pass depends on the last writer.
   [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiRGBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
+  /// \brief Read a previously declared/imported buffer by name. This is less efficient than using the handle directly, so prefer to store the handle if you need to read the same resource multiple times.
+  [[nodiscard]] xiiRGBufferHandle ReadBuffer(xiiStringView sName, xiiBitflags<xiiGALResourceStateFlags> requiredState);
+
   /// \brief Declares a write to the given buffer, bumping its version.
   ///        Returns the new versioned handle - store this, not the input handle.
   [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiRGBufferHandle hBuffer, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
-  /// \brief Shorthand: declare transient buffer AND register first write.
+  /// \brief Declares a new transient buffer resource owned by the graph and registers the first write in one call.
   [[nodiscard]] xiiRGBufferHandle WriteBuffer(xiiStringView sName, const xiiGALBufferCreationDescription& description, xiiBitflags<xiiGALResourceStateFlags> requiredState);
 
 

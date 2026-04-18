@@ -103,8 +103,8 @@ vk::DescriptorPool xiiGALDescriptorSetPoolVulkan::CreateVulkanDescriptorPool()
     const auto& extensionFeatures = m_pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures();
 
     xiiTemporaryHybridArray<vk::DescriptorPoolSize, 16U> descriptorPoolSizes;
-    vk::DescriptorType                          descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
-                                                                     vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
+    vk::DescriptorType                                   descriptorTypes[] = {vk::DescriptorType::eSampler, vk::DescriptorType::eCombinedImageSampler, vk::DescriptorType::eSampledImage, vk::DescriptorType::eStorageImage, vk::DescriptorType::eUniformTexelBuffer, vk::DescriptorType::eStorageTexelBuffer, vk::DescriptorType::eUniformBuffer,
+                                                                              vk::DescriptorType::eStorageBuffer, vk::DescriptorType::eUniformBufferDynamic, vk::DescriptorType::eStorageBufferDynamic, vk::DescriptorType::eInputAttachment, vk::DescriptorType::eInlineUniformBlock, vk::DescriptorType::eAccelerationStructureKHR};
 
     for (const vk::DescriptorType& vkDescriptorType : descriptorTypes)
     {

@@ -1,4 +1,4 @@
-// XII Engine — InstanceUpdate.xiiShader  [REWRITTEN]
+// XII Engine - InstanceUpdate.xiiShader  [REWRITTEN]
 // Pass 5: Compute world matrix + AABB from scene transforms.
 // Dispatch: ceil(InstanceCount/64) × 1 × 1
 

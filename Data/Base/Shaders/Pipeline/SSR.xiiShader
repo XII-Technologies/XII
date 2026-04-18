@@ -1,4 +1,4 @@
-// XII Engine — SSR.xiiShader  [NEW]
+// XII Engine - SSR.xiiShader  [NEW]
 // Pass 31: Screen-Space Reflections via hierarchical DDA ray march on the Hi-Z pyramid.
 // Dispatch: ceil(W/8) × ceil(H/8) × 1
 
@@ -8,7 +8,7 @@ cbuffer SSRConstants : register(b3)
 {
     uint   g_MaxSteps;
     float  g_Thickness;           // depth tolerance for a hit (world units)
-    float  g_MaxRoughnessForSSR;  // skip rougher pixels — they fall back to IBL
+    float  g_MaxRoughnessForSSR;  // skip rougher pixels - they fall back to IBL
     float  g_StrideZCutoff;       // stride doubles once Z exceeds this
     float2 g_InvResolution;
     uint   g_HiZMipCount;
@@ -38,7 +38,7 @@ bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness,
         float2 uv = pos.xy * float2(0.5f, -0.5f) + 0.5f;
         if (any(uv < 0.0f) || any(uv > 1.0f)) return false;
 
-        // Sample Hi-Z at current mip — reversed-Z min-depth pyramid.
+        // Sample Hi-Z at current mip - reversed-Z min-depth pyramid.
         float pyramidDepth = g_HiZPyramid.SampleLevel(g_sPointClamp, uv, float(mip));
 
         // In reversed-Z: larger = closer. Ray hit if ray's depth <= pyramid depth AND within thickness.
@@ -52,13 +52,13 @@ bool TraceHiZ(float3 rayOriginNDC, float3 rayDirNDC, float thickness,
         // Advance mip step size: step at coarser mip if no intersection.
         if (pos.z > pyramidDepth)
         {
-            // Behind surface — shrink step, drop mip.
+            // Behind surface - shrink step, drop mip.
             step *= 0.5f;
             if (mip > 0u) mip--;
         }
         else
         {
-            // No intersection — advance and try coarser.
+            // No intersection - advance and try coarser.
             step *= 1.5f;
             mip = min(mip + 1u, mipCount - 1u);
         }

@@ -1,4 +1,4 @@
-// XII Engine — FroxelSetup.xiiShader  [NEW]
+// XII Engine - FroxelSetup.xiiShader  [NEW]
 // Pass 22a: Write per-froxel bounds + phase constants for volumetric integration.
 // Dispatch: ceil(FroxW/8) × ceil(FroxH/8) × FroxDepth
 

@@ -198,20 +198,15 @@ void xiiGreyBoxComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) c
 
     bool bDontCacheYet = false;
 
-    // Determine render data category.
-    xiiRenderData::Category category = xiiDefaultRenderDataCategories::Opaque;
-
     if (hMaterial.IsValid())
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(hMaterial, xiiResourceAcquireMode::AllowLoadingFallback);
 
       if (pMaterial.GetAcquireResult() == xiiResourceAcquireResult::LoadingFallback)
         bDontCacheYet = true;
-
-      category = pMaterial->GetRenderDataCategory();
     }
 
-    msg.AddRenderData(pRenderData, category, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
+    msg.AddRenderData(pRenderData, bDontCacheYet ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic);
   }
 }
 

@@ -1,0 +1,79 @@
+// XII Engine - SSRefraction.xiiShader
+// Stage 9: Screen-Space Refraction.
+// Computes a perturbed screen-space UV from the GBuffer normal and IOR, then
+// samples the opaque scene color behind the refractive surface and blends it in.
+// Dispatch: ceil(W/8) × ceil(H/8) × 1.
+
+#include "PipelineCommon.xiiShader"
+
+cbuffer SSRefractionConstants : register(b3)
+{
+    float  g_PerturbScale;   // refraction offset scale in screen-space (default 0.05)
+    float  g_MaxDistance;    // max UV offset magnitude (default 0.1)
+    float  g_Chromatic;      // chromatic aberration split amount (default 0.002)
+    float  _pad;
+};
+
+Texture2D<float>  g_SceneDepth   : register(t0); // to determine refractive surface
+Texture2D<float4> g_GBufNormal   : register(t1); // oct-encoded world normals
+Texture2D<float4> g_HDRIn        : register(t2); // opaque scene color to sample behind
+RWTexture2D<float4> g_HDROut     : register(u0); // output (modifies in-place where refractive)
+
+[numthreads(8, 8, 1)]
+void CS_SSRefraction(uint3 tid : SV_DispatchThreadID)
+{
+    uint2 dims;
+    g_HDROut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims)) return;
+
+    float2 uv     = (float2(tid.xy) + 0.5f) / float2(dims);
+    float  depth  = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+
+    // Only process refractive pixels (flagged via material ID in GBuffer alpha channel).
+    // We use the normal alpha = 1.0 as the refraction mask (set by water/glass shaders).
+    float4 gbufNorm = g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0);
+    float  mask     = step(0.5f, gbufNorm.a); // 1 = refractive surface
+    if (mask < 0.5f) return;
+
+    // Decode world-space normal.
+    float3 worldNormal = DecodeOctNormal(gbufNorm.rg);
+
+    // Project normal into view-space XY for screen perturbation.
+    float4 viewNormal = mul(g_ViewProjectionMatrix, float4(worldNormal, 0.0f));
+    float2 perturbDir = normalize(viewNormal.xy + 1e-6f);
+
+    // Scale offset by depth so deeper water refracts less (underwater bending).
+    float linearDepth = LinearizeDepth(depth);
+    float strength    = g_PerturbScale / (1.0f + linearDepth * 0.5f);
+
+    float2 offset = perturbDir * strength;
+    offset = clamp(offset, float2(-g_MaxDistance, -g_MaxDistance),
+                            float2( g_MaxDistance,  g_MaxDistance));
+
+    float2 refractUV = uv + offset;
+
+    // Reject if refracted UV lands on a forepground surface closer than the refractor.
+    float backDepth = g_SceneDepth.SampleLevel(g_sLinearClamp, refractUV, 0);
+    if (backDepth > depth)
+    {
+        // Refracted sample is in front of the refractive surface - fall back to un-perturbed UV.
+        refractUV = uv;
+    }
+
+    // Chromatic aberration: sample RGB channels at slightly different offsets.
+    float2 rUV = refractUV + offset * g_Chromatic;
+    float2 gUV = refractUV;
+    float2 bUV = refractUV - offset * g_Chromatic;
+
+    rUV = clamp(rUV, 0.0f, 1.0f);
+    gUV = clamp(gUV, 0.0f, 1.0f);
+    bUV = clamp(bUV, 0.0f, 1.0f);
+
+    float3 refractColor;
+    refractColor.r = g_HDRIn.SampleLevel(g_sLinearClamp, rUV, 0).r;
+    refractColor.g = g_HDRIn.SampleLevel(g_sLinearClamp, gUV, 0).g;
+    refractColor.b = g_HDRIn.SampleLevel(g_sLinearClamp, bUV, 0).b;
+
+    // Write refracted colour back (the surface's forward pass will blend specular on top).
+    g_HDROut[tid.xy] = float4(refractColor, 1.0f);
+}

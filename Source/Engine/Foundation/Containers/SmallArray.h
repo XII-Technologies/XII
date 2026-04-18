@@ -19,10 +19,10 @@ public:
   // Only if the stored type is either POD or relocatable the hybrid array itself is also relocatable.
   XII_DECLARE_MEM_RELOCATABLE_TYPE_CONDITIONAL(T);
 
-  xiiSmallArrayBase();                                                                      // [tested]
-  xiiSmallArrayBase(const xiiSmallArrayBase<T, Size>& other, xiiAllocator* pAllocator);     // [tested]
-  xiiSmallArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator);           // [tested]
-  xiiSmallArrayBase(xiiSmallArrayBase<T, Size>&& other, xiiAllocator* pAllocator);          // [tested]
+  xiiSmallArrayBase();                                                                  // [tested]
+  xiiSmallArrayBase(const xiiSmallArrayBase<T, Size>& other, xiiAllocator* pAllocator); // [tested]
+  xiiSmallArrayBase(const xiiArrayPtr<const T>& other, xiiAllocator* pAllocator);       // [tested]
+  xiiSmallArrayBase(xiiSmallArrayBase<T, Size>&& other, xiiAllocator* pAllocator);      // [tested]
 
   ~xiiSmallArrayBase(); // [tested]
 
