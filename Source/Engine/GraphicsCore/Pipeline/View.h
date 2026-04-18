@@ -46,6 +46,12 @@ struct xiiRayTracedShadowData;
 struct xiiShadowDenoiseData;
 struct xiiContactShadowData;
 
+struct xiiDepthPrepassData;
+struct xiiHiZPyramidData;
+struct xiiHiZOcclusionCullData;
+struct xiiMotionVectorsData;
+struct xiiVelocityDilationData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -200,6 +206,21 @@ private:
   void SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& builder);
   void ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPassContext& context);
 
+
+  void SetupDepthPrepass(xiiDepthPrepassData& data, xiiRGBuilder& builder);
+  void ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassContext& context);
+
+  void SetupHiZPyramid(xiiHiZPyramidData& data, xiiRGBuilder& builder);
+  void ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRGPassContext& context);
+
+  void SetupHiZOcclusionCull(xiiHiZOcclusionCullData& data, xiiRGBuilder& builder);
+  void ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRGPassContext& context);
+
+  void SetupMotionVectors(xiiMotionVectorsData& data, xiiRGBuilder& builder);
+  void ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRGPassContext& context);
+
+  void SetupVelocityDilation(xiiVelocityDilationData& data, xiiRGBuilder& builder);
+  void ExecuteVelocityDilation(const xiiVelocityDilationData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
