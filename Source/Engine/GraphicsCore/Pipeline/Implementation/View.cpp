@@ -1358,11 +1358,11 @@ void xiiView::SetupGBufferBase(xiiGBufferBaseData& data, xiiRGBuilder& builder)
   description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
 
-  description.m_Format   = xiiGALResourceFormat::RGBA8UNormalized;
-  data.m_hGBufferAlbedo  = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, description, xiiGALResourceStateFlags::RenderTarget);
+  description.m_Format  = xiiGALResourceFormat::RGBA8UNormalized;
+  data.m_hGBufferAlbedo = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, description, xiiGALResourceStateFlags::RenderTarget);
 
-  description.m_Format   = xiiGALResourceFormat::RG16SNormalized;
-  data.m_hGBufferNormal  = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferNormal, description, xiiGALResourceStateFlags::RenderTarget);
+  description.m_Format  = xiiGALResourceFormat::RG16SNormalized;
+  data.m_hGBufferNormal = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferNormal, description, xiiGALResourceStateFlags::RenderTarget);
 
   description.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
   data.m_hGBufferMaterial = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferMaterial, description, xiiGALResourceStateFlags::RenderTarget);
