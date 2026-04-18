@@ -47,6 +47,7 @@ struct xiiShadowDenoiseData;
 struct xiiContactShadowData;
 
 struct xiiDepthPrepassData;
+struct xiiHiZPyramidData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -205,6 +206,9 @@ private:
 
   void SetupDepthPrepass(xiiDepthPrepassData& data, xiiRGBuilder& builder);
   void ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassContext& context);
+
+  void SetupHiZPyramid(xiiHiZPyramidData& data, xiiRGBuilder& builder);
+  void ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

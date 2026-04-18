@@ -1104,6 +1104,88 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassCont
   cmd.EndDebugGroup();
 }
 
+////////// GPU Hi-Z Pyramid Data //////////
+//
+// Collects all GPU resources related to hierarchical depth generation for the current frame, including the scene depth source and Hi-Z pyramid target.
+
+struct xiiHiZPyramidData
+{
+  xiiRGTextureHandle m_hSceneDepth;  ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
+  xiiRGTextureHandle m_hHiZPyramid;  ///< UnorderedAccess out (R32F max-depth hierarchy texture, consumed by Hi-Z occlusion culling and depth-aware effects).
+  xiiUInt32          m_uiMipLevels = 1U; ///< Number of mips in the Hi-Z pyramid, derived from the current viewport size.
+};
+
+void xiiView::SetupHiZPyramid(xiiHiZPyramidData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+
+  const xiiUInt32 uiBaseWidth  = xiiMath::Max(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width), 1U);
+  const xiiUInt32 uiBaseHeight = xiiMath::Max(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height), 1U);
+
+  xiiUInt32 uiMipWidth  = uiBaseWidth;
+  xiiUInt32 uiMipHeight = uiBaseHeight;
+  while (uiMipWidth > 1U || uiMipHeight > 1U)
+  {
+    uiMipWidth  = xiiMath::Max(uiMipWidth >> 1U, 1U);
+    uiMipHeight = xiiMath::Max(uiMipHeight >> 1U, 1U);
+    ++data.m_uiMipLevels;
+  }
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::R32Float;
+  description.m_Size.width  = uiBaseWidth;
+  description.m_Size.height = uiBaseHeight;
+  description.m_uiMipLevels = data.m_uiMipLevels;
+  description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hHiZPyramid        = builder.WriteTexture(xiiRGBlackboardKeys::k_HiZPyramid, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_DepthPasses.m_pHiZBuildPipeline, "Shaders/Pipeline/HiZBuild.xiiShader");
+}
+
+void xiiView::ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("HiZPyramid");
+  {
+    if (m_ViewPassResources.m_DepthPasses.m_pHiZBuildPipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_DepthPasses.m_pHiZBuildPipeline);
+
+      xiiGALTexture* pDepth = context.GetTexture(data.m_hSceneDepth);
+      xiiGALTexture* pHiZ   = context.GetTexture(data.m_hHiZPyramid);
+
+      xiiUInt32 uiSrcWidth  = xiiMath::Max(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width), 1U);
+      xiiUInt32 uiSrcHeight = xiiMath::Max(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height), 1U);
+
+      for (xiiUInt32 uiMip = 0U; uiMip + 1U < data.m_uiMipLevels; ++uiMip)
+      {
+        const xiiUInt32 uiDestinationWidth  = xiiMath::Max(uiSrcWidth >> 1U, 1U);
+        const xiiUInt32 uiDestinationHeight = xiiMath::Max(uiSrcHeight >> 1U, 1U);
+
+        if (uiMip == 0U)
+        {
+          cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pDepth->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+        }
+        else
+        {
+          cmd.ResolveAndSetShaderResourceTextureView("g_DepthSrc", pHiZ->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+        }
+
+        cmd.ResolveAndSetUnorderedAccessTextureView("g_HiZOut", pHiZ->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+        cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+        cmd.DispatchCompute({(uiDestinationWidth + 7U) / 8U, (uiDestinationHeight + 7U) / 8U, 1U});
+
+        uiSrcWidth  = uiDestinationWidth;
+        uiSrcHeight = uiDestinationHeight;
+      }
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1136,6 +1218,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Depth and motion prepasses, which produce depth and motion data consumed by later passes.
   graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));
+  graph.AddPass<xiiHiZPyramidData>("HiZPyramid", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZPyramid, this), xiiMakeDelegate(&xiiView::ExecuteHiZPyramid, this));
 }
 
 // static
