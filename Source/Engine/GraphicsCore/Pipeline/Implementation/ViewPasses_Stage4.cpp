@@ -12,7 +12,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-#if 0
 //
 // GBuffer base pass (graphics - writes 4 MRT + reuses depth)
 //
@@ -187,4 +186,3 @@ void xiiView::BuildStage4_GBuffer(xiiRenderGraph& graph, const xiiRenderGraphBla
     [self, &blackboard](NormalRoughnessData& d, xiiRGBuilder& b) { SetupNormalRoughness(*self, d, b, blackboard); },
     [self](const NormalRoughnessData& d, xiiRGPassContext& c) { ExecuteNormalRoughness(*self, d, c); });
 }
-#endif

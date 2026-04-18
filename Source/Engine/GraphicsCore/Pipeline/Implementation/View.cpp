@@ -1274,7 +1274,7 @@ void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRGPassCo
   cmd.BeginDebugGroup("MotionVectors");
   {
     cmd.ClearRenderTargetView(context.GetTexture(data.m_hVelocityBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
-    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_Data.m_ViewPortRect.width), static_cast<float>(m_Data.m_ViewPortRect.height), 0.0f, 1.0f});
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
 
     if (m_ViewPassResources.m_DepthPasses.m_pMotionVectorPipeline)
     {
@@ -1331,6 +1331,71 @@ void xiiView::ExecuteVelocityDilation(const xiiVelocityDilationData& data, xiiRG
   cmd.EndDebugGroup();
 }
 
+////////// GPU G-Buffer Base Data //////////
+//
+// Collects all GPU resources related to base G-Buffer generation for the current frame, including the scene depth input, four G-Buffer targets, and indirect draw commands.
+
+struct xiiGBufferBaseData
+{
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth generated in Stage 3, used for depth-tested G-Buffer rendering).
+  xiiRGTextureHandle m_hGBufferAlbedo;        ///< RenderTarget out (albedo and AO target).
+  xiiRGTextureHandle m_hGBufferNormal;        ///< RenderTarget out (encoded normal target).
+  xiiRGTextureHandle m_hGBufferMaterial;      ///< RenderTarget out (material properties target).
+  xiiRGTextureHandle m_hGBufferEmissive;      ///< RenderTarget out (emissive target).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
+};
+
+void xiiView::SetupGBufferBase(xiiGBufferBaseData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth           = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthRead);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+
+  description.m_Format   = xiiGALResourceFormat::RGBA8UNormalized;
+  data.m_hGBufferAlbedo  = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, description, xiiGALResourceStateFlags::RenderTarget);
+
+  description.m_Format   = xiiGALResourceFormat::RG16SNormalized;
+  data.m_hGBufferNormal  = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferNormal, description, xiiGALResourceStateFlags::RenderTarget);
+
+  description.m_Format    = xiiGALResourceFormat::RGBA8UNormalized;
+  data.m_hGBufferMaterial = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferMaterial, description, xiiGALResourceStateFlags::RenderTarget);
+
+  description.m_Format    = xiiGALResourceFormat::RGBA16Float;
+  data.m_hGBufferEmissive = builder.WriteTexture(xiiRGBlackboardKeys::k_GBufferEmissive, description, xiiGALResourceStateFlags::RenderTarget);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("GBufferBase");
+  {
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 1.0f));
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.0f, 0.0f, 0.0f, 0.0f));
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferMaterial)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor(0.5f, 0.0f, 1.0f, 0.0f));
+    cmd.ClearRenderTargetView(context.GetTexture(data.m_hGBufferEmissive)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeZero());
+
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_GBufferPasses.m_pGBufferPipeline)
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_GBufferPasses.m_pGBufferPipeline);
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1367,6 +1432,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiHiZOcclusionCullData>("HiZOcclusionCull", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupHiZOcclusionCull, this), xiiMakeDelegate(&xiiView::ExecuteHiZOcclusionCull, this));
   graph.AddPass<xiiMotionVectorsData>("MotionVectors", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupMotionVectors, this), xiiMakeDelegate(&xiiView::ExecuteMotionVectors, this));
   graph.AddPass<xiiVelocityDilationData>("VelocityDilation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupVelocityDilation, this), xiiMakeDelegate(&xiiView::ExecuteVelocityDilation, this));
+
+  // G-Buffer generation passes, which produce material surfaces consumed by lighting stages.
+  graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
 }
 
 // static
