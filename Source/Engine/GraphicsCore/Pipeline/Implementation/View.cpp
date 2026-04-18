@@ -1873,7 +1873,7 @@ struct xiiDeferredDirectLightingData
 
 void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuilder& builder)
 {
-  data.m_hGBufferAlbedo            = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo            = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferNormal            = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
   data.m_hGBufferMaterial          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
   data.m_hSceneDepth               = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
@@ -1885,13 +1885,13 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuil
   data.m_hLightIndexBuffer         = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type                  = xiiGALResourceDimension::Texture2D;
-  description.m_Format                = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width            = m_Data.m_ViewPortRect.width;
-  description.m_Size.height           = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels           = 1U;
-  description.m_BindFlags             = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage                 = xiiGALResourceUsage::Default;
+  description.m_Type           = xiiGALResourceDimension::Texture2D;
+  description.m_Format         = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width     = m_Data.m_ViewPortRect.width;
+  description.m_Size.height    = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels    = 1U;
+  description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage          = xiiGALResourceUsage::Default;
   data.m_hDirectLightingBuffer = builder.WriteTexture(xiiRGBlackboardKeys::k_DirectLightingBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pDirectLightingPipeline, "Shaders/Pipeline/DirectLighting.xiiShader");
@@ -1951,14 +1951,14 @@ void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRG
   data.m_hSkyRadiance            = builder.ReadTexture(xiiRGBlackboardKeys::k_SkyRadiance, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type               = xiiGALResourceDimension::Texture2D;
-  description.m_Format             = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width         = m_Data.m_ViewPortRect.width;
-  description.m_Size.height        = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels        = 1U;
-  description.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage              = xiiGALResourceUsage::Default;
-  data.m_hIndirectLightingBuffer   = builder.WriteTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Type             = xiiGALResourceDimension::Texture2D;
+  description.m_Format           = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width       = m_Data.m_ViewPortRect.width;
+  description.m_Size.height      = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels      = 1U;
+  description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage            = xiiGALResourceUsage::Default;
+  data.m_hIndirectLightingBuffer = builder.WriteTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pIndirectLightingPipeline, "Shaders/Pipeline/IndirectLighting.xiiShader");
 }
@@ -2006,15 +2006,15 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
   data.m_hIndirectLightingInput = builder.ReadTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type                         = xiiGALResourceDimension::Texture2D;
-  description.m_Format                       = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width                   = m_Data.m_ViewPortRect.width;
-  description.m_Size.height                  = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels                  = 1U;
-  description.m_BindFlags                    = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage                        = xiiGALResourceUsage::Default;
-  data.m_hRayTracedRawGlobalIllumination     = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawGI, description, xiiGALResourceStateFlags::UnorderedAccess);
-  data.m_hRayTracedFinalGlobalIllumination   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalGI, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Type                       = xiiGALResourceDimension::Texture2D;
+  description.m_Format                     = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width                 = m_Data.m_ViewPortRect.width;
+  description.m_Size.height                = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels                = 1U;
+  description.m_BindFlags                  = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage                      = xiiGALResourceUsage::Default;
+  data.m_hRayTracedRawGlobalIllumination   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawGI, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hRayTracedFinalGlobalIllumination = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalGI, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pRTGIPipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
 }
@@ -2044,20 +2044,20 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
 
 struct xiiRayTracedReflectionsData
 {
-  xiiRGTextureHandle m_hSceneDepth;                  ///< ShaderResource in (scene depth texture).
-  xiiRGTextureHandle m_hGBufferNormal;               ///< ShaderResource in (G-Buffer normal).
-  xiiRGTextureHandle m_hGBufferMaterial;             ///< ShaderResource in (G-Buffer material).
-  xiiRGTextureHandle m_hBRDFLut;                     ///< ShaderResource in (BRDF lookup texture).
-  xiiRGTextureHandle m_hRayTracedRawReflections;     ///< UnorderedAccess out (raw RT reflections texture).
-  xiiRGTextureHandle m_hRayTracedFinalReflections;   ///< UnorderedAccess out (final RT reflections texture).
+  xiiRGTextureHandle m_hSceneDepth;                ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferNormal;             ///< ShaderResource in (G-Buffer normal).
+  xiiRGTextureHandle m_hGBufferMaterial;           ///< ShaderResource in (G-Buffer material).
+  xiiRGTextureHandle m_hBRDFLut;                   ///< ShaderResource in (BRDF lookup texture).
+  xiiRGTextureHandle m_hRayTracedRawReflections;   ///< UnorderedAccess out (raw RT reflections texture).
+  xiiRGTextureHandle m_hRayTracedFinalReflections; ///< UnorderedAccess out (final RT reflections texture).
 };
 
 void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRGBuilder& builder)
 {
-  data.m_hSceneDepth                = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal             = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferMaterial           = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hBRDFLut                   = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hBRDFLut         = builder.ReadTexture(xiiRGBlackboardKeys::k_BRDFLut, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type                = xiiGALResourceDimension::Texture2D;
@@ -2108,10 +2108,10 @@ struct xiiScreenSpaceReflectionsData
 
 void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRGBuilder& builder)
 {
-  data.m_hSceneDepth             = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferMaterial        = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hHDRSceneColor          = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth      = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal   = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hHDRSceneColor   = builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type             = xiiGALResourceDimension::Texture2D;
@@ -2162,14 +2162,14 @@ void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& dat
   data.m_hLightGridBuffer        = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type              = xiiGALResourceDimension::Texture2D;
-  description.m_Format            = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width        = m_Data.m_ViewPortRect.width;
-  description.m_Size.height       = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels       = 1U;
-  description.m_BindFlags         = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  description.m_Usage             = xiiGALResourceUsage::Default;
-  data.m_hVolumetricScattering    = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScattering, description, xiiGALResourceStateFlags::UnorderedAccess);
+  description.m_Type           = xiiGALResourceDimension::Texture2D;
+  description.m_Format         = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width     = m_Data.m_ViewPortRect.width;
+  description.m_Size.height    = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels    = 1U;
+  description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage          = xiiGALResourceUsage::Default;
+  data.m_hVolumetricScattering = builder.WriteTexture(xiiRGBlackboardKeys::k_VolumetricScattering, description, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pVolumetricIntegratePipeline, "Shaders/Pipeline/VolumetricLightIntegration.xiiShader");
 }
@@ -2197,7 +2197,7 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
 
 struct xiiVolumetricFogTemporalReprojectionData
 {
-  xiiRGTextureHandle m_hFroxelHistory;       ///< ShaderResource in (history froxel volume from previous frame).
+  xiiRGTextureHandle m_hFroxelHistory;        ///< ShaderResource in (history froxel volume from previous frame).
   xiiRGTextureHandle m_hVolumetricScattering; ///< UnorderedAccess in/out (current volumetric scattering buffer).
 };
 
@@ -2218,8 +2218,8 @@ void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalRep
     m_ViewPassResources.m_LightingPasses.m_pFroxelHistoryBuffer = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
-  data.m_hFroxelHistory       = builder.ImportTexture("FroxelHistory", m_ViewPassResources.m_LightingPasses.m_pFroxelHistoryBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hFroxelHistory       = builder.ReadTexture(data.m_hFroxelHistory, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFroxelHistory        = builder.ImportTexture("FroxelHistory", m_ViewPassResources.m_LightingPasses.m_pFroxelHistoryBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hFroxelHistory        = builder.ReadTexture(data.m_hFroxelHistory, xiiGALResourceStateFlags::ShaderResource);
   data.m_hVolumetricScattering = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_VolumetricScattering, xiiGALResourceStateFlags::UnorderedAccess), xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
