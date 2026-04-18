@@ -29,65 +29,6 @@ static xiiRGTextureHandle DeclareHDROutput(xiiRGBuilder& builder, const char* sz
   return builder.WriteTexture(szKey, desc, xiiGALResourceStateFlags::UnorderedAccess);
 }
 
-
-//
-// Volumetric fog temporal reprojection
-//
-namespace
-{
-  struct VolumetricTemporalData
-  {
-    xiiRGTextureHandle m_hCurrentFroxel, m_hVolumetricScattering;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupVolumetricTemporal(xiiView& view, VolumetricTemporalData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  // History froxel from previous frame.
-  if (!lp.m_pFroxelHistoryBuffer)
-  {
-    xiiGALTextureCreationDescription desc;
-    desc.m_TextureType        = xiiGALTextureType::Texture3D;
-    desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
-    desc.m_uiWidth            = 128u;
-    desc.m_uiHeight           = 72u;
-    desc.m_uiDepth            = 64u;
-    desc.m_uiMipLevels        = 1u;
-    desc.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-    desc.m_Usage              = xiiGALResourceUsage::Default;
-    lp.m_pFroxelHistoryBuffer = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
-  }
-  // History is read this frame, then we write back the blended result.
-  data.m_hCurrentFroxel = builder.ImportTexture("FroxelHistory", lp.m_pFroxelHistoryBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hCurrentFroxel = builder.ReadTexture(data.m_hCurrentFroxel, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiRGTextureHandle hScat;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_VolumetricScattering), hScat);
-  if (hScat.IsValid()) data.m_hVolumetricScattering = builder.WriteTexture(hScat, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(lp.m_pVolumetricTemporalPipeline, "Shaders/Pipeline/VolumetricFogTemporalRep.xiiShader");
-}
-
-static void ExecuteVolumetricTemporal(xiiView& view, const VolumetricTemporalData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPasses;
-  cmd.BeginDebugGroup("VolumetricFogTemporalRep");
-  cmd.SetPipelineState(lp.m_pVolumetricTemporalPipeline);
-  if (data.m_hCurrentFroxel.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_FroxelHistory", ctx.GetTexture(data.m_hCurrentFroxel)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hVolumetricScattering.IsValid())
-    cmd.ResolveAndSetUnorderedAccessView("g_FroxelBlended", ctx.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({16u, 9u, 8u});
-  cmd.EndDebugGroup();
-}
-
 //
 // Atmosphere composite -> sky radiance accumulation
 //

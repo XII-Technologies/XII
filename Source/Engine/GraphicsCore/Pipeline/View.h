@@ -71,6 +71,7 @@ struct xiiRayTracedGlobalIlluminationData;
 struct xiiRayTracedReflectionsData;
 struct xiiScreenSpaceReflectionsData;
 struct xiiVolumetricFogIntegrationData;
+struct xiiVolumetricFogTemporalReprojectionData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -295,6 +296,9 @@ private:
 
   void SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& data, xiiRGBuilder& builder);
   void ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationData& data, xiiRGPassContext& context);
+
+  void SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalReprojectionData& data, xiiRGBuilder& builder);
+  void ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTemporalReprojectionData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
