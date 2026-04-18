@@ -41,42 +41,6 @@ namespace
   };
 } // namespace
 
-static void SetupSSR(xiiView& view, SSRData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-  auto readTex = [&](xiiRGTextureHandle& h, const char* k) {
-    xiiRGTextureHandle t;
-    bb.TryGetValue(xiiMakeHashedString(k), t);
-    if (t.IsValid()) h = builder.ReadTexture(t, xiiGALResourceStateFlags::ShaderResource);
-  };
-  readTex(data.m_hSceneDepth, xiiRGBlackboardKeys::k_SceneDepthTexture);
-  readTex(data.m_hGBufNormal, xiiRGBlackboardKeys::k_GBufferNormal);
-  readTex(data.m_hGBufMaterial, xiiRGBlackboardKeys::k_GBufferMaterial);
-  readTex(data.m_hHDRIn, xiiRGBlackboardKeys::k_HDRSceneColor); // reads current scene color for reflections
-  data.m_hSSR = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_SSRTexture, data.m_uiRenderW, data.m_uiRenderH);
-  xiiView::EnsureComputePipeline(lp.m_pSSRPipeline, "Shaders/Pipeline/SSR.xiiShader");
-}
-
-static void ExecuteSSR(xiiView& view, const SSRData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd     = ctx.GetCommandList();
-  auto&              lp      = view.m_ViewPassResources.m_LightingPasses;
-  auto               bindSRV = [&](const char* s, xiiRGTextureHandle h) {
-    if (h.IsValid()) cmd.ResolveAndSetShaderResourceView(s, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  };
-  cmd.BeginDebugGroup("SSR");
-  cmd.SetPipelineState(lp.m_pSSRPipeline);
-  bindSRV("g_SceneDepth", data.m_hSceneDepth);
-  bindSRV("g_GBufNormal", data.m_hGBufNormal);
-  bindSRV("g_GBufMaterial", data.m_hGBufMaterial);
-  bindSRV("g_HDRScene", data.m_hHDRIn);
-  cmd.ResolveAndSetUnorderedAccessView("g_SSROut", ctx.GetTexture(data.m_hSSR)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
 
 //
 // Volumetric fog integration

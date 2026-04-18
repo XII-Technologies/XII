@@ -69,6 +69,7 @@ struct xiiDeferredDirectLightingData;
 struct xiiDeferredIndirectLightingData;
 struct xiiRayTracedGlobalIlluminationData;
 struct xiiRayTracedReflectionsData;
+struct xiiScreenSpaceReflectionsData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -287,6 +288,9 @@ private:
 
   void SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRGBuilder& builder);
   void ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& data, xiiRGPassContext& context);
+
+  void SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, xiiRGBuilder& builder);
+  void ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
