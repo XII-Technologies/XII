@@ -1444,6 +1444,61 @@ void xiiView::ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData&
   cmd.EndDebugGroup();
 }
 
+////////// GPU BRDF LUT Generation Data //////////
+//
+// Collects all GPU resources related to BRDF LUT generation, persisted across frames.
+
+struct xiiBRDFLutGenerationData
+{
+  xiiRGTextureHandle m_hBRDFLut;                 ///< Imported persistent BRDF LUT texture.
+  bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch BRDF LUT generation.
+};
+
+void xiiView::SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRGBuilder& builder)
+{
+  if (!m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                  = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                = xiiGALResourceFormat::RG16Float;
+    description.m_Size.width                            = 256U;
+    description.m_Size.height                           = 256U;
+    description.m_uiMipLevels                           = 1U;
+    description.m_BindFlags                             = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                 = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  }
+
+  data.m_bNeedsGeneration = !m_ViewPassResources.m_LightingPrepPasses.m_bBRDFLutGenerated;
+
+  data.m_hBRDFLut = builder.ImportTexture(xiiRGBlackboardKeys::k_BRDFLut, m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLut, data.m_bNeedsGeneration ? xiiGALResourceStateFlags::UnorderedAccess : xiiGALResourceStateFlags::ShaderResource);
+
+  if (data.m_bNeedsGeneration)
+  {
+    data.m_hBRDFLut = builder.WriteTexture(data.m_hBRDFLut, xiiGALResourceStateFlags::UnorderedAccess);
+  }
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLutPipeline, "Shaders/Pipeline/BRDFLUTGenerate.xiiShader");
+}
+
+void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xiiRGPassContext& context)
+{
+  if (!data.m_bNeedsGeneration)
+    return;
+
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("BRDFLUTGenerate");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPrepPasses.m_pBRDFLutPipeline);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_BRDFLutOut", context.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({32U, 32U, 1U});
+    m_ViewPassResources.m_LightingPrepPasses.m_bBRDFLutGenerated = true;
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -1484,6 +1539,9 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // G-Buffer generation passes, which produce material surfaces consumed by lighting stages.
   graph.AddPass<xiiGBufferBaseData>("GBufferBase", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupGBufferBase, this), xiiMakeDelegate(&xiiView::ExecuteGBufferBase, this));
   graph.AddPass<xiiNormalRoughnessPrepassData>("NormalRoughnessPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupNormalRoughnessPrepass, this), xiiMakeDelegate(&xiiView::ExecuteNormalRoughnessPrepass, this));
+
+  // Lighting preparation passes, which generate lookup textures and lighting auxiliaries.
+  graph.AddPass<xiiBRDFLutGenerationData>("BRDFLUTGenerate", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupBRDFLutGeneration, this), xiiMakeDelegate(&xiiView::ExecuteBRDFLutGeneration, this));
 }
 
 // static

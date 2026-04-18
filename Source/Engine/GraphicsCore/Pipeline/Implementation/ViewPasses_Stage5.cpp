@@ -13,8 +13,6 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
-#if 0
-
 //
 // BRDF LUT generation (once, persisted across frames)
 //
@@ -574,4 +572,3 @@ void xiiView::BuildStage5_LightingPrep(xiiRenderGraph& graph, const xiiRenderGra
     [self, &blackboard](GTAODenoiseData& d, xiiRGBuilder& b) { SetupGTAODenoise(*self, d, b, blackboard); },
     [self](const GTAODenoiseData& d, xiiRGPassContext& c) { ExecuteGTAODenoise(*self, d, c); });
 }
-#endif

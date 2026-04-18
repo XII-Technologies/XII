@@ -55,6 +55,8 @@ struct xiiVelocityDilationData;
 struct xiiGBufferBaseData;
 struct xiiNormalRoughnessPrepassData;
 
+struct xiiBRDFLutGenerationData;
+
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
 ///
@@ -231,6 +233,10 @@ private:
 
   void SetupNormalRoughnessPrepass(xiiNormalRoughnessPrepassData& data, xiiRGBuilder& builder);
   void ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData& data, xiiRGPassContext& context);
+
+
+  void SetupBRDFLutGeneration(xiiBRDFLutGenerationData& data, xiiRGBuilder& builder);
+  void ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
