@@ -60,6 +60,7 @@ struct xiiAtmosphereTransmittanceData;
 struct xiiAtmosphereMultiScatterData;
 struct xiiSkyIrradianceConvolutionData;
 struct xiiReflectionProbeConvolutionData;
+struct xiiVolumetricFogInitializationData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -253,6 +254,9 @@ private:
 
   void SetupReflectionProbeConvolution(xiiReflectionProbeConvolutionData& data, xiiRGBuilder& builder);
   void ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolutionData& data, xiiRGPassContext& context);
+
+  void SetupVolumetricFogInitialization(xiiVolumetricFogInitializationData& data, xiiRGBuilder& builder);
+  void ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializationData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.

@@ -14,51 +14,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// Volumetric fog froxel init (second init pass after Stage-1 allocation)
-//
-namespace
-{
-  struct FroxelFogInitData
-  {
-    xiiRGBufferHandle  m_hFroxelMetadata;
-    xiiRGTextureHandle m_hFroxelScattering;
-  };
-} // namespace
-
-static void SetupFroxelFogInit(xiiView& view, FroxelFogInitData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  xiiRGBufferHandle hMeta;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_FroxelMetadataBuffer), hMeta);
-  if (hMeta.IsValid())
-    data.m_hFroxelMetadata = builder.ReadBuffer(hMeta, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiRGTextureHandle hScat;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_FroxelScatteringBuffer), hScat);
-  if (hScat.IsValid())
-    data.m_hFroxelScattering = builder.WriteTexture(hScat, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(lp.m_pFroxelFogInitPipeline, "Shaders/Pipeline/FroxelSetup.xiiShader");
-}
-
-static void ExecuteFroxelFogInit(xiiView& view, const FroxelFogInitData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  cmd.BeginDebugGroup("VolumetricFogInit");
-  cmd.SetPipelineState(lp.m_pFroxelFogInitPipeline);
-  if (data.m_hFroxelMetadata.IsValid())
-    cmd.ResolveAndSetShaderResourceBufferView("g_FroxelMeta", ctx.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hFroxelScattering.IsValid())
-    cmd.ResolveAndSetUnorderedAccessView("g_FroxelScatterOut", ctx.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({16u, 9u, 8u});
-  cmd.EndDebugGroup();
-}
-
-//
 // DDGI final gather
 //
 namespace
