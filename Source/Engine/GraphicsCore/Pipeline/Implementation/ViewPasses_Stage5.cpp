@@ -14,63 +14,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// Sky irradiance convolution
-//
-namespace
-{
-  struct SkyIrradianceData
-  {
-    xiiRGTextureHandle m_hTransmittanceLUT;
-    xiiRGTextureHandle m_hMultiScatterLUT;
-    xiiRGTextureHandle m_hSkyRadiance;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupSkyIrradiance(xiiView& view, SkyIrradianceData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  xiiRGTextureHandle hTrans, hMulti;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_AtmosphereTransmittanceLUT), hTrans);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_AtmosphereMultiScatterLUT), hMulti);
-  if (hTrans.IsValid()) data.m_hTransmittanceLUT = builder.ReadTexture(hTrans, xiiGALResourceStateFlags::ShaderResource);
-  if (hMulti.IsValid()) data.m_hMultiScatterLUT = builder.ReadTexture(hMulti, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiGALTextureCreationDescription desc;
-  desc.m_TextureType  = xiiGALTextureType::Texture2D;
-  desc.m_Format       = xiiGALTextureFormat::RGBA16Float;
-  desc.m_uiWidth      = data.m_uiRenderW;
-  desc.m_uiHeight     = data.m_uiRenderH;
-  desc.m_uiMipLevels  = 1u;
-  desc.m_BindFlags    = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
-  desc.m_Usage        = xiiGALResourceUsage::Default;
-  data.m_hSkyRadiance = builder.WriteTexture(xiiRGBlackboardKeys::k_SkyRadiance, desc, xiiGALResourceStateFlags::UnorderedAccess);
-
-  xiiView::EnsureComputePipeline(lp.m_pSkyIrradiancePipeline, "Shaders/Pipeline/ReflectionIrradiance.xiiShader");
-}
-
-static void ExecuteSkyIrradiance(xiiView& view, const SkyIrradianceData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  cmd.BeginDebugGroup("SkyIrradianceConv");
-  cmd.SetPipelineState(lp.m_pSkyIrradiancePipeline);
-  if (data.m_hTransmittanceLUT.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_Transmittance", ctx.GetTexture(data.m_hTransmittanceLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hMultiScatterLUT.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_MultiScatter", ctx.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_SkyOut", ctx.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // Reflection probe filtered specular convolution
 //
 namespace

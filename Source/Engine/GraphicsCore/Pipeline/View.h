@@ -58,6 +58,7 @@ struct xiiNormalRoughnessPrepassData;
 struct xiiBRDFLutGenerationData;
 struct xiiAtmosphereTransmittanceData;
 struct xiiAtmosphereMultiScatterData;
+struct xiiSkyIrradianceConvolutionData;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
@@ -245,6 +246,9 @@ private:
 
   void SetupAtmosphereMultiScatter(xiiAtmosphereMultiScatterData& data, xiiRGBuilder& builder);
   void ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData& data, xiiRGPassContext& context);
+
+  void SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& data, xiiRGBuilder& builder);
+  void ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionData& data, xiiRGPassContext& context);
 
   /// \brief Lazy-initialise a compute pipeline from a shader path + empty permutation set.
   ///        If the pipeline already exists this is a no-op.
