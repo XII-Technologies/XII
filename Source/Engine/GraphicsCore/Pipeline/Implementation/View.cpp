@@ -1092,7 +1092,7 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassCont
   {
     xiiGALTexture* pDepth = context.GetTexture(data.m_hSceneDepth);
     cmd.ClearDepthStencilView(pDepth->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 0.0f, 0U);
-    cmd.SetViewport({0.0f, 0.0f, static_cast<float>(m_Data.m_ViewPortRect.width), static_cast<float>(m_Data.m_ViewPortRect.height), 0.0f, 1.0f});
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
 
     if (m_ViewPassResources.m_DepthPasses.m_pDepthPrepassPipeline)
     {
