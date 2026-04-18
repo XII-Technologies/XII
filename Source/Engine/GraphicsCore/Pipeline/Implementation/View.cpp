@@ -14,9 +14,9 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
+#include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
 #include <Shaders/Pipeline/Passes/ShadowCascade/ShadowCascadeConstants.h>
-#include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 
 xiiCVarFloat cvar_DynamicRenderingTargetMs("Rendering.DynamicResolution.TargetFrameTimeMs", 16.0f, xiiCVarFlags::Default, "Target GPU frame time in milliseconds. The CPU PID controller drives render scale to meet this.");
 xiiCVarFloat cvar_DynamicRenderingMinScale("Rendering.DynamicResolution.MinimumRenderScale", 0.5f, xiiCVarFlags::Default, "Minimum allowed render scale (0.5 = 50% of native resolution in each direction).");
@@ -1110,8 +1110,8 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassCont
 
 struct xiiHiZPyramidData
 {
-  xiiRGTextureHandle m_hSceneDepth;  ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
-  xiiRGTextureHandle m_hHiZPyramid;  ///< UnorderedAccess out (R32F max-depth hierarchy texture, consumed by Hi-Z occlusion culling and depth-aware effects).
+  xiiRGTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
+  xiiRGTextureHandle m_hHiZPyramid;      ///< UnorderedAccess out (R32F max-depth hierarchy texture, consumed by Hi-Z occlusion culling and depth-aware effects).
   xiiUInt32          m_uiMipLevels = 1U; ///< Number of mips in the Hi-Z pyramid, derived from the current viewport size.
 };
 
@@ -1255,14 +1255,14 @@ void xiiView::SetupMotionVectors(xiiMotionVectorsData& data, xiiRGBuilder& build
   data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
 
   xiiGALTextureCreationDescription description;
-  description.m_Type            = xiiGALResourceDimension::Texture2D;
-  description.m_Format          = xiiGALResourceFormat::RG16Float;
-  description.m_Size.width      = m_Data.m_ViewPortRect.width;
-  description.m_Size.height     = m_Data.m_ViewPortRect.height;
-  description.m_uiMipLevels     = 1U;
-  description.m_BindFlags       = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
-  description.m_Usage           = xiiGALResourceUsage::Default;
-  data.m_hVelocityBuffer        = builder.WriteTexture(xiiRGBlackboardKeys::k_VelocityBuffer, description, xiiGALResourceStateFlags::RenderTarget);
+  description.m_Type        = xiiGALResourceDimension::Texture2D;
+  description.m_Format      = xiiGALResourceFormat::RG16Float;
+  description.m_Size.width  = m_Data.m_ViewPortRect.width;
+  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels = 1U;
+  description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+  description.m_Usage       = xiiGALResourceUsage::Default;
+  data.m_hVelocityBuffer    = builder.WriteTexture(xiiRGBlackboardKeys::k_VelocityBuffer, description, xiiGALResourceStateFlags::RenderTarget);
 
   builder.SetPassAllowMerge(false);
 }
