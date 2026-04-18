@@ -2429,6 +2429,50 @@ void xiiView::ExecuteHairRendering(const xiiHairRenderingData& data, xiiRGPassCo
   cmd.EndDebugGroup();
 }
 
+////////// GPU Water Rendering Data //////////
+//
+// Collects all GPU resources related to the water rendering pass.
+
+struct xiiWaterRenderingData
+{
+  xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
+  xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
+  xiiRGTextureHandle m_hPlanarReflectionMap;  ///< ShaderResource in (planar reflection map).
+  xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
+};
+
+void xiiView::SetupWaterRendering(xiiWaterRenderingData& data, xiiRGBuilder& builder)
+{
+  data.m_hHDRSceneColor       = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_HDRSceneColor, xiiGALResourceStateFlags::RenderTarget), xiiGALResourceStateFlags::RenderTarget);
+  data.m_hSceneDepth          = builder.WriteTexture(builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::DepthWrite), xiiGALResourceStateFlags::DepthWrite);
+  data.m_hPlanarReflectionMap = builder.ReadTexture(xiiRGBlackboardKeys::k_PlanarReflectionMap, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDrawIndirectCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawIndirectCommands, xiiGALResourceStateFlags::IndirectArgument);
+
+  builder.SetPassAllowMerge(true);
+}
+
+void xiiView::ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("WaterRendering");
+  {
+    cmd.SetViewport({0.0f, 0.0f, m_Data.m_ViewPortRect.width, m_Data.m_ViewPortRect.height, 0.0f, 1.0f});
+
+    if (m_ViewPassResources.m_ForwardPasses.m_pWaterPipeline && data.m_hDrawIndirectCommands.IsValid())
+    {
+      cmd.SetPipelineState(m_ViewPassResources.m_ForwardPasses.m_pWaterPipeline);
+      if (data.m_hPlanarReflectionMap.IsValid())
+      {
+        cmd.ResolveAndSetShaderResourceTextureView("g_PlanarRefl", context.GetTexture(data.m_hPlanarReflectionMap)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Pixel);
+      }
+      cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+      cmd.DrawIndexedIndirect({xiiGALValueType::UInt32, context.GetBuffer(data.m_hDrawIndirectCommands)});
+    }
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2495,6 +2539,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiForwardOpaqueData>("ForwardOpaque", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardOpaque, this), xiiMakeDelegate(&xiiView::ExecuteForwardOpaque, this));
   graph.AddPass<xiiForwardMaskedData>("ForwardMasked", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupForwardMasked, this), xiiMakeDelegate(&xiiView::ExecuteForwardMasked, this));
   graph.AddPass<xiiHairRenderingData>("HairRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupHairRendering, this), xiiMakeDelegate(&xiiView::ExecuteHairRendering, this));
+  graph.AddPass<xiiWaterRenderingData>("WaterRendering", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupWaterRendering, this), xiiMakeDelegate(&xiiView::ExecuteWaterRendering, this));
 }
 
 // static
