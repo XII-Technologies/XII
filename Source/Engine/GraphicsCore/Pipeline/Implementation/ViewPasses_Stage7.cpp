@@ -13,53 +13,6 @@
 
 
 //
-// Forward masked (alpha-test)
-//
-namespace
-{
-  struct ForwardMaskedData
-  {
-    xiiRGTextureHandle m_hHDRSceneColor, m_hSceneDepth;
-    xiiRGBufferHandle  m_hDrawCommands;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupForwardMasked(xiiView& view, ForwardMaskedData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& fp = view.m_ViewPassResources.m_ForwardPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-
-  xiiRGTextureHandle hHDR;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_HDRSceneColor), hHDR);
-  if (hHDR.IsValid()) data.m_hHDRSceneColor = builder.WriteTexture(hHDR, xiiGALResourceStateFlags::RenderTarget);
-  xiiRGTextureHandle hDepth;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_SceneDepthTexture), hDepth);
-  if (hDepth.IsValid()) data.m_hSceneDepth = builder.WriteTexture(hDepth, xiiGALResourceStateFlags::DepthWrite);
-  xiiRGBufferHandle hDraw;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_DrawIndirectCommands), hDraw);
-  if (hDraw.IsValid()) data.m_hDrawCommands = builder.ReadBuffer(hDraw, xiiGALResourceStateFlags::IndirectArgument);
-
-  builder.SetPassAllowMerge(true);
-}
-
-static void ExecuteForwardMasked(xiiView& view, const ForwardMaskedData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              fp  = view.m_ViewPassResources.m_ForwardPasses;
-  cmd.BeginDebugGroup("ForwardMasked");
-  cmd.SetViewports({{0.0f, 0.0f, static_cast<float>(data.m_uiRenderW), static_cast<float>(data.m_uiRenderH), 0.0f, 1.0f}}, data.m_uiRenderW, data.m_uiRenderH);
-  if (fp.m_pForwardMaskedPipeline && data.m_hDrawCommands.IsValid())
-  {
-    cmd.SetPipelineState(fp.m_pForwardMaskedPipeline);
-    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DrawIndexedIndirect(ctx.GetBuffer(data.m_hDrawCommands), 0u);
-  }
-  cmd.EndDebugGroup();
-}
-
-//
 // Hair rendering (strand-based, Marschner BSDF)
 //
 namespace
