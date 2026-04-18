@@ -14,51 +14,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 
 //
-// Reflection probe filtered specular convolution
-//
-namespace
-{
-  struct ReflProbeConvData
-  {
-    xiiRGBufferHandle  m_hProbeMask;
-    xiiRGTextureHandle m_hBRDFLut;
-  };
-} // namespace
-
-static void SetupReflProbeConv(xiiView& view, ReflProbeConvData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  xiiRGBufferHandle hMask;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_ReflectionProbeMask), hMask);
-  if (hMask.IsValid())
-    data.m_hProbeMask = builder.ReadBuffer(hMask, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiRGTextureHandle hBRDF;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_BRDFLut), hBRDF);
-  if (hBRDF.IsValid())
-    data.m_hBRDFLut = builder.ReadTexture(hBRDF, xiiGALResourceStateFlags::ShaderResource);
-
-  xiiView::EnsureComputePipeline(lp.m_pReflProbeConvPipeline, "Shaders/Pipeline/ReflectionFilteredSpecular.xiiShader");
-}
-
-static void ExecuteReflProbeConv(xiiView& view, const ReflProbeConvData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd = ctx.GetCommandList();
-  auto&              lp  = view.m_ViewPassResources.m_LightingPrepPasses;
-
-  cmd.BeginDebugGroup("ReflectionProbeConv");
-  cmd.SetPipelineState(lp.m_pReflProbeConvPipeline);
-  if (data.m_hBRDFLut.IsValid())
-    cmd.ResolveAndSetShaderResourceView("g_BRDFLut", ctx.GetTexture(data.m_hBRDFLut)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  if (data.m_hProbeMask.IsValid())
-    cmd.ResolveAndSetShaderResourceBufferView("g_ProbeMask", ctx.GetBuffer(data.m_hProbeMask)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({8u, 8u, 6u}); // 6 faces x 8x8 mip dispatch
-  cmd.EndDebugGroup();
-}
-
-//
 // Volumetric fog froxel init (second init pass after Stage-1 allocation)
 //
 namespace
