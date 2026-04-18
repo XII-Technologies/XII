@@ -30,58 +30,6 @@ static xiiRGTextureHandle DeclareHDROutput(xiiRGBuilder& builder, const char* sz
 }
 
 //
-// RT reflections + denoise
-//
-namespace
-{
-  struct RTReflData
-  {
-    xiiRGTextureHandle m_hSceneDepth, m_hGBufNormal, m_hGBufMaterial, m_hBRDFLut;
-    xiiRGTextureHandle m_hRTRawRefl, m_hRTFinalRefl;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupRTReflections(xiiView& view, RTReflData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-  auto readTex = [&](xiiRGTextureHandle& h, const char* k) {
-    xiiRGTextureHandle t;
-    bb.TryGetValue(xiiMakeHashedString(k), t);
-    if (t.IsValid()) h = builder.ReadTexture(t, xiiGALResourceStateFlags::ShaderResource);
-  };
-  readTex(data.m_hSceneDepth, xiiRGBlackboardKeys::k_SceneDepthTexture);
-  readTex(data.m_hGBufNormal, xiiRGBlackboardKeys::k_GBufferNormal);
-  readTex(data.m_hGBufMaterial, xiiRGBlackboardKeys::k_GBufferMaterial);
-  readTex(data.m_hBRDFLut, xiiRGBlackboardKeys::k_BRDFLut);
-  data.m_hRTRawRefl   = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_RTRawReflections, data.m_uiRenderW, data.m_uiRenderH);
-  data.m_hRTFinalRefl = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_RTFinalReflections, data.m_uiRenderW, data.m_uiRenderH);
-  xiiView::EnsureComputePipeline(lp.m_pRTReflectionPipeline, "Shaders/Pipeline/RTReflection.xiiShader");
-}
-
-static void ExecuteRTReflections(xiiView& view, const RTReflData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd     = ctx.GetCommandList();
-  auto&              lp      = view.m_ViewPassResources.m_LightingPasses;
-  auto               bindSRV = [&](const char* s, xiiRGTextureHandle h) {
-    if (h.IsValid()) cmd.ResolveAndSetShaderResourceView(s, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  };
-  cmd.BeginDebugGroup("RTReflections");
-  cmd.SetPipelineState(lp.m_pRTReflectionPipeline);
-  bindSRV("g_SceneDepth", data.m_hSceneDepth);
-  bindSRV("g_GBufNormal", data.m_hGBufNormal);
-  bindSRV("g_GBufMaterial", data.m_hGBufMaterial);
-  bindSRV("g_BRDFLut", data.m_hBRDFLut);
-  cmd.ResolveAndSetUnorderedAccessView("g_RTReflRaw", ctx.GetTexture(data.m_hRTRawRefl)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_RTReflFinal", ctx.GetTexture(data.m_hRTFinalRefl)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // Screen-space reflections
 //
 namespace
