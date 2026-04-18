@@ -1986,6 +1986,58 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
   cmd.EndDebugGroup();
 }
 
+////////// GPU Ray Traced Global Illumination Data //////////
+//
+// Collects all GPU resources related to ray traced global illumination final gather.
+
+struct xiiRayTracedGlobalIlluminationData
+{
+  xiiRGTextureHandle m_hSceneDepth;                       ///< ShaderResource in (scene depth texture).
+  xiiRGTextureHandle m_hGBufferNormal;                    ///< ShaderResource in (G-Buffer normal).
+  xiiRGTextureHandle m_hIndirectLightingInput;            ///< ShaderResource in (deferred indirect lighting input).
+  xiiRGTextureHandle m_hRayTracedRawGlobalIllumination;   ///< UnorderedAccess out (raw RT GI texture).
+  xiiRGTextureHandle m_hRayTracedFinalGlobalIllumination; ///< UnorderedAccess out (final RT GI texture).
+};
+
+void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationData& data, xiiRGBuilder& builder)
+{
+  data.m_hSceneDepth            = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal         = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hIndirectLightingInput = builder.ReadTexture(xiiRGBlackboardKeys::k_IndirectLightingBuffer, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALTextureCreationDescription description;
+  description.m_Type                         = xiiGALResourceDimension::Texture2D;
+  description.m_Format                       = xiiGALResourceFormat::RGBA16Float;
+  description.m_Size.width                   = m_Data.m_ViewPortRect.width;
+  description.m_Size.height                  = m_Data.m_ViewPortRect.height;
+  description.m_uiMipLevels                  = 1U;
+  description.m_BindFlags                    = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Usage                        = xiiGALResourceUsage::Default;
+  data.m_hRayTracedRawGlobalIllumination     = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawGI, description, xiiGALResourceStateFlags::UnorderedAccess);
+  data.m_hRayTracedFinalGlobalIllumination   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTFinalGI, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_LightingPasses.m_pRTGIPipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
+}
+
+void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIlluminationData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("RTGIFinalGather");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pRTGIPipeline);
+
+    cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_IndirectIn", context.GetTexture(data.m_hIndirectLightingInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIRaw", context.GetTexture(data.m_hRayTracedRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIFinal", context.GetTexture(data.m_hRayTracedFinalGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
   // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
@@ -2041,6 +2093,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   // Main lighting passes, which produce direct and indirect lighting results.
   graph.AddPass<xiiDeferredDirectLightingData>("DeferredDirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupDirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteDirectLighting, this));
   graph.AddPass<xiiDeferredIndirectLightingData>("DeferredIndirectLighting", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupIndirectLighting, this), xiiMakeDelegate(&xiiView::ExecuteIndirectLighting, this));
+  graph.AddPass<xiiRayTracedGlobalIlluminationData>("RTGIFinalGather", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedGlobalIllumination, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedGlobalIllumination, this));
 }
 
 // static

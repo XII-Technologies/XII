@@ -30,56 +30,6 @@ static xiiRGTextureHandle DeclareHDROutput(xiiRGBuilder& builder, const char* sz
 }
 
 //
-// RT GI final gather + denoise
-//
-namespace
-{
-  struct RTGIData
-  {
-    xiiRGTextureHandle m_hSceneDepth, m_hGBufNormal, m_hIndirectIn;
-    xiiRGTextureHandle m_hRTRawGI, m_hRTFinalGI;
-    xiiUInt32          m_uiRenderW = 1920u, m_uiRenderH = 1080u;
-  };
-} // namespace
-
-static void SetupRTGI(xiiView& view, RTGIData& data, xiiRGBuilder& builder, const xiiRenderGraphBlackboard& bb)
-{
-  auto& lp = view.m_ViewPassResources.m_LightingPasses;
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), data.m_uiRenderW);
-  bb.TryGetValue(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), data.m_uiRenderH);
-  auto readTex = [&](xiiRGTextureHandle& h, const char* k) {
-    xiiRGTextureHandle t;
-    bb.TryGetValue(xiiMakeHashedString(k), t);
-    if (t.IsValid()) h = builder.ReadTexture(t, xiiGALResourceStateFlags::ShaderResource);
-  };
-  readTex(data.m_hSceneDepth, xiiRGBlackboardKeys::k_SceneDepthTexture);
-  readTex(data.m_hGBufNormal, xiiRGBlackboardKeys::k_GBufferNormal);
-  readTex(data.m_hIndirectIn, xiiRGBlackboardKeys::k_IndirectLightingBuffer);
-  data.m_hRTRawGI   = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_RTRawGI, data.m_uiRenderW, data.m_uiRenderH);
-  data.m_hRTFinalGI = DeclareHDROutput(builder, xiiRGBlackboardKeys::k_RTFinalGI, data.m_uiRenderW, data.m_uiRenderH);
-  xiiView::EnsureComputePipeline(lp.m_pRTGIPipeline, "Shaders/Pipeline/RTGIFinalGather.xiiShader");
-}
-
-static void ExecuteRTGI(xiiView& view, const RTGIData& data, xiiRGPassContext& ctx)
-{
-  xiiGALCommandList& cmd     = ctx.GetCommandList();
-  auto&              lp      = view.m_ViewPassResources.m_LightingPasses;
-  auto               bindSRV = [&](const char* s, xiiRGTextureHandle h) {
-    if (h.IsValid()) cmd.ResolveAndSetShaderResourceView(s, ctx.GetTexture(h)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
-  };
-  cmd.BeginDebugGroup("RTGIFinalGather");
-  cmd.SetPipelineState(lp.m_pRTGIPipeline);
-  bindSRV("g_SceneDepth", data.m_hSceneDepth);
-  bindSRV("g_GBufNormal", data.m_hGBufNormal);
-  bindSRV("g_IndirectIn", data.m_hIndirectIn);
-  cmd.ResolveAndSetUnorderedAccessView("g_RTGIRaw", ctx.GetTexture(data.m_hRTRawGI)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.ResolveAndSetUnorderedAccessView("g_RTGIFinal", ctx.GetTexture(data.m_hRTFinalGI)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
-  cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-  cmd.DispatchCompute({(data.m_uiRenderW + 7u) / 8u, (data.m_uiRenderH + 7u) / 8u, 1u});
-  cmd.EndDebugGroup();
-}
-
-//
 // RT reflections + denoise
 //
 namespace
