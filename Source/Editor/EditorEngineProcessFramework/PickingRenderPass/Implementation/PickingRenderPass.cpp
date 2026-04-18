@@ -437,8 +437,8 @@ void xiiPickingRenderPass::RenderDataBatch(const xiiRenderViewContext& renderVie
     if (pRenderer == nullptr)
       continue;
 
-    xiiRenderData*      pSingleRenderData = pRenderData;
-    xiiRenderDataBatch  batch;
+    xiiRenderData*     pSingleRenderData = pRenderData;
+    xiiRenderDataBatch batch;
     batch.m_Data = xiiMakeArrayPtr(&pSingleRenderData, 1);
 
     pRenderer->RenderBatch(renderViewContext, this, batch);

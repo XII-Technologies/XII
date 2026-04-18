@@ -48,9 +48,9 @@ private:
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
   void ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
-  void BuildRendererLookup();
+  void               BuildRendererLookup();
   const xiiRenderer* FindRendererForRenderData(const xiiRenderData* pRenderData) const;
-  void RenderDataBatch(const xiiRenderViewContext& renderViewContext, xiiArrayPtr<xiiRenderData* const> renderData) const;
+  void               RenderDataBatch(const xiiRenderViewContext& renderViewContext, xiiArrayPtr<xiiRenderData* const> renderData) const;
 
 private:
   xiiRectFloat   m_TargetRect;
@@ -59,8 +59,8 @@ private:
   xiiSharedPtr<xiiGALTexture> m_pPickingIdRT;
   xiiSharedPtr<xiiGALTexture> m_pPickingDepthRT;
 
-  xiiHybridArray<xiiRenderer*, 32>             m_Renderers;
-  xiiHashTable<const xiiRTTI*, xiiRenderer*>   m_RenderersByRenderDataType;
+  xiiHybridArray<xiiRenderer*, 32>           m_Renderers;
+  xiiHashTable<const xiiRTTI*, xiiRenderer*> m_RenderersByRenderDataType;
 
   xiiDynamicArray<xiiRenderData*> m_LitOpaqueWithoutSelection;
 
