@@ -160,7 +160,7 @@ void xiiView::ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xii
     // (Written by the previous frame's FrameTotal sentinel query readback.)
     // We don't store it here, the profiler's GetPassDurationMs("FrameTotal") path already does it.
     xiiLog::Debug("Occlusion readback: GPU frame time from 2 frames ago = {0} ms", *static_cast<float*>(pData) / 1'000'000.0f);
-    cmd.UnmapBuffer(pStaging, xiiGALMapType::Read);
+    cmd.UnmapBuffer(pStaging, xiiGALMapType::Read).AssertSuccess("Failed to unmap occlusion readback buffer.");
   }
 
   // Advance ring.
@@ -462,8 +462,8 @@ struct xiiClusterBuildData
 
 void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder)
 {
-  const xiiUInt32 uiClusterCountX = (m_Data.m_ViewPortRect.width + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
-  const xiiUInt32 uiClusterCountY = (m_Data.m_ViewPortRect.height + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+  const xiiUInt32 uiClusterCountX = (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+  const xiiUInt32 uiClusterCountY = (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
   const xiiUInt32 uiTotalClusters = uiClusterCountX * uiClusterCountY * XII_CLUSTER_Z_SLICES;
 
   xiiGALBufferCreationDescription description;
@@ -491,8 +491,8 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
 
   cmd.BeginDebugGroup("ClusterGridBuild");
   {
-    xiiUInt32 uiClusterCountX = (m_Data.m_ViewPortRect.width + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
-    xiiUInt32 uiClusterCountY = (m_Data.m_ViewPortRect.height + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+    xiiUInt32 uiClusterCountX = (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
+    xiiUInt32 uiClusterCountY = (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
     xiiUInt32 uiClusterCountZ = XII_CLUSTER_Z_SLICES;
     xiiUInt32 uiTotalClusters = uiClusterCountX * uiClusterCountY * uiClusterCountZ;
 
@@ -946,8 +946,8 @@ void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilde
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1u;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -992,8 +992,8 @@ void xiiView::SetupShadowDenoiseData(xiiShadowDenoiseData& data, xiiRGBuilder& b
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1012,7 +1012,7 @@ void xiiView::ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRGPa
     cmd.ResolveAndSetShaderResourceTextureView("g_Input", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_Output", context.GetTexture(data.m_hRTFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1034,8 +1034,8 @@ void xiiView::SetupContactShadowData(xiiContactShadowData& data, xiiRGBuilder& b
   xiiGALTextureCreationDescription desc;
   desc.m_Type           = xiiGALResourceDimension::Texture2D;
   desc.m_Format         = xiiGALResourceFormat::R8UNormalized;
-  desc.m_Size.width     = m_Data.m_ViewPortRect.width;
-  desc.m_Size.height    = m_Data.m_ViewPortRect.height;
+  desc.m_Size.width     = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  desc.m_Size.height    = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   desc.m_uiMipLevels    = 1U;
   desc.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   desc.m_Usage          = xiiGALResourceUsage::Default;
@@ -1054,7 +1054,7 @@ void xiiView::ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPa
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_ContactShadowOut", context.GetTexture(data.m_hContactShadow)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1074,8 +1074,8 @@ void xiiView::SetupDepthPrepass(xiiDepthPrepassData& data, xiiRGBuilder& builder
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::D32Float;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1259,8 +1259,8 @@ void xiiView::SetupMotionVectors(xiiMotionVectorsData& data, xiiRGBuilder& build
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RG16Float;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1305,8 +1305,8 @@ void xiiView::SetupVelocityDilation(xiiVelocityDilationData& data, xiiRGBuilder&
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RG16Float;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1327,7 +1327,7 @@ void xiiView::ExecuteVelocityDilation(const xiiVelocityDilationData& data, xiiRG
       cmd.ResolveAndSetShaderResourceTextureView("g_Input", context.GetTexture(data.m_hVelocityInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
       cmd.ResolveAndSetUnorderedAccessTextureView("g_Output", context.GetTexture(data.m_hVelocityDilated)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
       cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-      cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+      cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
     }
   }
   cmd.EndDebugGroup();
@@ -1354,8 +1354,8 @@ void xiiView::SetupGBufferBase(xiiGBufferBaseData& data, xiiRGBuilder& builder)
 
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1417,8 +1417,8 @@ void xiiView::SetupNormalRoughnessPrepass(xiiNormalRoughnessPrepassData& data, x
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA8UNormalized;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1630,8 +1630,8 @@ void xiiView::SetupSkyIrradianceConvolution(xiiSkyIrradianceConvolutionData& dat
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1651,7 +1651,7 @@ void xiiView::ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionD
     cmd.ResolveAndSetShaderResourceTextureView("g_MultiScatter", context.GetTexture(data.m_hMultiScatterLUT)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SkyOut", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1741,8 +1741,8 @@ void xiiView::SetupDDGIProbeSampling(xiiDDGIProbeSamplingData& data, xiiRGBuilde
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage       = xiiGALResourceUsage::Default;
@@ -1762,7 +1762,7 @@ void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xii
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DDGIOut", context.GetTexture(data.m_hDDGIIrradiance)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1786,8 +1786,8 @@ void xiiView::SetupGroundTruthAmbientOcclusion(xiiGroundTruthAmbientOcclusionDat
   xiiGALTextureCreationDescription description;
   description.m_Type          = xiiGALResourceDimension::Texture2D;
   description.m_Format        = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width    = m_Data.m_ViewPortRect.width;
-  description.m_Size.height   = m_Data.m_ViewPortRect.height;
+  description.m_Size.width    = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height   = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels   = 1U;
   description.m_BindFlags     = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage         = xiiGALResourceUsage::Default;
@@ -1807,7 +1807,7 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
     cmd.ResolveAndSetShaderResourceTextureView("g_NormalRoughness", context.GetTexture(data.m_hNormalRoughness)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_AOOut", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1829,8 +1829,8 @@ void xiiView::SetupGroundTruthAmbientOcclusionDenoise(xiiGroundTruthAmbientOcclu
   xiiGALTextureCreationDescription description;
   description.m_Type             = xiiGALResourceDimension::Texture2D;
   description.m_Format           = xiiGALResourceFormat::R8UNormalized;
-  description.m_Size.width       = m_Data.m_ViewPortRect.width;
-  description.m_Size.height      = m_Data.m_ViewPortRect.height;
+  description.m_Size.width       = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height      = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels      = 1U;
   description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage            = xiiGALResourceUsage::Default;
@@ -1849,7 +1849,7 @@ void xiiView::ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbi
     cmd.ResolveAndSetShaderResourceTextureView("g_Input", context.GetTexture(data.m_hRawAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_Output", context.GetTexture(data.m_hStableAmbientOcclusion)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1889,8 +1889,8 @@ void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuil
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
   description.m_Format         = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width     = m_Data.m_ViewPortRect.width;
-  description.m_Size.height    = m_Data.m_ViewPortRect.height;
+  description.m_Size.width     = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  description.m_Size.height    = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
   description.m_uiMipLevels    = 1U;
   description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage          = xiiGALResourceUsage::Default;
@@ -1919,7 +1919,7 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DirectOut", context.GetTexture(data.m_hDirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width)) + 7U) / 8U, (static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height)) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -1955,8 +1955,8 @@ void xiiView::SetupIndirectLighting(xiiDeferredIndirectLightingData& data, xiiRG
   xiiGALTextureCreationDescription description;
   description.m_Type             = xiiGALResourceDimension::Texture2D;
   description.m_Format           = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width       = m_Data.m_ViewPortRect.width;
-  description.m_Size.height      = m_Data.m_ViewPortRect.height;
+  description.m_Size.width       = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height      = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels      = 1U;
   description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage            = xiiGALResourceUsage::Default;
@@ -1983,7 +1983,7 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
     cmd.ResolveAndSetShaderResourceTextureView("g_SkyRadiance", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_IndirectOut", context.GetTexture(data.m_hIndirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + 7U) / 8U, (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2010,8 +2010,8 @@ void xiiView::SetupRayTracedGlobalIllumination(xiiRayTracedGlobalIlluminationDat
   xiiGALTextureCreationDescription description;
   description.m_Type                       = xiiGALResourceDimension::Texture2D;
   description.m_Format                     = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width                 = m_Data.m_ViewPortRect.width;
-  description.m_Size.height                = m_Data.m_ViewPortRect.height;
+  description.m_Size.width                 = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height                = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels                = 1U;
   description.m_BindFlags                  = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage                      = xiiGALResourceUsage::Default;
@@ -2035,7 +2035,7 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
     cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIRaw", context.GetTexture(data.m_hRayTracedRawGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_RTGIFinal", context.GetTexture(data.m_hRayTracedFinalGlobalIllumination)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + 7U) / 8U, (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2064,8 +2064,8 @@ void xiiView::SetupRayTracedReflections(xiiRayTracedReflectionsData& data, xiiRG
   xiiGALTextureCreationDescription description;
   description.m_Type                = xiiGALResourceDimension::Texture2D;
   description.m_Format              = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width          = m_Data.m_ViewPortRect.width;
-  description.m_Size.height         = m_Data.m_ViewPortRect.height;
+  description.m_Size.width          = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height         = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels         = 1U;
   description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage               = xiiGALResourceUsage::Default;
@@ -2090,7 +2090,7 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
     cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflRaw", context.GetTexture(data.m_hRayTracedRawReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_RTReflFinal", context.GetTexture(data.m_hRayTracedFinalReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + 7U) / 8U, (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2118,8 +2118,8 @@ void xiiView::SetupScreenSpaceReflections(xiiScreenSpaceReflectionsData& data, x
   xiiGALTextureCreationDescription description;
   description.m_Type             = xiiGALResourceDimension::Texture2D;
   description.m_Format           = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width       = m_Data.m_ViewPortRect.width;
-  description.m_Size.height      = m_Data.m_ViewPortRect.height;
+  description.m_Size.width       = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height      = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels      = 1U;
   description.m_BindFlags        = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage            = xiiGALResourceUsage::Default;
@@ -2142,7 +2142,7 @@ void xiiView::ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData&
     cmd.ResolveAndSetShaderResourceTextureView("g_HDRScene", context.GetTexture(data.m_hHDRSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_SSROut", context.GetTexture(data.m_hScreenSpaceReflections)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + 7U) / 8U, (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2166,8 +2166,8 @@ void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& dat
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
   description.m_Format         = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width     = m_Data.m_ViewPortRect.width;
-  description.m_Size.height    = m_Data.m_ViewPortRect.height;
+  description.m_Size.width     = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height    = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels    = 1U;
   description.m_BindFlags      = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Usage          = xiiGALResourceUsage::Default;
@@ -2188,7 +2188,7 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + 7U) / 8U, (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2210,8 +2210,8 @@ void xiiView::SetupVolumetricFogTemporalReprojection(xiiVolumetricFogTemporalRep
     xiiGALTextureCreationDescription description;
     description.m_Type               = xiiGALResourceDimension::Texture3D;
     description.m_Format             = xiiGALResourceFormat::RGBA16Float;
-    description.m_Size.width         = 128U;
-    description.m_Size.height        = 72U;
+    description.m_Size.width         = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+    description.m_Size.height        = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
     description.m_uiArraySizeOrDepth = 64U;
     description.m_uiMipLevels        = 1U;
     description.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
@@ -2276,7 +2276,7 @@ void xiiView::ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data,
     cmd.ResolveAndSetShaderResourceTextureView("g_VolumetricFog", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_PrevSkyRadiance", context.GetTexture(data.m_hSkyRadiance)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(m_Data.m_ViewPortRect.width + 7U) / 8U, (m_Data.m_ViewPortRect.height + 7U) / 8U, 1U});
+    cmd.DispatchCompute({(static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width) + 7U) / 8U, (static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height) + 7U) / 8U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -2318,8 +2318,8 @@ void xiiView::SetupForwardOpaque(xiiForwardOpaqueData& data, xiiRGBuilder& build
   xiiGALTextureCreationDescription description;
   description.m_Type        = xiiGALResourceDimension::Texture2D;
   description.m_Format      = xiiGALResourceFormat::RGBA16Float;
-  description.m_Size.width  = m_Data.m_ViewPortRect.width;
-  description.m_Size.height = m_Data.m_ViewPortRect.height;
+  description.m_Size.width  = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width);
+  description.m_Size.height = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height);
   description.m_uiMipLevels = 1U;
   description.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
   description.m_Usage       = xiiGALResourceUsage::Default;
