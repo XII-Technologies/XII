@@ -72,6 +72,13 @@ public:
   /// \brief Clears all cached static render data for every view.
   void DeleteAllCachedRenderData();
 
+public:
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is created.
+  XII_ALWAYS_INLINE xiiEvent<xiiView*, xiiMutex>& GetViewCreatedEvent() { return m_ViewCreatedEvent; }
+
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is deleted.
+  XII_ALWAYS_INLINE xiiEvent<xiiView*, xiiMutex>& GetViewDeletedEvent() { return m_ViewDeletedEvent; }
+
 private:
   struct CachedStaticObjectData
   {
@@ -122,4 +129,7 @@ private:
   xiiDynamicArray<xiiUniquePtr<xiiExtractedRenderData>> m_ViewExtractedData;
   xiiDynamicArray<ViewExtractionCache>                  m_ViewExtractionCaches;
   xiiUInt64                                             m_uiRenderFrameIndex = 0;
+
+  xiiEvent<xiiView*, xiiMutex> m_ViewCreatedEvent;
+  xiiEvent<xiiView*, xiiMutex> m_ViewDeletedEvent;
 };
