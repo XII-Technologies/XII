@@ -1,9 +1,9 @@
 #pragma once
 
-#include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
-
 #include <Foundation/Communication/Message.h>
+#include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 class xiiView;
 
@@ -22,7 +22,6 @@ struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 
   xiiGameObjectHandle m_hCurrentObject;
   xiiComponentHandle  m_hCurrentComponent;
-  xiiUInt32           m_uiViewIndex = xiiInvalidIndex;
 
   XII_ALWAYS_INLINE void AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching = xiiRenderData::Caching::Never)
   {

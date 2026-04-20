@@ -67,10 +67,8 @@ void xiiRenderWorldModule::Initialize()
 
 void xiiRenderWorldModule::Deinitialize()
 {
-  // Destroying views releases all per-view GPU resources (ViewPassResources, profiler, etc.)
-  m_Views.Clear();
-  m_ViewExtractedData.Clear();
-  m_ViewExtractionCaches.Clear();
+  m_ViewIdTable.Clear();
+
   m_uiRenderFrameIndex = 0;
 }
 
@@ -78,36 +76,38 @@ void xiiRenderWorldModule::OnSimulationStarted()
 {
 }
 
-xiiView* xiiRenderWorldModule::CreateView(xiiStringView sName)
+xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
 {
-  xiiUniquePtr<xiiView>                pView          = XII_DEFAULT_NEW(xiiView);
-  xiiUniquePtr<xiiExtractedRenderData> pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
+  ViewDetail viewDetail;
+  viewDetail.m_pView          = xiiUniquePtr<xiiView>(XII_DEFAULT_NEW(xiiView));
+  viewDetail.m_pExtractedData = xiiUniquePtr<xiiExtractedRenderData>(XII_DEFAULT_NEW(xiiExtractedRenderData));
 
-  pView->SetName(sName);
-  pView->SetExtractedRenderData(pExtractedData.Borrow());
+  {
+    XII_LOCK(m_ViewMutex);
 
-  xiiView* pRet = pView.Borrow();
+    viewDetail.m_pView->m_InternalId = m_ViewIdTable.Insert(viewDetail);
+  }
 
-  m_Views.PushBack(std::move(pView));
-  m_ViewExtractedData.PushBack(std::move(pExtractedData));
-  m_ViewExtractionCaches.ExpandAndGetRef();
+  viewDetail.m_pView->SetName(sName);
+  viewDetail.m_pView->SetExtractedRenderData(viewDetail.m_pExtractedData.Borrow());
 
-  return pRet;
+  m_ViewCreatedEvent.Broadcast(viewDetail.m_pView.Borrow());
+
+  out_pView = viewDetail.m_pView.Borrow();
+
+  return viewDetail.m_pView->GetHandle();
 }
 
-void xiiRenderWorldModule::DestroyView(xiiView* pView)
+void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
 {
-  for (xiiUInt32 i = 0; i < m_Views.GetCount(); ++i)
+  ViewDetail viewDetail;
   {
-    if (m_Views[i].Borrow() == pView)
-    {
-      m_Views[i]->SetExtractedRenderData(nullptr);
-      m_Views.RemoveAtAndCopy(i);
-      m_ViewExtractedData.RemoveAtAndCopy(i);
-      m_ViewExtractionCaches.RemoveAtAndCopy(i);
+    XII_LOCK(m_ViewMutex);
+
+    if (!m_ViewIdTable.Remove(hView, &viewDetail))
       return;
-    }
   }
+  m_ViewDeletedEvent.Broadcast(viewDetail.m_pView.Borrow());
 }
 
 void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
@@ -120,19 +120,19 @@ void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractR
 
 void xiiRenderWorldModule::OnRenderDataSubmitted(const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
 {
+  if (msg.m_pView == nullptr)
+    return;
+
   if (msg.m_pExtractedRenderData == nullptr || pRenderData == nullptr)
     return;
 
   msg.m_pExtractedRenderData->AddRenderData(pRenderData, caching);
 
-  if (msg.m_uiViewIndex >= m_ViewExtractionCaches.GetCount())
-    return;
-
   if (msg.m_hCurrentObject.IsInvalidated())
     return;
 
-  ViewExtractionCache&      cache     = m_ViewExtractionCaches[msg.m_uiViewIndex];
-  ExtractedObjectFrameData& frameData = cache.m_FrameObjectData[msg.m_hCurrentObject];
+  ViewDetail&               viewDetail = m_ViewIdTable[msg.m_pView->GetHandle()];
+  ExtractedObjectFrameData& frameData  = viewDetail.m_ExtractionCache.m_FrameObjectData[msg.m_hCurrentObject];
 
   if (caching == xiiRenderData::Caching::IfStatic)
   {
@@ -341,15 +341,19 @@ void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObje
   if (hOwnerObject.IsInvalidated())
     return;
 
-  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  XII_LOCK(m_ViewMutex);
+
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    if (!hComponent.IsInvalidated() && !cache.m_StaticObjectCache.Contains(hOwnerObject))
+    auto& value = it.Value();
+
+    if (!hComponent.IsInvalidated() && !value.m_ExtractionCache.m_StaticObjectCache.Contains(hOwnerObject))
     {
-      RemoveCachedRenderDataForComponent(cache, hOwnerObject, hComponent);
+      RemoveCachedRenderDataForComponent(value.m_ExtractionCache, hOwnerObject, hComponent);
     }
     else
     {
-      RemoveCachedRenderDataForObject(cache, hOwnerObject);
+      RemoveCachedRenderDataForObject(value.m_ExtractionCache, hOwnerObject);
     }
   }
 }
@@ -359,44 +363,47 @@ void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGam
   if (pObject == nullptr)
     return;
 
-  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  XII_LOCK(m_ViewMutex);
+
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    RemoveCachedRenderDataForObjectRecursive(cache, pObject);
+    RemoveCachedRenderDataForObjectRecursive(it.Value().m_ExtractionCache, pObject);
   }
 }
 
 void xiiRenderWorldModule::DeleteAllCachedRenderData()
 {
-  for (ViewExtractionCache& cache : m_ViewExtractionCaches)
+  XII_LOCK(m_ViewMutex);
+
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    cache.m_StaticObjectCache.Clear();
-    cache.m_StaticComponentCache.Clear();
-    cache.m_ObjectToCachedComponents.Clear();
-    cache.m_FrameObjectData.Clear();
+    auto& value = it.Value();
+
+    value.m_ExtractionCache.m_StaticObjectCache.Clear();
+    value.m_ExtractionCache.m_StaticComponentCache.Clear();
+    value.m_ExtractionCache.m_ObjectToCachedComponents.Clear();
+    value.m_ExtractionCache.m_FrameObjectData.Clear();
   }
 }
 
 void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext& context)
 {
-  for (xiiUInt32 i = 0; i < m_Views.GetCount(); ++i)
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    xiiView* pView = m_Views[i].Borrow();
+    auto& viewDetail = it.Value();
 
-    if (!pView->IsValid())
+    if (!viewDetail.m_pView->IsValid())
       continue;
 
-    xiiExtractedRenderData* pExtractedData = m_ViewExtractedData[i].Borrow();
-    XII_ASSERT_DEV(pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
+    XII_ASSERT_DEV(viewDetail.m_pExtractedData != nullptr, "xiiRenderWorldModule view cache entry must always have extracted render data.");
 
-    ViewExtractionCache& viewCache = m_ViewExtractionCaches[i];
-    viewCache.m_FrameObjectData.Clear();
+    viewDetail.m_ExtractionCache.m_FrameObjectData.Clear();
 
-    pExtractedData->Clear();
+    viewDetail.m_pExtractedData->Clear();
 
     xiiMsgExtractRenderData msg;
-    msg.m_pView                    = pView;
-    msg.m_pExtractedRenderData     = pExtractedData;
-    msg.m_uiViewIndex              = i;
+    msg.m_pView                    = viewDetail.m_pView.Borrow();
+    msg.m_pExtractedRenderData     = viewDetail.m_pExtractedData.Borrow();
     msg.m_SubmitRenderDataFunction = &xiiRenderWorldModule::SubmitRenderData;
     msg.m_pSubmitRenderDataContext = this;
 
@@ -412,7 +419,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
         msg.m_hCurrentObject    = hObject;
         msg.m_hCurrentComponent = xiiComponentHandle();
 
-        if (ReuseCachedStaticRenderData(viewCache, hObject, *pExtractedData))
+        if (ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hObject, *viewDetail.m_pExtractedData))
         {
           msg.m_hCurrentObject = xiiGameObjectHandle();
           continue;
@@ -431,11 +438,13 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
           const xiiComponentHandle hComponent = pComponent->GetHandle();
 
-          if (ReuseCachedStaticRenderData(viewCache, hComponent, *pExtractedData))
+          if (ReuseCachedStaticRenderData(viewDetail.m_ExtractionCache, hComponent, *viewDetail.m_pExtractedData))
             continue;
 
           msg.m_hCurrentComponent = hComponent;
+
           pComponent->SendMessage(msg);
+
           msg.m_hCurrentComponent = xiiComponentHandle();
         }
 
@@ -443,10 +452,10 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
       }
     }
 
-    FinalizeViewExtractionCache(viewCache);
+    FinalizeViewExtractionCache(viewDetail.m_ExtractionCache);
 
     // Finalize and sort extracted data for this view.
-    pExtractedData->SortAndBatches();
+    viewDetail.m_pExtractedData->SortAndBatches();
   }
 }
 
@@ -458,14 +467,16 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
 
   const xiiUInt64 uiFrameIndex = m_uiRenderFrameIndex++;
 
-  for (auto& pView : m_Views)
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
-    if (!pView->IsValid())
+    auto& viewDetail = it.Value();
+
+    if (!viewDetail.m_pView->IsValid())
       continue;
 
-    xiiRenderGraph*              pGraph        = pView->GetRenderGraph();
-    xiiRenderGraphBlackboard&    blackboard    = pView->GetBlackboard();
-    xiiRenderGraphResourceCache& resourceCache = pView->GetResourceCache();
+    xiiRenderGraph*              pGraph        = viewDetail.m_pView->GetRenderGraph();
+    xiiRenderGraphBlackboard&    blackboard    = viewDetail.m_pView->GetBlackboard();
+    xiiRenderGraphResourceCache& resourceCache = viewDetail.m_pView->GetResourceCache();
 
     // Clear the per-view blackboard at the start of each frame so passes start clean.
     // History data lives in persistent GPU resources inside ViewPassResources, not here.
@@ -475,16 +486,16 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     // Reconstruct the graph for this frame.
     pGraph->BeginSetup(uiFrameIndex);
 
-    const xiiView::RenderGraphBuilder& graphBuilder = pView->GetRenderGraphBuilder();
+    const xiiView::RenderGraphBuilder& graphBuilder = viewDetail.m_pView->GetRenderGraphBuilder();
     if (graphBuilder.IsValid())
     {
       // Application-supplied custom graph (e.g. editor, headless, cinematic passes).
-      graphBuilder(*pView, *pGraph, blackboard);
+      graphBuilder(*viewDetail.m_pView, *pGraph, blackboard);
     }
     else
     {
       // Standard full-featured pipeline.
-      pView->BuildDefaultRenderGraph(*pGraph, blackboard);
+      viewDetail.m_pView->BuildDefaultRenderGraph(*pGraph, blackboard);
     }
 
     pGraph->EndSetup();
@@ -499,11 +510,11 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     if (pGraph->Compile(compileSettings).Succeeded())
     {
       // Pass the view's per-view profiler into the executor so every pass gets Duration bracketed.
-      const xiiResult executeResult = pGraph->Execute(pDevice, pView.Borrow(), &blackboard, &resourceCache, &pView->GetProfiler());
-      XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", pView->GetName());
+      const xiiResult executeResult = pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler());
+      XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", viewDetail.m_pView->GetName());
 
       // Tick the profiler so it advances its ring and schedules readback on the oldest slot.
-      pView->GetProfiler().OnFrameEnd(uiFrameIndex);
+      viewDetail.m_pView->GetProfiler().OnFrameEnd(uiFrameIndex);
     }
   }
 }

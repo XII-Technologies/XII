@@ -1,14 +1,10 @@
 #include <Foundation/Algorithm/Sorting.h>
 #include <GraphicsCore/GraphicsCorePCH.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderData, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-// ----------------------------------------------------------------------------------------------------------------
-// xiiExtractedRenderData
-
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
@@ -34,6 +30,7 @@ void xiiExtractedRenderData::AddRenderDataInternal(xiiRenderData* pRenderData, x
 void xiiExtractedRenderData::AddRenderData(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
 {
   XII_LOCK(m_Mutex);
+
   AddRenderDataInternal(pRenderData, caching);
 }
 
@@ -65,17 +62,14 @@ void xiiExtractedRenderData::SortAndBatches()
 
   xiiDynamicArray<xiiRenderData*> sortScratchBuffer;
 
-  auto sortByKey = [&sortScratchBuffer](xiiDynamicArray<xiiRenderData*>& data) {
+  auto SortByKey = [&sortScratchBuffer](xiiDynamicArray<xiiRenderData*>& data) {
     if (data.IsEmpty())
       return;
 
-    if (sortScratchBuffer.GetCount() != data.GetCount())
-    {
-      sortScratchBuffer.SetCountUninitialized(data.GetCount());
-    }
+    sortScratchBuffer.SetCountUninitialized(data.GetCount());
 
-    xiiArrayPtr<xiiRenderData*> dataPtr = data;
-    xiiSorting::RadixSort(dataPtr, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64 {
+    xiiArrayPtr<xiiRenderData*> pData = data;
+    xiiSorting::RadixSort(data, sortScratchBuffer, [](const xiiRenderData* pRenderData) -> xiiUInt64 {
       return pRenderData->m_uiSortingKey;
     });
   };
@@ -83,12 +77,12 @@ void xiiExtractedRenderData::SortAndBatches()
   m_SortedStaticRenderData  = m_SubmittedStaticRenderData;
   m_SortedDynamicRenderData = m_SubmittedDynamicRenderData;
 
-  sortByKey(m_SortedStaticRenderData);
-  sortByKey(m_SortedDynamicRenderData);
+  SortByKey(m_SortedStaticRenderData);
+  SortByKey(m_SortedDynamicRenderData);
 
   m_SortedAllRenderData = m_SortedStaticRenderData;
   m_SortedAllRenderData.PushBackRange(m_SortedDynamicRenderData);
-  sortByKey(m_SortedAllRenderData);
+  SortByKey(m_SortedAllRenderData);
 }
 
 xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetAllRenderData() const
