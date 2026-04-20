@@ -5,9 +5,9 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
-#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :
   xiiComponentManager<xiiCameraComponent, xiiBlockStorageType::Compact>(pWorld)
