@@ -12,10 +12,10 @@ struct xiiWorldUpdatePhase
 
   enum Enum : StorageType
   {
-    PreAsync,
-    Async,
-    PostAsync,
-    PostTransform,
+    PreAsync,      ///< Update phase before any async update functions are called. This is the last phase where it is safe to modify the world (e.g. create or delete objects, add or remove components, etc.) without affecting the simulation.
+    Async,         ///< Update phase where async update functions are called. During this phase, the world is considered to be in a "simulation step". This means that the state of the world should not be modified during this phase, as it may
+    PostAsync,     ///< Update phase after all async update functions have been called. This is the first phase where it is safe to modify the world again after the simulation step.
+    PostTransform, ///< Update phase after all transformations have been updated. This is the first phase where it is safe to read the final transformations of objects for this frame.
     COUNT,
 
     Default = PreAsync
