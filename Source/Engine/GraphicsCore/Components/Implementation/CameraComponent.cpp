@@ -5,33 +5,36 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :
   xiiComponentManager<xiiCameraComponent, xiiBlockStorageType::Compact>(pWorld)
 {
-  xiiRenderWorld::s_CameraConfigsModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnCameraConfigsChanged, this));
 }
 
-xiiCameraComponentManager::~xiiCameraComponentManager()
-{
-  xiiRenderWorld::s_CameraConfigsModifiedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnCameraConfigsChanged, this));
-}
+xiiCameraComponentManager::~xiiCameraComponentManager() = default;
 
 void xiiCameraComponentManager::Initialize()
 {
-  auto desc    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiCameraComponentManager::Update, this);
-  desc.m_Phase = xiiWorldUpdatePhase::PostTransform;
+  {
+    auto description    = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiCameraComponentManager::Update, this);
+    description.m_Phase = xiiWorldUpdatePhase::PostTransform;
 
-  this->RegisterUpdateFunction(desc);
+    this->RegisterUpdateFunction(description);
+  }
 
-  xiiRenderWorld::s_ViewCreatedEvent.AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
+
+  pRenderWorldModule->GetViewCreatedEvent().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
 }
 
 void xiiCameraComponentManager::Deinitialize()
 {
-  xiiRenderWorld::s_ViewCreatedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
+
+  pRenderWorldModule->GetViewCreatedEvent().RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
 
   SUPER::Deinitialize();
 }

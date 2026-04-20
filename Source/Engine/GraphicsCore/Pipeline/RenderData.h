@@ -19,8 +19,8 @@ public:
 
     enum Enum : StorageType
     {
-      Never,
-      IfStatic,
+      Never,    ///< This render data should never be cached. It will be extracted every frame and not stored in the static cache.
+      IfStatic, ///< This render data can be cached if it is detected to be static. It will be extracted every frame until it is detected as static, then stored in the static cache and reused until invalidated.
 
       Default = Never
     };

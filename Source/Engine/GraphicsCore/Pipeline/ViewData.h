@@ -3,6 +3,7 @@
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 /// \brief Defines the shading quality levels used in rendering operations.

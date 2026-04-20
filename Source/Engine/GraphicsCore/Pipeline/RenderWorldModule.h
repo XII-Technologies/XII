@@ -1,11 +1,11 @@
 #pragma once
 
 #include <Core/World/WorldModule.h>
-#include <GraphicsCore/Declarations.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
-
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
 
 class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
@@ -55,10 +55,10 @@ public:
   /// \brief Creates a new view and assumes ownership.
   ///
   /// The view is registered for render-data extraction and render-graph execution from the next frame onward.
-  xiiView* CreateView(xiiStringView sName);
+  xiiViewHandle CreateView(xiiStringView sName, xiiView*& out_pView);
 
   /// \brief Destroys a view. The view must have been created by this module.
-  void DestroyView(xiiView* pView);
+  void DestroyView(const xiiViewHandle& hView);
 
   /// \brief Invalidates cached static render data for one object.
   ///
@@ -71,6 +71,13 @@ public:
 
   /// \brief Clears all cached static render data for every view.
   void DeleteAllCachedRenderData();
+
+public:
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is created.
+  XII_ALWAYS_INLINE xiiEvent<xiiView*, xiiMutex>& GetViewCreatedEvent() { return m_ViewCreatedEvent; }
+
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is deleted.
+  XII_ALWAYS_INLINE xiiEvent<xiiView*, xiiMutex>& GetViewDeletedEvent() { return m_ViewDeletedEvent; }
 
 private:
   struct CachedStaticObjectData
@@ -118,8 +125,17 @@ private:
   void ExecuteRenderGraphs(const xiiWorldModule::UpdateContext& context);
 
 private:
-  xiiDynamicArray<xiiUniquePtr<xiiView>>                m_Views;
-  xiiDynamicArray<xiiUniquePtr<xiiExtractedRenderData>> m_ViewExtractedData;
-  xiiDynamicArray<ViewExtractionCache>                  m_ViewExtractionCaches;
-  xiiUInt64                                             m_uiRenderFrameIndex = 0;
+  struct ViewDetail
+  {
+    xiiUniquePtr<xiiView>                m_pView;
+    xiiUniquePtr<xiiExtractedRenderData> m_pExtractedData;
+    ViewExtractionCache                  m_ExtractionCache;
+  };
+
+  xiiMutex                          m_ViewMutex;
+  xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
+  xiiUInt64                         m_uiRenderFrameIndex = 0;
+
+  xiiEvent<xiiView*, xiiMutex> m_ViewCreatedEvent;
+  xiiEvent<xiiView*, xiiMutex> m_ViewDeletedEvent;
 };

@@ -207,11 +207,6 @@ void xiiSkeletonComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ms
     m_MaxBounds.ExpandToInclude(poseBounds);
     TriggerLocalBoundsUpdate();
   }
-  else if (((xiiRenderWorld::GetFrameCounter() + GetUniqueIdForRendering()) & (XII_BIT(10) - 1)) == 0) // reset the bbox every once in a while
-  {
-    m_MaxBounds = poseBounds;
-    TriggerLocalBoundsUpdate();
-  }
 }
 
 void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated& msg)

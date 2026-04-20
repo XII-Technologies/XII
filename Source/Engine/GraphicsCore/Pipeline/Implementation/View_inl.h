@@ -1,4 +1,9 @@
 
+XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
+{
+  return xiiViewHandle(m_InternalId);
+}
+
 XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
 {
   m_pSwapChain = pSwapChain;

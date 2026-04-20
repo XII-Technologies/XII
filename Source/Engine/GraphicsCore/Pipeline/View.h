@@ -98,6 +98,8 @@ struct xiiBloomData;
 struct xiiColorGradingData;
 struct xiiToneMappingData;
 
+struct xiiDebugVisualizationData;
+
 struct xiiFinalBlitData;
 
 /// \brief Encapsulates a view on the given world through the given camera
@@ -118,6 +120,8 @@ private:
   ~xiiView();
 
 public:
+  xiiViewHandle GetHandle() const;
+
   void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
 
@@ -392,6 +396,10 @@ private:
   void ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContext& context);
 
 
+  void SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder);
+  void ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context);
+
+
   void SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder);
   void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& context);
 
@@ -400,6 +408,10 @@ private:
   static xiiSharedPtr<xiiGALComputePipelineState> EnsureComputePipeline(xiiSharedPtr<xiiGALComputePipelineState>& inout_pPipeline, xiiStringView sShaderPath);
 
 private:
+  friend class xiiRenderWorldModule;
+
+  xiiViewId m_InternalId;
+
   xiiHashedString m_sName;
 
   xiiUInt32          m_uiRenderGraphBuilderVersion = 0;
