@@ -4,9 +4,14 @@ XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
   return xiiViewHandle(m_InternalId);
 }
 
-XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
+XII_ALWAYS_INLINE xiiStringView xiiView::GetName() const
 {
-  m_pRenderTargetView = pRenderTargetView;
+  return m_sName.GetView();
+}
+
+XII_ALWAYS_INLINE void xiiView::SetName(xiiStringView sName)
+{
+  m_sName.Assign(sName);
 }
 
 XII_ALWAYS_INLINE xiiGALTextureView* xiiView::GetRenderTargetView() const
@@ -14,9 +19,9 @@ XII_ALWAYS_INLINE xiiGALTextureView* xiiView::GetRenderTargetView() const
   return m_pRenderTargetView;
 }
 
-XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
+XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
 {
-  m_pSwapChain = pSwapChain;
+  m_pRenderTargetView = pRenderTargetView;
 }
 
 XII_ALWAYS_INLINE xiiGALSwapChain* xiiView::GetSwapChain() const
@@ -24,9 +29,9 @@ XII_ALWAYS_INLINE xiiGALSwapChain* xiiView::GetSwapChain() const
   return m_pSwapChain;
 }
 
-XII_ALWAYS_INLINE xiiStringView xiiView::GetName() const
+XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
 {
-  return m_sName.GetView();
+  m_pSwapChain = pSwapChain;
 }
 
 XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)
@@ -69,14 +74,29 @@ XII_ALWAYS_INLINE xiiEnum<xiiCameraUsageHint> xiiView::GetCameraUsageHint() cons
   return m_Data.m_CameraUsageHint;
 }
 
+XII_ALWAYS_INLINE void xiiView::SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint)
+{
+  m_Data.m_CameraUsageHint = hint;
+}
+
 XII_ALWAYS_INLINE xiiEnum<xiiViewRenderMode> xiiView::GetViewRenderMode() const
 {
   return m_Data.m_ViewRenderMode;
 }
 
+XII_ALWAYS_INLINE void xiiView::SetViewRenderMode(xiiEnum<xiiViewRenderMode> value)
+{
+  m_Data.m_ViewRenderMode = value;
+}
+
 XII_ALWAYS_INLINE const xiiRectFloat& xiiView::GetViewport() const
 {
   return m_Data.m_ViewPortRect;
+}
+
+XII_ALWAYS_INLINE void xiiView::SetViewport(const xiiRectFloat& viewport)
+{
+  m_Data.m_ViewPortRect = viewport;
 }
 
 XII_ALWAYS_INLINE void xiiView::SetRenderGraphBuilder(RenderGraphBuilder builder)
@@ -107,6 +127,20 @@ XII_FORCE_INLINE bool xiiView::IsValid() const
   return m_pCamera != nullptr && m_Data.m_ViewPortRect.HasNonZeroArea();
 }
 
+XII_FORCE_INLINE xiiResult xiiView::ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const
+{
+  UpdateCachedMatrices();
+
+  return m_Data.ComputePickingRay(fScreenPosX, fScreenPosY, out_vRayStartPos, out_vRayDir);
+}
+
+XII_FORCE_INLINE xiiResult xiiView::ComputeScreenSpacePos(const xiiVec3& vPoint, xiiVec3& out_vScreenPos) const
+{
+  UpdateCachedMatrices();
+
+  return m_Data.ComputeScreenSpacePos(vPoint, out_vScreenPos);
+}
+
 XII_FORCE_INLINE xiiResult xiiView::ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const
 {
   UpdateCachedMatrices();
@@ -128,40 +162,40 @@ XII_ALWAYS_INLINE const xiiMat4& xiiView::GetProjectionMatrix(xiiCameraEye eye) 
 {
   UpdateCachedMatrices();
 
-  return m_Data.m_ProjectionMatrix[static_cast<xiiInt32>(eye)];
+  return m_Data.m_ProjectionMatrix[static_cast<xiiUInt32>(eye)];
 }
 
 XII_ALWAYS_INLINE const xiiMat4& xiiView::GetInverseProjectionMatrix(xiiCameraEye eye) const
 {
   UpdateCachedMatrices();
 
-  return m_Data.m_InverseProjectionMatrix[static_cast<xiiInt32>(eye)];
+  return m_Data.m_InverseProjectionMatrix[static_cast<xiiUInt32>(eye)];
 }
 
 XII_ALWAYS_INLINE const xiiMat4& xiiView::GetViewMatrix(xiiCameraEye eye) const
 {
   UpdateCachedMatrices();
 
-  return m_Data.m_ViewMatrix[static_cast<xiiInt32>(eye)];
+  return m_Data.m_ViewMatrix[static_cast<xiiUInt32>(eye)];
 }
 
 XII_ALWAYS_INLINE const xiiMat4& xiiView::GetInverseViewMatrix(xiiCameraEye eye) const
 {
   UpdateCachedMatrices();
 
-  return m_Data.m_InverseViewMatrix[static_cast<xiiInt32>(eye)];
+  return m_Data.m_InverseViewMatrix[static_cast<xiiUInt32>(eye)];
 }
 
 XII_ALWAYS_INLINE const xiiMat4& xiiView::GetViewProjectionMatrix(xiiCameraEye eye) const
 {
   UpdateCachedMatrices();
 
-  return m_Data.m_ViewProjectionMatrix[static_cast<xiiInt32>(eye)];
+  return m_Data.m_ViewProjectionMatrix[static_cast<xiiUInt32>(eye)];
 }
 
 XII_ALWAYS_INLINE const xiiMat4& xiiView::GetInverseViewProjectionMatrix(xiiCameraEye eye) const
 {
   UpdateCachedMatrices();
 
-  return m_Data.m_InverseViewProjectionMatrix[static_cast<xiiInt32>(eye)];
+  return m_Data.m_InverseViewProjectionMatrix[static_cast<xiiUInt32>(eye)];
 }

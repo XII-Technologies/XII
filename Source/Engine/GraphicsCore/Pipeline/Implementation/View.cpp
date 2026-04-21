@@ -76,6 +76,49 @@ xiiView::~xiiView()
   m_ResourceCache.Shutdown();
 }
 
+void xiiView::UpdateCachedMatrices() const
+{
+  bool bUpdateVP = false;
+
+  if (m_uiLastCameraOrientationModification != m_pCamera->GetOrientationModificationCounter())
+  {
+    bUpdateVP                             = true;
+    m_uiLastCameraOrientationModification = m_pCamera->GetOrientationModificationCounter();
+
+    m_Data.m_ViewMatrix[0] = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
+    m_Data.m_ViewMatrix[1] = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
+
+    // Some of our matrices contain very small values so that the matrix inversion will fall below the default epsilon.
+    // We pass zero as epsilon here since all view and projection matrices are invertible.
+    m_Data.m_InverseViewMatrix[0] = m_Data.m_ViewMatrix[0].GetInverse(0.0f);
+    m_Data.m_InverseViewMatrix[1] = m_Data.m_ViewMatrix[1].GetInverse(0.0f);
+  }
+
+  const float fViewportAspectRatio = m_Data.m_ViewPortRect.HasNonZeroArea() ? m_Data.m_ViewPortRect.width / m_Data.m_ViewPortRect.height : 1.0f;
+  if (m_uiLastCameraSettingsModification != m_pCamera->GetSettingsModificationCounter() || m_fLastViewportAspectRatio != fViewportAspectRatio)
+  {
+    bUpdateVP                          = true;
+    m_uiLastCameraSettingsModification = m_pCamera->GetSettingsModificationCounter();
+    m_fLastViewportAspectRatio         = fViewportAspectRatio;
+
+
+    m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[0], xiiCameraEye::Left);
+    m_Data.m_InverseProjectionMatrix[0] = m_Data.m_ProjectionMatrix[0].GetInverse(0.0f);
+
+    m_pCamera->GetProjectionMatrix(m_fLastViewportAspectRatio, m_Data.m_ProjectionMatrix[1], xiiCameraEye::Right);
+    m_Data.m_InverseProjectionMatrix[1] = m_Data.m_ProjectionMatrix[1].GetInverse(0.0f);
+  }
+
+  if (bUpdateVP)
+  {
+    for (xiiUInt32 i = 0; i < 2; ++i)
+    {
+      m_Data.m_ViewProjectionMatrix[i]        = m_Data.m_ProjectionMatrix[i] * m_Data.m_ViewMatrix[i];
+      m_Data.m_InverseViewProjectionMatrix[i] = m_Data.m_ViewProjectionMatrix[i].GetInverse(0.0f);
+    }
+  }
+}
+
 void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
 {
   // Try the GPU profiler's resolved duration from 2 frames ago.
@@ -1451,7 +1494,7 @@ void xiiView::ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRGPassContex
 struct xiiNormalRoughnessPrepassData
 {
   XII_DECLARE_POD_TYPE();
-  
+
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth generated in Stage 3, used for depth-tested rendering).
   xiiRGTextureHandle m_hNormalRoughness;      ///< RenderTarget out (compact normal/roughness/specular buffer consumed by GTAO and lighting prep passes).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
