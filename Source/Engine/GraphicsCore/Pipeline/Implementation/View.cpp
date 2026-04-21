@@ -129,6 +129,8 @@ void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
 
 struct xiiOcclusionReadbackData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiUInt32 m_uiReadSlot = 0; ///< Index into the 3-frame ring of staging buffers to read from this frame (the one written by the GPU 2 frames ago).
 };
 
@@ -175,6 +177,8 @@ void xiiView::ExecuteOcclusionReadback(const xiiOcclusionReadbackData& data, xii
 
 struct xiiFrustumCullData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hInstanceBounds;     ///< SRV in (structured buffer of xiiBoundingSphere, one per instance, from previous frame's Instance Update).
   xiiRGBufferHandle m_hLODMetadata;        ///< SRV in (structured buffer of LOD metadata, one per instance, from previous frame's LOD Selection).
   xiiRGBufferHandle m_hVisibleCandidates;  ///< UAV out (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, consumed by Instance Update and Draw Build).
@@ -251,6 +255,8 @@ void xiiView::ExecuteFrustumCull(const xiiFrustumCullData& data, xiiRGPassContex
 
 struct xiiLODSelectData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hVisibleCandidates;  ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
   xiiRGBufferHandle m_hInstanceBounds;     ///< SRV in (structured buffer of xiiBoundingSphere, one per instance, from previous frame's Instance Update).
   xiiRGBufferHandle m_hInstanceLOD;        ///< UAV out (structured buffer of uint, one per instance, packed LOD level + meshlet offset, consumed by Draw Build).
@@ -295,6 +301,8 @@ void xiiView::ExecuteLODSelect(const xiiLODSelectData& data, xiiRGPassContext& c
 
 struct xiiInstanceUpdateData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hVisibleCandidates;  ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
   xiiRGBufferHandle m_hInstanceMatrices;   ///< UAV out (structured buffer of instance world matrices, one per instance, consumed by next frame's LOD Selection and Frustum Culling).
   xiiRGBufferHandle m_hInstanceBoundsOut;  ///< UAV out (structured buffer of xiiBoundingSphere, one per instance, consumed by next frame's Frustum Culling).
@@ -355,6 +363,8 @@ void xiiView::ExecuteInstanceUpdate(const xiiInstanceUpdateData& data, xiiRGPass
 
 struct xiiDrawBuildData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hSurvivors;          ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
   xiiRGBufferHandle m_hInstanceLOD;        ///< SRV in (structured buffer of uint, one per instance, packed LOD level + meshlet offset, from this frame's LOD Selection).
   xiiRGBufferHandle m_hDrawCommands;       ///< UAV out (structured buffer of DrawIndexedIndirectArguments, one per draw bin, consumed by GBuffer and Shadow Passes).
@@ -417,6 +427,8 @@ void xiiView::ExecuteDrawBuild(const xiiDrawBuildData& data, xiiRGPassContext& c
 
 struct xiiShadowCasterBuildData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hVisibleCandidates;    ///< SRV in (structured buffer of uint, [0]=count, [1..]=indices of visible instances for current frame, from this frame's Frustum Culling).
   xiiRGBufferHandle m_hShadowCasterCommands; ///< UAV out (structured buffer of uint, [0]=count, [1..]=indices of shadow-casting instances for current frame, consumed by Shadow Passes).
 };
@@ -457,6 +469,8 @@ void xiiView::ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xii
 
 struct xiiClusterBuildData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hClusterConstants;   ///< SRV in (structured buffer of cluster build constants, including cluster counts and depth range, consumed by the Cluster Build pass).
   xiiRGBufferHandle m_hClusterDescriptors; ///< UAV out (structured buffer of cluster descriptors, one per cluster, consumed by main lighting pass).
 };
@@ -531,6 +545,8 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
 
 struct xiiLightListData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hClusterDescriptors;    ///< SRV in (structured buffer of cluster descriptors, one per cluster, from this frame's Cluster Build).
   xiiRGBufferHandle m_hLightIndexBuffer;      ///< SRV in (structured buffer of uint, one per light, containing light type and other metadata, from extraction).
   xiiRGBufferHandle m_hLightGridBuffer;       ///< UAV out (structured buffer of uint, containing compact light lists per cluster, consumed by main lighting pass).
@@ -586,6 +602,8 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRGPassConte
 
 struct xiiReflectionProbeSelectData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hClusterDescriptors; ///< SRV in (structured buffer of cluster descriptors, one per cluster, from this frame's Cluster Build).
   xiiRGBufferHandle m_hProbeMask;          ///< UAV out (structured buffer of uint, one per instance, bitmask of which reflection probes affect each instance, consumed by main lighting pass).
 };
@@ -626,6 +644,8 @@ void xiiView::ExecuteReflectionProbeSelect(const xiiReflectionProbeSelectData& d
 
 struct xiiFroxelAllocationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle  m_hFroxelMetadata;
   xiiRGTextureHandle m_hFroxelScattering;
   xiiUInt32          m_uiRenderWidth  = 1920U;
@@ -677,6 +697,8 @@ void xiiView::ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRG
 
 struct xiiShadowCascadeSetupData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hCascadeMatrices;                              ///< UAV out (structured buffer of float4x4 cascade view-projection matrices, one per cascade, consumed by Shadow Passes).
   xiiUInt32         m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
   xiiVec3           m_vLightDir        = xiiVec3(0.0f, -1.0f, 0.0f); ///< Direction of the main directional light, used for computing cascade splits and matrices.
@@ -756,6 +778,8 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
 
 struct xiiDirectionalShadowData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle  m_hCascadeMatrices;        ///< SRV in (structured buffer of float4x4 cascade view-projection matrices, one per cascade, from this frame's Shadow Cascade Setup pass).
   xiiRGBufferHandle  m_hShadowCasterCommands;   ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per cascade-per-bin, from this frame's Shadow Caster Build pass).
   xiiRGTextureHandle m_hDirectionalShadowAtlas; ///< SRV in (texture atlas for directional shadow maps, written by Shadow Passes, read by main lighting pass).
@@ -837,6 +861,8 @@ void xiiView::ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data,
 
 struct xiiSpotShadowData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle  m_hShadowCasterCommands; ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per spot light, from this frame's Shadow Caster Build pass).
   xiiRGTextureHandle m_hLocalShadowAtlas;     ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
   xiiUInt32          m_uiSpotLightCount = 0;  ///< Number of active spot lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
@@ -894,6 +920,8 @@ void xiiView::ExecuteSpotShadowData(const xiiSpotShadowData& data, xiiRGPassCont
 
 struct xiiPointShadowData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle  m_hShadowCasterCommands; ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per point light, from this frame's Shadow Caster Build pass).
   xiiRGTextureHandle m_hLocalShadowAtlas;     ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
   xiiUInt32          m_uiPointLightCount = 0; ///< Number of active point lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
@@ -936,6 +964,8 @@ void xiiView::ExecutePointShadowData(const xiiPointShadowData& data, xiiRGPassCo
 
 struct xiiRayTracedShadowData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hRTRawShadowMask; ///< UAV out (texture containing raw ray-traced shadow masks, written by Ray-Traced Shadow Pass, read by Shadow Denoise Pass).
   xiiRGTextureHandle m_hSceneDepth;      ///< SRV in (depth texture from main render pass, used for ray-traced shadow ray generation and occlusion testing).
 };
@@ -982,6 +1012,8 @@ void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xii
 
 struct xiiShadowDenoiseData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hRTRawShadowMask;   ///< SRV in (texture containing raw ray-traced shadow masks, written by Ray-Traced Shadow Pass, read by this pass).
   xiiRGTextureHandle m_hRTFinalShadowMask; ///< UAV out (texture containing final denoised ray-traced shadow masks, written by this pass, read by main lighting pass).
 };
@@ -1024,6 +1056,8 @@ void xiiView::ExecuteShadowDenoiseData(const xiiShadowDenoiseData& data, xiiRGPa
 
 struct xiiContactShadowData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;    ///< SRV in (depth texture from main render pass, used for contact shadow ray generation and occlusion testing).
   xiiRGTextureHandle m_hContactShadow; ///< UAV out (texture containing contact shadow masks, written by this pass, read by main lighting pass).
 };
@@ -1066,6 +1100,8 @@ void xiiView::ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPa
 
 struct xiiDepthPrepassData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthStencil out (full-resolution reversed-Z scene depth, written by this pass and consumed by later depth-dependent passes).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin, from this frame's Draw Build pass).
 };
@@ -1113,6 +1149,8 @@ void xiiView::ExecuteDepthPrepass(const xiiDepthPrepassData& data, xiiRGPassCont
 
 struct xiiHiZPyramidData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture written by Depth Prepass, used as mip-0 source for Hi-Z generation).
   xiiRGTextureHandle m_hHiZPyramid;      ///< UnorderedAccess out (R32F max-depth hierarchy texture, consumed by Hi-Z occlusion culling and depth-aware effects).
   xiiUInt32          m_uiMipLevels = 1U; ///< Number of mips in the Hi-Z pyramid, derived from the current viewport size.
@@ -1195,6 +1233,8 @@ void xiiView::ExecuteHiZPyramid(const xiiHiZPyramidData& data, xiiRGPassContext&
 
 struct xiiHiZOcclusionCullData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHiZPyramid;         ///< ShaderResource in (Hi-Z pyramid generated by this frame's Hi-Z Pyramid pass).
   xiiRGBufferHandle  m_hVisibleCandidates;  ///< ShaderResource in (visible instance candidate list generated by this frame's Frustum Culling pass).
   xiiRGBufferHandle  m_hSurvivingInstances; ///< UnorderedAccess out (instance list surviving Hi-Z occlusion culling, consumed by later depth/lighting passes).
@@ -1247,6 +1287,8 @@ void xiiView::ExecuteHiZOcclusionCull(const xiiHiZOcclusionCullData& data, xiiRG
 
 struct xiiMotionVectorsData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthStencil inout (scene depth target reused for depth-tested motion vector rendering).
   xiiRGTextureHandle m_hVelocityBuffer;       ///< RenderTarget out (screen-space velocity buffer written by this pass).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
@@ -1295,6 +1337,8 @@ void xiiView::ExecuteMotionVectors(const xiiMotionVectorsData& data, xiiRGPassCo
 
 struct xiiVelocityDilationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hVelocityInput;   ///< ShaderResource in (screen-space velocity buffer generated by the Motion Vectors pass).
   xiiRGTextureHandle m_hVelocityDilated; ///< UnorderedAccess out (dilated velocity buffer replacing the velocity blackboard key for downstream consumers).
 };
@@ -1340,6 +1384,8 @@ void xiiView::ExecuteVelocityDilation(const xiiVelocityDilationData& data, xiiRG
 
 struct xiiGBufferBaseData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth generated in Stage 3, used for depth-tested G-Buffer rendering).
   xiiRGTextureHandle m_hGBufferAlbedo;        ///< RenderTarget out (albedo and AO target).
   xiiRGTextureHandle m_hGBufferNormal;        ///< RenderTarget out (encoded normal target).
@@ -1405,6 +1451,8 @@ void xiiView::ExecuteGBufferBase(const xiiGBufferBaseData& data, xiiRGPassContex
 
 struct xiiNormalRoughnessPrepassData
 {
+  XII_DECLARE_POD_TYPE();
+  
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth generated in Stage 3, used for depth-tested rendering).
   xiiRGTextureHandle m_hNormalRoughness;      ///< RenderTarget out (compact normal/roughness/specular buffer consumed by GTAO and lighting prep passes).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (buffer of DrawIndexedIndirectArguments, one per draw bin).
@@ -1453,6 +1501,8 @@ void xiiView::ExecuteNormalRoughnessPrepass(const xiiNormalRoughnessPrepassData&
 
 struct xiiBRDFLutGenerationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hBRDFLut;                 ///< Imported persistent BRDF LUT texture.
   bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch BRDF LUT generation.
 };
@@ -1508,6 +1558,8 @@ void xiiView::ExecuteBRDFLutGeneration(const xiiBRDFLutGenerationData& data, xii
 
 struct xiiAtmosphereTransmittanceData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hTransmittanceLUT;        ///< Imported persistent atmosphere transmittance LUT texture.
   bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch transmittance LUT generation.
 };
@@ -1561,6 +1613,8 @@ void xiiView::ExecuteAtmosphereTransmittance(const xiiAtmosphereTransmittanceDat
 
 struct xiiAtmosphereMultiScatterData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hMultiScatterLUT;         ///< Imported persistent atmosphere multi-scatter LUT texture.
   xiiRGTextureHandle m_hTransmittanceLUT;        ///< ShaderResource in (atmosphere transmittance LUT).
   bool               m_bNeedsGeneration = false; ///< Whether this frame must dispatch multi-scatter LUT generation.
@@ -1618,6 +1672,8 @@ void xiiView::ExecuteAtmosphereMultiScatter(const xiiAtmosphereMultiScatterData&
 
 struct xiiSkyIrradianceConvolutionData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
   xiiRGTextureHandle m_hMultiScatterLUT;  ///< ShaderResource in (atmosphere multi-scatter LUT).
   xiiRGTextureHandle m_hSkyRadiance;      ///< UnorderedAccess out (sky radiance texture used by later lighting passes).
@@ -1663,6 +1719,8 @@ void xiiView::ExecuteSkyIrradianceConvolution(const xiiSkyIrradianceConvolutionD
 
 struct xiiReflectionProbeConvolutionData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle  m_hReflectionProbeMask; ///< ShaderResource in (per-probe visibility/selection mask).
   xiiRGTextureHandle m_hBRDFLut;             ///< ShaderResource in (precomputed BRDF LUT for filtered specular).
 };
@@ -1696,6 +1754,8 @@ void xiiView::ExecuteReflectionProbeConvolution(const xiiReflectionProbeConvolut
 
 struct xiiVolumetricFogInitializationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle  m_hFroxelMetadata;   ///< ShaderResource in (froxel metadata buffer).
   xiiRGTextureHandle m_hFroxelScattering; ///< UnorderedAccess inout (froxel scattering texture).
 };
@@ -1729,6 +1789,8 @@ void xiiView::ExecuteVolumetricFogInitialization(const xiiVolumetricFogInitializ
 
 struct xiiDDGIProbeSamplingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hDDGIIrradiance; ///< UnorderedAccess out (DDGI irradiance result texture).
   xiiRGTextureHandle m_hSceneDepth;     ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferNormal;  ///< ShaderResource in (GBuffer normal texture).
@@ -1774,6 +1836,8 @@ void xiiView::ExecuteDDGIProbeSampling(const xiiDDGIProbeSamplingData& data, xii
 
 struct xiiGroundTruthAmbientOcclusionData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;          ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hNormalRoughness;     ///< ShaderResource in (normal/roughness buffer).
   xiiRGTextureHandle m_hRawAmbientOcclusion; ///< UnorderedAccess out (raw ambient occlusion result).
@@ -1819,6 +1883,8 @@ void xiiView::ExecuteGroundTruthAmbientOcclusion(const xiiGroundTruthAmbientOccl
 
 struct xiiGroundTruthAmbientOcclusionDenoiseData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hRawAmbientOcclusion;    ///< ShaderResource in (raw ambient occlusion texture).
   xiiRGTextureHandle m_hStableAmbientOcclusion; ///< UnorderedAccess out (denoised ambient occlusion texture).
 };
@@ -1861,6 +1927,8 @@ void xiiView::ExecuteGroundTruthAmbientOcclusionDenoise(const xiiGroundTruthAmbi
 
 struct xiiDeferredDirectLightingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hGBufferAlbedo;            ///< ShaderResource in (G-Buffer albedo).
   xiiRGTextureHandle m_hGBufferNormal;            ///< ShaderResource in (G-Buffer normal).
   xiiRGTextureHandle m_hGBufferMaterial;          ///< ShaderResource in (G-Buffer material).
@@ -1931,6 +1999,8 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
 
 struct xiiDeferredIndirectLightingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hGBufferAlbedo;          ///< ShaderResource in (G-Buffer albedo).
   xiiRGTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
   xiiRGTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
@@ -1995,6 +2065,8 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
 
 struct xiiRayTracedGlobalIlluminationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;                       ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferNormal;                    ///< ShaderResource in (G-Buffer normal).
   xiiRGTextureHandle m_hIndirectLightingInput;            ///< ShaderResource in (deferred indirect lighting input).
@@ -2047,6 +2119,8 @@ void xiiView::ExecuteRayTracedGlobalIllumination(const xiiRayTracedGlobalIllumin
 
 struct xiiRayTracedReflectionsData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;                ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferNormal;             ///< ShaderResource in (G-Buffer normal).
   xiiRGTextureHandle m_hGBufferMaterial;           ///< ShaderResource in (G-Buffer material).
@@ -2102,6 +2176,8 @@ void xiiView::ExecuteRayTracedReflections(const xiiRayTracedReflectionsData& dat
 
 struct xiiScreenSpaceReflectionsData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;             ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferNormal;          ///< ShaderResource in (G-Buffer normal).
   xiiRGTextureHandle m_hGBufferMaterial;        ///< ShaderResource in (G-Buffer material).
@@ -2154,6 +2230,8 @@ void xiiView::ExecuteScreenSpaceReflections(const xiiScreenSpaceReflectionsData&
 
 struct xiiVolumetricFogIntegrationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (froxel scattering buffer).
   xiiRGBufferHandle  m_hLightGridBuffer;        ///< ShaderResource in (cluster light grid).
   xiiRGTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
@@ -2200,6 +2278,8 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
 
 struct xiiVolumetricFogTemporalReprojectionData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hFroxelHistory;        ///< ShaderResource in (history froxel volume from previous frame).
   xiiRGTextureHandle m_hVolumetricScattering; ///< UnorderedAccess in/out (current volumetric scattering buffer).
 };
@@ -2249,6 +2329,8 @@ void xiiView::ExecuteVolumetricFogTemporalReprojection(const xiiVolumetricFogTem
 
 struct xiiAtmosphereCompositeData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hAtmosphereTransmittanceLUT; ///< ShaderResource in (atmosphere transmittance LUT).
   xiiRGTextureHandle m_hAtmosphereMultiScatterLUT;  ///< ShaderResource in (atmosphere multi-scatter LUT).
   xiiRGTextureHandle m_hVolumetricScattering;       ///< ShaderResource in (volumetric scattering buffer).
@@ -2288,6 +2370,8 @@ void xiiView::ExecuteAtmosphereComposite(const xiiAtmosphereCompositeData& data,
 
 struct xiiForwardOpaqueData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;                ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hDirectLighting;            ///< ShaderResource in (direct lighting texture).
   xiiRGTextureHandle m_hIndirectLighting;          ///< ShaderResource in (indirect lighting texture).
@@ -2362,6 +2446,8 @@ void xiiView::ExecuteForwardOpaque(const xiiForwardOpaqueData& data, xiiRGPassCo
 
 struct xiiForwardMaskedData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
@@ -2400,6 +2486,8 @@ void xiiView::ExecuteForwardMasked(const xiiForwardMaskedData& data, xiiRGPassCo
 
 struct xiiHairRenderingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
@@ -2438,6 +2526,8 @@ void xiiView::ExecuteHairRendering(const xiiHairRenderingData& data, xiiRGPassCo
 
 struct xiiWaterRenderingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
   xiiRGTextureHandle m_hPlanarReflectionMap;  ///< ShaderResource in (planar reflection map).
@@ -2482,6 +2572,8 @@ void xiiView::ExecuteWaterRendering(const xiiWaterRenderingData& data, xiiRGPass
 
 struct xiiSubsurfaceScatteringData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRSceneColor;   ///< UnorderedAccess in/out (HDR scene color).
   xiiRGTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferMaterial; ///< ShaderResource in (material G-Buffer).
@@ -2531,6 +2623,8 @@ void xiiView::ExecuteSubsurfaceScattering(const xiiSubsurfaceScatteringData& dat
 
 struct xiiEyeShaderData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRSceneColor;        ///< RenderTarget in/out (HDR scene color).
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthWrite in/out (scene depth texture).
   xiiRGBufferHandle  m_hDrawIndirectCommands; ///< IndirectArgument in (draw indirect commands).
@@ -2569,6 +2663,8 @@ void xiiView::ExecuteEyeShader(const xiiEyeShaderData& data, xiiRGPassContext& c
 
 struct xiiGPUParticleSimulateData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hParticleState;          ///< UnorderedAccess in/out (persistent particle state buffer).
   xiiUInt32         m_uiParticleCount = 65536; ///< Number of particles to simulate.
 };
@@ -2620,6 +2716,8 @@ void xiiView::ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data,
 
 struct xiiScreenSpaceDecalsData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;      ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferAlbedo;   ///< ShaderResource in (G-Buffer albedo).
   xiiRGTextureHandle m_hGBufferNormal;   ///< ShaderResource in (G-Buffer normal).
@@ -2679,6 +2777,8 @@ void xiiView::ExecuteScreenSpaceDecals(const xiiScreenSpaceDecalsData& data, xii
 
 struct xiiWeightedBlendedOITData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRSceneColor;        ///< UnorderedAccess in/out (HDR scene color target).
   xiiRGTextureHandle m_hSceneDepth;           ///< DepthRead in (scene depth for translucent geometry).
   xiiRGTextureHandle m_hOITAccumulate;        ///< RenderTarget out / ShaderResource in (weighted accumulation target).
@@ -2758,6 +2858,8 @@ void xiiView::ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, x
 
 struct xiiScreenSpaceGlobalIlluminationData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;    ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferNormal; ///< ShaderResource in (G-Buffer normal texture).
   xiiRGTextureHandle m_hHDRIn;         ///< ShaderResource in (current HDR scene color).
@@ -2811,6 +2913,8 @@ void xiiView::ExecuteScreenSpaceGlobalIllumination(const xiiScreenSpaceGlobalIll
 
 struct xiiScreenSpaceRefractionData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hSceneDepth;    ///< ShaderResource in (scene depth texture).
   xiiRGTextureHandle m_hGBufferNormal; ///< ShaderResource in (G-Buffer normal texture).
   xiiRGTextureHandle m_hHDRIn;         ///< ShaderResource in (current HDR scene color).
@@ -2852,6 +2956,8 @@ void xiiView::ExecuteScreenSpaceRefraction(const xiiScreenSpaceRefractionData& d
 
 struct xiiPlanarReflectionsData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hPlanarTarget; ///< RenderTarget out (planar reflection render target).
 };
 
@@ -2899,6 +3005,8 @@ void xiiView::ExecutePlanarReflections(const xiiPlanarReflectionsData& data, xii
 
 struct xiiLuminanceHistogramData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRIn;     ///< ShaderResource in (current HDR scene color).
   xiiRGBufferHandle  m_hHistogram; ///< UnorderedAccess out (256-bin luminance histogram).
 };
@@ -2941,6 +3049,8 @@ void xiiView::ExecuteLuminanceHistogram(const xiiLuminanceHistogramData& data, x
 
 struct xiiAutoExposureData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGBufferHandle m_hHistogram; ///< ShaderResource in (luminance histogram).
   xiiRGBufferHandle m_hExposure;  ///< UnorderedAccess in/out (persistent exposure value).
 };
@@ -2988,6 +3098,8 @@ void xiiView::ExecuteAutoExposure(const xiiAutoExposureData& data, xiiRGPassCont
 
 struct xiiTemporalAntiAliasingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRIn;    ///< ShaderResource in (current HDR scene color).
   xiiRGTextureHandle m_hVelocity; ///< ShaderResource in (motion vectors).
   xiiRGTextureHandle m_hHistory;  ///< ShaderResource in (history color).
@@ -3057,6 +3169,8 @@ void xiiView::ExecuteTemporalAntiAliasing(const xiiTemporalAntiAliasingData& dat
 
 struct xiiUpscaleData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hTAAIn;    ///< ShaderResource in (TAA resolved color).
   xiiRGTextureHandle m_hUpscaled; ///< UnorderedAccess out (upscaled HDR color).
 };
@@ -3104,6 +3218,8 @@ void xiiView::ExecuteUpscale(const xiiUpscaleData& data, xiiRGPassContext& conte
 
 struct xiiBloomData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRIn; ///< ShaderResource in (upscaled HDR input).
   xiiRGTextureHandle m_hBloom; ///< UnorderedAccess out (bloom result).
 };
@@ -3151,6 +3267,8 @@ void xiiView::ExecuteBloom(const xiiBloomData& data, xiiRGPassContext& context)
 
 struct xiiColorGradingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hHDRIn;  ///< ShaderResource in (upscaled HDR input).
   xiiRGTextureHandle m_hBloom;  ///< ShaderResource in (bloom result).
   xiiRGTextureHandle m_hGraded; ///< UnorderedAccess out (graded HDR output).
@@ -3201,6 +3319,8 @@ void xiiView::ExecuteColorGrading(const xiiColorGradingData& data, xiiRGPassCont
 
 struct xiiToneMappingData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hGraded; ///< ShaderResource in (graded HDR input).
   xiiRGTextureHandle m_hLDROut; ///< UnorderedAccess out (tone-mapped LDR output).
 };
@@ -3249,6 +3369,9 @@ void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContex
 
 struct xiiDebugVisualizationData
 {
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiPrimitives; ///< Number of debug primitives to render (lines, triangles, etc.).
 };
 
 void xiiView::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder)
@@ -3272,6 +3395,8 @@ void xiiView::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, x
 
 struct xiiFinalBlitData
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiRGTextureHandle m_hLDRIn;      ///< ShaderResource in (final LDR scene color).
   xiiRGTextureHandle m_hBackbuffer; ///< RenderTarget out (swapchain backbuffer).
 };
