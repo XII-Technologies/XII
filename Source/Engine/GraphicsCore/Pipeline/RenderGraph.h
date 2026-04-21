@@ -454,7 +454,7 @@ private:
     xiiHybridArray<ResourceUsage, 8> m_Reads;
     xiiHybridArray<ResourceUsage, 8> m_Writes;
 
-    // Type-erased pass data + execute func (owned by this entry).
+    // Type-erased pass data and execution delegate (owned by this entry).
     void*                                m_pPassData = nullptr;
     xiiDelegate<void(void*)>             m_DestroyPassDataDelegate;
     xiiDelegate<void(xiiRGPassContext&)> m_ExecuteDelegate;
