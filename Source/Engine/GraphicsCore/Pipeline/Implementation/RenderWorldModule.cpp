@@ -8,6 +8,7 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -426,10 +427,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
         }
 
         // Dispatch to object-level handlers explicitly, component dispatch is handled below.
-        if (const xiiRTTI* pObjectType = pObject->GetDynamicRTTI(); pObjectType != nullptr)
-        {
-          pObjectType->DispatchMessage(pObject, msg);
-        }
+        xiiGetStaticRTTI<xiiGameObject>()->DispatchMessage(pObject, msg);
 
         for (xiiComponent* pComponent : pObject->GetComponents())
         {
