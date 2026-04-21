@@ -125,6 +125,9 @@ public:
   void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
 
+  void               SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
+  xiiGALTextureView* GetRenderTargetView() const;
+
   /// \brief Sets the swapchain that this view will be rendering into.
   void             SetSwapChain(xiiGALSwapChain* pSwapChain);
   xiiGALSwapChain* GetSwapChain() const;
@@ -433,7 +436,8 @@ private:
 
   /// Non-owning pointer to the swapchain this view renders into.
   /// Set via SetSwapChain(); may be nullptr for off-screen views.
-  xiiGALSwapChain* m_pSwapChain = nullptr;
+  xiiGALSwapChain*   m_pSwapChain        = nullptr;
+  xiiGALTextureView* m_pRenderTargetView = nullptr;
 
   xiiRenderGraphBlackboard    m_Blackboard;
   xiiRenderGraphResourceCache m_ResourceCache;

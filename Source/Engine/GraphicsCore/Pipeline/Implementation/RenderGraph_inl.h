@@ -76,7 +76,7 @@ std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(xiiStringView sNa
   TPassData* pData                    = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), TPassData);
   passEntry.m_pPassData               = pData;
   passEntry.m_DestroyPassDataDelegate = [](void* pData) -> void {
-    XII_DELETE(xiiFrameAllocator::GetCurrentAllocator(), static_cast<TPassData*>(pData));
+    XII_DELETE(xiiFrameAllocator::GetCurrentAllocator(), pData);
   };
 
   // Wrap typed execute function in a type-erased delegate.

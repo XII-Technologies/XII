@@ -4,6 +4,16 @@ XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
   return xiiViewHandle(m_InternalId);
 }
 
+XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTargetView)
+{
+  m_pRenderTargetView = pRenderTargetView;
+}
+
+XII_ALWAYS_INLINE xiiGALTextureView* xiiView::GetRenderTargetView() const
+{
+  return m_pRenderTargetView;
+}
+
 XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
 {
   m_pSwapChain = pSwapChain;

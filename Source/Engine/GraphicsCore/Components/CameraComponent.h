@@ -4,8 +4,8 @@
 
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
-#include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
 
 class xiiView;
 struct xiiResourceEvent;
@@ -89,11 +89,7 @@ public:
   float GetOrthoDimension() const { return m_fOrthoDimension; } // [ property ]
   void  SetOrthoDimension(float fVal);                          // [ property ]
 
-  xiiRenderPipelineResourceHandle GetRenderPipeline() const;
-  xiiViewHandle                   GetRenderTargetView() const;
-
-  xiiStringView GetRenderPipelineEnum() const;              // [ property ]
-  void          SetRenderPipelineEnum(xiiStringView sFile); // [ property ]
+  xiiViewHandle GetRenderTargetView() const;
 
   float GetAperture() const { return m_fAperture; } // [ property ]
   void  SetAperture(float fAperture);               // [ property ]
@@ -128,7 +124,6 @@ private:
   float                              m_fFarPlane               = 1000.0f;
   float                              m_fPerspectiveFieldOfView = 60.0f;
   float                              m_fOrthoDimension         = 10.0f;
-  xiiRenderPipelineResourceHandle    m_hCachedRenderPipeline;
 
   float   m_fAperture             = 1.0f;
   xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0f);
@@ -148,9 +143,8 @@ private:
   void ActivateRenderToTexture();
   void DeactivateRenderToTexture();
 
-  xiiViewHandle   m_hRenderTargetView;
-  xiiVec2         m_vRenderTargetRectOffset = xiiVec2(0.0f);
-  xiiVec2         m_vRenderTargetRectSize   = xiiVec2(1.0f);
-  xiiCamera       m_RenderTargetCamera;
-  xiiHashedString m_sRenderPipeline;
+  xiiViewHandle m_hRenderTargetView;
+  xiiVec2       m_vRenderTargetRectOffset = xiiVec2(0.0f);
+  xiiVec2       m_vRenderTargetRectSize   = xiiVec2(1.0f);
+  xiiCamera     m_RenderTargetCamera;
 };

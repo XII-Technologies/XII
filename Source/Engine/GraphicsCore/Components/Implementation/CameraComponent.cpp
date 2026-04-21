@@ -40,6 +40,8 @@ void xiiCameraComponentManager::Deinitialize()
 
 void xiiCameraComponentManager::Update(const xiiWorldModule::UpdateContext& context)
 {
+  auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
+
   for (auto hCameraComponent : m_ModifiedCameras)
   {
     xiiCameraComponent* pCameraComponent = nullptr;
@@ -48,7 +50,7 @@ void xiiCameraComponentManager::Update(const xiiWorldModule::UpdateContext& cont
       continue;
     }
 
-    if (xiiView* pView = xiiRenderWorld::GetViewByUsageHint(pCameraComponent->GetUsageHint(), xiiCameraUsageHint::None, GetWorld()))
+    if (xiiView* pView = pRenderWorldModule->GetViewByUsageHint(pCameraComponent->GetUsageHint(), xiiCameraUsageHint::None))
     {
       pCameraComponent->ApplySettingsToView(pView);
     }
@@ -73,7 +75,7 @@ void xiiCameraComponentManager::Update(const xiiWorldModule::UpdateContext& cont
   {
     if (it->IsActiveAndInitialized() && it->m_bShowStats && it->GetUsageHint() == xiiCameraUsageHint::MainView)
     {
-      if (xiiView* pView = xiiRenderWorld::GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView, GetWorld()))
+      if (xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
       {
         it->ShowStats(pView);
       }
@@ -148,7 +150,7 @@ void xiiCameraComponentManager::OnCameraConfigsChanged(void* dummy)
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 10, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
@@ -164,14 +166,11 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 10, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("Dimensions", GetOrthoDimension, SetOrthoDimension)->AddAttributes(new xiiDefaultValueAttribute(10.0f), new xiiClampValueAttribute(0.01f, 10000.0f)),
     XII_SET_MEMBER_PROPERTY("IncludeTags", m_IncludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
     XII_SET_MEMBER_PROPERTY("ExcludeTags", m_ExcludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
-    XII_ACCESSOR_PROPERTY("CameraRenderPipeline", GetRenderPipelineEnum, SetRenderPipelineEnum)->AddAttributes(new xiiDynamicStringEnumAttribute("CameraPipelines")),
     XII_ACCESSOR_PROPERTY("Aperture", GetAperture, SetAperture)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(1.0f, 32.0f), new xiiSuffixAttribute(" f-stop(s)")),
     XII_ACCESSOR_PROPERTY("ShutterTime", GetShutterTime, SetShutterTime)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1.0)), new xiiClampValueAttribute(xiiTime::MakeFromSeconds(1.0f / 100000.0f), xiiTime::MakeFromSeconds(600.0f))),
     XII_ACCESSOR_PROPERTY("ISO", GetISO, SetISO)->AddAttributes(new xiiDefaultValueAttribute(100.0f), new xiiClampValueAttribute(50.0f, 64000.0f)),
     XII_ACCESSOR_PROPERTY("ExposureCompensation", GetExposureCompensation, SetExposureCompensation)->AddAttributes(new xiiClampValueAttribute(-32.0f, 32.0f)),
     XII_MEMBER_PROPERTY("ShowStats", m_bShowStats),
-    //XII_ACCESSOR_PROPERTY_READ_ONLY("EV100", GetEV100),
-    //XII_ACCESSOR_PROPERTY_READ_ONLY("FinalExposure", GetExposure),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -193,101 +192,49 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
   SUPER::SerializeComponent(inout_stream);
   auto& s = inout_stream.GetStream();
 
-  s << m_UsageHint.GetValue();
-  s << m_Mode.GetValue();
+  s << m_UsageHint;
+  s << m_Mode;
   s << m_fNearPlane;
   s << m_fFarPlane;
   s << m_fPerspectiveFieldOfView;
   s << m_fOrthoDimension;
-
-  // Version 2 till 7
-  // s << m_hRenderPipeline;
-
-  // Version 3
   s << m_fAperture;
   s << static_cast<float>(m_ShutterTime.GetSeconds());
   s << m_fISO;
   s << m_fExposureCompensation;
 
-  // Version 4
   m_IncludeTags.Save(s);
   m_ExcludeTags.Save(s);
 
-  // Version 6
   s << m_hRenderTarget;
-
-  // Version 7
   s << m_vRenderTargetRectOffset;
   s << m_vRenderTargetRectSize;
-
-  // Version 8
-  s << m_sRenderPipeline;
-
-  // Version 10
   s << m_bShowStats;
 }
 
 void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
   auto&           s         = inout_stream.GetStream();
 
-  xiiCameraUsageHint::StorageType usage;
-  s >> usage;
-  if (uiVersion == 1 && usage > xiiCameraUsageHint::MainView)
-    usage = xiiCameraUsageHint::None;
-  m_UsageHint.SetValue(usage);
-
-  xiiCameraMode::StorageType cam;
-  s >> cam;
-  m_Mode.SetValue(cam);
-
+  s >> m_UsageHint;
+  s >> m_Mode;
   s >> m_fNearPlane;
   s >> m_fFarPlane;
   s >> m_fPerspectiveFieldOfView;
   s >> m_fOrthoDimension;
+  s >> m_fAperture;
+  s >> m_ShutterTime;
+  s >> m_fISO;
+  s >> m_fExposureCompensation;
 
-  if (uiVersion >= 2 && uiVersion <= 7)
-  {
-  }
+  m_IncludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
+  m_ExcludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
 
-  if (uiVersion >= 3)
-  {
-    s >> m_fAperture;
-    float shutterTime;
-    s >> shutterTime;
-    m_ShutterTime = xiiTime::MakeFromSeconds(shutterTime);
-    s >> m_fISO;
-    s >> m_fExposureCompensation;
-  }
-
-  if (uiVersion >= 4)
-  {
-    m_IncludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
-    m_ExcludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
-  }
-
-  if (uiVersion >= 6)
-  {
-    s >> m_hRenderTarget;
-  }
-
-  if (uiVersion >= 7)
-  {
-    s >> m_vRenderTargetRectOffset;
-    s >> m_vRenderTargetRectSize;
-  }
-
-  if (uiVersion >= 8)
-  {
-    s >> m_sRenderPipeline;
-  }
-
-  if (uiVersion >= 10)
-  {
-    s >> m_bShowStats;
-  }
+  s >> m_hRenderTarget;
+  s >> m_vRenderTargetRectOffset;
+  s >> m_vRenderTargetRectSize;
+  s >> m_bShowStats;
 
   MarkAsModified();
 }
@@ -297,7 +244,7 @@ void xiiCameraComponent::UpdateRenderTargetCamera()
   if (!m_bRenderTargetInitialized)
     return;
 
-  // recreate everything, if the view got invalidated in between
+  // Recreate everything, if the view got invalidated in between.
   if (m_hRenderTargetView.IsInvalidated())
   {
     DeactivateRenderToTexture();
@@ -305,16 +252,19 @@ void xiiCameraComponent::UpdateRenderTargetCamera()
   }
 
   xiiView* pView = nullptr;
-  if (!xiiRenderWorld::TryGetView(m_hRenderTargetView, pView))
+  if (!GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->TryGetView(m_hRenderTargetView, pView))
     return;
 
   ApplySettingsToView(pView);
 
   if (m_Mode == xiiCameraMode::PerspectiveFixedFovX || m_Mode == xiiCameraMode::PerspectiveFixedFovY)
+  {
     m_RenderTargetCamera.SetCameraMode(GetCameraMode(), m_fPerspectiveFieldOfView, m_fNearPlane, m_fFarPlane);
+  }
   else
+  {
     m_RenderTargetCamera.SetCameraMode(GetCameraMode(), m_fOrthoDimension, m_fNearPlane, m_fFarPlane);
-
+  }
   m_RenderTargetCamera.LookAt(GetOwner()->GetGlobalPosition(), GetOwner()->GetGlobalPosition() + GetOwner()->GetGlobalDirForwards(), GetOwner()->GetGlobalDirUp());
 }
 
@@ -323,33 +273,7 @@ void xiiCameraComponent::ShowStats(xiiView* pView)
   if (!m_bShowStats)
     return;
 
-  // draw stats
-  {
-    const xiiStringView sName = GetOwner()->GetName();
-
-    xiiStringBuilder sb;
-    sb.SetFormat("Camera '{0}':\nEV100: {1}, Exposure: {2}", sName.IsEmpty() ? pView->GetName() : sName, GetEV100(), GetExposure());
-    xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::TopLeft, "CamStats", sb, xiiColor::White);
-  }
-
-  // draw frustum
-  {
-    const xiiGameObject* pOwner    = GetOwner();
-    xiiVec3              vPosition = pOwner->GetGlobalPosition();
-    xiiVec3              vForward  = pOwner->GetGlobalDirForwards();
-    xiiVec3              vUp       = pOwner->GetGlobalDirUp();
-
-    const xiiMat4 viewMatrix = xiiGraphicsUtils::CreateLookAtViewMatrix(vPosition, vPosition + vForward, vUp);
-
-    xiiMat4 projectionMatrix     = pView->GetProjectionMatrix(xiiCameraEye::Left); // todo: Stereo support
-    xiiMat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
-
-    xiiFrustum frustum = xiiFrustum::MakeFromMVP(viewProjectionMatrix);
-
-    // TODO: limit far plane to 10 meters
-
-    xiiDebugRenderer::DrawLineFrustum(GetWorld(), frustum, xiiColor::LimeGreen);
-  }
+  // \todo Draw stereo frustum and display stats with the debug renderer.
 }
 
 void xiiCameraComponent::SetUsageHint(xiiEnum<xiiCameraUsageHint> val)
@@ -422,6 +346,7 @@ void xiiCameraComponent::SetNearPlane(float fVal)
 {
   if (fVal == m_fNearPlane)
     return;
+
   m_fNearPlane = fVal;
 
   MarkAsModified();
@@ -431,6 +356,7 @@ void xiiCameraComponent::SetFarPlane(float fVal)
 {
   if (fVal == m_fFarPlane)
     return;
+
   m_fFarPlane = fVal;
 
   MarkAsModified();
@@ -440,6 +366,7 @@ void xiiCameraComponent::SetFieldOfView(float fVal)
 {
   if (fVal == m_fPerspectiveFieldOfView)
     return;
+
   m_fPerspectiveFieldOfView = fVal;
 
   MarkAsModified();
@@ -449,14 +376,10 @@ void xiiCameraComponent::SetOrthoDimension(float fVal)
 {
   if (fVal == m_fOrthoDimension)
     return;
+
   m_fOrthoDimension = fVal;
 
   MarkAsModified();
-}
-
-xiiRenderPipelineResourceHandle xiiCameraComponent::GetRenderPipeline() const
-{
-  return m_hCachedRenderPipeline;
 }
 
 xiiViewHandle xiiCameraComponent::GetRenderTargetView() const
@@ -464,26 +387,11 @@ xiiViewHandle xiiCameraComponent::GetRenderTargetView() const
   return m_hRenderTargetView;
 }
 
-xiiStringView xiiCameraComponent::GetRenderPipelineEnum() const
-{
-  return m_sRenderPipeline.GetView();
-}
-
-void xiiCameraComponent::SetRenderPipelineEnum(xiiStringView sFile)
-{
-  DeactivateRenderToTexture();
-
-  m_sRenderPipeline.Assign(sFile);
-
-  ActivateRenderToTexture();
-
-  MarkAsModified();
-}
-
 void xiiCameraComponent::SetAperture(float fAperture)
 {
   if (m_fAperture == fAperture)
     return;
+
   m_fAperture = fAperture;
 
   MarkAsModified();
@@ -493,6 +401,7 @@ void xiiCameraComponent::SetShutterTime(xiiTime shutterTime)
 {
   if (m_ShutterTime == shutterTime)
     return;
+
   m_ShutterTime = shutterTime;
 
   MarkAsModified();
@@ -502,6 +411,7 @@ void xiiCameraComponent::SetISO(float fISO)
 {
   if (m_fISO == fISO)
     return;
+
   m_fISO = fISO;
 
   MarkAsModified();
@@ -511,6 +421,7 @@ void xiiCameraComponent::SetExposureCompensation(float fEC)
 {
   if (m_fExposureCompensation == fEC)
     return;
+
   m_fExposureCompensation = fEC;
 
   MarkAsModified();
@@ -561,11 +472,6 @@ void xiiCameraComponent::ApplySettingsToView(xiiView* pView) const
 
   const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
   pView->m_ExcludeTags.Set(tagEditor);
-
-  if (m_hCachedRenderPipeline.IsValid())
-  {
-    pView->SetRenderPipelineResource(m_hCachedRenderPipeline);
-  }
 }
 
 void xiiCameraComponent::ResourceChangeEventHandler(const xiiResourceEvent& e)
@@ -579,11 +485,12 @@ void xiiCameraComponent::ResourceChangeEventHandler(const xiiResourceEvent& e)
     case xiiResourceEvent::Type::ResourceDeleted:
     case xiiResourceEvent::Type::ResourceContentUnloading:
     case xiiResourceEvent::Type::ResourceContentUpdated:
-      // triggers a recreation of the view
-      xiiRenderWorld::DeleteView(m_hRenderTargetView);
+    {
+      // Triggers a recreation of the view
+      GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DestroyView(m_hRenderTargetView);
       m_hRenderTargetView.Invalidate();
       break;
-
+    }
     default:
       break;
   }
@@ -613,21 +520,12 @@ void xiiCameraComponent::ActivateRenderToTexture()
   if (m_UsageHint != xiiCameraUsageHint::RenderTarget)
     return;
 
-  if (m_bRenderTargetInitialized || !m_hRenderTarget.IsValid() || m_sRenderPipeline.IsEmpty() || !IsActiveAndInitialized())
+  if (m_bRenderTargetInitialized || !m_hRenderTarget.IsValid() || !IsActiveAndInitialized())
     return;
 
   xiiResourceLock<xiiRenderToTexture2DResource> pRenderTarget(m_hRenderTarget, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
 
   if (pRenderTarget.GetAcquireResult() != xiiResourceAcquireResult::Final)
-    return;
-
-  // query the render pipeline to use
-  if (const auto* pConfig = xiiRenderWorld::FindCameraConfig(m_sRenderPipeline))
-  {
-    m_hCachedRenderPipeline = pConfig->m_hRenderPipeline;
-  }
-
-  if (!m_hCachedRenderPipeline.IsValid())
     return;
 
   m_bRenderTargetInitialized = true;
@@ -642,16 +540,11 @@ void xiiCameraComponent::ActivateRenderToTexture()
   xiiView* pView      = nullptr;
   m_hRenderTargetView = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView(sName, pView);
 
-  pView->SetRenderPipelineResource(m_hCachedRenderPipeline);
-
-  pView->SetWorld(GetWorld());
   pView->SetCamera(&m_RenderTargetCamera);
 
   pRenderTarget->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiCameraComponent::ResourceChangeEventHandler, this));
 
-  xiiRenderTargets renderTargets;
-  renderTargets.m_pRTs[0] = pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget);
-  pView->SetRenderTargets(renderTargets);
+  pView->SetRenderTargetView(pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
   const float maxSizeX = 1.0f - m_vRenderTargetRectOffset.x;
   const float maxSizeY = 1.0f - m_vRenderTargetRectOffset.y;
@@ -678,7 +571,6 @@ void xiiCameraComponent::DeactivateRenderToTexture()
     return;
 
   m_bRenderTargetInitialized = false;
-  m_hCachedRenderPipeline.Invalidate();
 
   XII_ASSERT_DEBUG(m_hRenderTarget.IsValid(), "Render Target should be valid");
 
@@ -712,62 +604,5 @@ void xiiCameraComponent::OnDeactivated()
 
   SUPER::OnDeactivated();
 }
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <Foundation/Serialization/GraphPatch.h>
-
-class xiiCameraComponentPatch_4_5 : public xiiGraphPatch
-{
-public:
-  xiiCameraComponentPatch_4_5() :
-    xiiGraphPatch("xiiCameraComponent", 5)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
-  {
-    pNode->RenameProperty("Usage Hint", "UsageHint");
-    pNode->RenameProperty("Near Plane", "NearPlane");
-    pNode->RenameProperty("Far Plane", "FarPlane");
-    pNode->RenameProperty("Include Tags", "IncludeTags");
-    pNode->RenameProperty("Exclude Tags", "ExcludeTags");
-    pNode->RenameProperty("Render Pipeline", "RenderPipeline");
-    pNode->RenameProperty("Shutter Time", "ShutterTime");
-    pNode->RenameProperty("Exposure Compensation", "ExposureCompensation");
-  }
-};
-
-xiiCameraComponentPatch_4_5 g_xiiCameraComponentPatch_4_5;
-
-//////////////////////////////////////////////////////////////////////////
-
-class xiiCameraComponentPatch_8_9 : public xiiGraphPatch
-{
-public:
-  xiiCameraComponentPatch_8_9() :
-    xiiGraphPatch("xiiCameraComponent", 9)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
-  {
-    // convert the "ShutterTime" property from float to xiiTime
-    if (auto pProp = pNode->FindProperty("ShutterTime"))
-    {
-      if (pProp->m_Value.IsA<float>())
-      {
-        const float shutterTime = pProp->m_Value.Get<float>();
-        pProp->m_Value          = xiiTime::MakeFromSeconds(shutterTime);
-      }
-    }
-  }
-};
-
-xiiCameraComponentPatch_8_9 g_xiiCameraComponentPatch_8_9;
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_CameraComponent);
