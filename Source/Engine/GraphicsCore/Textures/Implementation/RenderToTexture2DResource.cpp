@@ -100,6 +100,21 @@ xiiSharedPtr<xiiGALTextureView> xiiRenderToTexture2DResource::GetRenderTargetVie
   return m_pGALTexture[0]->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 }
 
+void xiiRenderToTexture2DResource::AddRenderView(xiiViewHandle hView)
+{
+  m_RenderViews.PushBack(hView);
+}
+
+void xiiRenderToTexture2DResource::RemoveRenderView(xiiViewHandle hView)
+{
+  m_RenderViews.RemoveAndSwap(hView);
+}
+
+const xiiDynamicArray<xiiViewHandle>& xiiRenderToTexture2DResource::GetAllRenderViews() const
+{
+  return m_RenderViews;
+}
+
 static xiiUInt16 GetNextBestResolution(float fRes)
 {
   fRes = xiiMath::Clamp(fRes, 8.0f, 4096.0f);

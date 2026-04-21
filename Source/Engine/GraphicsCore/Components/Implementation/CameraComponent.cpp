@@ -4,7 +4,6 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/CameraComponent.h>
-#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
@@ -637,11 +636,11 @@ void xiiCameraComponent::ActivateRenderToTexture()
 
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiStringBuilder name;
-  name.SetFormat("Camera RT: {0}", GetOwner()->GetName());
+  xiiStringBuilder sName;
+  sName.SetFormat("Camera RT: {0}", GetOwner()->GetName());
 
   xiiView* pView      = nullptr;
-  m_hRenderTargetView = xiiRenderWorld::CreateView(name, pView);
+  m_hRenderTargetView = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView(sName, pView);
 
   pView->SetRenderPipelineResource(m_hCachedRenderPipeline);
 
@@ -693,7 +692,7 @@ void xiiCameraComponent::DeactivateRenderToTexture()
 
   if (!m_hRenderTargetView.IsInvalidated())
   {
-    xiiRenderWorld::DeleteView(m_hRenderTargetView);
+    GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DestroyView(m_hRenderTargetView);
     m_hRenderTargetView.Invalidate();
   }
 

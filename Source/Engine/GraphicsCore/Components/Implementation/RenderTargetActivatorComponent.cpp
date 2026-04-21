@@ -3,9 +3,8 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/RenderTargetActivatorComponent.h>
-#include <GraphicsCore/Pipeline/RenderData/ExtractedRenderData.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiRenderTargetActivatorComponent, 1, xiiComponentMode::Static)
