@@ -2,13 +2,13 @@
 template <typename T>
 XII_ALWAYS_INLINE void xiiRenderGraphBlackboard::Set(xiiStringView sKey, const T& value)
 {
-  m_Entries.Insert(xiiTempHashedString(sKey), xiiVariant(value));
+  m_Entries.Insert(xiiMakeHashedString(sKey), xiiVariant(value));
 }
 
 template <typename T>
 XII_ALWAYS_INLINE void xiiRenderGraphBlackboard::Set(xiiStringView sKey, T&& value)
 {
-  m_Entries.Insert(xiiTempHashedString(sKey), xiiVariant(std::forward<T>(value)));
+  m_Entries.Insert(xiiMakeHashedString(sKey), xiiVariant(std::forward<T>(value)));
 }
 
 template <typename T>
