@@ -155,7 +155,7 @@ public:
 
   bool IsValid() const;
 
- /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
+  /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
   ///
   /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
   /// If no ray can be computed, EZ_FAILURE is returned.
