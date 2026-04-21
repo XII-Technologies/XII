@@ -73,26 +73,26 @@ std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(xiiStringView sNa
   passEntry.m_bAllowMerge     = true;
   passEntry.m_sName.Assign(sName);
 
-  TPassData* pData                    = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), TPassData);
-  passEntry.m_pPassData               = pData;
+  TPassData* pPassData                = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), TPassData);
+  passEntry.m_pPassData               = pPassData;
   passEntry.m_DestroyPassDataDelegate = [](void* pData) -> void {
-    XII_DELETE(xiiFrameAllocator::GetCurrentAllocator(), static_cast<TPassData*>(pData));
+    xiiInternal::Delete(xiiFrameAllocator::GetCurrentAllocator(), static_cast<TPassData*>(pData));
   };
 
   // Wrap typed execute function in a type-erased delegate.
-  passEntry.m_ExecuteDelegate = [executeDelegate, pData](xiiRGPassContext& context) -> void {
-    executeDelegate(*pData, context);
+  passEntry.m_ExecuteDelegate = [executeDelegate, pPassData](xiiRGPassContext& context) -> void {
+    executeDelegate(*pPassData, context);
   };
 
   // Call setup delegate immediately, this populates m_Reads / m_Writes via the builder.
   xiiRGBuilder builder(*this, uiPassIndex);
-  setupDelegate(*pData, builder);
+  setupDelegate(*pPassData, builder);
 
   m_bIsCompiled = false; // Invalidate any previous compile.
 
   xiiRGPassHandle hPass;
   hPass.m_uiIndex = uiPassIndex;
-  return {pData, hPass};
+  return {pPassData, hPass};
 }
 
 XII_ALWAYS_INLINE const xiiRGStatistics& xiiRenderGraph::GetStatistics() const

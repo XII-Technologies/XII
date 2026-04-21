@@ -60,6 +60,12 @@ public:
   /// \brief Destroys a view. The view must have been created by this module.
   void DestroyView(const xiiViewHandle& hView);
 
+  /// \brief Retrieves a view by its handle. Returns false if the handle is invalid.
+  bool TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const;
+
+  /// \brief Retrieves a view by its usage hint. If multiple views share the same hint, the first one found is returned.
+  xiiView* GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint) const;
+
   /// \brief Invalidates cached static render data for one object.
   ///
   /// The component handle is accepted for compatibility with existing call sites.
@@ -132,7 +138,7 @@ private:
     ViewExtractionCache                  m_ExtractionCache;
   };
 
-  xiiMutex                          m_ViewMutex;
+  mutable xiiMutex                  m_ViewMutex;
   xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
   xiiUInt64                         m_uiRenderFrameIndex = 0;
 

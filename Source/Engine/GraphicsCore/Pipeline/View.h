@@ -122,12 +122,15 @@ private:
 public:
   xiiViewHandle GetHandle() const;
 
-  void          SetName(xiiStringView sName);
   xiiStringView GetName() const;
+  void          SetName(xiiStringView sName);
+
+  xiiGALTextureView* GetRenderTargetView() const;
+  void               SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
 
   /// \brief Sets the swapchain that this view will be rendering into.
-  void             SetSwapChain(xiiGALSwapChain* pSwapChain);
   xiiGALSwapChain* GetSwapChain() const;
+  void             SetSwapChain(xiiGALSwapChain* pSwapChain);
 
   void             SetCamera(xiiCamera* pCamera);
   xiiCamera*       GetCamera();
@@ -140,7 +143,7 @@ public:
   const xiiCamera* GetLodCamera() const;
 
   xiiEnum<xiiCameraUsageHint> GetCameraUsageHint() const;
-  void                        SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> val);
+  void                        SetCameraUsageHint(xiiEnum<xiiCameraUsageHint> hint);
 
   void                       SetViewRenderMode(xiiEnum<xiiViewRenderMode> value);
   xiiEnum<xiiViewRenderMode> GetViewRenderMode() const;
@@ -152,11 +155,25 @@ public:
 
   bool IsValid() const;
 
+  /// \brief Calculates the start position and direction (in world space) of the picking ray through the screen position in this view.
+  ///
+  /// fNormalizedScreenPosX and fNormalizedScreenPosY are expected to be in [0; 1] range (normalized screen coordinates).
+  /// If no ray can be computed, EZ_FAILURE is returned.
   xiiResult ComputePickingRay(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir) const;
+
+  /// \brief Calculates the normalized screen-space coordinate ([0; 1] range) that the given world-space point projects to.
+  ///
+  /// Returns EZ_FAILURE, if the point could not be projected into screen-space.
   xiiResult ComputeScreenSpacePos(const xiiVec3& vWorldPos, xiiVec3& out_vScreenPosNormalized) const;
+
+  /// \brief Calculates the world-space position that the given normalized screen-space coordinate maps to
   xiiResult ComputeWorldSpacePos(float fNormalizedScreenPosX, float fNormalizedScreenPosY, xiiVec3& out_vWorldPos) const;
-  void      ConvertScreenPixelPosToNormalizedPos(xiiVec3& inout_vPixelPos);
-  void      ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
+
+  /// \brief Converts a screen-space position from pixel coordinates to normalized coordinates.
+  void ConvertScreenPixelPosToNormalizedPos(xiiVec3& inout_vPixelPos);
+
+  /// \brief Converts a screen-space position from normalized coordinates to pixel coordinates.
+  void ConvertScreenNormalizedPosToPixelPos(xiiVec3& inout_vNormalizedPos);
 
   const xiiMat4& GetProjectionMatrix(xiiCameraEye eye) const;
   const xiiMat4& GetInverseProjectionMatrix(xiiCameraEye eye) const;
@@ -433,7 +450,8 @@ private:
 
   /// Non-owning pointer to the swapchain this view renders into.
   /// Set via SetSwapChain(); may be nullptr for off-screen views.
-  xiiGALSwapChain* m_pSwapChain = nullptr;
+  xiiGALSwapChain*   m_pSwapChain        = nullptr;
+  xiiGALTextureView* m_pRenderTargetView = nullptr;
 
   xiiRenderGraphBlackboard    m_Blackboard;
   xiiRenderGraphResourceCache m_ResourceCache;

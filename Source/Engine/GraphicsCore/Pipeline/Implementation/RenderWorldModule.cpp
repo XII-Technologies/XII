@@ -5,6 +5,7 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -85,7 +86,7 @@ xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& ou
   {
     XII_LOCK(m_ViewMutex);
 
-    viewDetail.m_pView->m_InternalId = m_ViewIdTable.Insert(viewDetail);
+    viewDetail.m_pView->m_InternalId = m_ViewIdTable.Insert(std::move(viewDetail));
   }
 
   viewDetail.m_pView->SetName(sName);
@@ -108,6 +109,40 @@ void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
       return;
   }
   m_ViewDeletedEvent.Broadcast(viewDetail.m_pView.Borrow());
+}
+
+bool xiiRenderWorldModule::TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const
+{
+  XII_LOCK(m_ViewMutex);
+
+  ViewDetail* pViewDetail;
+  if (!m_ViewIdTable.TryGetValue(hView, pViewDetail))
+    return false;
+
+  out_pView = pViewDetail->m_pView.Borrow();
+  return true;
+}
+
+xiiView* xiiRenderWorldModule::GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint) const
+{
+  XII_LOCK(m_ViewMutex);
+
+  xiiView* pAlternativeView = nullptr;
+
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  {
+    auto& value = it.Value();
+
+    if (value.m_pView->GetCameraUsageHint() == usageHint)
+    {
+      return value.m_pView.Borrow();
+    }
+    else if (alternativeUsageHint != xiiCameraUsageHint::None && value.m_pView->GetCameraUsageHint() == alternativeUsageHint)
+    {
+      pAlternativeView = value.m_pView.Borrow();
+    }
+  }
+  return pAlternativeView;
 }
 
 void xiiRenderWorldModule::SubmitRenderData(void* pContext, const xiiMsgExtractRenderData& msg, xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
@@ -426,10 +461,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
         }
 
         // Dispatch to object-level handlers explicitly, component dispatch is handled below.
-        if (const xiiRTTI* pObjectType = pObject->GetDynamicRTTI(); pObjectType != nullptr)
-        {
-          pObjectType->DispatchMessage(pObject, msg);
-        }
+        xiiGetStaticRTTI<xiiGameObject>()->DispatchMessage(pObject, msg);
 
         for (xiiComponent* pComponent : pObject->GetComponents())
         {
