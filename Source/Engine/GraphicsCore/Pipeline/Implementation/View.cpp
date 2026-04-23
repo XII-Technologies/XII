@@ -60,6 +60,21 @@ namespace
     const xiiUInt32 uiScaled = static_cast<xiiUInt32>(static_cast<float>(uiNativeDimension) * fScale) & ~1U;
     return xiiMath::Max(uiScaled, 2U);
   }
+
+  static void ComputeDynamicScaleBounds(float fRenderScale, float& out_fDynamicMin, float& out_fDynamicMax)
+  {
+    const float fFinalMinScale = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
+    const float fFinalMaxScale = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+    const float fBaseScale     = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
+
+    out_fDynamicMin = xiiMath::Clamp(fFinalMinScale / fBaseScale, 0.1f, 1.0f);
+    out_fDynamicMax = xiiMath::Clamp(fFinalMaxScale / fBaseScale, 0.1f, 1.0f);
+
+    if (out_fDynamicMin > out_fDynamicMax)
+    {
+      out_fDynamicMin = out_fDynamicMax;
+    }
+  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
@@ -84,29 +99,23 @@ xiiView::~xiiView()
   m_ResourceCache.Shutdown();
 }
 
-void xiiView::SetRenderResolutionScaleOverride(float fRenderScale)
+void xiiView::SetRenderScale(float fRenderScale)
 {
-  const float fMin     = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
-  const float fMax     = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
-  const float fClamped = xiiMath::Clamp(fRenderScale, fMin, fMax);
+  m_ViewPassResources.m_DynamicResolution.m_fRenderScale = xiiMath::Clamp(fRenderScale, 0.1f, 1.0f);
 
-  m_ViewPassResources.m_DynamicResolution.m_fOverrideScale = fClamped;
-  m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = fClamped;
-  m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = fClamped;
-  m_ViewPassResources.m_DynamicResolution.m_fErrorIntegral = 0.0f;
-  m_ViewPassResources.m_DynamicResolution.m_fPreviousError = 0.0f;
+  float fDynamicMin = 0.1f;
+  float fDynamicMax = 1.0f;
+  ComputeDynamicScaleBounds(m_ViewPassResources.m_DynamicResolution.m_fRenderScale, fDynamicMin, fDynamicMax);
+
+  m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fCurrentScale, fDynamicMin, fDynamicMax);
+  m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
 
   UpdateRenderResolutionState();
 }
 
-void xiiView::ClearRenderResolutionScaleOverride()
+float xiiView::GetRenderScale() const
 {
-  m_ViewPassResources.m_DynamicResolution.m_fOverrideScale = -1.0f;
-}
-
-bool xiiView::HasRenderResolutionScaleOverride() const
-{
-  return m_ViewPassResources.m_DynamicResolution.m_fOverrideScale > 0.0f;
+  return m_ViewPassResources.m_DynamicResolution.m_fRenderScale;
 }
 
 void xiiView::UpdateCachedMatrices() const
@@ -154,10 +163,15 @@ void xiiView::UpdateCachedMatrices() const
 
 void xiiView::UpdateRenderResolutionState() const
 {
-  const float fMin = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
-  const float fMax = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+  const float fRenderScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
 
-  m_Data.m_fRenderResolutionScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, fMin, fMax);
+  float fDynamicMin = 0.1f;
+  float fDynamicMax = 1.0f;
+  ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
+
+  const float fDynamicScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, fDynamicMin, fDynamicMax);
+
+  m_Data.m_fRenderResolutionScale = xiiMath::Clamp(fDynamicScale * fRenderScale, 0.1f, 1.0f);
 
   const xiiUInt32 uiNativeWidth  = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
   const xiiUInt32 uiNativeHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
@@ -178,24 +192,12 @@ void xiiView::RunDynamicResolutionPID()
 
   m_ViewPassResources.m_DynamicResolution.m_fLastGpuFrameTimeMs = fGpuTimeMs;
 
-  if (HasRenderResolutionScaleOverride())
-  {
-    const float fMin   = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
-    const float fMax   = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
-    const float fScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fOverrideScale, fMin, fMax);
-
-    m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = fScale;
-    m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = fScale;
-    m_ViewPassResources.m_DynamicResolution.m_fErrorIntegral = 0.0f;
-    m_ViewPassResources.m_DynamicResolution.m_fPreviousError = 0.0f;
-
-    UpdateRenderResolutionState();
-    return;
-  }
-
   // PID controller.
-  const float fMin       = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
-  const float fMax       = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+  const float fRenderScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fRenderScale, 0.1f, 1.0f);
+  float       fDynamicMin  = 0.1f;
+  float       fDynamicMax  = 1.0f;
+  ComputeDynamicScaleBounds(fRenderScale, fDynamicMin, fDynamicMax);
+
   const float fTarget    = xiiMath::Max(cvar_DynamicRenderingTargetMs.GetValue(), 0.1f);
   const float fDeltaTime = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;
 
@@ -208,11 +210,11 @@ void xiiView::RunDynamicResolutionPID()
   const float fPID        = 0.35f * fError + 0.05f * m_ViewPassResources.m_DynamicResolution.m_fErrorIntegral + 0.15f * fDerivative;
 
   // Clamp per-frame delta to avoid oscillation.
-  const float fDesired = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fCurrentScale + fPID, fMin, fMax);
+  const float fDesired = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fCurrentScale + fPID, fDynamicMin, fDynamicMax);
   const float fDelta   = xiiMath::Clamp(fDesired - m_ViewPassResources.m_DynamicResolution.m_fCurrentScale, -0.10f, 0.10f);
 
-  m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = m_ViewPassResources.m_DynamicResolution.m_fCurrentScale + fDelta;
-  m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Lerp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, m_ViewPassResources.m_DynamicResolution.m_fCurrentScale, 0.20f);
+  m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fCurrentScale + fDelta, fDynamicMin, fDynamicMax);
+  m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Clamp(xiiMath::Lerp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, m_ViewPassResources.m_DynamicResolution.m_fCurrentScale, 0.20f), fDynamicMin, fDynamicMax);
   m_ViewPassResources.m_DynamicResolution.m_fPreviousError = fError;
 
   UpdateRenderResolutionState();

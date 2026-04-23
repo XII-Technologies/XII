@@ -42,31 +42,26 @@ void xiiCameraComponentManager::Update(const xiiWorldModule::UpdateContext& cont
 {
   auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
 
-  for (auto hCameraComponent : m_ModifiedCameras)
+  for (xiiComponentHandle hCameraComponent : m_ModifiedCameras)
   {
     xiiCameraComponent* pCameraComponent = nullptr;
     if (!TryGetComponent(hCameraComponent, pCameraComponent))
-    {
       continue;
-    }
 
     if (xiiView* pView = pRenderWorldModule->GetViewByUsageHint(pCameraComponent->GetUsageHint(), xiiCameraUsageHint::None))
     {
       pCameraComponent->ApplySettingsToView(pView);
     }
-
     pCameraComponent->m_bIsModified = false;
   }
 
   m_ModifiedCameras.Clear();
 
-  for (auto hCameraComponent : m_RenderTargetCameras)
+  for (xiiComponentHandle hCameraComponent : m_RenderTargetCameras)
   {
     xiiCameraComponent* pCameraComponent = nullptr;
     if (!TryGetComponent(hCameraComponent, pCameraComponent))
-    {
       continue;
-    }
 
     pCameraComponent->UpdateRenderTargetCamera();
   }
@@ -164,7 +159,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 1, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("FarPlane", GetFarPlane, SetFarPlane)->AddAttributes(new xiiDefaultValueAttribute(1000.0f), new xiiClampValueAttribute(5.0, 10000.0f)),
     XII_ACCESSOR_PROPERTY("FOV", GetFieldOfView, SetFieldOfView)->AddAttributes(new xiiDefaultValueAttribute(60.0f), new xiiClampValueAttribute(1.0f, 170.0f)),
     XII_ACCESSOR_PROPERTY("Dimensions", GetOrthoDimension, SetOrthoDimension)->AddAttributes(new xiiDefaultValueAttribute(10.0f), new xiiClampValueAttribute(0.01f, 10000.0f)),
-    XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, 1.0f)),
+    XII_ACCESSOR_PROPERTY("RenderScale", GetRenderScale, SetRenderScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 1.0f)),
     XII_SET_MEMBER_PROPERTY("IncludeTags", m_IncludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
     XII_SET_MEMBER_PROPERTY("ExcludeTags", m_ExcludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
     XII_ACCESSOR_PROPERTY("Aperture", GetAperture, SetAperture)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(1.0f, 32.0f), new xiiSuffixAttribute(" f-stop(s)")),
@@ -387,7 +382,7 @@ void xiiCameraComponent::SetOrthoDimension(float fVal)
 
 void xiiCameraComponent::SetRenderScale(float fVal)
 {
-  const float fClamped = xiiMath::Clamp(fVal, 0.0f, 1.0f);
+  const float fClamped = xiiMath::Clamp(fVal, 0.1f, 1.0f);
   if (fClamped == m_fRenderScale)
     return;
 
@@ -483,15 +478,7 @@ void xiiCameraComponent::ApplySettingsToView(xiiView* pView) const
 
   pView->m_IncludeTags = m_IncludeTags;
   pView->m_ExcludeTags = m_ExcludeTags;
-
-  if (m_fRenderScale > 0.0f)
-  {
-    pView->SetRenderResolutionScaleOverride(m_fRenderScale);
-  }
-  else
-  {
-    pView->ClearRenderResolutionScaleOverride();
-  }
+  pView->SetRenderScale(m_fRenderScale);
 
   const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
   pView->m_ExcludeTags.Set(tagEditor);

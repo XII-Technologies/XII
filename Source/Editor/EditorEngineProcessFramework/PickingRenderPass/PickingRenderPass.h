@@ -47,7 +47,7 @@ private:
   void ReadBackPropertiesSinglePick(xiiView* pView);
   void ReadBackPropertiesMarqueePick(xiiView* pView);
 
-  void ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
+  void               ProcessPickingRenderData(xiiExtractedRenderData& extractedRenderData);
   void               BuildRendererLookup();
   const xiiRenderer* FindRendererForRenderData(const xiiRenderData* pRenderData) const;
   void               RenderDataBatch(const xiiRenderViewContext& renderViewContext, xiiArrayPtr<xiiRenderData* const> renderData) const;

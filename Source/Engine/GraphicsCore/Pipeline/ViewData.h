@@ -11,8 +11,8 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
 {
   xiiViewData()
   {
-    m_ViewPortRect   = xiiRectFloat(0.0f, 0.0f);
-    m_ViewRenderMode = xiiViewRenderMode::None;
+    m_ViewPortRect             = xiiRectFloat(0.0f, 0.0f);
+    m_ViewRenderMode           = xiiViewRenderMode::None;
     m_fRenderResolutionScale   = 1.0f;
     m_uiRenderResolutionWidth  = 1U;
     m_uiRenderResolutionHeight = 1U;
