@@ -84,6 +84,31 @@ xiiView::~xiiView()
   m_ResourceCache.Shutdown();
 }
 
+void xiiView::SetRenderResolutionScaleOverride(float fRenderScale)
+{
+  const float fMin     = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
+  const float fMax     = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+  const float fClamped = xiiMath::Clamp(fRenderScale, fMin, fMax);
+
+  m_ViewPassResources.m_DynamicResolution.m_fOverrideScale = fClamped;
+  m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = fClamped;
+  m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = fClamped;
+  m_ViewPassResources.m_DynamicResolution.m_fErrorIntegral = 0.0f;
+  m_ViewPassResources.m_DynamicResolution.m_fPreviousError = 0.0f;
+
+  UpdateRenderResolutionState();
+}
+
+void xiiView::ClearRenderResolutionScaleOverride()
+{
+  m_ViewPassResources.m_DynamicResolution.m_fOverrideScale = -1.0f;
+}
+
+bool xiiView::HasRenderResolutionScaleOverride() const
+{
+  return m_ViewPassResources.m_DynamicResolution.m_fOverrideScale > 0.0f;
+}
+
 void xiiView::UpdateCachedMatrices() const
 {
   bool bUpdateVP = false;
@@ -152,6 +177,21 @@ void xiiView::RunDynamicResolutionPID()
   }
 
   m_ViewPassResources.m_DynamicResolution.m_fLastGpuFrameTimeMs = fGpuTimeMs;
+
+  if (HasRenderResolutionScaleOverride())
+  {
+    const float fMin   = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
+    const float fMax   = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+    const float fScale = xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fOverrideScale, fMin, fMax);
+
+    m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = fScale;
+    m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = fScale;
+    m_ViewPassResources.m_DynamicResolution.m_fErrorIntegral = 0.0f;
+    m_ViewPassResources.m_DynamicResolution.m_fPreviousError = 0.0f;
+
+    UpdateRenderResolutionState();
+    return;
+  }
 
   // PID controller.
   const float fMin       = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);

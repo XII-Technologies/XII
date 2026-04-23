@@ -89,6 +89,10 @@ public:
   float GetOrthoDimension() const { return m_fOrthoDimension; } // [ property ]
   void  SetOrthoDimension(float fVal);                          // [ property ]
 
+  /// \brief 0.0 means dynamic-resolution PID, otherwise fixed per-camera render scale.
+  float GetRenderScale() const { return m_fRenderScale; } // [ property ]
+  void  SetRenderScale(float fVal);                        // [ property ]
+
   xiiViewHandle GetRenderTargetView() const;
 
   float GetAperture() const { return m_fAperture; } // [ property ]
@@ -124,6 +128,7 @@ private:
   float                              m_fFarPlane               = 1000.0f;
   float                              m_fPerspectiveFieldOfView = 60.0f;
   float                              m_fOrthoDimension         = 10.0f;
+  float                              m_fRenderScale            = 0.0f;
 
   float   m_fAperture             = 1.0f;
   xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0f);

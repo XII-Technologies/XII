@@ -151,6 +151,16 @@ public:
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
+  /// \brief Sets a fixed render scale override for this view (0 < scale <= 1).
+  ///        While active, dynamic-resolution PID is bypassed and this scale is used directly.
+  void SetRenderResolutionScaleOverride(float fRenderScale);
+
+  /// \brief Clears a fixed render scale override so the dynamic-resolution PID can run again.
+  void ClearRenderResolutionScaleOverride();
+
+  /// \brief Returns whether a fixed render scale override is currently active.
+  bool HasRenderResolutionScaleOverride() const;
+
   /// \brief Returns the dynamic render scale applied to this view (1.0 = native viewport resolution).
   float GetRenderResolutionScale() const;
 
@@ -479,6 +489,7 @@ private:
       float m_fPreviousError      = 0.0f;
       float m_fSmoothedScale      = 1.0f;
       float m_fLastGpuFrameTimeMs = 0.0f; // resolved GPU time from profiler (2 frames ago)
+      float m_fOverrideScale      = -1.0f; // <= 0 means no fixed override; PID drives scale.
     } m_DynamicResolution;
 
     //  Stage 1 - Visibility & Setup
