@@ -151,6 +151,22 @@ public:
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
+  /// \brief Sets the per-view render scale factor (1.0 = native).
+  ///        This integrates with dynamic resolution as a baseline multiplier.
+  void SetRenderScale(float fRenderScale);
+
+  /// \brief Returns the configured per-view render scale factor (1.0 = native).
+  float GetRenderScale() const;
+
+  /// \brief Returns the dynamic render scale applied to this view (1.0 = native viewport resolution).
+  float GetRenderResolutionScale() const;
+
+  /// \brief Returns the dynamic internal render resolution width for this view.
+  xiiUInt32 GetRenderResolutionWidth() const;
+
+  /// \brief Returns the dynamic internal render resolution height for this view.
+  xiiUInt32 GetRenderResolutionHeight() const;
+
   const xiiViewData& GetData() const;
 
   bool IsValid() const;
@@ -214,13 +230,14 @@ private:
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
   void UpdateCachedMatrices() const;
+  void UpdateRenderResolutionState() const;
 
   /// \brief Populates the render graph for default (non-custom) views.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.
   void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
-  void RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard);
+  void RunDynamicResolutionPID();
 
 
   void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder);
@@ -469,6 +486,7 @@ private:
       float m_fPreviousError      = 0.0f;
       float m_fSmoothedScale      = 1.0f;
       float m_fLastGpuFrameTimeMs = 0.0f; // resolved GPU time from profiler (2 frames ago)
+      float m_fRenderScale        = 1.0f; // camera/view scale baseline (1.0 = native).
     } m_DynamicResolution;
 
     //  Stage 1 - Visibility & Setup
