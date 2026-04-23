@@ -2184,7 +2184,7 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
 bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const
 {
 #define XII_VERIFY_EXCLUSIVE_STATE(exclusiveState)                                                                                                                                                                 \
-  if (!stateFlags.IsStrictlyAnySet((xiiGALResourceStateFlags::exclusiveState)))                                                                                                                                    \
+  if (stateFlags.IsSet(xiiGALResourceStateFlags::exclusiveState) && !stateFlags.IsStrictlyAnySet((xiiGALResourceStateFlags::exclusiveState)))                                                                      \
   {                                                                                                                                                                                                                \
     xiiLog::Error("State {} is invalid: {} can not be combined with any other state.", xiiArgEnum(stateFlags), xiiArgEnum(xiiBitflags<xiiGALResourceStateFlags>(xiiGALResourceStateFlags::exclusiveState), true)); \
     return false;                                                                                                                                                                                                  \
