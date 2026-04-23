@@ -183,7 +183,10 @@ public:
 
           if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
           {
-            m_pRenderGraph->Execute(m_pDevice.Borrow(), /*pView=*/nullptr, m_pRenderGraphBlackboard.Borrow(), m_pRenderGraphResourceCache.Borrow()).AssertSuccess("RenderGraph execution failed.");
+            m_pRenderGraph->Execute(m_pDevice.Borrow(), /*pView=*/nullptr, m_pRenderGraphBlackboard.Borrow(), m_pRenderGraphResourceCache.Borrow(), m_pRenderGraphProfiler.Borrow()).AssertSuccess("RenderGraph execution failed.");
+
+            // Tick the profiler so it advances its ring and schedules readback on the oldest slot.
+            m_pRenderGraphProfiler->OnFrameEnd(m_uiFrameIndex);
           }
           else
           {
@@ -360,9 +363,10 @@ public:
     m_pRenderGraph              = XII_DEFAULT_NEW(xiiRenderGraph);
     m_pRenderGraphBlackboard    = XII_DEFAULT_NEW(xiiRenderGraphBlackboard);
     m_pRenderGraphResourceCache = XII_DEFAULT_NEW(xiiRenderGraphResourceCache);
+    m_pRenderGraphProfiler      = XII_DEFAULT_NEW(xiiRenderGraphTimestampProfiler);
 
-    // Initialize the render-graph transient resource cache with our device.
     m_pRenderGraphResourceCache->Initialize(m_pDevice);
+    m_pRenderGraphProfiler->Initialize(m_pDevice);
   }
 
   virtual void BeforeCoreSystemsShutdown() override
@@ -379,6 +383,7 @@ public:
 
   virtual void BeforeHighLevelSystemsShutdown() override
   {
+    m_pRenderGraphProfiler.Clear();
     m_pRenderGraphResourceCache.Clear();
     m_pRenderGraphBlackboard.Clear();
     m_pRenderGraph.Clear();
@@ -430,7 +435,6 @@ public:
   }
 
 private:
-  // Render-graph support: per-frame clear pass data
   struct ClearPassData
   {
     xiiRGTextureHandle m_hBackbuffer;
@@ -480,11 +484,12 @@ private:
   xiiSharedPtr<xiiGALDevice>    m_pDevice;
   xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
 
-  xiiUniquePtr<xiiRenderGraph>              m_pRenderGraph;
-  xiiUniquePtr<xiiRenderGraphBlackboard>    m_pRenderGraphBlackboard;
-  xiiUniquePtr<xiiRenderGraphResourceCache> m_pRenderGraphResourceCache;
-  xiiUInt64                                 m_uiFrameIndex = 0ULL;
-  xiiUniquePtr<xiiGraphicsExplorerWindow>   m_pWindow;
+  xiiUniquePtr<xiiRenderGraph>                  m_pRenderGraph;
+  xiiUniquePtr<xiiRenderGraphBlackboard>        m_pRenderGraphBlackboard;
+  xiiUniquePtr<xiiRenderGraphResourceCache>     m_pRenderGraphResourceCache;
+  xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pRenderGraphProfiler;
+  xiiUInt64                                     m_uiFrameIndex = 0ULL;
+  xiiUniquePtr<xiiGraphicsExplorerWindow>       m_pWindow;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGraphicsExplorerApp);
