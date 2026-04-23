@@ -24,6 +24,9 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -150,49 +153,62 @@ public:
     }
 
     // Perform rendering.
-    {
-      // Before starting to render in a frame call this function.
-      m_pDevice->BeginFrame();
-
-      // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
-      bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr) && (m_pDepthStencilTexture != nullptr) && (m_pRenderPass != nullptr);
-
-      if (bCanRender)
       {
-        auto pGraphicsQueue = m_pDevice->GetCommandQueue();
+        // Before starting to render in a frame call this function.
+        m_pDevice->BeginFrame();
 
-        m_pCommandList->Begin();
+        // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
+        bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr) && (m_pDepthStencilTexture != nullptr);
+
+        if (bCanRender)
         {
-          xiiGALBeginRenderPassDescription beginRenderPass(m_pRenderPass, GetCurrentFramebuffer());
+          // Build a minimal render graph that clears the depth and backbuffer.
+          ++m_uiFrameIndex;
 
-          auto& depthClearValue                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-          depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
-          depthClearValue.m_DepthStencil.m_uiStencil = 0U;
+          m_RenderGraph.BeginSetup(m_uiFrameIndex);
 
-          float fGlobalTime             = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-          auto& colorClearValue         = beginRenderPass.m_ClearValues.ExpandAndGetRef();
-          colorClearValue.m_ClearColour = xiiColor::MakeHSV(fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(fGlobalTime * 0.5f));
+          auto [pData, hPass] = m_RenderGraph.AddPass<ClearPassData>(
+            "ClearPass",
+            xiiGALCommandQueueFlags::Graphics,
+            xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupClearPass, this),
+            xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteClearPass, this),
+            /*bHasSideEffects=*/true
+          );
 
-          m_pCommandList->BeginRenderPass(beginRenderPass);
-          m_pCommandList->EndRenderPass();
-        }
-        m_pCommandList->End();
+          float fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+          if (pData)
+            pData->m_fGlobalTime = fGlobalTime;
 
-        pGraphicsQueue->Submit(m_pCommandList);
+          m_RenderGraph.EndSetup();
 
-        m_pSwapChain->Present();
-      }
-      else
-      {
-        // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
-        if (m_pSwapChain)
-        {
+          m_RenderGraphResourceCache.BeginFrame(m_uiFrameIndex);
+
+          xiiStringBuilder sError;
+          xiiRGCompileSettings settings;
+          if (m_RenderGraph.Compile(settings, &sError).Succeeded())
+          {
+            m_RenderGraph.Execute(m_pDevice.Borrow(), /*pView=*/nullptr, &m_RenderGraphBlackboard, &m_RenderGraphResourceCache).AssertSuccess("RenderGraph execution failed.");
+          }
+          else
+          {
+            xiiLog::Error("RenderGraph compile failed: {0}", sError);
+          }
+
+          m_RenderGraphResourceCache.EndFrame();
+
           m_pSwapChain->Present();
         }
-      }
+        else
+        {
+          // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
+          if (m_pSwapChain)
+          {
+            m_pSwapChain->Present();
+          }
+        }
 
-      m_pDevice->EndFrame();
-    }
+        m_pDevice->EndFrame();
+      }
 
     // Make sure telemetry is sent out regularly.
     xiiTelemetry::PerFrameUpdate();
@@ -356,6 +372,9 @@ public:
 
     // Now that we have a window and device, tell the engine to initialize the rendering infrastructure
     xiiStartup::StartupHighLevelSystems();
+
+    // Initialize the render-graph transient resource cache with our device.
+    m_RenderGraphResourceCache.Initialize(m_pDevice);
   }
 
   virtual void BeforeCoreSystemsShutdown() override
@@ -386,6 +405,9 @@ public:
     {
       xiiGALDevice::SetDefaultDevice(nullptr);
     }
+    // Shutdown render-graph transient resource cache before destroying device.
+    m_RenderGraphResourceCache.Shutdown();
+
     m_pDevice.Clear();
 
     // Finally destroy the window
@@ -546,6 +568,59 @@ public:
   }
 
 private:
+  // Render-graph support: per-frame clear pass data
+  struct ClearPassData
+  {
+    xiiRGTextureHandle m_hBackbuffer;
+    xiiRGTextureHandle m_hDepth;
+    float              m_fGlobalTime = 0.0f;
+  };
+
+  void SetupClearPass(ClearPassData& data, xiiRGBuilder& builder)
+  {
+    if (m_pSwapChain)
+    {
+      xiiSharedPtr<xiiGALTexture> pBackbufferTexture = m_pSwapChain->GetBackBufferTexture();
+      if (pBackbufferTexture)
+      {
+        data.m_hBackbuffer = builder.ImportTexture("Backbuffer", pBackbufferTexture, xiiGALResourceStateFlags::RenderTarget);
+        data.m_hBackbuffer = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
+      }
+    }
+
+    if (m_pDepthStencilTexture)
+    {
+      data.m_hDepth = builder.ImportTexture("DepthStencil", m_pDepthStencilTexture, xiiGALResourceStateFlags::DepthWrite);
+      data.m_hDepth = builder.WriteTexture(data.m_hDepth, xiiGALResourceStateFlags::DepthWrite);
+    }
+
+    builder.SetPassSideEffects(true);
+  }
+
+  void ExecuteClearPass(const ClearPassData& data, xiiRGPassContext& context)
+  {
+    xiiGALCommandList& cmd = context.GetCommandList();
+
+    cmd.BeginDebugGroup("GraphicsExplorerClear");
+    {
+      if (data.m_hDepth.IsValid())
+      {
+        cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
+      }
+
+      if (data.m_hBackbuffer.IsValid())
+      {
+        cmd.ClearRenderTargetView(context.GetTexture(data.m_hBackbuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
+      }
+    }
+    cmd.EndDebugGroup();
+  }
+
+  // Render graph objects
+  xiiRenderGraph                 m_RenderGraph;
+  xiiRenderGraphBlackboard       m_RenderGraphBlackboard;
+  xiiRenderGraphResourceCache    m_RenderGraphResourceCache;
+  xiiUInt64                      m_uiFrameIndex = 0ULL;
   xiiUniquePtr<xiiGraphicsExplorerWindow> m_pWindow;
 
   xiiSharedPtr<xiiGALDevice> m_pDevice;

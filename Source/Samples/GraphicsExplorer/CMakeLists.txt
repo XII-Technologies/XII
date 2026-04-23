@@ -11,5 +11,5 @@ xii_add_renderers(${PROJECT_NAME} EXCLUDE_SHADER_COMPILER)
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-  Core
+  GraphicsCore
 )
