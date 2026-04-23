@@ -609,7 +609,9 @@ void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResour
   if (bSplitBarrier)
   {
     // Producer emits Begin, consumer emits End.
-    barrier.m_TransitionType = xiiGALStateTransitionType::Begin;
+    barrier.m_TransitionType  = xiiGALStateTransitionType::Begin;
+    barrier.m_TransitionFlags = {};
+
     m_Barriers.PushBack(barrier);
 
     // Find the producer pass compiled index.
