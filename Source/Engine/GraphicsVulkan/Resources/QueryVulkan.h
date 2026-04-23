@@ -15,7 +15,8 @@ public:
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 GetQueryPoolIndex(xiiUInt32 uiQueryID) const
   {
-    XII_ASSERT_DEV(uiQueryID == 0 || (uiQueryID == xiiGALQueryType::Duration && uiQueryID == 1), "");
+    XII_ASSERT_DEV(uiQueryID == 0 || (m_Description.m_Type == xiiGALQueryType::Duration && uiQueryID == 1), "");
+
     return m_QueryPoolIndex[uiQueryID];
   }
 
