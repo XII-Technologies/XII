@@ -12,6 +12,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiGALQueryVulkan::xiiGALQueryVulkan(xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALQuery(std::move(pDeviceVulkan), creationDescription)
 {
+  m_QueryPoolIndex.SetCount(2U, xiiInvalidIndex);
 }
 
 xiiGALQueryVulkan::~xiiGALQueryVulkan()
@@ -70,7 +71,7 @@ bool xiiGALQueryVulkan::AllocateQueries()
 
   DiscardQueries();
 
-  XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
+  XII_ASSERT_DEV(m_pQueryPoolVulkan == nullptr, "");
   XII_ASSERT_DEV(m_pCommandList != nullptr, "");
 
   const xiiGALCommandListCreationDescription& description = m_pCommandList->GetDescription();
@@ -80,9 +81,9 @@ bool xiiGALQueryVulkan::AllocateQueries()
 
   for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 1U : 2U); ++i)
   {
-    auto& uiQueryPoolIndex = m_QueryPoolIndex[i];
+    xiiUInt32& uiQueryPoolIndex = m_QueryPoolIndex[i];
 
-    XII_ASSERT_DEV(uiQueryPoolIndex != xiiInvalidIndex, "");
+    XII_ASSERT_DEV(uiQueryPoolIndex == xiiInvalidIndex, "");
 
     uiQueryPoolIndex = m_pQueryPoolVulkan->AllocateQuery(m_Description.m_Type);
 
@@ -302,7 +303,6 @@ namespace
 
     return bIsDataAvailable;
   }
-
 } // namespace
 
 bool xiiGALQueryVulkan::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
