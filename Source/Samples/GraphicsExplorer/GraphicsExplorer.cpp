@@ -166,36 +166,30 @@ public:
         ++m_uiFrameIndex;
 
         m_pRenderGraph->BeginSetup(m_uiFrameIndex);
-
-        auto [pData, hPass] = m_pRenderGraph->AddPass<ClearPassData>("ClearPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupClearPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteClearPass, this), /*bHasSideEffects=*/true);
-
-        float fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-        if (pData)
         {
-          pData->m_fGlobalTime = fGlobalTime;
+          m_pRenderGraph->AddPass<ClearPassData>("ClearPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupClearPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteClearPass, this), /*bHasSideEffects=*/true);
         }
-
         m_pRenderGraph->EndSetup();
 
         m_pRenderGraphResourceCache->BeginFrame(m_uiFrameIndex);
-
-        xiiStringBuilder     sError;
-        xiiRGCompileSettings settings;
-        settings.m_bEnablePassCulling   = true;
-        settings.m_bEnableCompileCache  = true;
-        settings.m_bEnableSplitBarriers = false;
-        settings.m_bEnableAsyncQueues   = true;
-        settings.m_bEnableGPUProfiling  = true;
-
-        if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
         {
-          m_pRenderGraph->Execute(m_pDevice.Borrow(), /*pView=*/nullptr, m_pRenderGraphBlackboard.Borrow(), m_pRenderGraphResourceCache.Borrow()).AssertSuccess("RenderGraph execution failed.");
-        }
-        else
-        {
-          xiiLog::Error("RenderGraph compile failed: {0}", sError);
-        }
+          xiiStringBuilder     sError;
+          xiiRGCompileSettings settings;
+          settings.m_bEnablePassCulling   = true;
+          settings.m_bEnableCompileCache  = true;
+          settings.m_bEnableSplitBarriers = false;
+          settings.m_bEnableAsyncQueues   = true;
+          settings.m_bEnableGPUProfiling  = true;
 
+          if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
+          {
+            m_pRenderGraph->Execute(m_pDevice.Borrow(), /*pView=*/nullptr, m_pRenderGraphBlackboard.Borrow(), m_pRenderGraphResourceCache.Borrow()).AssertSuccess("RenderGraph execution failed.");
+          }
+          else
+          {
+            xiiLog::Error("RenderGraph compile failed: {0}", sError);
+          }
+        }
         m_pRenderGraphResourceCache->EndFrame();
 
         m_pSwapChain->Present();
@@ -457,6 +451,8 @@ private:
     depthStencilTextureDescription.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
     data.m_hDepth = builder.WriteTexture("DepthStencil", depthStencilTextureDescription, xiiGALResourceStateFlags::DepthWrite);
+
+    data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
 
     builder.SetPassSideEffects(true);
   }
