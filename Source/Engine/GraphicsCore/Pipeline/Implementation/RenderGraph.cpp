@@ -319,7 +319,10 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
   // Phase G pre-check: compute signature, if unchanged and cache enabled -> skip recompile.
   PhaseG_SignatureAndCache(settings);
   if (m_Statistics.m_bUsedCachedCompile)
+  {
+    m_LastCompileSettings = settings;
     return XII_SUCCESS;
+  }
 
   // Phase B: topological sort + culling.
   xiiDynamicArray<xiiUInt32> sortedIndices;
@@ -327,7 +330,8 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
 
   if (sortedIndices.IsEmpty() && m_Passes.IsEmpty())
   {
-    m_bIsCompiled = true;
+    m_bIsCompiled         = true;
+    m_LastCompileSettings = settings;
     return XII_SUCCESS;
   }
 
@@ -348,6 +352,7 @@ xiiResult xiiRenderGraph::Compile(const xiiRGCompileSettings& settings, xiiStrin
   m_Statistics.m_uiCompiledPassCount    = m_CompiledPasses.GetCount();
   m_Statistics.m_uiTotalBarrierCount    = m_Barriers.GetCount();
   m_Statistics.m_uiQueueSubmissionCount = m_QueueSubmissions.GetCount();
+  m_LastCompileSettings                 = settings;
 
   for (const xiiRGBarrierDescription& barrier : m_Barriers)
   {
