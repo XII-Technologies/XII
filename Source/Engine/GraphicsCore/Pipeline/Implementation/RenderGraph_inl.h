@@ -73,10 +73,10 @@ std::pair<TPassData*, xiiRGPassHandle> xiiRenderGraph::AddPass(xiiStringView sNa
   passEntry.m_bAllowMerge     = true;
   passEntry.m_sName.Assign(sName);
 
-  TPassData* pPassData                = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), TPassData);
+  TPassData* pPassData                = XII_NEW(xiiDefaultAllocatorWrapper::GetAllocator(), TPassData);
   passEntry.m_pPassData               = pPassData;
   passEntry.m_DestroyPassDataDelegate = [](void* pData) -> void {
-    xiiInternal::Delete(xiiFrameAllocator::GetCurrentAllocator(), static_cast<TPassData*>(pData));
+    xiiInternal::Delete(xiiDefaultAllocatorWrapper::GetAllocator(), static_cast<TPassData*>(pData));
   };
 
   // Wrap typed execute function in a type-erased delegate.

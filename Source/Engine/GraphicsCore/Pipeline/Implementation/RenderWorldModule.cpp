@@ -535,7 +535,7 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     xiiRGCompileSettings compileSettings;
     compileSettings.m_bEnableGPUProfiling  = true;
     compileSettings.m_bEnablePassCulling   = true;
-    compileSettings.m_bEnableSplitBarriers = true;
+    compileSettings.m_bEnableSplitBarriers = false;
     compileSettings.m_bEnableAsyncQueues   = true;
     compileSettings.m_bEnableCompileCache  = true;
 

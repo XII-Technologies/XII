@@ -172,6 +172,8 @@ xiiGALQueryPoolVulkan::QueryPoolInformation::~QueryPoolInformation()
 
 void xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPoolCreateInfo& vkQueryPoolCreateInfo, xiiGALQueryType::Enum queryType)
 {
+  XII_ASSERT_DEV(queryType != xiiGALQueryType::Undefined, "Invalid query pool type.");
+
   m_QueryType    = queryType;
   m_uiQueryCount = vkQueryPoolCreateInfo.queryCount;
 
@@ -179,11 +181,11 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPool
 
   VK_ASSERT_DEV(vkLogicalDevice.createQueryPool(&vkQueryPoolCreateInfo, nullptr, &m_vkQueryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  m_StaleQueries.SetCountUninitialized(m_uiQueryCount);
+  m_AvailableQueries.SetCountUninitialized(m_uiQueryCount);
 
   for (xiiUInt32 i = 0; i < m_uiQueryCount; ++i)
   {
-    m_StaleQueries[i] = i;
+    m_AvailableQueries[i] = i;
   }
 }
 
@@ -222,7 +224,7 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::Discard(xiiUInt32 uiIndex)
   XII_ASSERT_DEV(!m_AvailableQueries.Contains(uiIndex), "Index ({}) is already present in available queries list.", uiIndex);
   XII_ASSERT_DEV(!m_StaleQueries.Contains(uiIndex), "Index ({}) is already present in stale queries list.", uiIndex);
 
-  m_StaleQueries.PushBack(uiIndex);
+  m_AvailableQueries.PushBack(uiIndex);
 }
 
 xiiUInt32 xiiGALQueryPoolVulkan::QueryPoolInformation::ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer)

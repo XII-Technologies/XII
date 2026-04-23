@@ -1588,6 +1588,8 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
 
       if (xiiGALTexture* pTexture = xiiDynamicCast<xiiGALTexture*>(barrier.m_pResource))
       {
+        previousState = barrier.m_OldState != xiiGALResourceStateFlags::Unknown ? barrier.m_OldState : pTexture->GetResourceState();
+
         const xiiGALTextureCreationDescription& textureDescription = pTexture->GetDescription();
 
         XII_ASSERT_DEV(previousState != xiiGALResourceStateFlags::Unknown, "pResourceBarriers[{}].OldState for texture '{}' is unknown to the engine and is not explicitly specified in the barrier.", uiBarrierIndex, pTexture->GetDebugName());
@@ -2181,10 +2183,11 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
 
 bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlags> stateFlags, bool bIsTexture) const
 {
-#define XII_VERIFY_EXCLUSIVE_STATE(exclusiveState)                                                                                                       \
-  if (!stateFlags.IsStrictlyAnySet((xiiGALResourceStateFlags::exclusiveState)))                                                                          \
-  {                                                                                                                                                      \
-    xiiLog::Error("State {} is invalid: {} can not be combined with any other state.", stateFlags.GetValue(), xiiGALResourceStateFlags::exclusiveState); \
+#define XII_VERIFY_EXCLUSIVE_STATE(exclusiveState)                                                                                                                                                                 \
+  if (stateFlags.IsSet(xiiGALResourceStateFlags::exclusiveState) && !stateFlags.IsStrictlyAnySet((xiiGALResourceStateFlags::exclusiveState)))                                                                      \
+  {                                                                                                                                                                                                                \
+    xiiLog::Error("State {} is invalid: {} can not be combined with any other state.", xiiArgEnum(stateFlags), xiiArgEnum(xiiBitflags<xiiGALResourceStateFlags>(xiiGALResourceStateFlags::exclusiveState), true)); \
+    return false;                                                                                                                                                                                                  \
   }
 
   XII_VERIFY_EXCLUSIVE_STATE(Common);

@@ -303,16 +303,18 @@ struct xiiFrustumCullData
 
 void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRGBuilder& builder)
 {
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
   // Ensure persistent instance bounds buffer exists.
   if (!m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer)
   {
     xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride                              = 32U; // float3 center + float radius + float3 extents + float pad
+    description.m_uiElementByteStride                              = 32U; // float3 center + float radius + float3 extents + float pad.
     description.m_uiSize                                           = description.m_uiElementByteStride * k_uiMaxInstances;
     description.m_BindFlags                                        = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
     description.m_Mode                                             = xiiGALBufferMode::Structured;
     description.m_Usage                                            = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    m_ViewPassResources.m_VisibilityPasses.m_pInstanceBoundsBuffer = pDevice->CreateBuffer(description);
   }
 
   // Import persistent instance bounds as read-only SRV.
@@ -328,7 +330,7 @@ void xiiView::SetupFrustumCull(xiiFrustumCullData& data, xiiRGBuilder& builder)
     description.m_BindFlags                                        = xiiGALBindFlags::ShaderResource;
     description.m_Mode                                             = xiiGALBufferMode::Structured;
     description.m_Usage                                            = xiiGALResourceUsage::Default;
-    m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(description);
+    m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer = pDevice->CreateBuffer(description);
   }
   data.m_hLODMetadata = builder.ImportBuffer("LODMetadataIn", m_ViewPassResources.m_VisibilityPasses.m_pInstanceMatrixBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLODMetadata = builder.ReadBuffer(data.m_hLODMetadata, xiiGALResourceStateFlags::ShaderResource);
