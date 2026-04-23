@@ -15,6 +15,9 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
 
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -24,9 +27,6 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
-#include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
-#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -153,62 +153,61 @@ public:
     }
 
     // Perform rendering.
+    {
+      // Before starting to render in a frame call this function.
+      m_pDevice->BeginFrame();
+
+      // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
+      bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr) && (m_pDepthStencilTexture != nullptr);
+
+      if (bCanRender)
       {
-        // Before starting to render in a frame call this function.
-        m_pDevice->BeginFrame();
+        // Build a minimal render graph that clears the depth and backbuffer.
+        ++m_uiFrameIndex;
 
-        // If swap chain or its back buffer (or depth/rederpass) are not available we must skip rendering.
-        bool bCanRender = (m_pSwapChain != nullptr) && m_pSwapChain->GetCurrentSize().HasNonZeroArea() && (m_pSwapChain->GetBackBufferTexture() != nullptr) && (m_pDepthStencilTexture != nullptr);
+        m_RenderGraph.BeginSetup(m_uiFrameIndex);
 
-        if (bCanRender)
+        auto [pData, hPass] = m_RenderGraph.AddPass<ClearPassData>(
+          "ClearPass",
+          xiiGALCommandQueueFlags::Graphics,
+          xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupClearPass, this),
+          xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteClearPass, this),
+          /*bHasSideEffects=*/true);
+
+        float fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
+        if (pData)
+          pData->m_fGlobalTime = fGlobalTime;
+
+        m_RenderGraph.EndSetup();
+
+        m_RenderGraphResourceCache.BeginFrame(m_uiFrameIndex);
+
+        xiiStringBuilder     sError;
+        xiiRGCompileSettings settings;
+        if (m_RenderGraph.Compile(settings, &sError).Succeeded())
         {
-          // Build a minimal render graph that clears the depth and backbuffer.
-          ++m_uiFrameIndex;
-
-          m_RenderGraph.BeginSetup(m_uiFrameIndex);
-
-          auto [pData, hPass] = m_RenderGraph.AddPass<ClearPassData>(
-            "ClearPass",
-            xiiGALCommandQueueFlags::Graphics,
-            xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupClearPass, this),
-            xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteClearPass, this),
-            /*bHasSideEffects=*/true
-          );
-
-          float fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-          if (pData)
-            pData->m_fGlobalTime = fGlobalTime;
-
-          m_RenderGraph.EndSetup();
-
-          m_RenderGraphResourceCache.BeginFrame(m_uiFrameIndex);
-
-          xiiStringBuilder sError;
-          xiiRGCompileSettings settings;
-          if (m_RenderGraph.Compile(settings, &sError).Succeeded())
-          {
-            m_RenderGraph.Execute(m_pDevice.Borrow(), /*pView=*/nullptr, &m_RenderGraphBlackboard, &m_RenderGraphResourceCache).AssertSuccess("RenderGraph execution failed.");
-          }
-          else
-          {
-            xiiLog::Error("RenderGraph compile failed: {0}", sError);
-          }
-
-          m_RenderGraphResourceCache.EndFrame();
-
-          m_pSwapChain->Present();
+          m_RenderGraph.Execute(m_pDevice.Borrow(), /*pView=*/nullptr, &m_RenderGraphBlackboard, &m_RenderGraphResourceCache).AssertSuccess("RenderGraph execution failed.");
         }
         else
         {
-          // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
-          if (m_pSwapChain)
-          {
-            m_pSwapChain->Present();
-          }
+          xiiLog::Error("RenderGraph compile failed: {0}", sError);
         }
 
-        m_pDevice->EndFrame();
+        m_RenderGraphResourceCache.EndFrame();
+
+        m_pSwapChain->Present();
       }
+      else
+      {
+        // Ensure the swap chain can perform any internal throttling (e.g. when minimized)
+        if (m_pSwapChain)
+        {
+          m_pSwapChain->Present();
+        }
+      }
+
+      m_pDevice->EndFrame();
+    }
 
     // Make sure telemetry is sent out regularly.
     xiiTelemetry::PerFrameUpdate();
@@ -616,11 +615,12 @@ private:
     cmd.EndDebugGroup();
   }
 
+private:
   // Render graph objects
-  xiiRenderGraph                 m_RenderGraph;
-  xiiRenderGraphBlackboard       m_RenderGraphBlackboard;
-  xiiRenderGraphResourceCache    m_RenderGraphResourceCache;
-  xiiUInt64                      m_uiFrameIndex = 0ULL;
+  xiiRenderGraph                          m_RenderGraph;
+  xiiRenderGraphBlackboard                m_RenderGraphBlackboard;
+  xiiRenderGraphResourceCache             m_RenderGraphResourceCache;
+  xiiUInt64                               m_uiFrameIndex = 0ULL;
   xiiUniquePtr<xiiGraphicsExplorerWindow> m_pWindow;
 
   xiiSharedPtr<xiiGALDevice> m_pDevice;
