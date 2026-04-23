@@ -151,6 +151,15 @@ public:
   void                SetViewport(const xiiRectFloat& viewport);
   const xiiRectFloat& GetViewport() const;
 
+  /// \brief Returns the dynamic render scale applied to this view (1.0 = native viewport resolution).
+  float GetRenderResolutionScale() const;
+
+  /// \brief Returns the dynamic internal render resolution width for this view.
+  xiiUInt32 GetRenderResolutionWidth() const;
+
+  /// \brief Returns the dynamic internal render resolution height for this view.
+  xiiUInt32 GetRenderResolutionHeight() const;
+
   const xiiViewData& GetData() const;
 
   bool IsValid() const;
@@ -220,7 +229,7 @@ private:
   void BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard);
 
   // CPU PID dynamic resolution (runs before BeginSetup)
-  void RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard);
+  void RunDynamicResolutionPID();
 
 
   void SetupOcclusionReadback(xiiOcclusionReadbackData& data, xiiRGBuilder& builder);

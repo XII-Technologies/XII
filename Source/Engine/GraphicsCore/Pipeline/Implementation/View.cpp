@@ -54,6 +54,12 @@ namespace
 
     return uiCount;
   }
+
+  static xiiUInt32 ComputeDynamicResolutionDimension(xiiUInt32 uiNativeDimension, float fScale)
+  {
+    const xiiUInt32 uiScaled = static_cast<xiiUInt32>(static_cast<float>(uiNativeDimension) * fScale) & ~1U;
+    return xiiMath::Max(uiScaled, 2U);
+  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
@@ -119,7 +125,7 @@ void xiiView::UpdateCachedMatrices() const
   }
 }
 
-void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
+void xiiView::RunDynamicResolutionPID()
 {
   // Try the GPU profiler's resolved duration from 2 frames ago.
   // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
@@ -152,16 +158,25 @@ void xiiView::RunDynamicResolutionPID(xiiRenderGraphBlackboard& blackboard)
   m_ViewPassResources.m_DynamicResolution.m_fCurrentScale  = m_ViewPassResources.m_DynamicResolution.m_fCurrentScale + fDelta;
   m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale = xiiMath::Lerp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, m_ViewPassResources.m_DynamicResolution.m_fCurrentScale, 0.20f);
   m_ViewPassResources.m_DynamicResolution.m_fPreviousError = fError;
+}
 
-  const float fScale = m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale;
+float xiiView::GetRenderResolutionScale() const
+{
+  const float fMin = xiiMath::Max(cvar_DynamicRenderingMinScale.GetValue(), 0.25f);
+  const float fMax = xiiMath::Min(cvar_DynamicRenderingMaxScale.GetValue(), 1.0f);
+  return xiiMath::Clamp(m_ViewPassResources.m_DynamicResolution.m_fSmoothedScale, fMin, fMax);
+}
 
-  // Align to even pixels to satisfy 2x2 tile constraints.
-  const xiiUInt32 uiWidth  = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.width * fScale) & ~1U;
-  const xiiUInt32 uiHeight = static_cast<xiiUInt32>(m_Data.m_ViewPortRect.height * fScale) & ~1U;
+xiiUInt32 xiiView::GetRenderResolutionWidth() const
+{
+  const xiiUInt32 uiNativeWidth = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.width));
+  return ComputeDynamicResolutionDimension(uiNativeWidth, GetRenderResolutionScale());
+}
 
-  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_DynamicResolutionScale), fScale);
-  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), xiiMath::Max(uiWidth, 2U));
-  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), xiiMath::Max(uiHeight, 2U));
+xiiUInt32 xiiView::GetRenderResolutionHeight() const
+{
+  const xiiUInt32 uiNativeHeight = static_cast<xiiUInt32>(xiiMath::Max(1.0f, m_Data.m_ViewPortRect.height));
+  return ComputeDynamicResolutionDimension(uiNativeHeight, GetRenderResolutionScale());
 }
 
 ////////// GPU occlusion readback //////////
@@ -3482,10 +3497,14 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& c
 
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  // CPU dynamic resolution PID (pre-graph, writes to blackboard). Must happen before BeginSetup so passes see the correct render dimensions.
-  RunDynamicResolutionPID(blackboard);
+  // CPU dynamic resolution PID (pre-graph). View owns scale/resolution state.
+  RunDynamicResolutionPID();
 
-  XII_ASSERT_DEV(blackboard.Contains(xiiRGBlackboardKeys::k_RenderWidth) && blackboard.Contains(xiiRGBlackboardKeys::k_RenderHeight), "Dynamic resolution PID did not write render dimensions to the blackboard.");
+  // Mirror dimensions into the blackboard for render-graph pass setup.
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderWidth), GetRenderResolutionWidth());
+  blackboard.Set(xiiMakeHashedString(xiiRGBlackboardKeys::k_RenderHeight), GetRenderResolutionHeight());
+
+  XII_ASSERT_DEV(blackboard.Contains(xiiRGBlackboardKeys::k_RenderWidth) && blackboard.Contains(xiiRGBlackboardKeys::k_RenderHeight), "View did not publish render dimensions to the blackboard.");
 
   // Each stage adds its passes to the graph. Dependency ordering is handled by the render graph compiler (topological sort + culling).
 

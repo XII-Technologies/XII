@@ -8,7 +8,6 @@ namespace xiiRGBlackboardKeys
 {
   // Stage 0 - Dynamic Resolution (CPU, pre-graph).
 
-  constexpr xiiStringView k_DynamicResolutionScale = "DynamicResolutionScale"_xiisv; ///< float - [MinScale, 1.0] current PID-smoothed render scale.
   constexpr xiiStringView k_RenderWidth            = "RenderWidth"_xiisv;            ///< uint32 - scaled render width in pixels (aligned to 2).
   constexpr xiiStringView k_RenderHeight           = "RenderHeight"_xiisv;           ///< uint32 - scaled render height in pixels (aligned to 2).
 
