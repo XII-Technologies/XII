@@ -3,14 +3,8 @@
 /// \brief Compile-time string keys for the per-view render graph blackboard.
 ///
 /// All passes share this header to avoid typos and ensure consistent key names.
-/// Keys with a (*) suffix have a corresponding typed helper written by the named pass.
 namespace xiiRGBlackboardKeys
 {
-  // Stage 0 - Dynamic Resolution (CPU, pre-graph).
-
-  constexpr xiiStringView k_RenderWidth            = "RenderWidth"_xiisv;            ///< uint32 - scaled render width in pixels (aligned to 2).
-  constexpr xiiStringView k_RenderHeight           = "RenderHeight"_xiisv;           ///< uint32 - scaled render height in pixels (aligned to 2).
-
   // Stage 1 - Visibility & Setup.
 
   constexpr xiiStringView k_FrameIndex                = "FrameIndex"_xiisv;               ///< uint32 - monotonically increasing frame counter.

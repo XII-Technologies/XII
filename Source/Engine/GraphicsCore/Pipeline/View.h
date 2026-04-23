@@ -223,6 +223,7 @@ private:
   void SetExtractedRenderData(xiiExtractedRenderData* pExtractedData) { m_pExtractedData = pExtractedData; }
 
   void UpdateCachedMatrices() const;
+  void UpdateRenderResolutionState() const;
 
   /// \brief Populates the render graph for default (non-custom) views.
   ///        Called by xiiRenderWorldModule::ExecuteRenderGraphs each frame.

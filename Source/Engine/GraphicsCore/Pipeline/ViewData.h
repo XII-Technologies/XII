@@ -13,6 +13,9 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
   {
     m_ViewPortRect   = xiiRectFloat(0.0f, 0.0f);
     m_ViewRenderMode = xiiViewRenderMode::None;
+    m_fRenderResolutionScale   = 1.0f;
+    m_uiRenderResolutionWidth  = 1U;
+    m_uiRenderResolutionHeight = 1U;
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
@@ -28,6 +31,13 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
   xiiRectFloat                m_ViewPortRect;
   xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
   xiiEnum<xiiCameraUsageHint> m_CameraUsageHint;
+
+  /// Dynamic internal render scale applied to this view (1.0 = native viewport resolution).
+  float m_fRenderResolutionScale;
+
+  /// Dynamic internal render resolution in pixels.
+  xiiUInt32 m_uiRenderResolutionWidth;
+  xiiUInt32 m_uiRenderResolutionHeight;
 
   // Each matrix is there for both left and right camera lens.
   xiiMat4 m_ViewMatrix[2];

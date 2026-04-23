@@ -97,6 +97,7 @@ XII_ALWAYS_INLINE const xiiRectFloat& xiiView::GetViewport() const
 XII_ALWAYS_INLINE void xiiView::SetViewport(const xiiRectFloat& viewport)
 {
   m_Data.m_ViewPortRect = viewport;
+  UpdateRenderResolutionState();
 }
 
 XII_ALWAYS_INLINE void xiiView::SetRenderGraphBuilder(RenderGraphBuilder builder)
