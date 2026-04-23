@@ -2429,6 +2429,9 @@ void xiiGALCommandListVulkan::BeginQueryPlatform(xiiGALQuery* pQuery)
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALQueryPoolVulkan*           pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
   xiiGALQueryVulkan*               pQueryVulkan     = xiiDynamicCast<xiiGALQueryVulkan*>(pQuery);
+
+  pQueryVulkan->OnBeginQuery(this);
+
   xiiGALQueryType::Enum            queryType        = pQueryVulkan->GetDescription().m_Type;
   vk::QueryPool                    vkQueryPool      = pQueryPoolVulkan->GetQueryPool(queryType);
   xiiUInt32                        uiIndex          = pQueryVulkan->GetQueryPoolIndex(0);
@@ -2486,6 +2489,9 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan    = m_pDevice.Downcast<xiiGALDeviceVulkan>();
   xiiGALQueryPoolVulkan*           pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
   xiiGALQueryVulkan*               pQueryVulkan     = xiiDynamicCast<xiiGALQueryVulkan*>(pQuery);
+
+  pQueryVulkan->OnEndQuery(this);
+
   xiiGALQueryType::Enum            queryType        = pQueryVulkan->GetDescription().m_Type;
   vk::QueryPool                    vkQueryPool      = pQueryPoolVulkan->GetQueryPool(queryType);
   xiiUInt32                        uiIndex          = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);

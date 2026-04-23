@@ -49,9 +49,9 @@ bool xiiGALQueryVulkan::OnEndQuery(xiiGALCommandListVulkan* pCommandListVulkan)
       return false;
   }
 
-  if (m_QueryPoolIndex[0] == xiiInvalidIndex || (m_Description.m_Type == xiiGALQueryType::Duration && m_QueryPoolIndex[1] == xiiInvalidIndex))
+  if ((m_QueryPoolIndex[0] == xiiInvalidIndex) || (m_Description.m_Type == xiiGALQueryType::Duration && m_QueryPoolIndex[1] == xiiInvalidIndex))
   {
-    xiiLog::Error("Query '{}' is invalid. Vulkan query allocation failed!", m_Description.m_Type.GetValue());
+    xiiLog::Error("Query '{}' is invalid. Vulkan query allocation failed!", xiiArgEnum(m_Description.m_Type));
     return false;
   }
 
@@ -79,7 +79,7 @@ bool xiiGALQueryVulkan::AllocateQueries()
 
   XII_ASSERT_DEV(m_pQueryPoolVulkan != nullptr, "");
 
-  for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 1U : 2U); ++i)
+  for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 2U : 1U); ++i)
   {
     xiiUInt32& uiQueryPoolIndex = m_QueryPoolIndex[i];
 
@@ -89,7 +89,7 @@ bool xiiGALQueryVulkan::AllocateQueries()
 
     if (uiQueryPoolIndex == xiiInvalidIndex)
     {
-      xiiLog::Error("Failed to allocate Vulkan query for type {}. Increase the query pool size.", m_Description.m_Type);
+      xiiLog::Error("Failed to allocate Vulkan query for type {}. Increase the query pool size.", xiiArgEnum(m_Description.m_Type));
 
       DiscardQueries();
 
