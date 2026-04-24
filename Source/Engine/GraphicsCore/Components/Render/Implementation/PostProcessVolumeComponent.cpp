@@ -2,7 +2,7 @@
 
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GraphicsCore/Components/PostProcessVolumeComponent.h>
+#include <GraphicsCore/Components/Render/PostProcessVolumeComponent.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiPostProcessVolumeComponent, 1, xiiComponentMode::Static)

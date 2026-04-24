@@ -2,7 +2,7 @@
 
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GraphicsCore/Components/RenderWorldSettingsComponent.h>
+#include <GraphicsCore/Components/Render/RenderWorldSettingsComponent.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiRenderWorldSettingsComponent, 1, xiiComponentMode::Static)
