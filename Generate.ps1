@@ -4,7 +4,9 @@ param
   [switch]$NoUnityBuild,
   [switch]$NoSubmoduleUpdate,
   [string]$SolutionName,
-  [string]$WorkspaceDirectory
+  [string]$WorkspaceDirectory,
+  [Nullable[bool]]$D3D12Support,
+  [Nullable[bool]]$VulkanSupport
 )
 
 Set-Location $PSScriptRoot
@@ -46,6 +48,22 @@ if ($NoUnityBuild) {
 }
 else {
   $CMAKE_ARGS += "-DXII_ENABLE_FOLDER_UNITY_FILES:BOOL=ON"
+}
+
+# Enable Vulkan by default, but allow opt-out via command line argument.
+if ($VulkanSupport.HasValue -and $VulkanSupport.Value -eq $False) {
+  $CMAKE_ARGS += "-DXII_BUILD_VULKAN:BOOL=OFF"
+}
+else {
+  $CMAKE_ARGS += "-DXII_BUILD_VULKAN:BOOL=ON"
+}
+
+# Disable D3D12 by default, but allow opt-in via command line argument.
+if ($D3D12Support.HasValue -and $D3D12Support.Value -eq $True) {
+  $CMAKE_ARGS += "-DXII_BUILD_D3D12:BOOL=ON"
+}
+else {
+  $CMAKE_ARGS += "-DXII_BUILD_D3D12:BOOL=OFF"
 }
 
 if ($SolutionName -ne "") {
