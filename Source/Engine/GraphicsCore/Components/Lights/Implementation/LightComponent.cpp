@@ -6,12 +6,17 @@
 #include <GraphicsCore/Components/Lights/LightComponent.h>
 
 // clang-format off
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, 6)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLightRenderData, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, 1)
 {
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("LightColor", GetLightColor, SetLightColor),
     XII_ACCESSOR_PROPERTY("Temperature", GetTemperature, SetTemperature)->AddAttributes(new xiiImageSliderUiAttribute("LightTemperature"), new xiiDefaultValueAttribute(6550), new xiiClampValueAttribute(1000, 50000)),
+    XII_ACCESSOR_PROPERTY("Intensity", GetIntensity, SetIntensity)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
+    XII_ACCESSOR_PROPERTY("CastShadows", GetCastShadows, SetCastShadows),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -38,6 +43,7 @@ void xiiLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 
   s << m_LightColor;
   s << m_uiTemperature;
+  s << m_bCastShadows;
 }
 
 void xiiLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
@@ -47,6 +53,22 @@ void xiiLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
   s >> m_LightColor;
   s >> m_uiTemperature;
+  s >> m_bCastShadows;
+}
+
+void xiiLightComponent::SetLightColor(xiiColorGammaUB lightColor)
+{
+  if (m_LightColor != lightColor)
+  {
+    m_LightColor = lightColor;
+
+    InvalidateCachedRenderData();
+  }
+}
+
+xiiColorGammaUB xiiLightComponent::GetLightColor() const
+{
+  return m_LightColor;
 }
 
 void xiiLightComponent::SetTemperature(xiiUInt32 uiTemperature)
@@ -66,19 +88,37 @@ xiiUInt32 xiiLightComponent::GetTemperature() const
   return m_uiTemperature;
 }
 
-void xiiLightComponent::SetLightColor(xiiColorGammaUB lightColor)
+void xiiLightComponent::SetIntensity(float fIntensity)
 {
-  if (m_LightColor != lightColor)
+  fIntensity = xiiMath::Max(fIntensity, 0.0f);
+
+  if (m_fIntensity != fIntensity)
   {
-    m_LightColor = lightColor;
+    m_fIntensity = fIntensity;
+
+    TriggerLocalBoundsUpdate();
+    InvalidateCachedRenderData();
+  }
+}
+
+float xiiLightComponent::GetIntensity() const
+{
+  return m_fIntensity;
+}
+
+void xiiLightComponent::SetCastShadows(bool bCastShadows)
+{
+  if (m_bCastShadows != bCastShadows)
+  {
+    m_bCastShadows = bCastShadows;
 
     InvalidateCachedRenderData();
   }
 }
 
-xiiColorGammaUB xiiLightComponent::GetLightColor() const
+bool xiiLightComponent::GetCastShadows() const
 {
-  return m_LightColor;
+  return m_bCastShadows;
 }
 
 void xiiLightComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
