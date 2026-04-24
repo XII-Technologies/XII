@@ -181,11 +181,11 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::Initialize(const vk::QueryPool
 
   VK_ASSERT_DEV(vkLogicalDevice.createQueryPool(&vkQueryPoolCreateInfo, nullptr, &m_vkQueryPool, m_pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
-  m_AvailableQueries.SetCountUninitialized(m_uiQueryCount);
+  m_StaleQueries.SetCountUninitialized(m_uiQueryCount);
 
   for (xiiUInt32 i = 0; i < m_uiQueryCount; ++i)
   {
-    m_AvailableQueries[i] = i;
+    m_StaleQueries[i] = i;
   }
 }
 
@@ -224,7 +224,7 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::Discard(xiiUInt32 uiIndex)
   XII_ASSERT_DEV(!m_AvailableQueries.Contains(uiIndex), "Index ({}) is already present in available queries list.", uiIndex);
   XII_ASSERT_DEV(!m_StaleQueries.Contains(uiIndex), "Index ({}) is already present in stale queries list.", uiIndex);
 
-  m_AvailableQueries.PushBack(uiIndex);
+  m_StaleQueries.PushBack(uiIndex);
 }
 
 xiiUInt32 xiiGALQueryPoolVulkan::QueryPoolInformation::ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer)

@@ -20,7 +20,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64                    GetCounterFrequency() const { return m_uiCounterFrequency; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueueInformationVulkan GetQueueInformation() const { return m_CommandQueueInformation; }
 
-  [[nodiscard]] xiiUInt32 ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer);
+  xiiUInt32 ResetStaleQueries(const vk::CommandBuffer& vkCommandBuffer);
 
 private:
   friend class xiiMemoryUtils;

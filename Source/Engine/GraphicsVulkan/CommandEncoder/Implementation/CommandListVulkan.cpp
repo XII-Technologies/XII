@@ -638,6 +638,9 @@ void xiiGALCommandListVulkan::BeginPlatform()
 
   VK_ASSERT_DEV(m_vkCommandBuffer.begin(&vkCommandBufferBeginInfo, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
+  xiiGALQueryPoolVulkan* pQueryPoolVulkan = pDeviceVulkan->GetCommandQueueQueryPool(m_Description.m_QueueFlags);
+  pQueryPoolVulkan->ResetStaleQueries(m_vkCommandBuffer);
+
   m_RecordingState = RecordingState::Recording;
 }
 
@@ -2432,9 +2435,9 @@ void xiiGALCommandListVulkan::BeginQueryPlatform(xiiGALQuery* pQuery)
 
   pQueryVulkan->OnBeginQuery(this);
 
-  xiiGALQueryType::Enum            queryType        = pQueryVulkan->GetDescription().m_Type;
-  vk::QueryPool                    vkQueryPool      = pQueryPoolVulkan->GetQueryPool(queryType);
-  xiiUInt32                        uiIndex          = pQueryVulkan->GetQueryPoolIndex(0);
+  xiiGALQueryType::Enum queryType   = pQueryVulkan->GetDescription().m_Type;
+  vk::QueryPool         vkQueryPool = pQueryPoolVulkan->GetQueryPool(queryType);
+  xiiUInt32             uiIndex     = pQueryVulkan->GetQueryPoolIndex(0);
 
   XII_ASSERT_DEV(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
 
@@ -2492,9 +2495,9 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 
   pQueryVulkan->OnEndQuery(this);
 
-  xiiGALQueryType::Enum            queryType        = pQueryVulkan->GetDescription().m_Type;
-  vk::QueryPool                    vkQueryPool      = pQueryPoolVulkan->GetQueryPool(queryType);
-  xiiUInt32                        uiIndex          = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
+  xiiGALQueryType::Enum queryType   = pQueryVulkan->GetDescription().m_Type;
+  vk::QueryPool         vkQueryPool = pQueryPoolVulkan->GetQueryPool(queryType);
+  xiiUInt32             uiIndex     = pQueryVulkan->GetQueryPoolIndex(queryType == xiiGALQueryType::Duration ? 1 : 0);
 
   XII_ASSERT_DEV(vkQueryPool != VK_NULL_HANDLE, "Query pool is not initialized for query type.");
 
