@@ -101,17 +101,17 @@ namespace xiiApplicationDetails
 } // namespace xiiApplicationDetails
 
 /// \brief Same as XII_APPLICATION_ENTRY_POINT but should be used for applications that shall always show a console window.
-#define XII_CONSOLEAPP_ENTRY_POINT(AppClass, ...)                                                \
-  /* Enables that on machines with multiple GPUs the NVIDIA / AMD GPU is preferred */            \
-  extern "C"                                                                                     \
-  {                                                                                              \
-    _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001; \
-    _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; \
-  }                                                                                              \
-  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                     \
-  int main(int argc, const char** argv)                                                          \
-  {                                                                                              \
-    return xiiApplicationDetails::ConsoleEntry<AppClass>(argc, argv, __VA_ARGS__);               \
+#define XII_CONSOLEAPP_ENTRY_POINT(AppClass, ...)                                                                      \
+  /* Enable high performance graphics on laptops with dual graphics cards (e.g. NVIDIA Optimus or AMD PowerXpress). */ \
+  extern "C"                                                                                                           \
+  {                                                                                                                    \
+    _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001;                       \
+    _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;                       \
+  }                                                                                                                    \
+  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                           \
+  int main(int argc, const char** argv)                                                                                \
+  {                                                                                                                    \
+    return xiiApplicationDetails::ConsoleEntry<AppClass>(argc, argv, __VA_ARGS__);                                     \
   }
 
 // If windows.h is already included use the native types, otherwise use types from xiiMinWindows
@@ -136,7 +136,7 @@ namespace xiiApplicationDetails
 /// Just use the macro in a cpp file of your application and supply your app class (must be derived from xiiApplication).
 /// The additional (optional) parameters are passed to the constructor of your app class.
 #define XII_APPLICATION_ENTRY_POINT(AppClass, ...)                                                                                           \
-  /* Enables that on machines with multiple GPUs the NVIDIA / AMD GPU is preferred */                                                        \
+  /* Enable high performance graphics on laptops with dual graphics cards (e.g. NVIDIA Optimus or AMD PowerXpress). */                       \
   extern "C"                                                                                                                                 \
   {                                                                                                                                          \
     _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001;                                             \
