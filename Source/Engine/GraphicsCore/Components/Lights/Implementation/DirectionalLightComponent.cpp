@@ -4,6 +4,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/Lights/DirectionalLightComponent.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDirectionalLightRenderData, 1, xiiRTTIDefaultAllocator<xiiDirectionalLightRenderData>)
@@ -80,7 +81,9 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   if (m_fIntensity <= 0.0f)
     return;
 
-  xiiDirectionalLightRenderData* pRenderData = XII_NEW(xiiFrameAllocator::GetCurrentAllocator(), xiiDirectionalLightRenderData);
+  auto pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
+
+  xiiDirectionalLightRenderData* pRenderData = pWorldModule->CreateRenderDataForThisFrame<xiiDirectionalLightRenderData>(this);
   pRenderData->m_LightColor                  = m_LightColor;
   pRenderData->m_uiTemperature               = m_uiTemperature;
   pRenderData->m_fIntensity                  = m_fIntensity;

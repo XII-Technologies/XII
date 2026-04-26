@@ -66,6 +66,10 @@ public:
   /// \brief Retrieves a view by its usage hint. If multiple views share the same hint, the first one found is returned.
   xiiView* GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint) const;
 
+  /// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
+  template <typename T>
+  T* CreateRenderDataForThisFrame(const xiiComponent* pComponent) const;
+
   /// \brief Invalidates cached static render data for one object.
   ///
   /// The component handle is accepted for compatibility with existing call sites.
@@ -145,3 +149,5 @@ private:
   xiiEvent<xiiView*, xiiMutex> m_ViewCreatedEvent;
   xiiEvent<xiiView*, xiiMutex> m_ViewDeletedEvent;
 };
+
+#include <GraphicsCore/Pipeline/Implementation/RenderWorldModule_inl.h>
