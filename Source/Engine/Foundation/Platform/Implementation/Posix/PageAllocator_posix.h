@@ -1,4 +1,5 @@
 
+#include <Foundation/System/SystemInformation.h>
 #include <Foundation/Time/Time.h>
 
 // static

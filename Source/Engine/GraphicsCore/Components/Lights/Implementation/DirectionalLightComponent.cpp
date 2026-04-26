@@ -31,6 +31,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiDirectionalLightComponent, 1, xiiComponentMode::Stat
 XII_END_COMPONENT_TYPE
 // clang-format on
 
+xiiDirectionalLightComponent::xiiDirectionalLightComponent() = default;
+xiiDirectionalLightComponent::~xiiDirectionalLightComponent() = default;
+
 void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
   SUPER::SerializeComponent(inout_stream);

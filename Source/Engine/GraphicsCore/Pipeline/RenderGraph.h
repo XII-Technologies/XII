@@ -24,10 +24,13 @@
 
 class xiiView;
 struct xiiViewData;
+class xiiRenderGraph;
 
 /// \brief Opaque handle to a virtual texture resource declared in the render graph.
 struct XII_GRAPHICSCORE_DLL xiiRGTextureHandle : public xiiHashableStruct<xiiRGTextureHandle>
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiUInt32 m_uiIndex   = xiiInvalidIndex; ///< Index into the graph's resource table.
   xiiUInt16 m_uiVersion = 0U;              ///< Write version - read dependencies track this.
 
@@ -40,6 +43,8 @@ struct XII_GRAPHICSCORE_DLL xiiRGTextureHandle : public xiiHashableStruct<xiiRGT
 /// \brief Opaque handle to a virtual buffer resource declared in the render graph.
 struct XII_GRAPHICSCORE_DLL xiiRGBufferHandle : public xiiHashableStruct<xiiRGBufferHandle>
 {
+  XII_DECLARE_POD_TYPE();
+  
   xiiUInt32 m_uiIndex   = xiiInvalidIndex; ///< Index into the graph's resource table.
   xiiUInt16 m_uiVersion = 0U;              ///< Write version - read dependencies track this.
 
@@ -52,6 +57,8 @@ struct XII_GRAPHICSCORE_DLL xiiRGBufferHandle : public xiiHashableStruct<xiiRGBu
 /// \brief Opaque handle to a registered render pass.
 struct XII_GRAPHICSCORE_DLL xiiRGPassHandle : public xiiHashableStruct<xiiRGPassHandle>
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiUInt32 m_uiIndex = xiiInvalidIndex; ///< Index into the graph's pass table.
 
   /// \brief Returns whether this handle references a valid pass in the graph.
@@ -61,6 +68,8 @@ struct XII_GRAPHICSCORE_DLL xiiRGPassHandle : public xiiHashableStruct<xiiRGPass
 /// \brief Describes a resource state barrier synthesized during compilation.
 struct XII_GRAPHICSCORE_DLL xiiRGBarrierDescription : public xiiHashableStruct<xiiRGBarrierDescription>
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiUInt32                             m_uiResourceIndex   = xiiInvalidIndex;                      ///< Index into the resource table.
   bool                                  m_bIsTexture        = true;                                 ///< Whether the barrier is for a texture or a buffer resource.
   xiiUInt32                             m_uiFirstMipLevel   = 0U;                                   ///< For textures, the first mip level affected by the barrier. For buffers, this is always 0.
