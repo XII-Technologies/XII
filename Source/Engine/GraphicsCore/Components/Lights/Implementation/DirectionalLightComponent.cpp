@@ -32,7 +32,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiDirectionalLightComponent, 1, xiiComponentMode::Stat
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiDirectionalLightComponent::xiiDirectionalLightComponent() = default;
+xiiDirectionalLightComponent::xiiDirectionalLightComponent()  = default;
 xiiDirectionalLightComponent::~xiiDirectionalLightComponent() = default;
 
 void xiiDirectionalLightComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -93,6 +93,7 @@ void xiiDirectionalLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderDat
   pRenderData->m_uiSortingKey                = GetUniqueIdForRendering();
 
   xiiEnum<xiiRenderData::Caching> caching = m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never;
+
   ref_msg.AddRenderData(pRenderData, caching);
 }
 
