@@ -6,7 +6,10 @@
 
 struct xiiMsgExtractRenderData;
 
-/// \brief Render data submitted per-frame by a skinned mesh component.
+// ============================================================
+//  Skinned Mesh Render Data
+// ============================================================
+
 class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSkinnedMeshRenderData, xiiRenderData);
@@ -14,77 +17,63 @@ class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderData : public xiiRenderData
 public:
   xiiMeshResourceHandle                      m_hMesh;
   xiiDynamicArray<xiiMaterialResourceHandle> m_Materials;
-
-  /// \brief Byte offset into the per-frame GPU bone palette buffer for this draw call.
-  xiiUInt32 m_uiBonePaletteOffset = 0;
-
-  /// \brief Number of joints / bone transforms uploaded for this mesh instance.
-  xiiUInt16 m_uiBoneCount = 0;
-
-  bool m_bCastShadows = true;
+  xiiGALBufferHandle                         m_hSkinningTransforms; ///< GPU buffer containing bone matrices
+  xiiUInt32                                  m_uiCustomSeed = 0;
+  bool                                       m_bCastShadows = true;
 };
+
+// ============================================================
+//  Skinned Mesh Component
+// ============================================================
 
 using xiiSkinnedMeshComponentManager = xiiComponentManager<class xiiSkinnedMeshComponent, xiiBlockStorageType::Compact>;
 
-/// \brief Renders a GPU-skinned skeletal mesh driven by an external animation controller.
+/// \brief Renders animated meshes using GPU skinning.
 ///
-/// The component does not own the skeleton or animation graph; it only receives the final
-/// bone palette (world-space joint matrices) each frame and packages it into render data for
-/// the skinned mesh renderer to consume. Material slots mirror the mesh sub-mesh layout.
+/// This component is designed to work in tandem with an animation component
+/// that updates the internal GPU bone transform buffer each frame.
 class XII_GRAPHICSCORE_DLL xiiSkinnedMeshComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkinnedMeshComponent, xiiRenderComponent, xiiSkinnedMeshComponentManager);
 
-  //////////////////////////////////////////////////////////////////////////
-  // xiiComponent
-
 public:
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
-
-  //////////////////////////////////////////////////////////////////////////
-  // xiiRenderComponent
-
-public:
+  virtual void      SerializeComponent(xiiWorldWriter& inout_stream) const override;
+  virtual void      DeserializeComponent(xiiWorldReader& inout_stream) override;
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
-  //////////////////////////////////////////////////////////////////////////
-  // xiiSkinnedMeshComponent
-
-public:
   xiiSkinnedMeshComponent();
   ~xiiSkinnedMeshComponent();
 
+  // ---- Mesh ----
   void          SetMeshFile(xiiStringView sFile); // [ property ]
   xiiStringView GetMeshFile() const;              // [ property ]
+  void          SetMesh(const xiiMeshResourceHandle& hMesh);
 
-  void                         SetMesh(const xiiMeshResourceHandle& hMesh);
-  const xiiMeshResourceHandle& GetMesh() const { return m_hMesh; }
-
+  // ---- Materials ----
   xiiUInt32                 GetMaterialCount() const;
   void                      SetMaterial(xiiUInt32 uiIndex, const xiiMaterialResourceHandle& hMaterial);
   xiiMaterialResourceHandle GetMaterial(xiiUInt32 uiIndex) const;
+  void                      SetMaterialFile(xiiUInt32 uiIndex, xiiStringView sFile);
+  xiiStringView             GetMaterialFile(xiiUInt32 uiIndex) const;
+  void                      SetMaterial0Prop(xiiStringView s); // [ property ]
+  xiiStringView             GetMaterial0Prop() const;          // [ property ]
 
-  void          SetMaterialFile(xiiUInt32 uiIndex, xiiStringView sFile); // [ property ]
-  xiiStringView GetMaterialFile(xiiUInt32 uiIndex) const;                // [ property ]
+  // ---- GPU Skinning ----
+  /// \brief Updates the GPU bone matrices. Typically called by xiiAnimationComponent.
+  void UpdateSkinningTransforms(xiiArrayPtr<const xiiMat4> transforms);
 
-  void SetCastShadows(bool bCast);                       // [ property ]
-  bool GetCastShadows() const { return m_bCastShadows; } // [ property ]
-
-  /// \brief Called by the animation system each frame to supply the updated joint matrices.
-  void SetBonePalette(xiiArrayPtr<const xiiMat4> palette);
-
-  const xiiDynamicArray<xiiMat4>& GetBonePalette() const { return m_BonePalette; }
-
-private:
-  void          SetMaterialFile0Prop(xiiStringView s);
-  xiiStringView GetMaterialFile0Prop() const;
+  // ---- Flags ----
+  void SetCastShadows(bool b); // [ property ]
+  bool GetCastShadows() const { return m_bCastShadows; }
 
 protected:
   void OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
 
+private:
   xiiMeshResourceHandle                      m_hMesh;
   xiiDynamicArray<xiiMaterialResourceHandle> m_Materials;
-  xiiDynamicArray<xiiMat4>                   m_BonePalette;
-  bool                                       m_bCastShadows = true;
+  xiiGALBufferHandle                         m_hSkinningTransforms;
+
+  xiiBoundingBoxSphere m_SkinningBounds = xiiBoundingBoxSphere::MakeZero();
+  bool                 m_bCastShadows   = true;
 };

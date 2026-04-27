@@ -231,4 +231,15 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
 
   // ---- Phase 12 — Simulation Training Passes ----
   XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_SimulationPasses);
+  // ---- Phase 3 — Meshlet Passes ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_MeshletPass);
+  // ---- Phase 4 — Dynamic / Deformable Mesh ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_DeformableMeshComponents);
+
+  // ---- Phase 5 — Virtual Geometry ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Resources_VirtualGeometryResource);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_VirtualGeometryPasses);
+
+  // ---- Phase 6 — Terrain ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Terrain_Implementation_TerrainComponents);
 }
