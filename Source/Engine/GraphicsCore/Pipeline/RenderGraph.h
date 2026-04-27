@@ -44,7 +44,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGTextureHandle : public xiiHashableStruct<xiiRGT
 struct XII_GRAPHICSCORE_DLL xiiRGBufferHandle : public xiiHashableStruct<xiiRGBufferHandle>
 {
   XII_DECLARE_POD_TYPE();
-  
+
   xiiUInt32 m_uiIndex   = xiiInvalidIndex; ///< Index into the graph's resource table.
   xiiUInt16 m_uiVersion = 0U;              ///< Write version - read dependencies track this.
 

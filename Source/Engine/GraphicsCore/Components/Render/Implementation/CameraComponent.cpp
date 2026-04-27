@@ -212,7 +212,7 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
-  auto&           s         = inout_stream.GetStream();
+  auto& s = inout_stream.GetStream();
 
   s >> m_UsageHint;
   s >> m_Mode;
