@@ -149,4 +149,63 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureLoader);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureUtils);
   XII_STATICLINK_REFERENCE(GraphicsCore_Utils_Implementation_WorldGeoExtractionUtil);
+
+  // ---- New GraphicsCore Components ----
+
+  // Render
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_StaticMeshComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_SkinnedMeshComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_ProceduralMeshComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_InstancedMeshComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_ImpostorComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_DecalComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_GizmoComponent);
+
+  // Camera
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Camera_Implementation_StereoCameraComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Camera_Implementation_CinematicCameraComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Camera_Implementation_RenderTargetComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Camera_Implementation_SwapchainComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Camera_Implementation_FrameGraphNodeComponent);
+
+  // Lights
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_PointLightComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_SpotLightComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_RectangleAreaLightComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_EmissiveSurfaceComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_VolumetricLightComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_ReflectionProbeComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_PlanarReflectionComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_LightProbeGridComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Lights_Implementation_SkyAtmosphereComponent);
+
+  // Materials
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Materials_Implementation_MaterialComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Materials_Implementation_ShaderAndMaterialComponents);
+
+  // PostProcess
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_PostProcess_Implementation_PostProcessComponents);
+
+  // VFX
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_VFX_Implementation_VFXComponents);
+
+  // Sensors
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Sensors_Implementation_SensorComponents);
+
+  // RayTracing / GPU
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_RayTracing_Implementation_RayTracingComponents);
+
+  // LOD
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_LOD_Implementation_LODComponents);
+
+  // Debug
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Debug_Implementation_DebugComponents);
+
+  // Advanced
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Advanced_Implementation_AdvancedComponents);
+
+  // Managers
+  XII_STATICLINK_REFERENCE(GraphicsCore_Managers_LightProbeGridManager);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Managers_ReflectionProbeManager);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Managers_VirtualTexturingManager);
 }
