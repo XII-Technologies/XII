@@ -208,4 +208,27 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Managers_LightProbeGridManager);
   XII_STATICLINK_REFERENCE(GraphicsCore_Managers_ReflectionProbeManager);
   XII_STATICLINK_REFERENCE(GraphicsCore_Managers_VirtualTexturingManager);
+
+  // ---- Phase 1 — Mesh Resources ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Resources_MeshletResource);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Resources_DynamicMeshResource);
+
+  // ---- Phase 2 — GPU-Driven Indirect ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_IndirectDrawBatchBuilder);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Implementation_GPUDrivenCullingPass);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_MeshletComponent);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Render_Implementation_LargeScaleInstancedMeshComponent);
+
+  // ---- Phase 7 — Science Components ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_Science_Implementation_ScienceComponents);
+
+  // ---- Phase 8 — Point Cloud ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Components_PointCloud_Implementation_PointCloudComponents);
+
+  // ---- Phase 10 — GBuffer + Deferred Lighting ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_GBufferPass);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_DeferredLightingPass);
+
+  // ---- Phase 12 — Simulation Training Passes ----
+  XII_STATICLINK_REFERENCE(GraphicsCore_Pipeline_Passes_SimulationPasses);
 }

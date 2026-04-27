@@ -20,6 +20,16 @@ using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShade
 using xiiDecalResourceHandle             = xiiTypedResourceHandle<class xiiDecalResource>;
 using xiiDecalAtlasResourceHandle        = xiiTypedResourceHandle<class xiiDecalAtlasResource>;
 
+// ---- New High-Performance Mesh Pipeline ----
+/// Handle to a GPU-side meshlet geometry resource (cluster decomposition + packed vertex/index data).
+using xiiMeshletResourceHandle          = xiiTypedResourceHandle<class xiiMeshletResource>;
+/// Handle to a CPU-writable, GPU-resident dynamic mesh resource (ring-buffered, per-frame upload).
+using xiiDynamicMeshResourceHandle      = xiiTypedResourceHandle<class xiiDynamicMeshResource>;
+/// Handle to a virtual geometry DAG resource (Nanite-style hierarchical cluster stream).
+using xiiVirtualGeometryResourceHandle  = xiiTypedResourceHandle<class xiiVirtualGeometryResource>;
+/// Handle to a GPU simulation interop buffer (CUDA/compute → renderer zero-copy).
+using xiiGPUSimulationBufferHandle      = xiiTypedResourceHandle<class xiiGPUSimulationBuffer>;
+
 struct XII_GRAPHICSCORE_DLL xiiMeshImportTransform
 {
   using StorageType = xiiInt8;
