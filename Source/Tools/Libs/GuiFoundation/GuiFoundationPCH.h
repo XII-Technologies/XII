@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GuiFoundation/GuiFoundationDLL.h>
 
 #include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
