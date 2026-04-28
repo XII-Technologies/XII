@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Editor/EditorPCH.h>
 
 #include <EditorFramework/EditorApp/EditorApp.moc.h>

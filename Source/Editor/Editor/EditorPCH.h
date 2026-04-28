@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Basics.h>
 
 #include <Foundation/Basics/Platform/Windows/IncludeWindows.h>
