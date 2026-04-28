@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <FileservePlugin/FileservePluginPCH.h>
 
 #include <FileservePlugin/Fileserver/ClientContext.h>
