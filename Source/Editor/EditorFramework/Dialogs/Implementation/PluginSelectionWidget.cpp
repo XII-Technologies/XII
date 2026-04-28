@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/Dialogs/PluginSelectionWidget.moc.h>

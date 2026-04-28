@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <EditorFramework/EditorApp/Configuration/Plugins.h>
