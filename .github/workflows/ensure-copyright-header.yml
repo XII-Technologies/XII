@@ -1,0 +1,186 @@
+name: Ensure Copyright Header
+
+on:
+  pull_request:
+    branches: [ Development ]
+
+jobs:
+  ensure-header:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install optional dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # charset-normalizer is recommended for encoding detection
+          python -m pip install charset-normalizer || true
+
+      - name: Prepare outputs
+        id: init
+        run: |
+          echo "push=false" >> $GITHUB_OUTPUT
+          echo "hasPatch=false" >> $GITHUB_OUTPUT
+
+      - name: Fetch base and head refs
+        run: |
+          # Ensure we have both refs locally
+          git fetch origin "${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+          git fetch origin "${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}"
+
+      - name: Checkout head branch
+        run: |
+          git checkout --track "origin/${GITHUB_HEAD_REF}"
+
+      - name: Compute base commit and modified files
+        id: diff
+        run: |
+          set -euo pipefail
+
+          baseCommit=$(git merge-base HEAD origin/${GITHUB_BASE_REF})
+          echo "Base commit: $baseCommit"
+
+          # List modified files in the PR between baseCommit and HEAD.
+          # We include C/C++ and CMake patterns; adjust patterns as needed.
+          git diff --name-only "$baseCommit..HEAD" -- '*.cpp' '*.c' '*.cc' '*.cxx' '*.h' '*.hpp' '*.hh' '*.hxx' '*.inl' '*.cmake' 'CMakeLists.txt' > modified_files.txt || true
+
+          if [ ! -s modified_files.txt ]; then
+            echo "No modified target files in this PR."
+            echo "modified_files=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Normalize list and print
+          awk '{ print $0 }' modified_files.txt | sort -u > modified_files_sorted.txt
+          echo "::group::Modified files"
+          cat modified_files_sorted.txt
+          echo "::endgroup::"
+
+          # Export for later steps
+          MODIFIED=$(paste -sd " " modified_files_sorted.txt || true)
+          echo "modified_files=$MODIFIED" >> $GITHUB_OUTPUT
+          # Keep a file for later steps
+          mv modified_files_sorted.txt modified_files_for_action.txt
+
+      - name: Run header tool on repository
+        id: run_tool
+        run: |
+          set -euo pipefail
+
+          # Path to the tool provided by you
+          TOOL="${GITHUB_WORKSPACE}/Utilities/Scripts/EnsureCopyrightNotice.py"
+
+          if [ ! -f "$TOOL" ]; then
+            echo "Tool not found at $TOOL"
+            exit 1
+          fi
+
+          # Run the tool to apply headers. We run it across the repo but will only commit the modified files
+          # discovered earlier. This avoids needing to change the tool to accept a file list.
+          python "$TOOL"
+
+      - name: Detect formatting/changes and create patch
+        id: patch
+        run: |
+          set -euo pipefail
+
+          # Read the modified files list we computed earlier (if any)
+          if [ -f modified_files_for_action.txt ]; then
+            MODIFIED_FILES=$(cat modified_files_for_action.txt)
+          else
+            MODIFIED_FILES=""
+          fi
+
+          # See what changed after running the tool
+          # We'll create a patch that contains only changes to the files that were in the PR.
+          # First, ensure git index is up to date
+          git status --porcelain
+
+          # Build a list of files that are both in the original modified list and now changed
+          CHANGED_FILES=""
+          for f in $MODIFIED_FILES; do
+            # Only consider files that still exist in the repo
+            if [ -f "$f" ]; then
+              # Check if file has unstaged or staged changes
+              if git status --porcelain -- "$f" | grep -qE '^[ MADRCU]'; then
+                CHANGED_FILES="$CHANGED_FILES $f"
+              fi
+            fi
+          done
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changes to commit for the PR's modified files."
+            echo "hasPatch=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Create a patch containing only the changed files
+          # Use --binary to preserve binary diffs if any
+          git diff --binary -- $CHANGED_FILES > ensure_header.patch || true
+
+          if [ ! -s ensure_header.patch ]; then
+            echo "Patch file is empty."
+            echo "hasPatch=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Patch created: ensure_header.patch"
+          echo "hasPatch=true" >> $GITHUB_OUTPUT
+
+          # Stage only the changed files (so we don't accidentally commit unrelated changes)
+          git add -- $CHANGED_FILES
+
+          # Configure git user for commit
+          git config --global user.email "automation@xiitechnologies.com"
+          git config --global user.name "XII Automation"
+
+          # Commit
+          git commit -m "Apply copyright header to modified files." || true
+
+          # Mark that we have changes to push
+          echo "push=true" >> $GITHUB_OUTPUT
+
+      - name: Show patch content
+        if: ${{ steps.patch.outputs.hasPatch == 'true' }}
+        run: |
+          echo "=== Patch content ==="
+          sed -n '1,200p' ensure_header.patch || true
+
+      - name: Upload Patch File
+        if: ${{ steps.patch.outputs.hasPatch == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnsureCopyrightPatch
+          path: ensure_header.patch
+          retention-days: 3
+
+      - name: Push Changes
+        if: ${{ steps.patch.outputs.push == 'true' && github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+          directory: .
+          repository: ${{ github.repository }}
+          force: false
+
+      - name: Forked Repo Instructions
+        if: ${{ steps.patch.outputs.push == 'true' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          echo "This PR comes from the forked repository '${{ github.event.pull_request.head.repo.full_name }}'"
+          echo "Formatting/headers changes can't be applied automatically to forks."
+          echo "Please download the attached patch file and apply it manually using:"
+          echo "git apply --index ensure_header.patch"
+          exit 1
