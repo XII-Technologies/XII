@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 set(LLVM_LINK_COMPONENTS
   FrontendOpenMP
   Support

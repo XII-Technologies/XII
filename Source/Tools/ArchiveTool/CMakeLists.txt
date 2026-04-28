@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 xii_cmake_init()
 
 # currently the requirements are only met on Windows (ie. file iteration)

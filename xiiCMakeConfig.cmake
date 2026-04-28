@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 set_property(GLOBAL PROPERTY XII_BUILDTYPENAME_DEBUG "Debug")
 set_property(GLOBAL PROPERTY XII_BUILDTYPENAME_DEV "Dev")
 set_property(GLOBAL PROPERTY XII_BUILDTYPENAME_RELEASE "Shipping")

@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 xii_cmake_init()
 
 xii_requires_editor()
@@ -15,5 +17,3 @@ target_link_libraries(${PROJECT_NAME}
   EditorPluginAssets
   VisualScriptPlugin
 )
-
-

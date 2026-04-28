@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 /*
     opengametools vox file reader/writer - v0.6 - MIT license - Justin Paver, Oct 2019
 

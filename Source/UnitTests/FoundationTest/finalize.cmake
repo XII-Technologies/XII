@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 if (TARGET FoundationTest AND TARGET ArchiveTool)
 
 	target_compile_definitions(FoundationTest PRIVATE BUILDSYSTEM_HAS_ARCHIVE_TOOL)
