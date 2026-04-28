@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/World/Component.h>
 #include <GameComponentsPlugin/GameComponentsDLL.h>
 #include <GameEngine/AI/SensorComponent.h>
