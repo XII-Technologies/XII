@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <FoundationTest/FoundationTestPCH.h>
 
 #if XII_ENABLED(XII_SUPPORTS_PROCESSES)

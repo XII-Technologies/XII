@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <TestFramework/Framework/TestFramework.h>
 #include <TestFramework/Utilities/ConstructionCounter.h>
 
