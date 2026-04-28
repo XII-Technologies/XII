@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T>
 T* xiiRenderWorldModule::CreateRenderDataForThisFrame(const xiiComponent* pComponent) const

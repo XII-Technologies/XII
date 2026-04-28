@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
 {

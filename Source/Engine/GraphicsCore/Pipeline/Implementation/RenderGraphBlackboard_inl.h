@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T>
 XII_ALWAYS_INLINE void xiiRenderGraphBlackboard::Set(xiiStringView sKey, const T& value)

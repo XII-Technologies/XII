@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Memory/FrameAllocator.h>
 
 XII_ALWAYS_INLINE xiiGALCommandList& xiiRGPassContext::GetCommandList() const
