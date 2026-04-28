@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # -------------------------------------------------------------------
 # This file is part of the CMake build system for OGRE
 # (Object-oriented Graphics Rendering Engine)

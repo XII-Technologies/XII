@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 include("${CMAKE_CURRENT_LIST_DIR}/Configure_Default.cmake")
 
 message(STATUS "Configuring Platform: Windows")

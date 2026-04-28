@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # Find the folder into which the OpenXR loader has been installed
 
 # Early out, if this target has been created before

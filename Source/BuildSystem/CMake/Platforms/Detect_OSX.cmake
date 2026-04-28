@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR (DEFINED CURRENT_OSX_VERSION AND NOT "${CURRENT_OSX_VERSION}" STREQUAL ""))
   if(NOT DEFINED CURRENT_OSX_VERSION OR "${CURRENT_OSX_VERSION}" STREQUAL "")
     # Ensure other CMake files can test for OSX using this variable.

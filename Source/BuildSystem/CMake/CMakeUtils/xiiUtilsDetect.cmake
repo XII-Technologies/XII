@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # #####################################
 # ## xii_detect_project_name(<out-name>)
 # #####################################

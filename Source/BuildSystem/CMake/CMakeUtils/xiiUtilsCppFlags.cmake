@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # #####################################
 # ## xii_check_build_type()
 # #####################################

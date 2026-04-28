@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # #####################################
 # ## xii_ci_add_to_targets_list(<target> [C++])
 # #####################################
