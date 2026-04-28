@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorFramework/Assets/AssetStatusIndicator.moc.h>
 #include <EditorPluginAssets/EditorPluginAssetsPCH.h>
 

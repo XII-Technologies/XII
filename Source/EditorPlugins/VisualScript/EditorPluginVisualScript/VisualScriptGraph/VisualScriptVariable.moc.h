@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
