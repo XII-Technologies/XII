@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <TestFramework/TestFrameworkPCH.h>
 
 #include <TestFramework/Utilities/TestSetup.h>

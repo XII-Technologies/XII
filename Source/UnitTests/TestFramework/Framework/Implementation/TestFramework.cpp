@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <TestFramework/TestFrameworkPCH.h>
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
