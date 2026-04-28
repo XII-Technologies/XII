@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <VisualScriptPlugin/VisualScriptPluginPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
