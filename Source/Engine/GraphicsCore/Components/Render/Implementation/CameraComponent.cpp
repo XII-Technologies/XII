@@ -3,7 +3,7 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>

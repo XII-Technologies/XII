@@ -19,8 +19,10 @@ public:
 
     enum Enum : StorageType
     {
-      Never,    ///< This render data should never be cached. It will be extracted every frame and not stored in the static cache.
-      IfStatic, ///< This render data can be cached if it is detected to be static. It will be extracted every frame until it is detected as static, then stored in the static cache and reused until invalidated.
+      Never = 0U, ///< This render data should never be cached. It will be extracted every frame and not stored in the static cache.
+      IfStatic,   ///< This render data can be cached if it is detected to be static. It will be extracted every frame until it is detected as static, then stored in the static cache and reused until invalidated.
+
+      ENUM_COUNT,
 
       Default = Never
     };
@@ -29,8 +31,9 @@ public:
   xiiRenderData()          = default;
   virtual ~xiiRenderData() = default;
 
-  xiiMat4              m_GlobalTransform = xiiMat4::MakeIdentity();
-  xiiBoundingBoxSphere m_GlobalBounds;
+public:
+  xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();
+  xiiBoundingBoxSphere m_GlobalBounds    = xiiBoundingBoxSphere::MakeZero();
 
   xiiGameObjectHandle m_hOwnerObject;
   xiiComponentHandle  m_hOwnerComponent;

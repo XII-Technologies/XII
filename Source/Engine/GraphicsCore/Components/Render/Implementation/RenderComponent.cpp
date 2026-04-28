@@ -1,6 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Components/RenderComponent.h>
+#include <GraphicsCore/Components/Render/RenderComponent.h>
 
 // clang-format off
 XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, 1)

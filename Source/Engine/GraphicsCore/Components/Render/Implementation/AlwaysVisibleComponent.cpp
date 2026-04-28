@@ -2,7 +2,7 @@
 
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GraphicsCore/Components/AlwaysVisibleComponent.h>
+#include <GraphicsCore/Components/Render/AlwaysVisibleComponent.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiAlwaysVisibleComponent, 1, xiiComponentMode::Static)

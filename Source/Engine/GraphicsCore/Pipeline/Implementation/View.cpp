@@ -819,7 +819,7 @@ struct xiiShadowCascadeSetupData
 
   xiiRGBufferHandle m_hCascadeMatrices;                              ///< UAV out (structured buffer of float4x4 cascade view-projection matrices, one per cascade, consumed by Shadow Passes).
   xiiUInt32         m_uiActiveCascades = 0U;                         ///< Number of active shadow cascades for the current frame, used to avoid processing unused cascades in the Shadow Passes.
-  xiiVec3           m_vLightDir        = xiiVec3(0.0f, -1.0f, 0.0f); ///< Direction of the main directional light, used for computing cascade splits and matrices.
+  xiiVec3           m_vLightDirection  = xiiVec3(0.0f, -1.0f, 0.0f); ///< Direction of the main directional light, used for computing cascade splits and matrices.
   float             m_fNearPlane       = 0.1f;                       ///< Near plane distance for shadow cascades, used for computing cascade splits and matrices.
   float             m_fFarPlane        = 1000.0f;                    ///< Far plane distance for shadow cascades, used for computing cascade splits and matrices.
 };
@@ -827,17 +827,18 @@ struct xiiShadowCascadeSetupData
 void xiiView::SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuilder& builder)
 {
   data.m_uiActiveCascades = 3U;
-  data.m_vLightDir        = xiiVec3(0.0f, -1.0f, 0.0f);
+  data.m_vLightDirection  = xiiVec3(0.0f, -1.0f, 0.0f);
   data.m_fNearPlane       = m_pCamera->GetNearPlane();
   data.m_fFarPlane        = m_pCamera->GetFarPlane();
 
   // Walk extracted data to find the first directional light.
+
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
   for (xiiRenderData* pRenderData : renderData)
   {
     if (IsRenderDataTypeName(pRenderData, "xiiDirectionalLightRenderData"))
     {
-      data.m_vLightDir        = -pRenderData->m_GlobalTransform.GetColumn(2).GetAsVec3().GetNormalized();
+      data.m_vLightDirection  = -pRenderData->m_GlobalTransform.m_qRotation.GetVectorPart();
       data.m_uiActiveCascades = 3U; // Could read from component property via msg if exposed.
       break;
     }

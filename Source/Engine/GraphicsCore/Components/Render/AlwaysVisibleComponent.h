@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-#include <GraphicsCore/Components/RenderComponent.h>
+#include <GraphicsCore/Components/Render/RenderComponent.h>
 
 using xiiAlwaysVisibleComponentManager = xiiComponentManager<class xiiAlwaysVisibleComponent, xiiBlockStorageType::Compact>;
 
