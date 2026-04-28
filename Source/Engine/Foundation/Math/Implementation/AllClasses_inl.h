@@ -1,5 +1,7 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+#pragma once
+
 #include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/BoundingSphere.h>
 #include <Foundation/Math/Mat3.h>
