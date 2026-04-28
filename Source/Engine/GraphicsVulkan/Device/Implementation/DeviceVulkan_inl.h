@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename ObjectHandle, typename>
 XII_FORCE_INLINE void xiiGALDeviceVulkan::SetVulkanObjectDebugName(ObjectHandle& vkObject, const char* szDebugName, xiiVulkanAllocation allocation /*= {}*/) const

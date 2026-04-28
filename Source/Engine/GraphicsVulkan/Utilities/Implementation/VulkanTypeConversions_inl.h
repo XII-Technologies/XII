@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiGALBlendOperation::Enum e)
 {
