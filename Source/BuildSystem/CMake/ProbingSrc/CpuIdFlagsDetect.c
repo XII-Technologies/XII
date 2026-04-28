@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <stdint.h>
 #include <stdio.h>
 #if defined(__APPLE__)
