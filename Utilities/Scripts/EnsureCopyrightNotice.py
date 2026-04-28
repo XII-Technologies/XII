@@ -138,16 +138,15 @@ def ensure_header_text(original_text: str, header_line: str) -> (str, bool):
       - Remove all lines that exactly equal header_line (ignoring trailing spaces).
       - Strip leading blank lines from the remaining content.
       - Prepend header_line + one blank line.
-      - Preserve whether original ended with newline (so we don't accidentally remove final newline).
+      - Ensure the file ends with exactly one newline character.
     """
     if original_text is None:
         original_text = ""
     # Normalize newlines to LF for processing
     s = original_text.replace('\r\n', '\n').replace('\r', '\n')
-    had_trailing_newline = s.endswith('\n')
 
-    # Split into lines without losing empty trailing split artifact
-    lines = s.split('\n')  # note: if s endswith '\n', last element is ''
+    # Split into lines (split removes newline chars; trailing '' indicates trailing newline)
+    lines = s.split('\n')
 
     # Remove all lines that exactly equal the header (ignoring trailing spaces)
     header_stripped = header_line.rstrip()
@@ -163,10 +162,11 @@ def ensure_header_text(original_text: str, header_line: str) -> (str, bool):
     new_lines = [header_stripped, ""]  # header + exactly one blank line
     new_lines.extend(remaining)
 
-    new_text = "\n".join(new_lines)
-    if had_trailing_newline:
-        new_text = new_text + "\n"
+    # Join and ensure exactly one newline at EOF
+    new_text = "\n".join(new_lines).rstrip("\n") + "\n"
 
+    # Direct comparison of normalized original to new_text so differences
+    # in trailing-newline count are detected.
     changed = (s != new_text)
     return new_text, changed
 
