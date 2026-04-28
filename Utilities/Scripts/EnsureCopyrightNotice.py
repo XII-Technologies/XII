@@ -11,6 +11,9 @@ Default header:
 Usage:
   python EnsureCopyrightNotice.py --root . --dry-run
   python EnsureCopyrightNotice.py --root src --header "/// Copyright (c) Theophilus Eriata. All Rights Reserved."
+  python .\Utilities\Scripts\EnsureCopyrightNotice.py --root ./Source/Engine/ --no-backup
+  python .\Utilities\Scripts\EnsureCopyrightNotice.py --root . --header "# Copyright (c) Theophilus Eriata. All Rights Reserved." --extensions .cmake .txt
+
   pip install charset-normalizer
 """
 from pathlib import Path
