@@ -22,20 +22,42 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   for (xiiUInt32 i = 0U; i < s_uiRingFrameCount; ++i)
   {
     m_FrameRing[i].m_PassQueries.Clear();
+    m_FrameRing[i].m_pFrameDurationQuery.Clear();
     m_FrameRing[i].m_uiFrameIndex = xiiInvalidIndex;
   }
   m_pDevice = nullptr;
+
+  XII_LOCK(m_ResultMutex);
+  m_ResolvedDurationsMs.Clear();
 }
 
 void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
+
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
 
   if (uiPassIndex >= frame.m_PassQueries.GetCount())
   {
     frame.m_PassQueries.SetCount(uiPassIndex + 1U);
+  }
+
+  // If this is the first pass recorded for the frame, create & begin the frame-wide duration query.
+  if (uiPassIndex == 0U)
+  {
+    if (frame.m_pFrameDurationQuery == nullptr)
+    {
+      xiiGALQueryCreationDescription frameQueryDescription;
+      frameQueryDescription.m_Type = xiiGALQueryType::Duration;
+
+      frame.m_pFrameDurationQuery = m_pDevice->CreateQuery(frameQueryDescription);
+    }
+
+    if (frame.m_pFrameDurationQuery != nullptr)
+    {
+      commandList.BeginQuery(frame.m_pFrameDurationQuery);
+    }
   }
 
   PassQueries& pass = frame.m_PassQueries[uiPassIndex];
@@ -70,6 +92,16 @@ void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, 
   {
     commandList.EndQuery(pass.m_pDurationQuery);
   }
+
+  // If this is the last pass for the frame (based on current known count), end the frame-wide query.
+  // Note: This assumes passes are recorded in order and that the final pass index equals GetCount() - 1.
+  if (uiPassIndex == frame.m_PassQueries.GetCount() - 1)
+  {
+    if (frame.m_pFrameDurationQuery != nullptr)
+    {
+      commandList.EndQuery(frame.m_pFrameDurationQuery);
+    }
+  }
 }
 
 void xiiRenderGraphTimestampProfiler::OnFrameEnd(xiiUInt64 uiFrameIndex)
@@ -100,11 +132,36 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
       if (durationData.m_uiFrequency > 0ULL)
       {
         const float fDurationMs = static_cast<float>(durationData.m_uiDuration) / static_cast<float>(durationData.m_uiFrequency) * 1000.0f;
+
         m_ResolvedDurationsMs.Insert(pass.m_sPassName, fDurationMs);
       }
     }
     pass.m_bActive = false;
   }
+
+  // Read back the frame-wide duration query if present.
+  if (frameData.m_pFrameDurationQuery != nullptr)
+  {
+    xiiGALQueryDataDuration frameDurationData;
+    if (frameData.m_pFrameDurationQuery->GetData(&frameDurationData, sizeof(frameDurationData), /*bAutoInvalidate=*/false))
+    {
+      if (frameDurationData.m_uiFrequency > 0ULL)
+      {
+        const float fFrameDurationMs = static_cast<float>(frameDurationData.m_uiDuration) / static_cast<float>(frameDurationData.m_uiFrequency) * 1000.0f;
+
+        // Use a reserved name for the total frame duration so callers can query it like a pass.
+        static const xiiHashedString s_sFrameTotalName = xiiMakeHashedString("__FrameTotal__");
+        m_ResolvedDurationsMs.Insert(s_sFrameTotalName, fFrameDurationMs);
+      }
+    }
+
+    // Reset the frame query so it will be recreated on the next frame.
+    frameData.m_pFrameDurationQuery = nullptr;
+  }
+
+  // Clear pass queries array for this frame so it can be reused.
+  frameData.m_PassQueries.Clear();
+  frameData.m_uiFrameIndex = xiiInvalidIndex;
 }
 
 float xiiRenderGraphTimestampProfiler::GetPassDurationMs(xiiStringView sPassName) const
@@ -113,6 +170,19 @@ float xiiRenderGraphTimestampProfiler::GetPassDurationMs(xiiStringView sPassName
 
   float fResult = 0.0f;
   m_ResolvedDurationsMs.TryGetValue(xiiTempHashedString(sPassName), fResult);
+
+  return fResult;
+}
+
+float xiiRenderGraphTimestampProfiler::GetFrameDurationMs() const
+{
+  // Use the reserved name for the total frame duration.
+  static const xiiHashedString s_sFrameTotalName = xiiMakeHashedString("__FrameTotal__");
+
+  XII_LOCK(m_ResultMutex);
+
+  float fResult = 0.0f;
+  m_ResolvedDurationsMs.TryGetValue(s_sFrameTotalName, fResult);
 
   return fResult;
 }
