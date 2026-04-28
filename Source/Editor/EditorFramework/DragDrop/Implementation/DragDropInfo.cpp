@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #include <EditorFramework/DragDrop/DragDropInfo.h>

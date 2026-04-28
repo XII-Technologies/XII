@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Player/Player.h>
 
 #include <Foundation/Configuration/Startup.h>

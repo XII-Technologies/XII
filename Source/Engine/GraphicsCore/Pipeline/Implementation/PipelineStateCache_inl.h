@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 template <typename HandleType, typename DescType, typename KeyType>

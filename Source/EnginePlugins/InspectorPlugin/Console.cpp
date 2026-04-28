@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
 #include <Core/Console/Console.h>

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 ///	Preprocessor utilities for shader sources.
 ///
 ///	- Concatenate / stringify helpers.

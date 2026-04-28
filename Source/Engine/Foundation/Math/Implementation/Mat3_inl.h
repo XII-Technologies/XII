@@ -1,4 +1,4 @@
-#pragma once
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Type>
 xiiMat3Template<Type>::xiiMat3Template()

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #if defined(__clang__) || defined(__GNUC__)
 #  if defined(__clang__)
 #    pragma message("COMPILER:'clang'")

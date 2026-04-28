@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #define UNREFERENCED_PARAMETER(x) XII_IGNORE_UNUSED(x)

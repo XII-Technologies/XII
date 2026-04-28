@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Inspector/InspectorPCH.h>
 
 #include <Foundation/Application/Application.h>

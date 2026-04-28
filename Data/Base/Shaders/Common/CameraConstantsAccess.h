@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #if XII_ENABLED(XII_SHADER_PLATFORM)

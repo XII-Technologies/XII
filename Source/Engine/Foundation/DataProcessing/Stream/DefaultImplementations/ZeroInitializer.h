@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
 
@@ -8,7 +9,7 @@
 
 class xiiProcessingStream;
 
-/// \brief This element spawner initializes new elements with 0 (by writing 0 bytes into the whole element)
+/// \brief This element spawner initializes new elements with 0 (by writing 0 bytes into the whole element).
 class XII_FOUNDATION_DLL xiiProcessingStreamSpawnerZeroInitialized : public xiiProcessingStreamProcessor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiProcessingStreamSpawnerZeroInitialized, xiiProcessingStreamProcessor);

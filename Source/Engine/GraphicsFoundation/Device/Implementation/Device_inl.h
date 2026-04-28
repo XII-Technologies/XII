@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 /// \brief Used to guard xiiGALDevice functions from multi-threaded access and to verify that executing them on non-main-threads is allowed.
 #define XII_GAL_DEVICE_LOCK_AND_CHECK() \

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 inline xiiVec3 xiiCamera::GetCenterPosition() const

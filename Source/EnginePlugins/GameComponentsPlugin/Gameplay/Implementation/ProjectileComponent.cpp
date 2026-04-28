@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GameComponentsPlugin/GameComponentsPCH.h>
 
 #include <Core/Interfaces/PhysicsWorldModule.h>

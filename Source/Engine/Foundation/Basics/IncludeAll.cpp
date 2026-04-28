@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/FoundationPCH.h>
 
 // This file includes everything from Foundation to ensure that all template code is looked at when building the Foundation library.

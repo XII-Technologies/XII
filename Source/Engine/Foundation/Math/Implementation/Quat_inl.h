@@ -1,4 +1,4 @@
-#pragma once
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Math/Vec3.h>

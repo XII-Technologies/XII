@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Logging/Log.h>
 
 XII_ALWAYS_INLINE xiiComponent::xiiComponent() = default;

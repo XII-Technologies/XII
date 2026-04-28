@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <class Type>
 constexpr xiiInterval<Type>::xiiInterval(Type startAndEndValue) :

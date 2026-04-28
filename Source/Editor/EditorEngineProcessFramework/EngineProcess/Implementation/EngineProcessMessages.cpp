@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
@@ -604,4 +606,3 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiObjectsForDebugVisMsgToEngine, 1, xiiRTTIDef
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-

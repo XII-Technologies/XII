@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # find the folder in which Embree is located
 
 # early out, if this target has been created before

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 XII_ALWAYS_INLINE xiiInt32 xiiStringUtils::CompareChars(xiiUInt32 uiCharacter1, xiiUInt32 uiCharacter2)

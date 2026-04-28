@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorEngineProcess/EditorEngineProcessPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

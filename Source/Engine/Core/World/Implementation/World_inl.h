@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE xiiStringView xiiWorld::GetName() const
 {

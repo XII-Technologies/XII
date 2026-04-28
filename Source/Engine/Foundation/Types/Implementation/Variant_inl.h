@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_WARNING_PUSH()
 XII_WARNING_DISABLE_MSVC(4702) // Unreachable code for some reason

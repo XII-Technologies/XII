@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 ///
 /// Implements xiiProcessGroup by using xiiProcess

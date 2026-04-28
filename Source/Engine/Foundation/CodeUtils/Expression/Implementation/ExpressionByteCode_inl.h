@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE const xiiExpressionByteCode::StorageType* xiiExpressionByteCode::GetByteCodeStart() const
 {

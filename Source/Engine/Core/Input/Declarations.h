@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #include <Core/CoreDLL.h>
@@ -415,4 +417,3 @@ XII_DECLARE_FLAGS_OPERATORS(xiiInputSlotFlags);
 #define xiiInputSlot_Spatial_Head_UpNegX "spatial_head_up_negx"
 #define xiiInputSlot_Spatial_Head_UpNegY "spatial_head_up_negy"
 #define xiiInputSlot_Spatial_Head_UpNegZ "spatial_head_up_negz"
-

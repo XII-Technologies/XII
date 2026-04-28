@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #pragma once
 
@@ -9,12 +10,14 @@
 class xiiProcessingStreamProcessor;
 class xiiProcessingStreamGroup;
 
+/// \brief Event data that contains the stream group and the index of the element which is about to be removed.
 struct xiiStreamGroupElementRemovedEvent
 {
   xiiProcessingStreamGroup* m_pStreamGroup;
   xiiUInt64                 m_uiElementIndex;
 };
 
+/// \brief Event data that contains the stream group for which all elements have been cleared.
 struct xiiStreamGroupElementsClearedEvent
 {
   xiiProcessingStreamGroup* m_pStreamGroup;

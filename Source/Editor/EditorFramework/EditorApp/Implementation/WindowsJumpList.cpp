@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorFramework/EditorFrameworkPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)

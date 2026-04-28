@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/IO/MemoryMappedFile.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Platform/Implementation/Windows/DosDevicePath_win.h>

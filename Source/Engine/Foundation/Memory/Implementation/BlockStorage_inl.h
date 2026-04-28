@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T, xiiUInt32 BlockSize, xiiBlockStorageType::Enum StorageType>
 XII_FORCE_INLINE xiiBlockStorage<T, BlockSize, StorageType>::ConstIterator::ConstIterator(const xiiBlockStorage<T, BlockSize, StorageType>& storage, xiiUInt32 uiStartIndex, xiiUInt32 uiCount) :

@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_NAME "UNKNOWN")
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_PREFIX "")
 set_property(GLOBAL PROPERTY XII_CMAKE_PLATFORM_POSTFIX "")

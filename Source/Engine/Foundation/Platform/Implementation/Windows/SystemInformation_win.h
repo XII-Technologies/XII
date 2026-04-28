@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // Deactivate Doxygen document generation for the following block.
 /// \cond
 

@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 bool xiiUuid::operator==(const xiiUuid& other) const
 {

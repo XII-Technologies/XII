@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/FoundationPCH.h>
 
 #include <Foundation/Platform/Implementation/Linux/ETWProvider_linux.h>

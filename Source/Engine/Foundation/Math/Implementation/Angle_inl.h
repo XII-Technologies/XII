@@ -1,4 +1,4 @@
-#pragma once
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Type>
 inline constexpr Type xiiAngleTemplate<Type>::Pi()

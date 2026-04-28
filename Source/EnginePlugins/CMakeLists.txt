@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 set_property(GLOBAL PROPERTY "GATHER_EXPORT_PROJECTS" TRUE)
 xii_add_all_subdirs()
 set_property(GLOBAL PROPERTY "GATHER_EXPORT_PROJECTS" FALSE)

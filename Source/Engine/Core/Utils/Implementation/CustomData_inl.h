@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T>
 xiiCustomDataResource<T>::xiiCustomDataResource() = default;

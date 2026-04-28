@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename MetaDataType>
 xiiMessageQueueBase<MetaDataType>::xiiMessageQueueBase(xiiAllocator* pAllocator) :

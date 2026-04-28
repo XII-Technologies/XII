@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #if !defined(RENDER_PASS) || !defined(BLEND_MODE)

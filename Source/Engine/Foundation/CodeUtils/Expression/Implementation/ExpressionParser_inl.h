@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 inline bool xiiExpressionParser::AcceptStatementTerminator()
 {

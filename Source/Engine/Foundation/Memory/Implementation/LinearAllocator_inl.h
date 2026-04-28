@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 template <xiiAllocatorTrackingMode TrackingMode, bool OverwriteMemoryOnReset>
 xiiLinearAllocator<TrackingMode, OverwriteMemoryOnReset>::xiiLinearAllocator(xiiStringView sName, xiiAllocator* pParent, xiiUInt32 uiInitialSize) :
   SUPER(sName, pParent), m_DestructData(pParent), m_PtrToDestructDataIndexTable(pParent)

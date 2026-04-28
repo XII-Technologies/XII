@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_FORCE_INLINE void xiiVisualScriptDataDescription::CheckOffset(DataOffset dataOffset, const xiiRTTI* pType) const
 {

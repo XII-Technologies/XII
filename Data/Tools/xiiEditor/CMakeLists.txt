@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 xii_cmake_init()
 
 set(PROJECT_NAME "EditorData")

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 namespace xiiInternal
 {
   template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode>

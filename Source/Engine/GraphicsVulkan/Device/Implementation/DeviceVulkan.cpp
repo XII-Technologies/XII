@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 /// \brief Compile-time string keys for the per-view render graph blackboard.

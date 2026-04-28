@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 add_subdirectory(ThirdParty)
 add_subdirectory(BuildSystem)
 add_subdirectory(Engine)

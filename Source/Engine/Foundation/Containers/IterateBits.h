@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Containers/Implementation/BitIterator.h>
 
 /// Helper base class to iterate over the bit indices or bit values of an integer.

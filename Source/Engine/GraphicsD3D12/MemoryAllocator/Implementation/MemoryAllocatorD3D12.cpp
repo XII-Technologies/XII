@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <D3D12MemoryAllocator/D3D12MemAlloc.h>

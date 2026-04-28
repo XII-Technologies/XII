@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 /*
     opengametools voxel meshifier - v0.9 - MIT license - Justin Paver, April 2020
 

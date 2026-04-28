@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 // static
 template <typename T, xiiUInt32 Size>

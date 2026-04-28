@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_FORCE_INLINE bool xiiComponentManagerBase::IsValidComponent(const xiiComponentHandle& hComponent) const
 {

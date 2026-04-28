@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T>
 xiiDynamicArrayBase<T>::xiiDynamicArrayBase(xiiAllocator* pAllocator) :

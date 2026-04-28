@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Utilities/UtilitiesPCH.h>
 
 #include <Core/World/GameObject.h>

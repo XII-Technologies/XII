@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # #####################################
 # ## xii_create_target_cs(<LIBRARY | APPLICATION> <target-name>)
 # #####################################

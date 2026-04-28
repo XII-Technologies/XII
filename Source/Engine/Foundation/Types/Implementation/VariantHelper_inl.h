@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #define CALL_FUNCTOR(functor, type) return functor.template operator()<type>(std::forward<Args>(args)...)
 

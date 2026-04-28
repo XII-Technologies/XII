@@ -1,4 +1,6 @@
-﻿#include <FoundationTest/FoundationTestPCH.h>
+﻿/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+#include <FoundationTest/FoundationTestPCH.h>
 
 //////////////////////////////////////////////////////////////////////
 // Start of the definition of a example Enum

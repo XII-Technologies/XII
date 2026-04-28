@@ -1,3 +1,5 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 # #####################################
 # ## xii_add_pvs_header(<target-var> <optional-text>)
 # #####################################

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <TestFramework/TestFrameworkPCH.h>
 
 #ifdef XII_USE_QT

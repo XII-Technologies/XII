@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename VertexType, typename MutexType, typename AllocatorWrapper>
 XII_ALWAYS_INLINE xiiGALVertexBufferPool<VertexType, MutexType, AllocatorWrapper>::xiiGALVertexBufferPool(xiiStringView sName, xiiAllocator* pAllocator, xiiUInt32 uiInitialChunkSize, xiiUInt32 uiExpansionFactor) :

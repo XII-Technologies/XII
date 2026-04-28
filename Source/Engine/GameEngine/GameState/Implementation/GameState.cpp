@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <GameEngine/GameEnginePCH.h>
 

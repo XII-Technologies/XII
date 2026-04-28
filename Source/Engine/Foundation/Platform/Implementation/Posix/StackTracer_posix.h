@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #ifdef XII_STACKTRACER_POSIX_INL_H_INCLUDED
 #  error "This file must not be included twice."
 #endif

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Reflection/Implementation/PropertyAttributes.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Reflection/ReflectionUtils.h>

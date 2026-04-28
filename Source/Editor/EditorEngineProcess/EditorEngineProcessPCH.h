@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Input/InputManager.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Basics.h>

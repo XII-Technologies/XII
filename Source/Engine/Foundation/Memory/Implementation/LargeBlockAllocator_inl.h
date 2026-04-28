@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T, xiiUInt32 SizeInBytes>
 XII_ALWAYS_INLINE xiiDataBlock<T, SizeInBytes>::xiiDataBlock(T* pData, xiiUInt32 uiCount)

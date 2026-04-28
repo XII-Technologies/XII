@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Application/Application.h>
 #include <Foundation/IO/Archive/ArchiveBuilder.h>
 #include <Foundation/IO/Archive/ArchiveReader.h>

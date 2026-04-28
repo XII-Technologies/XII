@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include "Foundation/Serialization/AbstractObjectGraph.h"
 
 #include <GameEngine/GameEnginePCH.h>

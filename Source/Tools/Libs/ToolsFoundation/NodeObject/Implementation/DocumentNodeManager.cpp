@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <ToolsFoundation/ToolsFoundationPCH.h>
 
 #include <Foundation/Serialization/AbstractObjectGraph.h>

@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/System/SystemInformation.h>
 #include <Foundation/Time/Time.h>

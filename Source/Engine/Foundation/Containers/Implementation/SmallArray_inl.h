@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T, xiiUInt16 Size>
 xiiSmallArrayBase<T, Size>::xiiSmallArrayBase() = default;

@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Foundation/System/Process.h>

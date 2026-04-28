@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 inline xiiColorLinear16f::xiiColorLinear16f() = default;
 

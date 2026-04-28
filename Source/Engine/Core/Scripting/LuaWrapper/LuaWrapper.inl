@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #ifdef BUILDSYSTEM_ENABLE_LUA_SUPPORT
 
 #  pragma once

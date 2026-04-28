@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/Interfaces/NavmeshGeoWorldModule.h>
 
 // clang-format off
