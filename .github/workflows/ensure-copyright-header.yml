@@ -93,13 +93,18 @@ jobs:
           fi
 
           # Example omit directories (case-insensitive path segments). Adjust as needed.
-          # You can add multiple --omit-dir entries, the tool will skip files under those directories.
-          OMIT_ARGS="--omit-dir ${GITHUB_WORKSPACE}/Source/ThirdParty --omit-dir ${GITHUB_WORKSPACE}/Data/Tools --omit-dir ${GITHUB_WORKSPACE}/Source/Engine/Foundation/ThirdParty --omit-dir ${GITHUB_WORKSPACE}/Workspace --omit-dir ${GITHUB_WORKSPACE}/Output"
+          OMIT_DIRS=(${GITHUB_WORKSPACE}/Source/ThirdParty ${GITHUB_WORKSPACE}/Data/Tools ${GITHUB_WORKSPACE}/Source/Engine/Foundation/ThirdParty ${GITHUB_WORKSPACE}/Workspace ${GITHUB_WORKSPACE}/Output)
 
-          # Run the tool once with the full file list. xargs will append the file list as arguments.
-          # This safely passes all filenames (one invocation) to the tool:
-          #   python TOOL --files file1 file2 file3 --omit-dir ...
-          xargs -a modified_files_for_action.txt -r python "$TOOL" --files $OMIT_ARGS --no-backup
+          # Build omit args array for the tool
+          OMIT_ARGS=()
+          for d in "${OMIT_DIRS[@]}"; do
+            OMIT_ARGS+=(--omit-dir "$d")
+          done
+
+          # Call the tool once with all files passed as --files arguments.
+          # This avoids xargs creating multiple invocations and prevents argparse errors.
+          echo "Running header tool on ${#FILES[@]} files..."
+          python "$TOOL" --files "${FILES[@]}" "${OMIT_ARGS[@]}" --no-backup
 
       - name: Detect formatting/changes and create patch
         id: patch
