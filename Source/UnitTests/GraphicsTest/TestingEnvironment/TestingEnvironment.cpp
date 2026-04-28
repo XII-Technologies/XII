@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsTest/GraphicsTestPCH.h>
 
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
