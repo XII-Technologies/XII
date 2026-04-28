@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <ToolsFoundationTest/ToolsFoundationTestPCH.h>
 
 #include <Foundation/Reflection/Reflection.h>
