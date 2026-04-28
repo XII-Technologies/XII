@@ -36,7 +36,7 @@ def load_args():
     p.add_argument('--root', default='.', help='Root directory to scan')
     p.add_argument('--header', help='Exact header text to insert (include trailing newline if desired)')
     p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
-    p.add_argument('--backup', action='store_true', help='Create .bak backups before writing (default: True)', default=True)
+    p.add_argument('--backup', action='store_true', help='Create .bak backups before writing (default: False)', default=False)
     p.add_argument('--extensions', nargs='*', help='Extra extensions to include (e.g. .inl)')
     return p.parse_args()
 
