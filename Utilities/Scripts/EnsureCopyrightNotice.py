@@ -15,11 +15,12 @@ Behavior:
 - Detects and preserves encoding (uses charset-normalizer or chardet if available).
 - Supports --only to restrict processing to a subset of types (e.g., --only cmake).
 - Use --dry-run to preview changes.
+- Supports --files to process an explicit list of files and --omit-dir to skip directories.
 
 Usage examples:
   python EnsureCopyrightNotice.py --root . --dry-run
-  python EnsureCopyrightNotice.py --root . --only cmake --body "Copyright (c) Theophilus Eriata. All Rights Reserved." --no-backup
-  python EnsureCopyrightNotice.py --root . --extensions .cmake --body "Copyright (c) Theophilus Eriata. All Rights Reserved." --no-backup
+  python EnsureCopyrightNotice.py --files src/foo.cpp include/bar.h --omit-dir ThirdParty --no-backup
+  python EnsureCopyrightNotice.py --root . --extensions .cmake --body "Copyright (c) Theophilus Eriata. All Rights Reserved." --omit-dir thirdparty external
 
 Requires (recommended):
   pip install charset-normalizer
@@ -27,7 +28,6 @@ Requires (recommended):
 import sys
 import shutil
 import argparse
-
 from pathlib import Path
 
 # Optional encoding detection libraries
@@ -60,9 +60,14 @@ DEFAULT_TYPE_MAP = {
 
 DEFAULT_BODY = "Copyright (c) Theophilus Eriata. All Rights Reserved."
 
+# -------------------------
+# Argument parsing
+# -------------------------
 def parse_args():
     p = argparse.ArgumentParser(description="Force a single-line header as the first line, per-file-type, preserving encoding.")
-    p.add_argument('--root', default='.', help='Root directory to scan')
+    p.add_argument('--root', default='.', help='Root directory to scan (ignored if --files is used)')
+    p.add_argument('--files', nargs='*', help='Explicit list of files to process (overrides --root)')
+    p.add_argument('--omit-dir', nargs='*', default=[], help='Directory names or relative paths to omit (case-insensitive).')
     p.add_argument('--body', help='Header body text (without comment prefix). Default is Theophilus header.')
     p.add_argument('--header', help='Full header line to insert (overrides body and prefix)')
     p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
@@ -72,6 +77,9 @@ def parse_args():
     p.add_argument('--fallback-encoding', default='utf-8', help='Encoding to use if detection fails (default: utf-8)')
     return p.parse_args()
 
+# -------------------------
+# Encoding helpers
+# -------------------------
 def detect_encoding_from_bytes(b: bytes):
     if b.startswith(b'\xef\xbb\xbf'):
         return 'utf-8-sig', True, 1.0
@@ -130,6 +138,9 @@ def write_file_preserve_encoding(path: Path, text: str, encoding: str, had_bom: 
             out_bytes = text.encode(encoding, errors='surrogateescape')
     path.write_bytes(out_bytes)
 
+# -------------------------
+# Type map and helpers
+# -------------------------
 def build_type_map(extra_exts):
     # Merge defaults and add any extra extensions to all types.
     tm = {}
@@ -159,6 +170,9 @@ def make_full_header(prefix: str, body: str):
     # Single-line header (no trailing spaces), e.g. "/// Copyright..."
     return f"{prefix} {body}".rstrip()
 
+# -------------------------
+# Header enforcement
+# -------------------------
 def ensure_header_text(original_text: str, header_line: str) -> (str, bool):
     """
     - Remove all lines that exactly equal header_line (ignoring trailing spaces).
@@ -217,9 +231,84 @@ def process_file(path: Path, header_line: str, dry_run: bool, backup: bool, fall
 
     return True, "updated"
 
+# -------------------------
+# File collection with omit-dir and files list support
+# -------------------------
+def normalize_omit_dirs(omit_list):
+    """
+    Normalize omit entries to lowercase path segments for comparison.
+    Accepts directory names or relative paths. Returns set of normalized segments.
+    """
+    normalized = set()
+    for entry in omit_list or []:
+        if not entry:
+            continue
+        p = Path(entry)
+        # Add each segment of the provided path (so "thirdparty/lib" will match "thirdparty")
+        for part in p.parts:
+            normalized.add(part.lower())
+    return normalized
+
+def path_is_omitted(path: Path, omit_segments: set):
+    """
+    Return True if any path segment (case-insensitive) matches an omit segment.
+    """
+    for part in path.parts:
+        if part.lower() in omit_segments:
+            return True
+    return False
+
+def collect_target_files(args, type_map):
+    """
+    Return a list of Path objects to process based on args:
+      - If args.files provided: use that list (filter missing and omitted).
+      - Otherwise: scan args.root for known extensions and filenames, skipping omitted dirs.
+    """
+    omit_segments = normalize_omit_dirs(args.omit_dir)
+    extra_exts = [e if e.startswith('.') else f".{e}" for e in (args.extensions or [])]
+
+    targets = []
+    if args.files:
+        for f in args.files:
+            p = Path(f)
+            if not p.exists():
+                print(f"Skipping missing file: {f}", file=sys.stderr)
+                continue
+            if path_is_omitted(p, omit_segments):
+                print(f"Skipping omitted file (in omitted dir): {f}", file=sys.stdout)
+                continue
+            targets.append(p)
+        return targets
+
+    # Root scanning
+    root = Path(args.root)
+    if not root.exists():
+        print(f"Root path does not exist: {root}", file=sys.stderr)
+        return []
+
+    # Build combined extension set from type_map and extra_exts
+    exts = set()
+    filenames = set()
+    for info in type_map.values():
+        exts.update(info.get('extensions', set()))
+        filenames.update(info.get('filenames', set()))
+    exts.update(e.lower() for e in extra_exts)
+
+    for p in root.rglob('*'):
+        if not p.is_file():
+            continue
+        if path_is_omitted(p, omit_segments):
+            # skip any file under an omitted directory
+            continue
+        if p.name in filenames or p.suffix.lower() in exts:
+            targets.append(p)
+    return targets
+
+# -------------------------
+# Main
+# -------------------------
 def main():
     args = parse_args()
-    root = Path(args.root)
     extra_exts = [e if e.startswith('.') else f".{e}" for e in (args.extensions or [])]
     type_map = build_type_map(extra_exts)
 
@@ -228,12 +317,19 @@ def main():
 
     body = args.body if args.body is not None else DEFAULT_BODY
 
+    files = collect_target_files(args, type_map)
+
+    if not files:
+        print("No files to process.")
+        return
+
     changed = []
-    for p in root.rglob('*'):
-        if not p.is_file():
-            continue
+    for p in files:
+        # Determine file type; if unknown, skip
         ftype = file_type_for_path(p, type_map)
         if ftype is None or ftype not in allowed_types:
+            # If user provided explicit --files, we still skip unknown types to avoid accidental edits
+            print(f"Skipping (unknown type or not allowed): {p}", file=sys.stdout)
             continue
 
         prefix = type_map[ftype]['prefix']
@@ -246,13 +342,19 @@ def main():
         try:
             ok, status = process_file(p, header_line, args.dry_run, backup=not args.no_backup, fallback_encoding=args.fallback_encoding)
             changed.append((str(p), status))
+            print(f"{status}: {p}", file=sys.stdout)
         except Exception as e:
             changed.append((str(p), f"error: {e}"))
+            print(f"error: {p}: {e}", file=sys.stderr)
 
-    for f, s in changed:
-        print(f"{s}: {f}")
+    # Summary
+    updated_any = any(s in ("updated", "would-update", "replaced-header", "inserted-header", "would-replace-header", "would-insert-header") for _, s in changed)
     if not changed:
         print("No files matched the configured types/extensions.")
+    elif not updated_any:
+        print("No files changed.")
+    else:
+        print("Some files were updated. Review .bak files for originals if backups were enabled.")
 
 if __name__ == "__main__":
     main()
