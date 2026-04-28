@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <ModelImporter2/ModelImporterPCH.h>
 
 #include <Foundation/IO/FileSystem/FileReader.h>

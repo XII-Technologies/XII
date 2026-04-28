@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <ModelImporter2/ModelImporterPCH.h>
 
 #include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
