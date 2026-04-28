@@ -1,108 +1,105 @@
 #!/usr/bin/env python3
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
 """
-Add or ensure a copyright header in C/C++ source files.
+EnsureCopyrightHeader.py
+
+Scan a directory for C/C++ source/header files and insert or replace a single-line triple-slash copyright header.
+
+Default header:
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 Usage:
-  python EnsureCopyrightNotice.py --root . --license-file LICENSE.header --owner "XII Technologies" --year 2026
-  python EnsureCopyrightNotice.py --root Source --license "Copyright (c) $YEAR $OWNER" --dry-run
+  python EnsureCopyrightHeader.py --root . --dry-run
+  python EnsureCopyrightHeader.py --root src --header "/// Copyright (c) Someone Else. All Rights Reserved."
 """
-import re
-import shutil
-import pathlib
+from pathlib import Path
 import argparse
+import shutil
+import re
 
-from datetime import datetime
+# Default file extensions to scan.
+CPP_EXTS: set[str]  = {'.c', '.cpp', '.cc', '.cxx', '.h', '.hpp', '.hh', '.hxx', '.inl'}
+DEFAULT_HEADER: str = "/// Copyright (c) Theophilus Eriata. All Rights Reserved.\n\n"
 
-CPP_EXTS = {'.c', '.cpp', '.cc', '.cxx', '.h', '.hpp', '.hh', '.hxx'}
+# Regex to detect an existing header block at the top of the file.
+# Matches either:
+#  - One or more lines starting with "///" or "//",
+#  - a C-style block comment /* ... */.
+HEADER_DETECT_RE = re.compile(
+    r'(?s)\A\s*(?:(?P<triple>(?:///{1,}.*\n)+)|(?P<line>(?://.*\n)+)|(?P<block>/\*.*?\*/\s*\n*))'
+)
 
-DEFAULT_TEMPLATE = """Copyright (c) $YEAR $OWNER. All rights reserved.
-"""
+COPYRIGHT_KEYWORDS_RE = re.compile(r'Copyright|©|\(c\)|All rights reserved', re.I)
 
-C_STYLE_BLOCK = ("/*", "*/")
-LINE_PREFIX = "// "
+def load_args():
+    p = argparse.ArgumentParser(description="Add or ensure a triple-slash copyright header in C/C++ files.")
+    p.add_argument('--root', default='.', help='Root directory to scan')
+    p.add_argument('--header', help='Exact header text to insert (include trailing newline if desired)')
+    p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
+    p.add_argument('--backup', action='store_true', help='Create .bak backups before writing (default: True)', default=True)
+    p.add_argument('--extensions', nargs='*', help='Extra extensions to include (e.g. .inl)')
+    return p.parse_args()
 
-def load_template(args):
-    if args.license_file:
-        return pathlib.Path(args.license_file).read_text(encoding='utf-8')
-    if args.license:
-        return args.license
-    return DEFAULT_TEMPLATE
+def canonicalize_header(sHeader: str) -> str:
+    # Ensure header ends with two newlines (header + blank line).
+    if not sHeader.endswith("\n"):
+        sHeader = sHeader + "\n"
+    if not sHeader.endswith("\n\n"):
+        sHeader = sHeader + "\n"
+    return sHeader
 
-def render_template(tpl, year, owner):
-    return tpl.replace("$YEAR", str(year)).replace("$OWNER", owner)
-
-def make_block_comment(text):
-    lines = text.strip().splitlines()
-    body = "\n".join(" * " + l.rstrip() for l in lines)
-    return f"/*\n{body}\n */\n\n"
-
-def make_line_comment(text):
-    lines = text.strip().splitlines()
-    return "".join(LINE_PREFIX + l.rstrip() + "\n" for l in lines) + "\n"
-
-def detect_existing_header(content):
-    # Detect common header markers: Copyright, (c), All rights reserved
-    header_re = re.compile(r'(?s)\A\s*(/\*.*?\*/\s*|(?://.*\n)+)')
-    m = header_re.match(content)
+def detect_existing_header(sContent: str):
+    m = HEADER_DETECT_RE.match(sContent)
     if not m:
-        return None, content
+        return None, sContent
     block = m.group(0)
-    if re.search(r'Copyright|©|\(c\)|All rights reserved', block, re.I):
-        return block, content[m.end():]
-    return None, content
+    # Only treat it as a header to replace if it contains copyright-like keywords.
+    if COPYRIGHT_KEYWORDS_RE.search(block):
+        sRemainingText: str = sContent[m.end():]
+        return block, sRemainingText
+    return None, sContent
 
-def process_file(path, new_header, args):
-    text = path.read_text(encoding='utf-8')
-    existing, rest = detect_existing_header(text)
+def process_file(path: Path, sNewHeader: str, bIsDryRun: bool, bBackup: bool):
+    text: str                = path.read_text(encoding='utf-8', errors='surrogateescape')
+    existing, sRemainingText = detect_existing_header(text)
     if existing:
-        if existing.strip() == new_header.strip():
+        if existing.strip() == sNewHeader.strip():
             return False, "unchanged"
-        updated = new_header + rest
+        sUpdatedText = sNewHeader + sRemainingText
     else:
-        updated = new_header + text
-    if args.dry_run:
+        sUpdatedText = sNewHeader + text
+    if bIsDryRun:
         return True, "would-update"
-    # backup
-    bak = path.with_suffix(path.suffix + ".bak")
-    shutil.copy2(path, bak)
-    path.write_text(updated, encoding='utf-8')
+    if bBackup:
+        bak: Path = path.with_suffix(path.suffix + ".bak")
+        shutil.copy2(path, bak)
+    path.write_text(sUpdatedText, encoding='utf-8', errors='surrogateescape')
     return True, "updated"
 
 def main():
-    p = argparse.ArgumentParser()
-    p.add_argument('--root', default='.', help='Root directory to scan')
-    p.add_argument('--license-file', help='File containing license template')
-    p.add_argument('--license', help='Inline license template (use $YEAR and $OWNER)')
-    p.add_argument('--owner', default='Your Organization', help='Copyright owner')
-    p.add_argument('--year', type=int, default=datetime.now().year, help='Year to use')
-    p.add_argument('--style', choices=['block','line'], default='block', help='Comment style')
-    p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
-    p.add_argument('--extensions', nargs='*', help='Extra extensions to include (e.g. .inl)')
-    args = p.parse_args()
-
-    tpl = load_template(args)
-    rendered = render_template(tpl, args.year, args.owner)
-    if args.style == 'block':
-        header = make_block_comment(rendered)
-    else:
-        header = make_line_comment(rendered)
-
-    root = pathlib.Path(args.root)
+    args = load_args()
+    root = Path(args.root)
     exts = set(CPP_EXTS)
     if args.extensions:
         exts.update(args.extensions)
 
+    header_text = args.header if args.header is not None else DEFAULT_HEADER
+    header      = canonicalize_header(header_text)
+
     changed = []
-    for path in root.rglob('*'):
-        if path.is_file() and path.suffix in exts:
-            ok, status = process_file(path, header, args)
-            if ok:
-                changed.append((str(path), status))
+    for p in root.rglob('*'):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in exts:
+            continue
+        ok, status = process_file(p, header, args.dry_run, args.backup)
+        if ok:
+            changed.append((str(p), status))
 
     for f, s in changed:
         print(f"{s}: {f}")
     if not changed:
         print("No files changed.")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
