@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <Foundation/Utilities/Stats.h>

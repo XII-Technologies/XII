@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename DataType>
 XII_ALWAYS_INLINE xiiGALMapHelper<DataType>::xiiGALMapHelper() :
