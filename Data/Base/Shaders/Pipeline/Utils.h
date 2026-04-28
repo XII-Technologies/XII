@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Shaders/Common/GlobalConstants.h>
 
 // Computes view space coordinate for a given pixel position and depth.
