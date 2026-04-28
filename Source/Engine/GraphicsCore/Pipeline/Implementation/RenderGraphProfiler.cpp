@@ -35,7 +35,6 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
 
-
   FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
 
   if (uiPassIndex >= frame.m_PassQueries.GetCount())
