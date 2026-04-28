@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE D3D12_BLEND xiiD3D12TypeConversions::GetBlendFactor(xiiGALBlendFactor::Enum e)
 {

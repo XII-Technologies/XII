@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
