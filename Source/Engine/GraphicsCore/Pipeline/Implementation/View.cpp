@@ -184,7 +184,7 @@ void xiiView::RunDynamicResolutionPID()
 {
   // Try the GPU profiler's resolved duration from 2 frames ago.
   // Falls back to CPU wall-clock when the profiler ring hasn't warmed up yet.
-  float fGpuTimeMs = m_ViewPassResources.m_Profiler.GetPassDurationMs("FrameTotal");
+  float fGpuTimeMs = m_ViewPassResources.m_Profiler.GetFrameDurationMs();
   if (fGpuTimeMs <= 0.0f)
   {
     fGpuTimeMs = static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()) * 1000.0f;

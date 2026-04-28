@@ -62,7 +62,11 @@ public:
   void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnFrameEnd(xiiUInt64 uiFrameIndex) override;
 
+  /// \brief Returns the last resolved GPU duration for the given pass in milliseconds.
   [[nodiscard]] float GetPassDurationMs(xiiStringView sPassName) const override;
+
+  /// \brief Returns the last resolved GPU duration for the entire frame in milliseconds.
+  [[nodiscard]] float GetFrameDurationMs() const;
 
 private:
   struct PassQueries
@@ -75,6 +79,7 @@ private:
   struct FrameData
   {
     xiiDynamicArray<PassQueries> m_PassQueries;
+    xiiSharedPtr<xiiGALQuery>    m_pFrameDurationQuery;
     xiiUInt64                    m_uiFrameIndex = xiiInvalidIndex;
   };
 
