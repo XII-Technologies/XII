@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <TexConv/TexConvPCH.h>
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
