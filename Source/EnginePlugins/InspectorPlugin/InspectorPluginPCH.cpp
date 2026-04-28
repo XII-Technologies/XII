@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <InspectorPlugin/InspectorPluginPCH.h>
 
 XII_STATICLINK_LIBRARY(InspectorPlugin)
