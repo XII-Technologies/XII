@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Texture/TexturePCH.h>
 
 #include <Texture/Image/ImageConversion.h>
