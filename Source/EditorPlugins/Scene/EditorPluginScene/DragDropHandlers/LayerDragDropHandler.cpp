@@ -2,9 +2,9 @@
 
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
-#include <EditorFramework/GUI/RawDocumentTreeModel.moc.h>
 #include <Core/World/GameObject.h>
 #include <EditorFramework/DragDrop/DragDropInfo.h>
+#include <EditorFramework/GUI/RawDocumentTreeModel.moc.h>
 #include <EditorPluginScene/DragDropHandlers/LayerDragDropHandler.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <GuiFoundation/Action/ActionManager.h>

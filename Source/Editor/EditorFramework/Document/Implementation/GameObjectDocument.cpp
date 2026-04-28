@@ -2,7 +2,6 @@
 
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
 #include <Core/World/GameObject.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Document/GameObjectDocument.h>
