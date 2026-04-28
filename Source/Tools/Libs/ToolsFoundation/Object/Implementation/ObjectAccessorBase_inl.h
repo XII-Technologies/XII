@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Logging/Log.h>
 
 template <typename T>

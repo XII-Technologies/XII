@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Object>
 xiiRttiMappedObjectFactory<Object>::xiiRttiMappedObjectFactory() = default;

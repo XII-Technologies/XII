@@ -1,4 +1,4 @@
-
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 inline xiiDataDirPath::xiiDataDirPath() = default;
 
