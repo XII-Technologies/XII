@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_FORCE_INLINE void* xiiAllocationPolicyAlignedHeap::Allocate(size_t uiSize, size_t uiAlign)
 {

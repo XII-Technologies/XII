@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 /// \brief Provides access to an object while managing a lock (e.g. a mutex) that ensures that during its lifetime the access to the object

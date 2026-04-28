@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #ifdef XII_ATOMICUTLS_WIN_INL_H_INCLUDED
 #  error "This file must not be included more than once."
 #endif

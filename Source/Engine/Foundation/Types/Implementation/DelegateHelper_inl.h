@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 /// \brief [Internal] Storage for lambdas with captures in xiiDelegate.
 struct XII_FOUNDATION_DLL xiiLambdaDelegateStorageBase

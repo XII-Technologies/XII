@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename T>
 XII_ALWAYS_INLINE xiiSharedPtr<T>::xiiSharedPtr()

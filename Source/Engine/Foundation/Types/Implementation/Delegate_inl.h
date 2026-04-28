@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/Types/Implementation/DelegateHelper_inl.h>
 

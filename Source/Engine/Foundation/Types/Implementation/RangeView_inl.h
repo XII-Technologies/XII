@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename ValueType, typename IteratorType>
 xiiRangeView<ValueType, IteratorType>::xiiRangeView(BeginCallback begin, EndCallback end, NextCallback next, ValueCallback value) :

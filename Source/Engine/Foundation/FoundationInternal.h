@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 #ifdef BUILDSYSTEM_BUILDING_FOUNDATION_LIB
