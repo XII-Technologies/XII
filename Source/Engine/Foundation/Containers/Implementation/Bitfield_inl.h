@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <class Container>
 XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::GetBitInt(xiiUInt32 uiBitIndex) const

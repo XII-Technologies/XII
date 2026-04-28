@@ -1,4 +1,4 @@
-#pragma once
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 #include <Foundation/Math/BoundingBox.h>
 #include <Foundation/Math/BoundingSphere.h>

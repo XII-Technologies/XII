@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Math/Math.h>
 
 #define REDUCE_SIZE(iReduction)     \

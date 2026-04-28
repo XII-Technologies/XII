@@ -1,4 +1,4 @@
-#pragma once
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Type>
 XII_FORCE_INLINE xiiVec3Template<Type>::xiiVec3Template()

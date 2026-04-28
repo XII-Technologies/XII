@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Memory/MemoryUtils.h>
 
 template <typename Container, typename Comparer>

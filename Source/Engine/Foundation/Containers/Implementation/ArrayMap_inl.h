@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename KEY, typename VALUE>
 inline xiiArrayMapBase<KEY, VALUE>::xiiArrayMapBase(xiiAllocator* pAllocator) :

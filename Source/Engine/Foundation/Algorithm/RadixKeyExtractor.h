@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 /// \brief Checks if KeyFunc provides a GetKey(Element) method.

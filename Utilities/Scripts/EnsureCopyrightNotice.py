@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # Copyright (c) Theophilus Eriata. All Rights Reserved.
 """
-Safely insert or ensure a single-line triple-slash copyright header in C/C++ files
-without deleting unrelated top-of-file comments or code.
+Safely insert or ensure a single-line triple-slash copyright header in C/C++ files.
 
 Default header:
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 Usage:
-  python safe_add_header.py --root . --dry-run
-  python safe_add_header.py --root src
+  python EnsureCopyrightNotice.py --root . --dry-run
+  python EnsureCopyrightNotice.py --root src
 """
 from pathlib import Path
 import argparse
@@ -19,7 +18,7 @@ import re
 CPP_EXTS = {'.c', '.cpp', '.cc', '.cxx', '.h', '.hpp', '.hh', '.hxx', '.inl'}
 
 DEFAULT_HEADER_LINE = "/// Copyright (c) Theophilus Eriata. All Rights Reserved."
-HEADER_TRAILING_BLANKS = "\n"
+HEADER_TRAILING_BLANKS = "\n\n"
 
 COPYRIGHT_KEYWORDS_RE = re.compile(r'Copyright|©|\(c\)|All rights reserved', re.I)
 

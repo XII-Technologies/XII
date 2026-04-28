@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Type>
 xiiProcessingStreamIterator<Type>::xiiProcessingStreamIterator(const xiiProcessingStream* pStream, xiiUInt64 uiNumElements, xiiUInt64 uiStartIndex)

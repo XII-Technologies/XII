@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #pragma once
 
 /// \brief Operator to serialize xiiIAllocator::Stats objects.

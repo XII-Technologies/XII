@@ -1,4 +1,4 @@
-#pragma once
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 template <typename Type>
 XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate()
