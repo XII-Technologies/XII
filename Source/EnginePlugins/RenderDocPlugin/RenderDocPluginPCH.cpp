@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <RenderDocPlugin/RenderDocPluginPCH.h>
 
 XII_STATICLINK_LIBRARY(RenderDocPlugin)
