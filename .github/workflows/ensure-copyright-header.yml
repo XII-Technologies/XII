@@ -92,6 +92,13 @@ jobs:
             exit 0
           fi
 
+          mapfile -t FILES < modified_files_for_action.txt
+
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "No modified files to process."
+            exit 0
+          fi
+
           # Example omit directories (case-insensitive path segments). Adjust as needed.
           OMIT_DIRS=(${GITHUB_WORKSPACE}/Source/ThirdParty ${GITHUB_WORKSPACE}/Data/Tools ${GITHUB_WORKSPACE}/Source/Engine/Foundation/ThirdParty ${GITHUB_WORKSPACE}/Workspace ${GITHUB_WORKSPACE}/Output)
 
