@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE xiiGameObject::ConstChildIterator::ConstChildIterator(xiiGameObject* pObject, const xiiWorld* pWorld) :
   m_pObject(pObject), m_pWorld(pWorld)

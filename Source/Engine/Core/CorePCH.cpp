@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/CorePCH.h>
 
 XII_STATICLINK_LIBRARY(Core)

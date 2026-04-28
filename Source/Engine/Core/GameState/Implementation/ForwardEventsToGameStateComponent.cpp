@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/GameApplication/GameApplicationBase.h>
 #include <Core/GameState/ForwardEventsToGameStateComponent.h>
 #include <Core/GameState/GameStateBase.h>

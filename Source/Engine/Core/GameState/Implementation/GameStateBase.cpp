@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Core/CorePCH.h>
 
 #include <Core/GameState/GameStateBase.h>

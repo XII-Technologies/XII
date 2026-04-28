@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // NO #pragma once in this file !
 
 template <typename R XII_COMMA_IF(ARG_COUNT) XII_LIST(typename P, ARG_COUNT)>
