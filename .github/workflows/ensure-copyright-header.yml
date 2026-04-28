@@ -89,7 +89,7 @@ jobs:
 
           # Run the tool to apply headers. We run it across the repo but will only commit the modified files
           # discovered earlier. This avoids needing to change the tool to accept a file list.
-          python "$TOOL"
+          python "$TOOL" --root "${GITHUB_WORKSPACE}" --no-backup
 
       - name: Detect formatting/changes and create patch
         id: patch
