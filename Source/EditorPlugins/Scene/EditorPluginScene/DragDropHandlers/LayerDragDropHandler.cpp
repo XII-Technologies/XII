@@ -1,6 +1,8 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <EditorPluginScene/EditorPluginScenePCH.h>
 
-#include "EditorFramework/GUI/RawDocumentTreeModel.moc.h"
+#include <EditorFramework/GUI/RawDocumentTreeModel.moc.h>
 #include <Core/World/GameObject.h>
 #include <EditorFramework/DragDrop/DragDropInfo.h>
 #include <EditorPluginScene/DragDropHandlers/LayerDragDropHandler.h>
