@@ -1,157 +1,203 @@
 #!/usr/bin/env python3
 # Copyright (c) Theophilus Eriata. All Rights Reserved.
 """
-Safely insert or ensure a single-line triple-slash copyright header in C/C++ files.
+Ensure a single-line triple-slash copyright header is the absolute first line
+of each C/C++ file and that exactly one blank line separates the header from
+the rest of the file. Preserve original file encoding and BOM when possible.
 
 Default header:
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 Usage:
   python EnsureCopyrightNotice.py --root . --dry-run
-  python EnsureCopyrightNotice.py --root src
+  python EnsureCopyrightNotice.py --root src --header "/// Copyright (c) Theophilus Eriata. All Rights Reserved."
+  pip install charset-normalizer
 """
 from pathlib import Path
 import argparse
 import shutil
-import re
+import sys
 
+# Optional enc detection libraries
+try:
+    from charset_normalizer import from_bytes as cn_from_bytes  # type: ignore
+    _HAS_CN = True
+except Exception:
+    _HAS_CN = False
+
+try:
+    import chardet  # type: ignore
+    _HAS_CHARD = True
+except Exception:
+    _HAS_CHARD = False
+
+print("Has charset-normalizer:", _HAS_CN)
+print("Has chardet:", _HAS_CHARD)
+
+# Default file extensions to scan
 CPP_EXTS = {'.c', '.cpp', '.cc', '.cxx', '.h', '.hpp', '.hh', '.hxx', '.inl'}
 
 DEFAULT_HEADER_LINE = "/// Copyright (c) Theophilus Eriata. All Rights Reserved."
-HEADER_TRAILING_BLANKS = "\n\n"
-
-COPYRIGHT_KEYWORDS_RE = re.compile(r'Copyright|©|\(c\)|All rights reserved', re.I)
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Safely add/ensure triple-slash copyright header.")
+    p = argparse.ArgumentParser(description="Force a single-line header as the first line of C/C++ files, preserving encoding.")
     p.add_argument('--root', default='.', help='Root directory to scan')
-    p.add_argument('--header', help='Exact header line to insert (no trailing blank lines required)')
+    p.add_argument('--header', help='Exact header line to insert (no trailing newline required)')
     p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
     p.add_argument('--no-backup', action='store_true', help='Do not create .bak backups')
     p.add_argument('--extensions', nargs='*', help='Extra extensions to include (e.g. .inl)')
+    p.add_argument('--fallback-encoding', default='utf-8', help='Encoding to use if detection fails (default: utf-8)')
     return p.parse_args()
 
-def canonical_header(header_line: str) -> str:
-    # Ensure single header line followed by a newline
-    h = header_line.rstrip("\n")
-    return h + HEADER_TRAILING_BLANKS
+def detect_encoding_from_bytes(b: bytes):
+    """
+    Return (encoding_name, had_bom, confidence_float).
+    encoding_name may be None if detection fails.
+    """
+    # Detect BOM for UTF-8
+    if b.startswith(b'\xef\xbb\xbf'):
+        return 'utf-8-sig', True, 1.0
+    # Try charset-normalizer first (recommended)
+    if _HAS_CN:
+        try:
+            results = cn_from_bytes(b)
+            best = results.best()
+            if best:
+                enc = best.encoding
+                conf = float(best.fingerprint_confidence or 0.0)
+                return enc, False, conf
+        except Exception:
+            pass
+    # Fallback to chardet if available
+    if _HAS_CHARD:
+        try:
+            r = chardet.detect(b)
+            enc = r.get('encoding')
+            conf = float(r.get('confidence') or 0.0)
+            return enc, False, conf
+        except Exception:
+            pass
+    return None, False, 0.0
 
-def read_lines(path: Path):
-    return path.read_text(encoding='utf-8', errors='surrogateescape').splitlines(keepends=True)
+def read_file_preserve_encoding(path: Path, fallback_encoding: str):
+    """
+    Read bytes, detect encoding, decode to text. Return (text, encoding_used, had_bom, original_bytes).
+    If detection fails, fallback_encoding is used with surrogateescape to avoid data loss.
+    """
+    b = path.read_bytes()
+    enc, had_bom, conf = detect_encoding_from_bytes(b)
+    if enc:
+        # Normalize common names
+        enc_norm = enc.lower().replace('_', '-')
+        try:
+            # If encoding is utf-8-sig, decode to remove BOM
+            if enc_norm in ('utf-8-sig', 'utf8-sig'):
+                text = b.decode('utf-8-sig', errors='strict')
+                return text, 'utf-8-sig', True, b
+            # decode normally
+            text = b.decode(enc, errors='strict')
+            return text, enc, had_bom, b
+        except Exception:
+            # decoding failed despite detection; fall through to fallback
+            pass
+    # Fallback: try utf-8 strict, then fallback_encoding with surrogateescape
+    try:
+        text = b.decode('utf-8', errors='strict')
+        return text, 'utf-8', False, b
+    except Exception:
+        # Use fallback encoding with surrogateescape to preserve bytes
+        try:
+            text = b.decode(fallback_encoding, errors='surrogateescape')
+            return text, fallback_encoding, False, b
+        except Exception:
+            # As last resort, latin-1 (never fails)
+            text = b.decode('latin-1', errors='strict')
+            return text, 'latin-1', False, b
 
-def write_lines(path: Path, lines, backup=True):
+def write_file_preserve_encoding(path: Path, text: str, encoding: str, had_bom: bool):
+    """
+    Encode text using encoding and write bytes. If encoding is 'utf-8-sig' or had_bom True for utf-8,
+    write BOM accordingly.
+    """
+    enc_norm = encoding.lower().replace('_', '-')
+    if enc_norm in ('utf-8-sig',):
+        out_bytes = text.encode('utf-8-sig')
+    else:
+        # If original had BOM and encoding is utf-8, write utf-8-sig
+        if had_bom and enc_norm in ('utf-8', 'utf8'):
+            out_bytes = text.encode('utf-8-sig')
+        else:
+            # Use surrogateescape-safe encoding to avoid data loss for undecodable bytes
+            out_bytes = text.encode(encoding, errors='surrogateescape')
+    path.write_bytes(out_bytes)
+
+def ensure_header_text(original_text: str, header_line: str) -> (str, bool):
+    """
+    Return (new_text, changed_flag).
+    Rules:
+      - Remove all lines that exactly equal header_line (ignoring trailing spaces).
+      - Strip leading blank lines from the remaining content.
+      - Prepend header_line + one blank line.
+      - Preserve whether original ended with newline (so we don't accidentally remove final newline).
+    """
+    if original_text is None:
+        original_text = ""
+    # Normalize newlines to LF for processing
+    s = original_text.replace('\r\n', '\n').replace('\r', '\n')
+    had_trailing_newline = s.endswith('\n')
+
+    # Split into lines without losing empty trailing split artifact
+    lines = s.split('\n')  # note: if s endswith '\n', last element is ''
+
+    # Remove all lines that exactly equal the header (ignoring trailing spaces)
+    header_stripped = header_line.rstrip()
+    filtered = [ln for ln in lines if ln.rstrip() != header_stripped]
+
+    # Remove leading blank lines
+    i = 0
+    while i < len(filtered) and filtered[i].strip() == "":
+        i += 1
+    remaining = filtered[i:]
+
+    # Rebuild: header line, one blank line, then remaining content
+    new_lines = [header_stripped, ""]  # header + exactly one blank line
+    new_lines.extend(remaining)
+
+    new_text = "\n".join(new_lines)
+    if had_trailing_newline:
+        new_text = new_text + "\n"
+
+    changed = (s != new_text)
+    return new_text, changed
+
+def process_file(path: Path, header_line: str, dry_run: bool, backup: bool, fallback_encoding: str):
+    try:
+        text, encoding_used, had_bom, original_bytes = read_file_preserve_encoding(path, fallback_encoding)
+    except Exception as e:
+        return False, f"error-read: {e}"
+
+    new_text, changed = ensure_header_text(text, header_line)
+    if not changed:
+        return False, "unchanged"
+
+    if dry_run:
+        return True, "would-update"
+
+    # create backup of original bytes
     if backup:
         bak = path.with_suffix(path.suffix + ".bak")
-        shutil.copy2(path, bak)
-    path.write_text(''.join(lines), encoding='utf-8', errors='surrogateescape')
+        try:
+            bak.write_bytes(original_bytes)
+        except Exception as e:
+            return False, f"error-backup: {e}"
 
-def find_leading_block(lines):
-    """
-    Return (start_idx, end_idx, block_type)
-    - start_idx inclusive, end_idx exclusive
-    - block_type: 'shebang', 'line_comments', 'block_comment', or None
-    This finds the first contiguous leading region consisting of:
-      optional shebang (line 0),
-      followed by optional blank lines,
-      followed by either a block comment (/*...*/) or consecutive line comments (//...).
-    If nothing found, returns (0,0,None) meaning no leading comment block.
-    """
-    i = 0
-    n = len(lines)
-    # shebang
-    if i < n and lines[i].startswith("#!"):
-        i += 1
-    # skip leading blank lines after shebang
-    while i < n and lines[i].strip() == "":
-        i += 1
-    # now check for block comment
-    if i < n and lines[i].lstrip().startswith("/*"):
-        start = i
-        # find end of block comment
-        while i < n:
-            if "*/" in lines[i]:
-                i += 1
-                break
-            i += 1
-        return start, i, 'block_comment'
-    # check for consecutive line comments (// or ///)
-    if i < n and lines[i].lstrip().startswith("//"):
-        start = i
-        while i < n and lines[i].lstrip().startswith("//"):
-            i += 1
-        return start, i, 'line_comments'
-    return i, i, None
+    # write new text preserving encoding and BOM
+    try:
+        write_file_preserve_encoding(path, new_text, encoding_used, had_bom)
+    except Exception as e:
+        return False, f"error-write: {e}"
 
-def block_contains_copyright(lines, start, end):
-    block_text = ''.join(lines[start:end])
-    return bool(COPYRIGHT_KEYWORDS_RE.search(block_text))
-
-def process_file(path: Path, header_line: str, dry_run: bool, backup: bool):
-    lines = read_lines(path)
-    if not lines:
-        # empty file: just write header
-        new_text = canonical_header(header_line)
-        if dry_run:
-            return True, "would-update-empty"
-        if backup:
-            shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
-        path.write_text(new_text, encoding='utf-8', errors='surrogateescape')
-        return True, "updated-empty"
-
-    # find leading region
-    # keep shebang if present at top; find where to insert/replace
-    # We will treat shebang specially: if present, insertion point is after shebang and any immediate blank lines.
-    # find_leading_block returns the first comment block start/end (or same index if none)
-    # but we need to preserve shebang if present at index 0
-    # So detect shebang separately
-    idx = 0
-    n = len(lines)
-    shebang_present = False
-    if lines[0].startswith("#!"):
-        shebang_present = True
-        idx = 1
-        # skip blank lines after shebang
-        while idx < n and lines[idx].strip() == "":
-            idx += 1
-
-    # Now check for a leading comment block starting at idx
-    start, end, block_type = find_leading_block(lines[idx:]) if idx < n else (0,0,None)
-    # find_leading_block returned indices relative to idx; convert to absolute
-    if block_type is not None:
-        start += idx
-        end += idx
-    else:
-        start = end = idx
-
-    # Decide action:
-    # - If there is a comment block and it contains copyright -> replace that block with header
-    # - If there is a comment block and it does NOT contain copyright -> insert header after that block
-    # - If no comment block -> insert header at idx (after shebang if present)
-    header_full = canonical_header(header_line)
-    if start < end and block_contains_copyright(lines, start, end):
-        # Replace the entire block [start:end] with header
-        new_lines = lines[:start] + [header_full] + lines[end:]
-        # If the existing block already equals header (ignoring trailing whitespace), treat as unchanged
-        existing_block = ''.join(lines[start:end]).strip()
-        if existing_block == header_full.strip():
-            return False, "unchanged"
-        if dry_run:
-            return True, "would-replace-header"
-        write_lines(path, new_lines, backup=backup)
-        return True, "replaced-header"
-    else:
-        # Insert header after the block (or at idx if no block)
-        insert_at = end  # end is idx if no block
-        # Avoid inserting duplicate header if header already present at insert_at
-        # Check next non-blank line(s) for header_line
-        lookahead = ''.join(lines[insert_at:insert_at+3])  # small window
-        if header_line in lookahead:
-            return False, "unchanged"
-        new_lines = lines[:insert_at] + [header_full] + lines[insert_at:]
-        if dry_run:
-            return True, "would-insert-header"
-        write_lines(path, new_lines, backup=backup)
-        return True, "inserted-header"
+    return True, "updated"
 
 def main():
     args = parse_args()
@@ -169,16 +215,15 @@ def main():
         if p.suffix.lower() not in exts:
             continue
         try:
-            ok, status = process_file(p, header_line, args.dry_run, not args.no_backup)
-            if ok:
-                changed.append((str(p), status))
+            ok, status = process_file(p, header_line, args.dry_run, backup=not args.no_backup, fallback_encoding=args.fallback_encoding)
+            changed.append((str(p), status))
         except Exception as e:
             changed.append((str(p), f"error: {e}"))
 
     for f, s in changed:
         print(f"{s}: {f}")
     if not changed:
-        print("No files changed.")
+        print("No files matched the configured extensions.")
 
 if __name__ == "__main__":
     main()
