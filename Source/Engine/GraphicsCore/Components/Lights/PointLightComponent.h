@@ -72,7 +72,7 @@ protected:
   float m_fShadowFadeOutRange = 0.0f;
 };
 
-/// Visualizer attribute for point lights. Also renders a tube (capsule) when Length or Radius is non-zero.
+/// \brief Visualizer attribute for point lights. Also renders a tube (capsule) when Length or Radius is non-zero.
 class XII_GRAPHICSCORE_DLL xiiPointLightVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPointLightVisualizerAttribute, xiiVisualizerAttribute);

@@ -2,7 +2,11 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/WorldSerializer/WorldReader.h>
+#include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/Lights/PointLightComponent.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPointLightRenderData, 1, xiiRTTIDefaultAllocator<xiiPointLightRenderData>)
@@ -143,7 +147,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPointLightVisualizerAttribute, 1, xiiRTTIDef
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiPointLightVisualizerAttribute::xiiPointLightVisualizerAttribute() :
-  xiiVisualizerAttribute(nullptr)
+  xiiVisualizerAttribute({})
 {
 }
 
