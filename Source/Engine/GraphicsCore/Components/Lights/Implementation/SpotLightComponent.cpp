@@ -8,6 +8,11 @@
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
+namespace
+{
+  constexpr xiiAngle c_MaxSpotAngle = xiiAngle::MakeFromDegree(160.0f);
+} // namespace
+
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSpotLightRenderData, 1, xiiRTTIDefaultAllocator<xiiSpotLightRenderData>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -39,8 +44,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpotLightComponent, 1, xiiComponentMode::Static)
 }
 XII_END_COMPONENT_TYPE
 // clang-format on
-
-constexpr xiiAngle c_MaxSpotAngle = xiiAngle::MakeFromDegree(160.0f);
 
 xiiSpotLightComponent::xiiSpotLightComponent()  = default;
 xiiSpotLightComponent::~xiiSpotLightComponent() = default;
@@ -161,6 +164,27 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   pRenderData->m_fRadius               = m_fRadius;
   pRenderData->m_InnerSpotAngle        = m_InnerSpotAngle;
   pRenderData->m_OuterSpotAngle        = m_OuterSpotAngle;
+}
+
+xiiBoundingSphere xiiSpotLightComponent::CalculateBoundingSphere(const xiiTransform& transform, float fRange) const
+{
+  xiiBoundingSphere boundingSphere;
+  xiiAngle          halfAngle         = m_OuterSpotAngle / 2.0f;
+  xiiVec3           vPosition         = transform.m_vPosition;
+  xiiVec3           vForwardDirection = transform.m_qRotation * xiiVec3(1.0f, 0.0f, 0.0f);
+
+  if (halfAngle > xiiAngle::MakeFromDegree(45.0f))
+  {
+    boundingSphere.m_vCenter = vPosition + xiiMath::Cos(halfAngle) * fRange * vForwardDirection;
+    boundingSphere.m_fRadius = xiiMath::Sin(halfAngle) * fRange;
+  }
+  else
+  {
+    boundingSphere.m_fRadius = fRange / (2.0f * xiiMath::Cos(halfAngle));
+    boundingSphere.m_vCenter = vPosition + vForwardDirection * boundingSphere.m_fRadius;
+  }
+
+  return boundingSphere;
 }
 
 //////////////////////////////////////////////////////////////////////////
