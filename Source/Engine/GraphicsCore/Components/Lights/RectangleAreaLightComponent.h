@@ -42,7 +42,7 @@ public:
 
   /// \brief Sets the extents of the rectangle area light. The light is emitted from a rectangle centered on the position of the component, with the normal facing in negative X direction.
   void    SetExtents(xiiVec2 vExtents); // [ property ]
-  xiiVec2 GetExtents() const;                  // [ property ]
+  xiiVec2 GetExtents() const;           // [ property ]
 
 protected:
   void              OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg) const;
