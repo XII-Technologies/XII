@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Core/Graphics/Camera.h>
 #include <Core/Messages/SetColorMessage.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
@@ -133,5 +134,35 @@ void xiiLightComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
     m_LightColor = newColor;
 
     InvalidateCachedRenderData();
+  }
+}
+
+float xiiLightComponent::CalculateEffectiveRange(float fRange, float fIntensity)
+{
+  const float fThreshold      = 0.10f; // Aggressive threshold to prevent large lights.
+  const float fEffectiveRange = xiiMath::Sqrt(xiiMath::Max(0.0f, fIntensity)) / xiiMath::Sqrt(fThreshold);
+
+  XII_ASSERT_DEBUG(!xiiMath::IsNaN(fEffectiveRange), "Light range is NaN");
+
+  if (fRange <= 0.0f)
+  {
+    return fEffectiveRange;
+  }
+
+  return xiiMath::Min(fRange, fEffectiveRange);
+}
+
+float xiiLightComponent::CalculateScreenSpaceSize(const xiiBoundingSphere& sphere, const xiiCamera& camera)
+{
+  if (camera.IsPerspective())
+  {
+    float dist        = (sphere.m_vCenter - camera.GetPosition()).GetLength();
+    float fHalfHeight = xiiMath::Tan(camera.GetFovY(1.0f) * 0.5f) * dist;
+    return sphere.m_fRadius / fHalfHeight;
+  }
+  else
+  {
+    float fHalfHeight = camera.GetDimensionY(1.0f) * 0.5f;
+    return sphere.m_fRadius / fHalfHeight;
   }
 }
