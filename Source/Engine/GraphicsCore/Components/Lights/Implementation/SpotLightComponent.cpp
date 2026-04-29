@@ -76,8 +76,11 @@ void xiiSpotLightComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 
 xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  m_fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
-  ref_bounds        = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
+  XII_IGNORE_UNUSED(ref_msg);
+
+  m_fEffectiveRange  = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  ref_bounds         = CalculateBoundingSphere(xiiTransform::MakeIdentity(), m_fEffectiveRange);
+  ref_bAlwaysVisible = false;
 
   return XII_SUCCESS;
 }
@@ -164,6 +167,8 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   pRenderData->m_fRadius               = m_fRadius;
   pRenderData->m_InnerSpotAngle        = m_InnerSpotAngle;
   pRenderData->m_OuterSpotAngle        = m_OuterSpotAngle;
+
+  ref_msg.AddRenderData(pRenderData, m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);
 }
 
 xiiBoundingSphere xiiSpotLightComponent::CalculateBoundingSphere(const xiiTransform& transform, float fRange) const
