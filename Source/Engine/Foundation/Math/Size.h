@@ -26,6 +26,12 @@ public:
   /// \brief Constructor to set all values.
   xiiSizeTemplate(Type width, Type height);
 
+  /// \brief Static function that returns a zero-size.
+  [[nodiscard]] static constexpr xiiSizeTemplate<Type> MakeZero() { return xiiSizeTemplate(0); }
+
+  /// \brief Returns a size initialized to x,y.
+  [[nodiscard]] static constexpr xiiSizeTemplate<Type> Make(Type x, Type y) { return xiiSizeTemplate<Type>(x, y); }
+
   // *** Common Functions ***
 public:
   /// \brief Returns true if the area described by the size is non zero
