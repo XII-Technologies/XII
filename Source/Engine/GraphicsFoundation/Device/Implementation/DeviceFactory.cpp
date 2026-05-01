@@ -7,7 +7,7 @@
 struct CreatorFuncInfo
 {
   xiiGALDeviceFactory::CreatorFunc  m_Func;
-  xiiEnum<xiiGALGraphicsDeviceType> m_APIType = xiiGALGraphicsDeviceType::Undefined;
+  xiiEnum<xiiGALGraphicsDeviceType> m_APIType = xiiGALGraphicsDeviceType::Null;
   xiiString                         m_sShaderModel;
   xiiString                         m_sShaderCompiler;
 };
