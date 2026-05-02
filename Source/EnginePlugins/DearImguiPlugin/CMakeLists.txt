@@ -1,0 +1,22 @@
+# Copyright (c) Theophilus Eriata. All Rights Reserved.
+
+xii_cmake_init()
+
+xii_requires(XII_3RDPARTY_IMGUI_SUPPORT)
+
+# Get the name of this folder as the project name
+get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
+
+xii_create_target(LIBRARY ${PROJECT_NAME})
+
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+  GraphicsCore
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC Imgui)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/DearImgui.xiiPluginBundle" $<TARGET_FILE_DIR:${PROJECT_NAME}>
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)

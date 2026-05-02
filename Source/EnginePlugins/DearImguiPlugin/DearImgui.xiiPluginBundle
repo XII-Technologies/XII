@@ -1,0 +1,15 @@
+// for a description of the options see:
+// Code/EditorPlugins/Assets/EditorPluginAssets/Assets.xiiPluginBundle
+
+PluginInfo
+{
+  string %DisplayName{"DearImgui"}
+  string %Description{"Provides full integration of the Dear ImGui immediate‑mode GUI framework, enabling in‑engine debug UIs, tooling overlays, and custom editor extensions."}
+  string %EditorPlugins{}
+  string %EditorEnginePlugins{}
+  string %RuntimePlugins{"xiiDearImguiPlugin"}
+  string %PackageDependencies{}
+  string %RequiredPlugins{}
+  string %ExclusiveFeatures{}
+  string %EnabledInTemplates{}
+}

@@ -13,7 +13,3 @@ target_link_libraries(${PROJECT_NAME}
   ozz
   Utilities
 )
-
-if (XII_3RDPARTY_IMGUI_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PUBLIC Imgui)
-endif()
