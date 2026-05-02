@@ -3,11 +3,12 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsCore/Pipeline/RenderData.h>
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Threading/Mutex.h>
+#include <GraphicsCore/Debug/DebugRendererContext.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
 
 /// \brief Batch of extracted render data, intended to be populated by component managers sequentially per-batch.
 struct XII_GRAPHICSCORE_DLL xiiRenderDataBatch
@@ -113,7 +114,33 @@ struct XII_GRAPHICSCORE_DLL xiiRenderDataBatch
 class XII_GRAPHICSCORE_DLL xiiExtractedRenderData
 {
 public:
+  /// \brief Returns all extracted render data, sorted by sorting key.
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetAllRenderData() const { return m_SortedAllRenderData; }
+
+  /// \brief Returns extracted render data marked static during extraction, sorted by sorting key.
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetStaticRenderData() const { return m_SortedStaticRenderData; }
+
+  /// \brief Returns extracted render data marked dynamic during extraction, sorted by sorting key.
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const { return m_SortedDynamicRenderData; }
+
+  /// \brief Returns a debug context that can be used for rendering debug visualization related to the world in which the data was extracted. The geometry rendered in this context is rendered in all views for that scene.
+  XII_ALWAYS_INLINE xiiDebugRendererContext& GetWorldDebugContext() { return m_WorldDebugContext; }
+
+  /// \brief Returns a debug context that can be used for rendering debug visualization related to the view for which the data was extracted. The geometry rendered in this context is only rendered in this view.
+  XII_ALWAYS_INLINE xiiDebugRendererContext& GetViewDebugContext() { return m_ViewDebugContext; }
+
+public:
   xiiExtractedRenderData();
+
+  /// \brief Initializes the extracted render data with a world debug context. The geometry rendered in this context is rendered in all views for that scene.
+  xiiExtractedRenderData(const xiiWorld* pWorld);
+
+  /// \brief Initializes the extracted render data with a view debug context. The geometry rendered in this context is only rendered in this view.
+  xiiExtractedRenderData(const xiiViewHandle& hView);
+
+  /// \brief Initializes the extracted render data with both a world and view debug context. The geometry rendered in the world context is rendered in all views for that scene, while the geometry rendered in the view context is only rendered in this view.
+  xiiExtractedRenderData(const xiiWorld* pWorld, const xiiViewHandle& hView);
+
   ~xiiExtractedRenderData();
 
   /// \brief Adds a single extracted render data item without assigning a category.
@@ -128,16 +155,9 @@ public:
   /// \brief Sorts the underlying render data by sorting key for cache-efficient render execution.
   void SortAndBatches();
 
-  /// \brief Returns all extracted render data, sorted by sorting key.
-  xiiArrayPtr<xiiRenderData* const> GetAllRenderData() const;
-
-  /// \brief Returns extracted render data marked static during extraction, sorted by sorting key.
-  xiiArrayPtr<xiiRenderData* const> GetStaticRenderData() const;
-
-  /// \brief Returns extracted render data marked dynamic during extraction, sorted by sorting key.
-  xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const;
-
 private:
+  friend class xiiRenderWorldModule;
+
   void AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching);
 
   xiiMutex m_Mutex;
@@ -150,4 +170,7 @@ private:
   xiiDynamicArray<xiiRenderData*> m_SortedStaticRenderData;
   xiiDynamicArray<xiiRenderData*> m_SortedDynamicRenderData;
   xiiDynamicArray<xiiRenderData*> m_SortedAllRenderData;
+
+  xiiDebugRendererContext m_WorldDebugContext;
+  xiiDebugRendererContext m_ViewDebugContext;
 };
