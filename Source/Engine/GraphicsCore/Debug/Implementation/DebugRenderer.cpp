@@ -6,8 +6,8 @@
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
-#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
@@ -1980,7 +1980,6 @@ struct xiiDebugVisualizationData
 
 void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder)
 {
-
 }
 
 void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context)

@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -15,7 +16,6 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Tools/MapHelper.h>
-#include <GraphicsCore/Debug/DebugRenderer.h>
 
 #include <Shaders/Pipeline/Passes/HiZPyramid/HiZBuildConstants.h>
 #include <Shaders/Pipeline/Passes/LightClustering/LightClusteringConstants.h>
