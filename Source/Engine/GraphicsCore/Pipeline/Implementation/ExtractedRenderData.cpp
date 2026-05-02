@@ -6,6 +6,21 @@
 
 xiiExtractedRenderData::xiiExtractedRenderData() = default;
 
+xiiExtractedRenderData::xiiExtractedRenderData(const xiiWorld* pWorld) :
+  m_WorldDebugContext(pWorld)
+{
+}
+
+xiiExtractedRenderData::xiiExtractedRenderData(const xiiViewHandle& hView) :
+  m_ViewDebugContext(hView)
+{
+}
+
+xiiExtractedRenderData::xiiExtractedRenderData(const xiiWorld* pWorld, const xiiViewHandle& hView) :
+  m_WorldDebugContext(pWorld), m_ViewDebugContext(hView)
+{
+}
+
 xiiExtractedRenderData::~xiiExtractedRenderData() = default;
 
 void xiiExtractedRenderData::AddRenderDataInternal(xiiRenderData* pRenderData, xiiRenderData::Caching::Enum caching)
@@ -81,19 +96,4 @@ void xiiExtractedRenderData::SortAndBatches()
   m_SortedAllRenderData = m_SortedStaticRenderData;
   m_SortedAllRenderData.PushBackRange(m_SortedDynamicRenderData);
   SortByKey(m_SortedAllRenderData);
-}
-
-xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetAllRenderData() const
-{
-  return m_SortedAllRenderData;
-}
-
-xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetStaticRenderData() const
-{
-  return m_SortedStaticRenderData;
-}
-
-xiiArrayPtr<xiiRenderData* const> xiiExtractedRenderData::GetDynamicRenderData() const
-{
-  return m_SortedDynamicRenderData;
 }

@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -3483,33 +3484,6 @@ void xiiView::ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContex
   cmd.EndDebugGroup();
 }
 
-////////// GPU Debug Visualization Data //////////
-//
-// Collects all GPU resources related to debug visualization rendering.
-// Renders data from the xiiDebugRenderer system, which is fed by various engine systems (render world, culling, animation, etc.) to visualize internal engine state for debugging purposes.
-
-struct xiiDebugVisualizationData
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt32 m_uiPrimitives; ///< Number of debug primitives to render (lines, triangles, etc.).
-};
-
-void xiiView::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder)
-{
-}
-
-void xiiView::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context)
-{
-  xiiGALCommandList& cmd = context.GetCommandList();
-
-  cmd.BeginDebugGroup("DebugVisualization");
-  {
-    // Debug visualization rendering is scheduled by the render world module after the main scene rendering, so this pass just serves as a synchronization point to ensure correct ordering and resource states.
-  }
-  cmd.EndDebugGroup();
-}
-
 ////////// GPU Final Blit Data //////////
 //
 // Collects all GPU resources related to final backbuffer presentation.
@@ -3559,8 +3533,10 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& c
   cmd.EndDebugGroup();
 }
 
-void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& /*blackboard*/)
+void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
+  XII_IGNORE_UNUSED(blackboard);
+
   // CPU dynamic resolution PID (pre-graph). View owns scale/resolution state.
   RunDynamicResolutionPID();
 
@@ -3649,7 +3625,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   graph.AddPass<xiiToneMappingData>("ToneMapping", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupToneMapping, this), xiiMakeDelegate(&xiiView::ExecuteToneMapping, this));
 
   // Debug and visualization passes.
-  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDebugVisualization, this), xiiMakeDelegate(&xiiView::ExecuteDebugVisualization, this));
+  xiiDebugRenderer::AddRenderGraphPasses(graph);
 
   // Final output pass.
   graph.AddPass<xiiFinalBlitData>("BackbufferPresent", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupFinalBlit, this), xiiMakeDelegate(&xiiView::ExecuteFinalBlit, this));
