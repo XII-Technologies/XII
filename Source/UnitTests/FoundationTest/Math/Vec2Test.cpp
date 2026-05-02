@@ -45,6 +45,11 @@ XII_CREATE_SIMPLE_TEST(Math, Vec2)
     XII_TEST_VEC2(xiiVec2T::MakeZero(), xiiVec2T(0, 0), 0);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Make(x,y)")
+  {
+    XII_TEST_VEC2(xiiVec2T::Make(4, 5), xiiVec2T(4, 5), 0);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsVec3")
   {
     XII_TEST_VEC3(xiiVec2T(2, 3).GetAsVec3(4), xiiVec3T(2, 3, 4), 0);

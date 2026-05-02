@@ -29,7 +29,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiSensorComponent, 1)
     XII_ENUM_MEMBER_PROPERTY("UpdateRate", xiiUpdateRate, m_UpdateRate),
     XII_ACCESSOR_PROPERTY("SpatialCategory", GetSpatialCategory, SetSpatialCategory)->AddAttributes(new xiiDynamicStringEnumAttribute("SpatialDataCategoryEnum")),
     XII_MEMBER_PROPERTY("TestVisibility", m_bTestVisibility)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),    
+    XII_MEMBER_PROPERTY("CollisionLayer", m_uiCollisionLayer)->AddAttributes(new xiiDynamicEnumAttribute("PhysicsCollisionLayer")),
     XII_ACCESSOR_PROPERTY("ShowDebugInfo", GetShowDebugInfo, SetShowDebugInfo),
     XII_ACCESSOR_PROPERTY("Color", GetColor, SetColor)->AddAttributes(new xiiDefaultValueAttribute(xiiColorScheme::LightUI(xiiColorScheme::Orange))),
   }

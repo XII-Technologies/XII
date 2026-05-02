@@ -4,6 +4,7 @@
           - any-glob-to-any-file: [
               "Source/Engine/GraphicsFoundation/**",
               "Source/Engine/GraphicsVulkan/**",
+              "Source/Engine/GraphicsD3D12/**",
               "Source/Engine/GraphicsCore/**",
               "Source/Engine/ShaderCompilerSPIRV/**",
               "Data/Base/Shaders/**"

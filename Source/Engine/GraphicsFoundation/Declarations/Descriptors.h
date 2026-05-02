@@ -205,10 +205,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHa
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALGraphicsDeviceType>    m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Undefined;
-  xiiEnum<xiiGALDeviceValidationLevel> m_ValidationLevel    = xiiGALDeviceValidationLevel::Standard;
-  xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;
-  xiiGALDeviceFeatures                 m_DeviceFeatures;
+  xiiEnum<xiiGALGraphicsDeviceType>    m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Null;        ///< Graphics API type of the device to create.
+  xiiEnum<xiiGALDeviceValidationLevel> m_ValidationLevel    = xiiGALDeviceValidationLevel::Standard; ///< Validation level for the device. Higher validation levels may enable additional GPU-based validation and debugging features, which can help catch more issues during development, but may also have a performance impact. The optimal validation level depends on the specific needs of the application and the stage of development. For example, during early development or when debugging complex issues, a higher validation level may be beneficial. However, for performance testing or in production builds, a lower validation level or no validation may be more appropriate.
+  xiiUInt32                            m_uiAdapterID        = XII_GAL_DEFAULT_ADAPTER_ID;            ///< Adapter ID of the device to create. This is only used when there are multiple adapters available and the application wants to specify which one to use. The optimal adapter ID depends on the specific needs of the application and the hardware configuration of the system. In most cases, using the default adapter (XII_GAL_DEFAULT_ADAPTER_ID) is sufficient, as it typically corresponds to the primary GPU in the system. However, in systems with multiple GPUs, such as those with both integrated and discrete graphics, or in multi-GPU setups, specifying a particular adapter ID may be necessary to ensure that the application uses the desired GPU for rendering.
+  xiiGALDeviceFeatures                 m_DeviceFeatures;                                             ///< Device features that the application requires. The optimal device features depend on the specific needs of the application and the capabilities of the target hardware. For example, if the application relies heavily on compute shaders, it would be important to require support for compute shaders in the device features. Similarly, if the application uses ray tracing, it would need to require support for ray tracing. It's important to carefully consider which features are necessary for the application's functionality and performance requirements, as requiring unsupported features may lead to device creation failure or suboptimal performance.
 };
 
 /// \brief This describes the device memory properties.

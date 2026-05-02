@@ -5,6 +5,7 @@
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 
+class xiiCamera;
 struct xiiMsgSetColor;
 struct xiiMsgExtractRenderData;
 
@@ -52,6 +53,15 @@ public:
   bool GetCastShadows() const;            // [ property ]
 
   void OnMsgSetColor(xiiMsgSetColor& ref_msg); // [ msg handler ]
+
+  /// \brief Calculates how far a light source would shine given the specified range and intensity.
+  ///
+  /// If fRange is zero, the range needed for the given intensity is returned.
+  /// Otherwise the smaller value of that and fRange is returned.
+  static float CalculateEffectiveRange(float fRange, float fIntensity);
+
+  /// \brief Calculates how large on screen (relative height) the light source would be.
+  static float CalculateScreenSpaceSize(const xiiBoundingSphere& sphere, const xiiCamera& camera);
 
 protected:
   xiiColorGammaUB m_LightColor    = xiiColor::White;
