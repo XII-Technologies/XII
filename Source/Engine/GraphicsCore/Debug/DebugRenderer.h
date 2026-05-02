@@ -14,6 +14,11 @@ using xiiRectFloat = xiiRectTemplate<float>;
 
 class xiiFormatString;
 class xiiFrustum;
+class xiiRenderGraph;
+class xiiRGBuilder;
+class xiiRGPassContext;
+
+struct xiiDebugVisualizationData;
 
 /// \brief Horizontal alignment of debug text.
 struct xiiDebugTextHAlign
@@ -264,14 +269,12 @@ public:
   /// \brief Sets the global debug text scale
   static void SetTextScale(float fScale);
 
+public:
+  static void AddRenderGraphPasses(xiiRenderGraph& graph);
+
 private:
-  friend class xiiSimpleRenderPass;
-
-  static void RenderScreenSpace(const xiiRenderViewContext& renderViewContext);
-  static void RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
-
-  static void RenderWorldSpace(const xiiRenderViewContext& renderViewContext);
-  static void RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
+  static void SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder);
+  static void ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context);
 
   static void OnEngineStartup();
   static void OnEngineShutdown();

@@ -6,6 +6,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
@@ -1963,6 +1964,40 @@ void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& 
     }
   }
 #endif
+}
+
+////////// GPU Debug Visualization Data //////////
+//
+// Collects all GPU resources related to debug visualization rendering.
+// Renders data from the xiiDebugRenderer system, which is fed by various engine systems (render world, culling, animation, etc.) to visualize internal engine state for debugging purposes.
+
+struct xiiDebugVisualizationData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiPrimitives; ///< Number of debug primitives to render (lines, triangles, etc.).
+};
+
+void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder)
+{
+
+}
+
+void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("DebugVisualization");
+  {
+    // Debug visualization rendering is scheduled by the render world module after the main scene rendering, so this pass just serves as a synchronization point to ensure correct ordering and resource states.
+  }
+  cmd.EndDebugGroup();
+}
+
+// static
+void xiiDebugRenderer::AddRenderGraphPasses(xiiRenderGraph& graph)
+{
+  graph.AddPass<xiiDebugVisualizationData>("DebugVisualization", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiDebugRenderer::SetupDebugVisualization), xiiMakeDelegate(&xiiDebugRenderer::ExecuteDebugVisualization));
 }
 
 void xiiDebugRenderer::OnEngineStartup()
