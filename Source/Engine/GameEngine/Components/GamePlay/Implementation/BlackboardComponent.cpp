@@ -244,8 +244,7 @@ void xiiBlackboardComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) c
   if (!GetShowDebugInfo() || m_pBoard == nullptr)
     return;
 
-  if (msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::MainView &&
-      msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
+  if (msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::MainView && msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return;
 
   auto& entries = m_pBoard->GetAllEntries();

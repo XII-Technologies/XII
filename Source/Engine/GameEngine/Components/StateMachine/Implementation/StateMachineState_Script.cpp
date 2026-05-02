@@ -228,9 +228,9 @@ bool xiiStateMachineState_Script::GetInstanceDataDesc(xiiInstanceDataDesc& out_d
   return true;
 }
 
-void xiiStateMachineState_Script::SetScriptClassFile(const char* szFile)
+void xiiStateMachineState_Script::SetScriptClassFile(xiiStringView sFile)
 {
-  m_sScriptClassFile = szFile;
+  m_sScriptClassFile = sFile;
 
   // Note that we can't load the resource here directly. State machine states are instantiated during
   // state machine asset transform but the script class resource overwrites are not known there so the resource load would fail.
