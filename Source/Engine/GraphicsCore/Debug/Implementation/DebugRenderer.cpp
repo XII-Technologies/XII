@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <Core/Graphics/Geometry.h>
@@ -1978,10 +1980,12 @@ struct xiiDebugVisualizationData
   xiiUInt32 m_uiPrimitives; ///< Number of debug primitives to render (lines, triangles, etc.).
 };
 
+// static
 void xiiDebugRenderer::SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder)
 {
 }
 
+// static
 void xiiDebugRenderer::ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context)
 {
   xiiGALCommandList& cmd = context.GetCommandList();
