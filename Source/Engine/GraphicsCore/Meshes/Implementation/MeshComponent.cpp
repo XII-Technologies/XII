@@ -11,16 +11,16 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMeshRenderDataFlags, 1)
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::None),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::StaticObject),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::DynamicObject),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::Skinned),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::MorphTargets),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::Instanced),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::PreferMeshShader),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::ForceLOD),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::CpuCullingFallback),
-  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::RayTracingVisible),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::StaticObject),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::DynamicObject),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::Skinned),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::MorphTargets),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::Instanced),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::PreferMeshShader),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::ForceLOD),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::CpuCullingFallback),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::RayTracingVisible),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
