@@ -11,8 +11,16 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMeshRenderDataFlags, 1)
-  XII_BITFLAGS_CONSTANTS(xiiMeshRenderDataFlags::StaticObject, xiiMeshRenderDataFlags::DynamicObject, xiiMeshRenderDataFlags::Skinned, xiiMeshRenderDataFlags::MorphTargets)
-  XII_BITFLAGS_CONSTANTS(xiiMeshRenderDataFlags::Instanced, xiiMeshRenderDataFlags::PreferMeshShader, xiiMeshRenderDataFlags::ForceLOD, xiiMeshRenderDataFlags::CpuCullingFallback, xiiMeshRenderDataFlags::RayTracingVisible)
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::None),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::StaticObject),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::DynamicObject),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::Skinned),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::MorphTargets),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::Instanced),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::PreferMeshShader),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::ForceLOD),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::CpuCullingFallback),
+  XII_BITFLAG_CONSTANT(xiiMeshRenderDataFlags::RayTracingVisible),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
@@ -43,18 +51,12 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
 XII_END_ABSTRACT_COMPONENT_TYPE
 
 XII_BEGIN_COMPONENT_TYPE(xiiStaticMeshComponent, 1, xiiComponentMode::Static)
-{
-}
 XII_END_COMPONENT_TYPE
 
 XII_BEGIN_COMPONENT_TYPE(xiiMeshComponent, 1, xiiComponentMode::Static)
-{
-}
 XII_END_COMPONENT_TYPE
 
 XII_BEGIN_COMPONENT_TYPE(xiiDynamicMeshComponent, 1, xiiComponentMode::Dynamic)
-{
-}
 XII_END_COMPONENT_TYPE
 
 XII_BEGIN_COMPONENT_TYPE(xiiSkinnedMeshComponent, 1, xiiComponentMode::Dynamic)
@@ -91,11 +93,10 @@ XII_END_COMPONENT_TYPE
 
 namespace
 {
-  static constexpr xiiUInt32 s_uiMeshComponentVersion = 1U;
-
   static void WriteMaterialOverrides(xiiStreamWriter& ref_stream, xiiArrayPtr<const xiiMaterialResourceHandle> materials)
   {
     ref_stream << materials.GetCount();
+
     for (const xiiMaterialResourceHandle& hMaterial : materials)
     {
       ref_stream << hMaterial;
@@ -158,9 +159,10 @@ void xiiMeshComponentBase::SerializeComponent(xiiWorldWriter& inout_stream) cons
   SUPER::SerializeComponent(inout_stream);
   xiiStreamWriter& s = inout_stream.GetStream();
 
-  s << s_uiMeshComponentVersion;
   s << m_hMesh;
+
   WriteMaterialOverrides(s, m_MaterialOverrides);
+
   s << m_uiSectionIndex;
   s << m_bPreferMeshShaders;
   s << m_bRayTracingVisible;
@@ -172,12 +174,10 @@ void xiiMeshComponentBase::DeserializeComponent(xiiWorldReader& inout_stream)
   SUPER::DeserializeComponent(inout_stream);
   xiiStreamReader& s = inout_stream.GetStream();
 
-  xiiUInt32 uiVersion = 0U;
-  s >> uiVersion;
-  XII_IGNORE_UNUSED(uiVersion);
-
   s >> m_hMesh;
+
   ReadMaterialOverrides(s, m_MaterialOverrides);
+
   s >> m_uiSectionIndex;
   s >> m_bPreferMeshShaders;
   s >> m_bRayTracingVisible;
@@ -308,12 +308,12 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_m
   if (!pMesh)
     return;
 
-  xiiRenderWorldModule* pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
+  const xiiRenderWorldModule* pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
   if (pWorldModule == nullptr)
     return;
 
   xiiMeshRenderData* pRenderData = pWorldModule->CreateRenderDataForThisFrame<xiiMeshRenderData>(this);
-  FillRenderData(*pRenderData, *pMesh);
+  FillRenderData(*pRenderData, *pMesh.GetPointer());
 
   if (pRenderData->m_uiInstanceCount == 0U)
     return;
@@ -323,12 +323,12 @@ void xiiMeshComponentBase::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_m
 
 void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, const xiiMeshResource& mesh) const
 {
-  ref_renderData.m_hMesh       = m_hMesh;
-  ref_renderData.m_hMeshBuffer = mesh.GetMeshBuffer();
-  ref_renderData.m_uiUniqueID  = GetUniqueIdForRendering();
-  ref_renderData.m_uiLODIndex  = SelectLOD(mesh);
+  ref_renderData.m_hMesh          = m_hMesh;
+  ref_renderData.m_hMeshBuffer    = mesh.GetMeshBuffer();
+  ref_renderData.m_uiUniqueID     = GetUniqueIdForRendering();
+  ref_renderData.m_uiLODIndex     = SelectLOD(mesh);
   ref_renderData.m_uiSectionIndex = m_uiSectionIndex;
-  ref_renderData.m_Flags       = GetMeshRenderFlags();
+  ref_renderData.m_Flags          = GetMeshRenderFlags();
 
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::PreferMeshShader, m_bPreferMeshShaders);
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::CpuCullingFallback, m_bCpuCullingFallback);
@@ -338,20 +338,20 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::Skinned, meshUsage.IsSet(xiiMeshResourceUsageFlags::Skinned));
   ref_renderData.m_Flags.AddOrRemove(xiiMeshRenderDataFlags::MorphTargets, meshUsage.IsSet(xiiMeshResourceUsageFlags::MorphTargets));
 
-  const xiiArrayPtr<const xiiMeshLOD> lods = mesh.GetLODs();
-  if (!lods.IsEmpty())
+  const xiiArrayPtr<const xiiMeshLOD> pLODs = mesh.GetLODs();
+  if (!pLODs.IsEmpty())
   {
-    FillRangeFromLOD(ref_renderData, lods[ClampLODIndex(mesh, ref_renderData.m_uiLODIndex)]);
+    FillRangeFromLOD(ref_renderData, pLODs[ClampLODIndex(mesh, ref_renderData.m_uiLODIndex)]);
   }
 
-  const xiiArrayPtr<const xiiMeshSection> sections = mesh.GetSections();
-  if (m_uiSectionIndex < sections.GetCount())
+  const xiiArrayPtr<const xiiMeshSection> pSections = mesh.GetSections();
+  if (m_uiSectionIndex < pSections.GetCount())
   {
-    FillRangeFromSection(ref_renderData, sections[m_uiSectionIndex]);
+    FillRangeFromSection(ref_renderData, pSections[m_uiSectionIndex]);
   }
 
-  const xiiArrayPtr<const xiiMaterialResourceHandle> meshMaterials = mesh.GetMaterials();
-  const xiiUInt32 uiMaterialCount = xiiMath::Max(meshMaterials.GetCount(), m_MaterialOverrides.GetCount());
+  const xiiArrayPtr<const xiiMaterialResourceHandle> pMeshMaterials = mesh.GetMaterials();
+  const xiiUInt32                                    uiMaterialCount = xiiMath::Max(pMeshMaterials.GetCount(), m_MaterialOverrides.GetCount());
   ref_renderData.m_hMaterials.SetCount(uiMaterialCount);
   for (xiiUInt32 i = 0; i < uiMaterialCount; ++i)
   {
@@ -359,9 +359,9 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
     {
       ref_renderData.m_hMaterials[i] = m_MaterialOverrides[i];
     }
-    else if (i < meshMaterials.GetCount())
+    else if (i < pMeshMaterials.GetCount())
     {
-      ref_renderData.m_hMaterials[i] = meshMaterials[i];
+      ref_renderData.m_hMaterials[i] = pMeshMaterials[i];
     }
     else
     {
@@ -369,7 +369,7 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
     }
   }
 
-  const xiiUInt64 uiMeshKey = m_hMesh.IsValid() ? m_hMesh.GetResourceIDHash() : 0ULL;
+  const xiiUInt64 uiMeshKey     = m_hMesh.IsValid() ? m_hMesh.GetResourceIDHash() : 0ULL;
   const xiiUInt64 uiMaterialKey = (!ref_renderData.m_hMaterials.IsEmpty() && ref_renderData.m_hMaterials[0].IsValid()) ? ref_renderData.m_hMaterials[0].GetResourceIDHash() : 0ULL;
   ref_renderData.m_uiSortingKey = (uiMaterialKey & 0xFFFF000000000000ULL) ^ (uiMeshKey & 0x0000FFFFFFFF0000ULL) ^ ref_renderData.m_uiUniqueID;
 }
@@ -394,6 +394,8 @@ void xiiMeshComponentBase::UpdateLocalBoundsForInstances(xiiBoundingBoxSphere& r
   XII_IGNORE_UNUSED(ref_bounds);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 xiiStaticMeshComponent::xiiStaticMeshComponent()  = default;
 xiiStaticMeshComponent::~xiiStaticMeshComponent() = default;
 
@@ -409,8 +411,12 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiStaticMeshComponent::GetMeshRenderFlags()
   return flags;
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 xiiMeshComponent::xiiMeshComponent()  = default;
 xiiMeshComponent::~xiiMeshComponent() = default;
+
+//////////////////////////////////////////////////////////////////////////
 
 xiiDynamicMeshComponent::xiiDynamicMeshComponent()  = default;
 xiiDynamicMeshComponent::~xiiDynamicMeshComponent() = default;
@@ -421,6 +427,8 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiDynamicMeshComponent::GetMeshRenderFlags(
   flags.Add(xiiMeshRenderDataFlags::DynamicObject);
   return flags;
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 xiiSkinnedMeshComponent::xiiSkinnedMeshComponent()  = default;
 xiiSkinnedMeshComponent::~xiiSkinnedMeshComponent() = default;
@@ -439,23 +447,23 @@ const xiiSkeletonResourceHandle& xiiSkinnedMeshComponent::GetSkeleton() const
   return m_hSkeleton;
 }
 
-void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> matrices)
+void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices)
 {
-  m_SkinningMatrices.SetCount(matrices.GetCount());
-  for (xiiUInt32 i = 0; i < matrices.GetCount(); ++i)
+  m_SkinningMatrices.SetCount(pMatrices.GetCount());
+  for (xiiUInt32 i = 0; i < pMatrices.GetCount(); ++i)
   {
-    m_SkinningMatrices[i] = matrices[i];
+    m_SkinningMatrices[i] = pMatrices[i];
   }
 
   InvalidateCachedRenderData();
 }
 
-void xiiSkinnedMeshComponent::SetMorphWeights(xiiArrayPtr<const float> weights)
+void xiiSkinnedMeshComponent::SetMorphWeights(xiiArrayPtr<const float> pWeights)
 {
-  m_MorphWeights.SetCount(weights.GetCount());
-  for (xiiUInt32 i = 0; i < weights.GetCount(); ++i)
+  m_MorphWeights.SetCount(pWeights.GetCount());
+  for (xiiUInt32 i = 0; i < pWeights.GetCount(); ++i)
   {
-    m_MorphWeights[i] = weights[i];
+    m_MorphWeights[i] = pWeights[i];
   }
 
   TriggerLocalBoundsUpdate();
@@ -474,12 +482,14 @@ void xiiSkinnedMeshComponent::ClearPose()
 void xiiSkinnedMeshComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
   SUPER::SerializeComponent(inout_stream);
+
   inout_stream.GetStream() << m_hSkeleton;
 }
 
 void xiiSkinnedMeshComponent::DeserializeComponent(xiiWorldReader& inout_stream)
 {
   SUPER::DeserializeComponent(inout_stream);
+
   inout_stream.GetStream() >> m_hSkeleton;
 }
 
@@ -500,6 +510,8 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiSkinnedMeshComponent::GetMeshRenderFlags(
   flags.Add(xiiMeshRenderDataFlags::Skinned);
   return flags;
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 xiiInstancedMeshComponent::xiiInstancedMeshComponent()  = default;
 xiiInstancedMeshComponent::~xiiInstancedMeshComponent() = default;
@@ -618,7 +630,7 @@ void xiiInstancedMeshComponent::UpdateLocalBoundsForInstances(xiiBoundingBoxSphe
   }
 
   const xiiBoundingBoxSphere meshBounds = ref_bounds;
-  ref_bounds                           = xiiBoundingBoxSphere::MakeInvalid();
+  ref_bounds                            = xiiBoundingBoxSphere::MakeInvalid();
 
   for (const xiiMat4& transform : m_InstanceTransforms)
   {
@@ -627,6 +639,8 @@ void xiiInstancedMeshComponent::UpdateLocalBoundsForInstances(xiiBoundingBoxSphe
     ref_bounds.ExpandToInclude(transformedBounds);
   }
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 xiiLODMeshComponent::xiiLODMeshComponent()  = default;
 xiiLODMeshComponent::~xiiLODMeshComponent() = default;
@@ -682,9 +696,4 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiLODMeshComponent::GetMeshRenderFlags() co
   return flags;
 }
 
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_MeshComponentBase);
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_MeshComponent);
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_InstancedMeshComponent);
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_SkinnedMeshComponent);
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_DynamicMeshComponent);
-XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_LODMeshComponent);
