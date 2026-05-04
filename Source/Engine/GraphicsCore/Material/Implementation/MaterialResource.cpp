@@ -2,6 +2,7 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/IO/OpenDdlUtils.h>
@@ -19,15 +20,248 @@
 #  include <Foundation/IO/CompressedStreamZstd.h>
 #endif
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialShadingModel, 1)
+  XII_ENUM_CONSTANTS(xiiMaterialShadingModel::Lit, xiiMaterialShadingModel::Subsurface, xiiMaterialShadingModel::ClearCoat, xiiMaterialShadingModel::Cloth)
+  XII_ENUM_CONSTANTS(xiiMaterialShadingModel::Hair, xiiMaterialShadingModel::Eye, xiiMaterialShadingModel::Unlit, xiiMaterialShadingModel::Custom)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialBlendMode, 1)
+  XII_ENUM_CONSTANTS(xiiMaterialBlendMode::Opaque, xiiMaterialBlendMode::Masked, xiiMaterialBlendMode::Translucent, xiiMaterialBlendMode::Additive, xiiMaterialBlendMode::Modulate)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMaterialAlphaMode, 1)
+  XII_ENUM_CONSTANTS(xiiMaterialAlphaMode::Opaque, xiiMaterialAlphaMode::Mask, xiiMaterialAlphaMode::Blend)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMaterialFeatureFlags, 1)
+  XII_BITFLAGS_CONSTANTS(xiiMaterialFeatureFlags::NormalTexture, xiiMaterialFeatureFlags::MetallicRoughnessTexture, xiiMaterialFeatureFlags::OcclusionTexture, xiiMaterialFeatureFlags::EmissiveTexture)
+  XII_BITFLAGS_CONSTANTS(xiiMaterialFeatureFlags::HeightTexture, xiiMaterialFeatureFlags::ClearCoat, xiiMaterialFeatureFlags::Transmission, xiiMaterialFeatureFlags::Sheen, xiiMaterialFeatureFlags::Anisotropy)
+  XII_BITFLAGS_CONSTANTS(xiiMaterialFeatureFlags::VertexColor, xiiMaterialFeatureFlags::TwoSided, xiiMaterialFeatureFlags::RuntimeGenerated)
+XII_END_STATIC_REFLECTED_BITFLAGS;
+// clang-format on
+
+namespace
+{
+  static xiiUInt32 FindParameter(const xiiMaterialResourceDescriptor& desc, const xiiTempHashedString& sName)
+  {
+    for (xiiUInt32 i = 0; i < desc.m_Parameters.GetCount(); ++i)
+    {
+      if (desc.m_Parameters[i].m_Name == sName)
+        return i;
+    }
+
+    return xiiInvalidIndex;
+  }
+
+  static void SetPbrParameter(xiiMaterialResourceDescriptor& ref_desc, xiiStringView sName, const xiiVariant& value, bool bOnlyIfMissing)
+  {
+    const xiiTempHashedString sNameHash(sName);
+    const xiiUInt32          uiIndex = FindParameter(ref_desc, sNameHash);
+
+    if (uiIndex != xiiInvalidIndex)
+    {
+      if (!bOnlyIfMissing)
+      {
+        ref_desc.m_Parameters[uiIndex].m_Value = value;
+      }
+      return;
+    }
+
+    xiiMaterialResourceDescriptor::Parameter& param = ref_desc.m_Parameters.ExpandAndGetRef();
+    param.m_Name.Assign(sName);
+    param.m_Value = value;
+  }
+
+  static xiiUInt32 FindTexture2DBinding(const xiiMaterialResourceDescriptor& desc, const xiiTempHashedString& sName)
+  {
+    for (xiiUInt32 i = 0; i < desc.m_Texture2DBindings.GetCount(); ++i)
+    {
+      if (desc.m_Texture2DBindings[i].m_Name == sName)
+        return i;
+    }
+
+    return xiiInvalidIndex;
+  }
+
+  static void SetPbrTexture2DBinding(xiiMaterialResourceDescriptor& ref_desc, xiiStringView sName, const xiiTexture2DResourceHandle& hTexture, bool bOnlyIfMissing)
+  {
+    if (!hTexture.IsValid())
+      return;
+
+    const xiiTempHashedString sNameHash(sName);
+    const xiiUInt32          uiIndex = FindTexture2DBinding(ref_desc, sNameHash);
+
+    if (uiIndex != xiiInvalidIndex)
+    {
+      if (!bOnlyIfMissing)
+      {
+        ref_desc.m_Texture2DBindings[uiIndex].m_Value = hTexture;
+      }
+      return;
+    }
+
+    xiiMaterialResourceDescriptor::Texture2DBinding& binding = ref_desc.m_Texture2DBindings.ExpandAndGetRef();
+    binding.m_Name.Assign(sName);
+    binding.m_Value = hTexture;
+  }
+} // namespace
+
 void xiiMaterialResourceDescriptor::Clear()
 {
   m_hBaseMaterial.Invalidate();
   m_sSurface.Clear();
   m_hShader.Invalidate();
+
+  m_ShadingModel = xiiMaterialShadingModel::Lit;
+  m_BlendMode    = xiiMaterialBlendMode::Opaque;
+  m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
+  m_FeatureFlags = xiiMaterialFeatureFlags::Default;
+
+  m_BaseColor             = xiiColor::White;
+  m_EmissiveColor         = xiiColor::Black;
+  m_fMetallic             = 0.0f;
+  m_fRoughness            = 0.5f;
+  m_fOcclusionStrength    = 1.0f;
+  m_fAlphaCutoff          = 0.5f;
+  m_fNormalScale          = 1.0f;
+  m_fDisplacementScale    = 0.0f;
+  m_fClearCoat            = 0.0f;
+  m_fClearCoatRoughness   = 0.0f;
+  m_fTransmission         = 0.0f;
+  m_fThickness            = 0.0f;
+  m_fIndexOfRefraction    = 1.5f;
+  m_fAnisotropy           = 0.0f;
+  m_fSheenRoughness       = 0.5f;
+  m_iSortPriority         = 0;
+
+  m_hBaseColorTexture.Invalidate();
+  m_hNormalTexture.Invalidate();
+  m_hMetallicRoughnessTexture.Invalidate();
+  m_hOcclusionTexture.Invalidate();
+  m_hEmissiveTexture.Invalidate();
+  m_hHeightTexture.Invalidate();
+  m_hClearCoatTexture.Invalidate();
+  m_hTransmissionTexture.Invalidate();
+
+  m_uiRuntimeHash = 0U;
+
   m_PermutationVariables.Clear();
   m_Parameters.Clear();
   m_Texture2DBindings.Clear();
   m_TextureCubeBindings.Clear();
+}
+
+xiiUInt32 xiiMaterialResourceDescriptor::ComputeRuntimeHash() const
+{
+  xiiHashStreamWriter32 hashWriter;
+  hashWriter << (m_hBaseMaterial.IsValid() ? m_hBaseMaterial.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hShader.IsValid() ? m_hShader.GetResourceIDHash() : 0ULL);
+  hashWriter << m_ShadingModel.GetValue();
+  hashWriter << m_BlendMode.GetValue();
+  hashWriter << m_AlphaMode.GetValue();
+  hashWriter << m_FeatureFlags.GetValue();
+  hashWriter << m_BaseColor.r;
+  hashWriter << m_BaseColor.g;
+  hashWriter << m_BaseColor.b;
+  hashWriter << m_BaseColor.a;
+  hashWriter << m_EmissiveColor.r;
+  hashWriter << m_EmissiveColor.g;
+  hashWriter << m_EmissiveColor.b;
+  hashWriter << m_EmissiveColor.a;
+  hashWriter << m_fMetallic;
+  hashWriter << m_fRoughness;
+  hashWriter << m_fOcclusionStrength;
+  hashWriter << m_fAlphaCutoff;
+  hashWriter << m_fNormalScale;
+  hashWriter << m_fDisplacementScale;
+  hashWriter << m_fClearCoat;
+  hashWriter << m_fClearCoatRoughness;
+  hashWriter << m_fTransmission;
+  hashWriter << m_fThickness;
+  hashWriter << m_fIndexOfRefraction;
+  hashWriter << m_fAnisotropy;
+  hashWriter << m_fSheenRoughness;
+  hashWriter << m_iSortPriority;
+  hashWriter << (m_hBaseColorTexture.IsValid() ? m_hBaseColorTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hNormalTexture.IsValid() ? m_hNormalTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hMetallicRoughnessTexture.IsValid() ? m_hMetallicRoughnessTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hOcclusionTexture.IsValid() ? m_hOcclusionTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hEmissiveTexture.IsValid() ? m_hEmissiveTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hHeightTexture.IsValid() ? m_hHeightTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hClearCoatTexture.IsValid() ? m_hClearCoatTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << (m_hTransmissionTexture.IsValid() ? m_hTransmissionTexture.GetResourceIDHash() : 0ULL);
+  hashWriter << m_PermutationVariables.GetCount();
+  for (const xiiGALPermutationVariable& permutation : m_PermutationVariables)
+  {
+    hashWriter << permutation.m_sName.GetHash();
+    hashWriter << permutation.m_sValue.GetHash();
+  }
+  hashWriter << m_Parameters.GetCount();
+  for (const Parameter& parameter : m_Parameters)
+  {
+    hashWriter << parameter.m_Name.GetHash();
+    hashWriter << parameter.m_Value;
+  }
+  hashWriter << m_Texture2DBindings.GetCount();
+  for (const Texture2DBinding& binding : m_Texture2DBindings)
+  {
+    hashWriter << binding.m_Name.GetHash();
+    hashWriter << (binding.m_Value.IsValid() ? binding.m_Value.GetResourceIDHash() : 0ULL);
+  }
+  hashWriter << m_TextureCubeBindings.GetCount();
+  for (const TextureCubeBinding& binding : m_TextureCubeBindings)
+  {
+    hashWriter << binding.m_Name.GetHash();
+    hashWriter << (binding.m_Value.IsValid() ? binding.m_Value.GetResourceIDHash() : 0ULL);
+  }
+
+  return hashWriter.GetHashValue();
+}
+
+void xiiMaterialResourceDescriptor::RecomputeRuntimeHash()
+{
+  m_uiRuntimeHash = ComputeRuntimeHash();
+}
+
+void xiiMaterialResourceDescriptor::ApplyPbrParameterDefaults(bool bOnlyIfMissing)
+{
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::NormalTexture, m_hNormalTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("NormalTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::MetallicRoughnessTexture, m_hMetallicRoughnessTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("MetallicRoughnessTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::OcclusionTexture, m_hOcclusionTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("OcclusionTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::EmissiveTexture, m_hEmissiveTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("EmissiveTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::HeightTexture, m_hHeightTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("HeightTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::ClearCoat, m_fClearCoat > 0.0f || m_hClearCoatTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("ClearCoatTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::Transmission, m_fTransmission > 0.0f || m_hTransmissionTexture.IsValid() || FindTexture2DBinding(*this, xiiTempHashedString("TransmissionTexture")) != xiiInvalidIndex);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::Sheen, m_fSheenRoughness < 1.0f);
+  m_FeatureFlags.AddOrRemove(xiiMaterialFeatureFlags::Anisotropy, m_fAnisotropy != 0.0f);
+
+  SetPbrParameter(*this, "BaseColor", m_BaseColor, bOnlyIfMissing);
+  SetPbrParameter(*this, "EmissiveColor", m_EmissiveColor, bOnlyIfMissing);
+  SetPbrParameter(*this, "Metallic", m_fMetallic, bOnlyIfMissing);
+  SetPbrParameter(*this, "Roughness", m_fRoughness, bOnlyIfMissing);
+  SetPbrParameter(*this, "OcclusionStrength", m_fOcclusionStrength, bOnlyIfMissing);
+  SetPbrParameter(*this, "AlphaCutoff", m_fAlphaCutoff, bOnlyIfMissing);
+  SetPbrParameter(*this, "NormalScale", m_fNormalScale, bOnlyIfMissing);
+  SetPbrParameter(*this, "DisplacementScale", m_fDisplacementScale, bOnlyIfMissing);
+  SetPbrParameter(*this, "ClearCoat", m_fClearCoat, bOnlyIfMissing);
+  SetPbrParameter(*this, "ClearCoatRoughness", m_fClearCoatRoughness, bOnlyIfMissing);
+  SetPbrParameter(*this, "Transmission", m_fTransmission, bOnlyIfMissing);
+  SetPbrParameter(*this, "Thickness", m_fThickness, bOnlyIfMissing);
+  SetPbrParameter(*this, "IndexOfRefraction", m_fIndexOfRefraction, bOnlyIfMissing);
+  SetPbrParameter(*this, "Anisotropy", m_fAnisotropy, bOnlyIfMissing);
+  SetPbrParameter(*this, "SheenRoughness", m_fSheenRoughness, bOnlyIfMissing);
+
+  SetPbrTexture2DBinding(*this, "BaseColorTexture", m_hBaseColorTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "NormalTexture", m_hNormalTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "MetallicRoughnessTexture", m_hMetallicRoughnessTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "OcclusionTexture", m_hOcclusionTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "EmissiveTexture", m_hEmissiveTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "HeightTexture", m_hHeightTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "ClearCoatTexture", m_hClearCoatTexture, bOnlyIfMissing);
+  SetPbrTexture2DBinding(*this, "TransmissionTexture", m_hTransmissionTexture, bOnlyIfMissing);
+
+  RecomputeRuntimeHash();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,6 +326,31 @@ xiiHashedString xiiMaterialResource::GetSurface() const
   return xiiHashedString();
 }
 
+xiiEnum<xiiMaterialShadingModel> xiiMaterialResource::GetShadingModel() const
+{
+  return m_Description.m_ShadingModel;
+}
+
+xiiEnum<xiiMaterialBlendMode> xiiMaterialResource::GetBlendMode() const
+{
+  return m_Description.m_BlendMode;
+}
+
+xiiEnum<xiiMaterialAlphaMode> xiiMaterialResource::GetAlphaMode() const
+{
+  return m_Description.m_AlphaMode;
+}
+
+xiiBitflags<xiiMaterialFeatureFlags> xiiMaterialResource::GetFeatureFlags() const
+{
+  return m_Description.m_FeatureFlags;
+}
+
+xiiUInt32 xiiMaterialResource::GetRuntimeHash() const
+{
+  return m_Description.m_uiRuntimeHash;
+}
+
 void xiiMaterialResource::SetParameter(const xiiHashedString& sName, const xiiVariant& value)
 {
   xiiUInt32 uiIndex = xiiInvalidIndex;
@@ -131,6 +390,8 @@ void xiiMaterialResource::SetParameter(const xiiHashedString& sName, const xiiVa
 
     m_Description.m_Parameters.RemoveAtAndSwap(uiIndex);
   }
+
+  m_Description.RecomputeRuntimeHash();
 
   m_iLastModified.Increment();
   m_iLastConstantsModified.Increment();
@@ -179,6 +440,8 @@ void xiiMaterialResource::SetParameter(xiiStringView sName, const xiiVariant& va
 
     m_Description.m_Parameters.RemoveAtAndSwap(uiIndex);
   }
+
+  m_Description.RecomputeRuntimeHash();
 
   m_iLastModified.Increment();
   m_iLastConstantsModified.Increment();
@@ -229,6 +492,8 @@ void xiiMaterialResource::SetTexture2DBinding(const xiiHashedString& sName, cons
     }
   }
 
+  m_Description.RecomputeRuntimeHash();
+
   m_iLastModified.Increment();
 
   m_ModifiedEvent.Broadcast(this);
@@ -268,6 +533,8 @@ void xiiMaterialResource::SetTexture2DBinding(xiiStringView sName, const xiiText
       m_Description.m_Texture2DBindings.RemoveAtAndSwap(uiIndex);
     }
   }
+
+  m_Description.RecomputeRuntimeHash();
 
   m_iLastModified.Increment();
 
@@ -322,6 +589,8 @@ void xiiMaterialResource::SetTextureCubeBinding(const xiiHashedString& sName, co
     }
   }
 
+  m_Description.RecomputeRuntimeHash();
+
   m_iLastModified.Increment();
 
   m_ModifiedEvent.Broadcast(this);
@@ -361,6 +630,8 @@ void xiiMaterialResource::SetTextureCubeBinding(xiiStringView sName, const xiiTe
       m_Description.m_TextureCubeBindings.RemoveAtAndSwap(uiIndex);
     }
   }
+
+  m_Description.RecomputeRuntimeHash();
 
   m_iLastModified.Increment();
 
@@ -758,6 +1029,8 @@ xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterSt
     xiiLog::Error("Unknown material file type: '{}'", sAbsFilePath);
   }
 
+  m_Description.ApplyPbrParameterDefaults();
+
   if (m_Description.m_hBaseMaterial.IsValid())
   {
     // Block till the base material has been fully loaded to ensure that all parameters have their final value once this material is loaded.
@@ -788,6 +1061,8 @@ void xiiMaterialResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMaterialResource, xiiMaterialResourceDescriptor)
 {
+  descriptor.ApplyPbrParameterDefaults();
+
   m_Description        = descriptor;
   m_LoadingDescription = descriptor;
 
