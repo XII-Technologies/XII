@@ -5,12 +5,10 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshResource, 1, xiiRTTIDefaultAllocator<xiiMeshResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshResource);
-// clang-format on
 
 xiiMeshResource::xiiMeshResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
@@ -65,6 +63,7 @@ xiiUInt32 xiiMeshResource::GetMeshletCount() const
     return 0U;
 
   xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(m_hMeshBuffer, xiiResourceAcquireMode::PointerOnly);
+
   return pMeshBuffer->GetMeshletCount();
 }
 
@@ -140,7 +139,7 @@ void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& 
   sBufferResourceId.Set(GetResourceID(), "#MeshBuffer");
 
   xiiMeshBufferResourceDescriptor bufferDescriptor = std::move(inout_descriptor.GetMeshBufferDescriptor());
-  bufferDescriptor.m_bKeepCpuMeshData = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
+  bufferDescriptor.m_bKeepCpuMeshData              = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
 
   m_hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(sBufferResourceId, std::move(bufferDescriptor), GetResourceIdOrDescription());
   inout_descriptor.UseExistingMeshBuffer(m_hMeshBuffer);
@@ -154,6 +153,7 @@ void xiiMeshResource::LoadMaterialSlots(const xiiMeshResourceDescriptor& descrip
   for (xiiUInt32 i = 0; i < descriptor.GetMaterials().GetCount(); ++i)
   {
     xiiStringView sMaterial = descriptor.GetMaterials()[i];
+
     if (!sMaterial.IsEmpty())
     {
       m_hMaterials[i] = xiiResourceManager::LoadResource<xiiMaterialResource>(sMaterial);

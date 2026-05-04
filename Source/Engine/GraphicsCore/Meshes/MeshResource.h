@@ -235,39 +235,66 @@ private:
   xiiBoundingBoxSphere              m_Bounds = xiiBoundingBoxSphere::MakeInvalid(); ///< Bounding volume for this mesh, used for culling and LOD selection.
 };
 
+/// \brief Mesh resource class representing a renderable mesh in the engine, containing geometry, materials, LODs, and other properties for rendering and animation.
 class XII_GRAPHICSCORE_DLL xiiMeshResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshResource, xiiResource);
+
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiMeshResource);
+
   XII_RESOURCE_DECLARE_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor);
 
 public:
   xiiMeshResource();
   ~xiiMeshResource();
 
-  const xiiMeshBufferResourceHandle&           GetMeshBuffer() const;
-  const xiiMaterialResourceHandle&             GetMaterial(xiiUInt32 uiMaterialIndex) const;
+  /// \brief Returns the descriptor used to create this mesh resource, containing all the data and properties for this mesh.
+  const xiiMeshResourceDescriptor& GetDescriptor() const;
+
+  /// \brief Returns a handle to the mesh buffer resource associated with this mesh, used to access the vertex/index/meshlet data for rendering.
+  const xiiMeshBufferResourceHandle& GetMeshBuffer() const;
+
+  /// \brief Returns a reference to the material resource handle for the material slot at the given index, used to access the material for rendering.
+  ///
+  /// \param uiMaterialIndex Index of the material slot to retrieve, must be less than the number of material slots in this mesh.
+  const xiiMaterialResourceHandle& GetMaterial(xiiUInt32 uiMaterialIndex) const;
+
+  /// \brief Returns a reference to the array of material resource handles for this mesh, used to access the materials for rendering.
   xiiArrayPtr<const xiiMaterialResourceHandle> GetMaterials() const;
 
-  xiiArrayPtr<const xiiMeshLOD>     GetLODs() const;
+  /// \brief Returns a reference to the array of LODs for this mesh, used for LOD selection and rendering.
+  xiiArrayPtr<const xiiMeshLOD> GetLODs() const;
+
+  /// \brief Returns a reference to the array of sections for this mesh, used for rendering and culling.
   xiiArrayPtr<const xiiMeshSection> GetSections() const;
 
-  const xiiBoundingBoxSphere&            GetBounds() const;
-  xiiUInt32                              GetLODCount() const;
-  xiiUInt32                              GetMeshletCount() const;
-  xiiBitflags<xiiMeshResourceUsageFlags> GetUsageFlags() const;
-  xiiEnum<xiiMeshLodSelectionMode>       GetLodMode() const;
+  /// \brief Returns the bounding volume for this mesh, used for culling and LOD selection.
+  const xiiBoundingBoxSphere& GetBounds() const;
 
-  const xiiMeshResourceDescriptor& GetDescriptor() const;
+  /// \brief Returns the number of LODs for this mesh.
+  xiiUInt32 GetLODCount() const;
+
+  /// \brief Returns the number of sections for this mesh.
+  xiiUInt32 GetMeshletCount() const;
+
+  /// \brief Returns the usage flags for this mesh, used to specify intended usage patterns and GPU feature support.
+  xiiBitflags<xiiMeshResourceUsageFlags> GetUsageFlags() const;
+
+  /// \brief Returns the LOD selection mode for this mesh, used to determine how LODs are chosen at runtime.
+  xiiEnum<xiiMeshLodSelectionMode> GetLodMode() const;
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload whatToUnload) override;
   virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
+  /// \brief Creates the mesh buffer resource for this mesh based on the mesh buffer descriptor contained in the provided mesh resource descriptor, used to initialize the GPU buffers for this mesh.
   void CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& inout_descriptor);
+
+  /// \brief Loads the material resources for this mesh based on the material paths contained in the provided mesh resource descriptor, used to initialize the materials for this mesh.
   void LoadMaterialSlots(const xiiMeshResourceDescriptor& descriptor);
 
+private:
   xiiMeshResourceDescriptor                    m_Descriptor;
   xiiMeshBufferResourceHandle                  m_hMeshBuffer;
   xiiHybridArray<xiiMaterialResourceHandle, 8> m_hMaterials;
