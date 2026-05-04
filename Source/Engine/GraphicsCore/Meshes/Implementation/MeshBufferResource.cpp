@@ -12,14 +12,29 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexSemantic, 1)
-  XII_ENUM_CONSTANTS(xiiMeshVertexSemantic::Position, xiiMeshVertexSemantic::Normal, xiiMeshVertexSemantic::Tangent, xiiMeshVertexSemantic::TexCoord0, xiiMeshVertexSemantic::TexCoord1)
-  XII_ENUM_CONSTANTS(xiiMeshVertexSemantic::Color0, xiiMeshVertexSemantic::BoneIndices0, xiiMeshVertexSemantic::BoneWeights0)
-  XII_ENUM_CONSTANTS(xiiMeshVertexSemantic::Custom0, xiiMeshVertexSemantic::Custom1, xiiMeshVertexSemantic::Custom2, xiiMeshVertexSemantic::Custom3)
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Position),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Normal),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Tangent),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::TexCoord0),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::TexCoord1),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Color0),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::BoneIndices0),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::BoneWeights0),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Custom0),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Custom1),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Custom2),
+  XII_ENUM_CONSTANT(xiiMeshVertexSemantic::Custom3),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshVertexStreamFormat, 1)
-  XII_ENUM_CONSTANTS(xiiMeshVertexStreamFormat::Float1, xiiMeshVertexStreamFormat::Float2, xiiMeshVertexStreamFormat::Float3, xiiMeshVertexStreamFormat::Float4)
-  XII_ENUM_CONSTANTS(xiiMeshVertexStreamFormat::UByte4Normalized, xiiMeshVertexStreamFormat::UShort4, xiiMeshVertexStreamFormat::UShort4Normalized, xiiMeshVertexStreamFormat::UInt)
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::Float1),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::Float2),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::Float3),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::Float4),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::UByte4Normalized),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::UShort4),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::UShort4Normalized),
+  XII_ENUM_CONSTANT(xiiMeshVertexStreamFormat::UInt),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiMeshBufferResource>)
@@ -621,6 +636,7 @@ void xiiMeshBufferResourceDescriptor::SetBounds(const xiiBoundingBoxSphere& boun
 xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stream) const
 {
   inout_stream.WriteVersion(s_uiMeshBufferResourceVersion);
+
   inout_stream << m_Topology;
   inout_stream << m_IndexType;
   inout_stream << m_ResourceUsage;
@@ -649,6 +665,7 @@ xiiResult xiiMeshBufferResourceDescriptor::Serialize(xiiStreamWriter& inout_stre
 xiiResult xiiMeshBufferResourceDescriptor::Deserialize(xiiStreamReader& inout_stream)
 {
   inout_stream.ReadVersion(s_uiMeshBufferResourceVersion);
+
   inout_stream >> m_Topology;
   inout_stream >> m_IndexType;
   inout_stream >> m_ResourceUsage;
