@@ -408,6 +408,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
 
   xiiStringView    sCompileSource = sSource;
   xiiStringBuilder sDebugSource;
+  const bool        bMeshShaderProfile = sProfile.StartsWith("as_") || sProfile.StartsWith("ms_");
 
   xiiDynamicArray<xiiStringWChar> args;
   args.PushBack(xiiStringWChar(sFile));
@@ -418,7 +419,12 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   args.PushBack(L"-spirv");
   args.PushBack(L"-Zpc"); // Matrices in column-major order
   args.PushBack(L"-fvk-use-dx-position-w");
-  args.PushBack(L"-fspv-target-env=vulkan1.1");
+  args.PushBack(bMeshShaderProfile ? L"-fspv-target-env=vulkan1.3" : L"-fspv-target-env=vulkan1.1");
+
+  if (bMeshShaderProfile)
+  {
+    args.PushBack(L"-fspv-extension=SPV_EXT_mesh_shader");
+  }
 
   if (bDebug)
   {
