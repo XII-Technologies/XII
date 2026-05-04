@@ -451,10 +451,10 @@ void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
   m_MeshBufferDescriptor.Serialize(inout_stream).IgnoreResult();
 }
 
-xiiResult xiiMeshResourceDescriptor::Save(const char* szFile) const
+xiiResult xiiMeshResourceDescriptor::Save(xiiStringView sFile) const
 {
   xiiFileWriter file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   Save(file);
   return XII_SUCCESS;
@@ -488,10 +488,10 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-xiiResult xiiMeshResourceDescriptor::Load(const char* szFile)
+xiiResult xiiMeshResourceDescriptor::Load(xiiStringView sFile)
 {
   xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
   return Load(file);
 }

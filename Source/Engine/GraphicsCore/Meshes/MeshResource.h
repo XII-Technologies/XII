@@ -209,9 +209,10 @@ public:
 
 public:
   void      Save(xiiStreamWriter& inout_stream) const;
-  xiiResult Save(const char* szFile) const;
+  xiiResult Save(xiiStringView sFile) const;
+
   xiiResult Load(xiiStreamReader& inout_stream);
-  xiiResult Load(const char* szFile);
+  xiiResult Load(xiiStringView sFile);
 
 public:
   xiiBitflags<xiiMeshResourceUsageFlags> m_UsageFlags       = xiiMeshResourceUsageFlags::Default;  ///< Usage flags for this mesh resource, used to specify intended usage patterns and GPU feature support.
