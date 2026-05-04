@@ -139,7 +139,7 @@ void xiiMeshResource::CreateMeshBufferFromDescriptor(xiiMeshResourceDescriptor& 
   xiiStringBuilder sBufferResourceId;
   sBufferResourceId.Set(GetResourceID(), "#MeshBuffer");
 
-  xiiMeshBufferResourceDescriptor bufferDescriptor = std::move(inout_descriptor.MeshBufferDescriptor());
+  xiiMeshBufferResourceDescriptor bufferDescriptor = std::move(inout_descriptor.GetMeshBufferDescriptor());
   bufferDescriptor.m_bKeepCpuMeshData = inout_descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::CpuReadable);
 
   m_hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(sBufferResourceId, std::move(bufferDescriptor), GetResourceIdOrDescription());

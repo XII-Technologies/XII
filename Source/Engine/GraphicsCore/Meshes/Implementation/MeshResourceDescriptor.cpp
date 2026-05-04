@@ -9,12 +9,22 @@
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMeshResourceUsageFlags, 1)
-  XII_BITFLAGS_CONSTANTS(xiiMeshResourceUsageFlags::StaticGeometry, xiiMeshResourceUsageFlags::DynamicGeometry, xiiMeshResourceUsageFlags::Skinned, xiiMeshResourceUsageFlags::MorphTargets)
-  XII_BITFLAGS_CONSTANTS(xiiMeshResourceUsageFlags::Instancing, xiiMeshResourceUsageFlags::MeshShaderReady, xiiMeshResourceUsageFlags::RayTracingReady, xiiMeshResourceUsageFlags::Streaming, xiiMeshResourceUsageFlags::CpuReadable)
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::StaticGeometry),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::DynamicGeometry),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::Skinned),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::MorphTargets),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::Instancing),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::MeshShaderReady),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::RayTracingReady),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::Streaming),
+  XII_BITFLAGS_CONSTANT(xiiMeshResourceUsageFlags::CpuReadable),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshLodSelectionMode, 1)
-  XII_ENUM_CONSTANTS(xiiMeshLodSelectionMode::Distance, xiiMeshLodSelectionMode::ScreenSize, xiiMeshLodSelectionMode::Explicit)
+  XII_ENUM_CONSTANT(xiiMeshLodSelectionMode::Distance),
+  XII_ENUM_CONSTANT(xiiMeshLodSelectionMode::ScreenSize),
+  XII_ENUM_CONSTANT(xiiMeshLodSelectionMode::Explicit),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
@@ -22,18 +32,22 @@ namespace
 {
   static constexpr xiiUInt32 s_uiMeshResourceDescriptorVersion = 1U;
 
-  static xiiBoundingBoxSphere MergeBounds(xiiArrayPtr<const xiiMeshSection> sections, const xiiBoundingBoxSphere& fallbackBounds)
+  static xiiBoundingBoxSphere MergeBounds(xiiArrayPtr<const xiiMeshSection> pSections, const xiiBoundingBoxSphere& fallbackBounds)
   {
     xiiBoundingBoxSphere result = xiiBoundingBoxSphere::MakeInvalid();
 
-    for (const xiiMeshSection& section : sections)
+    for (const xiiMeshSection& section : pSections)
     {
       if (section.m_Bounds.IsValid())
       {
         if (result.IsValid())
+        {
           result.ExpandToInclude(section.m_Bounds);
+        }
         else
+        {
           result = section.m_Bounds;
+        }
       }
     }
 
@@ -144,8 +158,8 @@ xiiMeshResourceDescriptor::xiiMeshResourceDescriptor()
 
 void xiiMeshResourceDescriptor::Clear()
 {
-  m_UsageFlags = xiiMeshResourceUsageFlags::Default;
-  m_LodMode    = xiiMeshLodSelectionMode::ScreenSize;
+  m_UsageFlags       = xiiMeshResourceUsageFlags::Default;
+  m_LodMode          = xiiMeshLodSelectionMode::ScreenSize;
   m_uiStreamingGroup = 0U;
   m_uiMaxResidentLod = 0U;
   m_uiRuntimeHash    = 0U;
@@ -165,13 +179,14 @@ void xiiMeshResourceDescriptor::Clear()
   AddLOD(1.0f);
 }
 
-xiiMeshBufferResourceDescriptor& xiiMeshResourceDescriptor::MeshBufferDescriptor()
+xiiMeshBufferResourceDescriptor& xiiMeshResourceDescriptor::GetMeshBufferDescriptor()
 {
   m_hMeshBuffer.Invalidate();
+
   return m_MeshBufferDescriptor;
 }
 
-const xiiMeshBufferResourceDescriptor& xiiMeshResourceDescriptor::MeshBufferDescriptor() const
+const xiiMeshBufferResourceDescriptor& xiiMeshResourceDescriptor::GetMeshBufferDescriptor() const
 {
   return m_MeshBufferDescriptor;
 }
@@ -189,13 +204,16 @@ const xiiMeshBufferResourceHandle& xiiMeshResourceDescriptor::GetExistingMeshBuf
 xiiUInt32 xiiMeshResourceDescriptor::AddMaterialSlot(xiiStringView sPathToMaterial)
 {
   const xiiUInt32 uiIndex = m_Materials.GetCount();
+
   SetMaterial(uiIndex, sPathToMaterial);
+
   return uiIndex;
 }
 
 void xiiMeshResourceDescriptor::SetMaterial(xiiUInt32 uiMaterialIndex, xiiStringView sPathToMaterial)
 {
   m_Materials.SetCount(xiiMath::Max(m_Materials.GetCount(), uiMaterialIndex + 1U));
+
   m_Materials[uiMaterialIndex] = sPathToMaterial;
 }
 
@@ -211,7 +229,7 @@ xiiMeshSection& xiiMeshResourceDescriptor::AddSection(xiiUInt32 uiPrimitiveCount
     AddLOD(m_LODs.IsEmpty() ? 1.0f : m_LODs.PeekBack().m_fScreenSize * 0.5f);
   }
 
-  xiiMeshSection& section  = m_Sections.ExpandAndGetRef();
+  xiiMeshSection& section    = m_Sections.ExpandAndGetRef();
   section.m_uiFirstPrimitive = uiFirstPrimitive;
   section.m_uiPrimitiveCount = uiPrimitiveCount;
   section.m_uiMaterialIndex  = static_cast<xiiUInt16>(uiMaterialIndex);
@@ -232,8 +250,8 @@ xiiArrayPtr<const xiiMeshSection> xiiMeshResourceDescriptor::GetSubMeshes() cons
 
 xiiMeshLOD& xiiMeshResourceDescriptor::AddLOD(float fScreenSize, float fMaxDistance)
 {
-  xiiMeshLOD& lod  = m_LODs.ExpandAndGetRef();
-  lod.m_fScreenSize = xiiMath::Max(fScreenSize, 0.0f);
+  xiiMeshLOD& lod    = m_LODs.ExpandAndGetRef();
+  lod.m_fScreenSize  = xiiMath::Max(fScreenSize, 0.0f);
   lod.m_fMaxDistance = xiiMath::Max(fMaxDistance, 0.0f);
   return lod;
 }
@@ -256,9 +274,9 @@ void xiiMeshResourceDescriptor::CollapseSubMeshes()
     uiFirstPrimitive = xiiMath::Min(uiFirstPrimitive, section.m_uiFirstPrimitive);
     uiLastPrimitive  = xiiMath::Max(uiLastPrimitive, section.m_uiFirstPrimitive + section.m_uiPrimitiveCount);
   }
-
   m_Sections.Clear();
-  xiiMeshSection& section  = m_Sections.ExpandAndGetRef();
+
+  xiiMeshSection& section    = m_Sections.ExpandAndGetRef();
   section.m_uiFirstPrimitive = uiFirstPrimitive == xiiMath::MaxValue<xiiUInt32>() ? 0U : uiFirstPrimitive;
   section.m_uiPrimitiveCount = uiLastPrimitive - section.m_uiFirstPrimitive;
   section.m_uiMaterialIndex  = 0U;
@@ -281,6 +299,7 @@ void xiiMeshResourceDescriptor::ComputeBounds()
   else
   {
     m_MeshBufferDescriptor.ComputeBounds();
+
     m_Bounds = m_MeshBufferDescriptor.GetBounds();
   }
 
@@ -289,7 +308,9 @@ void xiiMeshResourceDescriptor::ComputeBounds()
     for (xiiMeshSection& section : m_Sections)
     {
       if (!section.m_Bounds.IsValid())
+      {
         section.m_Bounds = m_Bounds;
+      }
     }
 
     for (xiiMeshLOD& lod : m_LODs)
@@ -297,7 +318,9 @@ void xiiMeshResourceDescriptor::ComputeBounds()
       for (xiiMeshSection& section : lod.m_Sections)
       {
         if (!section.m_Bounds.IsValid())
+        {
           section.m_Bounds = m_Bounds;
+        }
       }
 
       lod.m_Bounds = MergeBounds(lod.m_Sections, m_Bounds);
@@ -313,6 +336,7 @@ void xiiMeshResourceDescriptor::ComputeBounds()
   hashWriter << m_MeshBufferDescriptor.m_Meshlets.GetCount();
   hashWriter << m_Sections.GetCount();
   hashWriter << m_Materials.GetCount();
+
   m_uiRuntimeHash = hashWriter.GetHashValue();
 }
 
@@ -334,9 +358,11 @@ void xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiUInt32
     for (xiiUInt32 i = 0; i < meshlets.GetCount(); ++i)
     {
       const xiiMeshlet& meshlet = meshlets[i];
+
       if (meshlet.m_uiFirstPrimitive >= section.m_uiFirstPrimitive && meshlet.m_uiFirstPrimitive < uiSectionEnd)
       {
         section.m_uiFirstMeshlet = xiiMath::Min(section.m_uiFirstMeshlet, i);
+
         ++section.m_uiMeshletCount;
       }
     }
@@ -355,15 +381,17 @@ void xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiUInt32
     for (xiiMeshSection& section : lod.m_Sections)
     {
       const xiiUInt32 uiSectionEnd = section.m_uiFirstPrimitive + section.m_uiPrimitiveCount;
-      section.m_uiFirstMeshlet = xiiMath::MaxValue<xiiUInt32>();
-      section.m_uiMeshletCount = 0U;
+      section.m_uiFirstMeshlet     = xiiMath::MaxValue<xiiUInt32>();
+      section.m_uiMeshletCount     = 0U;
 
       for (xiiUInt32 i = 0; i < meshlets.GetCount(); ++i)
       {
         const xiiMeshlet& meshlet = meshlets[i];
+
         if (meshlet.m_uiFirstPrimitive >= section.m_uiFirstPrimitive && meshlet.m_uiFirstPrimitive < uiSectionEnd)
         {
           section.m_uiFirstMeshlet = xiiMath::Min(section.m_uiFirstMeshlet, i);
+
           ++section.m_uiMeshletCount;
         }
       }
@@ -380,7 +408,9 @@ void xiiMeshResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xiiUInt32
     }
 
     if (lod.m_uiFirstMeshlet == xiiMath::MaxValue<xiiUInt32>())
+    {
       lod.m_uiFirstMeshlet = 0U;
+    }
   }
 
   m_UsageFlags.Add(xiiMeshResourceUsageFlags::MeshShaderReady);
@@ -399,6 +429,7 @@ void xiiMeshResourceDescriptor::SetBounds(const xiiBoundingBoxSphere& bounds)
 void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
 {
   inout_stream.WriteVersion(s_uiMeshResourceDescriptorVersion);
+
   inout_stream << m_UsageFlags;
   inout_stream << m_LodMode;
   inout_stream << m_uiStreamingGroup;
@@ -416,6 +447,7 @@ void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
   inout_stream.WriteArray(m_LODs).IgnoreResult();
   inout_stream.WriteArray(m_MorphTargets).IgnoreResult();
   inout_stream.WriteHashTable(m_Bones).IgnoreResult();
+
   m_MeshBufferDescriptor.Serialize(inout_stream).IgnoreResult();
 }
 
@@ -433,6 +465,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
   Clear();
 
   inout_stream.ReadVersion(s_uiMeshResourceDescriptorVersion);
+
   inout_stream >> m_UsageFlags;
   inout_stream >> m_LodMode;
   inout_stream >> m_uiStreamingGroup;

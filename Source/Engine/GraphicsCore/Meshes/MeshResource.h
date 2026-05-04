@@ -124,62 +124,114 @@ struct XII_GRAPHICSCORE_DLL xiiMeshBoneData
 
 /// \brief Authoring and streaming descriptor for xiiMeshResource.
 ///
-/// The descriptor is intentionally GPU-first: sections and LODs are defined in primitive/meshlet
-/// ranges, material slots are handles/paths, and the mesh buffer descriptor contains the packed
-/// vertex/index/meshlet payload that is uploaded to GAL buffers by xiiMeshBufferResource.
+/// The descriptor is intentionally GPU-first, that is, sections and LODs are defined in primitive/meshlet ranges, and material slots are handles/paths.
+/// The mesh buffer descriptor contains the packed vertex/index/meshlet payload that is uploaded to GAL buffers by xiiMeshBufferResource.
 class XII_GRAPHICSCORE_DLL xiiMeshResourceDescriptor
 {
 public:
-  xiiMeshResourceDescriptor();
+  /// \brief Returns a reference to the mesh buffer resource descriptor contained within this mesh resource descriptor.
+  xiiMeshBufferResourceDescriptor& GetMeshBufferDescriptor();
 
-  void Clear();
+  /// \brief Returns a reference to the mesh buffer resource descriptor contained within this mesh resource descriptor.
+  const xiiMeshBufferResourceDescriptor& GetMeshBufferDescriptor() const;
 
-  xiiMeshBufferResourceDescriptor&       MeshBufferDescriptor();
-  const xiiMeshBufferResourceDescriptor& MeshBufferDescriptor() const;
-  void                                   UseExistingMeshBuffer(const xiiMeshBufferResourceHandle& hBuffer);
-  const xiiMeshBufferResourceHandle&     GetExistingMeshBuffer() const;
+  /// \brief Returns a handle to an existing mesh buffer resource that can be used for this mesh resource, or an invalid handle if no existing mesh buffer can be used.
+  const xiiMeshBufferResourceHandle& GetExistingMeshBuffer() const;
 
-  xiiUInt32                    AddMaterialSlot(xiiStringView sPathToMaterial);
-  void                         SetMaterial(xiiUInt32 uiMaterialIndex, xiiStringView sPathToMaterial);
+  /// \brief Returns a reference to the array of material paths contained within this mesh resource descriptor.
   xiiArrayPtr<const xiiString> GetMaterials() const;
 
-  xiiMeshSection&                   AddSection(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiMaterialIndex, xiiUInt32 uiLodIndex = 0U);
-  void                              AddSubMesh(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiMaterialIndex);
+  /// \brief Returns a reference to the array of sections contained within this mesh resource descriptor.
   xiiArrayPtr<const xiiMeshSection> GetSubMeshes() const;
 
-  xiiMeshLOD&                   AddLOD(float fScreenSize, float fMaxDistance = 0.0f);
+  /// \brief Returns a reference to the array of LODs contained within this mesh resource descriptor.
   xiiArrayPtr<const xiiMeshLOD> GetLODs() const;
 
+  /// \brief Returns the bounding volume for this mesh resource, used for culling and LOD selection.
+  const xiiBoundingBoxSphere& GetBounds() const;
+
+public:
+  /// \brief Default constructor, initializes an empty mesh resource descriptor.
+  xiiMeshResourceDescriptor();
+
+  /// \brief Clears all data from the descriptor, resetting it to an empty state.
+  void Clear();
+
+  /// \brief Specifies that the mesh buffer for this mesh resource should be created from the given descriptor, instead of using an existing mesh buffer resource.
+  void UseExistingMeshBuffer(const xiiMeshBufferResourceHandle& hBuffer);
+
+  /// \brief Adds a new material slot to the mesh resource descriptor with the given path, and returns the index of the new material slot.
+  xiiUInt32 AddMaterialSlot(xiiStringView sPathToMaterial);
+
+  /// \brief Sets the material path for the material slot at the given index.
+  ///
+  /// \param uiMaterialIndex Index of the material slot to set, must be less than the number of material slots in the descriptor.
+  /// \param sPathToMaterial Path to the material to set for this material slot.
+  void SetMaterial(xiiUInt32 uiMaterialIndex, xiiStringView sPathToMaterial);
+
+  /// \brief Adds a new section to the mesh resource descriptor with the given properties, and returns a reference to the new section.
+  ///
+  /// \param uiPrimitiveCount Number of primitives in this section, used for rendering and culling.
+  /// \param uiFirstPrimitive Index of the first primitive in this section, used for rendering and culling.
+  /// \param uiMaterialIndex Index into the mesh's material array for the material used by this section, used for rendering.
+  /// \param uiLodIndex Index of the LOD to which this section belongs. If the specified LOD does not exist, it will be created. If uiLodIndex is greater than 0, the section will be added to the specified LOD; otherwise, it will be added as a sub-mesh (section at LOD 0).
+  xiiMeshSection& AddSection(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiMaterialIndex, xiiUInt32 uiLodIndex = 0U);
+
+  /// \brief Adds a new sub-mesh (section at LOD 0) to the mesh resource descriptor with the given properties.
+  ///
+  /// \param uiPrimitiveCount Number of primitives in this sub-mesh, used for rendering and culling.
+  /// \param uiFirstPrimitive Index of the first primitive in this sub-mesh, used for rendering and culling.
+  /// \param uiMaterialIndex Index into the mesh's material array for the material used by this sub-mesh, used for rendering.
+  void AddSubMesh(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiMaterialIndex);
+
+  /// \brief Adds a new LOD to the mesh resource descriptor with the given properties, and returns a reference to the new LOD.
+  ///
+  /// \param fScreenSize Screen size threshold for this LOD, used for LOD selection when m_LodMode is xiiMeshLodSelectionMode::ScreenSize.
+  /// \param fMaxDistance Maximum distance for this LOD, used for LOD selection.
+  ///
+  /// \return Reference to the newly added LOD, which can be further modified (e.g., by adding sections to it).
+  xiiMeshLOD& AddLOD(float fScreenSize, float fMaxDistance = 0.0f);
+
+  /// \brief Collapses all sub-meshes (sections at LOD 0) into a single section, used to optimize meshes that have multiple small sections.
   void CollapseSubMeshes();
+
+  /// \brief Computes the bounding volume for the mesh resource based on the vertex data in the mesh buffer descriptor, used for culling and LOD selection.
   void ComputeBounds();
+
+  /// \brief Builds meshlets for the mesh resource based on the sections and LODs defined in the descriptor, used for rendering with mesh shaders.
+  ///
+  /// \param uiMaxVertices Maximum number of vertices per meshlet, used to control the size of meshlets for rendering.
+  /// \param uiMaxPrimitives Maximum number of primitives per meshlet, used to control the size of meshlets for rendering.
   void BuildMeshlets(xiiUInt32 uiMaxVertices = 64U, xiiUInt32 uiMaxPrimitives = 124U);
 
-  const xiiBoundingBoxSphere& GetBounds() const;
-  void                        SetBounds(const xiiBoundingBoxSphere& bounds);
+  /// \brief Sets the bounding volume for this mesh resource, used for culling and LOD selection.
+  void SetBounds(const xiiBoundingBoxSphere& bounds);
 
+public:
   void      Save(xiiStreamWriter& inout_stream) const;
   xiiResult Save(const char* szFile) const;
   xiiResult Load(xiiStreamReader& inout_stream);
   xiiResult Load(const char* szFile);
 
-  xiiBitflags<xiiMeshResourceUsageFlags> m_UsageFlags       = xiiMeshResourceUsageFlags::Default;
-  xiiEnum<xiiMeshLodSelectionMode>       m_LodMode          = xiiMeshLodSelectionMode::ScreenSize;
-  xiiUInt32                              m_uiStreamingGroup = 0U;
-  xiiUInt32                              m_uiMaxResidentLod = 0U;
-  xiiUInt32                              m_uiRuntimeHash    = 0U;
+public:
+  xiiBitflags<xiiMeshResourceUsageFlags> m_UsageFlags       = xiiMeshResourceUsageFlags::Default;  ///< Usage flags for this mesh resource, used to specify intended usage patterns and GPU feature support.
+  xiiEnum<xiiMeshLodSelectionMode>       m_LodMode          = xiiMeshLodSelectionMode::ScreenSize; ///< LOD selection mode for this mesh resource.
+  xiiUInt32                              m_uiStreamingGroup = 0U;                                  ///< Streaming group index for this mesh resource, used to group meshes for streaming purposes.
+  xiiUInt32                              m_uiMaxResidentLod = 0U;                                  ///< Maximum resident LOD index for this mesh resource, used to control how many LODs are kept in memory when streaming.
+  xiiUInt32                              m_uiRuntimeHash    = 0U;                                  ///< Runtime hash for this mesh resource, used for quick comparisons and lookups at runtime.
 
-  xiiSkeletonResourceHandle                      m_hDefaultSkeleton;
-  xiiHashTable<xiiHashedString, xiiMeshBoneData> m_Bones;
-  xiiHybridArray<xiiMeshMorphTarget, 4>          m_MorphTargets;
-  float                                          m_fMaxBoneVertexOffset = 0.0f;
+  xiiSkeletonResourceHandle                      m_hDefaultSkeleton;            ///< Handle to the default skeleton resource for this mesh, used for skeletal animation when no specific skeleton is assigned.
+  xiiHashTable<xiiHashedString, xiiMeshBoneData> m_Bones;                       ///< Hash table mapping bone names to bone data for this mesh, used for skeletal animation.
+  xiiHybridArray<xiiMeshMorphTarget, 4>          m_MorphTargets;                ///< Array of morph targets for this mesh, used for shape animation.
+  float                                          m_fMaxBoneVertexOffset = 0.0f; ///< Maximum vertex offset caused by bone influences in this mesh, used for bounding volume calculations and culling of skinned meshes.
 
 private:
-  xiiHybridArray<xiiString, 8>      m_Materials;
-  xiiHybridArray<xiiMeshSection, 8> m_Sections;
-  xiiHybridArray<xiiMeshLOD, 4>     m_LODs;
-  xiiMeshBufferResourceDescriptor   m_MeshBufferDescriptor;
-  xiiMeshBufferResourceHandle       m_hMeshBuffer;
-  xiiBoundingBoxSphere              m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiHybridArray<xiiString, 8>      m_Materials;                                    ///< Array of material paths for this mesh, used to reference materials for rendering.
+  xiiHybridArray<xiiMeshSection, 8> m_Sections;                                     ///< Array of mesh sections (sub-meshes) for this mesh, used for rendering and culling.
+  xiiHybridArray<xiiMeshLOD, 4>     m_LODs;                                         ///< Array of LODs for this mesh, used for LOD selection and rendering.
+  xiiMeshBufferResourceDescriptor   m_MeshBufferDescriptor;                         ///< Descriptor for the mesh buffer resource associated with this mesh, used to define the vertex/index/meshlet data for this mesh.
+  xiiMeshBufferResourceHandle       m_hMeshBuffer;                                  ///< Handle to the mesh buffer resource associated with this mesh, used to reference the GPU buffers for rendering.
+  xiiBoundingBoxSphere              m_Bounds = xiiBoundingBoxSphere::MakeInvalid(); ///< Bounding volume for this mesh, used for culling and LOD selection.
 };
 
 class XII_GRAPHICSCORE_DLL xiiMeshResource final : public xiiResource
