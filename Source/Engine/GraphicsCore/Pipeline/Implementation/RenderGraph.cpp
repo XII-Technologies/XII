@@ -985,7 +985,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       // Emit pre-barriers (split-bar ends + immediate barriers).
       if (!compiledPass.m_PreBarrierIndices.IsEmpty())
       {
-        xiiSmallArray<xiiGALStateTransitionDescription, 8> transitions;
+        xiiTemporaryHybridArray<xiiGALStateTransitionDescription, 8> transitions;
 
         for (xiiUInt32 uiBarrierIndex : compiledPass.m_PreBarrierIndices)
         {
@@ -1082,7 +1082,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       // Emit split-barrier begins (post-pass).
       if (!compiledPass.m_PostBarrierBeginIndices.IsEmpty())
       {
-        xiiSmallArray<xiiGALStateTransitionDescription, 8> transitions;
+        xiiTemporaryHybridArray<xiiGALStateTransitionDescription, 8> transitions;
 
         for (xiiUInt32 uiBarrierIndex : compiledPass.m_PostBarrierBeginIndices)
         {
