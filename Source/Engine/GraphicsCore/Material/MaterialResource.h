@@ -118,6 +118,47 @@ struct XII_GRAPHICSCORE_DLL xiiMaterialFeatureFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiMaterialFeatureFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialFeatureFlags);
 
+struct XII_GRAPHICSCORE_DLL xiiMaterialTextureSlot
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    BaseColor,
+    Normal,
+    MetallicRoughness,
+    Occlusion,
+    Emissive,
+    Height,
+    ClearCoat,
+    Transmission,
+
+    ENUM_COUNT,
+
+    Default = BaseColor
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMaterialTextureSlot);
+
+struct XII_GRAPHICSCORE_DLL xiiMaterialRuntimeState
+{
+  xiiEnum<xiiMaterialShadingModel>     m_ShadingModel = xiiMaterialShadingModel::Lit;
+  xiiEnum<xiiMaterialBlendMode>        m_BlendMode    = xiiMaterialBlendMode::Opaque;
+  xiiEnum<xiiMaterialAlphaMode>        m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
+  xiiBitflags<xiiMaterialFeatureFlags> m_FeatureFlags = xiiMaterialFeatureFlags::Default;
+
+  xiiUInt32 m_uiRuntimeHash = 0U;
+  xiiUInt32 m_uiPipelineKey = 0U;
+  xiiUInt32 m_uiTextureMask = 0U;
+  xiiInt16  m_iSortPriority = 0;
+
+  XII_ALWAYS_INLINE bool IsMasked() const { return m_AlphaMode == xiiMaterialAlphaMode::Mask || m_BlendMode == xiiMaterialBlendMode::Masked; }
+  XII_ALWAYS_INLINE bool IsTranslucent() const { return m_AlphaMode == xiiMaterialAlphaMode::Blend || m_BlendMode == xiiMaterialBlendMode::Translucent || m_BlendMode == xiiMaterialBlendMode::Additive || m_BlendMode == xiiMaterialBlendMode::Modulate; }
+  XII_ALWAYS_INLINE bool IsTwoSided() const { return m_FeatureFlags.IsSet(xiiMaterialFeatureFlags::TwoSided); }
+  XII_ALWAYS_INLINE bool UsesTexture(xiiMaterialTextureSlot::Enum slot) const { return (m_uiTextureMask & (1U << static_cast<xiiUInt8>(slot))) != 0U; }
+};
+
 struct xiiMaterialResourceDescriptor
 {
   struct Parameter
@@ -147,6 +188,7 @@ struct xiiMaterialResourceDescriptor
   void Clear();
 
   void      ApplyPbrParameterDefaults(bool bOnlyIfMissing = true);
+  xiiMaterialRuntimeState BuildRuntimeState() const;
   xiiUInt32 ComputeRuntimeHash() const;
   void      RecomputeRuntimeHash();
 
@@ -217,7 +259,10 @@ public:
   xiiEnum<xiiMaterialBlendMode>    GetBlendMode() const;
   xiiEnum<xiiMaterialAlphaMode>    GetAlphaMode() const;
   xiiBitflags<xiiMaterialFeatureFlags> GetFeatureFlags() const;
+  const xiiMaterialRuntimeState& GetRuntimeState() const;
   xiiUInt32 GetRuntimeHash() const;
+  xiiUInt32 GetTextureMask() const;
+  bool      IsTranslucent() const;
 
   void       SetParameter(const xiiHashedString& sName, const xiiVariant& value);
   void       SetParameter(xiiStringView sName, const xiiVariant& value);
@@ -261,6 +306,7 @@ private:
 
   xiiMaterialResourceDescriptor m_LoadingDescription; // stores the state at loading, such that SetParameter etc. calls can be reset later
   xiiMaterialResourceDescriptor m_Description;
+  xiiMaterialRuntimeState       m_RuntimeState;
 
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, MaterialResource);
 
@@ -269,6 +315,7 @@ private:
   void                                           OnResourceEvent(const xiiResourceEvent& resourceEvent);
 
   void AddPermutationVariable(xiiStringView sName, xiiStringView sValue);
+  void UpdateRuntimeState();
 
   xiiAtomicInteger32 m_iLastModified;
   xiiAtomicInteger32 m_iLastConstantsModified;
