@@ -842,7 +842,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
       const xiiEnum<xiiGALResourceFormat>&   format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
       const xiiGALResourceFormatDescription& rtFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
-      XII_GAL_DEVICE_CHECK(rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+      XII_GAL_DEVICE_CHECK(rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALResourceFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, xiiArgEnum(format));
     }
 
     if (!subpass.m_ResolveAttachments.IsEmpty())
@@ -878,7 +878,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
         const xiiEnum<xiiGALResourceFormat>&   format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
         const xiiGALResourceFormatDescription& depthFormatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
-        XII_GAL_DEVICE_CHECK(depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+        XII_GAL_DEVICE_CHECK(depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, xiiArgEnum(format));
       }
     }
 
@@ -939,7 +939,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
         {
           // If pResolveAttachments is not NULL, each resolve attachment that is not VK_ATTACHMENT_UNUSED must have the same VkFormat as its corresponding color attachment.
           // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkSubpassDescription-pResolveAttachments-00850
-          XII_GAL_DEVICE_CHECK(false, "The format ({0}) of render target attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding resolve attachment at index {5}.", description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format.GetValue(), attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, description.m_Attachments[resolveAttacmentReference.m_uiAttachmentIndex].m_Format.GetValue(), resolveAttacmentReference.m_uiAttachmentIndex);
+          XII_GAL_DEVICE_CHECK(false, "The format ({0}) of render target attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding resolve attachment at index {5}.", xiiArgEnum(description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format), attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, xiiArgEnum(description.m_Attachments[resolveAttacmentReference.m_uiAttachmentIndex].m_Format), resolveAttacmentReference.m_uiAttachmentIndex);
         }
       }
     }
@@ -968,7 +968,7 @@ xiiSharedPtr<xiiGALRenderPass> xiiGALDevice::CreateRenderPass(const xiiGALRender
 
         if (depthResolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && depthStencilAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format != description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format)
         {
-          XII_GAL_DEVICE_CHECK(false, "The format ({0}) of depth-stencil attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding depth-stencil resolve attachment at index {5}.", description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format.GetValue(), depthStencilAttachmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex, description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format.GetValue(), depthResolveAttacmentReference.m_uiAttachmentIndex);
+          XII_GAL_DEVICE_CHECK(false, "The format ({0}) of depth-stencil attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding depth-stencil resolve attachment at index {5}.", xiiArgEnum(description.m_Attachments[depthStencilAttachmentReference.m_uiAttachmentIndex].m_Format), depthStencilAttachmentReference.m_uiAttachmentIndex, uiDepthStencilAttachmentIndex, uiSubPassIndex, xiiArgEnum(description.m_Attachments[depthResolveAttacmentReference.m_uiAttachmentIndex].m_Format), depthResolveAttacmentReference.m_uiAttachmentIndex);
         }
       }
     }
@@ -1050,7 +1050,7 @@ xiiSharedPtr<xiiGALFramebuffer> xiiGALDevice::CreateFramebuffer(const xiiGALFram
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a VkFormat value that matches the VkFormat specified by the corresponding VkAttachmentDescription in renderPass.
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00880
-    XII_GAL_DEVICE_CHECK(viewDescription.m_Format == textureDescription.m_Format, "The format ({0}) of attachment {1} does not match the format ({2}) defined by the render pass for the same attachment.", viewDescription.m_Format.GetValue(), uiAttachmentIndex, textureDescription.m_Format.GetValue());
+    XII_GAL_DEVICE_CHECK(viewDescription.m_Format == textureDescription.m_Format, "The format ({0}) of attachment {1} does not match the format ({2}) defined by the render pass for the same attachment.", xiiArgEnum(viewDescription.m_Format), uiAttachmentIndex, xiiArgEnum(textureDescription.m_Format));
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a samples value that matches the samples value specified by the corresponding VkAttachmentDescription in renderPass
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00881
@@ -1434,7 +1434,7 @@ xiiSharedPtr<xiiGALGraphicsPipelineState> xiiGALDevice::CreateGraphicsPipelineSt
 
   if (description.m_GraphicsPipeline.m_ShadingRateFlags.IsAnyFlagSet())
   {
-    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "Shading rate flags ({}) require VariableRateShading device feature.", description.m_GraphicsPipeline.m_ShadingRateFlags.GetValue());
+    XII_GAL_DEVICE_CHECK(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "Shading rate flags ({}) require VariableRateShading device feature.", xiiArgEnum(description.m_GraphicsPipeline.m_ShadingRateFlags));
 
     if (m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SampleMask))
     {
@@ -1507,7 +1507,7 @@ xiiSharedPtr<xiiGALRayTracingPipelineState> xiiGALDevice::CreateRayTracingPipeli
     XII_GAL_DEVICE_CHECK(!group.m_sName.IsEmpty(), "GeneralShaders[{}].sName must have a non-empty name.", i);
     XII_GAL_DEVICE_CHECK(!groupNames.Contains(group.m_sName.GetView()), "GeneralShaders[{}].sName has group name ('{}') that has already been assigned to another group. All group names must be unique.", i, group.m_sName);
     XII_GAL_DEVICE_CHECK(group.m_pShader != nullptr, "GeneralShaders[{}].pShader must not be null.", i);
-    XII_GAL_DEVICE_CHECK(group.m_pShader->GetDescription().m_ShaderType.IsStrictlyAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::Callable), "Shader type {} is not a valid type for ray tracing general shader.", group.m_pShader->GetDescription().m_ShaderType.GetValue());
+    XII_GAL_DEVICE_CHECK(group.m_pShader->GetDescription().m_ShaderType.IsStrictlyAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::Callable), "Shader type {} is not a valid type for ray tracing general shader.", xiiArgEnum(group.m_pShader->GetDescription().m_ShaderType));
 
     groupNames.Insert(group.m_sName);
   }

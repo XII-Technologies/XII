@@ -252,16 +252,22 @@ void xiiGALCommandList::Reset()
 void xiiGALCommandList::Submit(xiiGALCommandList* pSecondaryCommandList)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const char* szRecordingEnumToString[] = {
+    "Reset",
+    "Recording",
+    "Ended",
+  };
+
   XII_ASSERT_DEV(pSecondaryCommandList != nullptr, "xiiGALCommandList::Submit(): secondary list pointer is null.");
 
   const xiiGALCommandListCreationDescription& description  = pSecondaryCommandList->GetDescription();
   const bool                                  bIsSecondary = description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
   const bool                                  bIsPrimary   = m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary);
 
-  XII_ASSERT_DEV(bIsSecondary, "Submit(): provided list must be flagged Secondary (got Flags={0}).", description.m_Flags.GetValue());
+  XII_ASSERT_DEV(bIsSecondary, "Submit(): provided list must be flagged Secondary (got Flags={0}).", xiiArgEnum(description.m_Flags));
   XII_ASSERT_DEV(!bIsPrimary, "Submit(): cannot inject a secondary into another secondary; primary required.");
-  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary command list must be Recording (current state={0}).", static_cast<xiiUInt8>(m_RecordingState));
-  XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Ended, "Submit(): secondary command list must have been Ended before submission (current state={0}).", static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState()));
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "Submit(): primary command list must be Recording (current state={0}).", szRecordingEnumToString[static_cast<xiiUInt8>(m_RecordingState)]);
+  XII_ASSERT_DEV(pSecondaryCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Ended, "Submit(): secondary command list must have been Ended before submission (current state={0}).", szRecordingEnumToString[static_cast<xiiUInt8>(pSecondaryCommandList->GetRecordingState())]);
 #endif
 
   ++m_CommandListStatistics.m_CommandListCounters.m_uiSubmit;
@@ -2052,8 +2058,8 @@ void xiiGALCommandList::SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseR
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
-  XII_ASSERT_DEV(xiiMath::IsPowerOf2(primitiveCombinerFlags.GetValue()), "Primitive combiner flags ({}) must represent a single combiner mode.", primitiveCombinerFlags.GetValue());
-  XII_ASSERT_DEV(xiiMath::IsPowerOf2(textureCombinerFlags.GetValue()), "Texture combiner flags ({}) must represent a single combiner mode.", textureCombinerFlags.GetValue());
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(primitiveCombinerFlags.GetValue()), "Primitive combiner flags ({}) must represent a single combiner mode.", xiiArgEnum(primitiveCombinerFlags));
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(textureCombinerFlags.GetValue()), "Texture combiner flags ({}) must represent a single combiner mode.", xiiArgEnum(textureCombinerFlags));
   XII_ASSERT_DEV(m_pDevice->GetGraphicsDeviceAdapterProperties().m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "xiiGALCommandList::SetShadingRate requires VariableRateShading feature support on the device.");
 
   const xiiGALShadingRateProperties&                  shadingRateProperties = m_pDevice->GetGraphicsDeviceAdapterProperties().m_ShadingRateProperties;
@@ -2062,7 +2068,7 @@ void xiiGALCommandList::SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseR
 
   if (shadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::PerPrimitive))
   {
-    XII_ASSERT_DEV(primitiveCombinerFlags.IsAnySet(primitiveCombinerFlags), "Primitive combiner flags ({}) must contain at least one primitive combiner flag when the device supports per-primitive shading rates.", primitiveCombinerFlags.GetValue());
+    XII_ASSERT_DEV(primitiveCombinerFlags.IsAnySet(primitiveCombinerFlags), "Primitive combiner flags ({}) must contain at least one primitive combiner flag when the device supports per-primitive shading rates.", xiiArgEnum(primitiveCombinerFlags));
   }
   else
   {
@@ -2071,7 +2077,7 @@ void xiiGALCommandList::SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseR
 
   if (shadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureBased))
   {
-    XII_ASSERT_DEV(textureCombinerFlags.IsAnySet(textureCombinerFlags), "Texture combiner flags ({}) must contain at least one texture combiner flag when the device supports texture-based shading rates.", textureCombinerFlags.GetValue());
+    XII_ASSERT_DEV(textureCombinerFlags.IsAnySet(textureCombinerFlags), "Texture combiner flags ({}) must contain at least one texture combiner flag when the device supports texture-based shading rates.", xiiArgEnum(textureCombinerFlags));
   }
   else
   {
@@ -2087,7 +2093,7 @@ void xiiGALCommandList::SetShadingRate(xiiBitflags<xiiGALShadingRateFlags> baseR
       break;
     }
   }
-  XII_ASSERT_DEV(bIsSupportedRate, "xiiGALCommandList::SetShadingRate: Base shading rate flags ({}) are not supported by the device.", baseRateFlags.GetValue());
+  XII_ASSERT_DEV(bIsSupportedRate, "xiiGALCommandList::SetShadingRate: Base shading rate flags ({}) are not supported by the device.", xiiArgEnum(baseRateFlags));
 #endif
 
   SetShadingRatePlatform(baseRateFlags, primitiveCombinerFlags, textureCombinerFlags);
@@ -2138,7 +2144,7 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
         if (!queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
         {
           bResult = false;
-          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueFlags.GetValue());
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, xiiArgEnum(queueFlags));
         }
       }
       break;
@@ -2153,7 +2159,7 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
         if (!queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
         {
           bResult = false;
-          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueFlags.GetValue());
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, xiiArgEnum(queueFlags));
         }
       }
       break;
@@ -2172,7 +2178,7 @@ bool xiiGALCommandList::VerifyResourceState(xiiBitflags<xiiGALResourceStateFlags
         if (!queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
         {
           bResult = false;
-          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, queueFlags.GetValue());
+          XII_ASSERT_DEV("{} contains state '{}' that is not supported in {} queue.", szParameterName, state, xiiArgEnum(queueFlags));
         }
       }
       break;
@@ -2210,7 +2216,7 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
   {
     if (stateFlags.IsAnySet(xiiGALResourceStateFlags::VertexBuffer | xiiGALResourceStateFlags::ConstantBuffer | xiiGALResourceStateFlags::IndexBuffer | xiiGALResourceStateFlags::StreamOut | xiiGALResourceStateFlags::IndirectArgument))
     {
-      xiiLog::Error("State {} is invalid: states xiiGALResourceStateFlags::VertexBuffer, xiiGALResourceStateFlags::ConstantBuffer, xiiGALResourceStateFlags::IndexBuffer, xiiGALResourceStateFlags::StreamOut, xiiGALResourceStateFlags::IndirectArgument are not applicable to textures.", stateFlags.GetValue());
+      xiiLog::Error("State {} is invalid: states xiiGALResourceStateFlags::VertexBuffer, xiiGALResourceStateFlags::ConstantBuffer, xiiGALResourceStateFlags::IndexBuffer, xiiGALResourceStateFlags::StreamOut, xiiGALResourceStateFlags::IndirectArgument are not applicable to textures.", xiiArgEnum(stateFlags));
       return false;
     }
   }
@@ -2218,7 +2224,7 @@ bool xiiGALCommandList::VerifyResourceStates(xiiBitflags<xiiGALResourceStateFlag
   {
     if (stateFlags.IsAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::Present | xiiGALResourceStateFlags::ShadingRate | xiiGALResourceStateFlags::InputAttachment))
     {
-      xiiLog::Error("State {} is invalid: states xiiGALResourceStateFlags::RenderTarget, xiiGALResourceStateFlags::DepthWrite, xiiGALResourceStateFlags::DepthRead, xiiGALResourceStateFlags::ResolveSource, xiiGALResourceStateFlags::ResolveDestination, xiiGALResourceStateFlags::Present, xiiGALResourceStateFlags::ShadingRate, xiiGALResourceStateFlags::InputAttachment are not applicable to buffers.", stateFlags.GetValue());
+      xiiLog::Error("State {} is invalid: states xiiGALResourceStateFlags::RenderTarget, xiiGALResourceStateFlags::DepthWrite, xiiGALResourceStateFlags::DepthRead, xiiGALResourceStateFlags::ResolveSource, xiiGALResourceStateFlags::ResolveDestination, xiiGALResourceStateFlags::Present, xiiGALResourceStateFlags::ShadingRate, xiiGALResourceStateFlags::InputAttachment are not applicable to buffers.", xiiArgEnum(stateFlags));
       return false;
     }
   }
@@ -2233,7 +2239,7 @@ void xiiGALCommandList::VerifyBufferState(const xiiGALBuffer* pBuffer, xiiBitfla
 
   if (pBuffer->IsInKnownState() && !pBuffer->CheckState(requiredState))
   {
-    xiiLog::Error("{} requires buffer '{}' to be transitioned to {} state. Actual buffer state: {}. Use appropriate state transition flags or explicitly transition the buffer using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBuffer->GetDebugName(), requiredState.GetValue(), pBuffer->GetResourceState().GetValue());
+    xiiLog::Error("{} requires buffer '{}' to be transitioned to {} state. Actual buffer state: {}. Use appropriate state transition flags or explicitly transition the buffer using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBuffer->GetDebugName(), xiiArgEnum(requiredState), xiiArgEnum(pBuffer->GetResourceState()));
   }
 }
 
@@ -2244,7 +2250,7 @@ void xiiGALCommandList::VerifyTextureState(const xiiGALTexture* pTexture, xiiBit
 
   if (pTexture->IsInKnownState() && !pTexture->CheckState(requiredState))
   {
-    xiiLog::Error("{} requires texture '{}' to be transitioned to {} state. Actual texture state: {}. Use appropriate state transition flags or explicitly transition the texture using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTexture->GetDebugName(), requiredState.GetValue(), pTexture->GetResourceState().GetValue());
+    xiiLog::Error("{} requires texture '{}' to be transitioned to {} state. Actual texture state: {}. Use appropriate state transition flags or explicitly transition the texture using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTexture->GetDebugName(), xiiArgEnum(requiredState), xiiArgEnum(pTexture->GetResourceState()));
   }
 }
 
@@ -2255,7 +2261,7 @@ void xiiGALCommandList::VerifyBottomLevelASState(const xiiGALBottomLevelAS* pBot
 
   if (pBottomLevelAS->IsInKnownState() && !pBottomLevelAS->CheckState(requiredState))
   {
-    xiiLog::Error("{} requires bottom-level acceleration structure '{}' to be transitioned to {} state. Actual bottom-level acceleration structure state: {}. Use appropriate state transition flags or explicitly transition the bottom-level acceleration structure using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBottomLevelAS->GetDebugName(), requiredState.GetValue(), pBottomLevelAS->GetResourceState().GetValue());
+    xiiLog::Error("{} requires bottom-level acceleration structure '{}' to be transitioned to {} state. Actual bottom-level acceleration structure state: {}. Use appropriate state transition flags or explicitly transition the bottom-level acceleration structure using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBottomLevelAS->GetDebugName(), xiiArgEnum(requiredState), xiiArgEnum(pBottomLevelAS->GetResourceState()));
   }
 }
 
@@ -2266,7 +2272,7 @@ void xiiGALCommandList::VerifyTopLevelASState(const xiiGALTopLevelAS* pTopLevelA
 
   if (pTopLevelAS->IsInKnownState() && !pTopLevelAS->CheckState(requiredState))
   {
-    xiiLog::Error("{} requires top-level acceleration structure '{}' to be transitioned to {} state. Actual top-level acceleration structure state: {}. Use appropriate state transition flags or explicitly transition the top-level acceleration structure using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTopLevelAS->GetDebugName(), requiredState.GetValue(), pTopLevelAS->GetResourceState().GetValue());
+    xiiLog::Error("{} requires top-level acceleration structure '{}' to be transitioned to {} state. Actual top-level acceleration structure state: {}. Use appropriate state transition flags or explicitly transition the top-level acceleration structure using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTopLevelAS->GetDebugName(), xiiArgEnum(requiredState), xiiArgEnum(pTopLevelAS->GetResourceState()));
   }
 }
 

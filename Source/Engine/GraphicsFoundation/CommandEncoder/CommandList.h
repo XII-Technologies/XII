@@ -1517,6 +1517,8 @@ public:
     Reset = 0U, ///< The command list has been reset and is ready to be recorded again.
     Recording,  ///< The command list is currently being recorded.
     Ended,      ///< The recording of the command list has ended.
+
+    ENUM_COUNT,
   };
 
   XII_ALWAYS_INLINE void AssertRenderingThread() const { XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread."); };

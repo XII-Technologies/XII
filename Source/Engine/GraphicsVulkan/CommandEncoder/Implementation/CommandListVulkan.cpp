@@ -3598,7 +3598,7 @@ void xiiGALCommandListVulkan::TransitionBufferState(xiiGALBufferVulkan* pBufferV
   {
     if (pBufferVulkan->IsInKnownState() && pBufferVulkan->GetResourceState() != oldState)
     {
-      xiiLog::Error("The state ({}) of buffer '{}' does not match the old state ({}) specified by the barrier.", pBufferVulkan->GetResourceState().GetValue(), pBufferVulkan->GetDebugName(), oldState.GetValue());
+      xiiLog::Error("The state ({}) of buffer '{}' does not match the old state ({}) specified by the barrier.", xiiArgEnum(pBufferVulkan->GetResourceState()), pBufferVulkan->GetDebugName(), xiiArgEnum(oldState));
     }
   }
 
@@ -3659,7 +3659,7 @@ void xiiGALCommandListVulkan::TransitionTextureState(xiiGALTextureVulkan* pTextu
   {
     if (pTextureVulkan->IsInKnownState() && pTextureVulkan->GetResourceState() != oldState)
     {
-      xiiLog::Error("The state ({}) of texture '{}' does not match the old state ({}) specified by the barrier.", pTextureVulkan->GetResourceState().GetValue(), pTextureVulkan->GetDebugName(), oldState.GetValue());
+      xiiLog::Error("The state ({}) of texture '{}' does not match the old state ({}) specified by the barrier.", xiiArgEnum(pTextureVulkan->GetResourceState()), pTextureVulkan->GetDebugName(), xiiArgEnum(oldState));
     }
   }
 
@@ -3755,7 +3755,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyBufferState(xiiGALBufferVulkan* 
   {
     if (pBufferVulkan->IsInKnownState() && !pBufferVulkan->CheckState(requiredState))
     {
-      xiiLog::Error("{} requires buffer '{}' to be transitioned to {} state. Actual buffer state: {}. Use appropriate transition flags or explicitly transition the buffer using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBufferVulkan->GetDebugName(), requiredState.GetValue(), pBufferVulkan->GetResourceState().GetValue());
+      xiiLog::Error("{} requires buffer '{}' to be transitioned to {} state. Actual buffer state: {}. Use appropriate transition flags or explicitly transition the buffer using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pBufferVulkan->GetDebugName(), xiiArgEnum(requiredState), xiiArgEnum(pBufferVulkan->GetResourceState()));
     }
   }
 #else
@@ -3782,7 +3782,7 @@ void xiiGALCommandListVulkan::TransitionOrVerifyTextureState(xiiGALTextureVulkan
   {
     if (pTextureVulkan->IsInKnownState() && !pTextureVulkan->CheckState(requiredState))
     {
-      xiiLog::Error("{} requires texture '{}' to be transitioned to {} state. Actual texture state: {}. Use appropriate transition flags or explicitly transition the texture using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTextureVulkan->GetDebugName(), requiredState.GetValue(), pTextureVulkan->GetResourceState().GetValue());
+      xiiLog::Error("{} requires texture '{}' to be transitioned to {} state. Actual texture state: {}. Use appropriate transition flags or explicitly transition the texture using xiiGALCommandList::TransitionResourceStates() method.", szOperationName, pTextureVulkan->GetDebugName(), xiiArgEnum(requiredState), xiiArgEnum(pTextureVulkan->GetResourceState()));
     }
   }
 #else

@@ -919,9 +919,13 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     }
   }
 
+  const bool bEnableGpuProfiling = (pProfiler != nullptr) && m_LastCompileSettings.m_bEnableGPUProfiling;
+
   // Execute per queue submission.
-  for (const xiiRGQueueSubmission& submission : m_QueueSubmissions)
+  for (xiiUInt32 uiSubmissionIndex = 0U; uiSubmissionIndex < m_QueueSubmissions.GetCount(); ++uiSubmissionIndex)
   {
+    const xiiRGQueueSubmission& submission = m_QueueSubmissions[uiSubmissionIndex];
+
     xiiGALCommandQueue* pQueue = pDevice->GetCommandQueue(submission.m_QueueFlags);
     XII_ASSERT_DEV(pQueue != nullptr, "Could not obtain a command queue.");
 
@@ -932,6 +936,11 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
     XII_ASSERT_ALWAYS(pCommandList != nullptr, "Failed to create command list.");
 
     pCommandList->Begin();
+
+    if (bEnableGpuProfiling)
+    {
+      pProfiler->OnGraphBegin(*pCommandList, uiSubmissionIndex);
+    }
 
     // Emit cross-queue waits.
     for (xiiUInt32 uiWaitIndex = 0U; uiWaitIndex < submission.m_WaitFences.GetCount(); ++uiWaitIndex)
@@ -956,17 +965,27 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         if (resourceEntry.m_bIsTexture)
         {
           resolvedTextures[uiResourceIndex] = pResourceCache->AcquireTexture(resourceEntry.m_TextureDescription);
+
+          if (resolvedTextures[uiResourceIndex])
+          {
+            resolvedTextures[uiResourceIndex]->SetDebugName(resourceEntry.m_sName);
+          }
         }
         else
         {
           resolvedBuffers[uiResourceIndex] = pResourceCache->AcquireBuffer(resourceEntry.m_BufferDescription);
+
+          if (resolvedBuffers[uiResourceIndex])
+          {
+            resolvedBuffers[uiResourceIndex]->SetDebugName(resourceEntry.m_sName);
+          }
         }
       }
 
       // Emit pre-barriers (split-bar ends + immediate barriers).
       if (!compiledPass.m_PreBarrierIndices.IsEmpty())
       {
-        xiiSmallArray<xiiGALStateTransitionDescription, 8> transitions;
+        xiiTemporaryHybridArray<xiiGALStateTransitionDescription, 8> transitions;
 
         for (xiiUInt32 uiBarrierIndex : compiledPass.m_PreBarrierIndices)
         {
@@ -1022,7 +1041,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       }
 
       // Profiler begin.
-      if (pProfiler && m_LastCompileSettings.m_bEnableGPUProfiling)
+      if (bEnableGpuProfiling)
       {
         pProfiler->OnPassBegin(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
       }
@@ -1041,7 +1060,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       compiledPass.m_ExecuteDelegate(context);
 
       // Profiler end.
-      if (pProfiler && m_LastCompileSettings.m_bEnableGPUProfiling)
+      if (bEnableGpuProfiling)
       {
         pProfiler->OnPassEnd(*pCommandList, compiledPass.m_sName, compiledPass.m_uiPassIndex);
       }
@@ -1063,7 +1082,7 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       // Emit split-barrier begins (post-pass).
       if (!compiledPass.m_PostBarrierBeginIndices.IsEmpty())
       {
-        xiiSmallArray<xiiGALStateTransitionDescription, 8> transitions;
+        xiiTemporaryHybridArray<xiiGALStateTransitionDescription, 8> transitions;
 
         for (xiiUInt32 uiBarrierIndex : compiledPass.m_PostBarrierBeginIndices)
         {
@@ -1121,13 +1140,18 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
       pCommandList->EnqueueSignal(submission.m_pSignalFence.Borrow(), submission.m_uiSignalValue);
     }
 
+    if (bEnableGpuProfiling)
+    {
+      pProfiler->OnGraphEnd(*pCommandList, uiSubmissionIndex);
+    }
+
     pCommandList->End();
 
     pQueue->Submit(pCommandList);
   } // per-submission loop
 
   // Notify profiler.
-  if (pProfiler)
+  if (bEnableGpuProfiling)
   {
     pProfiler->OnFrameEnd(m_uiFrameIndex);
   }

@@ -545,9 +545,6 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
       // Pass the view's per-view profiler into the executor so every pass gets Duration bracketed.
       const xiiResult executeResult = pGraph->Execute(pDevice, viewDetail.m_pView.Borrow(), &blackboard, &resourceCache, &viewDetail.m_pView->GetProfiler());
       XII_ASSERT_DEV(executeResult.Succeeded(), "Render graph execution failed for view '{0}'.", viewDetail.m_pView->GetName());
-
-      // Tick the profiler so it advances its ring and schedules readback on the oldest slot.
-      viewDetail.m_pView->GetProfiler().OnFrameEnd(uiFrameIndex);
     }
   }
 }

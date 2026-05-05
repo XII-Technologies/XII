@@ -189,7 +189,7 @@ xiiSharedPtr<xiiGALTextureView> xiiGALTexture::CreateView(xiiGALTextureViewCreat
       XII_GAL_TEXTURE_CHECK(false, "Unexpected texture dimension.");
   }
 
-  XII_GAL_TEXTURE_CHECK(!xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
+  XII_GAL_TEXTURE_CHECK(!xiiGALTextureUtilities::GetResourceFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", xiiArgEnum(description.m_Format));
 
   if (description.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
   {
