@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 // XII Engine - GPU lighting data shared by clustered lighting passes.
 #pragma once
 
