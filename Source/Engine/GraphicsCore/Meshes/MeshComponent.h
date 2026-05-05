@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include <Foundation/Types/SharedPtr.h>
 #include <GraphicsCore/Components/Render/RenderComponent.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
-#include <Foundation/Types/SharedPtr.h>
 
 class xiiGALBuffer;
 class xiiMeshResource;
