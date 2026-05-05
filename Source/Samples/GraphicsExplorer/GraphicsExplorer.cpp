@@ -451,12 +451,12 @@ private:
 
     // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
-    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::RenderTarget);
+    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::CopyDestination);
 
     textureDescription.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
     textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
 
-    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::DepthWrite);
+    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::CopyDestination);
 
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }
@@ -484,12 +484,11 @@ private:
   {
     // Declare that we will read from the offscreen texture created in the previous pass.
     // This registers a read dependency on that pass, so it will be scheduled after it and the texture will be transitioned to the correct state before we read from it.
-    data.m_hOffScreenTexture = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::RenderTarget);
+    data.m_hOffScreenTexture = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::CopySource);
     data.m_hDepthTexture     = builder.ReadTexture("DepthStencil", xiiGALResourceStateFlags::DepthRead);
 
     // We also need to get the back buffer texture from the swap chain as a render target.
-    data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::RenderTarget);
-    data.m_hBackBufferTexture = builder.WriteTexture(data.m_hBackBufferTexture, xiiGALResourceStateFlags::RenderTarget);
+    data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::CopyDestination);
 
     // This pass writes to the back buffer, so we need to declare that it has side effects to prevent it from being culled.
     builder.SetPassSideEffects(true);
