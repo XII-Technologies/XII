@@ -29,7 +29,7 @@ namespace
 {
   static xiiVec3 NormalizeOrFallback(xiiVec3 vDirection, const xiiVec3& vFallback)
   {
-    vDirection.NormalizeIfNotZero(vFallback);
+    vDirection.NormalizeIfNotZero(vFallback).IgnoreResult();
     return vDirection;
   }
 

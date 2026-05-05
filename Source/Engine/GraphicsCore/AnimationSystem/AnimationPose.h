@@ -26,8 +26,8 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationPose
   void AdditiveBlend(const xiiAnimationPose& basePose, const xiiAnimationPose& additivePose, float fWeight);
   void LayeredBlend(const xiiAnimationPose& basePose, const xiiAnimationPose& layerPose, const xiiSkeletonResource& skeleton, xiiUInt16 uiRootJoint, float fWeight);
 
-  xiiHybridArray<xiiTransform, 96> m_LocalTransforms;
-  xiiHybridArray<xiiMat4, 96>      m_ModelTransforms;
-  xiiHybridArray<xiiMat4, 96>      m_SkinningMatrices;
-  xiiAnimationRootMotion           m_RootMotion;
+  xiiDynamicArray<xiiTransform> m_LocalTransforms;
+  xiiDynamicArray<xiiMat4>      m_ModelTransforms;
+  xiiDynamicArray<xiiMat4>      m_SkinningMatrices;
+  xiiAnimationRootMotion        m_RootMotion;
 };

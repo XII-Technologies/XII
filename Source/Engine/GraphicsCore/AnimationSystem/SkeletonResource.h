@@ -48,11 +48,11 @@ struct XII_GRAPHICSCORE_DLL xiiSkeletonResourceDescriptor
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  xiiHybridArray<xiiSkeletonJoint, 96> m_Joints;
-  xiiBoundingBoxSphere                 m_Bounds        = xiiBoundingBoxSphere::MakeInvalid();
-  xiiUInt16                            m_uiRootJoint   = xiiMath::MaxValue<xiiUInt16>();
-  xiiUInt32                            m_uiRuntimeHash = 0U;
-  xiiDynamicArray<xiiUInt8>            m_OzzSkeletonData;
+  xiiDynamicArray<xiiSkeletonJoint> m_Joints;
+  xiiBoundingBoxSphere              m_Bounds        = xiiBoundingBoxSphere::MakeInvalid();
+  xiiUInt16                         m_uiRootJoint   = xiiMath::MaxValue<xiiUInt16>();
+  xiiUInt32                         m_uiRuntimeHash = 0U;
+  xiiDynamicArray<xiiUInt8>         m_OzzSkeletonData;
 };
 
 class XII_GRAPHICSCORE_DLL xiiSkeletonResource final : public xiiResource
