@@ -69,7 +69,7 @@ class XII_GRAPHICSCORE_DLL xiiMeshRenderData : public xiiRenderData
 public:
   xiiMeshResourceHandle                        m_hMesh;       ///< The mesh resource to render, containing the mesh buffer and materials.
   xiiMeshBufferResourceHandle                  m_hMeshBuffer; ///< The mesh buffer resource containing the GPU buffers for this mesh, used for rendering and culling.
-  xiiHybridArray<xiiMaterialResourceHandle, 8> m_hMaterials;  ///< The material resources for this mesh, used for rendering.
+  xiiHybridArray<xiiMaterialResourceHandle, 4> m_hMaterials;  ///< The material resources for this mesh, used for rendering.
 
   xiiUInt32 m_uiUniqueID       = 0U;              ///< A unique identifier for this mesh render data, used for caching and sorting.
   xiiUInt32 m_uiLODIndex       = 0U;              ///< The LOD index to render, used to select the appropriate LOD from the mesh resource.
@@ -84,9 +84,9 @@ public:
 
   xiiBitflags<xiiMeshRenderDataFlags> m_Flags = xiiMeshRenderDataFlags::Default; ///< Flags specifying various properties of the mesh render data, used to determine how the mesh should be rendered.
 
-  xiiHybridArray<xiiMat4, 64> m_InstanceTransforms; ///< Array of instance transforms for instanced rendering, used to provide per-instance transformation data to the GPU.
-  xiiHybridArray<xiiMat4, 96> m_SkinningMatrices;   ///< Array of skinning matrices for skinned rendering, used to provide per-vertex transformation data to the GPU.
-  xiiHybridArray<float, 16>   m_MorphWeights;       ///< Array of morph weights for morph target rendering, used to interpolate between different mesh shapes.
+  xiiDynamicArray<xiiMat4> m_InstanceTransforms; ///< Array of instance transforms for instanced rendering, used to provide per-instance transformation data to the GPU.
+  xiiDynamicArray<xiiMat4> m_SkinningMatrices;   ///< Array of skinning matrices for skinned rendering, used to provide per-vertex transformation data to the GPU.
+  xiiDynamicArray<float>   m_MorphWeights;       ///< Array of morph weights for morph target rendering, used to interpolate between different mesh shapes.
 
   xiiSharedPtr<xiiGALBuffer> m_pInstanceDataBuffer;     ///< GPU buffer for instance data, used for instanced rendering to provide per-instance data to the GPU.
   xiiSharedPtr<xiiGALBuffer> m_pSkinningMatricesBuffer; ///< GPU buffer for skinning matrices, used for skinned rendering to provide per-vertex transformation data to the GPU.
@@ -135,7 +135,7 @@ public:
   void ClearMaterialOverrides();
 
   /// \brief Returns a reference to the array of material overrides for this component, used to access all overridden materials for rendering.
-  const xiiHybridArray<xiiMaterialResourceHandle, 8>& GetMaterialOverrides() const;
+  const xiiHybridArray<xiiMaterialResourceHandle, 4>& GetMaterialOverrides() const;
 
   /// \brief Sets the section index for this component, used to select a specific section of the mesh for rendering.
   void SetSectionIndex(xiiUInt32 uiSectionIndex); // [ property ]
@@ -176,7 +176,7 @@ protected:
 
 protected:
   xiiMeshResourceHandle                        m_hMesh;             ///< The mesh resource for this component, containing the mesh buffer and materials, used to specify the geometry and materials to render.
-  xiiHybridArray<xiiMaterialResourceHandle, 8> m_MaterialOverrides; ///< Array of material overrides for this component, used to override the materials specified in the mesh resource for rendering.
+  xiiHybridArray<xiiMaterialResourceHandle, 4> m_MaterialOverrides; ///< Array of material overrides for this component, used to override the materials specified in the mesh resource for rendering.
 
   xiiUInt32 m_uiSectionIndex      = xiiInvalidIndex; ///< The section index for this component, used to select a specific section of the mesh for rendering.
   bool      m_bPreferMeshShaders  = true;            ///< Whether to prefer using mesh shaders for rendering this mesh, if available, used to optimize rendering performance on supported hardware.
@@ -272,21 +272,21 @@ public:
   void SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMatrices);
 
   /// \brief Returns a reference to the array of skinning matrices for this skinned mesh component, used to access the skinning transformation data for rendering this mesh.
-  const xiiHybridArray<xiiMat4, 96>& GetSkinningMatrices() const;
+  xiiArrayPtr<const xiiMat4> GetSkinningMatrices() const;
 
   /// \brief Sets the morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
   void SetMorphWeights(xiiArrayPtr<const float> pWeights);
 
   /// \brief Returns a reference to the array of morph target weights for this skinned mesh component, used to access the morph target blending data for rendering this mesh.
-  const xiiHybridArray<float, 16>& GetMorphWeights() const;
+  xiiArrayPtr<const float> GetMorphWeights() const;
 
   /// \brief Clears all skinning and morph target data, used to reset the skinning and morphing state for this mesh.
   void ClearPose();
 
 protected:
-  xiiSkeletonResourceHandle   m_hSkeleton;        ///< The skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
-  xiiHybridArray<xiiMat4, 96> m_SkinningMatrices; ///< Array of skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
-  xiiHybridArray<float, 16>   m_MorphWeights;     ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
+  xiiSkeletonResourceHandle m_hSkeleton;        ///< The skeleton resource for this skinned mesh component, used to specify the skeleton for skinning this mesh.
+  xiiDynamicArray<xiiMat4>  m_SkinningMatrices; ///< Array of skinning matrices for this skinned mesh component, used to provide the skinning transformation data for rendering this mesh.
+  xiiDynamicArray<float>    m_MorphWeights;     ///< Array of morph target weights for this skinned mesh component, used to provide the morph target blending data for rendering this mesh.
 };
 
 /// \brief Instanced mesh component for many local-space instances of one mesh resource.
@@ -338,7 +338,7 @@ public:
   void ClearInstances();
 
 protected:
-  xiiHybridArray<xiiMat4, 64> m_InstanceTransforms; ///< Array of instance transforms for this instanced mesh component, used to provide the transformation data for rendering each instance.
+  xiiDynamicArray<xiiMat4> m_InstanceTransforms; ///< Array of instance transforms for this instanced mesh component, used to provide the transformation data for rendering each instance.
 };
 
 /// \brief Mesh component with explicit CPU-side LOD controls.

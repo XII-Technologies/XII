@@ -245,7 +245,9 @@ struct xiiMaterialResourceDescriptor
 class XII_GRAPHICSCORE_DLL xiiMaterialResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMaterialResource, xiiResource);
+
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiMaterialResource);
+
   XII_RESOURCE_DECLARE_CREATEABLE(xiiMaterialResource, xiiMaterialResourceDescriptor);
 
 public:

@@ -5,91 +5,11 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
-
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMeshRenderDataFlags, 1)
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::None),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::StaticObject),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::DynamicObject),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::Skinned),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::MorphTargets),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::Instanced),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::PreferMeshShader),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::ForceLOD),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::CpuCullingFallback),
-  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::RayTracingVisible),
-XII_END_STATIC_REFLECTED_BITFLAGS;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_RESOURCE_ACCESSOR_PROPERTY("Mesh", GetMesh, SetMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh", xiiDependencyFlags::Package)),
-    XII_ARRAY_MEMBER_PROPERTY("MaterialOverrides", m_MaterialOverrides)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Package)),
-    XII_ACCESSOR_PROPERTY("SectionIndex", GetSectionIndex, SetSectionIndex)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiInvalidIndex))),
-    XII_ACCESSOR_PROPERTY("PreferMeshShaders", GetPreferMeshShaders, SetPreferMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("RayTracingVisible", GetRayTracingVisible, SetRayTracingVisible)->AddAttributes(new xiiDefaultValueAttribute(true)),
-  }
-  XII_END_PROPERTIES;
-  XII_BEGIN_MESSAGEHANDLERS
-  {
-    XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
-  }
-  XII_END_MESSAGEHANDLERS;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiCategoryAttribute("RenderWorld/Meshes"),
-  }
-  XII_END_ATTRIBUTES;
-}
-XII_END_ABSTRACT_COMPONENT_TYPE
-
-XII_BEGIN_COMPONENT_TYPE(xiiStaticMeshComponent, 1, xiiComponentMode::Static)
-XII_END_COMPONENT_TYPE
-
-XII_BEGIN_COMPONENT_TYPE(xiiMeshComponent, 1, xiiComponentMode::Static)
-XII_END_COMPONENT_TYPE
-
-XII_BEGIN_COMPONENT_TYPE(xiiDynamicMeshComponent, 1, xiiComponentMode::Dynamic)
-XII_END_COMPONENT_TYPE
-
-XII_BEGIN_COMPONENT_TYPE(xiiSkinnedMeshComponent, 1, xiiComponentMode::Dynamic)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Skeleton", xiiDependencyFlags::Package)),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_COMPONENT_TYPE
-
-XII_BEGIN_COMPONENT_TYPE(xiiInstancedMeshComponent, 1, xiiComponentMode::Dynamic)
-{
-  XII_BEGIN_FUNCTIONS
-  {
-    XII_SCRIPT_FUNCTION_PROPERTY(ClearInstances),
-  }
-  XII_END_FUNCTIONS;
-}
-XII_END_COMPONENT_TYPE
-
-XII_BEGIN_COMPONENT_TYPE(xiiLODMeshComponent, 1, xiiComponentMode::Static)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_ACCESSOR_PROPERTY("ForcedLOD", GetForcedLOD, SetForcedLOD)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiInvalidIndex))),
-    XII_ACCESSOR_PROPERTY("LodBias", GetLodBias, SetLodBias)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_COMPONENT_TYPE
-// clang-format on
 
 namespace
 {
@@ -103,7 +23,7 @@ namespace
     }
   }
 
-  static void ReadMaterialOverrides(xiiStreamReader& ref_stream, xiiHybridArray<xiiMaterialResourceHandle, 8>& out_materials)
+  static void ReadMaterialOverrides(xiiStreamReader& ref_stream, xiiHybridArray<xiiMaterialResourceHandle, 4>& out_materials)
   {
     xiiUInt32 uiCount = 0U;
     ref_stream >> uiCount;
@@ -150,6 +70,48 @@ namespace
     ref_renderData.m_uiMeshletCount   = section.m_uiMeshletCount;
   }
 } // namespace
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiMeshRenderDataFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::StaticObject),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::DynamicObject),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::Skinned),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::MorphTargets),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::Instanced),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::PreferMeshShader),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::ForceLOD),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::CpuCullingFallback),
+  XII_BITFLAGS_CONSTANT(xiiMeshRenderDataFlags::RayTracingVisible),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiMeshRenderData>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_RESOURCE_ACCESSOR_PROPERTY("Mesh", GetMesh, SetMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh", xiiDependencyFlags::Package)),
+    XII_ARRAY_MEMBER_PROPERTY("MaterialOverrides", m_MaterialOverrides)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Package)),
+    XII_ACCESSOR_PROPERTY("SectionIndex", GetSectionIndex, SetSectionIndex)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiInvalidIndex))),
+    XII_ACCESSOR_PROPERTY("PreferMeshShaders", GetPreferMeshShaders, SetPreferMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("RayTracingVisible", GetRayTracingVisible, SetRayTracingVisible)->AddAttributes(new xiiDefaultValueAttribute(true)),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_MESSAGEHANDLERS
+  {
+    XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
+  }
+  XII_END_MESSAGEHANDLERS;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiCategoryAttribute("RenderWorld/Meshes"),
+  }
+  XII_END_ATTRIBUTES;
+}
+XII_END_ABSTRACT_COMPONENT_TYPE;
+// clang-format on
 
 xiiMeshComponentBase::xiiMeshComponentBase()  = default;
 xiiMeshComponentBase::~xiiMeshComponentBase() = default;
@@ -254,7 +216,7 @@ void xiiMeshComponentBase::ClearMaterialOverrides()
   InvalidateCachedRenderData();
 }
 
-const xiiHybridArray<xiiMaterialResourceHandle, 8>& xiiMeshComponentBase::GetMaterialOverrides() const
+const xiiHybridArray<xiiMaterialResourceHandle, 4>& xiiMeshComponentBase::GetMaterialOverrides() const
 {
   return m_MaterialOverrides;
 }
@@ -401,6 +363,9 @@ void xiiMeshComponentBase::UpdateLocalBoundsForInstances(xiiBoundingBoxSphere& r
 
 //////////////////////////////////////////////////////////////////////////
 
+XII_BEGIN_COMPONENT_TYPE(xiiStaticMeshComponent, 1, xiiComponentMode::Static)
+XII_END_COMPONENT_TYPE;
+
 xiiStaticMeshComponent::xiiStaticMeshComponent()  = default;
 xiiStaticMeshComponent::~xiiStaticMeshComponent() = default;
 
@@ -418,10 +383,16 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiStaticMeshComponent::GetMeshRenderFlags()
 
 //////////////////////////////////////////////////////////////////////////
 
+XII_BEGIN_COMPONENT_TYPE(xiiMeshComponent, 1, xiiComponentMode::Static)
+XII_END_COMPONENT_TYPE;
+
 xiiMeshComponent::xiiMeshComponent()  = default;
 xiiMeshComponent::~xiiMeshComponent() = default;
 
 //////////////////////////////////////////////////////////////////////////
+
+XII_BEGIN_COMPONENT_TYPE(xiiDynamicMeshComponent, 1, xiiComponentMode::Dynamic)
+XII_END_COMPONENT_TYPE;
 
 xiiDynamicMeshComponent::xiiDynamicMeshComponent()  = default;
 xiiDynamicMeshComponent::~xiiDynamicMeshComponent() = default;
@@ -434,6 +405,18 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiDynamicMeshComponent::GetMeshRenderFlags(
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_COMPONENT_TYPE(xiiSkinnedMeshComponent, 1, xiiComponentMode::Dynamic)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_RESOURCE_ACCESSOR_PROPERTY("Skeleton", GetSkeleton, SetSkeleton)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Skeleton", xiiDependencyFlags::Package)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_COMPONENT_TYPE;
+// clang-format on
 
 xiiSkinnedMeshComponent::xiiSkinnedMeshComponent()  = default;
 xiiSkinnedMeshComponent::~xiiSkinnedMeshComponent() = default;
@@ -463,7 +446,7 @@ void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMa
   InvalidateCachedRenderData();
 }
 
-const xiiHybridArray<xiiMat4, 96>& xiiSkinnedMeshComponent::GetSkinningMatrices() const
+xiiArrayPtr<const xiiMat4> xiiSkinnedMeshComponent::GetSkinningMatrices() const
 {
   return m_SkinningMatrices;
 }
@@ -480,7 +463,7 @@ void xiiSkinnedMeshComponent::SetMorphWeights(xiiArrayPtr<const float> pWeights)
   InvalidateCachedRenderData();
 }
 
-const xiiHybridArray<float, 16>& xiiSkinnedMeshComponent::GetMorphWeights() const
+xiiArrayPtr<const float> xiiSkinnedMeshComponent::GetMorphWeights() const
 {
   return m_MorphWeights;
 }
@@ -527,6 +510,18 @@ xiiBitflags<xiiMeshRenderDataFlags> xiiSkinnedMeshComponent::GetMeshRenderFlags(
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_COMPONENT_TYPE(xiiInstancedMeshComponent, 1, xiiComponentMode::Dynamic)
+{
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(ClearInstances),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_COMPONENT_TYPE;
+// clang-format on
 
 xiiInstancedMeshComponent::xiiInstancedMeshComponent()  = default;
 xiiInstancedMeshComponent::~xiiInstancedMeshComponent() = default;
@@ -667,6 +662,19 @@ void xiiInstancedMeshComponent::UpdateLocalBoundsForInstances(xiiBoundingBoxSphe
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_COMPONENT_TYPE(xiiLODMeshComponent, 1, xiiComponentMode::Static)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("ForcedLOD", GetForcedLOD, SetForcedLOD)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiInvalidIndex))),
+    XII_ACCESSOR_PROPERTY("LodBias", GetLodBias, SetLodBias)->AddAttributes(new xiiDefaultValueAttribute(0.0f)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_COMPONENT_TYPE;
+// clang-format on
 
 xiiLODMeshComponent::xiiLODMeshComponent()  = default;
 xiiLODMeshComponent::~xiiLODMeshComponent() = default;

@@ -58,7 +58,9 @@ struct XII_GRAPHICSCORE_DLL xiiSkeletonResourceDescriptor
 class XII_GRAPHICSCORE_DLL xiiSkeletonResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSkeletonResource, xiiResource);
+
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiSkeletonResource);
+
   XII_RESOURCE_DECLARE_CREATEABLE(xiiSkeletonResource, xiiSkeletonResourceDescriptor);
 
 public:
