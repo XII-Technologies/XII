@@ -14,36 +14,14 @@
 #  include <ozz/base/maths/soa_transform.h>
 #endif
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkeletonResource, 1, xiiRTTIDefaultAllocator<xiiSkeletonResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiSkeletonResource);
-// clang-format on
 
 namespace
 {
   static constexpr xiiUInt32 s_uiSkeletonResourceVersion = 1U;
-
-  static void WriteBytes(xiiStreamWriter& ref_stream, xiiArrayPtr<const xiiUInt8> data)
-  {
-    ref_stream << data.GetCount();
-    if (!data.IsEmpty())
-    {
-      ref_stream.WriteBytes(data.GetPtr(), data.GetCount()).IgnoreResult();
-    }
-  }
-
-  static void ReadBytes(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& out_data)
-  {
-    xiiUInt32 uiCount = 0U;
-    ref_stream >> uiCount;
-    out_data.SetCountUninitialized(uiCount);
-    if (uiCount > 0U)
-    {
-      ref_stream.ReadBytes(out_data.GetData(), uiCount);
-    }
-  }
 
 #if defined(BUILDSYSTEM_ENABLE_OZZ_SUPPORT)
   static xiiTransform GetOzzRestPoseTransform(ozz::span<const ozz::math::SoaTransform> restPose, xiiUInt32 uiJointIndex)
@@ -195,11 +173,19 @@ void xiiSkeletonResourceDescriptor::ComputeRuntimeHash()
 xiiResult xiiSkeletonResourceDescriptor::Serialize(xiiStreamWriter& inout_stream) const
 {
   inout_stream << s_uiSkeletonResourceVersion;
+
   inout_stream.WriteArray(m_Joints).IgnoreResult();
+
   inout_stream << m_Bounds;
   inout_stream << m_uiRootJoint;
   inout_stream << m_uiRuntimeHash;
-  WriteBytes(inout_stream, m_OzzSkeletonData);
+
+  inout_stream << m_OzzSkeletonData.GetCount();
+  if (!m_OzzSkeletonData.IsEmpty())
+  {
+    inout_stream.WriteBytes(m_OzzSkeletonData.GetData(), m_OzzSkeletonData.GetCount()).IgnoreResult();
+  }
+
   return XII_SUCCESS;
 }
 
@@ -210,10 +196,20 @@ xiiResult xiiSkeletonResourceDescriptor::Deserialize(xiiStreamReader& inout_stre
   XII_IGNORE_UNUSED(uiVersion);
 
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_Joints));
+
   inout_stream >> m_Bounds;
   inout_stream >> m_uiRootJoint;
   inout_stream >> m_uiRuntimeHash;
-  ReadBytes(inout_stream, m_OzzSkeletonData);
+
+  xiiUInt32 uiOzzDataSize = 0U;
+  inout_stream >> uiOzzDataSize;
+  if (uiOzzDataSize > 0U)
+  {
+    m_OzzSkeletonData.SetCount(uiOzzDataSize);
+
+    inout_stream.ReadBytes(m_OzzSkeletonData.GetData(), uiOzzDataSize);
+  }
+
   return XII_SUCCESS;
 }
 

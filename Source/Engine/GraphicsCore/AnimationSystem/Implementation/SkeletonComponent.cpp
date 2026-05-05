@@ -171,7 +171,7 @@ void xiiSkeletonComponent::Update()
     xiiResourceLock<xiiAnimationClipResource> pClip(m_hAnimationClip, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
     if (pClip)
     {
-      pClip->SampleLocalPose(*pSkeleton, m_PlaybackTime, m_CurrentPose);
+      pClip->SampleLocalPose(*pSkeleton.GetPointer(), m_PlaybackTime, m_CurrentPose);
     }
   }
   else

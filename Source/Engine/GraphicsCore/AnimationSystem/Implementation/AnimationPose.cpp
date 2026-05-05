@@ -145,9 +145,13 @@ void xiiAnimationPose::LayeredBlend(const xiiAnimationPose& basePose, const xiiA
   for (xiiUInt32 i = 0; i < uiCount; ++i)
   {
     if (IsJointInSubtree(joints, i, uiRootJoint))
+    {
       m_LocalTransforms[i] = BlendTransform(basePose.m_LocalTransforms[i], layerPose.m_LocalTransforms[i], fClampedWeight);
+    }
     else
+    {
       m_LocalTransforms[i] = basePose.m_LocalTransforms[i];
+    }
   }
 
   m_ModelTransforms.Clear();
