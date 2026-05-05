@@ -67,9 +67,9 @@ class XII_GRAPHICSCORE_DLL xiiMeshRenderData : public xiiRenderData
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderData, xiiRenderData);
 
 public:
-  xiiMeshResourceHandle                        m_hMesh;       ///< The mesh resource to render, containing the mesh buffer and materials.
-  xiiMeshBufferResourceHandle                  m_hMeshBuffer; ///< The mesh buffer resource containing the GPU buffers for this mesh, used for rendering and culling.
-  xiiHybridArray<xiiMaterialResourceHandle, 4> m_hMaterials;  ///< The material resources for this mesh, used for rendering.
+  xiiMeshResourceHandle                      m_hMesh;       ///< The mesh resource to render, containing the mesh buffer and materials.
+  xiiMeshBufferResourceHandle                m_hMeshBuffer; ///< The mesh buffer resource containing the GPU buffers for this mesh, used for rendering and culling.
+  xiiDynamicArray<xiiMaterialResourceHandle> m_hMaterials;  ///< The material resources for this mesh, used for rendering.
 
   xiiUInt32 m_uiUniqueID       = 0U;              ///< A unique identifier for this mesh render data, used for caching and sorting.
   xiiUInt32 m_uiLODIndex       = 0U;              ///< The LOD index to render, used to select the appropriate LOD from the mesh resource.
@@ -135,7 +135,7 @@ public:
   void ClearMaterialOverrides();
 
   /// \brief Returns a reference to the array of material overrides for this component, used to access all overridden materials for rendering.
-  const xiiHybridArray<xiiMaterialResourceHandle, 4>& GetMaterialOverrides() const;
+  xiiArrayPtr<const xiiMaterialResourceHandle> GetMaterialOverrides() const;
 
   /// \brief Sets the section index for this component, used to select a specific section of the mesh for rendering.
   void SetSectionIndex(xiiUInt32 uiSectionIndex); // [ property ]
@@ -175,8 +175,8 @@ protected:
   virtual void UpdateLocalBoundsForInstances(xiiBoundingBoxSphere& ref_bounds) const;
 
 protected:
-  xiiMeshResourceHandle                        m_hMesh;             ///< The mesh resource for this component, containing the mesh buffer and materials, used to specify the geometry and materials to render.
-  xiiHybridArray<xiiMaterialResourceHandle, 4> m_MaterialOverrides; ///< Array of material overrides for this component, used to override the materials specified in the mesh resource for rendering.
+  xiiMeshResourceHandle                      m_hMesh;             ///< The mesh resource for this component, containing the mesh buffer and materials, used to specify the geometry and materials to render.
+  xiiDynamicArray<xiiMaterialResourceHandle> m_MaterialOverrides; ///< Array of material overrides for this component, used to override the materials specified in the mesh resource for rendering.
 
   xiiUInt32 m_uiSectionIndex      = xiiInvalidIndex; ///< The section index for this component, used to select a specific section of the mesh for rendering.
   bool      m_bPreferMeshShaders  = true;            ///< Whether to prefer using mesh shaders for rendering this mesh, if available, used to optimize rendering performance on supported hardware.

@@ -23,7 +23,7 @@ namespace
     }
   }
 
-  static void ReadMaterialOverrides(xiiStreamReader& ref_stream, xiiHybridArray<xiiMaterialResourceHandle, 4>& out_materials)
+  static void ReadMaterialOverrides(xiiStreamReader& ref_stream, xiiDynamicArray<xiiMaterialResourceHandle>& out_materials)
   {
     xiiUInt32 uiCount = 0U;
     ref_stream >> uiCount;
@@ -216,7 +216,7 @@ void xiiMeshComponentBase::ClearMaterialOverrides()
   InvalidateCachedRenderData();
 }
 
-const xiiHybridArray<xiiMaterialResourceHandle, 4>& xiiMeshComponentBase::GetMaterialOverrides() const
+xiiArrayPtr<const xiiMaterialResourceHandle> xiiMeshComponentBase::GetMaterialOverrides() const
 {
   return m_MaterialOverrides;
 }
