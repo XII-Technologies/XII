@@ -3,13 +3,13 @@
 #pragma once
 
 #include <GraphicsCore/Components/Render/RenderComponent.h>
-#include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
-
 #include <Foundation/Types/SharedPtr.h>
 
 class xiiGALBuffer;
+class xiiMeshResource;
+class xiiMaterialResource;
+
 struct xiiMsgExtractRenderData;
 
 using xiiStaticMeshComponentManager    = xiiComponentManager<class xiiStaticMeshComponent, xiiBlockStorageType::Compact>;
@@ -136,6 +136,21 @@ public:
 
   /// \brief Returns a reference to the array of material overrides for this component, used to access all overridden materials for rendering.
   xiiArrayPtr<const xiiMaterialResourceHandle> GetMaterialOverrides() const;
+
+  /// \brief Reflection accessor: returns material override count.
+  xiiUInt32 GetMaterialOverrideCount() const; // [ property ]
+
+  /// \brief Reflection accessor: returns the material override resource ID at the given index.
+  xiiStringView GetMaterialOverrideFile(xiiUInt32 uiMaterialIndex) const; // [ property ]
+
+  /// \brief Reflection accessor: sets a material override from a resource ID.
+  void SetMaterialOverrideFile(xiiUInt32 uiMaterialIndex, xiiStringView sFile); // [ property ]
+
+  /// \brief Reflection accessor: inserts a material override from a resource ID.
+  void InsertMaterialOverrideFile(xiiUInt32 uiMaterialIndex, xiiStringView sFile); // [ property ]
+
+  /// \brief Reflection accessor: removes a material override at the given index.
+  void RemoveMaterialOverrideFile(xiiUInt32 uiMaterialIndex); // [ property ]
 
   /// \brief Sets the section index for this component, used to select a specific section of the mesh for rendering.
   void SetSectionIndex(xiiUInt32 uiSectionIndex); // [ property ]

@@ -950,7 +950,7 @@ const xiiMaterialResourceDescriptor& xiiMaterialResource::GetCurrentDescription(
   return m_Description;
 }
 
-const char* xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType materialType)
+xiiStringView xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialType materialType)
 {
   switch (materialType)
   {

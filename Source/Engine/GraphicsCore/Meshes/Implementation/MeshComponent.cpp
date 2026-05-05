@@ -8,6 +8,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
@@ -93,7 +94,7 @@ XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, 1)
   XII_BEGIN_PROPERTIES
   {
     XII_RESOURCE_ACCESSOR_PROPERTY("Mesh", GetMesh, SetMesh)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Mesh", xiiDependencyFlags::Package)),
-    XII_ARRAY_MEMBER_PROPERTY("MaterialOverrides", m_MaterialOverrides)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Package)),
+    XII_ARRAY_ACCESSOR_PROPERTY("MaterialOverrides", GetMaterialOverrideCount, GetMaterialOverrideFile, SetMaterialOverrideFile, InsertMaterialOverrideFile, RemoveMaterialOverrideFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Material", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("SectionIndex", GetSectionIndex, SetSectionIndex)->AddAttributes(new xiiDefaultValueAttribute(xiiVariant(xiiInvalidIndex))),
     XII_ACCESSOR_PROPERTY("PreferMeshShaders", GetPreferMeshShaders, SetPreferMeshShaders)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("RayTracingVisible", GetRayTracingVisible, SetRayTracingVisible)->AddAttributes(new xiiDefaultValueAttribute(true)),
@@ -219,6 +220,51 @@ void xiiMeshComponentBase::ClearMaterialOverrides()
 xiiArrayPtr<const xiiMaterialResourceHandle> xiiMeshComponentBase::GetMaterialOverrides() const
 {
   return m_MaterialOverrides;
+}
+
+xiiUInt32 xiiMeshComponentBase::GetMaterialOverrideCount() const
+{
+  return m_MaterialOverrides.GetCount();
+}
+
+xiiStringView xiiMeshComponentBase::GetMaterialOverrideFile(xiiUInt32 uiMaterialIndex) const
+{
+  XII_ASSERT_DEBUG(uiMaterialIndex < m_MaterialOverrides.GetCount(), "GetMaterialOverrideFile: uiIndex ('{0}') is out of range ('{1}')", uiMaterialIndex, m_MaterialOverrides.GetCount());
+
+  return m_MaterialOverrides[uiMaterialIndex].GetResourceID();
+}
+
+void xiiMeshComponentBase::SetMaterialOverrideFile(xiiUInt32 uiMaterialIndex, xiiStringView sFile)
+{
+  if (sFile.IsEmpty())
+  {
+    SetMaterialOverride(uiMaterialIndex, {});
+    return;
+  }
+
+  SetMaterialOverride(uiMaterialIndex, xiiResourceManager::LoadResource<xiiMaterialResource>(sFile));
+}
+
+void xiiMeshComponentBase::InsertMaterialOverrideFile(xiiUInt32 uiMaterialIndex, xiiStringView sFile)
+{
+  XII_ASSERT_DEBUG(uiMaterialIndex <= m_MaterialOverrides.GetCount(), "InsertMaterialOverrideFile: uiIndex ('{0}') is out of range ('{1}')", uiMaterialIndex, m_MaterialOverrides.GetCount());
+
+  xiiMaterialResourceHandle hMaterial;
+  if (!sFile.IsEmpty())
+  {
+    hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(sFile);
+  }
+
+  m_MaterialOverrides.InsertAt(uiMaterialIndex, hMaterial);
+  InvalidateCachedRenderData();
+}
+
+void xiiMeshComponentBase::RemoveMaterialOverrideFile(xiiUInt32 uiMaterialIndex)
+{
+  XII_ASSERT_DEBUG(uiMaterialIndex < m_MaterialOverrides.GetCount(), "RemoveMaterialOverrideFile: uiIndex ('{0}') is out of range ('{1}')", uiMaterialIndex, m_MaterialOverrides.GetCount());
+
+  m_MaterialOverrides.RemoveAtAndCopy(uiMaterialIndex);
+  InvalidateCachedRenderData();
 }
 
 void xiiMeshComponentBase::SetSectionIndex(xiiUInt32 uiSectionIndex)

@@ -296,7 +296,7 @@ public:
   };
 
   /// \brief Returns the default material file name for the given type (materials in Data/Base/Materials/BaseMaterials).
-  static const char* GetDefaultMaterialFileName(DefaultMaterialType materialType);
+  static xiiStringView GetDefaultMaterialFileName(DefaultMaterialType materialType);
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
