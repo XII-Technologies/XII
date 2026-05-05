@@ -1,51 +1,39 @@
-// XII Engine - DirectLighting.xiiShader  [NEW]
-// Pass 46: Deferred direct lighting - GGX BRDF + cluster lights + cascade shadow sample.
-// Dispatch: ceil(W/8) × ceil(H/8) × 1
+// XII Engine - DirectLighting.xiiShader
+// Deferred direct lighting: GGX BRDF, clustered local lights, and global shadow masks.
 
 #include "PipelineCommon.xiiShader"
+#include "LightingData.h"
 
-cbuffer DirectLightingConstants : register(b3)
-{
-    uint   g_ClusterCountX, g_ClusterCountY, g_ClusterCountZ;
-    uint   g_MaxLightsPerCluster;
-    float  g_ClusterNearPlane;
-    float  g_ClusterLogFarOverNear; // log(far/near) for packed cluster Z
-    float2 _pad;
-};
+Texture2D<float4> g_GBufAlbedo    : register(t0);
+Texture2D<float2> g_GBufNormal    : register(t1);
+Texture2D<float4> g_GBufMaterial  : register(t2);
+Texture2D<float>  g_SceneDepth    : register(t3);
+Texture2D<float>  g_AOTerm        : register(t4);
+Texture2D<float>  g_ShadowAtlas   : register(t5);
+Texture2D<float>  g_ContactShadow : register(t6);
+Texture2D<float>  g_RTShadow      : register(t7);
+Texture2D<float>  g_LocalShadowAtlas : register(t8);
 
-// 
-// GBuffer inputs
-// 
-Texture2D<float4> g_GBufAlbedo   : register(t0);
-Texture2D<float2> g_GBufNormal   : register(t1);
-Texture2D<float4> g_GBufMaterial : register(t2);  // r=rough, g=metal, b=AO
-Texture2D<float>  g_SceneDepth   : register(t3);
-Texture2D<float>  g_AOTerm       : register(t4);
-Texture2D<float>  g_ShadowAtlas  : register(t5);  // directional CSM atlas (D16)
-Texture2D<float>  g_ContactShadow: register(t6);
-Texture2D<float>  g_RTShadow     : register(t7);  // optionally bound
+StructuredBuffer<uint2>                   g_LightGrid             : register(t9);
+StructuredBuffer<uint>                    g_LightIndex            : register(t10);
+StructuredBuffer<xiiGpuLightData>         g_Lights                : register(t11);
+StructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs : register(t12);
+RWTexture2D<float4>               g_DirectOut  : register(u0);
 
-StructuredBuffer<uint>    g_LightGrid  : register(t8);  // (offset, count) per cluster
-StructuredBuffer<uint>    g_LightIndex : register(t9);  // light index list
-RWTexture2D<float4>       g_DirectOut  : register(u0);
-
-// 
-// GGX BRDF terms
-// 
 float D_GGX(float NoH, float roughness)
 {
-    float a  = roughness * roughness;
-    float a2 = a * a;
-    float d  = max(NoH * NoH * (a2 - 1.0f) + 1.0f, 1e-7f);
+    const float a  = roughness * roughness;
+    const float a2 = a * a;
+    const float d  = max(NoH * NoH * (a2 - 1.0f) + 1.0f, 1e-7f);
     return a2 / (3.14159265f * d * d);
 }
 
 float G_SmithGGX(float NoV, float NoL, float roughness)
 {
-    float r = roughness + 1.0f;
-    float k = (r * r) / 8.0f;
-    float gv = NoV / (NoV * (1.0f - k) + k);
-    float gl = NoL / (NoL * (1.0f - k) + k);
+    const float r = roughness + 1.0f;
+    const float k = (r * r) * 0.125f;
+    const float gv = NoV / (NoV * (1.0f - k) + k);
+    const float gl = NoL / (NoL * (1.0f - k) + k);
     return gv * gl;
 }
 
@@ -56,65 +44,141 @@ float3 F_Schlick(float3 f0, float VoH)
 
 float3 BRDF(float3 albedo, float roughness, float metallic, float3 N, float3 L, float3 V)
 {
-    float3 f0   = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
-    float3 H    = normalize(V + L);
-    float NoH   = saturate(dot(N, H));
-    float NoV   = max(dot(N, V), 1e-4f);
-    float NoL   = saturate(dot(N, L));
-    float VoH   = saturate(dot(V, H));
-    float3 F    = F_Schlick(f0, VoH);
-    float  D    = D_GGX(NoH, roughness);
-    float  G    = G_SmithGGX(NoV, NoL, roughness);
-    float3 spec = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
-    float3 diff = (1.0f - F) * (1.0f - metallic) * albedo / 3.14159265f;
+    const float3 f0   = lerp(float3(0.04f, 0.04f, 0.04f), albedo, metallic);
+    const float3 H    = normalize(V + L);
+    const float NoH   = saturate(dot(N, H));
+    const float NoV   = max(dot(N, V), 1e-4f);
+    const float NoL   = saturate(dot(N, L));
+    const float VoH   = saturate(dot(V, H));
+    const float3 F    = F_Schlick(f0, VoH);
+    const float D     = D_GGX(NoH, roughness);
+    const float G     = G_SmithGGX(NoV, NoL, roughness);
+    const float3 spec = (D * G * F) / max(4.0f * NoV * NoL, 1e-7f);
+    const float3 diff = (1.0f - F) * (1.0f - metallic) * albedo / 3.14159265f;
     return (diff + spec) * NoL;
 }
 
-// 
+float SmoothDistanceAttenuation(float distance, float range)
+{
+    const float normalizedDistance = saturate(distance / max(range, 1e-3f));
+    float attenuation = saturate(1.0f - normalizedDistance * normalizedDistance);
+    attenuation *= attenuation;
+    return attenuation / max(distance * distance, 0.25f);
+}
+
+float SpotConeAttenuation(xiiGpuLightData lightData, float3 L)
+{
+    const float cosTheta = dot(-L, normalize(lightData.DirectionAndType.xyz));
+    const float cosInner = lightData.SpotAnglesAndRectSize.x;
+    const float cosOuter = lightData.SpotAnglesAndRectSize.y;
+    const float cone = saturate((cosTheta - cosOuter) / max(cosInner - cosOuter, 1e-4f));
+    return cone * cone * (3.0f - 2.0f * cone);
+}
+
+float3 EvaluateLocalLight(xiiGpuLightData lightData, float3 worldPos, float3 N, float3 V, float3 albedo, float roughness, float metallic)
+{
+    const uint lightType = GetLightType(lightData);
+
+    float3 toLight = lightData.PositionAndInvRange.xyz - worldPos;
+    float distance = length(toLight);
+    float3 L = distance > 1e-4f ? toLight / distance : normalize(-lightData.DirectionAndType.xyz);
+
+    float attenuation = SmoothDistanceAttenuation(distance, lightData.AttenuationAndSize.x);
+
+    if (lightType == XII_LIGHT_TYPE_SPOT)
+    {
+        attenuation *= SpotConeAttenuation(lightData, L);
+    }
+    else if (lightType == XII_LIGHT_TYPE_RECTANGLE)
+    {
+        const float facing = saturate(dot(-L, normalize(lightData.DirectionAndType.xyz)));
+        const float area = max(lightData.SpotAnglesAndRectSize.z * lightData.SpotAnglesAndRectSize.w, 0.001f);
+        attenuation *= facing * area;
+    }
+    else if (lightType == XII_LIGHT_TYPE_DISC)
+    {
+        const float facing = saturate(dot(-L, normalize(lightData.DirectionAndType.xyz)));
+        const float radius = max(lightData.AttenuationAndSize.y, 0.001f);
+        const float area = 3.14159265f * radius * radius;
+        attenuation *= facing * area;
+    }
+
+    const float3 radiance = lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
+    return BRDF(albedo, roughness, metallic, N, L, V) * radiance;
+}
+
+uint ComputeClusterIndex(float2 uv, float depth)
+{
+    if (g_ClusterCountX == 0u || g_ClusterCountY == 0u || g_ClusterCountZ == 0u)
+        return 0u;
+
+    const float linearDepth = LinearizeDepth(depth);
+    const float zSlice = max(0.0f, log2(max(linearDepth, g_ClusterNearPlane) / max(g_ClusterNearPlane, 1e-4f)) / max(g_ClusterLogFarOverNear, 1e-4f) * (float)g_ClusterCountZ);
+
+    const uint cX = min((uint)(uv.x * (float)g_ClusterCountX), g_ClusterCountX - 1u);
+    const uint cY = min((uint)(uv.y * (float)g_ClusterCountY), g_ClusterCountY - 1u);
+    const uint cZ = min((uint)zSlice, g_ClusterCountZ - 1u);
+    return (cZ * g_ClusterCountY + cY) * g_ClusterCountX + cX;
+}
+
 [numthreads(8, 8, 1)]
 void CS_DirectLighting(uint3 tid : SV_DispatchThreadID)
 {
-    uint2 dims; g_DirectOut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
+    uint2 dims;
+    g_DirectOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims))
+        return;
 
-    float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
-    float  depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
-    if (depth <= 0.0f) { g_DirectOut[tid.xy] = float4(0,0,0,1); return; }
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
+    if (depth <= 0.0f)
+    {
+        g_DirectOut[tid.xy] = float4(0.0f, 0.0f, 0.0f, 1.0f);
+        return;
+    }
 
-    float4 albedoA  = g_GBufAlbedo  .SampleLevel(g_sPointClamp, uv, 0);
-    float2 octNorm  = g_GBufNormal  .SampleLevel(g_sPointClamp, uv, 0);
-    float4 material = g_GBufMaterial.SampleLevel(g_sPointClamp, uv, 0);
-    float  ao       = g_AOTerm      .SampleLevel(g_sPointClamp, uv, 0);
-    float  rtSh     = g_RTShadow    .SampleLevel(g_sPointClamp, uv, 0);
-    float  ctSh     = g_ContactShadow.SampleLevel(g_sPointClamp, uv, 0);
+    const float4 albedoA = g_GBufAlbedo.SampleLevel(g_sPointClamp, uv, 0);
+    const float2 octNorm = g_GBufNormal.SampleLevel(g_sPointClamp, uv, 0);
+    const float4 material = g_GBufMaterial.SampleLevel(g_sPointClamp, uv, 0);
+    const float ao = g_AOTerm.SampleLevel(g_sPointClamp, uv, 0);
+    const float rtShadow = g_RTShadow.SampleLevel(g_sPointClamp, uv, 0);
+    const float contactShadow = g_ContactShadow.SampleLevel(g_sPointClamp, uv, 0);
 
-    float3 albedo    = albedoA.rgb;
-    float  roughness = max(material.r, 0.01f);
-    float  metallic  = material.g;
-    float3 N         = DecodeOctNormal(octNorm);
-    float3 worldPos  = ReconstructWorldPos(uv, depth);
-    float3 V         = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
+    const float3 albedo = albedoA.rgb;
+    const float roughness = max(material.r, 0.01f);
+    const float metallic = saturate(material.g);
+    const float3 N = DecodeOctNormal(octNorm);
+    const float3 worldPos = ReconstructWorldPos(uv, depth);
+    const float3 V = normalize(g_CameraPositionAndNearPlane.xyz - worldPos);
 
-    // Main directional light.
-    float3 L         = normalize(-g_MainLightDirectionAndIntensity.xyz);
-    float  shadow    = saturate(1.0f - max(rtSh, ctSh));
-    float3 direct    = BRDF(albedo, roughness, metallic, N, L, V)
-                       * g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w
-                       * shadow * ao;
+    const float3 mainL = normalize(-g_MainLightDirectionAndIntensity.xyz);
+    const float globalShadow = saturate(1.0f - max(rtShadow, contactShadow));
+    float3 direct = BRDF(albedo, roughness, metallic, N, mainL, V) * g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * globalShadow;
 
-    // Cluster local lights (no shadow for this example, shadows via atlas for nearby lights).
-    // Cluster index from clip-space Z.
-    float linZ   = LinearizeDepth(depth);
-    float zSlice = max(0.0f, log(linZ / g_ClusterNearPlane) / g_ClusterLogFarOverNear
-                        * float(g_ClusterCountZ));
-    uint cZ = min(uint(zSlice), g_ClusterCountZ - 1u);
-    uint cX = min(uint(uv.x * float(g_ClusterCountX)), g_ClusterCountX - 1u);
-    uint cY = min(uint(uv.y * float(g_ClusterCountY)), g_ClusterCountY - 1u);
-    uint clusterIdx = (cZ * g_ClusterCountY + cY) * g_ClusterCountX + cX;
-    uint offset = g_LightGrid[clusterIdx * 2u + 0u];
-    uint count  = g_LightGrid[clusterIdx * 2u + 1u];
+    const uint clusterIndex = ComputeClusterIndex(uv, depth);
+    const uint2 lightRange = g_LightGrid[clusterIndex];
+    const uint lightCount = min(lightRange.y, g_MaxLightsPerCluster);
 
-    // (Local light evaluation elided here - would read per-light struct and evaluate BRDF.)
+    [loop]
+    for (uint i = 0u; i < lightCount; ++i)
+    {
+        const uint lightIndex = g_LightIndex[lightRange.x + i];
+        if (lightIndex >= g_ActiveLightCount)
+            continue;
 
-    g_DirectOut[tid.xy] = float4(direct, 1.0f);
+        const xiiGpuLightData lightData = g_Lights[lightIndex];
+        if (GetLightType(lightData) == XII_LIGHT_TYPE_DIRECTIONAL)
+            continue;
+
+        float localShadow = 1.0f;
+        if (lightData.ShadowData.x > 0.5f)
+        {
+            const xiiLocalShadowAtlasData shadowData = g_LocalShadowAtlasDescs[lightIndex];
+            localShadow = shadowData.Meta.y > 0.0f ? localShadow : 1.0f;
+        }
+
+        direct += EvaluateLocalLight(lightData, worldPos, N, V, albedo, roughness, metallic) * localShadow;
+    }
+
+    g_DirectOut[tid.xy] = float4(direct * ao, 1.0f);
 }

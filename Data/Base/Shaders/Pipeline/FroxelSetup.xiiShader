@@ -1,48 +1,31 @@
-// XII Engine - FroxelSetup.xiiShader  [NEW]
-// Pass 22a: Write per-froxel bounds + phase constants for volumetric integration.
-// Dispatch: ceil(FroxW/8) × ceil(FroxH/8) × FroxDepth
+// XII Engine - FroxelSetup.xiiShader
+// Initializes view-aligned froxel density and extinction for volumetric lighting.
 
 #include "PipelineCommon.xiiShader"
 
-cbuffer FroxelSetupConstants : register(b3)
-{
-    uint3  g_FroxelCount;    // (X, Y, Z) grid dimensions
-    float  g_NearPlane;
-    float  g_FarPlane;
-    float  g_FogDensity;
-    float  g_HeightFogFalloff; // exponential height falloff coefficient
-    float  g_HeightFogBase;    // world-space height of fog base
-};
+RWStructuredBuffer<float4> g_FroxelMetadata   : register(u0);
+RWTexture3D<float4>        g_FroxelScattering : register(u1);
 
-// Phase + density per froxel (written here, sampled during integration).
-RWStructuredBuffer<float4> g_FroxelMetadata    : register(u0); // (density, phase, scatter, _)
-RWTexture3D<float4>        g_FroxelScattering  : register(u1); // rgba = scatter xyz + extinction
+static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
 
 [numthreads(8, 8, 1)]
 void CS_FroxelSetup(uint3 tid : SV_DispatchThreadID)
 {
-    if (any(tid >= g_FroxelCount)) return;
+    if (any(tid >= XII_FROXEL_COUNT))
+        return;
 
-    // Compute froxel world-space center.
-    float2 ndc  = (float2(tid.xy) / float2(g_FroxelCount.xy)) * 2.0f - 1.0f;
-    float  zFrac = (float(tid.z) + 0.5f) / float(g_FroxelCount.z);
-    float  zView = g_NearPlane * exp(zFrac * log(g_FarPlane / g_NearPlane)); // exponential depth slice
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(XII_FROXEL_COUNT.xy);
+    const float zFrac = (float(tid.z) + 0.5f) / (float)XII_FROXEL_COUNT.z;
+    const float linearDepth = g_CameraPositionAndNearPlane.w * exp(zFrac * log(max(g_CameraForwardAndFarPlane.w, g_CameraPositionAndNearPlane.w + 0.001f) / max(g_CameraPositionAndNearPlane.w, 0.001f)));
+    const float ndcDepth = saturate(g_CameraPositionAndNearPlane.w / max(linearDepth, 1e-4f));
+    const float3 worldPos = ReconstructWorldPos(uv, ndcDepth);
 
-    float4 clipPos  = float4(ndc * zView, zView, 1.0f);
-    float4 worldPos = mul(g_InverseViewProjectionMatrix, clipPos);
-    worldPos.xyz   /= worldPos.w;
+    const float heightDelta = worldPos.y - g_VolumetricBaseHeight;
+    const float heightTerm = exp(-max(heightDelta, 0.0f) * g_VolumetricHeightFalloff);
+    const float density = saturate(g_VolumetricFogDensity * heightTerm);
+    const float extinction = density;
 
-    // Height-based exponential fog density.
-    float deltaH  = worldPos.y - g_HeightFogBase;
-    float density = g_FogDensity * exp(-max(deltaH, 0.0f) * g_HeightFogFalloff);
-    density = saturate(density);
-
-    // Phase constant (Henyey-Greenstein g=0.5 for most fog).
-    float phase   = 0.5f;
-    float scatter = density * 0.8f;
-    float extinct = density;
-
-    uint linearIdx = (tid.z * g_FroxelCount.y + tid.y) * g_FroxelCount.x + tid.x;
-    g_FroxelMetadata[linearIdx] = float4(density, phase, scatter, extinct);
-    g_FroxelScattering[tid]     = float4(float3(scatter, scatter, scatter) * float3(0.9f, 0.95f, 1.0f), extinct);
+    const uint linearIndex = (tid.z * XII_FROXEL_COUNT.y + tid.y) * XII_FROXEL_COUNT.x + tid.x;
+    g_FroxelMetadata[linearIndex] = float4(density, g_VolumetricAnisotropy, linearDepth, extinction);
+    g_FroxelScattering[tid] = float4(g_AmbientLightColor.rgb * density, extinction);
 }

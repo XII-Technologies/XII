@@ -20,7 +20,21 @@ cbuffer PerFrameLight : register(b1)
     float4   g_MainLightColor;                 // xyz=rgb, w=unused
     float4   g_AmbientLightColor;              // xyz=rgb, w=unused
     uint     g_ActiveLightCount;
-    float3   _pad0;
+    uint     g_ClusterCountX;
+    uint     g_ClusterCountY;
+    uint     g_ClusterCountZ;
+    uint     g_MaxLightsPerCluster;
+    float    g_ClusterNearPlane;
+    float    g_ClusterLogFarOverNear;
+    float    g_IBLIntensity;
+    float    g_ContactShadowLength;
+    float    g_ContactShadowThickness;
+    uint     g_ContactShadowSteps;
+    uint     g_LocalShadowTileSize;
+    float    g_VolumetricFogDensity;
+    float    g_VolumetricHeightFalloff;
+    float    g_VolumetricBaseHeight;
+    float    g_VolumetricAnisotropy;
 };
 
 cbuffer PerFrameGlobal : register(b2)

@@ -5,47 +5,66 @@ ALL
 
 [COMPUTESHADER]
 
-StructuredBuffer<float4> VisibleLightList;
-StructuredBuffer<float4> ClusterDescriptors;
-StructuredBuffer<float4> ClusterDepthRange;
-RWStructuredBuffer<uint> ClusterLightIndices;
-RWStructuredBuffer<uint> ClusterLightPrefixSums;
+#include "PipelineCommon.xiiShader"
+#include "LightingData.h"
+
+cbuffer xiiLightClusteringConstants : register(b3)
+{
+    uint  ClusterCountX;
+    uint  ClusterCountY;
+    uint  ClusterCountZ;
+    uint  TotalClusters;
+    float NearPlane;
+    float FarPlane;
+    float LogFarOverNear;
+    float Padding1;
+    uint  TilePixelsX;
+    uint  TilePixelsY;
+    uint  MaxLightsPerCluster;
+    uint  ActiveLightCount;
+};
+
+StructuredBuffer<xiiClusterDescriptor> g_Clusters   : register(t0);
+StructuredBuffer<xiiGpuLightData>      g_Lights     : register(t1);
+RWStructuredBuffer<uint>               g_LightIndex : register(u0);
+RWStructuredBuffer<uint2>              g_LightGrid  : register(u1);
+
+bool SphereIntersectsAabb(float4 sphere, float3 aabbMin, float3 aabbMax)
+{
+    const float3 closest = clamp(sphere.xyz, aabbMin, aabbMax);
+    const float3 delta = closest - sphere.xyz;
+    return dot(delta, delta) <= sphere.w * sphere.w;
+}
 
 [numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_LightListBuild(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-  const uint clusterIndex = dispatchThreadId.x;
+    const uint clusterIndex = dispatchThreadId.x;
+    if (clusterIndex >= TotalClusters)
+        return;
 
-  if (clusterIndex >= ClusterLightPrefixSums.Length)
-  {
-    return;
-  }
+    const xiiClusterDescriptor cluster = g_Clusters[clusterIndex];
+    const uint listOffset = clusterIndex * MaxLightsPerCluster;
+    uint localCount = 0u;
 
-  const uint lightCount = max(VisibleLightList.Length, 1u);
-  const uint compactLightsPerCluster = min(16u, lightCount);
-
-  // Prefix sums store compact ranges in ClusterLightIndices for each cluster.
-  const uint startOffset = clusterIndex * compactLightsPerCluster;
-  ClusterLightPrefixSums[clusterIndex] = startOffset;
-
-  const uint descriptorHash = ClusterDescriptors.Length > clusterIndex ? asuint(ClusterDescriptors[clusterIndex].z * 1024.0f) : clusterIndex;
-  const uint depthHash = ClusterDepthRange.Length > 0 ? asuint(ClusterDepthRange[0].x * 1000.0f) : 0u;
-
-  [unroll]
-  for (uint i = 0u; i < 16u; ++i)
-  {
-    if (i >= compactLightsPerCluster)
+    [loop]
+    for (uint lightIndex = 0u; lightIndex < ActiveLightCount; ++lightIndex)
     {
-      break;
+        const xiiGpuLightData lightData = g_Lights[lightIndex];
+        const uint lightType = GetLightType(lightData);
+
+        if (lightType == XII_LIGHT_TYPE_DIRECTIONAL)
+            continue;
+
+        if (!SphereIntersectsAabb(lightData.BoundsCenterAndRadius, cluster.MinBounds.xyz, cluster.MaxBounds.xyz))
+            continue;
+
+        if (localCount < MaxLightsPerCluster)
+        {
+            g_LightIndex[listOffset + localCount] = lightIndex;
+            ++localCount;
+        }
     }
 
-    const uint dstIndex = startOffset + i;
-    if (dstIndex >= ClusterLightIndices.Length)
-    {
-      break;
-    }
-
-    const uint candidate = (descriptorHash + depthHash + clusterIndex * 131u + i * 17u) % lightCount;
-    ClusterLightIndices[dstIndex] = candidate;
-  }
+    g_LightGrid[clusterIndex] = uint2(listOffset, localCount);
 }
