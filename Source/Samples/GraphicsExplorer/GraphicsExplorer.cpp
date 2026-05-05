@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/UniquePtr.h>
 
