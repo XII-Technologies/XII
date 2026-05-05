@@ -9,6 +9,7 @@
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
@@ -23,7 +24,6 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
-#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -232,6 +232,11 @@ namespace
         return m_uiSampleCount < rhs.m_uiSampleCount;
       return m_uiArraySliceCount < rhs.m_uiArraySliceCount;
     }
+
+    XII_ALWAYS_INLINE bool operator==(const DebugRenderPassKey& rhs) const
+    {
+      return m_ColorFormat == rhs.m_ColorFormat && m_DepthFormat == rhs.m_DepthFormat && m_uiSampleCount == rhs.m_uiSampleCount && m_uiArraySliceCount == rhs.m_uiArraySliceCount;
+    }
   };
 
   enum class DebugPipelineKind : xiiUInt8
@@ -271,6 +276,11 @@ namespace
       if (m_bMonochrome != rhs.m_bMonochrome)
         return m_bMonochrome < rhs.m_bMonochrome;
       return m_pRenderPass < rhs.m_pRenderPass;
+    }
+
+    XII_ALWAYS_INLINE bool operator==(const DebugPipelineKey& rhs) const
+    {
+      return m_Kind == rhs.m_Kind && m_CameraMode == rhs.m_CameraMode && m_Topology == rhs.m_Topology && m_bPreTransformed == rhs.m_bPreTransformed && m_bMonochrome == rhs.m_bMonochrome && m_pRenderPass == rhs.m_pRenderPass;
     }
   };
 
