@@ -91,6 +91,7 @@ xiiView::xiiView()
   XII_ASSERT_DEV(pDevice != nullptr, "No default device available. A view requires a device to initialize its resources.");
 
   m_ViewPassResources.m_Profiler.Initialize(pDevice);
+  m_ViewPassResources.m_LightingSystem.Initialize(pDevice);
   m_ResourceCache.Initialize(pDevice);
 
   UpdateRenderResolutionState();
@@ -98,6 +99,7 @@ xiiView::xiiView()
 
 xiiView::~xiiView()
 {
+  m_ViewPassResources.m_LightingSystem.Shutdown();
   m_ViewPassResources.m_Profiler.Shutdown();
   m_ResourceCache.Shutdown();
 }
@@ -239,6 +241,47 @@ xiiUInt32 xiiView::GetRenderResolutionHeight() const
 {
   UpdateRenderResolutionState();
   return m_Data.m_uiRenderResolutionHeight;
+}
+
+////////// Lighting Data Upload //////////
+//
+// Uploads per-view camera, frame, and light data into persistent GAL buffers once per frame.
+// A tiny graph token makes the dependency explicit for clustering and all downstream lighting passes.
+
+struct xiiLightingDataUploadData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRGBufferHandle m_hLightingDataReady; ///< UAV out token written after persistent lighting buffers have been uploaded.
+};
+
+void xiiView::SetupLightingDataUpload(xiiLightingDataUploadData& data, xiiRGBuilder& builder)
+{
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = 4U;
+  description.m_uiSize              = 4U;
+  description.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  description.m_Usage               = xiiGALResourceUsage::Default;
+
+  data.m_hLightingDataReady = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightingDataReady, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  builder.SetPassSideEffects(true);
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteLightingDataUpload(const xiiLightingDataUploadData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("LightingDataUpload");
+  {
+    m_ViewPassResources.m_LightingSystem.UploadFrameData(cmd);
+
+    const xiiUInt32 uiReadyToken = 1U;
+    cmd.UpdateBuffer(context.GetBuffer(data.m_hLightingDataReady), 0U, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&uiReadyToken), sizeof(uiReadyToken)));
+  }
+  cmd.EndDebugGroup();
 }
 
 ////////// GPU occlusion readback //////////
@@ -592,20 +635,21 @@ struct xiiClusterBuildData
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiRGBufferHandle m_hLightingDataReady;  ///< SRV in dependency token that ensures persistent lighting buffers are uploaded.
   xiiRGBufferHandle m_hClusterConstants;   ///< SRV in (structured buffer of cluster build constants, including cluster counts and depth range, consumed by the Cluster Build pass).
   xiiRGBufferHandle m_hClusterDescriptors; ///< UAV out (structured buffer of cluster descriptors, one per cluster, consumed by main lighting pass).
 };
 
 void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder)
 {
-  const xiiUInt32 uiClusterCountX = (GetRenderResolutionWidth() + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
-  const xiiUInt32 uiClusterCountY = (GetRenderResolutionHeight() + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
-  const xiiUInt32 uiTotalClusters = uiClusterCountX * uiClusterCountY * XII_CLUSTER_Z_SLICES;
+  data.m_hLightingDataReady = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightingDataReady, xiiGALResourceStateFlags::ShaderResource);
+
+  const xiiUInt32 uiTotalClusters = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
 
   xiiGALBufferCreationDescription description;
   description.m_uiElementByteStride = 32U; // float4 min + float4 max per cluster AABB
   description.m_uiSize              = description.m_uiElementByteStride * uiTotalClusters;
-  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   description.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hClusterDescriptors        = builder.WriteBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, description, xiiGALResourceStateFlags::UnorderedAccess);
 
@@ -613,12 +657,12 @@ void xiiView::SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder
 
   description.m_uiElementByteStride = 0;
   description.m_uiSize              = sizeof(xiiLightClusteringConstants);
-  description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  description.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
   description.m_Mode                = xiiGALBufferMode::Undefined;
   description.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
   description.m_Usage               = xiiGALResourceUsage::Dynamic;
 
-  data.m_hClusterConstants = builder.WriteBuffer("xiiLightClusteringConstants", description, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hClusterConstants = builder.WriteBuffer("xiiLightClusteringConstants", description, xiiGALResourceStateFlags::ConstantBuffer);
 }
 
 void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context)
@@ -627,10 +671,10 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
 
   cmd.BeginDebugGroup("ClusterGridBuild");
   {
-    xiiUInt32 uiClusterCountX = (GetRenderResolutionWidth() + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
-    xiiUInt32 uiClusterCountY = (GetRenderResolutionHeight() + XII_CLUSTER_TILE_SIZE - 1U) / XII_CLUSTER_TILE_SIZE;
-    xiiUInt32 uiClusterCountZ = XII_CLUSTER_Z_SLICES;
-    xiiUInt32 uiTotalClusters = uiClusterCountX * uiClusterCountY * uiClusterCountZ;
+    xiiUInt32 uiClusterCountX = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetClusterCountX(), 1U);
+    xiiUInt32 uiClusterCountY = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetClusterCountY(), 1U);
+    xiiUInt32 uiClusterCountZ = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetClusterCountZ(), 1U);
+    xiiUInt32 uiTotalClusters = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
 
     {
       xiiGALMapHelper<xiiLightClusteringConstants> pClusteringConstants(cmd, context.GetBuffer(data.m_hClusterConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
@@ -642,14 +686,15 @@ void xiiView::ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassCont
       pClusteringConstants->NearPlane           = m_pCamera->GetNearPlane();
       pClusteringConstants->FarPlane            = m_pCamera->GetFarPlane();
       pClusteringConstants->LogFarOverNear      = xiiMath::Log2(pClusteringConstants->FarPlane / pClusteringConstants->NearPlane);
-      pClusteringConstants->TilePixelsX         = XII_CLUSTER_TILE_SIZE;
-      pClusteringConstants->TilePixelsY         = XII_CLUSTER_TILE_SIZE;
-      pClusteringConstants->MaxLightsPerCluster = XII_MAX_LIGHTS_PER_CLUSTER;
-      pClusteringConstants->ActiveLightCount    = 0; ///< \todo : write actual count of active lights from extraction.
+      pClusteringConstants->TilePixelsX         = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiClusterTileSize;
+      pClusteringConstants->TilePixelsY         = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiClusterTileSize;
+      pClusteringConstants->MaxLightsPerCluster = m_ViewPassResources.m_LightingSystem.GetSettings().m_uiMaxLightsPerCluster;
+      pClusteringConstants->ActiveLightCount    = m_ViewPassResources.m_LightingSystem.GetActiveLightCount();
     }
 
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pClusterBuildPipeline);
-    cmd.ResolveAndSetShaderResourceBufferView("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_ClustersOut", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
 
@@ -669,33 +714,37 @@ struct xiiLightListData
   XII_DECLARE_POD_TYPE();
 
   xiiRGBufferHandle m_hClusterDescriptors;    ///< SRV in (structured buffer of cluster descriptors, one per cluster, from this frame's Cluster Build).
+  xiiRGBufferHandle m_hClusterConstants;      ///< Constant buffer in (cluster dimensions and active light count).
   xiiRGBufferHandle m_hLightIndexBuffer;      ///< SRV in (structured buffer of uint, one per light, containing light type and other metadata, from extraction).
   xiiRGBufferHandle m_hLightGridBuffer;       ///< UAV out (structured buffer of uint, containing compact light lists per cluster, consumed by main lighting pass).
   xiiUInt32         m_uiActiveLightCount = 0; ///< Number of active lights to process (from extraction). This is used to avoid processing the entire buffer when only a subset is populated.
+  xiiUInt32         m_uiTotalClusters    = 0; ///< Number of clusters that need a compact light list.
 };
 
 void xiiView::SetupLightListBuild(xiiLightListData& data, xiiRGBuilder& builder)
 {
   data.m_hClusterDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_ClusterDescriptors, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hClusterConstants   = builder.ReadBuffer("xiiLightClusteringConstants", xiiGALResourceStateFlags::ConstantBuffer);
 
-  const xiiUInt32 uiMaxClusters    = 16U * 9U * 24U; // worst case
-  const xiiUInt32 uiMaxLightsPerCl = 256U;
+  const xiiUInt32 uiMaxClusters    = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetTotalClusterCount(), 1U);
+  const xiiUInt32 uiMaxLightsPerCl = xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetSettings().m_uiMaxLightsPerCluster, 1U);
 
   xiiGALBufferCreationDescription indexBufferDescription;
   indexBufferDescription.m_uiElementByteStride = 4U;
   indexBufferDescription.m_uiSize              = 4U * uiMaxClusters * uiMaxLightsPerCl;
-  indexBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  indexBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   indexBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hLightIndexBuffer                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, indexBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
   xiiGALBufferCreationDescription gridBufferDescription;
   gridBufferDescription.m_uiElementByteStride = 8U; // uint2 (offset, count) per cluster
   gridBufferDescription.m_uiSize              = gridBufferDescription.m_uiElementByteStride * uiMaxClusters;
-  gridBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
+  gridBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
   gridBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
   data.m_hLightGridBuffer                     = builder.WriteBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, gridBufferDescription, xiiGALResourceStateFlags::UnorderedAccess);
 
-  data.m_uiActiveLightCount = 1024; ///< \todo : driven by actual count of active lights from extraction.
+  data.m_uiActiveLightCount = m_ViewPassResources.m_LightingSystem.GetActiveLightCount();
+  data.m_uiTotalClusters    = uiMaxClusters;
 
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_VisibilityPasses.m_pLightListPipeline, "Shaders/Pipeline/LightListBuild.xiiShader");
 }
@@ -707,11 +756,14 @@ void xiiView::ExecuteLightListBuild(const xiiLightListData& data, xiiRGPassConte
   cmd.BeginDebugGroup("LightListBuild");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pLightListPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    m_ViewPassResources.m_LightingSystem.BindLightData(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetConstantBuffer("xiiLightClusteringConstants", context.GetBuffer(data.m_hClusterConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_Clusters", context.GetBuffer(data.m_hClusterDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(data.m_uiActiveLightCount + 63U) / 64U, 1U, 1U});
+    cmd.DispatchCompute({(data.m_uiTotalClusters + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -776,7 +828,7 @@ struct xiiFroxelAllocationData
 void xiiView::SetupFroxelAllocation(xiiFroxelAllocationData& data, xiiRGBuilder& builder)
 {
   xiiGALBufferCreationDescription froxelMetadataBufferDescription;
-  froxelMetadataBufferDescription.m_uiElementByteStride = 32U;                                                                      // per-froxel density + phase + absorption
+  froxelMetadataBufferDescription.m_uiElementByteStride = 16U;                                                                      // per-froxel density + phase + depth + extinction
   froxelMetadataBufferDescription.m_uiSize              = froxelMetadataBufferDescription.m_uiElementByteStride * 128U * 72U * 64U; // froxel volume
   froxelMetadataBufferDescription.m_BindFlags           = xiiGALBindFlags::UnorderedAccess;
   froxelMetadataBufferDescription.m_Mode                = xiiGALBufferMode::Structured;
@@ -803,10 +855,11 @@ void xiiView::ExecuteFroxelAllocation(const xiiFroxelAllocationData& data, xiiRG
   cmd.BeginDebugGroup("VolumetricGridAllocation");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_VisibilityPasses.m_pFroxelSetupPipeline);
-    cmd.ResolveAndSetUnorderedAccessBufferView("g_FroxelMetaOut", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
-    cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScatteringOut", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_FroxelMetadata", context.GetBuffer(data.m_hFroxelMetadata)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
-    cmd.DispatchCompute({(128u + 7U) / 8U, (72U + 7U) / 8U, 8U});
+    cmd.DispatchCompute({(128u + 7U) / 8U, (72U + 7U) / 8U, 64U});
   }
   cmd.EndDebugGroup();
 }
@@ -890,6 +943,50 @@ void xiiView::ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, x
     cmd.ResolveAndSetUnorderedAccessBufferView("g_CascadeOut", context.GetBuffer(data.m_hCascadeMatrices)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({1U, 1U, 1U});
+  }
+  cmd.EndDebugGroup();
+}
+
+////////// GPU Local Shadow Atlas Allocation //////////
+//
+// Allocates deterministic atlas descriptors for all shadow-casting local lights.
+
+struct xiiLocalShadowAtlasAllocationData
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiRGBufferHandle m_hLightingDataReady;
+  xiiRGBufferHandle m_hLocalShadowAtlasDescriptors;
+};
+
+void xiiView::SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData& data, xiiRGBuilder& builder)
+{
+  data.m_hLightingDataReady = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightingDataReady, xiiGALResourceStateFlags::ShaderResource);
+
+  xiiGALBufferCreationDescription description;
+  description.m_uiElementByteStride = 32U;
+  description.m_uiSize              = description.m_uiElementByteStride * k_uiMaxLights;
+  description.m_BindFlags           = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  description.m_Mode                = xiiGALBufferMode::Structured;
+  description.m_Usage               = xiiGALResourceUsage::Default;
+
+  data.m_hLocalShadowAtlasDescriptors = builder.WriteBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, description, xiiGALResourceStateFlags::UnorderedAccess);
+
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlasAllocationPipeline, "Shaders/Pipeline/LocalLightShadowAtlasAllocation.xiiShader");
+  builder.SetPassAllowMerge(false);
+}
+
+void xiiView::ExecuteLocalShadowAtlasAllocation(const xiiLocalShadowAtlasAllocationData& data, xiiRGPassContext& context)
+{
+  xiiGALCommandList& cmd = context.GetCommandList();
+
+  cmd.BeginDebugGroup("LocalShadowAtlasAllocation");
+  {
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlasAllocationPipeline);
+    m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
+    cmd.ResolveAndSetUnorderedAccessBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
+    cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
+    cmd.DispatchCompute({(xiiMath::Max(m_ViewPassResources.m_LightingSystem.GetActiveLightCount(), 1U) + 63U) / 64U, 1U, 1U});
   }
   cmd.EndDebugGroup();
 }
@@ -986,8 +1083,9 @@ struct xiiSpotShadowData
   XII_DECLARE_POD_TYPE();
 
   xiiRGBufferHandle  m_hShadowCasterCommands; ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per spot light, from this frame's Shadow Caster Build pass).
-  xiiRGTextureHandle m_hLocalShadowAtlas;     ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
-  xiiUInt32          m_uiSpotLightCount = 0;  ///< Number of active spot lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
+  xiiRGBufferHandle  m_hLocalShadowAtlasDescriptors;
+  xiiRGTextureHandle m_hLocalShadowAtlas;    ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
+  xiiUInt32          m_uiSpotLightCount = 0; ///< Number of active spot lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
 };
 
 void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder)
@@ -1005,9 +1103,10 @@ void xiiView::SetupSpotShadowData(xiiSpotShadowData& data, xiiRGBuilder& builder
     m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
   }
 
-  data.m_hShadowCasterCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
-  data.m_hLocalShadowAtlas     = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
-  data.m_hLocalShadowAtlas     = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hShadowCasterCommands        = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlas            = builder.ImportTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hLocalShadowAtlas            = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
 
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
   data.m_uiSpotLightCount                            = CountRenderDataByTypeName(renderData, "xiiSpotLightRenderData");
@@ -1045,14 +1144,30 @@ struct xiiPointShadowData
   XII_DECLARE_POD_TYPE();
 
   xiiRGBufferHandle  m_hShadowCasterCommands; ///< SRV in (structured buffer of DrawIndexedIndirectArguments, one per point light, from this frame's Shadow Caster Build pass).
+  xiiRGBufferHandle  m_hLocalShadowAtlasDescriptors;
   xiiRGTextureHandle m_hLocalShadowAtlas;     ///< Same atlas for spot and point lights, with different tile allocations. UAV out (texture atlas for local shadow maps, written by Shadow Passes, read by main lighting pass).
   xiiUInt32          m_uiPointLightCount = 0; ///< Number of active point lights for the current frame, used to avoid processing when zero and to drive atlas tile allocation in a full implementation.
 };
 
 void xiiView::SetupPointShadowData(xiiPointShadowData& data, xiiRGBuilder& builder)
 {
-  data.m_hShadowCasterCommands = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
-  data.m_hLocalShadowAtlas     = builder.WriteTexture(builder.DeclareTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, {}), xiiGALResourceStateFlags::DepthWrite);
+  if (!m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type                                     = xiiGALResourceDimension::Texture2D;
+    description.m_Format                                   = xiiGALResourceFormat::D32Float;
+    description.m_Size.width                               = k_uiLocalShadowAtlasSize;
+    description.m_Size.height                              = k_uiLocalShadowAtlasSize;
+    description.m_uiMipLevels                              = 1U;
+    description.m_BindFlags                                = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+    description.m_Usage                                    = xiiGALResourceUsage::Default;
+    m_ViewPassResources.m_ShadowPasses.m_pLocalShadowAtlas = xiiGALDevice::GetDefaultDevice()->CreateTexture(description);
+  }
+
+  data.m_hShadowCasterCommands        = builder.ReadBuffer(xiiRGBlackboardKeys::k_DrawShadowCasterCommands, xiiGALResourceStateFlags::IndirectArgument);
+  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
+  data.m_hLocalShadowAtlas            = builder.WriteTexture(data.m_hLocalShadowAtlas, xiiGALResourceStateFlags::DepthWrite);
 
   const xiiArrayPtr<xiiRenderData* const> renderData = m_pExtractedData != nullptr ? m_pExtractedData->GetAllRenderData() : xiiArrayPtr<xiiRenderData* const>();
   data.m_uiPointLightCount                           = CountRenderDataByTypeName(renderData, "xiiPointLightRenderData");
@@ -1106,7 +1221,7 @@ void xiiView::SetupRayTracedShadowData(xiiRayTracedShadowData& data, xiiRGBuilde
   description.m_Usage       = xiiGALResourceUsage::Default;
   data.m_hRTRawShadowMask   = builder.WriteTexture(xiiRGBlackboardKeys::k_RTRawShadowMask, description, xiiGALResourceStateFlags::UnorderedAccess);
 
-  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pShadowDenoisePipeline, "Shaders/Pipeline/RTShadow.xiiShader");
+  xiiView::EnsureComputePipeline(m_ViewPassResources.m_ShadowPasses.m_pRayTracedShadowPipeline, "Shaders/Pipeline/RTShadow.xiiShader");
 
   builder.SetPassAllowMerge(false);
 }
@@ -1119,7 +1234,8 @@ void xiiView::ExecuteRayTracedShadowData(const xiiRayTracedShadowData& data, xii
 
   cmd.BeginDebugGroup("Ray-Traced Shadows");
   {
-    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pShadowDenoisePipeline); // reusing slot for RT pipeline
+    cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pRayTracedShadowPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_RTShadowOut", context.GetTexture(data.m_hRTRawShadowMask)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -1208,6 +1324,7 @@ void xiiView::ExecuteContactShadowData(const xiiContactShadowData& data, xiiRGPa
   cmd.BeginDebugGroup("ContactShadows");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_ShadowPasses.m_pContactShadowPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_SceneDepth", context.GetTexture(data.m_hSceneDepth)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_ContactShadowOut", context.GetTexture(data.m_hContactShadow)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
@@ -2059,23 +2176,27 @@ struct xiiDeferredDirectLightingData
   xiiRGTextureHandle m_hRayTracedFinalShadowMask; ///< ShaderResource in (denoised ray traced shadows).
   xiiRGTextureHandle m_hContactShadowTerm;        ///< ShaderResource in (contact shadow mask).
   xiiRGTextureHandle m_hDirectionalShadowAtlas;   ///< ShaderResource in (directional shadow atlas).
-  xiiRGBufferHandle  m_hLightGridBuffer;          ///< ShaderResource in (cluster light grid).
-  xiiRGBufferHandle  m_hLightIndexBuffer;         ///< ShaderResource in (cluster light indices).
-  xiiRGTextureHandle m_hDirectLightingBuffer;     ///< UnorderedAccess out (direct lighting HDR buffer).
+  xiiRGTextureHandle m_hLocalShadowAtlas;         ///< ShaderResource in (local light shadow atlas).
+  xiiRGBufferHandle  m_hLocalShadowAtlasDescriptors;
+  xiiRGBufferHandle  m_hLightGridBuffer;      ///< ShaderResource in (cluster light grid).
+  xiiRGBufferHandle  m_hLightIndexBuffer;     ///< ShaderResource in (cluster light indices).
+  xiiRGTextureHandle m_hDirectLightingBuffer; ///< UnorderedAccess out (direct lighting HDR buffer).
 };
 
 void xiiView::SetupDirectLighting(xiiDeferredDirectLightingData& data, xiiRGBuilder& builder)
 {
-  data.m_hGBufferAlbedo            = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferNormal            = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hGBufferMaterial          = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hSceneDepth               = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hStableAmbientOcclusion   = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hRayTracedFinalShadowMask = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hContactShadowTerm        = builder.ReadTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hDirectionalShadowAtlas   = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightGridBuffer          = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
-  data.m_hLightIndexBuffer         = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferAlbedo               = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferAlbedo, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferNormal               = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferNormal, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hGBufferMaterial             = builder.ReadTexture(xiiRGBlackboardKeys::k_GBufferMaterial, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hSceneDepth                  = builder.ReadTexture(xiiRGBlackboardKeys::k_SceneDepthTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hStableAmbientOcclusion      = builder.ReadTexture(xiiRGBlackboardKeys::k_StableAOTexture, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hRayTracedFinalShadowMask    = builder.ReadTexture(xiiRGBlackboardKeys::k_RTFinalShadowMask, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hContactShadowTerm           = builder.ReadTexture(xiiRGBlackboardKeys::k_ContactShadowTerm, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hDirectionalShadowAtlas      = builder.ReadTexture(xiiRGBlackboardKeys::k_DirectionalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlas            = builder.ReadTexture(xiiRGBlackboardKeys::k_LocalShadowAtlas, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLocalShadowAtlasDescriptors = builder.ReadBuffer(xiiRGBlackboardKeys::k_LocalShadowAtlasDescs, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightGridBuffer             = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer            = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -2097,6 +2218,7 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
   cmd.BeginDebugGroup("DeferredDirectLighting");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pDirectLightingPipeline);
+    m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
 
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -2106,8 +2228,10 @@ void xiiView::ExecuteDirectLighting(const xiiDeferredDirectLightingData& data, x
     cmd.ResolveAndSetShaderResourceTextureView("g_RTShadow", context.GetTexture(data.m_hRayTracedFinalShadowMask)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ContactShadow", context.GetTexture(data.m_hContactShadowTerm)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_ShadowAtlas", context.GetTexture(data.m_hDirectionalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceTextureView("g_LocalShadowAtlas", context.GetTexture(data.m_hLocalShadowAtlas)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LocalShadowAtlasDescs", context.GetBuffer(data.m_hLocalShadowAtlasDescriptors)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_DirectOut", context.GetTexture(data.m_hDirectLightingBuffer)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
@@ -2165,6 +2289,7 @@ void xiiView::ExecuteIndirectLighting(const xiiDeferredIndirectLightingData& dat
   cmd.BeginDebugGroup("DeferredIndirectLighting");
   {
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pIndirectLightingPipeline);
+    m_ViewPassResources.m_LightingSystem.BindFrameConstants(cmd, xiiGALShaderType::Compute);
 
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufAlbedo", context.GetTexture(data.m_hGBufferAlbedo)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_GBufNormal", context.GetTexture(data.m_hGBufferNormal)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
@@ -2356,6 +2481,7 @@ struct xiiVolumetricFogIntegrationData
 
   xiiRGTextureHandle m_hFroxelScatteringBuffer; ///< ShaderResource in (froxel scattering buffer).
   xiiRGBufferHandle  m_hLightGridBuffer;        ///< ShaderResource in (cluster light grid).
+  xiiRGBufferHandle  m_hLightIndexBuffer;       ///< ShaderResource in (cluster light indices).
   xiiRGTextureHandle m_hVolumetricScattering;   ///< UnorderedAccess out (integrated volumetric scattering).
 };
 
@@ -2363,6 +2489,7 @@ void xiiView::SetupVolumetricFogIntegration(xiiVolumetricFogIntegrationData& dat
 {
   data.m_hFroxelScatteringBuffer = builder.ReadTexture(xiiRGBlackboardKeys::k_FroxelScatteringBuffer, xiiGALResourceStateFlags::ShaderResource);
   data.m_hLightGridBuffer        = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightGridBuffer, xiiGALResourceStateFlags::ShaderResource);
+  data.m_hLightIndexBuffer       = builder.ReadBuffer(xiiRGBlackboardKeys::k_LightIndexBuffer, xiiGALResourceStateFlags::ShaderResource);
 
   xiiGALTextureCreationDescription description;
   description.m_Type           = xiiGALResourceDimension::Texture2D;
@@ -2385,8 +2512,10 @@ void xiiView::ExecuteVolumetricFogIntegration(const xiiVolumetricFogIntegrationD
   {
     cmd.SetPipelineState(m_ViewPassResources.m_LightingPasses.m_pVolumetricIntegratePipeline);
 
+    m_ViewPassResources.m_LightingSystem.BindLightingResources(cmd, xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceTextureView("g_FroxelScattering", context.GetTexture(data.m_hFroxelScatteringBuffer)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetShaderResourceBufferView("g_LightGrid", context.GetBuffer(data.m_hLightGridBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
+    cmd.ResolveAndSetShaderResourceBufferView("g_LightIndex", context.GetBuffer(data.m_hLightIndexBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessTextureView("g_VolumetricOut", context.GetTexture(data.m_hVolumetricScattering)->GetDefaultView(xiiGALTextureViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(GetRenderResolutionWidth() + 7U) / 8U, (GetRenderResolutionHeight() + 7U) / 8U, 1U});
@@ -3535,12 +3664,21 @@ void xiiView::ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& c
 
 void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlackboard& blackboard)
 {
-  XII_IGNORE_UNUSED(blackboard);
-
   // CPU dynamic resolution PID (pre-graph). View owns scale/resolution state.
   RunDynamicResolutionPID();
 
+  xiiUInt32 uiFrameIndex = 0U;
+  blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
+
+  if (m_pExtractedData != nullptr)
+  {
+    m_ViewPassResources.m_LightingSystem.BuildFrameData(*this, *m_pExtractedData, uiFrameIndex);
+  }
+  m_ViewPassResources.m_LightingSystem.WriteBlackboard(blackboard);
+
   // Each stage adds its passes to the graph. Dependency ordering is handled by the render graph compiler (topological sort + culling).
+
+  graph.AddPass<xiiLightingDataUploadData>("LightingDataUpload", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLightingDataUpload, this), xiiMakeDelegate(&xiiView::ExecuteLightingDataUpload, this));
 
   // Visibility preparation passes, which produce data consumed by the main render passes in later stages.
   graph.AddPass<xiiOcclusionReadbackData>("GpuOcclusionReadback", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupOcclusionReadback, this), xiiMakeDelegate(&xiiView::ExecuteOcclusionReadback, this));
@@ -3556,12 +3694,13 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
 
   // Shadow preparation passes, which produce data consumed by the main shadow pass in later stages.
   graph.AddPass<xiiShadowCascadeSetupData>("ShadowCascadeSetup", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowCascadeSetup, this), xiiMakeDelegate(&xiiView::ExecuteShadowCascadeSetup, this));
+  graph.AddPass<xiiLocalShadowAtlasAllocationData>("LocalShadowAtlasAllocation", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupLocalShadowAtlasAllocation, this), xiiMakeDelegate(&xiiView::ExecuteLocalShadowAtlasAllocation, this));
   graph.AddPass<xiiDirectionalShadowData>("DirectionalShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDirectionalShadowData, this), xiiMakeDelegate(&xiiView::ExecuteDirectionalShadowData, this));
   graph.AddPass<xiiSpotShadowData>("SpotShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupSpotShadowData, this), xiiMakeDelegate(&xiiView::ExecuteSpotShadowData, this));
   graph.AddPass<xiiPointShadowData>("PointShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupPointShadowData, this), xiiMakeDelegate(&xiiView::ExecutePointShadowData, this));
-  graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
-  graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
-  graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
+  graph.AddPass<xiiRayTracedShadowData>("RayTracedShadowData", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupRayTracedShadowData, this), xiiMakeDelegate(&xiiView::ExecuteRayTracedShadowData, this));
+  graph.AddPass<xiiShadowDenoiseData>("ShadowDenoise", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupShadowDenoiseData, this), xiiMakeDelegate(&xiiView::ExecuteShadowDenoiseData, this));
+  graph.AddPass<xiiContactShadowData>("ContactShadow", xiiGALCommandQueueFlags::Compute, xiiMakeDelegate(&xiiView::SetupContactShadowData, this), xiiMakeDelegate(&xiiView::ExecuteContactShadowData, this));
 
   // Depth and motion prepasses, which produce depth and motion data consumed by later passes.
   graph.AddPass<xiiDepthPrepassData>("DepthPrepass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiView::SetupDepthPrepass, this), xiiMakeDelegate(&xiiView::ExecuteDepthPrepass, this));

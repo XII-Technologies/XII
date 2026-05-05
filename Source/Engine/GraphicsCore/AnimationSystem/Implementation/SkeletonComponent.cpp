@@ -163,7 +163,7 @@ void xiiSkeletonComponent::Update()
   if (m_hAnimationGraph.IsValid())
   {
     m_AnimGraphInstance.SetGraph(m_hAnimationGraph);
-    m_AnimGraphInstance.Update(*pSkeleton, deltaTime, m_CurrentPose);
+    m_AnimGraphInstance.Update(*pSkeleton.GetPointer(), deltaTime, m_CurrentPose);
   }
   else if (m_hAnimationClip.IsValid())
   {
@@ -176,9 +176,9 @@ void xiiSkeletonComponent::Update()
   }
   else
   {
-    m_CurrentPose.ResetToRestPose(*pSkeleton);
-    m_CurrentPose.BuildModelSpacePose(*pSkeleton);
-    m_CurrentPose.BuildSkinningMatrices(*pSkeleton);
+    m_CurrentPose.ResetToRestPose(*pSkeleton.GetPointer());
+    m_CurrentPose.BuildModelSpacePose(*pSkeleton.GetPointer());
+    m_CurrentPose.BuildSkinningMatrices(*pSkeleton.GetPointer());
   }
 
   if (m_bApplyToOwnerMesh)
@@ -274,11 +274,11 @@ void xiiSkeletonPoseComponent::Update()
 
   if (m_CurrentPose.m_LocalTransforms.GetCount() != pSkeleton->GetJointCount())
   {
-    m_CurrentPose.ResetToRestPose(*pSkeleton);
+    m_CurrentPose.ResetToRestPose(*pSkeleton.GetPointer());
   }
 
-  m_CurrentPose.BuildModelSpacePose(*pSkeleton);
-  m_CurrentPose.BuildSkinningMatrices(*pSkeleton);
+  m_CurrentPose.BuildModelSpacePose(*pSkeleton.GetPointer());
+  m_CurrentPose.BuildSkinningMatrices(*pSkeleton.GetPointer());
 
   if (m_bApplyToOwnerMesh)
   {

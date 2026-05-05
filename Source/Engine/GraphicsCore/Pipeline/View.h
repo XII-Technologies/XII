@@ -12,6 +12,7 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 #include <GraphicsCore/Declarations.h>
+#include <GraphicsCore/Lighting/LightingSystem.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphProfiler.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -35,12 +36,14 @@ struct xiiLODSelectData;
 struct xiiInstanceUpdateData;
 struct xiiDrawBuildData;
 struct xiiShadowCasterBuildData;
+struct xiiLightingDataUploadData;
 struct xiiClusterBuildData;
 struct xiiLightListData;
 struct xiiReflectionProbeSelectData;
 struct xiiFroxelAllocationData;
 
 struct xiiShadowCascadeSetupData;
+struct xiiLocalShadowAtlasAllocationData;
 struct xiiDirectionalShadowData;
 struct xiiSpotShadowData;
 struct xiiPointShadowData;
@@ -260,6 +263,9 @@ private:
   void SetupShadowCasterBuild(xiiShadowCasterBuildData& data, xiiRGBuilder& builder);
   void ExecuteShadowCasterBuild(const xiiShadowCasterBuildData& data, xiiRGPassContext& context);
 
+  void SetupLightingDataUpload(xiiLightingDataUploadData& data, xiiRGBuilder& builder);
+  void ExecuteLightingDataUpload(const xiiLightingDataUploadData& data, xiiRGPassContext& context);
+
   void SetupClusterBuild(xiiClusterBuildData& data, xiiRGBuilder& builder);
   void ExecuteClusterBuild(const xiiClusterBuildData& data, xiiRGPassContext& context);
 
@@ -275,6 +281,9 @@ private:
 
   void SetupShadowCascadeSetup(xiiShadowCascadeSetupData& data, xiiRGBuilder& builder);
   void ExecuteShadowCascadeSetup(const xiiShadowCascadeSetupData& data, xiiRGPassContext& context);
+
+  void SetupLocalShadowAtlasAllocation(xiiLocalShadowAtlasAllocationData& data, xiiRGBuilder& builder);
+  void ExecuteLocalShadowAtlasAllocation(const xiiLocalShadowAtlasAllocationData& data, xiiRGPassContext& context);
 
   void SetupDirectionalShadowData(xiiDirectionalShadowData& data, xiiRGBuilder& builder);
   void ExecuteDirectionalShadowData(const xiiDirectionalShadowData& data, xiiRGPassContext& context);
@@ -513,11 +522,16 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState> m_pFroxelSetupPipeline;
     } m_VisibilityPasses;
 
+    //  Frame lighting data uploaded once and consumed by clustered, deferred, and forward lighting passes.
+    xiiLightingSystem m_LightingSystem;
+
     //  Stage 2 - Shadows
     struct ShadowPasses
     {
       xiiSharedPtr<xiiGALComputePipelineState>  m_pCascadeSetupPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pLocalShadowAtlasAllocationPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pShadowDepthPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pRayTracedShadowPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pShadowDenoisePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pContactShadowPipeline;
       xiiSharedPtr<xiiGALTexture>               m_pDirectionalShadowAtlas; // D32F[4] 4096x4096
