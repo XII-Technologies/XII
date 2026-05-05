@@ -23,6 +23,7 @@
 #include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+#include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 
 xiiCVarFloat cvar_DebugTextScale("Debug.TextScale", 1.0f, xiiCVarFlags::Save, "Global scale for debug text.");
 
@@ -1759,7 +1760,7 @@ namespace
     return vertexShader.CreateInputLayout(description);
   }
 
-  static xiiSharedPtr<xiiGALInputLayout> EnsurePositionOnlyInputLayout(xiiShaderPermutationResource& permutation)
+  static xiiSharedPtr<xiiGALInputLayout> EnsurePositionOnlyInputLayout(const xiiShaderPermutationResource& permutation)
   {
     if (s_pPositionOnlyInputLayout == nullptr)
     {
@@ -1774,7 +1775,7 @@ namespace
     return s_pPositionOnlyInputLayout;
   }
 
-  static xiiSharedPtr<xiiGALInputLayout> EnsureVertexInputLayout(xiiShaderPermutationResource& permutation)
+  static xiiSharedPtr<xiiGALInputLayout> EnsureVertexInputLayout(const xiiShaderPermutationResource& permutation)
   {
     if (s_pVertexInputLayout == nullptr)
     {
@@ -1790,7 +1791,7 @@ namespace
     return s_pVertexInputLayout;
   }
 
-  static xiiSharedPtr<xiiGALInputLayout> EnsureTexVertexInputLayout(xiiShaderPermutationResource& permutation)
+  static xiiSharedPtr<xiiGALInputLayout> EnsureTextureVertexInputLayout(const xiiShaderPermutationResource& permutation)
   {
     if (s_pTexVertexInputLayout == nullptr)
     {
@@ -1925,7 +1926,7 @@ namespace
     pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology           = topology;
     pipelineDescription.m_GraphicsPipeline.m_uiViewportCount             = 1U;
     pipelineDescription.m_GraphicsPipeline.m_uiSubpassIndex              = 0U;
-    pipelineDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount = static_cast<xiiUInt8>(xiiMath::Max(1U, drawState.m_pRenderPass->GetDescription().m_Attachments[0].m_uiSampleCount));
+    pipelineDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount = static_cast<xiiUInt8>(xiiMath::Max(xiiUInt8{1U}, drawState.m_pRenderPass->GetDescription().m_Attachments[0].m_uiSampleCount));
 
     switch (pipelineKind)
     {
@@ -1936,7 +1937,7 @@ namespace
         pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureVertexInputLayout(*pPermutation.GetPointer());
         break;
       case DebugPipelineKind::TexturedPrimitive:
-        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureTexVertexInputLayout(*pPermutation.GetPointer());
+        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureTextureVertexInputLayout(*pPermutation.GetPointer());
         break;
       case DebugPipelineKind::Text:
         pipelineDescription.m_GraphicsPipeline.m_pInputLayout.Clear();
@@ -2217,7 +2218,7 @@ namespace
 
       for (xiiUInt32 uiOffset = 0; uiOffset < vertices.GetCount(); uiOffset += TEX_TRIANGLE_VERTICES_PER_BATCH)
       {
-        const xiiUInt32                        uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, TEX_TRIANGLE_VERTICES_PER_BATCH);
+        const xiiUInt32                        uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, xiiUInt32{TEX_TRIANGLE_VERTICES_PER_BATCH});
         const xiiMeshBufferResourceHandle      hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, DynamicMeshBufferKind::TexturedTriangle);
         xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
         if (!pMeshBuffer.IsValid() || pMeshBuffer->GetVertexBuffer() == nullptr)
@@ -2255,7 +2256,7 @@ namespace
 
     for (xiiUInt32 uiOffset = 0; uiOffset < boxes.GetCount(); uiOffset += BOXES_PER_BATCH)
     {
-      const xiiUInt32            uiBatchCount  = xiiMath::Min(boxes.GetCount() - uiOffset, BOXES_PER_BATCH);
+      const xiiUInt32            uiBatchCount  = xiiMath::Min(boxes.GetCount() - uiOffset, xiiUInt32{BOXES_PER_BATCH});
       xiiSharedPtr<xiiGALBuffer> pInstanceData = AcquireDataBufferPage(allocator, bufferType, sizeof(BoxData));
       xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pInstanceData, 0U, xiiMakeArrayPtr(boxes.GetPtr() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
@@ -2287,7 +2288,7 @@ namespace
 
     for (xiiUInt32 uiOffset = 0; uiOffset < glyphs.GetCount(); uiOffset += GLYPHS_PER_BATCH)
     {
-      const xiiUInt32            uiBatchCount = xiiMath::Min(glyphs.GetCount() - uiOffset, GLYPHS_PER_BATCH);
+      const xiiUInt32            uiBatchCount = xiiMath::Min(glyphs.GetCount() - uiOffset, xiiUInt32{GLYPHS_PER_BATCH});
       xiiSharedPtr<xiiGALBuffer> pGlyphData   = AcquireDataBufferPage(allocator, BufferType::Glyphs, sizeof(GlyphData));
       xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pGlyphData, 0U, xiiMakeArrayPtr(glyphs.GetPtr() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
