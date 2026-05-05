@@ -24,7 +24,7 @@ xiiUInt64 xiiGALCommandQueue::Submit(xiiGALCommandList* pCommandList)
 
     const xiiGALCommandListCreationDescription& description = pCommandList->GetDescription();
 
-    XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(description.m_QueueFlags), "Submit failed: Command list queue flags [{0}] are incompatible with this queue [{1}].", description.m_QueueFlags.GetValue(), m_Description.m_QueueFlags.GetValue());
+    XII_ASSERT_DEV(m_Description.m_QueueFlags.AreAllSet(description.m_QueueFlags), "Submit failed: Command list queue flags [{0}] are incompatible with this queue [{1}].", xiiArgEnum(description.m_QueueFlags), xiiArgEnum(m_Description.m_QueueFlags));
 
     const xiiGALCommandList::RecordingState recordingState = pCommandList->GetRecordingState();
 

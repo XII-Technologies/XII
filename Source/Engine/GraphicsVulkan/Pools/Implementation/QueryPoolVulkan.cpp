@@ -164,7 +164,7 @@ xiiGALQueryPoolVulkan::QueryPoolInformation::~QueryPoolInformation()
 
   if (uiPendingQueries > 0)
   {
-    xiiLog::Error("There are '{}' pending queries of type {}.", uiPendingQueries, m_QueryType.GetValue());
+    xiiLog::Error("There are '{}' pending queries of type {}.", uiPendingQueries, xiiArgEnum(m_QueryType));
   }
 
   vk::Device vkLogicalDevice = m_pDeviceVulkan->GetVulkanLogicalDevice();
