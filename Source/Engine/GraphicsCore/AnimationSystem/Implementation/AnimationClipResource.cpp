@@ -17,78 +17,56 @@
 #  include <ozz/base/maths/soa_transform.h>
 #endif
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimationClipResource, 1, xiiRTTIDefaultAllocator<xiiAnimationClipResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiAnimationClipResource);
-// clang-format on
 
 namespace
 {
   static constexpr xiiUInt32 s_uiAnimationClipResourceVersion = 1U;
 
-  static void WriteBytes(xiiStreamWriter& ref_stream, xiiArrayPtr<const xiiUInt8> data)
-  {
-    ref_stream << data.GetCount();
-    if (!data.IsEmpty())
-    {
-      ref_stream.WriteBytes(data.GetPtr(), data.GetCount()).IgnoreResult();
-    }
-  }
-
-  static void ReadBytes(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& out_data)
-  {
-    xiiUInt32 uiCount = 0U;
-    ref_stream >> uiCount;
-    out_data.SetCountUninitialized(uiCount);
-    if (uiCount > 0U)
-    {
-      ref_stream.ReadBytes(out_data.GetData(), uiCount);
-    }
-  }
-
   template <typename KeyType, typename ValueType>
-  static ValueType SampleStepOrLinear(xiiArrayPtr<const KeyType> keys, float fTime, const ValueType& fallback)
+  static ValueType SampleStepOrLinear(xiiArrayPtr<const KeyType> pKeys, float fTime, const ValueType& fallback)
   {
-    if (keys.IsEmpty())
+    if (pKeys.IsEmpty())
       return fallback;
 
-    if (keys.GetCount() == 1U || fTime <= keys[0].m_fTime)
-      return keys[0].m_Value;
+    if (pKeys.GetCount() == 1U || fTime <= pKeys[0].m_fTime)
+      return pKeys[0].m_Value;
 
-    for (xiiUInt32 i = 1; i < keys.GetCount(); ++i)
+    for (xiiUInt32 i = 1; i < pKeys.GetCount(); ++i)
     {
-      if (fTime <= keys[i].m_fTime)
+      if (fTime <= pKeys[i].m_fTime)
       {
-        const float fRange = keys[i].m_fTime - keys[i - 1U].m_fTime;
-        const float fT     = fRange > 0.0f ? xiiMath::Saturate((fTime - keys[i - 1U].m_fTime) / fRange) : 0.0f;
-        return keys[i - 1U].m_Value + (keys[i].m_Value - keys[i - 1U].m_Value) * fT;
+        const float fRange = pKeys[i].m_fTime - pKeys[i - 1U].m_fTime;
+        const float fT     = fRange > 0.0f ? xiiMath::Saturate((fTime - pKeys[i - 1U].m_fTime) / fRange) : 0.0f;
+        return pKeys[i - 1U].m_Value + (pKeys[i].m_Value - pKeys[i - 1U].m_Value) * fT;
       }
     }
 
-    return keys[keys.GetCount() - 1U].m_Value;
+    return pKeys[pKeys.GetCount() - 1U].m_Value;
   }
 
-  static xiiQuat SampleQuat(xiiArrayPtr<const xiiAnimationKeyQuat> keys, float fTime, const xiiQuat& fallback)
+  static xiiQuat SampleQuat(xiiArrayPtr<const xiiAnimationKeyQuat> pKeys, float fTime, const xiiQuat& fallback)
   {
-    if (keys.IsEmpty())
+    if (pKeys.IsEmpty())
       return fallback;
 
-    if (keys.GetCount() == 1U || fTime <= keys[0].m_fTime)
-      return keys[0].m_Value;
+    if (pKeys.GetCount() == 1U || fTime <= pKeys[0].m_fTime)
+      return pKeys[0].m_Value;
 
-    for (xiiUInt32 i = 1; i < keys.GetCount(); ++i)
+    for (xiiUInt32 i = 1; i < pKeys.GetCount(); ++i)
     {
-      if (fTime <= keys[i].m_fTime)
+      if (fTime <= pKeys[i].m_fTime)
       {
-        const float fRange = keys[i].m_fTime - keys[i - 1U].m_fTime;
-        const float fT     = fRange > 0.0f ? xiiMath::Saturate((fTime - keys[i - 1U].m_fTime) / fRange) : 0.0f;
-        return xiiQuat::MakeSlerp(keys[i - 1U].m_Value, keys[i].m_Value, fT);
+        const float fRange = pKeys[i].m_fTime - pKeys[i - 1U].m_fTime;
+        const float fT     = fRange > 0.0f ? xiiMath::Saturate((fTime - pKeys[i - 1U].m_fTime) / fRange) : 0.0f;
+        return xiiQuat::MakeSlerp(pKeys[i - 1U].m_Value, pKeys[i].m_Value, fT);
       }
     }
 
-    return keys[keys.GetCount() - 1U].m_Value;
+    return pKeys[pKeys.GetCount() - 1U].m_Value;
   }
 
 #if defined(BUILDSYSTEM_ENABLE_OZZ_SUPPORT)
@@ -255,7 +233,13 @@ xiiResult xiiAnimationClipResourceDescriptor::Serialize(xiiStreamWriter& inout_s
   inout_stream << m_uiRootMotionJoint;
   inout_stream.WriteArray(m_JointTracks).IgnoreResult();
   inout_stream.WriteArray(m_Events).IgnoreResult();
-  WriteBytes(inout_stream, m_OzzAnimationData);
+
+  inout_stream << m_OzzAnimationData.GetCount();
+  if (!m_OzzAnimationData.IsEmpty())
+  {
+    inout_stream.WriteBytes(m_OzzAnimationData.GetData(), m_OzzAnimationData.GetCount()).IgnoreResult();
+  }
+
   inout_stream << m_uiRuntimeHash;
   return XII_SUCCESS;
 }
@@ -273,7 +257,16 @@ xiiResult xiiAnimationClipResourceDescriptor::Deserialize(xiiStreamReader& inout
   inout_stream >> m_uiRootMotionJoint;
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_JointTracks));
   XII_SUCCEED_OR_RETURN(inout_stream.ReadArray(m_Events));
-  ReadBytes(inout_stream, m_OzzAnimationData);
+
+  xiiUInt32 uiOzzDataSize = 0U;
+  inout_stream >> uiOzzDataSize;
+  if (uiOzzDataSize > 0U)
+  {
+    m_OzzAnimationData.SetCount(uiOzzDataSize);
+
+    inout_stream.ReadBytes(m_OzzAnimationData.GetData(), uiOzzDataSize);
+  }
+
   inout_stream >> m_uiRuntimeHash;
   return XII_SUCCESS;
 }
