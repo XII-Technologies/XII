@@ -87,7 +87,7 @@ xiiResult xiiSpotLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds
 
 void xiiSpotLightComponent::SetRange(float fRange)
 {
-  m_fRange = fRange;
+  m_fRange = xiiMath::Max(fRange, 0.0f);
 
   TriggerLocalBoundsUpdate();
 }
@@ -155,7 +155,9 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   if (ref_msg.m_pView == nullptr || ref_msg.m_pExtractedRenderData == nullptr)
     return;
 
-  if (m_fIntensity <= 0.0f || m_fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)
+  const float fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
+
+  if (m_fIntensity <= 0.0f || fEffectiveRange <= 0.0f || m_OuterSpotAngle.GetRadian() <= 0.0f)
     return;
 
   auto                    pWorldModule = GetWorld()->GetModule<xiiRenderWorldModule>();
@@ -163,10 +165,14 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_
   pRenderData->m_LightColor            = GetLightColor();
   pRenderData->m_fIntensity            = GetIntensity();
   pRenderData->m_uiTemperature         = GetTemperature();
-  pRenderData->m_fRange                = m_fEffectiveRange;
+  pRenderData->m_fRange                = fEffectiveRange;
   pRenderData->m_fRadius               = m_fRadius;
+  pRenderData->m_fShadowFadeOutRange   = m_fShadowFadeOutRange;
+  pRenderData->m_bCastShadows          = m_bCastShadows;
+  pRenderData->m_qGlobalRotation       = GetOwner()->GetGlobalRotation();
   pRenderData->m_InnerSpotAngle        = m_InnerSpotAngle;
   pRenderData->m_OuterSpotAngle        = m_OuterSpotAngle;
+  pRenderData->m_uiSortingKey          = GetUniqueIdForRendering();
 
   ref_msg.AddRenderData(pRenderData, m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);
 }

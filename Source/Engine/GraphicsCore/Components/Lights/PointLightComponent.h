@@ -14,6 +14,7 @@ class XII_GRAPHICSCORE_DLL xiiPointLightRenderData : public xiiLightRenderData
 public:
   float   m_fRange;
   float   m_fLength;
+  float   m_fShadowFadeOutRange;
   xiiQuat m_qGlobalRotation;
 };
 

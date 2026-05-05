@@ -138,7 +138,14 @@ void xiiPointLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref
   pRenderData->m_uiTemperature          = m_uiTemperature;
   pRenderData->m_fIntensity             = m_fIntensity;
   pRenderData->m_bCastShadows           = m_bCastShadows;
-  pRenderData->m_fRadius                = GetEffectiveRange();
+  pRenderData->m_fRange                 = CalculateEffectiveRange(m_fRange, m_fIntensity);
+  pRenderData->m_fRadius                = m_fRadius;
+  pRenderData->m_fLength                = m_fLength;
+  pRenderData->m_fShadowFadeOutRange    = m_fShadowFadeOutRange;
+  pRenderData->m_qGlobalRotation        = GetOwner()->GetGlobalRotation();
+  pRenderData->m_uiSortingKey           = GetUniqueIdForRendering();
+
+  ref_msg.AddRenderData(pRenderData, m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);
 }
 
 //////////////////////////////////////////////////////////////////////////
