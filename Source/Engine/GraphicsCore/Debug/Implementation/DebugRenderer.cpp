@@ -1930,13 +1930,13 @@ namespace
     switch (pipelineKind)
     {
       case DebugPipelineKind::Geometry:
-        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsurePositionOnlyInputLayout(*pPermutation);
+        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsurePositionOnlyInputLayout(*pPermutation.GetPointer());
         break;
       case DebugPipelineKind::Primitive:
-        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureVertexInputLayout(*pPermutation);
+        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureVertexInputLayout(*pPermutation.GetPointer());
         break;
       case DebugPipelineKind::TexturedPrimitive:
-        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureTexVertexInputLayout(*pPermutation);
+        pipelineDescription.m_GraphicsPipeline.m_pInputLayout = EnsureTexVertexInputLayout(*pPermutation.GetPointer());
         break;
       case DebugPipelineKind::Text:
         pipelineDescription.m_GraphicsPipeline.m_pInputLayout.Clear();
