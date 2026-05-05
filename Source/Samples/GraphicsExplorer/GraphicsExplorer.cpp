@@ -167,7 +167,8 @@ public:
 
         m_pRenderGraph->BeginSetup(m_uiFrameIndex);
         {
-          m_pRenderGraph->AddPass<ClearPassData>("ClearPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupClearPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteClearPass, this), /*bHasSideEffects=*/true);
+          m_pRenderGraph->AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
+          m_pRenderGraph->AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupBlitPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
         }
         m_pRenderGraph->EndSetup();
 
@@ -435,47 +436,76 @@ public:
   }
 
 private:
-  struct ClearPassData
+  struct OffscreenPassData
   {
-    xiiRGTextureHandle m_hBackbuffer;
-    xiiRGTextureHandle m_hDepth;
+    xiiRGTextureHandle m_hOffScreenTexture;
+    xiiRGTextureHandle m_hDepthTexture;
     float              m_fGlobalTime = 0.0f;
   };
 
-  void SetupClearPass(ClearPassData& data, xiiRGBuilder& builder)
+  void SetupOffscreenPass(OffscreenPassData& data, xiiRGBuilder& builder)
   {
-    data.m_hBackbuffer = builder.ImportTexture("Backbuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::RenderTarget);
-    data.m_hBackbuffer = builder.WriteTexture(data.m_hBackbuffer, xiiGALResourceStateFlags::RenderTarget);
+    xiiGALTextureCreationDescription textureDescription;
+    textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
+    textureDescription.m_Size.width  = g_uiWindowWidth;
+    textureDescription.m_Size.height = g_uiWindowHeight;
+    textureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
 
-    xiiGALTextureCreationDescription depthStencilTextureDescription;
-    depthStencilTextureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-    depthStencilTextureDescription.m_Size.width  = g_uiWindowWidth;
-    depthStencilTextureDescription.m_Size.height = g_uiWindowHeight;
-    depthStencilTextureDescription.m_Format      = xiiGALResourceFormat::D24UNormalizedS8UInt;
-    depthStencilTextureDescription.m_BindFlags   = xiiGALBindFlags::DepthStencil;
+    // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
+    // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
+    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::RenderTarget);
 
-    data.m_hDepth = builder.WriteTexture("DepthStencil", depthStencilTextureDescription, xiiGALResourceStateFlags::DepthWrite);
+    textureDescription.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
+    textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
+
+    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::DepthWrite);
 
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
-
-    builder.SetPassSideEffects(true);
   }
 
-  void ExecuteClearPass(const ClearPassData& data, xiiRGPassContext& context)
+  void ExecuteOffscreenPass(const OffscreenPassData& data, xiiRGPassContext& context)
   {
     xiiGALCommandList& cmd = context.GetCommandList();
 
-    cmd.BeginDebugGroup("GraphicsExplorerClear");
+    cmd.BeginDebugGroup("Offscreen Clear");
     {
-      if (data.m_hDepth.IsValid())
-      {
-        cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepth)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
-      }
+      cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
+      cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
+    }
+    cmd.EndDebugGroup();
+  }
 
-      if (data.m_hBackbuffer.IsValid())
-      {
-        cmd.ClearRenderTargetView(context.GetTexture(data.m_hBackbuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
-      }
+  struct BlitPassData
+  {
+    xiiRGTextureHandle m_hBackBufferTexture;
+    xiiRGTextureHandle m_hOffScreenTexture;
+    xiiRGTextureHandle m_hDepthTexture;
+  };
+
+  void SetupBlitPass(BlitPassData& data, xiiRGBuilder& builder)
+  {
+    // Declare that we will read from the offscreen texture created in the previous pass.
+    // This registers a read dependency on that pass, so it will be scheduled after it and the texture will be transitioned to the correct state before we read from it.
+    data.m_hOffScreenTexture = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::RenderTarget);
+    data.m_hDepthTexture     = builder.ReadTexture("DepthStencil", xiiGALResourceStateFlags::DepthRead);
+
+    // We also need to get the back buffer texture from the swap chain as a render target.
+    data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::RenderTarget);
+    data.m_hBackBufferTexture = builder.WriteTexture(data.m_hBackBufferTexture, xiiGALResourceStateFlags::RenderTarget);
+
+    // This pass writes to the back buffer, so we need to declare that it has side effects to prevent it from being culled.
+    builder.SetPassSideEffects(true);
+  }
+
+  void ExecuteBlitPass(const BlitPassData& data, xiiRGPassContext& context)
+  {
+    xiiGALCommandList& cmd = context.GetCommandList();
+
+    cmd.BeginDebugGroup("Blit to Back Buffer");
+    {
+      // Just blit the offscreen texture to the back buffer. The render graph will take care of all necessary resource transitions.
+      cmd.CopyTexture(context.GetTexture(data.m_hOffScreenTexture), context.GetTexture(data.m_hBackBufferTexture));
     }
     cmd.EndDebugGroup();
   }
