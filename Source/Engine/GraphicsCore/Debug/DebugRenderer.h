@@ -278,6 +278,7 @@ public:
 private:
   static void SetupDebugUpload(xiiDebugUploadData& data, xiiRGBuilder& builder);
   static void ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRGPassContext& context);
+
   static void SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder);
   static void ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context);
 

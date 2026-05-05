@@ -333,7 +333,7 @@ namespace
 
     xiiMeshBufferResourceDescriptor desc;
     desc.Clear();
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Mutable;
     desc.m_bAllowGpuDrivenDraw = false;
 
     xiiStringView sBaseName;
@@ -2484,7 +2484,7 @@ void xiiDebugRenderer::SetupDebugUpload(xiiDebugUploadData& data, xiiRGBuilder& 
   description.m_uiSize              = sizeof(xiiUInt32);
   description.m_Mode                = xiiGALBufferMode::Structured;
   description.m_BindFlags           = xiiGALBindFlags::ShaderResource;
-  description.m_Usage               = xiiGALResourceUsage::Default;
+  description.m_Usage               = xiiGALResourceUsage::Mutable;
 
   data.m_hSyncToken = builder.WriteBuffer("DebugUploadSyncToken", description, xiiGALResourceStateFlags::ShaderResource);
   builder.SetPassSideEffects(true);
