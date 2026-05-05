@@ -112,8 +112,8 @@ namespace
 
   static xiiUInt32 CountNewVertices(const xiiDynamicArray<xiiUInt32>& vertices, xiiUInt32 uiA, xiiUInt32 uiB, xiiUInt32 uiC)
   {
-    xiiUInt32 uiNewVertices = 0U;
-    const xiiUInt32 tri[3]  = {uiA, uiB, uiC};
+    xiiUInt32       uiNewVertices = 0U;
+    const xiiUInt32 tri[3]        = {uiA, uiB, uiC};
 
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
@@ -341,10 +341,10 @@ void xiiMeshBufferResourceDescriptor::Clear()
 void xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiMeshVertexSemantic> semantic, xiiEnum<xiiMeshVertexStreamFormat> format, xiiUInt16 uiOffset, xiiUInt16 uiStride)
 {
   xiiMeshVertexStream& stream = m_VertexStreams.ExpandAndGetRef();
-  stream.m_Semantic          = semantic;
-  stream.m_Format            = format;
-  stream.m_uiOffset          = uiOffset;
-  stream.m_uiStride          = uiStride;
+  stream.m_Semantic           = semantic;
+  stream.m_Format             = format;
+  stream.m_uiOffset           = uiOffset;
+  stream.m_uiStride           = uiStride;
 
   m_uiVertexStride = xiiMath::Max<xiiUInt32>(m_uiVertexStride, uiStride);
 }
@@ -523,14 +523,14 @@ void xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xii
     if (localPrimitiveIndices.IsEmpty())
       return;
 
-    xiiMeshlet& meshlet               = m_Meshlets.ExpandAndGetRef();
-    meshlet.m_uiFirstPrimitive        = (m_MeshletPrimitiveIndices.GetCount() / 3U);
-    meshlet.m_uiPrimitiveCount        = static_cast<xiiUInt16>(localPrimitiveIndices.GetCount() / 3U);
-    meshlet.m_uiVertexCount           = static_cast<xiiUInt16>(localVertices.GetCount());
-    meshlet.m_uiVertexRemapOffset     = m_MeshletVertexRemap.GetCount();
-    meshlet.m_uiPrimitiveIndexOffset  = m_MeshletPrimitiveIndices.GetCount();
-    meshlet.m_uiMaterialIndex         = 0U;
-    meshlet.m_Bounds                  = ComputeMeshletBounds(*this, localVertices);
+    xiiMeshlet& meshlet              = m_Meshlets.ExpandAndGetRef();
+    meshlet.m_uiFirstPrimitive       = (m_MeshletPrimitiveIndices.GetCount() / 3U);
+    meshlet.m_uiPrimitiveCount       = static_cast<xiiUInt16>(localPrimitiveIndices.GetCount() / 3U);
+    meshlet.m_uiVertexCount          = static_cast<xiiUInt16>(localVertices.GetCount());
+    meshlet.m_uiVertexRemapOffset    = m_MeshletVertexRemap.GetCount();
+    meshlet.m_uiPrimitiveIndexOffset = m_MeshletPrimitiveIndices.GetCount();
+    meshlet.m_uiMaterialIndex        = 0U;
+    meshlet.m_Bounds                 = ComputeMeshletBounds(*this, localVertices);
     ComputeMeshletCone(*this, localPrimitiveIndices, localVertices, meshlet.m_vConeAxis, meshlet.m_fConeCutoff);
 
     m_MeshletVertexRemap.PushBackRange(localVertices);
@@ -567,10 +567,10 @@ void xiiMeshBufferResourceDescriptor::BuildMeshlets(xiiUInt32 uiMaxVertices, xii
 
   if (!m_Meshlets.IsEmpty())
   {
-    xiiMeshDrawCommand& command     = m_DrawCommands.ExpandAndGetRef();
-    command.m_uiThreadGroupCountX   = m_Meshlets.GetCount();
-    command.m_uiThreadGroupCountY   = 1U;
-    command.m_uiThreadGroupCountZ   = 1U;
+    xiiMeshDrawCommand& command   = m_DrawCommands.ExpandAndGetRef();
+    command.m_uiThreadGroupCountX = m_Meshlets.GetCount();
+    command.m_uiThreadGroupCountY = 1U;
+    command.m_uiThreadGroupCountZ = 1U;
   }
 }
 

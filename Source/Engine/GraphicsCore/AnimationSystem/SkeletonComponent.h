@@ -8,7 +8,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-using xiiSkeletonComponentManager = xiiComponentManagerSimple<class xiiSkeletonComponent, xiiComponentUpdateType::WhenSimulating, xiiBlockStorageType::Compact, xiiWorldUpdatePhase::PostTransform>;
+using xiiSkeletonComponentManager     = xiiComponentManagerSimple<class xiiSkeletonComponent, xiiComponentUpdateType::WhenSimulating, xiiBlockStorageType::Compact, xiiWorldUpdatePhase::PostTransform>;
 using xiiSkeletonPoseComponentManager = xiiComponentManagerSimple<class xiiSkeletonPoseComponent, xiiComponentUpdateType::WhenSimulating, xiiBlockStorageType::Compact, xiiWorldUpdatePhase::PostTransform>;
 
 class XII_GRAPHICSCORE_DLL xiiSkeletonComponent : public xiiComponent
@@ -22,14 +22,14 @@ public:
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
-  void SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton); // [ property ]
-  const xiiSkeletonResourceHandle& GetSkeleton() const;         // [ property ]
+  void                             SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton); // [ property ]
+  const xiiSkeletonResourceHandle& GetSkeleton() const;                                     // [ property ]
 
-  void SetAnimationClip(const xiiAnimationClipResourceHandle& hClip); // [ property ]
-  const xiiAnimationClipResourceHandle& GetAnimationClip() const;     // [ property ]
+  void                                  SetAnimationClip(const xiiAnimationClipResourceHandle& hClip); // [ property ]
+  const xiiAnimationClipResourceHandle& GetAnimationClip() const;                                      // [ property ]
 
-  void SetAnimationGraph(const xiiAnimGraphResourceHandle& hGraph); // [ property ]
-  const xiiAnimGraphResourceHandle& GetAnimationGraph() const;      // [ property ]
+  void                              SetAnimationGraph(const xiiAnimGraphResourceHandle& hGraph); // [ property ]
+  const xiiAnimGraphResourceHandle& GetAnimationGraph() const;                                   // [ property ]
 
   void  SetPlaybackSpeed(float fSpeed); // [ property ]
   float GetPlaybackSpeed() const;       // [ property ]
@@ -41,7 +41,7 @@ public:
   void SetBoolParameter(xiiStringView sName, bool bValue);
 
   const xiiAnimationPose& GetCurrentPose() const;
-  void Update();
+  void                    Update();
 
 protected:
   void ApplyPoseToSkinnedMesh();
@@ -54,7 +54,7 @@ protected:
   xiiAnimGraphInstance m_AnimGraphInstance;
   xiiAnimationPose     m_CurrentPose;
   xiiTime              m_PlaybackTime;
-  float                m_fPlaybackSpeed = 1.0f;
+  float                m_fPlaybackSpeed    = 1.0f;
   bool                 m_bApplyToOwnerMesh = true;
 };
 
@@ -69,10 +69,10 @@ public:
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
-  void SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton); // [ property ]
-  const xiiSkeletonResourceHandle& GetSkeleton() const;         // [ property ]
+  void                             SetSkeleton(const xiiSkeletonResourceHandle& hSkeleton); // [ property ]
+  const xiiSkeletonResourceHandle& GetSkeleton() const;                                     // [ property ]
 
-  void SetLocalPose(xiiArrayPtr<const xiiTransform> localPose);
+  void                    SetLocalPose(xiiArrayPtr<const xiiTransform> localPose);
   const xiiAnimationPose& GetCurrentPose() const;
 
   void Update();

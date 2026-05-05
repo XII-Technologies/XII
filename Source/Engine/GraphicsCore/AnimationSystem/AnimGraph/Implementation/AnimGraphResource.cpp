@@ -85,7 +85,7 @@ void xiiAnimGraphResourceDescriptor::Clear()
 {
   m_Nodes.Clear();
   m_Transitions.Clear();
-  m_uiOutputNode = xiiMath::MaxValue<xiiUInt16>();
+  m_uiOutputNode  = xiiMath::MaxValue<xiiUInt16>();
   m_uiRuntimeHash = 0U;
 }
 
@@ -100,8 +100,8 @@ xiiUInt16 xiiAnimGraphResourceDescriptor::AddClipNode(xiiStringView sName, const
 {
   xiiAnimGraphNode node;
   node.m_sName.Assign(sName);
-  node.m_Type = xiiAnimGraphNodeType::Clip;
-  node.m_hClip = hClip;
+  node.m_Type           = xiiAnimGraphNodeType::Clip;
+  node.m_hClip          = hClip;
   node.m_fPlaybackSpeed = fSpeed;
   node.m_Flags.Add(xiiAnimGraphNodeFlags::Loop);
   return AddNode(node);
@@ -130,9 +130,9 @@ xiiUInt16 xiiAnimGraphResourceDescriptor::AddLayeredBlendNode(xiiStringView sNam
 {
   xiiAnimGraphNode node;
   node.m_sName.Assign(sName);
-  node.m_Type = xiiAnimGraphNodeType::LayeredBlend;
+  node.m_Type          = xiiAnimGraphNodeType::LayeredBlend;
   node.m_uiTargetJoint = uiRootJoint;
-  node.m_fWeight = fWeight;
+  node.m_fWeight       = fWeight;
   node.m_sParameter.Assign(sWeightParameter);
   node.m_Inputs.PushBack(uiBaseNode);
   node.m_Inputs.PushBack(uiLayerNode);
@@ -155,11 +155,11 @@ xiiUInt16 xiiAnimGraphResourceDescriptor::AddStateMachineNode(xiiStringView sNam
 void xiiAnimGraphResourceDescriptor::AddTransition(xiiUInt16 uiFromNode, xiiUInt16 uiToNode, xiiStringView sConditionParameter, float fThreshold, xiiTime blendDuration)
 {
   xiiAnimGraphTransition& transition = m_Transitions.ExpandAndGetRef();
-  transition.m_uiFromNode = uiFromNode;
-  transition.m_uiToNode = uiToNode;
+  transition.m_uiFromNode            = uiFromNode;
+  transition.m_uiToNode              = uiToNode;
   transition.m_sConditionParameter.Assign(sConditionParameter);
   transition.m_fConditionThreshold = fThreshold;
-  transition.m_BlendDuration = blendDuration;
+  transition.m_BlendDuration       = blendDuration;
 }
 
 void xiiAnimGraphResourceDescriptor::SetOutputNode(xiiUInt16 uiNodeIndex)
@@ -256,18 +256,18 @@ xiiResourceLoadDesc xiiAnimGraphResource::UnloadData(Unload whatToUnload)
   m_Descriptor.Clear();
 
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Unloaded;
+  res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
 xiiResourceLoadDesc xiiAnimGraphResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Loaded;
+  res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
 
   if (pStream == nullptr)
   {
@@ -298,9 +298,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiAnimGraphResource, xiiAnimGraphResourceDesc
   m_Descriptor = std::move(descriptor);
 
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Loaded;
+  res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
@@ -321,7 +321,7 @@ void xiiAnimGraphInstance::SetGraph(const xiiAnimGraphResourceHandle& hGraph)
     return;
 
   m_hGraph = hGraph;
-  m_Time = xiiTime::MakeZero();
+  m_Time   = xiiTime::MakeZero();
   m_StateMachineStates.Clear();
   m_StateMachinePreviousStates.Clear();
   m_StateMachineTransitionStarts.Clear();
@@ -501,14 +501,14 @@ void xiiAnimGraphInstance::EvaluateNode(const xiiAnimGraphResourceDescriptor& gr
       }
 
       const float fParameter = GetFloat(node.m_sParameter, 0.0f);
-      xiiUInt32 uiUpper = 0U;
+      xiiUInt32   uiUpper    = 0U;
       while (uiUpper + 1U < node.m_Inputs.GetCount() && uiUpper + 1U < node.m_InputThresholds.GetCount() && node.m_InputThresholds[uiUpper + 1U] < fParameter)
       {
         ++uiUpper;
       }
 
       const xiiUInt32 uiLower = uiUpper;
-      uiUpper = xiiMath::Min(uiLower + 1U, node.m_Inputs.GetCount() - 1U);
+      uiUpper                 = xiiMath::Min(uiLower + 1U, node.m_Inputs.GetCount() - 1U);
 
       xiiAnimationPose lowerPose;
       xiiAnimationPose upperPose;
@@ -524,7 +524,7 @@ void xiiAnimGraphInstance::EvaluateNode(const xiiAnimGraphResourceDescriptor& gr
 
       const float fLowerThreshold = uiLower < node.m_InputThresholds.GetCount() ? node.m_InputThresholds[uiLower] : 0.0f;
       const float fUpperThreshold = uiUpper < node.m_InputThresholds.GetCount() ? node.m_InputThresholds[uiUpper] : 1.0f;
-      const float fWeight = fUpperThreshold > fLowerThreshold ? (fParameter - fLowerThreshold) / (fUpperThreshold - fLowerThreshold) : 0.0f;
+      const float fWeight         = fUpperThreshold > fLowerThreshold ? (fParameter - fLowerThreshold) / (fUpperThreshold - fLowerThreshold) : 0.0f;
       ref_pose.Blend(lowerPose, upperPose, fWeight);
     }
     break;
@@ -572,13 +572,13 @@ void xiiAnimGraphInstance::EvaluateNode(const xiiAnimGraphResourceDescriptor& gr
         break;
       }
 
-      xiiUInt16 uiPreviousStateNode = xiiMath::MaxValue<xiiUInt16>();
-      xiiTime transitionStart = xiiTime::MakeZero();
-      xiiTime transitionDuration = xiiTime::MakeZero();
-      const bool bHasBlend = m_StateMachinePreviousStates.TryGetValue(uiNodeIndex, uiPreviousStateNode) &&
-                             m_StateMachineTransitionStarts.TryGetValue(uiNodeIndex, transitionStart) &&
-                             m_StateMachineTransitionDurations.TryGetValue(uiNodeIndex, transitionDuration) &&
-                             uiPreviousStateNode < graph.m_Nodes.GetCount() && transitionDuration.GetSeconds() > 0.0;
+      xiiUInt16  uiPreviousStateNode = xiiMath::MaxValue<xiiUInt16>();
+      xiiTime    transitionStart     = xiiTime::MakeZero();
+      xiiTime    transitionDuration  = xiiTime::MakeZero();
+      const bool bHasBlend           = m_StateMachinePreviousStates.TryGetValue(uiNodeIndex, uiPreviousStateNode) &&
+        m_StateMachineTransitionStarts.TryGetValue(uiNodeIndex, transitionStart) &&
+        m_StateMachineTransitionDurations.TryGetValue(uiNodeIndex, transitionDuration) &&
+        uiPreviousStateNode < graph.m_Nodes.GetCount() && transitionDuration.GetSeconds() > 0.0;
 
       if (bHasBlend)
       {

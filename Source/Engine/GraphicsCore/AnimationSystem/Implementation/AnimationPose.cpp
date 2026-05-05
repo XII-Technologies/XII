@@ -125,9 +125,9 @@ void xiiAnimationPose::AdditiveBlend(const xiiAnimationPose& basePose, const xii
     const xiiTransform& add  = additivePose.m_LocalTransforms[i];
 
     xiiTransform result;
-    result.m_vPosition = base.m_vPosition + add.m_vPosition * fWeight;
-    result.m_qRotation = xiiQuat::MakeSlerp(xiiQuat::MakeIdentity(), add.m_qRotation, xiiMath::Clamp(fWeight, 0.0f, 1.0f)) * base.m_qRotation;
-    result.m_vScale    = base.m_vScale + (add.m_vScale - xiiVec3(1.0f)) * fWeight;
+    result.m_vPosition   = base.m_vPosition + add.m_vPosition * fWeight;
+    result.m_qRotation   = xiiQuat::MakeSlerp(xiiQuat::MakeIdentity(), add.m_qRotation, xiiMath::Clamp(fWeight, 0.0f, 1.0f)) * base.m_qRotation;
+    result.m_vScale      = base.m_vScale + (add.m_vScale - xiiVec3(1.0f)) * fWeight;
     m_LocalTransforms[i] = result;
   }
 
@@ -137,9 +137,9 @@ void xiiAnimationPose::AdditiveBlend(const xiiAnimationPose& basePose, const xii
 
 void xiiAnimationPose::LayeredBlend(const xiiAnimationPose& basePose, const xiiAnimationPose& layerPose, const xiiSkeletonResource& skeleton, xiiUInt16 uiRootJoint, float fWeight)
 {
-  const xiiArrayPtr<const xiiSkeletonJoint> joints = skeleton.GetJoints();
-  const xiiUInt32 uiCount = xiiMath::Min(joints.GetCount(), xiiMath::Min(basePose.m_LocalTransforms.GetCount(), layerPose.m_LocalTransforms.GetCount()));
-  const float fClampedWeight = xiiMath::Clamp(fWeight, 0.0f, 1.0f);
+  const xiiArrayPtr<const xiiSkeletonJoint> joints         = skeleton.GetJoints();
+  const xiiUInt32                           uiCount        = xiiMath::Min(joints.GetCount(), xiiMath::Min(basePose.m_LocalTransforms.GetCount(), layerPose.m_LocalTransforms.GetCount()));
+  const float                               fClampedWeight = xiiMath::Clamp(fWeight, 0.0f, 1.0f);
 
   m_LocalTransforms.SetCount(uiCount);
   for (xiiUInt32 i = 0; i < uiCount; ++i)

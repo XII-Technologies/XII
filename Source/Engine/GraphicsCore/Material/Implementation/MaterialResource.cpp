@@ -62,7 +62,7 @@ namespace
   static void SetPbrParameter(xiiMaterialResourceDescriptor& ref_desc, xiiStringView sName, const xiiVariant& value, bool bOnlyIfMissing)
   {
     const xiiTempHashedString sNameHash(sName);
-    const xiiUInt32          uiIndex = FindParameter(ref_desc, sNameHash);
+    const xiiUInt32           uiIndex = FindParameter(ref_desc, sNameHash);
 
     if (uiIndex != xiiInvalidIndex)
     {
@@ -95,7 +95,7 @@ namespace
       return;
 
     const xiiTempHashedString sNameHash(sName);
-    const xiiUInt32          uiIndex = FindTexture2DBinding(ref_desc, sNameHash);
+    const xiiUInt32           uiIndex = FindTexture2DBinding(ref_desc, sNameHash);
 
     if (uiIndex != xiiInvalidIndex)
     {
@@ -335,22 +335,22 @@ void xiiMaterialResourceDescriptor::Clear()
   m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
   m_FeatureFlags = xiiMaterialFeatureFlags::Default;
 
-  m_BaseColor             = xiiColor::White;
-  m_EmissiveColor         = xiiColor::Black;
-  m_fMetallic             = 0.0f;
-  m_fRoughness            = 0.5f;
-  m_fOcclusionStrength    = 1.0f;
-  m_fAlphaCutoff          = 0.5f;
-  m_fNormalScale          = 1.0f;
-  m_fDisplacementScale    = 0.0f;
-  m_fClearCoat            = 0.0f;
-  m_fClearCoatRoughness   = 0.0f;
-  m_fTransmission         = 0.0f;
-  m_fThickness            = 0.0f;
-  m_fIndexOfRefraction    = 1.5f;
-  m_fAnisotropy           = 0.0f;
-  m_fSheenRoughness       = 0.5f;
-  m_iSortPriority         = 0;
+  m_BaseColor           = xiiColor::White;
+  m_EmissiveColor       = xiiColor::Black;
+  m_fMetallic           = 0.0f;
+  m_fRoughness          = 0.5f;
+  m_fOcclusionStrength  = 1.0f;
+  m_fAlphaCutoff        = 0.5f;
+  m_fNormalScale        = 1.0f;
+  m_fDisplacementScale  = 0.0f;
+  m_fClearCoat          = 0.0f;
+  m_fClearCoatRoughness = 0.0f;
+  m_fTransmission       = 0.0f;
+  m_fThickness          = 0.0f;
+  m_fIndexOfRefraction  = 1.5f;
+  m_fAnisotropy         = 0.0f;
+  m_fSheenRoughness     = 0.5f;
+  m_iSortPriority       = 0;
 
   m_hBaseColorTexture.Invalidate();
   m_hNormalTexture.Invalidate();
@@ -444,10 +444,10 @@ void xiiMaterialResourceDescriptor::RecomputeRuntimeHash()
 xiiMaterialRuntimeState xiiMaterialResourceDescriptor::BuildRuntimeState() const
 {
   xiiMaterialRuntimeState state;
-  state.m_ShadingModel = m_ShadingModel;
-  state.m_BlendMode    = m_BlendMode;
-  state.m_AlphaMode    = m_AlphaMode;
-  state.m_FeatureFlags = m_FeatureFlags;
+  state.m_ShadingModel  = m_ShadingModel;
+  state.m_BlendMode     = m_BlendMode;
+  state.m_AlphaMode     = m_AlphaMode;
+  state.m_FeatureFlags  = m_FeatureFlags;
   state.m_uiRuntimeHash = m_uiRuntimeHash;
   state.m_iSortPriority = m_iSortPriority;
 

@@ -100,8 +100,8 @@ xiiResult xiiSkeletonJoint::Deserialize(xiiStreamReader& inout_stream)
 void xiiSkeletonResourceDescriptor::Clear()
 {
   m_Joints.Clear();
-  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
-  m_uiRootJoint = xiiMath::MaxValue<xiiUInt16>();
+  m_Bounds        = xiiBoundingBoxSphere::MakeInvalid();
+  m_uiRootJoint   = xiiMath::MaxValue<xiiUInt16>();
   m_uiRuntimeHash = 0U;
   m_OzzSkeletonData.Clear();
 }
@@ -142,8 +142,8 @@ void xiiSkeletonResourceDescriptor::BuildModelSpaceRestPose()
 
   for (xiiUInt32 i = 0; i < m_Joints.GetCount(); ++i)
   {
-    xiiSkeletonJoint& joint = m_Joints[i];
-    const xiiMat4 localMatrix = joint.m_LocalRestPose.GetAsMat4();
+    xiiSkeletonJoint& joint       = m_Joints[i];
+    const xiiMat4     localMatrix = joint.m_LocalRestPose.GetAsMat4();
 
     if (joint.m_uiParentIndex < i)
     {
@@ -275,18 +275,18 @@ xiiResourceLoadDesc xiiSkeletonResource::UnloadData(Unload whatToUnload)
 #endif
 
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Unloaded;
+  res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
 xiiResourceLoadDesc xiiSkeletonResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Loaded;
+  res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
 
   if (pStream == nullptr)
   {
@@ -335,20 +335,20 @@ void xiiSkeletonResource::LoadOzzSkeleton(const xiiDynamicArray<xiiUInt8>& ozzDa
   stream.Seek(0, ozz::io::Stream::kSet);
 
   xiiUniquePtr<ozz::animation::Skeleton> pSkeleton = XII_DEFAULT_NEW(ozz::animation::Skeleton);
-  ozz::io::IArchive archive(&stream);
+  ozz::io::IArchive                      archive(&stream);
   archive >> *pSkeleton.Borrow();
 
   m_pOzzSkeleton = std::move(pSkeleton);
 
   if (m_Descriptor.m_Joints.IsEmpty())
   {
-    const ozz::animation::Skeleton* pLoadedSkeleton = m_pOzzSkeleton.Borrow();
-    const xiiUInt32                 uiJointCount    = static_cast<xiiUInt32>(pLoadedSkeleton->num_joints());
-    const ozz::span<const ozz::math::SoaTransform> restPose = pLoadedSkeleton->joint_rest_poses();
-    const ozz::span<const int16_t> parents = pLoadedSkeleton->joint_parents();
-    const ozz::span<const char* const> names = pLoadedSkeleton->joint_names();
+    const ozz::animation::Skeleton*                pLoadedSkeleton = m_pOzzSkeleton.Borrow();
+    const xiiUInt32                                uiJointCount    = static_cast<xiiUInt32>(pLoadedSkeleton->num_joints());
+    const ozz::span<const ozz::math::SoaTransform> restPose        = pLoadedSkeleton->joint_rest_poses();
+    const ozz::span<const int16_t>                 parents         = pLoadedSkeleton->joint_parents();
+    const ozz::span<const char* const>             names           = pLoadedSkeleton->joint_names();
 
-    m_Descriptor.m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+    m_Descriptor.m_Bounds      = xiiBoundingBoxSphere::MakeInvalid();
     m_Descriptor.m_uiRootJoint = xiiMath::MaxValue<xiiUInt16>();
     m_Descriptor.m_Joints.Reserve(uiJointCount);
 
@@ -377,9 +377,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiSkeletonResource, xiiSkeletonResourceDescri
   BuildJointLookup();
 
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Loaded;
+  res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 

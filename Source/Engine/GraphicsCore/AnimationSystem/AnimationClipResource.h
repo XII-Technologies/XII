@@ -41,9 +41,9 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationClipJointTrack
   xiiHashedString m_sJointName;
   xiiUInt16       m_uiJointIndex = xiiMath::MaxValue<xiiUInt16>();
 
-  xiiHybridArray<xiiAnimationKeyVec3, 4>  m_PositionKeys;
-  xiiHybridArray<xiiAnimationKeyQuat, 4>  m_RotationKeys;
-  xiiHybridArray<xiiAnimationKeyVec3, 4>  m_ScaleKeys;
+  xiiHybridArray<xiiAnimationKeyVec3, 4> m_PositionKeys;
+  xiiHybridArray<xiiAnimationKeyQuat, 4> m_RotationKeys;
+  xiiHybridArray<xiiAnimationKeyVec3, 4> m_ScaleKeys;
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -68,10 +68,10 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationClipResourceDescriptor
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  xiiTime m_Duration   = xiiTime::MakeZero();
-  float   m_fSampleRate = 30.0f;
-  bool    m_bLooping    = true;
-  bool    m_bAdditive   = false;
+  xiiTime   m_Duration          = xiiTime::MakeZero();
+  float     m_fSampleRate       = 30.0f;
+  bool      m_bLooping          = true;
+  bool      m_bAdditive         = false;
   xiiUInt16 m_uiRootMotionJoint = xiiMath::MaxValue<xiiUInt16>();
 
   xiiHybridArray<xiiAnimationClipJointTrack, 96> m_JointTracks;
@@ -90,10 +90,10 @@ public:
   xiiAnimationClipResource();
   ~xiiAnimationClipResource();
 
-  xiiTime GetDuration() const;
-  bool    IsLooping() const;
-  bool    IsAdditive() const;
-  xiiUInt32 GetRuntimeHash() const;
+  xiiTime                                   GetDuration() const;
+  bool                                      IsLooping() const;
+  bool                                      IsAdditive() const;
+  xiiUInt32                                 GetRuntimeHash() const;
   const xiiAnimationClipResourceDescriptor& GetDescriptor() const;
 
   void SampleLocalPose(const xiiSkeletonResource& skeleton, xiiTime sampleTime, xiiAnimationPose& ref_pose) const;

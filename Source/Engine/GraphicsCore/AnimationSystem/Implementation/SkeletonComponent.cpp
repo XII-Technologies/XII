@@ -43,7 +43,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSkeletonPoseComponent, 1, xiiComponentMode::Dynamic)
 XII_END_COMPONENT_TYPE
 // clang-format on
 
-xiiSkeletonComponent::xiiSkeletonComponent() = default;
+xiiSkeletonComponent::xiiSkeletonComponent()  = default;
 xiiSkeletonComponent::~xiiSkeletonComponent() = default;
 
 void xiiSkeletonComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
@@ -92,7 +92,7 @@ void xiiSkeletonComponent::SetAnimationClip(const xiiAnimationClipResourceHandle
     return;
 
   m_hAnimationClip = hClip;
-  m_PlaybackTime = xiiTime::MakeZero();
+  m_PlaybackTime   = xiiTime::MakeZero();
 }
 
 const xiiAnimationClipResourceHandle& xiiSkeletonComponent::GetAnimationClip() const
@@ -201,7 +201,7 @@ void xiiSkeletonComponent::ApplyPoseToSkinnedMesh()
   pSkinnedMesh->SetSkinningMatrices(m_CurrentPose.m_SkinningMatrices);
 }
 
-xiiSkeletonPoseComponent::xiiSkeletonPoseComponent() = default;
+xiiSkeletonPoseComponent::xiiSkeletonPoseComponent()  = default;
 xiiSkeletonPoseComponent::~xiiSkeletonPoseComponent() = default;
 
 void xiiSkeletonPoseComponent::SerializeComponent(xiiWorldWriter& inout_stream) const

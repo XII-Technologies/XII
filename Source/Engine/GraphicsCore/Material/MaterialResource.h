@@ -187,10 +187,10 @@ struct xiiMaterialResourceDescriptor
 
   void Clear();
 
-  void      ApplyPbrParameterDefaults(bool bOnlyIfMissing = true);
+  void                    ApplyPbrParameterDefaults(bool bOnlyIfMissing = true);
   xiiMaterialRuntimeState BuildRuntimeState() const;
-  xiiUInt32 ComputeRuntimeHash() const;
-  void      RecomputeRuntimeHash();
+  xiiUInt32               ComputeRuntimeHash() const;
+  void                    RecomputeRuntimeHash();
 
   XII_ALWAYS_INLINE bool operator==(const xiiMaterialResourceDescriptor& other) const
   {
@@ -200,30 +200,30 @@ struct xiiMaterialResourceDescriptor
   xiiMaterialResourceHandle m_hBaseMaterial;
   // xiiSurfaceResource is not linked into this project (not true anymore -> could be changed)
   // this is not used for game purposes but rather for automatic collision mesh generation, so we only store the asset ID here
-  xiiHashedString                            m_sSurface;
-  xiiShaderResourceHandle                    m_hShader;
+  xiiHashedString         m_sSurface;
+  xiiShaderResourceHandle m_hShader;
 
-  xiiEnum<xiiMaterialShadingModel>           m_ShadingModel = xiiMaterialShadingModel::Lit;
-  xiiEnum<xiiMaterialBlendMode>              m_BlendMode    = xiiMaterialBlendMode::Opaque;
-  xiiEnum<xiiMaterialAlphaMode>              m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
-  xiiBitflags<xiiMaterialFeatureFlags>       m_FeatureFlags = xiiMaterialFeatureFlags::Default;
+  xiiEnum<xiiMaterialShadingModel>     m_ShadingModel = xiiMaterialShadingModel::Lit;
+  xiiEnum<xiiMaterialBlendMode>        m_BlendMode    = xiiMaterialBlendMode::Opaque;
+  xiiEnum<xiiMaterialAlphaMode>        m_AlphaMode    = xiiMaterialAlphaMode::Opaque;
+  xiiBitflags<xiiMaterialFeatureFlags> m_FeatureFlags = xiiMaterialFeatureFlags::Default;
 
-  xiiColor m_BaseColor       = xiiColor::White;
-  xiiColor m_EmissiveColor   = xiiColor::Black;
-  float    m_fMetallic       = 0.0f;
-  float    m_fRoughness      = 0.5f;
-  float    m_fOcclusionStrength = 1.0f;
-  float    m_fAlphaCutoff    = 0.5f;
-  float    m_fNormalScale    = 1.0f;
-  float    m_fDisplacementScale = 0.0f;
-  float    m_fClearCoat      = 0.0f;
+  xiiColor m_BaseColor           = xiiColor::White;
+  xiiColor m_EmissiveColor       = xiiColor::Black;
+  float    m_fMetallic           = 0.0f;
+  float    m_fRoughness          = 0.5f;
+  float    m_fOcclusionStrength  = 1.0f;
+  float    m_fAlphaCutoff        = 0.5f;
+  float    m_fNormalScale        = 1.0f;
+  float    m_fDisplacementScale  = 0.0f;
+  float    m_fClearCoat          = 0.0f;
   float    m_fClearCoatRoughness = 0.0f;
-  float    m_fTransmission   = 0.0f;
-  float    m_fThickness      = 0.0f;
-  float    m_fIndexOfRefraction = 1.5f;
-  float    m_fAnisotropy     = 0.0f;
-  float    m_fSheenRoughness = 0.5f;
-  xiiInt16 m_iSortPriority   = 0;
+  float    m_fTransmission       = 0.0f;
+  float    m_fThickness          = 0.0f;
+  float    m_fIndexOfRefraction  = 1.5f;
+  float    m_fAnisotropy         = 0.0f;
+  float    m_fSheenRoughness     = 0.5f;
+  xiiInt16 m_iSortPriority       = 0;
 
   xiiTexture2DResourceHandle m_hBaseColorTexture;
   xiiTexture2DResourceHandle m_hNormalTexture;
@@ -255,14 +255,14 @@ public:
   xiiHashedString GetPermutationValue(const xiiTempHashedString& sName);
   xiiHashedString GetSurface() const;
 
-  xiiEnum<xiiMaterialShadingModel> GetShadingModel() const;
-  xiiEnum<xiiMaterialBlendMode>    GetBlendMode() const;
-  xiiEnum<xiiMaterialAlphaMode>    GetAlphaMode() const;
+  xiiEnum<xiiMaterialShadingModel>     GetShadingModel() const;
+  xiiEnum<xiiMaterialBlendMode>        GetBlendMode() const;
+  xiiEnum<xiiMaterialAlphaMode>        GetAlphaMode() const;
   xiiBitflags<xiiMaterialFeatureFlags> GetFeatureFlags() const;
-  const xiiMaterialRuntimeState& GetRuntimeState() const;
-  xiiUInt32 GetRuntimeHash() const;
-  xiiUInt32 GetTextureMask() const;
-  bool      IsTranslucent() const;
+  const xiiMaterialRuntimeState&       GetRuntimeState() const;
+  xiiUInt32                            GetRuntimeHash() const;
+  xiiUInt32                            GetTextureMask() const;
+  bool                                 IsTranslucent() const;
 
   void       SetParameter(const xiiHashedString& sName, const xiiVariant& value);
   void       SetParameter(xiiStringView sName, const xiiVariant& value);

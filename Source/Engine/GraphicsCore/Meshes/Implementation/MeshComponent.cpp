@@ -355,7 +355,7 @@ void xiiMeshComponentBase::FillRenderData(xiiMeshRenderData& ref_renderData, con
     FillRangeFromSection(ref_renderData, pSections[m_uiSectionIndex]);
   }
 
-  const xiiArrayPtr<const xiiMaterialResourceHandle> pMeshMaterials = mesh.GetMaterials();
+  const xiiArrayPtr<const xiiMaterialResourceHandle> pMeshMaterials  = mesh.GetMaterials();
   const xiiUInt32                                    uiMaterialCount = xiiMath::Max(pMeshMaterials.GetCount(), m_MaterialOverrides.GetCount());
   ref_renderData.m_hMaterials.SetCount(uiMaterialCount);
   for (xiiUInt32 i = 0; i < uiMaterialCount; ++i)

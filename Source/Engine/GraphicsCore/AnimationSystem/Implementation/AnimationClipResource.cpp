@@ -62,7 +62,7 @@ namespace
       if (fTime <= keys[i].m_fTime)
       {
         const float fRange = keys[i].m_fTime - keys[i - 1U].m_fTime;
-        const float fT = fRange > 0.0f ? xiiMath::Saturate((fTime - keys[i - 1U].m_fTime) / fRange) : 0.0f;
+        const float fT     = fRange > 0.0f ? xiiMath::Saturate((fTime - keys[i - 1U].m_fTime) / fRange) : 0.0f;
         return keys[i - 1U].m_Value + (keys[i].m_Value - keys[i - 1U].m_Value) * fT;
       }
     }
@@ -83,7 +83,7 @@ namespace
       if (fTime <= keys[i].m_fTime)
       {
         const float fRange = keys[i].m_fTime - keys[i - 1U].m_fTime;
-        const float fT = fRange > 0.0f ? xiiMath::Saturate((fTime - keys[i - 1U].m_fTime) / fRange) : 0.0f;
+        const float fT     = fRange > 0.0f ? xiiMath::Saturate((fTime - keys[i - 1U].m_fTime) / fRange) : 0.0f;
         return xiiQuat::MakeSlerp(keys[i - 1U].m_Value, keys[i].m_Value, fT);
       }
     }
@@ -122,9 +122,9 @@ namespace
           break;
 
         xiiTransform& transform = ref_pose.m_LocalTransforms[uiJointIndex];
-        transform.m_vPosition = xiiVec3(fTranslationX[uiLane], fTranslationY[uiLane], fTranslationZ[uiLane]);
-        transform.m_qRotation = xiiQuat::MakeFromElements(fRotationX[uiLane], fRotationY[uiLane], fRotationZ[uiLane], fRotationW[uiLane]);
-        transform.m_vScale    = xiiVec3(fScaleX[uiLane], fScaleY[uiLane], fScaleZ[uiLane]);
+        transform.m_vPosition   = xiiVec3(fTranslationX[uiLane], fTranslationY[uiLane], fTranslationZ[uiLane]);
+        transform.m_qRotation   = xiiQuat::MakeFromElements(fRotationX[uiLane], fRotationY[uiLane], fRotationZ[uiLane], fRotationW[uiLane]);
+        transform.m_vScale      = xiiVec3(fScaleX[uiLane], fScaleY[uiLane], fScaleZ[uiLane]);
       }
     }
 
@@ -198,10 +198,10 @@ xiiResult xiiAnimationClipEvent::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiAnimationClipResourceDescriptor::Clear()
 {
-  m_Duration = xiiTime::MakeZero();
-  m_fSampleRate = 30.0f;
-  m_bLooping = true;
-  m_bAdditive = false;
+  m_Duration          = xiiTime::MakeZero();
+  m_fSampleRate       = 30.0f;
+  m_bLooping          = true;
+  m_bAdditive         = false;
   m_uiRootMotionJoint = xiiMath::MaxValue<xiiUInt16>();
   m_JointTracks.Clear();
   m_Events.Clear();
@@ -334,7 +334,7 @@ void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skelet
         fSampleSeconds = xiiMath::Clamp(fSampleSeconds, 0.0f, fOzzDuration);
       }
 
-      ozz::vector<ozz::math::SoaTransform> localTransforms(static_cast<size_t>(pOzzSkeleton->num_soa_joints()));
+      ozz::vector<ozz::math::SoaTransform>           localTransforms(static_cast<size_t>(pOzzSkeleton->num_soa_joints()));
       const ozz::span<const ozz::math::SoaTransform> restPose = pOzzSkeleton->joint_rest_poses();
       for (size_t i = 0; i < localTransforms.size(); ++i)
       {
@@ -378,9 +378,9 @@ void xiiAnimationClipResource::SampleLocalPose(const xiiSkeletonResource& skelet
       continue;
 
     xiiTransform& localTransform = ref_pose.m_LocalTransforms[uiJointIndex];
-    localTransform.m_vPosition = SampleStepOrLinear<xiiAnimationKeyVec3, xiiVec3>(track.m_PositionKeys, fTime, localTransform.m_vPosition);
-    localTransform.m_qRotation = SampleQuat(track.m_RotationKeys, fTime, localTransform.m_qRotation);
-    localTransform.m_vScale    = SampleStepOrLinear<xiiAnimationKeyVec3, xiiVec3>(track.m_ScaleKeys, fTime, localTransform.m_vScale);
+    localTransform.m_vPosition   = SampleStepOrLinear<xiiAnimationKeyVec3, xiiVec3>(track.m_PositionKeys, fTime, localTransform.m_vPosition);
+    localTransform.m_qRotation   = SampleQuat(track.m_RotationKeys, fTime, localTransform.m_qRotation);
+    localTransform.m_vScale      = SampleStepOrLinear<xiiAnimationKeyVec3, xiiVec3>(track.m_ScaleKeys, fTime, localTransform.m_vScale);
   }
 
   ref_pose.BuildModelSpacePose(skeleton);
@@ -404,18 +404,18 @@ xiiResourceLoadDesc xiiAnimationClipResource::UnloadData(Unload whatToUnload)
 #endif
 
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Unloaded;
+  res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
 xiiResourceLoadDesc xiiAnimationClipResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Loaded;
+  res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
 
   if (pStream == nullptr)
   {
@@ -453,7 +453,7 @@ void xiiAnimationClipResource::LoadOzzAnimation(const xiiDynamicArray<xiiUInt8>&
   stream.Seek(0, ozz::io::Stream::kSet);
 
   xiiUniquePtr<ozz::animation::Animation> pAnimation = XII_DEFAULT_NEW(ozz::animation::Animation);
-  ozz::io::IArchive archive(&stream);
+  ozz::io::IArchive                       archive(&stream);
   archive >> *pAnimation.Borrow();
 
   m_pOzzAnimation = std::move(pAnimation);
@@ -475,9 +475,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiAnimationClipResource, xiiAnimationClipReso
   LoadOzzAnimation(m_Descriptor.m_OzzAnimationData);
 
   xiiResourceLoadDesc res;
-  res.m_State = xiiResourceState::Loaded;
+  res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable = 0U;
+  res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 

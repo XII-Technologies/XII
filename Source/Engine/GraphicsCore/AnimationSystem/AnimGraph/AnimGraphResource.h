@@ -65,16 +65,16 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAnimGraphNodeFlags);
 
 struct XII_GRAPHICSCORE_DLL xiiAnimGraphNode
 {
-  xiiHashedString m_sName;
-  xiiEnum<xiiAnimGraphNodeType> m_Type = xiiAnimGraphNodeType::Invalid;
+  xiiHashedString                    m_sName;
+  xiiEnum<xiiAnimGraphNodeType>      m_Type  = xiiAnimGraphNodeType::Invalid;
   xiiBitflags<xiiAnimGraphNodeFlags> m_Flags = xiiAnimGraphNodeFlags::Default;
 
   xiiAnimationClipResourceHandle m_hClip;
-  xiiHashedString m_sParameter;
-  float           m_fPlaybackSpeed = 1.0f;
-  float           m_fWeight        = 1.0f;
-  float           m_fThreshold     = 0.0f;
-  xiiUInt16       m_uiTargetJoint  = xiiMath::MaxValue<xiiUInt16>();
+  xiiHashedString                m_sParameter;
+  float                          m_fPlaybackSpeed = 1.0f;
+  float                          m_fWeight        = 1.0f;
+  float                          m_fThreshold     = 0.0f;
+  xiiUInt16                      m_uiTargetJoint  = xiiMath::MaxValue<xiiUInt16>();
 
   xiiHybridArray<xiiUInt16, 4> m_Inputs;
   xiiHybridArray<float, 4>     m_InputThresholds;
@@ -90,7 +90,7 @@ struct XII_GRAPHICSCORE_DLL xiiAnimGraphTransition
   xiiUInt16       m_uiToNode   = xiiMath::MaxValue<xiiUInt16>();
   xiiHashedString m_sConditionParameter;
   float           m_fConditionThreshold = 0.5f;
-  xiiTime         m_BlendDuration = xiiTime::MakeFromMilliseconds(150.0);
+  xiiTime         m_BlendDuration       = xiiTime::MakeFromMilliseconds(150.0);
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -114,7 +114,7 @@ struct XII_GRAPHICSCORE_DLL xiiAnimGraphResourceDescriptor
 
   xiiHybridArray<xiiAnimGraphNode, 32>       m_Nodes;
   xiiHybridArray<xiiAnimGraphTransition, 16> m_Transitions;
-  xiiUInt16                                  m_uiOutputNode = xiiMath::MaxValue<xiiUInt16>();
+  xiiUInt16                                  m_uiOutputNode  = xiiMath::MaxValue<xiiUInt16>();
   xiiUInt32                                  m_uiRuntimeHash = 0U;
 };
 
@@ -129,7 +129,7 @@ public:
   ~xiiAnimGraphResource();
 
   const xiiAnimGraphResourceDescriptor& GetDescriptor() const;
-  xiiUInt32 GetRuntimeHash() const;
+  xiiUInt32                             GetRuntimeHash() const;
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload whatToUnload) override;
@@ -145,10 +145,10 @@ class XII_GRAPHICSCORE_DLL xiiAnimGraphInstance
 public:
   void Reset();
 
-  void SetGraph(const xiiAnimGraphResourceHandle& hGraph);
+  void                              SetGraph(const xiiAnimGraphResourceHandle& hGraph);
   const xiiAnimGraphResourceHandle& GetGraph() const;
 
-  void SetFloat(xiiStringView sName, float fValue);
+  void  SetFloat(xiiStringView sName, float fValue);
   float GetFloat(const xiiTempHashedString& sName, float fFallback = 0.0f) const;
 
   void SetBool(xiiStringView sName, bool bValue);
@@ -157,18 +157,18 @@ public:
   void Update(const xiiSkeletonResource& skeleton, xiiTime deltaTime, xiiAnimationPose& ref_pose);
 
 private:
-  void EvaluateNode(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiNodeIndex, const xiiAnimGraphNode& node, const xiiSkeletonResource& skeleton, xiiAnimationPose& ref_pose);
-  void EvaluateNodeIndex(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiNodeIndex, const xiiSkeletonResource& skeleton, xiiAnimationPose& ref_pose);
-  bool IsTransitionConditionTrue(const xiiAnimGraphTransition& transition) const;
+  void      EvaluateNode(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiNodeIndex, const xiiAnimGraphNode& node, const xiiSkeletonResource& skeleton, xiiAnimationPose& ref_pose);
+  void      EvaluateNodeIndex(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiNodeIndex, const xiiSkeletonResource& skeleton, xiiAnimationPose& ref_pose);
+  bool      IsTransitionConditionTrue(const xiiAnimGraphTransition& transition) const;
   xiiUInt16 GetActiveStateNode(const xiiAnimGraphResourceDescriptor& graph, xiiUInt16 uiStateMachineNodeIndex, const xiiAnimGraphNode& stateMachineNode);
 
 private:
-  xiiAnimGraphResourceHandle m_hGraph;
-  xiiTime                    m_Time;
+  xiiAnimGraphResourceHandle           m_hGraph;
+  xiiTime                              m_Time;
   xiiHashTable<xiiHashedString, float> m_Floats;
   xiiHashTable<xiiHashedString, bool>  m_Bools;
-  xiiHashTable<xiiUInt16, xiiUInt16>    m_StateMachineStates;
-  xiiHashTable<xiiUInt16, xiiUInt16>    m_StateMachinePreviousStates;
-  xiiHashTable<xiiUInt16, xiiTime>      m_StateMachineTransitionStarts;
-  xiiHashTable<xiiUInt16, xiiTime>      m_StateMachineTransitionDurations;
+  xiiHashTable<xiiUInt16, xiiUInt16>   m_StateMachineStates;
+  xiiHashTable<xiiUInt16, xiiUInt16>   m_StateMachinePreviousStates;
+  xiiHashTable<xiiUInt16, xiiTime>     m_StateMachineTransitionStarts;
+  xiiHashTable<xiiUInt16, xiiTime>     m_StateMachineTransitionDurations;
 };

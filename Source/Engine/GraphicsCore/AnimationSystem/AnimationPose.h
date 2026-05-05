@@ -10,8 +10,8 @@
 
 struct XII_GRAPHICSCORE_DLL xiiAnimationRootMotion
 {
-  xiiVec3  m_vTranslation = xiiVec3::MakeZero();
-  xiiQuat  m_qRotation    = xiiQuat::MakeIdentity();
+  xiiVec3   m_vTranslation = xiiVec3::MakeZero();
+  xiiQuat   m_qRotation    = xiiQuat::MakeIdentity();
   xiiUInt16 m_uiJointIndex = xiiMath::MaxValue<xiiUInt16>();
 };
 
