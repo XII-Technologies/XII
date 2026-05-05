@@ -9,9 +9,9 @@
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Debug/SimpleASCIIFont.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
@@ -198,12 +198,12 @@ namespace
     };
   };
 
-  static xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>       s_DataBufferPages[BufferType::Count];
-  static xiiDynamicArray<xiiMeshBufferResourceHandle>      s_DynamicMeshBufferPages[DynamicMeshBufferKind::Count];
-  static xiiMeshBufferResourceHandle                       s_hLineBoxMeshBuffer;
-  static xiiMeshBufferResourceHandle                       s_hSolidBoxMeshBuffer;
-  static xiiTexture2DResourceHandle                        s_hDebugFontTexture;
-  static xiiSharedPtr<xiiGALBuffer>                        s_pGlobalConstantsBuffer;
+  static xiiDynamicArray<xiiSharedPtr<xiiGALBuffer>>  s_DataBufferPages[BufferType::Count];
+  static xiiDynamicArray<xiiMeshBufferResourceHandle> s_DynamicMeshBufferPages[DynamicMeshBufferKind::Count];
+  static xiiMeshBufferResourceHandle                  s_hLineBoxMeshBuffer;
+  static xiiMeshBufferResourceHandle                  s_hSolidBoxMeshBuffer;
+  static xiiTexture2DResourceHandle                   s_hDebugFontTexture;
+  static xiiSharedPtr<xiiGALBuffer>                   s_pGlobalConstantsBuffer;
 
   static xiiSharedPtr<xiiGALInputLayout> s_pPositionOnlyInputLayout;
   static xiiSharedPtr<xiiGALInputLayout> s_pVertexInputLayout;
@@ -216,9 +216,9 @@ namespace
 
   struct DebugRenderPassKey
   {
-    xiiEnum<xiiGALResourceFormat> m_ColorFormat = xiiGALResourceFormat::Unknown;
-    xiiEnum<xiiGALResourceFormat> m_DepthFormat = xiiGALResourceFormat::Unknown;
-    xiiUInt8                      m_uiSampleCount = 1U;
+    xiiEnum<xiiGALResourceFormat> m_ColorFormat       = xiiGALResourceFormat::Unknown;
+    xiiEnum<xiiGALResourceFormat> m_DepthFormat       = xiiGALResourceFormat::Unknown;
+    xiiUInt8                      m_uiSampleCount     = 1U;
     xiiUInt8                      m_uiArraySliceCount = 1U;
 
     XII_ALWAYS_INLINE bool operator<(const DebugRenderPassKey& rhs) const
@@ -250,12 +250,12 @@ namespace
 
   struct DebugPipelineKey
   {
-    DebugPipelineKind           m_Kind             = DebugPipelineKind::Primitive;
-    DebugCameraMode             m_CameraMode       = DebugCameraMode::Perspective;
-    xiiEnum<xiiGALPrimitiveTopology> m_Topology    = xiiGALPrimitiveTopology::TriangleList;
-    bool                        m_bPreTransformed  = false;
-    bool                        m_bMonochrome      = false;
-    xiiGALRenderPass*           m_pRenderPass      = nullptr;
+    DebugPipelineKind                m_Kind            = DebugPipelineKind::Primitive;
+    DebugCameraMode                  m_CameraMode      = DebugCameraMode::Perspective;
+    xiiEnum<xiiGALPrimitiveTopology> m_Topology        = xiiGALPrimitiveTopology::TriangleList;
+    bool                             m_bPreTransformed = false;
+    bool                             m_bMonochrome     = false;
+    xiiGALRenderPass*                m_pRenderPass     = nullptr;
 
     XII_ALWAYS_INLINE bool operator<(const DebugPipelineKey& rhs) const
     {
@@ -273,8 +273,8 @@ namespace
     }
   };
 
-  static xiiMap<DebugRenderPassKey, xiiSharedPtr<xiiGALRenderPass>>                s_RenderPassCache;
-  static xiiMap<DebugPipelineKey, xiiSharedPtr<xiiGALGraphicsPipelineState>>        s_GraphicsPipelineCache;
+  static xiiMap<DebugRenderPassKey, xiiSharedPtr<xiiGALRenderPass>>          s_RenderPassCache;
+  static xiiMap<DebugPipelineKey, xiiSharedPtr<xiiGALGraphicsPipelineState>> s_GraphicsPipelineCache;
 
   enum
   {
@@ -1567,9 +1567,9 @@ namespace
 
   struct PreparedTexturedVertexBatch
   {
-    xiiGALBuffer*                  m_pVertexBuffer    = nullptr;
-    xiiUInt32                      m_uiVertexCount    = 0U;
-    bool                           m_bMonochrome      = false;
+    xiiGALBuffer*                   m_pVertexBuffer = nullptr;
+    xiiUInt32                       m_uiVertexCount = 0U;
+    bool                            m_bMonochrome   = false;
     xiiSharedPtr<xiiGALTextureView> m_pTextureView;
   };
 
@@ -1577,12 +1577,12 @@ namespace
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiGALBuffer*                  m_pVertexBuffer  = nullptr;
-    xiiGALBuffer*                  m_pIndexBuffer   = nullptr;
-    xiiGALBuffer*                  m_pInstanceData  = nullptr;
-    xiiUInt32                      m_uiIndexCount   = 0U;
-    xiiEnum<xiiGALValueType>       m_IndexType      = xiiGALValueType::Undefined;
-    xiiUInt32                      m_uiInstanceCount = 0U;
+    xiiGALBuffer*            m_pVertexBuffer   = nullptr;
+    xiiGALBuffer*            m_pIndexBuffer    = nullptr;
+    xiiGALBuffer*            m_pInstanceData   = nullptr;
+    xiiUInt32                m_uiIndexCount    = 0U;
+    xiiEnum<xiiGALValueType> m_IndexType       = xiiGALValueType::Undefined;
+    xiiUInt32                m_uiInstanceCount = 0U;
   };
 
   struct PreparedGlyphBatch
@@ -1616,7 +1616,7 @@ namespace
 
   struct DebugTransitionCollector
   {
-    xiiHybridArray<xiiGALStateTransitionDescription, 32> m_Transitions;
+    xiiHybridArray<xiiGALStateTransitionDescription, 32>                 m_Transitions;
     xiiHashTable<xiiGALResource*, xiiBitflags<xiiGALResourceStateFlags>> m_LastRequestedState;
   };
 
@@ -1635,9 +1635,9 @@ namespace
     const xiiView&                 m_View;
     xiiGALCommandList&             m_CommandList;
     xiiSharedPtr<xiiGALRenderPass> m_pRenderPass;
-    DebugCameraMode                m_CameraMode      = DebugCameraMode::Perspective;
-    xiiUInt32                      m_uiEyeCount      = 1U;
-    xiiUInt32                      m_uiViewportWidth = 1U;
+    DebugCameraMode                m_CameraMode       = DebugCameraMode::Perspective;
+    xiiUInt32                      m_uiEyeCount       = 1U;
+    xiiUInt32                      m_uiViewportWidth  = 1U;
     xiiUInt32                      m_uiViewportHeight = 1U;
   };
 
@@ -1767,8 +1767,8 @@ namespace
       XII_ASSERT_DEV(pVertexShader != nullptr, "Debug geometry permutation is missing a vertex shader.");
 
       s_pPositionOnlyInputLayout = CreateInputLayout(*pVertexShader, {
-        xiiGALLayoutElement(xiiGALInputLayoutSemantic::Position, 0U, xiiGALResourceFormat::RGB32Float, 0U, sizeof(xiiMeshPackedVertex), xiiGALInputElementFrequency::PerVertex, 1U),
-      });
+                                                                       xiiGALLayoutElement(xiiGALInputLayoutSemantic::Position, 0U, xiiGALResourceFormat::RGB32Float, 0U, sizeof(xiiMeshPackedVertex), xiiGALInputElementFrequency::PerVertex, 1U),
+                                                                     });
     }
 
     return s_pPositionOnlyInputLayout;
@@ -1782,9 +1782,9 @@ namespace
       XII_ASSERT_DEV(pVertexShader != nullptr, "Debug primitive permutation is missing a vertex shader.");
 
       s_pVertexInputLayout = CreateInputLayout(*pVertexShader, {
-        xiiGALLayoutElement(xiiGALInputLayoutSemantic::Position, 0U, xiiGALResourceFormat::RGB32Float, 0U, sizeof(Vertex), xiiGALInputElementFrequency::PerVertex, 1U),
-        xiiGALLayoutElement(xiiGALInputLayoutSemantic::Color0, 0U, xiiGALResourceFormat::RGBA8UNormalized, 12U, sizeof(Vertex), xiiGALInputElementFrequency::PerVertex, 1U),
-      });
+                                                                 xiiGALLayoutElement(xiiGALInputLayoutSemantic::Position, 0U, xiiGALResourceFormat::RGB32Float, 0U, sizeof(Vertex), xiiGALInputElementFrequency::PerVertex, 1U),
+                                                                 xiiGALLayoutElement(xiiGALInputLayoutSemantic::Color0, 0U, xiiGALResourceFormat::RGBA8UNormalized, 12U, sizeof(Vertex), xiiGALInputElementFrequency::PerVertex, 1U),
+                                                               });
     }
 
     return s_pVertexInputLayout;
@@ -1798,10 +1798,10 @@ namespace
       XII_ASSERT_DEV(pVertexShader != nullptr, "Debug textured primitive permutation is missing a vertex shader.");
 
       s_pTexVertexInputLayout = CreateInputLayout(*pVertexShader, {
-        xiiGALLayoutElement(xiiGALInputLayoutSemantic::Position, 0U, xiiGALResourceFormat::RGB32Float, 0U, sizeof(TexVertex), xiiGALInputElementFrequency::PerVertex, 1U),
-        xiiGALLayoutElement(xiiGALInputLayoutSemantic::Color0, 0U, xiiGALResourceFormat::RGBA8UNormalized, 12U, sizeof(TexVertex), xiiGALInputElementFrequency::PerVertex, 1U),
-        xiiGALLayoutElement(xiiGALInputLayoutSemantic::TexCoord0, 0U, xiiGALResourceFormat::RG32Float, 16U, sizeof(TexVertex), xiiGALInputElementFrequency::PerVertex, 1U),
-      });
+                                                                    xiiGALLayoutElement(xiiGALInputLayoutSemantic::Position, 0U, xiiGALResourceFormat::RGB32Float, 0U, sizeof(TexVertex), xiiGALInputElementFrequency::PerVertex, 1U),
+                                                                    xiiGALLayoutElement(xiiGALInputLayoutSemantic::Color0, 0U, xiiGALResourceFormat::RGBA8UNormalized, 12U, sizeof(TexVertex), xiiGALInputElementFrequency::PerVertex, 1U),
+                                                                    xiiGALLayoutElement(xiiGALInputLayoutSemantic::TexCoord0, 0U, xiiGALResourceFormat::RG32Float, 16U, sizeof(TexVertex), xiiGALInputElementFrequency::PerVertex, 1U),
+                                                                  });
     }
 
     return s_pTexVertexInputLayout;
@@ -1825,22 +1825,22 @@ namespace
     xiiGALRenderPassCreationDescription renderPassDescription;
 
     xiiGALRenderPassAttachmentDescription& colorAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-    colorAttachment.m_Format            = colorDescription.m_Format;
-    colorAttachment.m_uiSampleCount     = static_cast<xiiUInt8>(xiiMath::Max(1U, colorDescription.m_uiSampleCount));
-    colorAttachment.m_LoadOperation     = xiiGALAttachmentLoadOperation::Load;
-    colorAttachment.m_StoreOperation    = xiiGALAttachmentStoreOperation::Store;
-    colorAttachment.m_InitialStateFlags = xiiGALResourceStateFlags::RenderTarget;
-    colorAttachment.m_FinalStateFlags   = xiiGALResourceStateFlags::RenderTarget;
+    colorAttachment.m_Format                               = colorDescription.m_Format;
+    colorAttachment.m_uiSampleCount                        = static_cast<xiiUInt8>(xiiMath::Max(1U, colorDescription.m_uiSampleCount));
+    colorAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
+    colorAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
+    colorAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
+    colorAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
 
     xiiGALRenderPassAttachmentDescription& depthAttachment = renderPassDescription.m_Attachments.ExpandAndGetRef();
-    depthAttachment.m_Format                = depthDescription.m_Format;
-    depthAttachment.m_uiSampleCount         = static_cast<xiiUInt8>(xiiMath::Max(1U, depthDescription.m_uiSampleCount));
-    depthAttachment.m_LoadOperation         = xiiGALAttachmentLoadOperation::Load;
-    depthAttachment.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
-    depthAttachment.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Load;
-    depthAttachment.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
-    depthAttachment.m_InitialStateFlags     = xiiGALResourceStateFlags::DepthWrite;
-    depthAttachment.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
+    depthAttachment.m_Format                               = depthDescription.m_Format;
+    depthAttachment.m_uiSampleCount                        = static_cast<xiiUInt8>(xiiMath::Max(1U, depthDescription.m_uiSampleCount));
+    depthAttachment.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
+    depthAttachment.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
+    depthAttachment.m_StencilLoadOperation                 = xiiGALAttachmentLoadOperation::Load;
+    depthAttachment.m_StencilStoreOperation                = xiiGALAttachmentStoreOperation::Store;
+    depthAttachment.m_InitialStateFlags                    = xiiGALResourceStateFlags::DepthWrite;
+    depthAttachment.m_FinalStateFlags                      = xiiGALResourceStateFlags::DepthWrite;
 
     xiiGALSubPassDescription& subPass = renderPassDescription.m_SubPasses.ExpandAndGetRef();
     subPass.m_RenderTargetAttachments.PushBack({0U, xiiGALResourceStateFlags::RenderTarget});
@@ -1910,21 +1910,21 @@ namespace
       permutationVariables.Insert(permutationName, permutationValue);
     }
 
-    xiiShaderPermutationResourceHandle hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
+    xiiShaderPermutationResourceHandle            hPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(hShader, permutationVariables, true);
     xiiResourceLock<xiiShaderPermutationResource> pPermutation(hPermutation, xiiResourceAcquireMode::BlockTillLoaded);
     XII_ASSERT_DEV(pPermutation.IsValid(), "Failed to load the required debug shader permutation.");
 
     xiiGALGraphicsPipelineStateCreationDescription pipelineDescription;
-    pipelineDescription.m_pPipelineResourceSignature           = pPermutation->GetPipelineResourceSignature();
-    pipelineDescription.m_pVertexShader                        = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
-    pipelineDescription.m_pPixelShader                         = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
-    pipelineDescription.m_GraphicsPipeline.m_pBlendState       = pPermutation->GetBlendState();
-    pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState = pPermutation->GetDepthStencilState();
-    pipelineDescription.m_GraphicsPipeline.m_pRasterizerState  = pPermutation->GetRasterizerState();
-    pipelineDescription.m_GraphicsPipeline.m_pRenderPass       = drawState.m_pRenderPass;
-    pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology = topology;
-    pipelineDescription.m_GraphicsPipeline.m_uiViewportCount   = 1U;
-    pipelineDescription.m_GraphicsPipeline.m_uiSubpassIndex    = 0U;
+    pipelineDescription.m_pPipelineResourceSignature                     = pPermutation->GetPipelineResourceSignature();
+    pipelineDescription.m_pVertexShader                                  = pPermutation->GetGALShader(xiiGALShaderType::Vertex);
+    pipelineDescription.m_pPixelShader                                   = pPermutation->GetGALShader(xiiGALShaderType::Pixel);
+    pipelineDescription.m_GraphicsPipeline.m_pBlendState                 = pPermutation->GetBlendState();
+    pipelineDescription.m_GraphicsPipeline.m_pDepthStencilState          = pPermutation->GetDepthStencilState();
+    pipelineDescription.m_GraphicsPipeline.m_pRasterizerState            = pPermutation->GetRasterizerState();
+    pipelineDescription.m_GraphicsPipeline.m_pRenderPass                 = drawState.m_pRenderPass;
+    pipelineDescription.m_GraphicsPipeline.m_PrimitiveTopology           = topology;
+    pipelineDescription.m_GraphicsPipeline.m_uiViewportCount             = 1U;
+    pipelineDescription.m_GraphicsPipeline.m_uiSubpassIndex              = 0U;
     pipelineDescription.m_GraphicsPipeline.m_SampleDescription.m_uiCount = static_cast<xiiUInt8>(xiiMath::Max(1U, drawState.m_pRenderPass->GetDescription().m_Attachments[0].m_uiSampleCount));
 
     switch (pipelineKind)
@@ -1977,13 +1977,13 @@ namespace
     collector.m_LastRequestedState.Insert(pResource, newState);
 
     xiiGALStateTransitionDescription& transition = collector.m_Transitions.ExpandAndGetRef();
-    transition.m_pResource         = pResource;
-    transition.m_OldState          = xiiGALResourceStateFlags::Unknown;
-    transition.m_NewState          = newState;
-    transition.m_TransitionFlags   = xiiGALStateTransitionFlags::UpdateState;
-    transition.m_TransitionType    = xiiGALStateTransitionType::Immediate;
-    transition.m_uiMipLevelCount   = XII_GAL_REMAINING_MIP_LEVELS;
-    transition.m_uiArraySliceCount = XII_GAL_REMAINING_ARRAY_SLICES;
+    transition.m_pResource                       = pResource;
+    transition.m_OldState                        = xiiGALResourceStateFlags::Unknown;
+    transition.m_NewState                        = newState;
+    transition.m_TransitionFlags                 = xiiGALStateTransitionFlags::UpdateState;
+    transition.m_TransitionType                  = xiiGALStateTransitionType::Immediate;
+    transition.m_uiMipLevelCount                 = XII_GAL_REMAINING_MIP_LEVELS;
+    transition.m_uiArraySliceCount               = XII_GAL_REMAINING_ARRAY_SLICES;
   }
 
   static void FlushTransitions(xiiGALCommandList& commandList, DebugTransitionCollector& collector)
@@ -2145,7 +2145,7 @@ namespace
       xiiDebugTextVAlign::Bottom,
     };
 
-    const xiiInt32 lineHeight = static_cast<xiiInt32>(xiiDebugRenderer::GetTextLineHeight());
+    const xiiInt32 lineHeight                                                       = static_cast<xiiInt32>(xiiDebugRenderer::GetTextLineHeight());
     xiiVec2I32     anchor[static_cast<xiiUInt8>(xiiDebugTextPlacement::ENUM_COUNT)] = {
       xiiVec2I32(10, 10),
       xiiVec2I32(static_cast<xiiInt32>(uiViewportWidth / 2U), 10),
@@ -2160,8 +2160,8 @@ namespace
       auto& cornerData = pData->m_InfoTextData[uiCorner];
       xiiSorting::InsertionSort(cornerData, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_sGroup < rhs.m_sGroup; });
 
-      xiiVec2I32 currentPosition = anchor[uiCorner];
-      const xiiInt32 offset      = verticalAlignment[uiCorner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
+      xiiVec2I32     currentPosition = anchor[uiCorner];
+      const xiiInt32 offset          = verticalAlignment[uiCorner] == xiiDebugTextVAlign::Top ? lineHeight : -lineHeight;
 
       for (xiiUInt32 i = 0; i < cornerData.GetCount(); ++i)
       {
@@ -2183,13 +2183,13 @@ namespace
     if (vertices.IsEmpty())
       return;
 
-    const DynamicMeshBufferKind::Enum bufferKind = topology == xiiGALPrimitiveTopology::LineList ? DynamicMeshBufferKind::Line : DynamicMeshBufferKind::Triangle;
+    const DynamicMeshBufferKind::Enum bufferKind  = topology == xiiGALPrimitiveTopology::LineList ? DynamicMeshBufferKind::Line : DynamicMeshBufferKind::Triangle;
     const xiiUInt32                   uiBatchSize = topology == xiiGALPrimitiveTopology::LineList ? LINE_VERTICES_PER_BATCH : TRIANGLE_VERTICES_PER_BATCH;
 
     for (xiiUInt32 uiOffset = 0; uiOffset < vertices.GetCount(); uiOffset += uiBatchSize)
     {
-      const xiiUInt32                    uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, uiBatchSize);
-      const xiiMeshBufferResourceHandle  hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, bufferKind);
+      const xiiUInt32                        uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, uiBatchSize);
+      const xiiMeshBufferResourceHandle      hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, bufferKind);
       xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
       if (!pMeshBuffer.IsValid() || pMeshBuffer->GetVertexBuffer() == nullptr)
         continue;
@@ -2197,8 +2197,8 @@ namespace
       xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pMeshBuffer->GetVertexBuffer(), 0U, xiiMakeArrayPtr(vertices.GetPtr() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
       PreparedVertexBatch& batch = out_batches.ExpandAndGetRef();
-      batch.m_pVertexBuffer = pMeshBuffer->GetVertexBuffer().Borrow();
-      batch.m_uiVertexCount = uiBatchCount;
+      batch.m_pVertexBuffer      = pMeshBuffer->GetVertexBuffer().Borrow();
+      batch.m_uiVertexCount      = uiBatchCount;
 
       QueueTransition(transitions, batch.m_pVertexBuffer, xiiGALResourceStateFlags::VertexBuffer);
     }
@@ -2217,8 +2217,8 @@ namespace
 
       for (xiiUInt32 uiOffset = 0; uiOffset < vertices.GetCount(); uiOffset += TEX_TRIANGLE_VERTICES_PER_BATCH)
       {
-        const xiiUInt32                    uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, TEX_TRIANGLE_VERTICES_PER_BATCH);
-        const xiiMeshBufferResourceHandle  hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, DynamicMeshBufferKind::TexturedTriangle);
+        const xiiUInt32                        uiBatchCount = xiiMath::Min(vertices.GetCount() - uiOffset, TEX_TRIANGLE_VERTICES_PER_BATCH);
+        const xiiMeshBufferResourceHandle      hMeshBuffer  = AcquireDynamicMeshBufferPage(allocator, DynamicMeshBufferKind::TexturedTriangle);
         xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
         if (!pMeshBuffer.IsValid() || pMeshBuffer->GetVertexBuffer() == nullptr)
           continue;
@@ -2226,10 +2226,10 @@ namespace
         xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pMeshBuffer->GetVertexBuffer(), 0U, xiiMakeArrayPtr(vertices.GetData() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
         PreparedTexturedVertexBatch& batch = out_batches.ExpandAndGetRef();
-        batch.m_pVertexBuffer = pMeshBuffer->GetVertexBuffer().Borrow();
-        batch.m_uiVertexCount = uiBatchCount;
-        batch.m_bMonochrome   = formatProperties.m_uiComponentCount == 1U;
-        batch.m_pTextureView  = pTextureView;
+        batch.m_pVertexBuffer              = pMeshBuffer->GetVertexBuffer().Borrow();
+        batch.m_uiVertexCount              = uiBatchCount;
+        batch.m_bMonochrome                = formatProperties.m_uiComponentCount == 1U;
+        batch.m_pTextureView               = pTextureView;
 
         QueueTransition(transitions, batch.m_pVertexBuffer, xiiGALResourceStateFlags::VertexBuffer);
 
@@ -2244,8 +2244,8 @@ namespace
     if (boxes.IsEmpty())
       return;
 
-    const BufferType::Enum              bufferType = topology == xiiGALPrimitiveTopology::LineList ? BufferType::LineBoxes : BufferType::SolidBoxes;
-    const xiiMeshBufferResourceHandle   hMeshBuffer = topology == xiiGALPrimitiveTopology::LineList ? s_hLineBoxMeshBuffer : s_hSolidBoxMeshBuffer;
+    const BufferType::Enum                 bufferType  = topology == xiiGALPrimitiveTopology::LineList ? BufferType::LineBoxes : BufferType::SolidBoxes;
+    const xiiMeshBufferResourceHandle      hMeshBuffer = topology == xiiGALPrimitiveTopology::LineList ? s_hLineBoxMeshBuffer : s_hSolidBoxMeshBuffer;
     xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
     if (!pMeshBuffer.IsValid() || pMeshBuffer->GetVertexBuffer() == nullptr || pMeshBuffer->GetIndexBuffer() == nullptr)
       return;
@@ -2255,8 +2255,8 @@ namespace
 
     for (xiiUInt32 uiOffset = 0; uiOffset < boxes.GetCount(); uiOffset += BOXES_PER_BATCH)
     {
-      const xiiUInt32             uiBatchCount = xiiMath::Min(boxes.GetCount() - uiOffset, BOXES_PER_BATCH);
-      xiiSharedPtr<xiiGALBuffer>  pInstanceData = AcquireDataBufferPage(allocator, bufferType, sizeof(BoxData));
+      const xiiUInt32            uiBatchCount  = xiiMath::Min(boxes.GetCount() - uiOffset, BOXES_PER_BATCH);
+      xiiSharedPtr<xiiGALBuffer> pInstanceData = AcquireDataBufferPage(allocator, bufferType, sizeof(BoxData));
       xiiGALDeviceUtilities::MapAndUpdateBuffer(&uploadState.m_CommandList, pInstanceData, 0U, xiiMakeArrayPtr(boxes.GetPtr() + uiOffset, uiBatchCount).ToByteArray()).AssertSuccess();
 
       PreparedBoxBatch& batch = out_batches.ExpandAndGetRef();
@@ -2429,7 +2429,7 @@ namespace
     if (!pFontTexture.IsValid() || pFontTexture->GetGALTexture() == nullptr)
       return;
 
-    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline = GetOrCreatePipeline(drawState, DebugPipelineKind::Text, xiiGALPrimitiveTopology::TriangleList, true, false);
+    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipeline        = GetOrCreatePipeline(drawState, DebugPipelineKind::Text, xiiGALPrimitiveTopology::TriangleList, true, false);
     xiiGALTextureView*                        pFontTextureView = pFontTexture->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::ShaderResource).Borrow();
 
     for (const PreparedGlyphBatch& batch : batches)
@@ -2499,10 +2499,10 @@ void xiiDebugRenderer::ExecuteDebugUpload(const xiiDebugUploadData& data, xiiRGP
   const xiiUInt32 uiViewportWidth  = xiiMath::Max(1U, static_cast<xiiUInt32>(xiiMath::Round(pView->GetViewport().width)));
   const xiiUInt32 uiViewportHeight = xiiMath::Max(1U, static_cast<xiiUInt32>(xiiMath::Round(pView->GetViewport().height)));
 
-  DebugUploadState       uploadState{*pView, cmd, uiViewportWidth, uiViewportHeight};
-  DebugUploadAllocator   allocator;
+  DebugUploadState         uploadState{*pView, cmd, uiViewportWidth, uiViewportHeight};
+  DebugUploadAllocator     allocator;
   DebugTransitionCollector transitionCollector;
-  PreparedDebugViewData  preparedViewData;
+  PreparedDebugViewData    preparedViewData;
 
   UpdateGlobalConstants(*pView, cmd, uiViewportWidth, uiViewportHeight);
   QueueTransition(transitionCollector, s_pGlobalConstantsBuffer.Borrow(), xiiGALResourceStateFlags::ConstantBuffer);
@@ -2629,7 +2629,6 @@ void xiiDebugRenderer::OnEngineStartup()
   s_hDebugTexturedPrimitiveShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Debug/DebugTexturedPrimitive.xiiShader");
   s_hDebugTextShader              = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Debug/DebugText.xiiShader");
   EnsureGlobalConstantsBuffer();
-
 }
 
 void xiiDebugRenderer::OnEngineShutdown()
