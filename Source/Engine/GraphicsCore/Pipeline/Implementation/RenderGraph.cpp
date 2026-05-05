@@ -965,10 +965,20 @@ xiiResult xiiRenderGraph::Execute(xiiGALDevice* pDevice, const xiiView* pView, x
         if (resourceEntry.m_bIsTexture)
         {
           resolvedTextures[uiResourceIndex] = pResourceCache->AcquireTexture(resourceEntry.m_TextureDescription);
+
+          if (resolvedTextures[uiResourceIndex])
+          {
+            resolvedTextures[uiResourceIndex]->SetDebugName(resourceEntry.m_sName);
+          }
         }
         else
         {
           resolvedBuffers[uiResourceIndex] = pResourceCache->AcquireBuffer(resourceEntry.m_BufferDescription);
+
+          if (resolvedBuffers[uiResourceIndex])
+          {
+            resolvedBuffers[uiResourceIndex]->SetDebugName(resourceEntry.m_sName);
+          }
         }
       }
 
