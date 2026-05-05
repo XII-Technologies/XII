@@ -124,10 +124,10 @@ public:
   XII_ALWAYS_INLINE xiiArrayPtr<xiiRenderData* const> GetDynamicRenderData() const { return m_SortedDynamicRenderData; }
 
   /// \brief Returns a debug context that can be used for rendering debug visualization related to the world in which the data was extracted. The geometry rendered in this context is rendered in all views for that scene.
-  XII_ALWAYS_INLINE xiiDebugRendererContext& GetWorldDebugContext() { return m_WorldDebugContext; }
+  XII_ALWAYS_INLINE const xiiDebugRendererContext& GetWorldDebugContext() const { return m_WorldDebugContext; }
 
   /// \brief Returns a debug context that can be used for rendering debug visualization related to the view for which the data was extracted. The geometry rendered in this context is only rendered in this view.
-  XII_ALWAYS_INLINE xiiDebugRendererContext& GetViewDebugContext() { return m_ViewDebugContext; }
+  XII_ALWAYS_INLINE const xiiDebugRendererContext& GetViewDebugContext() const { return m_ViewDebugContext; }
 
 public:
   xiiExtractedRenderData();

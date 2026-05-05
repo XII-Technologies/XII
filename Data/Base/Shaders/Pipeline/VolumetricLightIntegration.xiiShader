@@ -1,60 +1,113 @@
-// XII Engine - VolumetricLightIntegration.xiiShader  [NEW]
-// Pass 49: Integrate per-froxel scattering/extinction along view ray (front-to-back).
-// Converts 3D froxel grid into a full-res 2D in-scattering buffer.
-// Dispatch: ceil(FroxW/8) × ceil(FroxH/8) × 1
+// XII Engine - VolumetricLightIntegration.xiiShader
+// Integrates directional and clustered local light scattering through the froxel volume.
 
 #include "PipelineCommon.xiiShader"
+#include "LightingData.h"
 
-cbuffer VolumetricConstants : register(b3)
+Texture3D<float4> g_FroxelScattering : register(t0);
+StructuredBuffer<uint2>           g_LightGrid  : register(t1);
+StructuredBuffer<uint>            g_LightIndex : register(t2);
+StructuredBuffer<xiiGpuLightData> g_Lights     : register(t3);
+RWTexture2D<float4>               g_VolumetricOut : register(u0);
+
+static const uint3 XII_FROXEL_COUNT = uint3(128u, 72u, 64u);
+
+float SmoothVolumeAttenuation(float distance, float range)
 {
-    float3 g_FogAlbedo;      float g_FogDensity;
-    float  g_FogScatterAsym; float g_PhaseG;
-    uint3  g_FroxelCount;    // (X, Y, Z)
-    float  g_NearPlane;
-    float  g_FarPlane;
-    float3 _pad;
-};
+    const float normalizedDistance = saturate(distance / max(range, 1e-3f));
+    float attenuation = saturate(1.0f - normalizedDistance * normalizedDistance);
+    attenuation *= attenuation;
+    return attenuation / max(distance * distance, 0.5f);
+}
 
-Texture3D<float4>   g_FroxelScattering : register(t0);  // rgb=in-scatter, a=extinction
-RWTexture2D<float4> g_VolumetricOut    : register(u0);  // full-res result
-
-float HenyeyGreenstein(float cosTheta, float g)
+float PhaseHG(float cosTheta, float anisotropy)
 {
-    float g2 = g * g;
-    return (1.0f - g2) / (4.0f * 3.14159265f * pow(max(1.0f + g2 - 2.0f*g*cosTheta, 1e-7f), 1.5f));
+    const float g = clamp(anisotropy, -0.95f, 0.95f);
+    const float g2 = g * g;
+    return (1.0f - g2) / (4.0f * 3.14159265f * pow(max(1.0f + g2 - 2.0f * g * cosTheta, 1e-4f), 1.5f));
+}
+
+uint ComputeClusterIndex(float2 uv, float zFrac)
+{
+    const uint cX = min((uint)(uv.x * (float)g_ClusterCountX), max(g_ClusterCountX, 1u) - 1u);
+    const uint cY = min((uint)(uv.y * (float)g_ClusterCountY), max(g_ClusterCountY, 1u) - 1u);
+    const uint cZ = min((uint)(zFrac * (float)g_ClusterCountZ), max(g_ClusterCountZ, 1u) - 1u);
+    return (cZ * g_ClusterCountY + cY) * g_ClusterCountX + cX;
+}
+
+float3 EstimateLocalScattering(float2 uv, float zFrac, float3 worldPos)
+{
+    if (g_ActiveLightCount == 0u)
+        return float3(0.0f, 0.0f, 0.0f);
+
+    const uint clusterIndex = ComputeClusterIndex(uv, zFrac);
+    const uint2 lightRange = g_LightGrid[clusterIndex];
+    const uint lightCount = min(lightRange.y, min(g_MaxLightsPerCluster, 32u));
+
+    float3 radiance = float3(0.0f, 0.0f, 0.0f);
+
+    [loop]
+    for (uint i = 0u; i < lightCount; ++i)
+    {
+        const uint lightIndex = g_LightIndex[lightRange.x + i];
+        if (lightIndex >= g_ActiveLightCount)
+            continue;
+
+        const xiiGpuLightData lightData = g_Lights[lightIndex];
+        const uint lightType = GetLightType(lightData);
+        if (lightType == XII_LIGHT_TYPE_DIRECTIONAL)
+            continue;
+
+        const float3 toLight = lightData.PositionAndInvRange.xyz - worldPos;
+        const float distance = length(toLight);
+        const float attenuation = SmoothVolumeAttenuation(distance, lightData.AttenuationAndSize.x);
+
+        radiance += lightData.ColorAndIntensity.rgb * lightData.ColorAndIntensity.w * attenuation;
+    }
+
+    return radiance;
 }
 
 [numthreads(8, 8, 1)]
 void CS_VolumetricIntegration(uint3 tid : SV_DispatchThreadID)
 {
-    uint2 dims; g_VolumetricOut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
+    uint2 dims;
+    g_VolumetricOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims))
+        return;
 
-    float2 uv    = (float2(tid.xy) + 0.5f) / float2(dims);
-    float3 V     = normalize(g_CameraPositionAndNearPlane.xyz);
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+    const float3 viewRay = normalize(ReconstructWorldPos(uv, 0.5f) - g_CameraPositionAndNearPlane.xyz);
+    const float3 mainLight = normalize(-g_MainLightDirectionAndIntensity.xyz);
+    const float phase = PhaseHG(dot(viewRay, mainLight), g_VolumetricAnisotropy);
 
-    float3 accumScatter     = float3(0,0,0);
-    float  accumTransmit    = 1.0f;
-    float  prevZ            = 0.0f;
+    float3 accumulatedScattering = float3(0.0f, 0.0f, 0.0f);
+    float transmittance = 1.0f;
 
-    // March froxel columns front-to-back.
-    for (uint z = 0u; z < g_FroxelCount.z; ++z)
+    [loop]
+    for (uint z = 0u; z < XII_FROXEL_COUNT.z; ++z)
     {
-        float3 uvw     = float3(uv, (float(z) + 0.5f) / float(g_FroxelCount.z));
-        float4 froxel  = g_FroxelScattering.SampleLevel(g_sLinearClamp, uvw, 0);
-        float3 scatter = froxel.rgb;
-        float  extinct = max(froxel.a, 0.0f) * g_FogDensity;
+        const float zFrac = (float(z) + 0.5f) / (float)XII_FROXEL_COUNT.z;
+        const float4 froxel = g_FroxelScattering.SampleLevel(g_sLinearClamp, float3(uv, zFrac), 0);
+        const float extinction = max(froxel.a, 0.0f);
+        if (extinction <= 0.0f)
+            continue;
 
-        // Exponential integration over froxel slab thickness.
-        float slabDepth  = (g_FarPlane - g_NearPlane) / float(g_FroxelCount.z);
-        float transmitSlab = exp(-extinct * slabDepth);
-        float3 inScatter   = scatter * (1.0f - transmitSlab) / max(extinct, 1e-6f);
+        const float linearDepth = g_CameraPositionAndNearPlane.w * exp(zFrac * log(max(g_CameraForwardAndFarPlane.w, g_CameraPositionAndNearPlane.w + 0.001f) / max(g_CameraPositionAndNearPlane.w, 0.001f)));
+        const float ndcDepth = saturate(g_CameraPositionAndNearPlane.w / max(linearDepth, 1e-4f));
+        const float3 worldPos = ReconstructWorldPos(uv, ndcDepth);
+        const float3 directRadiance = g_MainLightColor.rgb * g_MainLightDirectionAndIntensity.w * phase;
+        const float3 localRadiance = EstimateLocalScattering(uv, zFrac, worldPos);
+        const float sliceDepth = (g_CameraForwardAndFarPlane.w - g_CameraPositionAndNearPlane.w) / (float)XII_FROXEL_COUNT.z;
+        const float sliceTransmittance = exp(-extinction * sliceDepth);
+        const float3 inscatter = (froxel.rgb + (directRadiance + localRadiance) * extinction) * (1.0f - sliceTransmittance) / max(extinction, 1e-5f);
 
-        accumScatter   += accumTransmit * inScatter;
-        accumTransmit  *= transmitSlab;
+        accumulatedScattering += transmittance * inscatter;
+        transmittance *= sliceTransmittance;
 
-        if (accumTransmit < 0.01f) break; // early exit
+        if (transmittance < 0.01f)
+            break;
     }
 
-    g_VolumetricOut[tid.xy] = float4(accumScatter, 1.0f - accumTransmit);
+    g_VolumetricOut[tid.xy] = float4(accumulatedScattering, 1.0f - transmittance);
 }

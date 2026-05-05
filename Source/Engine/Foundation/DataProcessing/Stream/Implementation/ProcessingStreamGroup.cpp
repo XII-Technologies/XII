@@ -74,13 +74,13 @@ void xiiProcessingStreamGroup::ClearProcessors()
 
 xiiProcessingStream* xiiProcessingStreamGroup::AddStream(xiiStringView sName, xiiProcessingStream::DataType type)
 {
-  // Treat adding a stream two times as an error (return null)
-  if (GetStreamByName(sName))
+  // Treat adding a stream two times as an error (return null).
+  if (GetStreamByName(xiiTempHashedString(sName)))
     return nullptr;
 
-  xiiHashedString Name;
-  Name.Assign(sName);
-  xiiProcessingStream* pStream = XII_DEFAULT_NEW(xiiProcessingStream, Name, type, xiiProcessingStream::GetDataTypeSize(type), 16);
+  xiiHashedString sNameHashed;
+  sNameHashed.Assign(sName);
+  xiiProcessingStream* pStream = XII_DEFAULT_NEW(xiiProcessingStream, sNameHashed, type, xiiProcessingStream::GetDataTypeSize(type), 16);
 
   m_DataStreams.PushBack(pStream);
 
@@ -89,14 +89,11 @@ xiiProcessingStream* xiiProcessingStreamGroup::AddStream(xiiStringView sName, xi
   return pStream;
 }
 
-void xiiProcessingStreamGroup::RemoveStreamByName(xiiStringView sName)
+void xiiProcessingStreamGroup::RemoveStreamByName(xiiTempHashedString sName)
 {
-  xiiHashedString Name;
-  Name.Assign(sName);
-
   for (xiiUInt32 i = 0; i < m_DataStreams.GetCount(); ++i)
   {
-    if (m_DataStreams[i]->GetName() == Name)
+    if (m_DataStreams[i]->GetName() == sName)
     {
       XII_DEFAULT_DELETE(m_DataStreams[i]);
       m_DataStreams.RemoveAtAndSwap(i);
@@ -107,19 +104,15 @@ void xiiProcessingStreamGroup::RemoveStreamByName(xiiStringView sName)
   }
 }
 
-xiiProcessingStream* xiiProcessingStreamGroup::GetStreamByName(xiiStringView sName) const
+xiiProcessingStream* xiiProcessingStreamGroup::GetStreamByName(xiiTempHashedString sName) const
 {
-  xiiHashedString Name;
-  Name.Assign(sName);
-
   for (xiiProcessingStream* Stream : m_DataStreams)
   {
-    if (Stream->GetName() == Name)
+    if (Stream->GetName() == sName)
     {
       return Stream;
     }
   }
-
   return nullptr;
 }
 

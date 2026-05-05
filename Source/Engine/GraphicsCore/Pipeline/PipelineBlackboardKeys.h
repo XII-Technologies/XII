@@ -29,6 +29,7 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_PerFrameCameraBuffer = "PerFrameCameraBuffer"_xiisv; ///< xiiGALBuffer* - camera constants structured buffer.
   constexpr xiiStringView k_PerFrameLightBuffer  = "PerFrameLightBuffer"_xiisv;  ///< xiiGALBuffer* - global light constants buffer.
   constexpr xiiStringView k_PerFrameGlobalBuffer = "PerFrameGlobalBuffer"_xiisv; ///< xiiGALBuffer* - global frame constants buffer.
+  constexpr xiiStringView k_LightingDataReady    = "LightingDataReady"_xiisv;    ///< xiiRGBufferHandle - tiny token written after per-frame light buffers are uploaded.
 
   // Stage 1 - Clustering.
 

@@ -1,46 +1,47 @@
-[PLATFORMS]
-ALL
+// XII Engine - LocalLightShadowAtlasAllocation.xiiShader
+// Computes deterministic per-light atlas placement descriptors for shadowed local lights.
 
-[PERMUTATIONS]
+#include "PipelineCommon.xiiShader"
+#include "LightingData.h"
 
-[COMPUTESHADER]
+StructuredBuffer<xiiGpuLightData>           g_Lights                : register(t0);
+RWStructuredBuffer<xiiLocalShadowAtlasData> g_LocalShadowAtlasDescs : register(u0);
 
-StructuredBuffer<float4>   LocalShadowRequests;
-StructuredBuffer<float4>   LocalShadowAllocatorParams;
-RWStructuredBuffer<float4> LocalShadowAtlasPlacements;
+static const uint XII_LOCAL_SHADOW_ATLAS_SIZE = 4096u;
+
+uint GetLocalShadowFaceCount(uint lightType)
+{
+    return lightType == XII_LIGHT_TYPE_POINT ? 6u : 1u;
+}
 
 [numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_LocalLightShadowAtlasAllocation(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-  const uint requestIndex = dispatchThreadId.x;
+    const uint lightIndex = dispatchThreadId.x;
+    if (lightIndex >= g_ActiveLightCount)
+        return;
 
-  if (requestIndex >= LocalShadowRequests.Length || requestIndex >= LocalShadowAtlasPlacements.Length)
-  {
-    return;
-  }
+    const xiiGpuLightData lightData = g_Lights[lightIndex];
+    const uint lightType = GetLightType(lightData);
 
-  const float4 requestData = LocalShadowRequests[requestIndex];
+    xiiLocalShadowAtlasData atlasData;
+    atlasData.ScaleBias = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    atlasData.Meta = float4(0.0f, 0.0f, (float)g_LocalShadowTileSize, (float)lightType);
 
-  // Deterministic placement seed/rules payload: x = seed, y = atlas tiles per axis, z/w = atlas size.
-  const float4 allocatorParams = LocalShadowAllocatorParams.Length > 0 ? LocalShadowAllocatorParams[0] : float4(0.0f, 1.0f, 1024.0f, 1024.0f);
-  const uint   atlasTilesPerAxis = max((uint)allocatorParams.y, 1u);
+    if (lightType != XII_LIGHT_TYPE_DIRECTIONAL && lightData.ShadowData.x > 0.5f)
+    {
+        const uint tileSize = min(max(g_LocalShadowTileSize, 64u), 1024u);
+        const uint tilesPerAxis = max(XII_LOCAL_SHADOW_ATLAS_SIZE / tileSize, 1u);
+        const uint tileCount = max(tilesPerAxis * tilesPerAxis, 1u);
+        const uint faceCount = GetLocalShadowFaceCount(lightType);
+        const uint baseTile = (lightIndex * faceCount) % tileCount;
+        const uint tileX = baseTile % tilesPerAxis;
+        const uint tileY = (baseTile / tilesPerAxis) % tilesPerAxis;
+        const float invTiles = 1.0f / (float)tilesPerAxis;
 
-  const uint stableHash = requestIndex * 1664525u + 1013904223u + asuint(allocatorParams.x);
-  const uint tileX      = stableHash % atlasTilesPerAxis;
-  const uint tileY      = (stableHash / atlasTilesPerAxis) % atlasTilesPerAxis;
+        atlasData.ScaleBias = float4(invTiles, invTiles, (float)tileX * invTiles, (float)tileY * invTiles);
+        atlasData.Meta = float4((float)baseTile, (float)faceCount, (float)tileSize, (float)lightType);
+    }
 
-  const float invTiles = 1.0f / max((float)atlasTilesPerAxis, 1.0f);
-  const float scaleX   = invTiles;
-  const float scaleY   = invTiles;
-  const float biasX    = (float)tileX * invTiles;
-  const float biasY    = (float)tileY * invTiles;
-
-  // xy = atlas scale, zw = atlas bias for the request.
-  LocalShadowAtlasPlacements[requestIndex] = float4(scaleX, scaleY, biasX, biasY);
-
-  // Preserve request payload read to avoid being optimized out in minimal scaffolds.
-  if (requestData.w < 0.0f)
-  {
-    LocalShadowAtlasPlacements[requestIndex] = requestData;
-  }
+    g_LocalShadowAtlasDescs[lightIndex] = atlasData;
 }

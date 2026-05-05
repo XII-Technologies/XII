@@ -13,6 +13,7 @@ class XII_GRAPHICSCORE_DLL xiiSpotLightRenderData : public xiiLightRenderData
 public:
   xiiQuat  m_qGlobalRotation;
   float    m_fRange;
+  float    m_fShadowFadeOutRange;
   xiiAngle m_InnerSpotAngle;
   xiiAngle m_OuterSpotAngle;
 };

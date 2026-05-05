@@ -5,29 +5,79 @@ ALL
 
 [COMPUTESHADER]
 
-StructuredBuffer<float4>   ClusterCameraFrustum;
-StructuredBuffer<float4>   ClusterDepthRange;
-RWStructuredBuffer<float4> ClusterDescriptors;
+#include "PipelineCommon.xiiShader"
+#include "LightingData.h"
+
+cbuffer xiiLightClusteringConstants : register(b3)
+{
+    uint  ClusterCountX;
+    uint  ClusterCountY;
+    uint  ClusterCountZ;
+    uint  TotalClusters;
+    float NearPlane;
+    float FarPlane;
+    float LogFarOverNear;
+    float Padding1;
+    uint  TilePixelsX;
+    uint  TilePixelsY;
+    uint  MaxLightsPerCluster;
+    uint  ActiveLightCount;
+};
+
+RWStructuredBuffer<xiiClusterDescriptor> g_ClustersOut : register(u0);
+
+float GetSliceLinearDepth(uint slice)
+{
+    const float normalizedSlice = saturate((float)slice / max((float)ClusterCountZ, 1.0f));
+    return NearPlane * exp2(normalizedSlice * LogFarOverNear);
+}
+
+float GetReversedZFromLinearDepth(float linearDepth)
+{
+    return saturate(NearPlane / max(linearDepth, NearPlane));
+}
+
+void IncludePoint(inout float3 minBounds, inout float3 maxBounds, float3 point)
+{
+    minBounds = min(minBounds, point);
+    maxBounds = max(maxBounds, point);
+}
 
 [numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+void CS_ClusterGridBuild(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-  const uint clusterIndex = dispatchThreadId.x;
+    const uint clusterIndex = dispatchThreadId.x;
+    if (clusterIndex >= TotalClusters)
+        return;
 
-  if (clusterIndex >= ClusterDescriptors.Length)
-  {
-    return;
-  }
+    const uint clusterX = clusterIndex % ClusterCountX;
+    const uint clusterY = (clusterIndex / ClusterCountX) % ClusterCountY;
+    const uint clusterZ = clusterIndex / (ClusterCountX * ClusterCountY);
 
-  const float4 depthRange = ClusterDepthRange.Length > 0 ? ClusterDepthRange[0] : float4(0.1f, 1000.0f, 24.0f, 0.0f);
+    const float2 renderSize = float2(max(ClusterCountX * TilePixelsX, 1u), max(ClusterCountY * TilePixelsY, 1u));
+    const float2 pixelMin = float2(clusterX * TilePixelsX, clusterY * TilePixelsY);
+    const float2 pixelMax = float2((clusterX + 1u) * TilePixelsX, (clusterY + 1u) * TilePixelsY);
 
-  // Pack a lightweight descriptor: x = near, y = far, z = normalized slice index, w = frustum plane count.
-  const float nearPlane = max(depthRange.x, 0.001f);
-  const float farPlane  = max(depthRange.y, nearPlane + 0.001f);
-  const float sliceCount = max(depthRange.z, 1.0f);
-  const float slice = fmod((float)clusterIndex, sliceCount);
-  const float normalizedSlice = slice / sliceCount;
+    const float2 uvMin = saturate(pixelMin / renderSize);
+    const float2 uvMax = saturate(pixelMax / renderSize);
 
-  const float frustumPlaneCount = (float)ClusterCameraFrustum.Length;
-  ClusterDescriptors[clusterIndex] = float4(nearPlane, farPlane, normalizedSlice, frustumPlaneCount);
+    const float nearDepth = GetSliceLinearDepth(clusterZ);
+    const float farDepth  = GetSliceLinearDepth(clusterZ + 1u);
+    const float nearNdc   = GetReversedZFromLinearDepth(nearDepth);
+    const float farNdc    = GetReversedZFromLinearDepth(farDepth);
+
+    float3 minBounds = float3( 3.402823e+38f,  3.402823e+38f,  3.402823e+38f);
+    float3 maxBounds = float3(-3.402823e+38f, -3.402823e+38f, -3.402823e+38f);
+
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMin.x, uvMin.y), nearNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMax.x, uvMin.y), nearNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMin.x, uvMax.y), nearNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMax.x, uvMax.y), nearNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMin.x, uvMin.y), farNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMax.x, uvMin.y), farNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMin.x, uvMax.y), farNdc));
+    IncludePoint(minBounds, maxBounds, ReconstructWorldPos(float2(uvMax.x, uvMax.y), farNdc));
+
+    g_ClustersOut[clusterIndex].MinBounds = float4(minBounds, 0.0f);
+    g_ClustersOut[clusterIndex].MaxBounds = float4(maxBounds, 0.0f);
 }

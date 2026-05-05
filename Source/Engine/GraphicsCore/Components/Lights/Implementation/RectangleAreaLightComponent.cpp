@@ -93,6 +93,8 @@ void xiiRectangleAreaLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderD
   pRenderData->m_fIntensity                     = m_fIntensity;
   pRenderData->m_bCastShadows                   = m_bCastShadows;
   pRenderData->m_vExtents                       = m_vExtents;
+  pRenderData->m_qGlobalRotation                = GetOwner()->GetGlobalRotation();
+  pRenderData->m_fRadius                        = CalculateEffectiveRange(0.0f, m_fIntensity);
   pRenderData->m_uiSortingKey                   = GetUniqueIdForRendering();
 
   ref_msg.AddRenderData(pRenderData, m_bCastShadows ? xiiRenderData::Caching::IfStatic : xiiRenderData::Caching::Never);

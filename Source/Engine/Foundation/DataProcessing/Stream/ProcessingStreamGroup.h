@@ -51,10 +51,10 @@ public:
   xiiProcessingStream* AddStream(xiiStringView sName, xiiProcessingStream::DataType type);
 
   /// \brief Removes the stream with the given name, if it exists.
-  void RemoveStreamByName(xiiStringView sName);
+  void RemoveStreamByName(xiiTempHashedString sName);
 
   /// \brief Returns the stream by it's name, returns nullptr if not existent. More efficient since direct use of xiiHashedString.
-  xiiProcessingStream* GetStreamByName(xiiStringView sName) const;
+  xiiProcessingStream* GetStreamByName(xiiTempHashedString sName) const;
 
   /// \brief Resizes all streams to contain storage for uiNumElements. Any pending remove and spawn operations will be reset!
   void SetSize(xiiUInt64 uiNumElements);

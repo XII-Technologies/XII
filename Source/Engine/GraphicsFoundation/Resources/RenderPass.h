@@ -101,6 +101,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiGALAttachmentReferenceDescription() = default;
+
+  xiiGALAttachmentReferenceDescription(xiiUInt32 uiAttachmentIndex, xiiBitflags<xiiGALResourceStateFlags> resourceStateFlags) :
+    m_uiAttachmentIndex(uiAttachmentIndex), m_ResourceStateFlags(resourceStateFlags)
+  {
+  }
+
   xiiUInt32                             m_uiAttachmentIndex  = XII_GAL_ATTACHMENT_UNUSED;         ///< Either an integer value identifying an attachment at the corresponding index in the xiiGALRenderPassCreationDescription, or XII_GAL_ATTACHMENT_UNUSED to signify that this attachment is not used. The default is 0.
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceStateFlags = xiiGALResourceStateFlags::Unknown; ///< The state of the attachment during the sub pass.
 };
@@ -110,6 +117,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
 /// Vulkan counterpart: [VkSubpassDescriptionDepthStencilResolve](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkSubpassDescriptionDepthStencilResolve).
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHashableStruct<xiiGALDepthResolveDescription>
 {
+  XII_DECLARE_POD_TYPE();
+
+  xiiGALDepthResolveDescription() = default;
+
+  xiiGALDepthResolveDescription(xiiGALAttachmentReferenceDescription attachment, xiiEnum<xiiGALDepthResolveMode> depthMode, xiiEnum<xiiGALDepthResolveMode> stencilMode) :
+    m_Attachment(attachment), m_DepthMode(depthMode), m_StencilMode(stencilMode)
+  {
+  }
+
   xiiGALAttachmentReferenceDescription m_Attachment;  ///< The depth resolve attachment reference.
   xiiEnum<xiiGALDepthResolveMode>      m_DepthMode;   ///< The depth resolve mode.
   xiiEnum<xiiGALDepthResolveMode>      m_StencilMode; ///< The stencil resolve mode.
@@ -119,6 +135,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthResolveDescription : public xiiHash
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : public xiiHashableStruct<xiiGALShadingRateAttachmentDescription>
 {
   XII_DECLARE_POD_TYPE();
+
+  xiiGALShadingRateAttachmentDescription() = default;
+
+  xiiGALShadingRateAttachmentDescription(xiiGALAttachmentReferenceDescription attachment, xiiSizeU32 tileSize) :
+    m_AttachmentReference(attachment), m_TileSize(tileSize)
+  {
+  }
 
   xiiGALAttachmentReferenceDescription m_AttachmentReference;           ///< The shading rate attachment reference.
   xiiSizeU32                           m_TileSize = xiiSizeU32(0U, 0U); ///< Each texel in the attachment contains shading rate for the whole tile. The size must be a power-of-two value between xiiGALShadingRateProperties::MinTileSize and xiiGALShadingRateProperties::MaxTileSize. Keep zero (default) to use the default tile size.

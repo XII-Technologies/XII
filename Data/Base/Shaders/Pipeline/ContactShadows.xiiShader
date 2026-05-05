@@ -1,69 +1,57 @@
-// XII Engine - ContactShadow.xiiShader  [REWRITTEN]
-// Pass 20: Screen-space contact shadow ray march in view space.
-// Dispatch: ceil(W/8) × ceil(H/8) × 1
+// XII Engine - ContactShadows.xiiShader
+// Screen-space contact shadows for the dominant directional light.
 
 #include "PipelineCommon.xiiShader"
 
-cbuffer ContactShadowConstants : register(b3)
-{
-    float3 g_LightDirView;   // light direction in view space
-    uint   g_RaySteps;       // typically 8-32
-    float  g_MaxRayDistView; // max distance in view space units
-    float  g_DepthBias;      // anti-self-intersection
-    float2 _pad;
-};
-
-Texture2D<float>   g_SceneDepth  : register(t0);
-RWTexture2D<float> g_ShadowOut   : register(u0); // 0=lit, 1=occluded
-
-float3 ViewPosFromDepth(float2 ndc, float depth)
-{
-    float4 clip  = float4(ndc, depth, 1.0f);
-    float4 world = mul(g_InverseViewProjectionMatrix, clip);
-    world /= world.w;
-    // Quick hack: reconstruct view-space via another mul (kept for generality).
-    // In a real pipeline, bind a separate per-frame view matrix.
-    return world.xyz; // using world as approximation for view-space (camera at origin)
-}
+Texture2D<float>   g_SceneDepth       : register(t0);
+RWTexture2D<float> g_ContactShadowOut : register(u0);
 
 [numthreads(8, 8, 1)]
 void CS_ContactShadow(uint3 tid : SV_DispatchThreadID)
 {
-    uint2 dims; g_ShadowOut.GetDimensions(dims.x, dims.y);
-    if (any(tid.xy >= dims)) return;
+    uint2 dims;
+    g_ContactShadowOut.GetDimensions(dims.x, dims.y);
+    if (any(tid.xy >= dims))
+        return;
 
-    float2 uv      = (float2(tid.xy) + 0.5f) / float2(dims);
-    float  depth   = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
-    float  shadow  = 0.0f;
+    const float2 uv = (float2(tid.xy) + 0.5f) / float2(dims);
+    const float depth = g_SceneDepth.SampleLevel(g_sPointClamp, uv, 0);
 
-    if (depth > 0.0f && depth < 1.0f)
+    float shadow = 0.0f;
+    if (depth > 0.0f && depth < 1.0f && g_MainLightDirectionAndIntensity.w > 0.0f)
     {
-        float2 ndc    = uv * 2.0f - float2(1.0f, -1.0f);
-        float3 vPos   = ViewPosFromDepth(ndc, depth);
-        float  stepSz = g_MaxRayDistView / float(g_RaySteps);
+        const float3 worldPos = ReconstructWorldPos(uv, depth);
+        const float3 lightDir = normalize(-g_MainLightDirectionAndIntensity.xyz);
+        const uint stepCount = clamp(g_ContactShadowSteps, 4u, 64u);
+        const float stepSize = g_ContactShadowLength / (float)stepCount;
+        const float jitter = InterleavedGradientNoise((float2)tid.xy, g_FrameIndex);
 
-        for (uint s = 0u; s < g_RaySteps; ++s)
+        [loop]
+        for (uint stepIndex = 0u; stepIndex < stepCount; ++stepIndex)
         {
-            float3 rayPos = vPos + g_LightDirView * (stepSz * float(s + 1u));
+            const float rayDistance = (float(stepIndex) + jitter + 1.0f) * stepSize;
+            const float3 sampleWorldPos = worldPos + lightDir * rayDistance;
+            const float4 clipPos = mul(g_ViewProjectionMatrix, float4(sampleWorldPos, 1.0f));
 
-            // Project ray position back to screen to sample depth.
-            float4 clip   = mul(g_ViewProjectionMatrix, float4(rayPos, 1.0f));
-            float2 rayNDC = clip.xy / max(clip.w, 1e-7f);
-            float2 rayUV  = rayNDC * float2(0.5f, -0.5f) + 0.5f;
-            if (any(rayUV < 0.0f) || any(rayUV > 1.0f)) break;
+            if (clipPos.w <= 0.0f)
+                break;
 
-            float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, rayUV, 0);
-            float rayDepth    = clip.z / clip.w;
+            const float2 sampleNdc = clipPos.xy / clipPos.w;
+            const float2 sampleUv = sampleNdc * float2(0.5f, -0.5f) + 0.5f;
+            if (any(sampleUv < 0.0f) || any(sampleUv > 1.0f))
+                break;
 
-            // Reversed-Z: sampleDepth > rayDepth means sample is in front of ray = occluded.
-            if (sampleDepth > rayDepth + g_DepthBias)
+            const float sampleDepth = g_SceneDepth.SampleLevel(g_sPointClamp, sampleUv, 0);
+            const float rayDepth = clipPos.z / clipPos.w;
+
+            if (sampleDepth > rayDepth + g_ContactShadowThickness)
             {
-                // Fade out at march end to reduce hard edges.
-                shadow = 1.0f - float(s) / float(g_RaySteps);
+                const float fade = 1.0f - (float)stepIndex / (float)stepCount;
+                shadow = saturate(fade);
                 break;
             }
         }
     }
 
-    g_ShadowOut[tid.xy] = shadow;
+    g_ContactShadowOut[tid.xy] = shadow;
 }
