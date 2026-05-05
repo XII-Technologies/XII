@@ -3668,7 +3668,7 @@ void xiiView::BuildDefaultRenderGraph(xiiRenderGraph& graph, xiiRenderGraphBlack
   RunDynamicResolutionPID();
 
   xiiUInt32 uiFrameIndex = 0U;
-  bool bResult = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
+  bool      bResult      = blackboard.TryGet(xiiRGBlackboardKeys::k_FrameIndex, uiFrameIndex);
   XII_IGNORE_UNUSED(bResult);
 
   if (m_pExtractedData != nullptr)
