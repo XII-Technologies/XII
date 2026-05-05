@@ -857,7 +857,7 @@ void xiiMeshBufferResource::CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuf
   desc.m_uiSize              = data.GetCount();
   desc.m_BindFlags           = bindFlags;
   desc.m_Usage               = m_Descriptor.m_ResourceUsage;
-  desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
+  desc.m_CPUAccessFlags      = m_Descriptor.m_ResourceUsage == xiiGALResourceUsage::Dynamic ? xiiGALCPUAccessFlag::Write : xiiGALCPUAccessFlag::None;
   desc.m_Mode                = bindFlags.IsSet(xiiGALBindFlags::IndexBuffer) ? xiiGALBufferMode::Raw : xiiGALBufferMode::Structured;
   desc.m_uiElementByteStride = uiStride;
 
