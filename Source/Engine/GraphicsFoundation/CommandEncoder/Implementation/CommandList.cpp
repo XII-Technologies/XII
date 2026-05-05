@@ -479,7 +479,7 @@ void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescriptio
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetConstantBuffer must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetConstantBuffer requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -509,7 +509,7 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetShaderResourceBufferView must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetShaderResourceBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetShaderResourceBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -539,7 +539,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetShaderResourceTextureView must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetShaderResourceTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetShaderResourceTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -569,7 +569,7 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetUnorderedAccessBufferView must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetUnorderedAccessBufferView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetUnorderedAccessBufferView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -599,7 +599,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetUnorderedAccessTextureView must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetUnorderedAccessTextureView arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetUnorderedAccessTextureView requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -629,7 +629,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "SetSampler must be called while recording.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "SetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "SetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "SetSampler requires a pipeline state to be set.");
 
   // Check that the pipeline resource signature contains the binding information at the required shader stage.
@@ -683,7 +683,7 @@ void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDes
 
 void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& sResourceName, xiiGALBuffer* pConstantBuffer, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetConstantBuffer arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetConstantBuffer requires a pipeline state to be set.");
 
   const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
@@ -763,7 +763,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHas
 
 void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourceName, xiiGALSampler* pSampler, xiiBitflags<xiiGALShaderType> shaderStages /*= xiiGALShaderType::Unknown*/)
 {
-  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics flag.");
+  XII_ASSERT_DEV(m_Description.m_QueueFlags.IsAnySet(xiiGALCommandQueueFlags::Graphics | xiiGALCommandQueueFlags::Compute), "ResolveAndSetSampler arguments are invalid. The command list does not have the xiiGALCommandQueueFlags::Graphics or xiiGALCommandQueueFlags::Compute flag.");
   XII_ASSERT_DEV(m_pPipelineState != nullptr, "ResolveAndSetSampler requires a pipeline state to be set.");
 
   const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
