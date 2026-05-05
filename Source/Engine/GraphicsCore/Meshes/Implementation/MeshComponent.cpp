@@ -254,6 +254,11 @@ void xiiMeshComponentBase::ClearMaterialOverrides()
   InvalidateCachedRenderData();
 }
 
+const xiiHybridArray<xiiMaterialResourceHandle, 8>& xiiMeshComponentBase::GetMaterialOverrides() const
+{
+  return m_MaterialOverrides;
+}
+
 void xiiMeshComponentBase::SetSectionIndex(xiiUInt32 uiSectionIndex)
 {
   if (m_uiSectionIndex == uiSectionIndex)
@@ -458,6 +463,11 @@ void xiiSkinnedMeshComponent::SetSkinningMatrices(xiiArrayPtr<const xiiMat4> pMa
   InvalidateCachedRenderData();
 }
 
+const xiiHybridArray<xiiMat4, 96>& xiiSkinnedMeshComponent::GetSkinningMatrices() const
+{
+  return m_SkinningMatrices;
+}
+
 void xiiSkinnedMeshComponent::SetMorphWeights(xiiArrayPtr<const float> pWeights)
 {
   m_MorphWeights.SetCount(pWeights.GetCount());
@@ -468,6 +478,11 @@ void xiiSkinnedMeshComponent::SetMorphWeights(xiiArrayPtr<const float> pWeights)
 
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
+}
+
+const xiiHybridArray<float, 16>& xiiSkinnedMeshComponent::GetMorphWeights() const
+{
+  return m_MorphWeights;
 }
 
 void xiiSkinnedMeshComponent::ClearPose()
@@ -535,6 +550,17 @@ void xiiInstancedMeshComponent::SetInstanceTransform(xiiUInt32 uiIndex, const xi
     return;
 
   m_InstanceTransforms[uiIndex] = transform;
+
+  TriggerLocalBoundsUpdate();
+  InvalidateCachedRenderData();
+}
+
+void xiiInstancedMeshComponent::RemoveInstance(xiiUInt32 uiIndex)
+{
+  if (uiIndex >= m_InstanceTransforms.GetCount())
+    return;
+
+  m_InstanceTransforms.RemoveAtAndCopy(uiIndex);
 
   TriggerLocalBoundsUpdate();
   InvalidateCachedRenderData();
