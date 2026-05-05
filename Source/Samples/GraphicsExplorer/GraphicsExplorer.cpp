@@ -185,9 +185,6 @@ public:
           if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
           {
             m_pRenderGraph->Execute(m_pDevice.Borrow(), /*pView=*/nullptr, m_pRenderGraphBlackboard.Borrow(), m_pRenderGraphResourceCache.Borrow(), m_pRenderGraphProfiler.Borrow()).AssertSuccess("RenderGraph execution failed.");
-
-            // Tick the profiler so it advances its ring and schedules readback on the oldest slot.
-            m_pRenderGraphProfiler->OnFrameEnd(m_uiFrameIndex);
           }
           else
           {

@@ -15,13 +15,20 @@
 /// \brief Abstract interface for per-pass GPU timing instrumentation in the render graph.
 ///
 /// Implement this interface to capture GPU performance data during render graph execution.
-/// The executor calls OnPassBegin / OnPassEnd around each pass's RecordCommands call.
+/// The executor calls OnGraphBegin / OnGraphEnd around each queue submission command list,
+/// and OnPassBegin / OnPassEnd around each pass's RecordCommands call.
 /// OnFrameEnd is called after all passes have been submitted so implementations can schedule readback or finalize timing data.
 class XII_GRAPHICSCORE_DLL xiiRenderGraphProfiler
 {
 public:
   xiiRenderGraphProfiler()          = default;
   virtual ~xiiRenderGraphProfiler() = default;
+
+  /// \brief Called at the start of a submission command list.
+  virtual void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) = 0;
+
+  /// \brief Called at the end of a submission command list.
+  virtual void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) = 0;
 
   /// \brief Called immediately before a pass records its commands. Insert a begin-query here.
   virtual void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) = 0;
@@ -60,6 +67,8 @@ public:
   void Shutdown();
 
   // xiiRenderGraphProfiler interface
+  void OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) override;
+  void OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex) override;
   void OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnPassEnd(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex) override;
   void OnFrameEnd(xiiUInt64 uiFrameIndex) override;
@@ -80,9 +89,10 @@ private:
 
   struct FrameData
   {
-    xiiDynamicArray<PassQueries> m_PassQueries;
-    xiiSharedPtr<xiiGALQuery>    m_pFrameDurationQuery;
-    xiiUInt64                    m_uiFrameIndex = xiiInvalidIndex;
+    xiiDynamicArray<PassQueries>               m_PassQueries;
+    xiiDynamicArray<xiiSharedPtr<xiiGALQuery>> m_SubmissionDurationQueries;
+    xiiDynamicArray<bool>                      m_SubmissionQueryActive;
+    xiiUInt64                                  m_uiFrameIndex = xiiInvalidIndex;
   };
 
   void ReadbackFrame(FrameData& frameData);

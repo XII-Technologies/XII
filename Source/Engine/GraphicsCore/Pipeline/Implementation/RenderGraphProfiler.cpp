@@ -24,13 +24,60 @@ void xiiRenderGraphTimestampProfiler::Shutdown()
   for (xiiUInt32 i = 0U; i < s_uiRingFrameCount; ++i)
   {
     m_FrameRing[i].m_PassQueries.Clear();
-    m_FrameRing[i].m_pFrameDurationQuery.Clear();
+    m_FrameRing[i].m_SubmissionDurationQueries.Clear();
+    m_FrameRing[i].m_SubmissionQueryActive.Clear();
     m_FrameRing[i].m_uiFrameIndex = xiiInvalidIndex;
   }
   m_pDevice = nullptr;
 
   XII_LOCK(m_ResultMutex);
   m_ResolvedDurationsMs.Clear();
+}
+
+void xiiRenderGraphTimestampProfiler::OnGraphBegin(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex)
+{
+  XII_ASSERT_DEV(m_pDevice != nullptr, "Profiler not initialized.");
+
+  FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
+
+  if (uiSubmissionIndex >= frame.m_SubmissionDurationQueries.GetCount())
+  {
+    frame.m_SubmissionDurationQueries.SetCount(uiSubmissionIndex + 1U);
+    frame.m_SubmissionQueryActive.SetCount(uiSubmissionIndex + 1U, false);
+  }
+
+  xiiSharedPtr<xiiGALQuery>& pSubmissionQuery = frame.m_SubmissionDurationQueries[uiSubmissionIndex];
+  if (pSubmissionQuery == nullptr)
+  {
+    xiiGALQueryCreationDescription queryDescription;
+    queryDescription.m_Type = xiiGALQueryType::Duration;
+
+    pSubmissionQuery = m_pDevice->CreateQuery(queryDescription);
+  }
+
+  if (pSubmissionQuery != nullptr)
+  {
+    commandList.BeginQuery(pSubmissionQuery);
+
+    frame.m_SubmissionQueryActive[uiSubmissionIndex] = true;
+  }
+}
+
+void xiiRenderGraphTimestampProfiler::OnGraphEnd(xiiGALCommandList& commandList, xiiUInt32 uiSubmissionIndex)
+{
+  FrameData& frame = m_FrameRing[m_uiCurrentRingSlot];
+
+  if (uiSubmissionIndex >= frame.m_SubmissionDurationQueries.GetCount())
+    return;
+
+  if (!frame.m_SubmissionQueryActive[uiSubmissionIndex])
+    return;
+
+  xiiSharedPtr<xiiGALQuery>& pSubmissionQuery = frame.m_SubmissionDurationQueries[uiSubmissionIndex];
+  if (pSubmissionQuery != nullptr)
+  {
+    commandList.EndQuery(pSubmissionQuery);
+  }
 }
 
 void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList, xiiStringView sPassName, xiiUInt32 uiPassIndex)
@@ -42,23 +89,6 @@ void xiiRenderGraphTimestampProfiler::OnPassBegin(xiiGALCommandList& commandList
   if (uiPassIndex >= frame.m_PassQueries.GetCount())
   {
     frame.m_PassQueries.SetCount(uiPassIndex + 1U);
-  }
-
-  // If this is the first pass recorded for the frame, create & begin the frame-wide duration query.
-  if (uiPassIndex == 0U)
-  {
-    if (frame.m_pFrameDurationQuery == nullptr)
-    {
-      xiiGALQueryCreationDescription frameQueryDescription;
-      frameQueryDescription.m_Type = xiiGALQueryType::Duration;
-
-      frame.m_pFrameDurationQuery = m_pDevice->CreateQuery(frameQueryDescription);
-    }
-
-    if (frame.m_pFrameDurationQuery != nullptr)
-    {
-      commandList.BeginQuery(frame.m_pFrameDurationQuery);
-    }
   }
 
   PassQueries& pass = frame.m_PassQueries[uiPassIndex];
@@ -93,16 +123,6 @@ void xiiRenderGraphTimestampProfiler::OnPassEnd(xiiGALCommandList& commandList, 
   {
     commandList.EndQuery(pass.m_pDurationQuery);
   }
-
-  // If this is the last pass for the frame (based on current known count), end the frame-wide query.
-  // Note: This assumes passes are recorded in order and that the final pass index equals GetCount() - 1.
-  if (uiPassIndex == frame.m_PassQueries.GetCount() - 1)
-  {
-    if (frame.m_pFrameDurationQuery != nullptr)
-    {
-      commandList.EndQuery(frame.m_pFrameDurationQuery);
-    }
-  }
 }
 
 void xiiRenderGraphTimestampProfiler::OnFrameEnd(xiiUInt64 uiFrameIndex)
@@ -122,6 +142,8 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
 {
   XII_LOCK(m_ResultMutex);
 
+  float fFrameDurationMs = 0.0f;
+
   for (PassQueries& pass : frameData.m_PassQueries)
   {
     if (!pass.m_bActive || pass.m_pDurationQuery == nullptr)
@@ -140,28 +162,36 @@ void xiiRenderGraphTimestampProfiler::ReadbackFrame(FrameData& frameData)
     pass.m_bActive = false;
   }
 
-  // Read back the frame-wide duration query if present.
-  if (frameData.m_pFrameDurationQuery != nullptr)
+  // Read back all submission duration queries for this frame and accumulate them.
+  for (xiiUInt32 uiSubmissionIndex = 0U; uiSubmissionIndex < frameData.m_SubmissionDurationQueries.GetCount(); ++uiSubmissionIndex)
   {
-    xiiGALQueryDataDuration frameDurationData;
-    if (frameData.m_pFrameDurationQuery->GetData(&frameDurationData, sizeof(frameDurationData), /*bAutoInvalidate=*/false))
-    {
-      if (frameDurationData.m_uiFrequency > 0ULL)
-      {
-        const float fFrameDurationMs = static_cast<float>(frameDurationData.m_uiDuration) / static_cast<float>(frameDurationData.m_uiFrequency) * 1000.0f;
+    if (!frameData.m_SubmissionQueryActive[uiSubmissionIndex])
+      continue;
 
-        // Use a reserved name for the total frame duration so callers can query it like a pass.
-        static const xiiHashedString s_sFrameTotalName = xiiMakeHashedString("__FrameTotal__");
-        m_ResolvedDurationsMs.Insert(s_sFrameTotalName, fFrameDurationMs);
+    xiiSharedPtr<xiiGALQuery>& pSubmissionQuery = frameData.m_SubmissionDurationQueries[uiSubmissionIndex];
+    if (pSubmissionQuery == nullptr)
+      continue;
+
+    xiiGALQueryDataDuration submissionDurationData;
+    if (pSubmissionQuery->GetData(&submissionDurationData, sizeof(submissionDurationData), /*bAutoInvalidate=*/false))
+    {
+      if (submissionDurationData.m_uiFrequency > 0ULL)
+      {
+        fFrameDurationMs += static_cast<float>(submissionDurationData.m_uiDuration) / static_cast<float>(submissionDurationData.m_uiFrequency) * 1000.0f;
       }
     }
 
-    // Reset the frame query so it will be recreated on the next frame.
-    frameData.m_pFrameDurationQuery = nullptr;
+    frameData.m_SubmissionQueryActive[uiSubmissionIndex] = false;
   }
 
-  // Clear pass queries array for this frame so it can be reused.
+  // Use a reserved name for the total frame duration so callers can query it like a pass.
+  static const xiiHashedString s_sFrameTotalName = xiiMakeHashedString("__FrameTotal__");
+  m_ResolvedDurationsMs.Insert(s_sFrameTotalName, fFrameDurationMs);
+
+  // Clear per-frame arrays so the slot can be reused.
   frameData.m_PassQueries.Clear();
+  frameData.m_SubmissionDurationQueries.Clear();
+  frameData.m_SubmissionQueryActive.Clear();
   frameData.m_uiFrameIndex = xiiInvalidIndex;
 }
 
