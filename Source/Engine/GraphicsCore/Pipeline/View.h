@@ -103,8 +103,6 @@ struct xiiBloomData;
 struct xiiColorGradingData;
 struct xiiToneMappingData;
 
-struct xiiDebugVisualizationData;
-
 struct xiiFinalBlitData;
 
 /// \brief Encapsulates a view on the given world through the given camera
@@ -439,11 +437,6 @@ private:
 
   void SetupToneMapping(xiiToneMappingData& data, xiiRGBuilder& builder);
   void ExecuteToneMapping(const xiiToneMappingData& data, xiiRGPassContext& context);
-
-
-  void SetupDebugVisualization(xiiDebugVisualizationData& data, xiiRGBuilder& builder);
-  void ExecuteDebugVisualization(const xiiDebugVisualizationData& data, xiiRGPassContext& context);
-
 
   void SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder);
   void ExecuteFinalBlit(const xiiFinalBlitData& data, xiiRGPassContext& context);
