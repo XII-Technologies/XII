@@ -17,9 +17,6 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
 
-#include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
-#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -28,7 +25,14 @@
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -225,14 +229,23 @@ public:
 
   virtual void AfterCoreSystemsStartup() override
   {
+//#if XII_ENABLED(USE_FILESERVE)
+//    xiiPlugin::LoadPlugin("xiiFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
+//#endif
+
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/GraphicsExplorer";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
-
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
-    xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiDataDirUsage::AllowWrites).IgnoreResult();
+//#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+//    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+//    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+//#endif
+
+    xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
+    xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
+    xiiFileSystem::AddDataDirectory(">project/", "Project", "project").AssertSuccess();
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -346,7 +359,14 @@ public:
 #endif
 
       xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
-      m_pDevice                      = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
+      xiiStringView sShaderModel     = {};
+      xiiStringView sShaderCompiler  = {};
+      xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
+
+      xiiGALShaderManager::Configure(sShaderModel, true);
+      XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found.", sShaderCompiler);
+
+      m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
       XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 

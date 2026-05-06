@@ -7,7 +7,7 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(APPLICATION ${PROJECT_NAME})
 
-xii_add_renderers(${PROJECT_NAME} EXCLUDE_SHADER_COMPILER)
+xii_add_renderers(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
