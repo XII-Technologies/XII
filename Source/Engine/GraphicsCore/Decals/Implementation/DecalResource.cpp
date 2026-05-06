@@ -8,32 +8,6 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-// clang-format off
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiDecalChannelMask, 1)
-  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::None),
-  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Albedo),
-  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Normal),
-  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Material),
-  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Emissive),
-  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::All),
-XII_END_STATIC_REFLECTED_BITFLAGS;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiDecalProjectionMode, 1)
-  XII_ENUM_CONSTANT(xiiDecalProjectionMode::Projected),
-  XII_ENUM_CONSTANT(xiiDecalProjectionMode::Mesh),
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAtlasResource, 1, xiiRTTIDefaultAllocator<xiiDecalAtlasResource>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalResource, 1, xiiRTTIDefaultAllocator<xiiDecalResource>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalAtlasResource);
-
-XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalResource);
-
 namespace
 {
   static xiiUInt16 ResolveTextureWidth(const xiiTexture2DResourceHandle& hTexture, xiiUInt16 uiFallback)
@@ -69,6 +43,27 @@ namespace
     assetHeader.Read(ref_stream).IgnoreResult();
   }
 } // namespace
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiDecalChannelMask, 1)
+  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::None),
+  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Albedo),
+  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Normal),
+  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Material),
+  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::Emissive),
+  XII_BITFLAGS_CONSTANT(xiiDecalChannelMask::All),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiDecalProjectionMode, 1)
+  XII_ENUM_CONSTANT(xiiDecalProjectionMode::Projected),
+  XII_ENUM_CONSTANT(xiiDecalProjectionMode::Mesh),
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAtlasResource, 1, xiiRTTIDefaultAllocator<xiiDecalAtlasResource>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalAtlasResource);
 
 xiiDecalAtlasResource::xiiDecalAtlasResource() :
   xiiResource(DoUpdate::OnAnyThread, 1U)
@@ -328,6 +323,13 @@ void xiiDecalAtlasResourceDescriptor::Load(xiiStreamReader& ref_stream)
     ref_stream >> entry.m_ChannelMask;
   }
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalResource, 1, xiiRTTIDefaultAllocator<xiiDecalResource>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalResource);
 
 xiiDecalResource::xiiDecalResource() :
   xiiResource(DoUpdate::OnAnyThread, 1U)
