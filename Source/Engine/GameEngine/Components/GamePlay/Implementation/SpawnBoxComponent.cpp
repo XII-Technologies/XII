@@ -6,7 +6,7 @@
 #include <Core/Messages/TriggerMessage.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Gameplay/SpawnBoxComponent.h>
+#include <GameEngine/Components/Gameplay/SpawnBoxComponent.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiSpawnBoxComponent, 1, xiiComponentMode::Dynamic)

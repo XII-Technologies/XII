@@ -10,19 +10,16 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <GameEngine/Animation/PropertyAnimResource.h>
 #include <GameEngine/GameApplication/GameApplication.h>
-#include <GameEngine/StateMachine/StateMachineResource.h>
-#include <GameEngine/Utils/BlackboardTemplateResource.h>
-#include <GameEngine/Utils/ImageDataResource.h>
+#include <GameEngine/Components/StateMachine/StateMachineResource.h>
+#include <GameEngine/Resources/BlackboardTemplateResource.h>
+#include <GameEngine/Resources/ImageDataResource.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
-#include <GraphicsCore/Decals/DecalAtlasResource.h>
-#include <GraphicsCore/Decals/DecalResource.h>
-#include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
+// #include <GraphicsCore/Decals/DecalAtlasResource.h>
+// #include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
-#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
@@ -59,15 +56,13 @@ void xiiGameApplication::Init_ConfigureAssetManagement()
   xiiResourceManager::RegisterResourceForAssetType("Collection", xiiGetStaticRTTI<xiiCollectionResource>());
   xiiResourceManager::RegisterResourceForAssetType("ColorGradient", xiiGetStaticRTTI<xiiColorGradientResource>());
   xiiResourceManager::RegisterResourceForAssetType("Curve1D", xiiGetStaticRTTI<xiiCurve1DResource>());
-  xiiResourceManager::RegisterResourceForAssetType("Decal", xiiGetStaticRTTI<xiiDecalResource>());
-  xiiResourceManager::RegisterResourceForAssetType("Decal Atlas", xiiGetStaticRTTI<xiiDecalAtlasResource>());
+  // xiiResourceManager::RegisterResourceForAssetType("Decal", xiiGetStaticRTTI<xiiDecalResource>());
+  // xiiResourceManager::RegisterResourceForAssetType("Decal Atlas", xiiGetStaticRTTI<xiiDecalAtlasResource>());
   xiiResourceManager::RegisterResourceForAssetType("Image Data", xiiGetStaticRTTI<xiiImageDataResource>());
   xiiResourceManager::RegisterResourceForAssetType("LUT", xiiGetStaticRTTI<xiiTexture3DResource>());
   xiiResourceManager::RegisterResourceForAssetType("Material", xiiGetStaticRTTI<xiiMaterialResource>());
   xiiResourceManager::RegisterResourceForAssetType("Mesh", xiiGetStaticRTTI<xiiMeshResource>());
   xiiResourceManager::RegisterResourceForAssetType("Prefab", xiiGetStaticRTTI<xiiPrefabResource>());
-  xiiResourceManager::RegisterResourceForAssetType("PropertyAnim", xiiGetStaticRTTI<xiiPropertyAnimResource>());
-  xiiResourceManager::RegisterResourceForAssetType("RenderPipeline", xiiGetStaticRTTI<xiiRenderPipelineResource>());
   xiiResourceManager::RegisterResourceForAssetType("Render Target", xiiGetStaticRTTI<xiiTexture2DResource>());
   xiiResourceManager::RegisterResourceForAssetType("Skeleton", xiiGetStaticRTTI<xiiSkeletonResource>());
   xiiResourceManager::RegisterResourceForAssetType("StateMachine", xiiGetStaticRTTI<xiiStateMachineResource>());
@@ -194,12 +189,6 @@ void xiiGameApplication::Init_SetupDefaultResources()
     xiiResourceManager::SetResourceTypeMissingFallback<xiiCollectionResource>(hMissingCollection);
   }
 
-  // Render Pipelines
-  {
-    xiiRenderPipelineResourceHandle hMissingRenderPipeline = xiiRenderPipelineResource::CreateMissingPipeline();
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiRenderPipelineResource>(hMissingRenderPipeline);
-  }
-
   // Color Gradient
   {
     xiiColorGradientResourceDescriptor cg;
@@ -221,15 +210,6 @@ void xiiGameApplication::Init_SetupDefaultResources()
 
     xiiCurve1DResourceHandle hResource = xiiResourceManager::CreateResource<xiiCurve1DResource>("MissingCurve1D", std::move(cd), "Missing Curve1D Resource");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiCurve1DResource>(hResource);
-  }
-
-  // Property Animations
-  {
-    xiiPropertyAnimResourceDescriptor desc;
-    desc.m_AnimationDuration = xiiTime::MakeFromSeconds(0.1);
-
-    xiiPropertyAnimResourceHandle hResource = xiiResourceManager::CreateResource<xiiPropertyAnimResource>("MissingPropertyAnim", std::move(desc), "Missing Property Animation Resource");
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiPropertyAnimResource>(hResource);
   }
 
   // Animation Skeleton
@@ -340,10 +320,6 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
 
     xiiGALDevice::SetDefaultDevice(pDevice);
   }
-
-  // Create GPU resource pool
-  xiiGPUResourcePool* pResourcePool = XII_DEFAULT_NEW(xiiGPUResourcePool);
-  xiiGPUResourcePool::SetDefaultInstance(pResourcePool);
 }
 
 void xiiGameApplication::Init_LoadRequiredPlugins()
@@ -360,7 +336,7 @@ void xiiGameApplication::Init_LoadRequiredPlugins()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 
-  // on sandboxed platforms, we can only load data through fileserve, so enforce use of this plugin
+  // On sandboxed platforms, we can only load data through fileserve, so enforce use of this plugin.
 #  if XII_DISABLED(XII_SUPPORTS_UNRESTRICTED_FILE_ACCESS)
   xiiPlugin::LoadPlugin("xiiFileservePlugin").IgnoreResult(); // don't care if it fails to load
 #  endif
@@ -374,9 +350,6 @@ void xiiGameApplication::Deinit_ShutdownGraphicsDevice()
 {
   if (!xiiGALDevice::HasDefaultDevice())
     return;
-
-  // Cleanup resource pool
-  xiiGPUResourcePool::SetDefaultInstance(nullptr);
 
   xiiResourceManager::FreeAllUnusedResources();
 

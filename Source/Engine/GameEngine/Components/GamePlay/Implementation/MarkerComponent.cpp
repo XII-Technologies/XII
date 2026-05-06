@@ -7,8 +7,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <GameEngine/Gameplay/MarkerComponent.h>
-#include <GameEngine/Messages/DamageMessage.h>
+#include <GameEngine/Components/Gameplay/MarkerComponent.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiMarkerComponent, 1, xiiComponentMode::Static)

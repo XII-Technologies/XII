@@ -6,7 +6,7 @@
 #include <Core/Prefabs/PrefabReferenceComponent.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <GameEngine/Gameplay/SpawnComponent.h>
+#include <GameEngine/Components/Gameplay/SpawnComponent.h>
 
 //////////////////////////////////////////////////////////////////////////
 

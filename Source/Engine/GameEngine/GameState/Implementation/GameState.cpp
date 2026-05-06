@@ -104,10 +104,7 @@ void xiiGameState::OnDeactivation()
 
 void xiiGameState::AddMainViewsToRender()
 {
-  if (!m_hMainView.IsInvalidated())
-  {
-    xiiRenderWorld::AddMainView(m_hMainView);
-  }
+  // Views are managed by xiiRenderWorldModule and automatically scheduled for rendering upon creation
 }
 
 void xiiGameState::RequestQuit()
@@ -226,7 +223,6 @@ xiiView* xiiGameState::CreateMainView()
 
   pView->SetCameraUsageHint(xiiCameraUsageHint::MainView);
   pView->SetCamera(&m_MainCamera);
-  xiiRenderWorld::AddMainView(m_hMainView);
 
   const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
   // exclude all editor objects from rendering in proper game views
