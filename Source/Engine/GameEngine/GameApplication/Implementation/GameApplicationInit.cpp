@@ -10,8 +10,8 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/Components/StateMachine/StateMachineResource.h>
+#include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/Resources/BlackboardTemplateResource.h>
 #include <GameEngine/Resources/ImageDataResource.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>

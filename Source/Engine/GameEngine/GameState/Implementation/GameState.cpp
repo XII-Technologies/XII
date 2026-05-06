@@ -191,8 +191,8 @@ void xiiGameState::ConfigureInputActions() {}
 
 void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize)
 {
-  m_pMainSwapChain    = std::move(pSwapChain);
-  m_MainViewportSize  = viewportSize;
+  m_pMainSwapChain   = std::move(pSwapChain);
+  m_MainViewportSize = viewportSize;
 
   xiiView* pView = GetMainView();
   if (pView == nullptr)
