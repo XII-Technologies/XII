@@ -1,0 +1,129 @@
+[PLATFORMS]
+ALL
+
+[PERMUTATIONS]
+
+[COMPUTESHADER]
+
+#include "PipelineCommon.xiiShader"
+
+#define DECAL_CHANNEL_ALBEDO   1u
+#define DECAL_CHANNEL_NORMAL   2u
+#define DECAL_CHANNEL_MATERIAL 4u
+#define DECAL_CHANNEL_EMISSIVE 8u
+
+struct DecalInstance
+{
+    float4x4 WorldToDecal;
+    float4   AtlasUVRect;
+    float4   Tint;
+    float4   UVOffsetScale;
+    float4   ExtentsOpacity;
+    float4   WorldCenterRadius;
+    float4   SurfaceParams;
+    uint4    Meta;
+};
+
+Texture2D<float>                g_SceneDepth;
+StructuredBuffer<DecalInstance> g_Decals;
+StructuredBuffer<uint>          g_MeshDecalCommands;
+Texture2D<float4>               g_DecalAtlasAlbedo;
+Texture2D<float4>               g_DecalAtlasNormal;
+Texture2D<float4>               g_DecalAtlasMaterial;
+Texture2D<float4>               g_DecalAtlasEmissive;
+RWTexture2D<float4>             g_GBufferAlbedo;
+RWTexture2D<float2>             g_GBufferNormal;
+RWTexture2D<float4>             g_GBufferMaterial;
+RWTexture2D<float4>             g_GBufferEmissive;
+
+float2 ComputeAtlasUV(DecalInstance decal, float2 localUV)
+{
+    const float2 uv = localUV * decal.UVOffsetScale.zw + decal.UVOffsetScale.xy;
+    return decal.AtlasUVRect.xy + uv * decal.AtlasUVRect.zw;
+}
+
+[numthreads(8, 8, 1)]
+void main(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    uint renderWidth = 0u;
+    uint renderHeight = 0u;
+    g_GBufferAlbedo.GetDimensions(renderWidth, renderHeight);
+
+    if (dispatchThreadId.x >= renderWidth || dispatchThreadId.y >= renderHeight)
+    {
+        return;
+    }
+
+    const uint2 pixelCoord = dispatchThreadId.xy;
+    const float  sceneDepth = g_SceneDepth.Load(int3(pixelCoord, 0));
+    const float2 uv = (float2(pixelCoord) + 0.5f) / float2(renderWidth, renderHeight);
+    const float3 worldPos = ReconstructWorldPos(uv, sceneDepth);
+
+    const uint meshDecalCount = g_MeshDecalCommands[0];
+
+    float4 albedo = g_GBufferAlbedo[pixelCoord];
+    float2 normalOct = g_GBufferNormal[pixelCoord];
+    float4 material = g_GBufferMaterial[pixelCoord];
+    float4 emissive = g_GBufferEmissive[pixelCoord];
+
+    [loop]
+    for (uint commandIndex = 0u; commandIndex < meshDecalCount; ++commandIndex)
+    {
+        const uint decalIndex = g_MeshDecalCommands[commandIndex + 1u];
+        const DecalInstance decal = g_Decals[decalIndex];
+
+        const float3 localPos = mul(float4(worldPos, 1.0f), decal.WorldToDecal).xyz;
+        const float3 absLocalPos = abs(localPos);
+
+        if (absLocalPos.x > decal.ExtentsOpacity.x || absLocalPos.y > decal.ExtentsOpacity.y || absLocalPos.z > decal.ExtentsOpacity.z)
+        {
+            continue;
+        }
+
+        const float2 localUV = localPos.xy / max(decal.ExtentsOpacity.xy * 2.0f, float2(1e-4f, 1e-4f)) + 0.5f;
+        if (localUV.x < 0.0f || localUV.x > 1.0f || localUV.y < 0.0f || localUV.y > 1.0f)
+        {
+            continue;
+        }
+
+        const float edgeFade = 1.0f - saturate(absLocalPos.z / max(decal.ExtentsOpacity.z, 1e-4f));
+        const float2 atlasUV = ComputeAtlasUV(decal, localUV);
+
+        const float4 decalAlbedo = g_DecalAtlasAlbedo.SampleLevel(g_sLinearClamp, atlasUV, 0) * decal.Tint;
+        const float4 decalNormal = g_DecalAtlasNormal.SampleLevel(g_sLinearClamp, atlasUV, 0);
+        const float4 decalMaterial = g_DecalAtlasMaterial.SampleLevel(g_sLinearClamp, atlasUV, 0);
+        const float4 decalEmissive = g_DecalAtlasEmissive.SampleLevel(g_sLinearClamp, atlasUV, 0);
+
+        const float opacity = saturate(decal.ExtentsOpacity.w * decalAlbedo.a * edgeFade);
+
+        if ((decal.Meta.x & DECAL_CHANNEL_ALBEDO) != 0u)
+        {
+            albedo.rgb = lerp(albedo.rgb, decalAlbedo.rgb, opacity);
+        }
+
+        if ((decal.Meta.x & DECAL_CHANNEL_NORMAL) != 0u)
+        {
+            const float3 existingNormal = DecodeOctNormal(normalOct);
+            const float3 perturbation = normalize(float3(decalNormal.xy * 2.0f - 1.0f, max(decalNormal.z * 2.0f - 1.0f, 0.05f)));
+            const float3 blendedNormal = normalize(lerp(existingNormal, normalize(existingNormal + perturbation), saturate(decal.SurfaceParams.x * opacity)));
+            normalOct = EncodeOctNormal(blendedNormal);
+        }
+
+        if ((decal.Meta.x & DECAL_CHANNEL_MATERIAL) != 0u)
+        {
+            material.r = lerp(material.r, saturate(decalMaterial.r * decal.SurfaceParams.y), opacity);
+            material.g = lerp(material.g, saturate(decalMaterial.g * decal.SurfaceParams.z), opacity);
+            material.b = lerp(material.b, decalMaterial.b, opacity);
+        }
+
+        if ((decal.Meta.x & DECAL_CHANNEL_EMISSIVE) != 0u)
+        {
+            emissive.rgb += decalEmissive.rgb * decal.SurfaceParams.w * opacity;
+        }
+    }
+
+    g_GBufferAlbedo[pixelCoord] = albedo;
+    g_GBufferNormal[pixelCoord] = normalOct;
+    g_GBufferMaterial[pixelCoord] = material;
+    g_GBufferEmissive[pixelCoord] = emissive;
+}

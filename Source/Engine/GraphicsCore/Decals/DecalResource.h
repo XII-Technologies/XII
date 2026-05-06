@@ -115,7 +115,11 @@ public:
   bool TryGetAtlasEntry(const xiiTempHashedString& sDecalId, const xiiDecalAtlasEntry*& out_pEntry) const;
   bool TryGetAtlasEntry(const xiiHashedString& sDecalId, const xiiDecalAtlasEntry*& out_pEntry) const;
 
-  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pAtlasTexture; }
+  xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pAlbedoAtlasTexture; }
+  xiiSharedPtr<xiiGALTexture> GetAlbedoTexture() const { return m_pAlbedoAtlasTexture; }
+  xiiSharedPtr<xiiGALTexture> GetNormalTexture() const { return m_pNormalAtlasTexture; }
+  xiiSharedPtr<xiiGALTexture> GetMaterialTexture() const { return m_pMaterialAtlasTexture; }
+  xiiSharedPtr<xiiGALTexture> GetEmissiveTexture() const { return m_pEmissiveAtlasTexture; }
   xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pAtlasSampler; }
 
 private:
@@ -124,14 +128,17 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void PackAtlas();
-  void CreateGPUAtlas();
+  void CreateGPUAtlases();
   void RebuildLookup();
 
 private:
   xiiDecalAtlasResourceDescriptor m_Descriptor;
   xiiHashTable<xiiHashedString, xiiUInt32> m_IdToEntryIndex;
 
-  xiiSharedPtr<xiiGALTexture> m_pAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> m_pAlbedoAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> m_pNormalAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> m_pMaterialAtlasTexture;
+  xiiSharedPtr<xiiGALTexture> m_pEmissiveAtlasTexture;
   xiiSharedPtr<xiiGALSampler> m_pAtlasSampler;
   xiiUInt32                   m_uiMemoryGPU = 0U;
 };

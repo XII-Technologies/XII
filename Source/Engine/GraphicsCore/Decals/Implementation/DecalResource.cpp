@@ -89,7 +89,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalAtlasResource, xiiDecalAtlasResourceDe
 
   PackAtlas();
   RebuildLookup();
-  CreateGPUAtlas();
+  CreateGPUAtlases();
 
   return MakeResourceLoadDesc(xiiResourceState::Loaded);
 }
@@ -117,7 +117,10 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UnloadData(Unload WhatToUnload)
 
   m_Descriptor.m_Entries.Clear();
   m_IdToEntryIndex.Clear();
-  m_pAtlasTexture.Clear();
+  m_pAlbedoAtlasTexture.Clear();
+  m_pNormalAtlasTexture.Clear();
+  m_pMaterialAtlasTexture.Clear();
+  m_pEmissiveAtlasTexture.Clear();
   m_pAtlasSampler.Clear();
   m_uiMemoryGPU = 0U;
 
@@ -136,7 +139,7 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStrea
 
   PackAtlas();
   RebuildLookup();
-  CreateGPUAtlas();
+  CreateGPUAtlases();
 
   return MakeResourceLoadDesc(xiiResourceState::Loaded);
 }
@@ -195,7 +198,7 @@ void xiiDecalAtlasResource::PackAtlas()
   }
 }
 
-void xiiDecalAtlasResource::CreateGPUAtlas()
+void xiiDecalAtlasResource::CreateGPUAtlases()
 {
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
   if (pDevice == nullptr)
@@ -210,28 +213,40 @@ void xiiDecalAtlasResource::CreateGPUAtlas()
   textureDescription.m_Size.width  = uiAtlasWidth;
   textureDescription.m_Size.height = uiAtlasHeight;
   textureDescription.m_uiMipLevels = 1U;
-  textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+  textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource;
   textureDescription.m_Usage       = xiiGALResourceUsage::Default;
 
-  xiiDynamicArray<xiiUInt32> neutralPixels;
-  neutralPixels.SetCount(uiAtlasWidth * uiAtlasHeight);
-  for (xiiUInt32& uiPixel : neutralPixels)
-  {
-    uiPixel = 0xFFFFFFFFU;
-  }
+  auto CreateNeutralAtlas = [&](xiiUInt32 uiClearValue, xiiStringView sSuffix) -> xiiSharedPtr<xiiGALTexture> {
+    xiiDynamicArray<xiiUInt32> neutralPixels;
+    neutralPixels.SetCount(uiAtlasWidth * uiAtlasHeight);
+    for (xiiUInt32& uiPixel : neutralPixels)
+    {
+      uiPixel = uiClearValue;
+    }
 
-  xiiHybridArray<xiiGALTextureSubResourceData, 1U> initData;
-  xiiGALTextureSubResourceData&                    subResourceData = initData.ExpandAndGetRef();
-  subResourceData.m_pData                                           = neutralPixels.GetData();
-  subResourceData.m_uiStride                                        = uiAtlasWidth * sizeof(xiiUInt32);
-  subResourceData.m_uiDepthStride                                   = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32);
+    xiiHybridArray<xiiGALTextureSubResourceData, 1U> initData;
+    xiiGALTextureSubResourceData&                    subResourceData = initData.ExpandAndGetRef();
+    subResourceData.m_pData                                           = neutralPixels.GetData();
+    subResourceData.m_uiStride                                        = uiAtlasWidth * sizeof(xiiUInt32);
+    subResourceData.m_uiDepthStride                                   = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32);
 
-  xiiGALTextureData textureData(initData);
-  m_pAtlasTexture = pDevice->CreateTexture(textureDescription, &textureData);
-  if (m_pAtlasTexture)
-  {
-    m_pAtlasTexture->SetDebugName(GetResourceDescription());
-  }
+    xiiGALTextureData           textureData(initData);
+    xiiSharedPtr<xiiGALTexture> pTexture = pDevice->CreateTexture(textureDescription, &textureData);
+    if (pTexture)
+    {
+      xiiStringBuilder sDebugName = GetResourceDescription();
+      sDebugName.Append("::", sSuffix);
+      pTexture->SetDebugName(sDebugName);
+    }
+
+    return pTexture;
+  };
+
+  // Albedo = white, normal = neutral tangent-space normal, material = roughness 0.5 / metallic 0 / ao 1, emissive = black.
+  m_pAlbedoAtlasTexture   = CreateNeutralAtlas(0xFFFFFFFFU, "Albedo");
+  m_pNormalAtlasTexture   = CreateNeutralAtlas(0xFFFF8080U, "Normal");
+  m_pMaterialAtlasTexture = CreateNeutralAtlas(0x00FF0080U, "Material");
+  m_pEmissiveAtlasTexture = CreateNeutralAtlas(0x00000000U, "Emissive");
 
   xiiGALSamplerCreationDescription samplerDescription = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
   samplerDescription.m_AddressU                       = xiiGALTextureAddressMode::Clamp;
@@ -239,7 +254,7 @@ void xiiDecalAtlasResource::CreateGPUAtlas()
   samplerDescription.m_AddressW                       = xiiGALTextureAddressMode::Clamp;
   m_pAtlasSampler                                     = pDevice->CreateSampler(samplerDescription);
 
-  m_uiMemoryGPU = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32);
+  m_uiMemoryGPU = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32) * 4U;
 }
 
 void xiiDecalAtlasResource::RebuildLookup()
