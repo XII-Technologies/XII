@@ -25,7 +25,7 @@ public:
   virtual bool GetInstanceDataDesc(xiiInstanceDataDesc& out_desc) override;
 
   void        SetScriptClassFile(xiiStringView sFile); // [ property ]
-  const char* GetScriptClassFile() const;              // [ property ]
+  xiiStringView GetScriptClassFile() const;              // [ property ]
 
   // Exposed Parameters
   const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;

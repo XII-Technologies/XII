@@ -9,6 +9,7 @@
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Foundation/Math/Size.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GameEngine/Utilities/SceneLoadUtil.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
@@ -215,6 +216,8 @@ protected:
   static xiiGameState* s_pActiveGameState;
 
   xiiViewHandle m_hMainView;
+  xiiSharedPtr<xiiGALSwapChain> m_pMainSwapChain;
+  xiiSizeU32                    m_MainViewportSize = xiiSizeU32(0, 0);
 
   xiiWorld* m_pMainWorld = nullptr;
 
