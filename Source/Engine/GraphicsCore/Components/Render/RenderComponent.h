@@ -20,7 +20,6 @@ protected:
   virtual void OnActivated() override;
   virtual void OnDeactivated() override;
 
-
   //////////////////////////////////////////////////////////////////////////
   // xiiRenderComponent
 
@@ -41,10 +40,7 @@ public:
   static xiiUInt32 GetUniqueIdForRendering(const xiiComponent& component, xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24);
 
   /// \brief Computes a unique ID for the given component, that is usually given to the renderer to distinguish objects.
-  XII_ALWAYS_INLINE xiiUInt32 GetUniqueIdForRendering(xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24) const
-  {
-    return GetUniqueIdForRendering(*this, uiInnerIndex, uiInnerIndexShift);
-  }
+  XII_ALWAYS_INLINE xiiUInt32 GetUniqueIdForRendering(xiiUInt32 uiInnerIndex = 0, xiiUInt32 uiInnerIndexShift = 24) const { return GetUniqueIdForRendering(*this, uiInnerIndex, uiInnerIndexShift); }
 
 protected:
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);

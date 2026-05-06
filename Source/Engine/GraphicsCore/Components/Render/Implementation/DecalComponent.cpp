@@ -18,11 +18,6 @@ namespace
     const xiiVec3 vSafeHalfExtents = vHalfExtents.CompMax(xiiVec3(0.001f));
     return xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), vSafeHalfExtents, vSafeHalfExtents.GetLength());
   }
-
-  static xiiColor MultiplyColor(const xiiColor& lhs, const xiiColor& rhs)
-  {
-    return xiiColor(lhs.r * rhs.r, lhs.g * rhs.g, lhs.b * rhs.b, lhs.a * rhs.a);
-  }
 } // namespace
 
 // clang-format off
@@ -417,7 +412,7 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
   pRenderData->m_vExtents    = m_vExtents;
   pRenderData->m_vUVOffset   = xiiVec2(decalDefaults.m_vUVOffset.x + m_vUVOffset.x, decalDefaults.m_vUVOffset.y + m_vUVOffset.y);
   pRenderData->m_vUVScale    = xiiVec2(decalDefaults.m_vUVScale.x * m_vUVScale.x, decalDefaults.m_vUVScale.y * m_vUVScale.y);
-  pRenderData->m_Tint        = MultiplyColor(decalDefaults.m_Tint, m_Tint);
+  pRenderData->m_Tint        = decalDefaults.m_Tint * m_Tint;
   pRenderData->m_ChannelMask = decalDefaults.m_ChannelMask & m_ChannelMask;
 
   pRenderData->m_fOpacity     = xiiMath::Clamp(decalDefaults.m_fOpacity * m_fOpacity, 0.0f, 1.0f);
@@ -431,9 +426,11 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
   if (m_Mode == xiiDecalProjectionMode::Mesh && m_hMesh.IsValid())
   {
     xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+
     if (pMesh)
     {
       FillMeshRange(*pRenderData, *pMesh.GetPointer());
+
       pRenderData->m_vExtents     = pMesh->GetBounds().GetBox().GetHalfExtents().CompMax(xiiVec3(0.001f));
       pRenderData->m_GlobalBounds = pMesh->GetBounds();
       pRenderData->m_GlobalBounds.Transform(pRenderData->m_GlobalTransform.GetAsMat4());
@@ -443,22 +440,31 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
   if (pRenderData->m_hAtlas.IsValid() && !pRenderData->m_sAtlasId.IsEmpty())
   {
     xiiResourceLock<xiiDecalAtlasResource> pAtlas(pRenderData->m_hAtlas, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+
     if (pAtlas)
     {
       const xiiDecalAtlasEntry* pEntry = nullptr;
+
       if (pAtlas->TryGetAtlasEntry(pRenderData->m_sAtlasId, pEntry) && pEntry != nullptr)
       {
         pRenderData->m_vAtlasUVRect = pEntry->m_vUVRect;
 
         if (!pRenderData->m_hAlbedo.IsValid())
+        {
           pRenderData->m_hAlbedo = pEntry->m_hAlbedo;
+        }
         if (!pRenderData->m_hNormal.IsValid())
+        {
           pRenderData->m_hNormal = pEntry->m_hNormal;
+        }
         if (!pRenderData->m_hMaterial.IsValid())
+        {
           pRenderData->m_hMaterial = pEntry->m_hMaterial;
+        }
         if (!pRenderData->m_hEmissive.IsValid())
+        {
           pRenderData->m_hEmissive = pEntry->m_hEmissive;
-
+        }
         pRenderData->m_ChannelMask &= pEntry->m_ChannelMask;
       }
     }
@@ -476,6 +482,7 @@ void xiiDecalComponent::FillMeshRange(xiiDecalRenderData& ref_renderData, const 
   ref_renderData.m_hMeshBuffer = mesh.GetMeshBuffer();
 
   const xiiArrayPtr<const xiiMeshLOD> pLODs = mesh.GetLODs();
+
   if (!pLODs.IsEmpty())
   {
     const xiiMeshLOD& lod             = pLODs[0];
@@ -487,6 +494,7 @@ void xiiDecalComponent::FillMeshRange(xiiDecalRenderData& ref_renderData, const 
     if (!lod.m_Sections.IsEmpty())
     {
       ref_renderData.m_uiFirstPrimitive = lod.m_Sections[0].m_uiFirstPrimitive;
+
       for (const xiiMeshSection& section : lod.m_Sections)
       {
         ref_renderData.m_uiFirstPrimitive = xiiMath::Min(ref_renderData.m_uiFirstPrimitive, section.m_uiFirstPrimitive);
@@ -496,6 +504,7 @@ void xiiDecalComponent::FillMeshRange(xiiDecalRenderData& ref_renderData, const 
   }
 
   const xiiArrayPtr<const xiiMeshSection> pSections = mesh.GetSections();
+
   if (!pSections.IsEmpty() && ref_renderData.m_uiPrimitiveCount == 0U)
   {
     ref_renderData.m_uiFirstPrimitive = pSections[0].m_uiFirstPrimitive;
