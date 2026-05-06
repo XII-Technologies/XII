@@ -5,48 +5,110 @@ ALL
 
 [COMPUTESHADER]
 
-StructuredBuffer<float4> DecalVolumes;
-Texture2D<float> SceneDepth;
-RWStructuredBuffer<uint> DecalTileLists;
+#include "PipelineCommon.xiiShader"
+
+#define DECAL_TILE_SIZE 16u
+#define MAX_PROJECTED_DECALS_PER_TILE 12u
+#define PROJECTED_TILE_STRIDE (1u + MAX_PROJECTED_DECALS_PER_TILE)
+#define DECAL_MODE_PROJECTED 0u
+#define DECAL_MODE_MESH      1u
+
+struct DecalInstance
+{
+    float4x4 WorldToDecal;
+    float4   AtlasUVRect;
+    float4   Tint;
+    float4   UVOffsetScale;
+    float4   ExtentsOpacity;
+    float4   WorldCenterRadius;
+    float4   SurfaceParams;
+    uint4    Meta;
+};
+
+Texture2D<float>            g_SceneDepth;
+StructuredBuffer<DecalInstance> g_Decals;
+RWStructuredBuffer<uint>    g_VisibleDecals;
+RWStructuredBuffer<uint>    g_TileLists;
+RWStructuredBuffer<uint>    g_MeshDecalCommands;
 
 [numthreads(64, 1, 1)]
 void main(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-  const uint tileIndex = dispatchThreadId.x;
-
-  // Eight compact decal slots per tile to avoid full-screen decal loops.
-  const uint tileStride = 8u;
-  const uint tileStart = tileIndex * tileStride;
-
-  if (tileStart >= DecalTileLists.Length)
-  {
-    return;
-  }
-
-  uint depthWidth = 0u;
-  uint depthHeight = 0u;
-  SceneDepth.GetDimensions(depthWidth, depthHeight);
-
-  float depthSample = 1.0f;
-  if (depthWidth > 0u && depthHeight > 0u)
-  {
-    const uint sampleX = tileIndex % depthWidth;
-    const uint sampleY = (tileIndex / max(depthWidth, 1u)) % depthHeight;
-    depthSample = SceneDepth.Load(int3(sampleX, sampleY, 0));
-  }
-
-  const uint decalCount = max(DecalVolumes.Length, 1u);
-
-  [unroll]
-  for (uint slot = 0u; slot < tileStride; ++slot)
-  {
-    const uint outIndex = tileStart + slot;
-    if (outIndex >= DecalTileLists.Length)
+    const uint decalIndex = dispatchThreadId.x;
+    if (decalIndex >= g_Decals.Length)
     {
-      break;
+        return;
     }
 
-    const uint candidate = (tileIndex * 131u + slot * 17u + asuint(depthSample * 4096.0f)) % decalCount;
-    DecalTileLists[outIndex] = candidate;
-  }
+    uint depthWidth = 0u;
+    uint depthHeight = 0u;
+    g_SceneDepth.GetDimensions(depthWidth, depthHeight);
+    if (depthWidth == 0u || depthHeight == 0u)
+    {
+        return;
+    }
+
+    const DecalInstance decal = g_Decals[decalIndex];
+
+    const float3 worldCenter = decal.WorldCenterRadius.xyz;
+    const float  worldRadius = max(decal.WorldCenterRadius.w, 0.001f);
+
+    const float4 clipCenter = mul(g_ViewProjectionMatrix, float4(worldCenter, 1.0f));
+    if (clipCenter.w <= 0.001f)
+    {
+        return;
+    }
+
+    const float invW = rcp(max(clipCenter.w, 1e-4f));
+    const float2 uvCenter = float2(clipCenter.x * invW * 0.5f + 0.5f, clipCenter.y * invW * -0.5f + 0.5f);
+
+    const float projectedRadius = abs(g_ViewProjectionMatrix[1][1]) * worldRadius * invW;
+    const float2 uvMin = uvCenter - projectedRadius.xx;
+    const float2 uvMax = uvCenter + projectedRadius.xx;
+
+    if (uvMax.x < 0.0f || uvMax.y < 0.0f || uvMin.x > 1.0f || uvMin.y > 1.0f)
+    {
+        return;
+    }
+
+    uint visibleSlot = 0u;
+    InterlockedAdd(g_VisibleDecals[0], 1u, visibleSlot);
+    if (visibleSlot + 1u < g_VisibleDecals.Length)
+    {
+        g_VisibleDecals[visibleSlot + 1u] = decalIndex;
+    }
+
+    if (decal.Meta.y == DECAL_MODE_MESH)
+    {
+        uint meshSlot = 0u;
+        InterlockedAdd(g_MeshDecalCommands[0], 1u, meshSlot);
+        if (meshSlot + 1u < g_MeshDecalCommands.Length)
+        {
+            g_MeshDecalCommands[meshSlot + 1u] = decalIndex;
+        }
+        return;
+    }
+
+    const uint2 tileMin = uint2(clamp(floor(saturate(uvMin) * float2(depthWidth, depthHeight) / float(DECAL_TILE_SIZE)), 0.0f, 65535.0f));
+    const uint2 tileMax = uint2(clamp(floor(saturate(uvMax) * float2(depthWidth, depthHeight) / float(DECAL_TILE_SIZE)), 0.0f, 65535.0f));
+    const uint tileCountX = (depthWidth + DECAL_TILE_SIZE - 1u) / DECAL_TILE_SIZE;
+    const uint tileCountY = (depthHeight + DECAL_TILE_SIZE - 1u) / DECAL_TILE_SIZE;
+
+    [loop]
+    for (uint tileY = tileMin.y; tileY <= min(tileMax.y, tileCountY - 1u); ++tileY)
+    {
+        [loop]
+        for (uint tileX = tileMin.x; tileX <= min(tileMax.x, tileCountX - 1u); ++tileX)
+        {
+            const uint tileIndex = tileY * tileCountX + tileX;
+            const uint tileBase = tileIndex * PROJECTED_TILE_STRIDE;
+
+            uint tileSlot = 0u;
+            InterlockedAdd(g_TileLists[tileBase], 1u, tileSlot);
+            if (tileSlot < MAX_PROJECTED_DECALS_PER_TILE)
+            {
+                g_TileLists[tileBase + 1u + tileSlot] = decalIndex;
+            }
+        }
+    }
 }

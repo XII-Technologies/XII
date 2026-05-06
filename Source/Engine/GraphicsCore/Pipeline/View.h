@@ -27,6 +27,7 @@ class xiiRGPassContext;
 class xiiExtractedRenderData;
 class xiiGALBuffer;
 class xiiGALTexture;
+class xiiGALSampler;
 class xiiGALComputePipelineState;
 class xiiGALGraphicsPipelineState;
 
@@ -87,7 +88,10 @@ struct xiiSubsurfaceScatteringData;
 struct xiiEyeShaderData;
 
 struct xiiGPUParticleSimulateData;
-struct xiiScreenSpaceDecalsData;
+struct xiiDecalUploadData;
+struct xiiDecalCullBatchData;
+struct xiiProjectedDecalResolveData;
+struct xiiMeshDecalDrawData;
 struct xiiWeightedBlendedOITData;
 
 struct xiiScreenSpaceGlobalIlluminationData;
@@ -400,8 +404,17 @@ private:
   void SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRGBuilder& builder);
   void ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data, xiiRGPassContext& context);
 
-  void SetupScreenSpaceDecals(xiiScreenSpaceDecalsData& data, xiiRGBuilder& builder);
-  void ExecuteScreenSpaceDecals(const xiiScreenSpaceDecalsData& data, xiiRGPassContext& context);
+  void SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder);
+  void ExecuteDecalUpload(const xiiDecalUploadData& data, xiiRGPassContext& context);
+
+  void SetupDecalCullBatch(xiiDecalCullBatchData& data, xiiRGBuilder& builder);
+  void ExecuteDecalCullBatch(const xiiDecalCullBatchData& data, xiiRGPassContext& context);
+
+  void SetupProjectedDecalResolve(xiiProjectedDecalResolveData& data, xiiRGBuilder& builder);
+  void ExecuteProjectedDecalResolve(const xiiProjectedDecalResolveData& data, xiiRGPassContext& context);
+
+  void SetupMeshDecalDraw(xiiMeshDecalDrawData& data, xiiRGBuilder& builder);
+  void ExecuteMeshDecalDraw(const xiiMeshDecalDrawData& data, xiiRGPassContext& context);
 
   void SetupWeightedBlendedOIT(xiiWeightedBlendedOITData& data, xiiRGBuilder& builder);
   void ExecuteWeightedBlendedOIT(const xiiWeightedBlendedOITData& data, xiiRGPassContext& context);
@@ -599,8 +612,10 @@ private:
       xiiSharedPtr<xiiGALComputePipelineState>  m_pParticleSimulatePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pParticleRenderPipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pDecalRenderPipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pDecalCullBatchPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pSSDecalClassifyPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pSSDecalResolvePipeline;
+      xiiSharedPtr<xiiGALComputePipelineState>  m_pMeshDecalResolvePipeline;
       xiiSharedPtr<xiiGALGraphicsPipelineState> m_pTranslucentPipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pOITResolvePipeline;
       xiiSharedPtr<xiiGALComputePipelineState>  m_pRTTransparencyPipeline;
@@ -608,6 +623,12 @@ private:
       // Persistent particle simulation state
       xiiSharedPtr<xiiGALBuffer> m_pParticleStateBuffer;
       xiiUInt32                  m_uiParticleCapacity = 0U;
+
+      xiiSharedPtr<xiiGALTexture> m_pFallbackDecalAlbedoAtlasTexture;
+      xiiSharedPtr<xiiGALTexture> m_pFallbackDecalNormalAtlasTexture;
+      xiiSharedPtr<xiiGALTexture> m_pFallbackDecalMaterialAtlasTexture;
+      xiiSharedPtr<xiiGALTexture> m_pFallbackDecalEmissiveAtlasTexture;
+      xiiSharedPtr<xiiGALSampler> m_pFallbackDecalAtlasSampler;
     } m_TransparencyPasses;
 
     //  Stage 9 - Screen-Space Effects

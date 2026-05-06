@@ -19,7 +19,6 @@ public:
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
-
   //////////////////////////////////////////////////////////////////////////
   // xiiPostProcessVolumeComponent
 

@@ -37,6 +37,7 @@ public:
 
   //////////////////////////////////////////////////////////////////////////
   // xiiDirectionalLightComponent
+
 public:
   xiiDirectionalLightComponent();
   ~xiiDirectionalLightComponent();
