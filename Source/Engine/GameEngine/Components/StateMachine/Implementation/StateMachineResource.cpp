@@ -3,7 +3,7 @@
 #include <GameEngine/GameEnginePCH.h>
 
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <GameEngine/StateMachine/StateMachineResource.h>
+#include <GameEngine/Components/StateMachine/StateMachineResource.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineResource, 1, xiiRTTIDefaultAllocator<xiiStateMachineResource>)
@@ -41,7 +41,7 @@ xiiResourceLoadDesc xiiStateMachineResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiStateMachineResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDesc xiiStateMachineResource::UpdateContent(xiiStreamReader* pStream)
 {
   XII_LOG_BLOCK("xiiStateMachineResource::UpdateContent", GetResourceDescription().GetData());
 
@@ -49,7 +49,7 @@ xiiResourceLoadDesc xiiStateMachineResource::UpdateContent(xiiStreamReader* Stre
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
-  if (Stream == nullptr)
+  if (pStream == nullptr)
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
@@ -58,14 +58,14 @@ xiiResourceLoadDesc xiiStateMachineResource::UpdateContent(xiiStreamReader* Stre
   // skip the absolute file path data that the standard file reader writes into the stream
   {
     xiiStringBuilder sAbsFilePath;
-    (*Stream) >> sAbsFilePath;
+    (*pStream) >> sAbsFilePath;
   }
 
   xiiAssetFileHeader AssetHash;
-  AssetHash.Read(*Stream).IgnoreResult();
+  AssetHash.Read(*pStream).IgnoreResult();
 
   xiiUniquePtr<xiiStateMachineDescription> pDescription = XII_DEFAULT_NEW(xiiStateMachineDescription);
-  if (pDescription->Deserialize(*Stream).Failed())
+  if (pDescription->Deserialize(*pStream).Failed())
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
     return res;
@@ -82,6 +82,5 @@ void xiiStateMachineResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
   out_NewMemoryUsage.m_uiMemoryCPU = 0;
   out_NewMemoryUsage.m_uiMemoryGPU = 0;
 }
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_StateMachine_Implementation_StateMachineResource);

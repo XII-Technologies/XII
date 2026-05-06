@@ -2,14 +2,15 @@
 
 #pragma once
 
+#include <GameEngine/GameEngineDLL.h>
+
 #include <Core/GameState/GameStateBase.h>
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Foundation/Math/Size.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <GameEngine/GameEngineDLL.h>
-#include <GameEngine/Utils/SceneLoadUtil.h>
+#include <GameEngine/Utilities/SceneLoadUtil.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 

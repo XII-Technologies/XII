@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/Messages/EventMessage.h>
-#include <GameEngine/StateMachine/StateMachineResource.h>
+#include <GameEngine/Components/StateMachine/StateMachineResource.h>
 
 /// \brief Message that is sent by xiiStateMachineState_SendMsg once the state is entered.
 struct XII_GAMEENGINE_DLL xiiMsgStateMachineStateChanged : public xiiEventMessage

@@ -13,14 +13,11 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <GameEngine/Configuration/RendererProfileConfigs.h>
+#include <GameEngine/Components/Gameplay/PlayerStartPointComponent.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
-#include <GameEngine/Gameplay/PlayerStartPointComponent.h>
-#include <GraphicsCore/Components/CameraComponent.h>
-#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 

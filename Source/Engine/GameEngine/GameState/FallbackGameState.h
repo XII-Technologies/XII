@@ -5,7 +5,7 @@
 #include <Core/Graphics/Camera.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GameEngine/GameState/GameState.h>
-#include <GameEngine/Utils/SceneLoadUtil.h>
+#include <GameEngine/Utilities/SceneLoadUtil.h>
 
 class xiiCameraComponent;
 

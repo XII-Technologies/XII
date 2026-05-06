@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/Utils/Blackboard.h>
-#include <GameEngine/StateMachine/StateMachineResource.h>
+#include <GameEngine/Components/StateMachine/StateMachineResource.h>
 
 /// \brief A state machine state implementation that represents another state machine nested within this state. This can be used to build hierarchical state machines.
 class XII_GAMEENGINE_DLL xiiStateMachineState_NestedStateMachine : public xiiStateMachineState

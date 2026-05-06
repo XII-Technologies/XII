@@ -5,7 +5,7 @@
 #include <GameEngine/GameEngineDLL.h>
 
 #include <Core/ResourceManager/Resource.h>
-#include <GameEngine/Gameplay/BlackboardComponent.h>
+#include <GameEngine/Components/Gameplay/BlackboardComponent.h>
 
 using xiiBlackboardTemplateResourceHandle = xiiTypedResourceHandle<class xiiBlackboardTemplateResource>;
 
@@ -23,7 +23,9 @@ struct XII_GAMEENGINE_DLL xiiBlackboardTemplateResourceDescriptor
 class XII_GAMEENGINE_DLL xiiBlackboardTemplateResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiBlackboardTemplateResource, xiiResource);
+
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiBlackboardTemplateResource);
+
   XII_RESOURCE_DECLARE_CREATEABLE(xiiBlackboardTemplateResource, xiiBlackboardTemplateResourceDescriptor);
 
 public:

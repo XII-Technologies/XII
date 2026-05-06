@@ -4,7 +4,7 @@
 
 #include <Core/Scripting/ScriptClassResource.h>
 #include <Foundation/Types/RangeView.h>
-#include <GameEngine/StateMachine/StateMachine.h>
+#include <GameEngine/Components/StateMachine/StateMachine.h>
 
 /// \brief A state machine state implementation that can be scripted using e.g. visual scripting.
 class XII_GAMEENGINE_DLL xiiStateMachineState_Script : public xiiStateMachineState

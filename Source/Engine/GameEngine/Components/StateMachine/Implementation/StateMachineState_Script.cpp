@@ -4,7 +4,7 @@
 
 #include <Core/Scripting/ScriptWorldModule.h>
 #include <Foundation/IO/TypeVersionContext.h>
-#include <GameEngine/StateMachine/StateMachineState_Script.h>
+#include <GameEngine/Components/StateMachine/StateMachineState_Script.h>
 
 namespace
 {

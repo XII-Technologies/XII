@@ -3,18 +3,16 @@
 #include <GameEngine/GameEnginePCH.h>
 
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <GameEngine/Utils/ImageDataResource.h>
+#include <GameEngine/Resources/ImageDataResource.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImageDataResource, 1, xiiRTTIDefaultAllocator<xiiImageDataResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiImageDataResource);
-// clang-format on
 
 xiiImageDataResource::xiiImageDataResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
