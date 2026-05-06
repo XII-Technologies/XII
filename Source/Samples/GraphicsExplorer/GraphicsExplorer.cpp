@@ -174,6 +174,7 @@ public:
         m_pRenderGraph->BeginSetup(m_uiFrameIndex);
         {
           m_pRenderGraph->AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
+          m_pRenderGraph->AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteProceduralTrianglePass, this));
           m_pRenderGraph->AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupBlitPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
         }
         m_pRenderGraph->EndSetup();
@@ -491,6 +492,47 @@ private:
     {
       cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
+    }
+    cmd.EndDebugGroup();
+  }
+
+  struct ProceduralTrianglePassData
+  {
+    xiiRGTextureHandle                        m_hOffScreenTexture;
+    xiiShaderResourceHandle                   m_hShader;
+    xiiShaderPermutationResourceHandle        m_hShaderPermutation;
+    xiiSharedPtr<xiiGALGraphicsPipelineState> m_pPipelineState;
+  };
+
+  void SetupProceduralTrianglePass(ProceduralTrianglePassData& data, xiiRGBuilder& builder)
+  {
+    data.m_hOffScreenTexture  = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::RenderTarget);
+    data.m_hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/ProceduralTriangle.xiiShader");
+    data.m_hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(data.m_hShader, {}, false);
+
+    xiiSharedPtr<xiiGALDevice>                    pDevice = xiiGALDevice::GetDefaultDevice();
+    xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+
+    xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+    graphicsPipelineStateDescription.m_pPipelineResourceSignature            = pShaderPermutation->GetPipelineResourceSignature();
+    graphicsPipelineStateDescription.m_pVertexShader                         = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+    graphicsPipelineStateDescription.m_pPixelShader                          = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+    graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+
+    data.m_pPipelineState = pDevice->CreateGraphicsPipelineState(graphicsPipelineStateDescription);
+  }
+
+  void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRGPassContext& context)
+  {
+    xiiGALCommandList& cmd = context.GetCommandList();
+
+    cmd.BeginDebugGroup("Procedural Triangle");
+    {
+      cmd.SetPipelineState(data.m_pPipelineState.Borrow()); // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+      cmd.CommitShaderResources().IgnoreResult();           // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+      cmd.Draw({3});                                        // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
     }
     cmd.EndDebugGroup();
   }
