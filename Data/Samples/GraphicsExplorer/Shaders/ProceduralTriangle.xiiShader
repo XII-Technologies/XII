@@ -1,6 +1,11 @@
 [PLATFORMS]
 ALL
 
+[RENDERSTATE]
+
+DepthEnable = false
+CullMode    = CullMode_None
+
 [VERTEX_SHADER]
 
 struct PSInput 
