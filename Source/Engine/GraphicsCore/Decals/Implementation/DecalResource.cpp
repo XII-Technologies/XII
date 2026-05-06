@@ -214,19 +214,19 @@ void xiiDecalAtlasResource::CreateGPUAtlases()
   textureDescription.m_Size.height = uiAtlasHeight;
   textureDescription.m_uiMipLevels = 1U;
   textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource;
-  textureDescription.m_Usage       = xiiGALResourceUsage::Default;
+  textureDescription.m_Usage       = xiiGALResourceUsage::Mutable;
 
   auto CreateNeutralAtlas = [&](xiiUInt32 uiClearValue, xiiStringView sSuffix) -> xiiSharedPtr<xiiGALTexture> {
-    xiiDynamicArray<xiiUInt32> neutralPixels;
+    xiiTemporaryArray<xiiUInt32> neutralPixels;
     neutralPixels.SetCount(uiAtlasWidth * uiAtlasHeight);
     for (xiiUInt32& uiPixel : neutralPixels)
     {
       uiPixel = uiClearValue;
     }
 
-    xiiHybridArray<xiiGALTextureSubResourceData, 1U> initData;
+    xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 1U> initData;
     xiiGALTextureSubResourceData&                    subResourceData = initData.ExpandAndGetRef();
-    subResourceData.m_pData                                           = neutralPixels.GetData();
+    subResourceData.m_pData                                           = neutralPixels.GetByteArrayPtr();
     subResourceData.m_uiStride                                        = uiAtlasWidth * sizeof(xiiUInt32);
     subResourceData.m_uiDepthStride                                   = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32);
 
