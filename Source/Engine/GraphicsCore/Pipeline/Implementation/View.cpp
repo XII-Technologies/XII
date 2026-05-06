@@ -7,8 +7,8 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Time/Clock.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
-#include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -2974,17 +2974,17 @@ namespace
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiMat4 m_WorldToDecal               = xiiMat4::MakeIdentity();
-    xiiVec4 m_AtlasUVRect                = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
-    xiiVec4 m_Tint                       = xiiVec4(1.0f);
-    xiiVec4 m_UVOffsetScale              = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
-    xiiVec4 m_ExtentsOpacity             = xiiVec4(1.0f, 1.0f, 0.25f, 1.0f);
-    xiiVec4 m_WorldCenterRadius          = xiiVec4::MakeZero();
-    xiiVec4 m_SurfaceParams              = xiiVec4(1.0f, 0.5f, 0.0f, 0.0f);
-    xiiUInt32 m_uiChannelMask            = 0U;
-    xiiUInt32 m_uiMode                   = 0U;
-    xiiUInt32 m_uiPriority               = 0U;
-    xiiUInt32 m_uiFlags                  = 0U;
+    xiiMat4   m_WorldToDecal      = xiiMat4::MakeIdentity();
+    xiiVec4   m_AtlasUVRect       = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
+    xiiVec4   m_Tint              = xiiVec4(1.0f);
+    xiiVec4   m_UVOffsetScale     = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
+    xiiVec4   m_ExtentsOpacity    = xiiVec4(1.0f, 1.0f, 0.25f, 1.0f);
+    xiiVec4   m_WorldCenterRadius = xiiVec4::MakeZero();
+    xiiVec4   m_SurfaceParams     = xiiVec4(1.0f, 0.5f, 0.0f, 0.0f);
+    xiiUInt32 m_uiChannelMask     = 0U;
+    xiiUInt32 m_uiMode            = 0U;
+    xiiUInt32 m_uiPriority        = 0U;
+    xiiUInt32 m_uiFlags           = 0U;
   };
 
   static_assert((sizeof(xiiGPUDecalInstance) % 16U) == 0U);
@@ -3003,7 +3003,7 @@ struct xiiDecalUploadData
   xiiRGTextureHandle m_hAtlasEmissive;
 
   xiiDynamicArray<xiiGPUDecalInstance, xiiAlignedAllocatorWrapper> m_Decals;
-  xiiUInt32                                                         m_uiDecalCount = 0U;
+  xiiUInt32                                                        m_uiDecalCount = 0U;
 };
 
 void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder)
@@ -3025,9 +3025,9 @@ void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder)
 
     xiiHybridArray<xiiGALTextureSubResourceData, 1U> initData;
     xiiGALTextureSubResourceData&                    subResourceData = initData.ExpandAndGetRef();
-    subResourceData.m_pData                                           = xiiMakeByteBlobPtr(static_cast<const void*>(&uiPixel), sizeof(uiPixel));
-    subResourceData.m_uiStride                                        = sizeof(uiPixel);
-    subResourceData.m_uiDepthStride                                   = sizeof(uiPixel);
+    subResourceData.m_pData                                          = xiiMakeByteBlobPtr(static_cast<const void*>(&uiPixel), sizeof(uiPixel));
+    subResourceData.m_uiStride                                       = sizeof(uiPixel);
+    subResourceData.m_uiDepthStride                                  = sizeof(uiPixel);
 
     xiiGALTextureData textureData(initData);
     inout_pTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(textureDescription, &textureData);
@@ -3045,10 +3045,10 @@ void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder)
 
     if (m_ViewPassResources.m_TransparencyPasses.m_pFallbackDecalAtlasSampler == nullptr)
     {
-      xiiGALSamplerCreationDescription samplerDescription = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
-      samplerDescription.m_AddressU                       = xiiGALTextureAddressMode::Clamp;
-      samplerDescription.m_AddressV                       = xiiGALTextureAddressMode::Clamp;
-      samplerDescription.m_AddressW                       = xiiGALTextureAddressMode::Clamp;
+      xiiGALSamplerCreationDescription samplerDescription                   = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
+      samplerDescription.m_AddressU                                         = xiiGALTextureAddressMode::Clamp;
+      samplerDescription.m_AddressV                                         = xiiGALTextureAddressMode::Clamp;
+      samplerDescription.m_AddressW                                         = xiiGALTextureAddressMode::Clamp;
       m_ViewPassResources.m_TransparencyPasses.m_pFallbackDecalAtlasSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(samplerDescription);
     }
   };
@@ -3099,12 +3099,12 @@ void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder)
     gpuDecal.m_UVOffsetScale      = xiiVec4(pDecal->m_vUVOffset.x, pDecal->m_vUVOffset.y, pDecal->m_vUVScale.x, pDecal->m_vUVScale.y);
     gpuDecal.m_ExtentsOpacity     = xiiVec4(pDecal->m_vExtents.x, pDecal->m_vExtents.y, pDecal->m_vExtents.z, pDecal->m_fOpacity);
 
-    const auto boundsSphere       = pDecal->m_GlobalBounds.GetSphere();
-    gpuDecal.m_WorldCenterRadius  = xiiVec4(boundsSphere.m_vCenter.x, boundsSphere.m_vCenter.y, boundsSphere.m_vCenter.z, boundsSphere.m_fRadius);
-    gpuDecal.m_SurfaceParams      = xiiVec4(pDecal->m_fNormalBlend, pDecal->m_fRoughness, pDecal->m_fMetallic, pDecal->m_fEmissive);
-    gpuDecal.m_uiChannelMask      = pDecal->m_ChannelMask.GetValue();
-    gpuDecal.m_uiMode             = pDecal->m_Mode.GetValue();
-    gpuDecal.m_uiPriority         = pDecal->m_uiPriority;
+    const auto boundsSphere      = pDecal->m_GlobalBounds.GetSphere();
+    gpuDecal.m_WorldCenterRadius = xiiVec4(boundsSphere.m_vCenter.x, boundsSphere.m_vCenter.y, boundsSphere.m_vCenter.z, boundsSphere.m_fRadius);
+    gpuDecal.m_SurfaceParams     = xiiVec4(pDecal->m_fNormalBlend, pDecal->m_fRoughness, pDecal->m_fMetallic, pDecal->m_fEmissive);
+    gpuDecal.m_uiChannelMask     = pDecal->m_ChannelMask.GetValue();
+    gpuDecal.m_uiMode            = pDecal->m_Mode.GetValue();
+    gpuDecal.m_uiPriority        = pDecal->m_uiPriority;
   }
 
   data.m_uiDecalCount = data.m_Decals.GetCount();
@@ -3215,7 +3215,7 @@ void xiiView::ExecuteDecalCullBatch(const xiiDecalCullBatchData& data, xiiRGPass
   xiiGALCommandList& cmd = context.GetCommandList();
 
   auto ClearStructuredUIntBuffer = [&cmd](xiiGALBuffer* pBuffer) {
-    const xiiUInt32 uiValueCount = static_cast<xiiUInt32>(pBuffer->GetDescription().m_uiSize / sizeof(xiiUInt32));
+    const xiiUInt32            uiValueCount = static_cast<xiiUInt32>(pBuffer->GetDescription().m_uiSize / sizeof(xiiUInt32));
     xiiDynamicArray<xiiUInt32> zeroData;
     zeroData.SetCount(uiValueCount);
     for (xiiUInt32& uiValue : zeroData)

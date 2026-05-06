@@ -99,14 +99,14 @@ namespace xiiRGBlackboardKeys
   constexpr xiiStringView k_OITAccumulateBuffer = "OITAccumulate"_xiisv; ///< xiiRGTextureHandle - WBOIT weighted accumulation target (R16G16B16A16F).
   constexpr xiiStringView k_OITRevealBuffer     = "OITReveal"_xiisv;     ///< xiiRGTextureHandle - WBOIT reveal (transmittance) target (R8_UNORM).
   constexpr xiiStringView k_DecalDataBuffer     = "DecalData"_xiisv;     ///< xiiRGBufferHandle - packed decal instance records uploaded from extracted render data.
-  constexpr xiiStringView k_DecalVisibleList    = "DecalVisibleList"_xiisv; ///< xiiRGBufferHandle - GPU-visible decal indices, [0]=count.
-  constexpr xiiStringView k_DecalDrawCommands   = "DecalDrawCommands"_xiisv; ///< xiiRGBufferHandle - GPU-built mesh decal command/index stream.
-  constexpr xiiStringView k_DecalTileList       = "DecalTileList"_xiisv;     ///< xiiRGBufferHandle - per-tile projected decal index list.
-  constexpr xiiStringView k_DecalAtlasAlbedo    = "DecalAtlasAlbedo"_xiisv;  ///< xiiRGTextureHandle - active packed decal albedo atlas.
-  constexpr xiiStringView k_DecalAtlasNormal    = "DecalAtlasNormal"_xiisv;  ///< xiiRGTextureHandle - active packed decal normal atlas.
+  constexpr xiiStringView k_DecalVisibleList    = "DecalVisibleList"_xiisv;   ///< xiiRGBufferHandle - GPU-visible decal indices, [0]=count.
+  constexpr xiiStringView k_DecalDrawCommands   = "DecalDrawCommands"_xiisv;  ///< xiiRGBufferHandle - GPU-built mesh decal command/index stream.
+  constexpr xiiStringView k_DecalTileList       = "DecalTileList"_xiisv;      ///< xiiRGBufferHandle - per-tile projected decal index list.
+  constexpr xiiStringView k_DecalAtlasAlbedo    = "DecalAtlasAlbedo"_xiisv;   ///< xiiRGTextureHandle - active packed decal albedo atlas.
+  constexpr xiiStringView k_DecalAtlasNormal    = "DecalAtlasNormal"_xiisv;   ///< xiiRGTextureHandle - active packed decal normal atlas.
   constexpr xiiStringView k_DecalAtlasMaterial  = "DecalAtlasMaterial"_xiisv; ///< xiiRGTextureHandle - active packed decal material atlas.
   constexpr xiiStringView k_DecalAtlasEmissive  = "DecalAtlasEmissive"_xiisv; ///< xiiRGTextureHandle - active packed decal emissive atlas.
-  constexpr xiiStringView k_DecalCount          = "DecalCount"_xiisv;     ///< uint32 - number of decals uploaded for this view.
+  constexpr xiiStringView k_DecalCount          = "DecalCount"_xiisv;         ///< uint32 - number of decals uploaded for this view.
 
   // Stage 9 - Screen-Space Effects.
 
