@@ -89,7 +89,7 @@ struct xiiResourceFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiResourceFlags);
 
 /// \brief Describes the state in which a resource can be in.
-enum class xiiResourceState
+enum class xiiResourceState : xiiUInt8
 {
   Invalid,               ///< Initial state
   Unloaded,              ///< The resource instance has been created, but no meta info about the resource is available and no data is loaded.

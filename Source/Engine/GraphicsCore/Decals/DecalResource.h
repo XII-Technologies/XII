@@ -76,10 +76,8 @@ struct XII_GRAPHICSCORE_DLL xiiDecalAtlasEntry
 
   xiiBitflags<xiiDecalChannelMask> m_ChannelMask; ///< Mask of G-Buffer channels that this decal writes to. This allows packing multiple decals into the same atlas, as decals that write to different channels can be blended together without artifacts.
 
-  /// \brief xy = UV minimum, zw = UV size inside the packed atlas.
   xiiVec4 m_vUVRect = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f); ///< UV rectangle in the atlas where this decal is located, in normalized coordinates. xy = UV minimum, zw = UV size inside the packed atlas.
 
-  /// \brief xy = texel size, zw = packed pixel size.
   xiiVec4 m_vTextureMetrics = xiiVec4(1.0f / 256.0f, 1.0f / 256.0f, 256.0f, 256.0f); ///< Texture metrics for this decal, used for sampling and mipmap calculations. xy = texel size (1 / original texture size), zw = packed pixel size (original texture size + padding, in pixels).
 };
 

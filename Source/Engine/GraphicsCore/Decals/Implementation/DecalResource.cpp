@@ -31,19 +31,11 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalAtlasResource);
+
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalResource);
 
 namespace
 {
-  static xiiResourceLoadDesc MakeResourceLoadDesc(xiiResourceState state)
-  {
-    xiiResourceLoadDesc desc;
-    desc.m_uiQualityLevelsDiscardable = 0U;
-    desc.m_uiQualityLevelsLoadable    = 0U;
-    desc.m_State                      = state;
-    return desc;
-  }
-
   static xiiUInt16 ResolveTextureWidth(const xiiTexture2DResourceHandle& hTexture, xiiUInt16 uiFallback)
   {
     if (!hTexture.IsValid())
@@ -91,7 +83,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalAtlasResource, xiiDecalAtlasResourceDe
   RebuildLookup();
   CreateGPUAtlases();
 
-  return MakeResourceLoadDesc(xiiResourceState::Loaded);
+  xiiResourceLoadDesc description;
+  description.m_uiQualityLevelsDiscardable = 0U;
+  description.m_uiQualityLevelsLoadable    = 0U;
+  description.m_State                      = xiiResourceState::Loaded;
+  return description;
 }
 
 bool xiiDecalAtlasResource::TryGetAtlasEntry(const xiiTempHashedString& sDecalId, const xiiDecalAtlasEntry*& out_pEntry) const
@@ -124,7 +120,11 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UnloadData(Unload WhatToUnload)
   m_pAtlasSampler.Clear();
   m_uiMemoryGPU = 0U;
 
-  return MakeResourceLoadDesc(xiiResourceState::Unloaded);
+  xiiResourceLoadDesc description;
+  description.m_uiQualityLevelsDiscardable = 0U;
+  description.m_uiQualityLevelsLoadable    = 0U;
+  description.m_State                      = xiiResourceState::Unloaded;
+  return description;
 }
 
 xiiResourceLoadDesc xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStream)
@@ -132,7 +132,13 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStrea
   XII_LOG_BLOCK("xiiDecalAtlasResource::UpdateContent", GetResourceIdOrDescription());
 
   if (pStream == nullptr)
-    return MakeResourceLoadDesc(xiiResourceState::LoadedResourceMissing);
+  {
+    xiiResourceLoadDesc description;
+    description.m_uiQualityLevelsDiscardable = 0U;
+    description.m_uiQualityLevelsLoadable    = 0U;
+    description.m_State                      = xiiResourceState::LoadedResourceMissing;
+    return description;
+  }
 
   SkipResourceFileHeader(*pStream);
   m_Descriptor.Load(*pStream);
@@ -141,7 +147,11 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStrea
   RebuildLookup();
   CreateGPUAtlases();
 
-  return MakeResourceLoadDesc(xiiResourceState::Loaded);
+  xiiResourceLoadDesc description;
+  description.m_uiQualityLevelsDiscardable = 0U;
+  description.m_uiQualityLevelsLoadable    = 0U;
+  description.m_State                      = xiiResourceState::Loaded;
+  return description;
 }
 
 void xiiDecalAtlasResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
@@ -152,20 +162,20 @@ void xiiDecalAtlasResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 void xiiDecalAtlasResource::PackAtlas()
 {
-  const xiiUInt32 uiAtlasWidth  = xiiMath::Max<xiiUInt32>(m_Descriptor.m_uiAtlasWidth, 1U);
-  const xiiUInt32 uiAtlasHeight = xiiMath::Max<xiiUInt32>(m_Descriptor.m_uiAtlasHeight, 1U);
+  const xiiUInt32 uiAtlasWidth  = xiiMath::Max<xiiUInt32>(m_Descriptor.m_AtlasSize.width, 1U);
+  const xiiUInt32 uiAtlasHeight = xiiMath::Max<xiiUInt32>(m_Descriptor.m_AtlasSize.height, 1U);
   const xiiUInt32 uiPadding     = m_Descriptor.m_uiPadding;
 
-  xiiUInt32 uiCursorX  = uiPadding;
-  xiiUInt32 uiCursorY  = uiPadding;
+  xiiUInt32 uiCursorX   = uiPadding;
+  xiiUInt32 uiCursorY   = uiPadding;
   xiiUInt32 uiRowHeight = 0U;
 
   for (xiiDecalAtlasEntry& entry : m_Descriptor.m_Entries)
   {
     const xiiTexture2DResourceHandle hSizeTexture = entry.m_hAlbedo.IsValid() ? entry.m_hAlbedo : (entry.m_hNormal.IsValid() ? entry.m_hNormal : entry.m_hMaterial);
 
-    xiiUInt32 uiWidth  = ResolveTextureWidth(hSizeTexture, entry.m_uiWidth);
-    xiiUInt32 uiHeight = ResolveTextureHeight(hSizeTexture, entry.m_uiHeight);
+    xiiUInt32 uiWidth  = ResolveTextureWidth(hSizeTexture, entry.m_Size.width);
+    xiiUInt32 uiHeight = ResolveTextureHeight(hSizeTexture, entry.m_Size.height);
 
     const xiiUInt32 uiEntryPadding = xiiMath::Max<xiiUInt32>(entry.m_uiPadding, uiPadding);
     uiWidth                        = xiiMath::Min(uiWidth, xiiMath::Max<xiiUInt32>(1U, uiAtlasWidth - xiiMath::Min(uiAtlasWidth, uiEntryPadding * 2U)));
@@ -173,8 +183,8 @@ void xiiDecalAtlasResource::PackAtlas()
 
     if (uiCursorX + uiWidth + uiEntryPadding > uiAtlasWidth)
     {
-      uiCursorX   = uiPadding;
-      uiCursorY  += uiRowHeight + uiPadding;
+      uiCursorX = uiPadding;
+      uiCursorY += uiRowHeight + uiPadding;
       uiRowHeight = 0U;
     }
 
@@ -185,15 +195,12 @@ void xiiDecalAtlasResource::PackAtlas()
       continue;
     }
 
-    entry.m_uiWidth  = static_cast<xiiUInt16>(uiWidth);
-    entry.m_uiHeight = static_cast<xiiUInt16>(uiHeight);
-    entry.m_vUVRect  = xiiVec4(static_cast<float>(uiCursorX) / static_cast<float>(uiAtlasWidth),
-                               static_cast<float>(uiCursorY) / static_cast<float>(uiAtlasHeight),
-                               static_cast<float>(uiWidth) / static_cast<float>(uiAtlasWidth),
-                               static_cast<float>(uiHeight) / static_cast<float>(uiAtlasHeight));
+    entry.m_Size.width      = static_cast<xiiUInt16>(uiWidth);
+    entry.m_Size.height     = static_cast<xiiUInt16>(uiHeight);
+    entry.m_vUVRect         = xiiVec4(static_cast<float>(uiCursorX) / static_cast<float>(uiAtlasWidth), static_cast<float>(uiCursorY) / static_cast<float>(uiAtlasHeight), static_cast<float>(uiWidth) / static_cast<float>(uiAtlasWidth), static_cast<float>(uiHeight) / static_cast<float>(uiAtlasHeight));
     entry.m_vTextureMetrics = xiiVec4(1.0f / static_cast<float>(uiWidth), 1.0f / static_cast<float>(uiHeight), static_cast<float>(uiWidth), static_cast<float>(uiHeight));
 
-    uiCursorX  += uiWidth + uiEntryPadding;
+    uiCursorX += uiWidth + uiEntryPadding;
     uiRowHeight = xiiMath::Max(uiRowHeight, uiHeight);
   }
 }
@@ -204,8 +211,8 @@ void xiiDecalAtlasResource::CreateGPUAtlases()
   if (pDevice == nullptr)
     return;
 
-  const xiiUInt32 uiAtlasWidth  = xiiMath::Max<xiiUInt32>(m_Descriptor.m_uiAtlasWidth, 1U);
-  const xiiUInt32 uiAtlasHeight = xiiMath::Max<xiiUInt32>(m_Descriptor.m_uiAtlasHeight, 1U);
+  const xiiUInt32 uiAtlasWidth  = xiiMath::Max<xiiUInt32>(m_Descriptor.m_AtlasSize.width, 1U);
+  const xiiUInt32 uiAtlasHeight = xiiMath::Max<xiiUInt32>(m_Descriptor.m_AtlasSize.height, 1U);
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
@@ -225,10 +232,10 @@ void xiiDecalAtlasResource::CreateGPUAtlases()
     }
 
     xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 1U> initData;
-    xiiGALTextureSubResourceData&                    subResourceData = initData.ExpandAndGetRef();
-    subResourceData.m_pData                                           = neutralPixels.GetByteArrayPtr();
-    subResourceData.m_uiStride                                        = uiAtlasWidth * sizeof(xiiUInt32);
-    subResourceData.m_uiDepthStride                                   = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32);
+    xiiGALTextureSubResourceData&                             subResourceData = initData.ExpandAndGetRef();
+    subResourceData.m_pData                                                   = neutralPixels.GetByteArrayPtr();
+    subResourceData.m_uiStride                                                = uiAtlasWidth * sizeof(xiiUInt32);
+    subResourceData.m_uiDepthStride                                           = uiAtlasWidth * uiAtlasHeight * sizeof(xiiUInt32);
 
     xiiGALTextureData           textureData(initData);
     xiiSharedPtr<xiiGALTexture> pTexture = pDevice->CreateTexture(textureDescription, &textureData);
@@ -265,6 +272,7 @@ void xiiDecalAtlasResource::RebuildLookup()
   for (xiiUInt32 i = 0; i < m_Descriptor.m_Entries.GetCount(); ++i)
   {
     const xiiHashedString& sDecalId = m_Descriptor.m_Entries[i].m_sDecalId;
+
     if (!sDecalId.IsEmpty())
     {
       m_IdToEntryIndex.Insert(sDecalId, i);
@@ -275,8 +283,8 @@ void xiiDecalAtlasResource::RebuildLookup()
 void xiiDecalAtlasResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   ref_stream.WriteVersion(1U);
-  ref_stream << m_uiAtlasWidth;
-  ref_stream << m_uiAtlasHeight;
+
+  ref_stream << m_AtlasSize;
   ref_stream << m_uiPadding;
   ref_stream << m_bGenerateMipMaps;
 
@@ -288,8 +296,7 @@ void xiiDecalAtlasResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
     ref_stream << entry.m_hNormal;
     ref_stream << entry.m_hMaterial;
     ref_stream << entry.m_hEmissive;
-    ref_stream << entry.m_uiWidth;
-    ref_stream << entry.m_uiHeight;
+    ref_stream << entry.m_Size;
     ref_stream << entry.m_uiPadding;
     ref_stream << entry.m_uiPriority;
     ref_stream << entry.m_ChannelMask;
@@ -299,8 +306,8 @@ void xiiDecalAtlasResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 void xiiDecalAtlasResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   ref_stream.ReadVersion(1U);
-  ref_stream >> m_uiAtlasWidth;
-  ref_stream >> m_uiAtlasHeight;
+
+  ref_stream >> m_AtlasSize;
   ref_stream >> m_uiPadding;
   ref_stream >> m_bGenerateMipMaps;
 
@@ -315,8 +322,7 @@ void xiiDecalAtlasResourceDescriptor::Load(xiiStreamReader& ref_stream)
     ref_stream >> entry.m_hNormal;
     ref_stream >> entry.m_hMaterial;
     ref_stream >> entry.m_hEmissive;
-    ref_stream >> entry.m_uiWidth;
-    ref_stream >> entry.m_uiHeight;
+    ref_stream >> entry.m_Size;
     ref_stream >> entry.m_uiPadding;
     ref_stream >> entry.m_uiPriority;
     ref_stream >> entry.m_ChannelMask;
@@ -331,7 +337,12 @@ xiiDecalResource::xiiDecalResource() :
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalResource, xiiDecalResourceDescriptor)
 {
   m_Descriptor = descriptor;
-  return MakeResourceLoadDesc(xiiResourceState::Loaded);
+
+  xiiResourceLoadDesc description;
+  description.m_uiQualityLevelsDiscardable = 0U;
+  description.m_uiQualityLevelsLoadable    = 0U;
+  description.m_State                      = xiiResourceState::Loaded;
+  return description;
 }
 
 xiiResourceLoadDesc xiiDecalResource::UnloadData(Unload WhatToUnload)
@@ -339,7 +350,12 @@ xiiResourceLoadDesc xiiDecalResource::UnloadData(Unload WhatToUnload)
   XII_IGNORE_UNUSED(WhatToUnload);
 
   m_Descriptor = {};
-  return MakeResourceLoadDesc(xiiResourceState::Unloaded);
+
+  xiiResourceLoadDesc description;
+  description.m_uiQualityLevelsDiscardable = 0U;
+  description.m_uiQualityLevelsLoadable    = 0U;
+  description.m_State                      = xiiResourceState::Unloaded;
+  return description;
 }
 
 xiiResourceLoadDesc xiiDecalResource::UpdateContent(xiiStreamReader* pStream)
@@ -347,12 +363,22 @@ xiiResourceLoadDesc xiiDecalResource::UpdateContent(xiiStreamReader* pStream)
   XII_LOG_BLOCK("xiiDecalResource::UpdateContent", GetResourceIdOrDescription());
 
   if (pStream == nullptr)
-    return MakeResourceLoadDesc(xiiResourceState::LoadedResourceMissing);
+  {
+    xiiResourceLoadDesc description;
+    description.m_uiQualityLevelsDiscardable = 0U;
+    description.m_uiQualityLevelsLoadable    = 0U;
+    description.m_State                      = xiiResourceState::LoadedResourceMissing;
+    return description;
+  }
 
   SkipResourceFileHeader(*pStream);
   m_Descriptor.Load(*pStream);
 
-  return MakeResourceLoadDesc(xiiResourceState::Loaded);
+  xiiResourceLoadDesc description;
+  description.m_uiQualityLevelsDiscardable = 0U;
+  description.m_uiQualityLevelsLoadable    = 0U;
+  description.m_State                      = xiiResourceState::Loaded;
+  return description;
 }
 
 void xiiDecalResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
@@ -364,6 +390,7 @@ void xiiDecalResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 void xiiDecalResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
   ref_stream.WriteVersion(1U);
+
   ref_stream << m_sDecalId;
   ref_stream << m_hAtlas;
   ref_stream << m_hAlbedo;
@@ -385,6 +412,7 @@ void xiiDecalResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 void xiiDecalResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
   ref_stream.ReadVersion(1U);
+
   ref_stream >> m_sDecalId;
   ref_stream >> m_hAtlas;
   ref_stream >> m_hAlbedo;
