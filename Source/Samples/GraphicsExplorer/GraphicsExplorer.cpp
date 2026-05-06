@@ -580,9 +580,10 @@ private:
     {
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetPipelineState(pPipelineState);       // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
-        cmd.CommitShaderResources().IgnoreResult(); // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
-        cmd.Draw({3});                              // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight)); // Set the viewport to cover the entire render target.
+        cmd.SetPipelineState(pPipelineState);                                                       // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+        cmd.CommitShaderResources().IgnoreResult();                                                 // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+        cmd.Draw({3});                                                                              // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
       }
       cmd.EndRenderPass(); // End the render pass, which will also perform necessary resource transitions to make the offscreen texture available for reading in the next pass.
     }
