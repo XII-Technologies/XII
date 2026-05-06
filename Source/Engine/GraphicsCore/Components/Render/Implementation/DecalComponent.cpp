@@ -220,7 +220,7 @@ void xiiDecalComponent::SetExtents(xiiVec3 vExtents)
   InvalidateCachedRenderData();
 }
 
-const xiiVec3& xiiDecalComponent::GetExtents() const
+xiiVec3 xiiDecalComponent::GetExtents() const
 {
   return m_vExtents;
 }
@@ -234,7 +234,7 @@ void xiiDecalComponent::SetUVOffset(xiiVec2 vOffset)
   InvalidateCachedRenderData();
 }
 
-const xiiVec2& xiiDecalComponent::GetUVOffset() const
+xiiVec2 xiiDecalComponent::GetUVOffset() const
 {
   return m_vUVOffset;
 }
@@ -248,21 +248,22 @@ void xiiDecalComponent::SetUVScale(xiiVec2 vScale)
   InvalidateCachedRenderData();
 }
 
-const xiiVec2& xiiDecalComponent::GetUVScale() const
+xiiVec2 xiiDecalComponent::GetUVScale() const
 {
   return m_vUVScale;
 }
 
-void xiiDecalComponent::SetTint(const xiiColor& tint)
+void xiiDecalComponent::SetTint(xiiColor tint)
 {
   if (m_Tint == tint)
     return;
 
   m_Tint = tint;
+
   InvalidateCachedRenderData();
 }
 
-const xiiColor& xiiDecalComponent::GetTint() const
+xiiColor xiiDecalComponent::GetTint() const
 {
   return m_Tint;
 }
@@ -413,10 +414,10 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
   pRenderData->m_GlobalBounds    = MakeDecalVolumeBounds(m_vExtents);
   pRenderData->m_GlobalBounds.Transform(pRenderData->m_GlobalTransform.GetAsMat4());
 
-  pRenderData->m_vExtents  = m_vExtents;
-  pRenderData->m_vUVOffset = xiiVec2(decalDefaults.m_vUVOffset.x + m_vUVOffset.x, decalDefaults.m_vUVOffset.y + m_vUVOffset.y);
-  pRenderData->m_vUVScale  = xiiVec2(decalDefaults.m_vUVScale.x * m_vUVScale.x, decalDefaults.m_vUVScale.y * m_vUVScale.y);
-  pRenderData->m_Tint      = MultiplyColor(decalDefaults.m_Tint, m_Tint);
+  pRenderData->m_vExtents    = m_vExtents;
+  pRenderData->m_vUVOffset   = xiiVec2(decalDefaults.m_vUVOffset.x + m_vUVOffset.x, decalDefaults.m_vUVOffset.y + m_vUVOffset.y);
+  pRenderData->m_vUVScale    = xiiVec2(decalDefaults.m_vUVScale.x * m_vUVScale.x, decalDefaults.m_vUVScale.y * m_vUVScale.y);
+  pRenderData->m_Tint        = MultiplyColor(decalDefaults.m_Tint, m_Tint);
   pRenderData->m_ChannelMask = decalDefaults.m_ChannelMask & m_ChannelMask;
 
   pRenderData->m_fOpacity     = xiiMath::Clamp(decalDefaults.m_fOpacity * m_fOpacity, 0.0f, 1.0f);
@@ -433,7 +434,7 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
     if (pMesh)
     {
       FillMeshRange(*pRenderData, *pMesh.GetPointer());
-      pRenderData->m_vExtents      = pMesh->GetBounds().GetBox().GetHalfExtents().CompMax(xiiVec3(0.001f));
+      pRenderData->m_vExtents     = pMesh->GetBounds().GetBox().GetHalfExtents().CompMax(xiiVec3(0.001f));
       pRenderData->m_GlobalBounds = pMesh->GetBounds();
       pRenderData->m_GlobalBounds.Transform(pRenderData->m_GlobalTransform.GetAsMat4());
     }
@@ -477,7 +478,7 @@ void xiiDecalComponent::FillMeshRange(xiiDecalRenderData& ref_renderData, const 
   const xiiArrayPtr<const xiiMeshLOD> pLODs = mesh.GetLODs();
   if (!pLODs.IsEmpty())
   {
-    const xiiMeshLOD& lod = pLODs[0];
+    const xiiMeshLOD& lod             = pLODs[0];
     ref_renderData.m_uiFirstPrimitive = 0U;
     ref_renderData.m_uiPrimitiveCount = 0U;
     ref_renderData.m_uiFirstMeshlet   = lod.m_uiFirstMeshlet;

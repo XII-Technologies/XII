@@ -31,12 +31,12 @@ public:
   xiiMeshResourceHandle       m_hMesh;
   xiiMeshBufferResourceHandle m_hMeshBuffer;
 
-  xiiVec3 m_vExtents  = xiiVec3(1.0f, 1.0f, 0.25f);
-  xiiVec2 m_vUVOffset = xiiVec2::MakeZero();
-  xiiVec2 m_vUVScale  = xiiVec2(1.0f);
+  xiiVec3 m_vExtents     = xiiVec3(1.0f, 1.0f, 0.25f);
+  xiiVec2 m_vUVOffset    = xiiVec2::MakeZero();
+  xiiVec2 m_vUVScale     = xiiVec2(1.0f);
   xiiVec4 m_vAtlasUVRect = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
 
-  xiiColor m_Tint = xiiColor::White;
+  xiiColor                         m_Tint        = xiiColor::White;
   xiiBitflags<xiiDecalChannelMask> m_ChannelMask = xiiDecalChannelMask::Default;
 
   float    m_fOpacity     = 1.0f;
@@ -71,8 +71,8 @@ public:
   void                            SetProjectionMode(xiiEnum<xiiDecalProjectionMode> mode);
   xiiEnum<xiiDecalProjectionMode> GetProjectionMode() const;
 
-  void                            SetDecal(const xiiDecalResourceHandle& hDecal);
-  const xiiDecalResourceHandle&   GetDecal() const;
+  void                          SetDecal(const xiiDecalResourceHandle& hDecal);
+  const xiiDecalResourceHandle& GetDecal() const;
 
   void                               SetAtlas(const xiiDecalAtlasResourceHandle& hAtlas);
   const xiiDecalAtlasResourceHandle& GetAtlas() const;
@@ -84,19 +84,19 @@ public:
   const xiiMeshResourceHandle& GetMesh() const;
 
   void          SetExtents(xiiVec3 vExtents);
-  const xiiVec3& GetExtents() const;
+  xiiVec3 GetExtents() const;
 
-  void           SetUVOffset(xiiVec2 vOffset);
-  const xiiVec2& GetUVOffset() const;
+  void          SetUVOffset(xiiVec2 vOffset);
+  xiiVec2 GetUVOffset() const;
 
-  void           SetUVScale(xiiVec2 vScale);
-  const xiiVec2& GetUVScale() const;
+  void          SetUVScale(xiiVec2 vScale);
+  xiiVec2 GetUVScale() const;
 
-  void            SetTint(const xiiColor& tint);
-  const xiiColor& GetTint() const;
+  void           SetTint(xiiColor tint);
+  xiiColor GetTint() const;
 
-  void                                SetChannelMask(xiiBitflags<xiiDecalChannelMask> mask);
-  xiiBitflags<xiiDecalChannelMask>    GetChannelMask() const;
+  void                             SetChannelMask(xiiBitflags<xiiDecalChannelMask> mask);
+  xiiBitflags<xiiDecalChannelMask> GetChannelMask() const;
 
   void  SetOpacity(float fOpacity);
   float GetOpacity() const;
@@ -130,10 +130,10 @@ private:
   xiiHashedString             m_sAtlasId;
   xiiMeshResourceHandle       m_hMesh;
 
-  xiiVec3 m_vExtents  = xiiVec3(1.0f, 1.0f, 0.25f);
-  xiiVec2 m_vUVOffset = xiiVec2::MakeZero();
-  xiiVec2 m_vUVScale  = xiiVec2(1.0f);
-  xiiColor m_Tint     = xiiColor::White;
+  xiiVec3  m_vExtents  = xiiVec3(1.0f, 1.0f, 0.25f);
+  xiiVec2  m_vUVOffset = xiiVec2::MakeZero();
+  xiiVec2  m_vUVScale  = xiiVec2(1.0f);
+  xiiColor m_Tint      = xiiColor::White;
 
   xiiBitflags<xiiDecalChannelMask> m_ChannelMask = xiiDecalChannelMask::Default;
 
