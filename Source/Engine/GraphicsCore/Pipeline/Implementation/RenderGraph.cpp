@@ -392,10 +392,10 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   // Build dependency arcs: for each pass p, if it reads version v of resource r, and version v was produced by pass q, then p depends on q.
 
   // Use a per-pass in-degree counter and adjacency list.
-  xiiDynamicArray<xiiUInt32> inDegree;
+  xiiTemporaryArray<xiiUInt32> inDegree;
   inDegree.SetCount(uiPassCount, 0U);
 
-  xiiDynamicArray<xiiHybridArray<xiiUInt32, 4>> adjacency;
+  xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> adjacency;
   adjacency.SetCount(uiPassCount);
 
   // Build producer map: (resource index, version) -> pass index
