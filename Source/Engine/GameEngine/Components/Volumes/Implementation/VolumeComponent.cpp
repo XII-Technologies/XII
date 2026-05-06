@@ -5,8 +5,8 @@
 #include <Core/Messages/UpdateLocalBoundsMessage.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Utils/BlackboardTemplateResource.h>
-#include <GameEngine/Volumes/VolumeComponent.h>
+#include <GameEngine/Components/Volumes/VolumeComponent.h>
+#include <GameEngine/Resources/BlackboardTemplateResource.h>
 
 // clang-format off
 XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiVolumeComponent, 1)

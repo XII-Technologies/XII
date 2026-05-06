@@ -3,14 +3,12 @@
 #include <GameEngine/GameEnginePCH.h>
 
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <GameEngine/Utils/BlackboardTemplateResource.h>
+#include <GameEngine/Resources/BlackboardTemplateResource.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiBlackboardTemplateResource, 1, xiiRTTIDefaultAllocator<xiiBlackboardTemplateResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiBlackboardTemplateResource);
-// clang-format on
 
 xiiBlackboardTemplateResource::xiiBlackboardTemplateResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)

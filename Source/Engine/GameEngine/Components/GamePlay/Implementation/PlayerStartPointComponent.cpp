@@ -6,7 +6,7 @@
 #include <Core/Prefabs/PrefabResource.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Gameplay/PlayerStartPointComponent.h>
+#include <GameEngine/Components/Gameplay/PlayerStartPointComponent.h>
 
 //////////////////////////////////////////////////////////////////////////
 

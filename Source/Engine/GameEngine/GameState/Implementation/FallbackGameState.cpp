@@ -8,11 +8,11 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
+#include <GameEngine/Components/Gameplay/PlayerStartPointComponent.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameState/FallbackGameState.h>
-#include <GameEngine/Gameplay/PlayerStartPointComponent.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFallbackGameState, 1, xiiRTTIDefaultAllocator<xiiFallbackGameState>)
@@ -35,9 +35,13 @@ void xiiFallbackGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPo
     m_bShowMenu = true;
 
     if (xiiCommandLineUtils::GetGlobalInstance()->HasOption("-project"))
+    {
       m_State = State::BadProject;
+    }
     else
+    {
       m_State = State::NoProject;
+    }
   }
   else
   {
@@ -138,7 +142,7 @@ const xiiCameraComponent* xiiFallbackGameState::FindActiveCameraComponent()
 
   auto itComp = pManager->GetComponents();
 
-  xiiHybridArray<const xiiCameraComponent*, 32> Cameras[xiiCameraUsageHint::ENUM_COUNT];
+  xiiTemporaryHybridArray<const xiiCameraComponent*, 32> Cameras[xiiCameraUsageHint::ENUM_COUNT];
 
   // first find all cameras and sort them by usage type
   while (itComp.IsValid())
@@ -153,12 +157,10 @@ const xiiCameraComponent* xiiFallbackGameState::FindActiveCameraComponent()
     itComp.Next();
   }
 
-  Cameras[xiiCameraUsageHint::None].Clear();
-  Cameras[xiiCameraUsageHint::RenderTarget].Clear();
-  Cameras[xiiCameraUsageHint::Culling].Clear();
-  Cameras[xiiCameraUsageHint::Shadow].Clear();
-  Cameras[xiiCameraUsageHint::Reflection].Clear();
-  Cameras[xiiCameraUsageHint::Thumbnail].Clear();
+  for (xiiUInt32 i = 0; i < xiiCameraUsageHint::ENUM_COUNT; ++i)
+  {
+    Cameras[i].Clear();
+  }
 
   if (m_iActiveCameraComponentIndex == -3)
   {

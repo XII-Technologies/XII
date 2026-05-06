@@ -10,6 +10,5 @@ xii_create_target(LIBRARY ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   GraphicsCore
-  ozz
   Utilities
 )

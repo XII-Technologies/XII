@@ -3,7 +3,7 @@
 #include <GameEngine/GameEnginePCH.h>
 
 #include <Foundation/IO/TypeVersionContext.h>
-#include <GameEngine/StateMachine/StateMachineBuiltins.h>
+#include <GameEngine/Components/StateMachine/StateMachineBuiltins.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineState_NestedStateMachine, 1, xiiRTTIDefaultAllocator<xiiStateMachineState_NestedStateMachine>)

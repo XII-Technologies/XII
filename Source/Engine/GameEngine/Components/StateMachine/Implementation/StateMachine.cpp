@@ -7,7 +7,7 @@
 #include <Core/World/Component.h>
 #include <Foundation/IO/StringDeduplicationContext.h>
 #include <Foundation/IO/TypeVersionContext.h>
-#include <GameEngine/StateMachine/StateMachine.h>
+#include <GameEngine/Components/StateMachine/StateMachine.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStateMachineState, 1, xiiRTTINoAllocator)

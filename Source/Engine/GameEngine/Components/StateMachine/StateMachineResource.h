@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Core/ResourceManager/Resource.h>
-#include <GameEngine/StateMachine/StateMachine.h>
+#include <GameEngine/Components/StateMachine/StateMachine.h>
 
 using xiiStateMachineResourceHandle = xiiTypedResourceHandle<class xiiStateMachineResource>;
 
@@ -22,7 +22,7 @@ public:
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
+  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 private:

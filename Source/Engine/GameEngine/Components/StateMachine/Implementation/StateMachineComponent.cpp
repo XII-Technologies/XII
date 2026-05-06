@@ -4,8 +4,8 @@
 
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Gameplay/BlackboardComponent.h>
-#include <GameEngine/StateMachine/StateMachineComponent.h>
+#include <GameEngine/Components/Gameplay/BlackboardComponent.h>
+#include <GameEngine/Components/StateMachine/StateMachineComponent.h>
 
 // clang-format off
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgStateMachineStateChanged);

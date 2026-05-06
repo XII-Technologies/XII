@@ -22,9 +22,8 @@
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Formats/TgaFileFormat.h>
@@ -35,6 +34,27 @@ xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> 
 
 xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");
 xiiCVarBool xiiGameApplication::cvar_AppShowFPS("App.ShowFPS", false, xiiCVarFlags::Save, "Show frames per second counter");
+
+namespace
+{
+  static xiiView* TryGetViewFromModule(xiiWorld* pWorld, xiiViewHandle hView)
+  {
+    if (pWorld == nullptr)
+      return nullptr;
+
+    const xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>();
+    if (pRenderWorldModule == nullptr)
+      return nullptr;
+
+    xiiView* pView = nullptr;
+    if (pRenderWorldModule->TryGetView(hView, pView))
+    {
+      return pView;
+    }
+
+    return nullptr;
+  }
+} // namespace
 
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :
   xiiGameApplicationBase(sAppName), m_sAppProjectPath(sProjectPath)
@@ -223,14 +243,20 @@ void xiiGameApplication::UpdateWorldsAndExtractViews()
   auto mainViews = xiiRenderWorld::GetMainViews();
   for (auto hView : mainViews)
   {
-    xiiView* pView = nullptr;
-    if (xiiRenderWorld::TryGetView(hView, pView))
-    {
-      xiiWorld* pWorld = pView->GetWorld();
+    // Iterate through all worlds to find which one owns this view
+    xiiHybridArray<xiiWorld*, 16> allWorlds;
+    xiiWorld::GetWorlds(allWorlds);
 
-      if (pWorld != nullptr && !worldsToUpdate.Contains(pWorld))
+    for (xiiWorld* pWorld : allWorlds)
+    {
+      xiiView* pView = TryGetViewFromModule(pWorld, hView);
+      if (pView != nullptr)
       {
-        worldsToUpdate.PushBack(pWorld);
+        if (!worldsToUpdate.Contains(pWorld))
+        {
+          worldsToUpdate.PushBack(pWorld);
+        }
+        break;
       }
     }
   }

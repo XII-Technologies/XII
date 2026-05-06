@@ -5,7 +5,7 @@
 #include <Core/Messages/UpdateLocalBoundsMessage.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Gameplay/GrabbableItemComponent.h>
+#include <GameEngine/Components/Gameplay/GrabbableItemComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/View.h>

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <GameEngine/StateMachine/Implementation/StateMachineInstanceData.h>
+#include <GameEngine/Components/StateMachine/Implementation/StateMachineInstanceData.h>
 
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Strings/HashedString.h>

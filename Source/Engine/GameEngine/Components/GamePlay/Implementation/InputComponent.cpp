@@ -7,8 +7,8 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <GameEngine/Gameplay/BlackboardComponent.h>
-#include <GameEngine/Gameplay/InputComponent.h>
+#include <GameEngine/Components/Gameplay/BlackboardComponent.h>
+#include <GameEngine/Components/Gameplay/InputComponent.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiInputMessageGranularity, 1)

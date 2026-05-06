@@ -2,8 +2,8 @@
 
 #include <GameEngine/GameEnginePCH.h>
 
-#include <GameEngine/Volumes/VolumeComponent.h>
-#include <GameEngine/Volumes/VolumeSampler.h>
+#include <GameEngine/Components/Volumes/VolumeComponent.h>
+#include <GameEngine/Components/Volumes/VolumeSampler.h>
 
 xiiVolumeSampler::xiiVolumeSampler()  = default;
 xiiVolumeSampler::~xiiVolumeSampler() = default;

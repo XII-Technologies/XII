@@ -13,25 +13,34 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
-#include <GameEngine/Configuration/RendererProfileConfigs.h>
+#include <GameEngine/Components/Gameplay/PlayerStartPointComponent.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
-#include <GameEngine/Gameplay/PlayerStartPointComponent.h>
-#include <GraphicsCore/Components/CameraComponent.h>
-#include <GraphicsCore/Pipeline/RenderPipelineResource.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 xiiCommandLineOptionPath opt_Window("GameState", "-wnd", "Path to the window configuration file to use.", "");
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);
-// clang-format on
+
+namespace
+{
+  static xiiRenderWorldModule* GetRenderWorldModule(xiiWorld* pWorld)
+  {
+    return pWorld != nullptr ? pWorld->GetOrCreateModule<xiiRenderWorldModule>() : nullptr;
+  }
+
+  static const xiiRenderWorldModule* GetRenderWorldModule(const xiiWorld* pWorld)
+  {
+    return pWorld != nullptr ? pWorld->GetModule<xiiRenderWorldModule>() : nullptr;
+  }
+} // namespace
 
 xiiGameState* xiiGameState::s_pActiveGameState = nullptr;
 
@@ -77,17 +86,25 @@ void xiiGameState::OnDeactivation()
 {
   CancelBackgroundSceneLoading();
 
-  xiiRenderWorld::DeleteView(m_hMainView);
+  if (m_pMainWorld != nullptr && !m_hMainView.IsInvalidated())
+  {
+    if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
+    {
+      pRenderWorldModule->DestroyView(m_hMainView);
+    }
+
+    m_hMainView.Invalidate();
+  }
+
+  m_pMainSwapChain.Clear();
+  m_MainViewportSize = xiiSizeU32(0, 0);
 
   s_pActiveGameState = nullptr;
 }
 
 void xiiGameState::AddMainViewsToRender()
 {
-  if (!m_hMainView.IsInvalidated())
-  {
-    xiiRenderWorld::AddMainView(m_hMainView);
-  }
+  // Views are managed by xiiRenderWorldModule and automatically scheduled for rendering upon creation
 }
 
 void xiiGameState::RequestQuit()
@@ -108,9 +125,12 @@ void xiiGameState::ProcessInput()
 xiiView* xiiGameState::GetMainView()
 {
   xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_hMainView, pView))
+  if (const xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
   {
-    return pView;
+    if (pRenderWorldModule->TryGetView(m_hMainView, pView))
+    {
+      return pView;
+    }
   }
 
   return nullptr;
@@ -152,7 +172,6 @@ void xiiGameState::CreateActors()
   xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
 
   ConfigureMainWindowInputDevices(pMainWindow.Borrow());
-  CreateMainView();
   SetupMainView(pOutput->m_pSwapChain, pMainWindow->GetClientAreaSize());
 
   {
@@ -172,36 +191,48 @@ void xiiGameState::ConfigureInputActions() {}
 
 void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize)
 {
-  xiiView* pView = nullptr;
-  if (!xiiRenderWorld::TryGetView(m_hMainView, pView))
+  m_pMainSwapChain   = std::move(pSwapChain);
+  m_MainViewportSize = viewportSize;
+
+  xiiView* pView = GetMainView();
+  if (pView == nullptr)
   {
-    xiiLog::Error("Main view is invalid, SetupMainView canceled.");
     return;
   }
 
-  const xiiRenderPipelineProfileConfig* pConfig         = xiiGameApplicationBase::GetGameApplicationBaseInstance()->GetPlatformProfile().GetTypeConfig<xiiRenderPipelineProfileConfig>();
-  auto                                  hRenderPipeline = xiiResourceManager::LoadResource<xiiRenderPipelineResource>(pConfig->m_sMainRenderPipeline);
-  pView->SetRenderPipelineResource(hRenderPipeline);
-  pView->SetSwapChain(pSwapChain);
-  pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)viewportSize.width, (float)viewportSize.height));
-  pView->ForceUpdate();
+  pView->SetSwapChain(m_pMainSwapChain);
+  pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)m_MainViewportSize.width, (float)m_MainViewportSize.height));
 }
 
 xiiView* xiiGameState::CreateMainView()
 {
   XII_ASSERT_DEV(m_hMainView.IsInvalidated(), "CreateMainView was already called.");
+  XII_ASSERT_DEV(m_pMainWorld != nullptr, "CreateMainView requires an active world.");
 
   XII_LOG_BLOCK("CreateMainView");
   xiiView* pView = nullptr;
-  m_hMainView    = xiiRenderWorld::CreateView("MainView", pView);
+  if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
+  {
+    m_hMainView = pRenderWorldModule->CreateView("MainView", pView);
+  }
+
+  if (pView == nullptr)
+  {
+    return nullptr;
+  }
+
   pView->SetCameraUsageHint(xiiCameraUsageHint::MainView);
-  pView->SetWorld(m_pMainWorld);
   pView->SetCamera(&m_MainCamera);
-  xiiRenderWorld::AddMainView(m_hMainView);
 
   const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
   // exclude all editor objects from rendering in proper game views
   pView->m_ExcludeTags.Set(tagEditor);
+
+  if (m_pMainSwapChain != nullptr)
+  {
+    SetupMainView(m_pMainSwapChain, m_MainViewportSize);
+  }
+
   return pView;
 }
 
@@ -276,12 +307,21 @@ void xiiGameState::ChangeMainWorld(xiiWorld* pNewMainWorld, xiiStringView sStart
 
   xiiWorld* pPrevWorld = m_pMainWorld;
 
+  if (pPrevWorld != nullptr && !m_hMainView.IsInvalidated())
+  {
+    if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(pPrevWorld))
+    {
+      pRenderWorldModule->DestroyView(m_hMainView);
+    }
+
+    m_hMainView.Invalidate();
+  }
+
   m_pMainWorld = pNewMainWorld;
 
-  xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_hMainView, pView))
+  if (m_pMainWorld != nullptr)
   {
-    pView->SetWorld(m_pMainWorld);
+    CreateMainView();
   }
 
   OnChangedMainWorld(pPrevWorld, pNewMainWorld, sStartPosition, startPositionOffset);

@@ -8,9 +8,10 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Serialization/GraphPatch.h>
-#include <GameEngine/Gameplay/BlackboardComponent.h>
-#include <GameEngine/Utils/BlackboardTemplateResource.h>
+#include <GameEngine/Components/Gameplay/BlackboardComponent.h>
+#include <GameEngine/Resources/BlackboardTemplateResource.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 

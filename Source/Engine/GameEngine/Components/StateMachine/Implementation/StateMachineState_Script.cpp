@@ -4,7 +4,7 @@
 
 #include <Core/Scripting/ScriptWorldModule.h>
 #include <Foundation/IO/TypeVersionContext.h>
-#include <GameEngine/StateMachine/StateMachineState_Script.h>
+#include <GameEngine/Components/StateMachine/StateMachineState_Script.h>
 
 namespace
 {
@@ -236,7 +236,7 @@ void xiiStateMachineState_Script::SetScriptClassFile(xiiStringView sFile)
   // state machine asset transform but the script class resource overwrites are not known there so the resource load would fail.
 }
 
-const char* xiiStateMachineState_Script::GetScriptClassFile() const
+xiiStringView xiiStateMachineState_Script::GetScriptClassFile() const
 {
   return m_sScriptClassFile;
 }
