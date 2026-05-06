@@ -68,8 +68,8 @@ public:
 
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
-  void                         SetMode(xiiEnum<xiiDecalProjectionMode> mode);
-  xiiEnum<xiiDecalProjectionMode> GetMode() const;
+  void                            SetProjectionMode(xiiEnum<xiiDecalProjectionMode> mode);
+  xiiEnum<xiiDecalProjectionMode> GetProjectionMode() const;
 
   void                            SetDecal(const xiiDecalResourceHandle& hDecal);
   const xiiDecalResourceHandle&   GetDecal() const;

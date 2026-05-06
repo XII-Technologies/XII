@@ -6,6 +6,7 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Components/Render/DecalComponent.h>
+#include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 #include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
@@ -32,7 +33,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiDecalComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiDecalProjectionMode, GetMode, SetMode),
+    XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiDecalProjectionMode, GetProjectionMode, SetProjectionMode),
     XII_RESOURCE_ACCESSOR_PROPERTY("Decal", GetDecal, SetDecal)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Decal", xiiDependencyFlags::Package)),
     XII_RESOURCE_ACCESSOR_PROPERTY("Atlas", GetAtlas, SetAtlas)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_DecalAtlas", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("AtlasId", GetAtlasId, SetAtlasId),
@@ -136,7 +137,7 @@ xiiResult xiiDecalComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bo
   return XII_SUCCESS;
 }
 
-void xiiDecalComponent::SetMode(xiiEnum<xiiDecalProjectionMode> mode)
+void xiiDecalComponent::SetProjectionMode(xiiEnum<xiiDecalProjectionMode> mode)
 {
   if (m_Mode == mode)
     return;
@@ -146,7 +147,7 @@ void xiiDecalComponent::SetMode(xiiEnum<xiiDecalProjectionMode> mode)
   InvalidateCachedRenderData();
 }
 
-xiiEnum<xiiDecalProjectionMode> xiiDecalComponent::GetMode() const
+xiiEnum<xiiDecalProjectionMode> xiiDecalComponent::GetProjectionMode() const
 {
   return m_Mode;
 }
@@ -416,7 +417,7 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
   pRenderData->m_vUVOffset = xiiVec2(decalDefaults.m_vUVOffset.x + m_vUVOffset.x, decalDefaults.m_vUVOffset.y + m_vUVOffset.y);
   pRenderData->m_vUVScale  = xiiVec2(decalDefaults.m_vUVScale.x * m_vUVScale.x, decalDefaults.m_vUVScale.y * m_vUVScale.y);
   pRenderData->m_Tint      = MultiplyColor(decalDefaults.m_Tint, m_Tint);
-  pRenderData->m_ChannelMask = m_ChannelMask;
+  pRenderData->m_ChannelMask = decalDefaults.m_ChannelMask & m_ChannelMask;
 
   pRenderData->m_fOpacity     = xiiMath::Clamp(decalDefaults.m_fOpacity * m_fOpacity, 0.0f, 1.0f);
   pRenderData->m_fNormalBlend = xiiMath::Clamp(decalDefaults.m_fNormalBlend * m_fNormalBlend, 0.0f, 1.0f);
@@ -432,8 +433,33 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& ref_msg)
     if (pMesh)
     {
       FillMeshRange(*pRenderData, *pMesh.GetPointer());
+      pRenderData->m_vExtents      = pMesh->GetBounds().GetBox().GetHalfExtents().CompMax(xiiVec3(0.001f));
       pRenderData->m_GlobalBounds = pMesh->GetBounds();
       pRenderData->m_GlobalBounds.Transform(pRenderData->m_GlobalTransform.GetAsMat4());
+    }
+  }
+
+  if (pRenderData->m_hAtlas.IsValid() && !pRenderData->m_sAtlasId.IsEmpty())
+  {
+    xiiResourceLock<xiiDecalAtlasResource> pAtlas(pRenderData->m_hAtlas, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
+    if (pAtlas)
+    {
+      const xiiDecalAtlasEntry* pEntry = nullptr;
+      if (pAtlas->TryGetAtlasEntry(pRenderData->m_sAtlasId, pEntry) && pEntry != nullptr)
+      {
+        pRenderData->m_vAtlasUVRect = pEntry->m_vUVRect;
+
+        if (!pRenderData->m_hAlbedo.IsValid())
+          pRenderData->m_hAlbedo = pEntry->m_hAlbedo;
+        if (!pRenderData->m_hNormal.IsValid())
+          pRenderData->m_hNormal = pEntry->m_hNormal;
+        if (!pRenderData->m_hMaterial.IsValid())
+          pRenderData->m_hMaterial = pEntry->m_hMaterial;
+        if (!pRenderData->m_hEmissive.IsValid())
+          pRenderData->m_hEmissive = pEntry->m_hEmissive;
+
+        pRenderData->m_ChannelMask &= pEntry->m_ChannelMask;
+      }
     }
   }
 
