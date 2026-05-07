@@ -9,6 +9,7 @@
 #include <GraphicsCore/Components/Render/DecalComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Decals/DecalResource.h>
+#include <GraphicsCore/Particles/ParticleSystem.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/PipelineBlackboardKeys.h>
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -2920,17 +2921,32 @@ struct xiiGPUParticleSimulateData
   XII_DECLARE_POD_TYPE();
 
   xiiRGBufferHandle m_hParticleState;          ///< UnorderedAccess in/out (persistent particle state buffer).
+  xiiRGBufferHandle m_hParticleConstants;      ///< ConstantBuffer in (simulation time step and live count).
   xiiUInt32         m_uiParticleCount = 65536; ///< Number of particles to simulate.
 };
 
+struct alignas(16) xiiGPUParticleSimulateConstants
+{
+  XII_DECLARE_POD_TYPE();
+
+  float     m_fDeltaTimeS      = 0.0f;
+  float     m_fGravityScale    = 1.0f;
+  float     m_fDragCoefficient = 0.05f;
+  float     m_fTurbulenceScale = 0.0f;
+  xiiVec3   m_vWindVelocity    = xiiVec3::MakeZero();
+  xiiUInt32 m_uiActiveCount   = 0U;
+};
+
+static_assert((sizeof(xiiGPUParticleSimulateConstants) % 16U) == 0U);
+
 void xiiView::SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRGBuilder& builder)
 {
-  constexpr xiiUInt32 uiDefaultParticleCapacity = 65536U;
+  constexpr xiiUInt32 uiDefaultParticleCapacity = xiiParticleSystemConstants::s_uiDefaultMaxParticles;
 
   if (!m_ViewPassResources.m_TransparencyPasses.m_pParticleStateBuffer)
   {
     xiiGALBufferCreationDescription description;
-    description.m_uiElementByteStride = 64U; // position(3) + velocity(3) + age + lifetime + color(4) + size + pad(3)
+    description.m_uiElementByteStride = sizeof(xiiParticleGPUState);
     description.m_uiSize              = description.m_uiElementByteStride * uiDefaultParticleCapacity;
     description.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
     description.m_Mode                = xiiGALBufferMode::Structured;
@@ -2944,6 +2960,15 @@ void xiiView::SetupGPUParticleSimulate(xiiGPUParticleSimulateData& data, xiiRGBu
   data.m_hParticleState  = builder.WriteBuffer(data.m_hParticleState, xiiGALResourceStateFlags::UnorderedAccess);
   data.m_uiParticleCount = xiiMath::Max(1U, m_ViewPassResources.m_TransparencyPasses.m_uiParticleCapacity);
 
+  xiiGALBufferCreationDescription constantsDescription;
+  constantsDescription.m_uiSize         = sizeof(xiiGPUParticleSimulateConstants);
+  constantsDescription.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  constantsDescription.m_Mode           = xiiGALBufferMode::Undefined;
+  constantsDescription.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  constantsDescription.m_Usage          = xiiGALResourceUsage::Dynamic;
+
+  data.m_hParticleConstants = builder.WriteBuffer("ParticleSimConstants", constantsDescription, xiiGALResourceStateFlags::ConstantBuffer);
+
   xiiView::EnsureComputePipeline(m_ViewPassResources.m_TransparencyPasses.m_pParticleSimulatePipeline, "Shaders/Pipeline/GPUParticleSimulate.xiiShader");
 
   builder.SetPassSideEffects(true);
@@ -2956,7 +2981,18 @@ void xiiView::ExecuteGPUParticleSimulate(const xiiGPUParticleSimulateData& data,
 
   cmd.BeginDebugGroup("GPUParticleSimulate");
   {
+    {
+      xiiGALMapHelper<xiiGPUParticleSimulateConstants> pConstants(cmd, context.GetBuffer(data.m_hParticleConstants), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+      pConstants->m_fDeltaTimeS      = xiiMath::Clamp(static_cast<float>(xiiClock::GetGlobalClock()->GetTimeDiff().GetSeconds()), 0.0f, 1.0f / 15.0f);
+      pConstants->m_fGravityScale    = 1.0f;
+      pConstants->m_fDragCoefficient = 0.05f;
+      pConstants->m_fTurbulenceScale = 0.0f;
+      pConstants->m_vWindVelocity    = xiiVec3::MakeZero();
+      pConstants->m_uiActiveCount    = data.m_uiParticleCount;
+    }
+
     cmd.SetPipelineState(m_ViewPassResources.m_TransparencyPasses.m_pParticleSimulatePipeline);
+    cmd.ResolveAndSetConstantBuffer("ParticleSimConstants", context.GetBuffer(data.m_hParticleConstants), xiiGALShaderType::Compute);
     cmd.ResolveAndSetUnorderedAccessBufferView("g_Particles", context.GetBuffer(data.m_hParticleState)->GetDefaultView(xiiGALBufferViewType::UnorderedAccess), xiiGALShaderType::Compute);
     cmd.CommitShaderResources(xiiGALStateTransitionMode::Transition).IgnoreResult();
     cmd.DispatchCompute({(data.m_uiParticleCount + 63U) / 64U, 1U, 1U});

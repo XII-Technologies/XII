@@ -1,31 +1,40 @@
 // XII Engine - GPUParticleSimulate.xiiShader
-// Stage 8: GPU particle simulation - Euler integration, drag, turbulence, lifetime kill.
-// Dispatch: ceil(ParticleCount / 64) × 1 × 1.
+// GPU particle simulation - Euler integration, drag, turbulence, lifetime kill.
+// Dispatch: ceil(ParticleCount / 64) x 1 x 1.
 
 #include "PipelineCommon.xiiShader"
 
 cbuffer ParticleSimConstants : register(b3)
 {
     float  g_DeltaTimeS;       // frame delta in seconds
-    float  g_GravityScale;     // multiplier for downward gravity (typically 1.0)
-    float  g_DragCoefficient;  // linear air drag (typically 0.05)
+    float  g_GravityScale;     // multiplier for downward gravity
+    float  g_DragCoefficient;  // linear drag
     float  g_TurbulenceScale;  // world-space curl-noise magnitude
     float3 g_WindVelocity;     // world-space constant wind
-    uint   g_ActiveCount;      // CPU-written live particle count
+    uint   g_ActiveCount;      // live particle count
 };
 
 struct Particle
 {
-    float3 Position;   // world-space
-    float3 Velocity;   // world-space m/s
-    float  Age;        // seconds since birth
-    float  Lifetime;   // total lifetime seconds
-    float4 Color;      // rgba
-    float  Size;       // world-space radius
-    float3 _pad;
+    float4 PositionAge;            // xyz = world-space position, w = age
+    float4 PreviousPositionRadius; // xyz = previous position, w = radius
+    float4 VelocityLifetime;       // xyz = world-space velocity, w = lifetime
+    float4 Color;                  // rgba
+    float4 ForceInverseMass;       // xyz = accumulated force, w = inverse mass
+    float4 Custom0;
+    float4 Custom1;
+    uint   Id;
+    uint   Flags;
+    uint   Emitter;
+    uint   CellId;
 };
 
 RWStructuredBuffer<Particle> g_Particles : register(u0);
+
+float ParticleHash(float3 x)
+{
+    return frac(sin(dot(x, float3(127.1f, 311.7f, 74.7f))) * 43758.5453f);
+}
 
 // Fast cheap curl-noise approximation (Smith 2007 turbulence field).
 float3 CurlNoise(float3 p, float scale)
@@ -35,16 +44,10 @@ float3 CurlNoise(float3 p, float scale)
     float3 dy = float3(0, eps, 0);
     float3 dz = float3(0, 0, eps);
 
-    // Use sin-based hash to avoid texture lookups.
-    auto hash = [](float3 x) -> float
-    {
-        return frac(sin(dot(x, float3(127.1f, 311.7f, 74.7f))) * 43758.5453f);
-    };
-
     float3 c;
-    c.x = hash(p + dy) - hash(p - dy) - (hash(p + dz) - hash(p - dz));
-    c.y = hash(p + dz) - hash(p - dz) - (hash(p + dx) - hash(p - dx));
-    c.z = hash(p + dx) - hash(p - dx) - (hash(p + dy) - hash(p - dy));
+    c.x = ParticleHash(p + dy) - ParticleHash(p - dy) - (ParticleHash(p + dz) - ParticleHash(p - dz));
+    c.y = ParticleHash(p + dz) - ParticleHash(p - dz) - (ParticleHash(p + dx) - ParticleHash(p - dx));
+    c.z = ParticleHash(p + dx) - ParticleHash(p - dx) - (ParticleHash(p + dy) - ParticleHash(p - dy));
     return normalize(c) * scale / (2.0f * eps);
 }
 
@@ -57,37 +60,33 @@ void CS_ParticleSimulate(uint3 tid : SV_DispatchThreadID)
     Particle p = g_Particles[idx];
 
     // Kill particle when lifetime elapsed.
-    p.Age += g_DeltaTimeS;
-    if (p.Age >= p.Lifetime)
+    p.PositionAge.w += g_DeltaTimeS;
+    if (p.PositionAge.w >= p.VelocityLifetime.w)
     {
-        // Teleport to "dead" state - CPU will reclaim on next spawn.
-        p.Position  = float3(0, -1e6f, 0);
-        p.Velocity  = float3(0, 0, 0);
-        p.Lifetime  = 0.0f;
+        p.PositionAge.xyz      = float3(0, -1e6f, 0);
+        p.VelocityLifetime.xyz = float3(0, 0, 0);
+        p.VelocityLifetime.w   = 0.0f;
         g_Particles[idx] = p;
         return;
     }
 
-    // Gravity.
     float3 accel = float3(0.0f, -9.81f * g_GravityScale, 0.0f);
-
-    // Wind.
     accel += g_WindVelocity;
+    accel += p.ForceInverseMass.xyz;
 
-    // Turbulence.
     if (g_TurbulenceScale > 0.0f)
-        accel += CurlNoise(p.Position * 0.1f, g_TurbulenceScale);
+    {
+        accel += CurlNoise(p.PositionAge.xyz * 0.1f, g_TurbulenceScale);
+    }
 
-    // Drag (linear).
-    accel -= p.Velocity * g_DragCoefficient;
+    accel -= p.VelocityLifetime.xyz * g_DragCoefficient;
 
-    // Euler integration.
-    p.Velocity  += accel * g_DeltaTimeS;
-    p.Position  += p.Velocity * g_DeltaTimeS;
+    p.PreviousPositionRadius.xyz = p.PositionAge.xyz;
+    p.VelocityLifetime.xyz      += accel * g_DeltaTimeS;
+    p.PositionAge.xyz           += p.VelocityLifetime.xyz * g_DeltaTimeS;
 
-    // Fade colour/alpha over lifetime.
-    float t = saturate(p.Age / p.Lifetime);
-    p.Color.a = 1.0f - t * t; // quadratic fade-out
+    float t = saturate(p.PositionAge.w / max(p.VelocityLifetime.w, 0.0001f));
+    p.Color.a = 1.0f - t * t;
 
     g_Particles[idx] = p;
 }
