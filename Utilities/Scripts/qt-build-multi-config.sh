@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
-# qt-build-multi-config.sh
-# Cross-platform helper to build or install Qt mapped to engine configs:
-#   Debug  -> Debug
-#   Dev    -> RelWithDebInfo (optimized + debug info)
-#   Shipping -> Release (strip/split debug symbols on Linux; keep PDBs separate on Windows)
+# qt-build-relative.sh
+# Cross-platform Qt build helper that keeps all files relative to the current working directory.
+# Usage examples:
+#   # Bash on Windows (started from VS Developer Prompt) or Linux:
+#   ./qt-build-relative.sh
+#   ENGINE_CONFIG=Shipping JOBS=8 ./qt-build-relative.sh
 set -euo pipefail
 IFS=$'\n\t'
 
-# --- Defaults (override with env vars) ---
+# --- User-configurable environment variables (all paths are relative to CWD by default) ---
 QT_VERSION="${QT_VERSION:-6.11.0}"
 ENGINE_CONFIG="${ENGINE_CONFIG:-Dev}"   # Debug | Dev | Shipping
-PREFIX="${PREFIX:-}"
-BUILD_FROM_SOURCE="${BUILD_FROM_SOURCE:-0}"  # Linux only: 0 = use distro packages, 1 = build from source
-SRC_ARCHIVE="${SRC_ARCHIVE:-qt-everywhere-src-${QT_VERSION}.zip}"
+BUILD_FROM_SOURCE="${BUILD_FROM_SOURCE:-1}"  # On Linux: 0 = use distro packages, 1 = build from source
+SRC_ARCHIVE="${SRC_ARCHIVE:-qt-everywhere-src-${QT_VERSION}.zip}"  # place archive in ./src or set absolute path
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
-LOG="${LOG:-$PWD/qt-build.log}"
 USE_CCACHE="${USE_CCACHE:-1}"
 EXTRA_CONFIGURE_OPTS="${EXTRA_CONFIGURE_OPTS:-}"
-# internal
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_ROOT="${BUILD_ROOT:-$PWD/qt-build}"
-SRC_ROOT="${SRC_ROOT:-$PWD/qt-src}"
+
+# --- All paths relative to current working directory ---
+ROOT_DIR="$(pwd)"
+SRC_ROOT="$ROOT_DIR/src"
+BUILD_ROOT="$ROOT_DIR/build"
+INSTALL_ROOT="$ROOT_DIR/install"
+ARTIFACTS_DIR="$ROOT_DIR/artifacts"
+LOG="$ROOT_DIR/qt-build.log"
+
+# Ensure log capture
+exec > >(tee -a "$LOG") 2>&1
 
 # Platform detection
 is_windows() {
@@ -30,24 +36,17 @@ is_windows() {
   esac
 }
 
-log() { printf '%s\n' "$*"; }
-err() { printf 'ERROR: %s\n' "$*" >&2; }
+log(){ printf '%s\n' "$*"; }
+err(){ printf 'ERROR: %s\n' "$*"; exit 1; }
 
-# Ensure log capture
-exec > >(tee -a "$LOG") 2>&1
-
-# --- Helpers ---
-command_exists(){ command -v "$1" >/dev/null 2>&1; }
-
-# Map engine config to CMake build type and extra flags
-map_config() {
+# Map engine config to CMake build type and configure flags
+map_config(){
   case "$ENGINE_CONFIG" in
     Debug)
       CMAKE_BUILD_TYPE="Debug"
       CONFIGURE_FLAGS=("-debug")
       ;;
     Dev)
-      # Dev -> RelWithDebInfo (optimized with debug info)
       CMAKE_BUILD_TYPE="RelWithDebInfo"
       CONFIGURE_FLAGS=("-release" "-force-debug-info")
       ;;
@@ -57,13 +56,14 @@ map_config() {
       ;;
     *)
       err "Unknown ENGINE_CONFIG: $ENGINE_CONFIG. Use Debug, Dev, or Shipping."
-      exit 2
       ;;
   esac
 }
 
-# --- Linux flow (default uses distro packages unless BUILD_FROM_SOURCE=1) ---
-linux_install_packages() {
+command_exists(){ command -v "$1" >/dev/null 2>&1; }
+
+# --- Linux helpers ---
+linux_install_packages(){
   if command_exists apt-get; then
     sudo apt-get update
     sudo apt-get install -y build-essential cmake ninja-build python3 perl git \
@@ -77,134 +77,97 @@ linux_install_packages() {
   fi
 }
 
-linux_fetch_and_extract() {
+linux_prepare_source(){
   mkdir -p "$SRC_ROOT"
   cd "$SRC_ROOT"
-  if [ ! -f "$SRC_ARCHIVE" ]; then
-    log "Please place Qt source archive at $SRC_ARCHIVE or set SRC_ARCHIVE."
-    exit 1
+  if [ ! -d "qt-everywhere-src" ]; then
+    if [ -f "$SRC_ARCHIVE" ]; then
+      case "$SRC_ARCHIVE" in
+        *.tar.*|*.tgz) tar -xf "$SRC_ARCHIVE" ;;
+        *.zip) unzip -q "$SRC_ARCHIVE" ;;
+        *) err "Unknown archive format: $SRC_ARCHIVE" ;;
+      esac
+      # normalize
+      EXTRACTED_DIR=$(ls -d qt-everywhere* 2>/dev/null | head -n1 || true)
+      [ -n "$EXTRACTED_DIR" ] && mv "$EXTRACTED_DIR" qt-everywhere-src || true
+    else
+      err "Source archive not found at $SRC_ROOT/$SRC_ARCHIVE. Place it there or set SRC_ARCHIVE."
+    fi
   fi
-  # support tar.xz or zip
-  case "$SRC_ARCHIVE" in
-    *.tar.*|*.tgz)
-      tar -xf "$SRC_ARCHIVE"
-      ;;
-    *.zip)
-      unzip -q "$SRC_ARCHIVE"
-      ;;
-    *)
-      err "Unknown archive format: $SRC_ARCHIVE"
-      exit 1
-      ;;
-  esac
-  # normalize source dir
-  EXTRACTED_DIR=$(tar -tf "$SRC_ARCHIVE" 2>/dev/null | head -1 | cut -f1 -d"/" || true)
-  if [ -z "$EXTRACTED_DIR" ]; then
-    # fallback: find directory named qt-everywhere*
-    EXTRACTED_DIR=$(ls -d qt-everywhere* 2>/dev/null | head -n1 || true)
-  fi
-  if [ -z "$EXTRACTED_DIR" ]; then
-    err "Could not find extracted source directory."
-    exit 1
-  fi
-  mv "$EXTRACTED_DIR" qt-everywhere-src || true
 }
 
-# Build on Linux (single-config Ninja recommended)
-linux_build() {
+linux_build(){
   map_config
   linux_install_packages
   if [ "$BUILD_FROM_SOURCE" -ne 1 ]; then
     log "Using system Qt packages (not building from source)."
-    log "If you want to build from source set BUILD_FROM_SOURCE=1 and re-run."
     return 0
   fi
 
-  linux_fetch_and_extract
+  linux_prepare_source
   SRC_DIR="$SRC_ROOT/qt-everywhere-src"
-  mkdir -p "$BUILD_ROOT"
-  cd "$BUILD_ROOT"
-
-  # For single-config generators (Ninja) create separate build dirs per config
   BUILD_DIR="$BUILD_ROOT/build-${CMAKE_BUILD_TYPE,,}"
   rm -rf "$BUILD_DIR"
   mkdir -p "$BUILD_DIR"
   cd "$BUILD_DIR"
 
-  # ccache
   if [ "$USE_CCACHE" -eq 1 ] && command_exists ccache; then
     export CC="ccache gcc"
     export CXX="ccache g++"
-    log "Using ccache for gcc/g++"
+    log "Using ccache"
   fi
 
-  # Run Qt configure (Qt 6 uses configure script that wraps CMake)
   CONFIG_OPTS=(
-    -prefix "${PREFIX:-/opt/Qt-${QT_VERSION}}"
+    -prefix "$INSTALL_ROOT/$QT_VERSION/$CMAKE_BUILD_TYPE"
     "${CONFIGURE_FLAGS[@]}"
     -nomake examples
     -nomake tests
   )
-  # append extras
   if [ -n "$EXTRA_CONFIGURE_OPTS" ]; then
     read -r -a EXTRA <<< "$EXTRA_CONFIGURE_OPTS"
     CONFIG_OPTS+=("${EXTRA[@]}")
   fi
 
-  log "Configuring Qt ($ENGINE_CONFIG -> $CMAKE_BUILD_TYPE) in $BUILD_DIR"
+  log "Configuring Qt in $BUILD_DIR"
   "$SRC_DIR/configure" "${CONFIG_OPTS[@]}"
 
   log "Building Qt ($JOBS jobs)"
   cmake --build . --parallel "$JOBS"
 
-  log "Installing to ${PREFIX:-/opt/Qt-${QT_VERSION}}"
+  log "Installing to $INSTALL_ROOT/$QT_VERSION/$CMAKE_BUILD_TYPE"
   sudo cmake --install .
 
   if [ "$ENGINE_CONFIG" = "Shipping" ]; then
     log "Splitting debug symbols and stripping binaries for Shipping build"
-    # find shared libs and executables under prefix and split debug info
-    INSTALL_PREFIX="${PREFIX:-/opt/Qt-${QT_VERSION}}"
-    DBG_DIR="$INSTALL_PREFIX/debug-symbols"
+    DBG_DIR="$INSTALL_ROOT/$QT_VERSION/$CMAKE_BUILD_TYPE/debug-symbols"
     sudo mkdir -p "$DBG_DIR"
-    # iterate libs and binaries
     while IFS= read -r -d '' file; do
       sudo objcopy --only-keep-debug "$file" "$DBG_DIR/$(basename "$file").debug" || true
       sudo strip --strip-unneeded "$file" || true
       sudo objcopy --add-gnu-debuglink="$DBG_DIR/$(basename "$file").debug" "$file" || true
-    done < <(sudo find "$INSTALL_PREFIX" -type f \( -name "*.so*" -o -perm /111 \) -print0)
+    done < <(sudo find "$INSTALL_ROOT/$QT_VERSION/$CMAKE_BUILD_TYPE" -type f \( -name "*.so*" -o -perm /111 \) -print0)
     log "Debug symbols saved to $DBG_DIR"
   fi
 
-  log "Linux build complete."
+  log "Linux build finished."
 }
 
-# --- Windows flow ---
-windows_locate_vcvars() {
-  # Try to find vcvarsall.bat via vswhere if available
+# --- Windows helpers (bash running on Windows, e.g., Git Bash started from Developer Prompt) ---
+windows_locate_vcvars(){
   if command_exists vswhere; then
-    VSWHERE_PATH="$(vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>/dev/null || true)"
-    if [ -n "$VSWHERE_PATH" ]; then
-      VCVARS="$VSWHERE_PATH/VC/Auxiliary/Build/vcvarsall.bat"
-      if [ -f "$VCVARS" ]; then
-        echo "$VCVARS"
-        return 0
-      fi
-    fi
+    VSROOT=$(vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>/dev/null || true)
+    [ -n "$VSROOT" ] && echo "$VSROOT/VC/Auxiliary/Build/vcvarsall.bat" && return 0
   fi
-  # fallback: search common locations
   for base in "/c/Program Files (x86)/Microsoft Visual Studio" "/c/Program Files/Microsoft Visual Studio"; do
     if [ -d "$base" ]; then
       found=$(find "$base" -type f -name vcvarsall.bat 2>/dev/null | head -n1 || true)
-      if [ -n "$found" ]; then
-        echo "$found"
-        return 0
-      fi
+      [ -n "$found" ] && echo "$found" && return 0
     fi
   done
   return 1
 }
 
-windows_prepare_source() {
+windows_prepare_source(){
   mkdir -p "$SRC_ROOT"
   cd "$SRC_ROOT"
   if [ ! -d "qt-everywhere-src" ]; then
@@ -212,46 +175,30 @@ windows_prepare_source() {
       unzip -q "$SRC_ARCHIVE"
       mv qt-everywhere-src-* qt-everywhere-src || true
     else
-      err "Qt source archive not found at $SRC_ARCHIVE. Please download and set SRC_ARCHIVE."
-      exit 1
+      err "Qt source archive not found at $SRC_ROOT/$SRC_ARCHIVE"
     fi
   fi
 }
 
-windows_build() {
+windows_build(){
   map_config
-  require_cmd() { command -v "$1" >/dev/null 2>&1 || { err "Missing required: $1"; exit 2; }; }
-
-  require_cmd cmake
-  require_cmd ninja
-  require_cmd python
-  require_cmd unzip
-
-  # Ensure MSVC environment
-  if ! command_exists cl; then
-    VCVARS=$(windows_locate_vcvars || true)
-    if [ -z "$VCVARS" ]; then
-      err "MSVC compiler not found and vcvarsall.bat not located. Run this script from a 'x64 Native Tools Command Prompt' or set PATH."
-      exit 1
-    fi
-    log "Sourcing vcvarsall.bat via cmd.exe (this will set MSVC env for the session)"
-    # Note: we cannot source a .bat into bash; instead we will run configure/build via cmd.exe below.
-  fi
+  for tool in cmake ninja python unzip; do
+    command_exists "$tool" || err "Missing required tool: $tool (install and add to PATH)"
+  done
 
   windows_prepare_source
   SRC_DIR="$SRC_ROOT/qt-everywhere-src"
-  mkdir -p "$BUILD_ROOT"
-  cd "$BUILD_ROOT"
-
-  # Use a multi-config build (Visual Studio or Ninja Multi-Config) so we can build specific config
   BUILD_DIR="$BUILD_ROOT/qt-build"
   rm -rf "$BUILD_DIR"
   mkdir -p "$BUILD_DIR"
   cd "$BUILD_DIR"
 
-  # Build steps executed via cmd.exe to ensure MSVC env is active
-  # Compose configure.bat command
-  WIN_PREFIX="${PREFIX:-C:\\Qt\\${QT_VERSION}}"
+  VCVARS="$(windows_locate_vcvars || true)"
+  if [ -z "$VCVARS" ] && ! command_exists cl; then
+    err "MSVC not found. Start Git Bash from a Visual Studio Developer Prompt or ensure vcvarsall.bat is available."
+  fi
+
+  WIN_PREFIX="${INSTALL_ROOT//\//\\}\\$QT_VERSION\\$CMAKE_BUILD_TYPE"
   CONFIG_OPTS=(
     -prefix "\"$WIN_PREFIX\""
     "${CONFIGURE_FLAGS[@]}"
@@ -262,54 +209,50 @@ windows_build() {
     CONFIG_OPTS+=($EXTRA_CONFIGURE_OPTS)
   fi
 
-  # Build commands: run configure.bat then cmake --build with --config
-  # Use cmd.exe /c to run batch commands in a single MSVC environment
-  CMD_SCRIPT=$(mktemp --suffix=.cmd)
+  # Create a temporary .cmd that calls vcvarsall and runs configure/build/install so MSVC env is active
+  CMD_SCRIPT="$(mktemp --suffix=.cmd)"
   cat > "$CMD_SCRIPT" <<-CMD
     @echo off
-    REM Attempt to call vcvarsall if available
     CALL "${VCVARS:-vcvarsall.bat}" amd64 2>nul || echo "vcvarsall not called; ensure you are in a Developer Prompt"
-    cd /d "%~dp0"
+    pushd "%~dp0"
     pushd "$SRC_DIR"
     configure.bat ${CONFIG_OPTS[*]}
     popd
-    cd /d "%~dp0"
     cmake --build . --config ${CMAKE_BUILD_TYPE} -- /m:${JOBS}
     cmake --install . --config ${CMAKE_BUILD_TYPE} --prefix "$WIN_PREFIX"
+    popd
     CMD
 
-  log "Running Windows build script via cmd.exe: $CMD_SCRIPT"
-  cmd.exe /c "$CMD_SCRIPT" || { err "Windows build failed"; rm -f "$CMD_SCRIPT"; exit 1; }
+  log "Running Windows build via cmd.exe"
+  cmd.exe /c "$CMD_SCRIPT" || { rm -f "$CMD_SCRIPT"; err "Windows build failed"; }
   rm -f "$CMD_SCRIPT"
 
   if [ "$ENGINE_CONFIG" = "Shipping" ]; then
-    log "Shipping build on Windows: keeping PDBs separate and packaging Release binaries."
-    # PDBs are generated alongside binaries; move them to a debug-symbols folder
     WIN_INSTALL="$(cygpath -u "$WIN_PREFIX" 2>/dev/null || echo "$WIN_PREFIX")"
     DBG_DIR="$WIN_INSTALL/debug-symbols"
     mkdir -p "$DBG_DIR"
-    # Move PDBs
     find "$WIN_INSTALL" -type f -name "*.pdb" -exec mv {} "$DBG_DIR/" \; || true
-    log "PDBs moved to $DBG_DIR. Distribute binaries without PDBs for Shipping."
+    log "PDBs moved to $DBG_DIR"
   fi
 
-  log "Windows build complete. Installed to $WIN_PREFIX"
+  log "Windows build finished. Installed to $WIN_PREFIX"
 }
 
 # --- Entrypoint ---
-main() {
-  log "=== Qt build helper started: $(date) ==="
+main(){
+  log "Starting Qt build helper in CWD: $ROOT_DIR"
   map_config
+  mkdir -p "$SRC_ROOT" "$BUILD_ROOT" "$INSTALL_ROOT" "$ARTIFACTS_DIR"
 
   if is_windows; then
-    log "Platform: Windows"
+    log "Platform: Windows (bash). All paths are relative to $ROOT_DIR"
     windows_build
-    exit 0
   else
-    log "Platform: Linux/Unix"
+    log "Platform: Linux/Unix. All paths are relative to $ROOT_DIR"
     linux_build
-    exit 0
   fi
+
+  log "Artifacts (install, logs) are under $ROOT_DIR"
 }
 
 main "$@"
