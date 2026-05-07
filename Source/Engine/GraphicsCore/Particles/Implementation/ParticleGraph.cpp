@@ -5,6 +5,190 @@
 #include <Foundation/Algorithm/HashingUtils.h>
 #include <GraphicsCore/Particles/ParticleGraph.h>
 
+namespace
+{
+  enum class ParticleGraphResourceDescriptorVersion : xiiUInt8
+  {
+    Version1 = 1U, ///< Initial version.
+
+    ENUM_COUNT,
+
+    Current = Version1
+  };
+
+  template <typename T>
+  static void HashValue(xiiUInt64& ref_uiHash, const T& value)
+  {
+    ref_uiHash = xiiHashingUtils::xxHash64(&value, sizeof(T), ref_uiHash);
+  }
+
+  static void HashString(xiiUInt64& ref_uiHash, xiiStringView sValue)
+  {
+    ref_uiHash = xiiHashingUtils::xxHash64String(sValue, ref_uiHash);
+  }
+
+  static void SavePin(xiiStreamWriter& ref_stream, const xiiParticleGraphPinDesc& pin)
+  {
+    ref_stream << pin.m_sName;
+    ref_stream << pin.m_sAttributeName;
+    ref_stream << pin.m_Semantic;
+    ref_stream << pin.m_Format;
+    ref_stream << pin.m_DefaultValue;
+    ref_stream << pin.m_bRequired;
+    ref_stream << pin.m_bMultiConnect;
+    ref_stream << pin.m_bHidden;
+  }
+
+  static void LoadPin(xiiStreamReader& ref_stream, xiiParticleGraphPinDesc& ref_pin)
+  {
+    ref_stream >> ref_pin.m_sName;
+    ref_stream >> ref_pin.m_sAttributeName;
+    ref_stream >> ref_pin.m_Semantic;
+    ref_stream >> ref_pin.m_Format;
+    ref_stream >> ref_pin.m_DefaultValue;
+    ref_stream >> ref_pin.m_bRequired;
+    ref_stream >> ref_pin.m_bMultiConnect;
+    ref_stream >> ref_pin.m_bHidden;
+  }
+
+  static void SaveParameter(xiiStreamWriter& ref_stream, const xiiParticleGraphParameterDesc& parameter)
+  {
+    ref_stream << parameter.m_sName;
+    ref_stream << parameter.m_sDisplayName;
+    ref_stream << parameter.m_sCategory;
+    ref_stream << parameter.m_sTooltip;
+    ref_stream << parameter.m_DefaultValue;
+    ref_stream << parameter.m_MinValue;
+    ref_stream << parameter.m_MaxValue;
+    ref_stream << parameter.m_bAnimatable;
+    ref_stream << parameter.m_bAdvanced;
+  }
+
+  static void LoadParameter(xiiStreamReader& ref_stream, xiiParticleGraphParameterDesc& ref_parameter)
+  {
+    ref_stream >> ref_parameter.m_sName;
+    ref_stream >> ref_parameter.m_sDisplayName;
+    ref_stream >> ref_parameter.m_sCategory;
+    ref_stream >> ref_parameter.m_sTooltip;
+    ref_stream >> ref_parameter.m_DefaultValue;
+    ref_stream >> ref_parameter.m_MinValue;
+    ref_stream >> ref_parameter.m_MaxValue;
+    ref_stream >> ref_parameter.m_bAnimatable;
+    ref_stream >> ref_parameter.m_bAdvanced;
+  }
+
+  template <typename T, typename SaveFunc>
+  static void SaveCustomArray(xiiStreamWriter& ref_stream, const xiiDynamicArray<T>& values, SaveFunc saveFunc)
+  {
+    ref_stream << values.GetCount();
+
+    for (const T& value : values)
+    {
+      saveFunc(ref_stream, value);
+    }
+  }
+
+  template <typename T, typename LoadFunc>
+  static void LoadCustomArray(xiiStreamReader& ref_stream, xiiDynamicArray<T>& ref_values, LoadFunc loadFunc)
+  {
+    xiiUInt32 uiCount = 0U;
+    ref_stream >> uiCount;
+
+    ref_values.SetCount(uiCount);
+
+    for (T& value : ref_values)
+    {
+      loadFunc(ref_stream, value);
+    }
+  }
+
+  static void SaveHashedStringArray(xiiStreamWriter& ref_stream, const xiiDynamicArray<xiiHashedString>& values)
+  {
+    ref_stream << values.GetCount();
+
+    for (const xiiHashedString& value : values)
+    {
+      ref_stream << value;
+    }
+  }
+
+  static void LoadHashedStringArray(xiiStreamReader& ref_stream, xiiDynamicArray<xiiHashedString>& ref_values)
+  {
+    xiiUInt32 uiCount = 0U;
+    ref_stream >> uiCount;
+
+    ref_values.SetCount(uiCount);
+
+    for (xiiHashedString& value : ref_values)
+    {
+      ref_stream >> value;
+    }
+  }
+
+  static void SaveUuidArray(xiiStreamWriter& ref_stream, const xiiDynamicArray<xiiUuid>& values)
+  {
+    ref_stream << values.GetCount();
+
+    for (const xiiUuid& value : values)
+    {
+      ref_stream << value;
+    }
+  }
+
+  static void LoadUuidArray(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUuid>& ref_values)
+  {
+    xiiUInt32 uiCount = 0U;
+    ref_stream >> uiCount;
+
+    ref_values.SetCount(uiCount);
+
+    for (xiiUuid& value : ref_values)
+    {
+      ref_stream >> value;
+    }
+  }
+
+  static void SaveLink(xiiStreamWriter& ref_stream, const xiiParticleGraphLinkDesc& link)
+  {
+    ref_stream << link.m_SourceNode;
+    ref_stream << link.m_sSourcePin;
+    ref_stream << link.m_TargetNode;
+    ref_stream << link.m_sTargetPin;
+    ref_stream << link.m_bEnabled;
+  }
+
+  static void LoadLink(xiiStreamReader& ref_stream, xiiParticleGraphLinkDesc& ref_link)
+  {
+    ref_stream >> ref_link.m_SourceNode;
+    ref_stream >> ref_link.m_sSourcePin;
+    ref_stream >> ref_link.m_TargetNode;
+    ref_stream >> ref_link.m_sTargetPin;
+    ref_stream >> ref_link.m_bEnabled;
+  }
+
+  static void SaveGroup(xiiStreamWriter& ref_stream, const xiiParticleGraphGroupDesc& group)
+  {
+    ref_stream << group.m_GroupId;
+    ref_stream << group.m_sTitle;
+    ref_stream << group.m_Color;
+    ref_stream << group.m_vPosition;
+    ref_stream << group.m_vSize;
+
+    SaveUuidArray(ref_stream, group.m_Nodes);
+  }
+
+  static void LoadGroup(xiiStreamReader& ref_stream, xiiParticleGraphGroupDesc& ref_group)
+  {
+    ref_stream >> ref_group.m_GroupId;
+    ref_stream >> ref_group.m_sTitle;
+    ref_stream >> ref_group.m_Color;
+    ref_stream >> ref_group.m_vPosition;
+    ref_stream >> ref_group.m_vSize;
+
+    LoadUuidArray(ref_stream, ref_group.m_Nodes);
+  }
+} // namespace
+
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiParticleAttributeFormat, 1)
   XII_ENUM_CONSTANT(xiiParticleAttributeFormat::Float),
@@ -174,7 +358,6 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiParticleGraphResourceDescriptor, xiiNoBase, 1
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Version", m_uiVersion),
     XII_MEMBER_PROPERTY("GraphName", m_sGraphName),
     XII_MEMBER_PROPERTY("Description", m_sDescription),
     XII_MEMBER_PROPERTY("AuthoringTool", m_sAuthoringTool),
@@ -192,173 +375,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiParticleGraphResource);
-
-namespace
-{
-  template <typename T>
-  static void HashValue(xiiUInt64& ref_uiHash, const T& value)
-  {
-    ref_uiHash = xiiHashingUtils::xxHash64(&value, sizeof(T), ref_uiHash);
-  }
-
-  static void HashString(xiiUInt64& ref_uiHash, xiiStringView sValue)
-  {
-    ref_uiHash = xiiHashingUtils::xxHash64String(sValue, ref_uiHash);
-  }
-
-  static void SavePin(xiiStreamWriter& ref_stream, const xiiParticleGraphPinDesc& pin)
-  {
-    ref_stream << pin.m_sName;
-    ref_stream << pin.m_sAttributeName;
-    ref_stream << pin.m_Semantic;
-    ref_stream << pin.m_Format;
-    ref_stream << pin.m_DefaultValue;
-    ref_stream << pin.m_bRequired;
-    ref_stream << pin.m_bMultiConnect;
-    ref_stream << pin.m_bHidden;
-  }
-
-  static void LoadPin(xiiStreamReader& ref_stream, xiiParticleGraphPinDesc& ref_pin)
-  {
-    ref_stream >> ref_pin.m_sName;
-    ref_stream >> ref_pin.m_sAttributeName;
-    ref_stream >> ref_pin.m_Semantic;
-    ref_stream >> ref_pin.m_Format;
-    ref_stream >> ref_pin.m_DefaultValue;
-    ref_stream >> ref_pin.m_bRequired;
-    ref_stream >> ref_pin.m_bMultiConnect;
-    ref_stream >> ref_pin.m_bHidden;
-  }
-
-  static void SaveParameter(xiiStreamWriter& ref_stream, const xiiParticleGraphParameterDesc& parameter)
-  {
-    ref_stream << parameter.m_sName;
-    ref_stream << parameter.m_sDisplayName;
-    ref_stream << parameter.m_sCategory;
-    ref_stream << parameter.m_sTooltip;
-    ref_stream << parameter.m_DefaultValue;
-    ref_stream << parameter.m_MinValue;
-    ref_stream << parameter.m_MaxValue;
-    ref_stream << parameter.m_bAnimatable;
-    ref_stream << parameter.m_bAdvanced;
-  }
-
-  static void LoadParameter(xiiStreamReader& ref_stream, xiiParticleGraphParameterDesc& ref_parameter)
-  {
-    ref_stream >> ref_parameter.m_sName;
-    ref_stream >> ref_parameter.m_sDisplayName;
-    ref_stream >> ref_parameter.m_sCategory;
-    ref_stream >> ref_parameter.m_sTooltip;
-    ref_stream >> ref_parameter.m_DefaultValue;
-    ref_stream >> ref_parameter.m_MinValue;
-    ref_stream >> ref_parameter.m_MaxValue;
-    ref_stream >> ref_parameter.m_bAnimatable;
-    ref_stream >> ref_parameter.m_bAdvanced;
-  }
-
-  template <typename T, typename SaveFunc>
-  static void SaveCustomArray(xiiStreamWriter& ref_stream, const xiiDynamicArray<T>& values, SaveFunc saveFunc)
-  {
-    ref_stream << values.GetCount();
-    for (const T& value : values)
-    {
-      saveFunc(ref_stream, value);
-    }
-  }
-
-  template <typename T, typename LoadFunc>
-  static void LoadCustomArray(xiiStreamReader& ref_stream, xiiDynamicArray<T>& ref_values, LoadFunc loadFunc)
-  {
-    xiiUInt32 uiCount = 0U;
-    ref_stream >> uiCount;
-
-    ref_values.SetCount(uiCount);
-    for (T& value : ref_values)
-    {
-      loadFunc(ref_stream, value);
-    }
-  }
-
-  static void SaveHashedStringArray(xiiStreamWriter& ref_stream, const xiiDynamicArray<xiiHashedString>& values)
-  {
-    ref_stream << values.GetCount();
-    for (const xiiHashedString& value : values)
-    {
-      ref_stream << value;
-    }
-  }
-
-  static void LoadHashedStringArray(xiiStreamReader& ref_stream, xiiDynamicArray<xiiHashedString>& ref_values)
-  {
-    xiiUInt32 uiCount = 0U;
-    ref_stream >> uiCount;
-
-    ref_values.SetCount(uiCount);
-    for (xiiHashedString& value : ref_values)
-    {
-      ref_stream >> value;
-    }
-  }
-
-  static void SaveUuidArray(xiiStreamWriter& ref_stream, const xiiDynamicArray<xiiUuid>& values)
-  {
-    ref_stream << values.GetCount();
-    for (const xiiUuid& value : values)
-    {
-      ref_stream << value;
-    }
-  }
-
-  static void LoadUuidArray(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUuid>& ref_values)
-  {
-    xiiUInt32 uiCount = 0U;
-    ref_stream >> uiCount;
-
-    ref_values.SetCount(uiCount);
-    for (xiiUuid& value : ref_values)
-    {
-      ref_stream >> value;
-    }
-  }
-
-  static void SaveLink(xiiStreamWriter& ref_stream, const xiiParticleGraphLinkDesc& link)
-  {
-    ref_stream << link.m_SourceNode;
-    ref_stream << link.m_sSourcePin;
-    ref_stream << link.m_TargetNode;
-    ref_stream << link.m_sTargetPin;
-    ref_stream << link.m_bEnabled;
-  }
-
-  static void LoadLink(xiiStreamReader& ref_stream, xiiParticleGraphLinkDesc& ref_link)
-  {
-    ref_stream >> ref_link.m_SourceNode;
-    ref_stream >> ref_link.m_sSourcePin;
-    ref_stream >> ref_link.m_TargetNode;
-    ref_stream >> ref_link.m_sTargetPin;
-    ref_stream >> ref_link.m_bEnabled;
-  }
-
-  static void SaveGroup(xiiStreamWriter& ref_stream, const xiiParticleGraphGroupDesc& group)
-  {
-    ref_stream << group.m_GroupId;
-    ref_stream << group.m_sTitle;
-    ref_stream << group.m_Color;
-    ref_stream << group.m_vPosition;
-    ref_stream << group.m_vSize;
-    SaveUuidArray(ref_stream, group.m_Nodes);
-  }
-
-  static void LoadGroup(xiiStreamReader& ref_stream, xiiParticleGraphGroupDesc& ref_group)
-  {
-    ref_stream >> ref_group.m_GroupId;
-    ref_stream >> ref_group.m_sTitle;
-    ref_stream >> ref_group.m_Color;
-    ref_stream >> ref_group.m_vPosition;
-    ref_stream >> ref_group.m_vSize;
-    LoadUuidArray(ref_stream, ref_group.m_Nodes);
-  }
-} // namespace
 
 xiiUuid xiiParticleGraphResourceDescriptor::AddNode(const xiiParticleGraphNodeDesc& node)
 {
@@ -384,6 +400,7 @@ bool xiiParticleGraphResourceDescriptor::RemoveNode(const xiiUuid& nodeId)
       for (xiiUInt32 linkIndex = m_Links.GetCount(); linkIndex > 0; --linkIndex)
       {
         const xiiParticleGraphLinkDesc& link = m_Links[linkIndex - 1U];
+
         if (link.m_SourceNode == nodeId || link.m_TargetNode == nodeId)
         {
           m_Links.RemoveAtAndCopy(linkIndex - 1U);
@@ -434,7 +451,9 @@ xiiResult xiiParticleGraphResourceDescriptor::Validate(xiiStringBuilder* out_pEr
     if (!node.m_NodeId.IsValid())
     {
       if (out_pError != nullptr)
+      {
         out_pError->SetFormat("Particle graph node at index {0} has no valid id.", i);
+      }
       return XII_FAILURE;
     }
 
@@ -443,7 +462,9 @@ xiiResult xiiParticleGraphResourceDescriptor::Validate(xiiStringBuilder* out_pEr
       if (m_Nodes[j].m_NodeId == node.m_NodeId)
       {
         if (out_pError != nullptr)
+        {
           out_pError->SetFormat("Particle graph contains duplicate node id at indices {0} and {1}.", i, j);
+        }
         return XII_FAILURE;
       }
     }
@@ -457,14 +478,18 @@ xiiResult xiiParticleGraphResourceDescriptor::Validate(xiiStringBuilder* out_pEr
     if (FindNode(link.m_SourceNode) == nullptr || FindNode(link.m_TargetNode) == nullptr)
     {
       if (out_pError != nullptr)
+      {
         out_pError->SetFormat("Particle graph link references a missing node.");
+      }
       return XII_FAILURE;
     }
 
     if (link.m_sSourcePin.IsEmpty() || link.m_sTargetPin.IsEmpty())
     {
       if (out_pError != nullptr)
+      {
         out_pError->SetFormat("Particle graph link references an empty pin.");
+      }
       return XII_FAILURE;
     }
   }
@@ -474,9 +499,9 @@ xiiResult xiiParticleGraphResourceDescriptor::Validate(xiiStringBuilder* out_pEr
 
 xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
 {
-  xiiUInt64 uiHash = 0x9E3779B185EBCA87ULL;
+  xiiUInt64 uiHash    = 0x9E3779B185EBCA87ULL;
 
-  HashValue(uiHash, m_uiVersion);
+  HashValue(uiHash, ParticleGraphResourceDescriptorVersion::Current);
   HashString(uiHash, m_sGraphName);
 
   for (const xiiParticleGraphNodeDesc& node : m_Nodes)
@@ -484,6 +509,7 @@ xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
     xiiUInt64 uiLow  = 0U;
     xiiUInt64 uiHigh = 0U;
     node.m_NodeId.GetValues(uiLow, uiHigh);
+
     HashValue(uiHash, uiLow);
     HashValue(uiHash, uiHigh);
     HashString(uiHash, node.m_sType.GetString());
@@ -506,9 +532,12 @@ xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
     xiiUInt64 uiLow  = 0U;
     xiiUInt64 uiHigh = 0U;
     link.m_SourceNode.GetValues(uiLow, uiHigh);
+
     HashValue(uiHash, uiLow);
     HashValue(uiHash, uiHigh);
+
     link.m_TargetNode.GetValues(uiLow, uiHigh);
+
     HashValue(uiHash, uiLow);
     HashValue(uiHash, uiHigh);
     HashString(uiHash, link.m_sSourcePin.GetString());
@@ -521,7 +550,8 @@ xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
 
 void xiiParticleGraphResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
-  const xiiUInt32 uiVersion = 1U;
+  const xiiUInt32 uiVersion = xiiGetStaticRTTI<xiiParticleGraphResourceDescriptor>()->GetTypeVersion();
+
   ref_stream << uiVersion;
   ref_stream << m_sGraphName;
   ref_stream << m_sDescription;
@@ -542,6 +572,7 @@ void xiiParticleGraphResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
     ref_stream << node.m_DebugColor;
     ref_stream << node.m_uiThreadGroupSize;
     ref_stream << node.m_uiEstimatedCost;
+
     SaveCustomArray(ref_stream, node.m_Inputs, SavePin);
     SaveCustomArray(ref_stream, node.m_Outputs, SavePin);
     SaveCustomArray(ref_stream, node.m_Parameters, SaveParameter);
@@ -581,6 +612,7 @@ void xiiParticleGraphResourceDescriptor::Load(xiiStreamReader& ref_stream)
     ref_stream >> node.m_DebugColor;
     ref_stream >> node.m_uiThreadGroupSize;
     ref_stream >> node.m_uiEstimatedCost;
+
     LoadCustomArray(ref_stream, node.m_Inputs, LoadPin);
     LoadCustomArray(ref_stream, node.m_Outputs, LoadPin);
     LoadCustomArray(ref_stream, node.m_Parameters, LoadParameter);
@@ -605,25 +637,25 @@ xiiResourceLoadDesc xiiParticleGraphResource::UnloadData(Unload WhatToUnload)
   m_Descriptor.Clear();
   m_uiPipelineHash = 0ULL;
 
-  xiiResourceLoadDesc res;
-  res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable    = 0U;
-  res.m_State                      = xiiResourceState::Unloaded;
-  return res;
+  xiiResourceLoadDesc resourceLoadDescription;
+  resourceLoadDescription.m_uiQualityLevelsDiscardable = 0U;
+  resourceLoadDescription.m_uiQualityLevelsLoadable    = 0U;
+  resourceLoadDescription.m_State                      = xiiResourceState::Unloaded;
+  return resourceLoadDescription;
 }
 
 xiiResourceLoadDesc xiiParticleGraphResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
-  res.m_uiQualityLevelsDiscardable = 0U;
-  res.m_uiQualityLevelsLoadable    = 0U;
+  xiiResourceLoadDesc resourceLoadDescription;
+  resourceLoadDescription.m_uiQualityLevelsDiscardable = 0U;
+  resourceLoadDescription.m_uiQualityLevelsLoadable    = 0U;
 
   if (pStream == nullptr)
   {
     m_Descriptor.Clear();
-    m_uiPipelineHash = 0ULL;
-    res.m_State      = xiiResourceState::LoadedResourceMissing;
-    return res;
+    m_uiPipelineHash                = 0ULL;
+    resourceLoadDescription.m_State = xiiResourceState::LoadedResourceMissing;
+    return resourceLoadDescription;
   }
 
   xiiStringBuilder sAbsoluteFilePath;
@@ -632,8 +664,8 @@ xiiResourceLoadDesc xiiParticleGraphResource::UpdateContent(xiiStreamReader* pSt
   m_Descriptor.Load(*pStream);
   m_uiPipelineHash = m_Descriptor.ComputePipelineHash();
 
-  res.m_State = m_Descriptor.Validate().Succeeded() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
-  return res;
+  resourceLoadDescription.m_State = m_Descriptor.Validate().Succeeded() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
+  return resourceLoadDescription;
 }
 
 void xiiParticleGraphResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
@@ -651,11 +683,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiParticleGraphResource, xiiParticleGraphReso
   m_Descriptor     = descriptor;
   m_uiPipelineHash = m_Descriptor.ComputePipelineHash();
 
-  xiiResourceLoadDesc ret;
-  ret.m_State                      = m_Descriptor.Validate().Succeeded() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
-  ret.m_uiQualityLevelsDiscardable = 0U;
-  ret.m_uiQualityLevelsLoadable    = 0U;
-  return ret;
+  xiiResourceLoadDesc resourceLoadDescription;
+  resourceLoadDescription.m_State                      = m_Descriptor.Validate().Succeeded() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
+  resourceLoadDescription.m_uiQualityLevelsDiscardable = 0U;
+  resourceLoadDescription.m_uiQualityLevelsLoadable    = 0U;
+  return resourceLoadDescription;
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Particles_Implementation_ParticleGraph);
