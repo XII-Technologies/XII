@@ -33,6 +33,7 @@
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
@@ -539,7 +540,7 @@ private:
       dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
       dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
     }
-    data.m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    data.m_pRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
   }
 
   void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRGPassContext& context)
