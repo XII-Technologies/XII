@@ -1,0 +1,49 @@
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+
+DepthEnable = false
+CullMode    = CullMode_None
+
+[VERTEX_SHADER]
+
+struct PSInput 
+{ 
+ float4 Position : SV_POSITION; 
+ float3 Color    : COLOR; 
+};
+
+void main(in uint uiVertexID : SV_VertexID, out PSInput PSIn) 
+{
+  float4 positions[3];
+  positions[0] = float4(-0.5, -0.5, 0.0, 1.0);
+  positions[1] = float4( 0.0, +0.5, 0.0, 1.0);
+  positions[2] = float4(+0.5, -0.5, 0.0, 1.0);
+
+  float3 colors[3];
+  colors[0] = float3(1.0, 0.0, 0.0); // red
+  colors[1] = float3(0.0, 1.0, 0.0); // green
+  colors[2] = float3(0.0, 0.0, 1.0); // blue
+
+  PSIn.Position = positions[uiVertexID];
+  PSIn.Color    = colors[uiVertexID];
+}
+
+[PIXEL_SHADER]  
+
+struct PSInput 
+{ 
+  float4 Position : SV_POSITION; 
+  float3 Color    : COLOR; 
+};
+
+struct PSOutput
+{
+  float4 Color : SV_TARGET;
+};
+
+void main(in PSInput PSIn, out PSOutput PSOut)
+{
+  PSOut.Color = float4(PSIn.Color.rgb, 1.0);
+}

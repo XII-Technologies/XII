@@ -17,9 +17,6 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
 
-#include <GraphicsCore/Pipeline/RenderGraph.h>
-#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
-#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -28,7 +25,15 @@
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
+
+#include <GraphicsCore/Pipeline/PipelineStateCache.h>
+#include <GraphicsCore/Pipeline/RenderGraph.h>
+#include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
+#include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -170,6 +175,7 @@ public:
         m_pRenderGraph->BeginSetup(m_uiFrameIndex);
         {
           m_pRenderGraph->AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
+          m_pRenderGraph->AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteProceduralTrianglePass, this));
           m_pRenderGraph->AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupBlitPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
         }
         m_pRenderGraph->EndSetup();
@@ -225,14 +231,23 @@ public:
 
   virtual void AfterCoreSystemsStartup() override
   {
+    //#if XII_ENABLED(USE_FILESERVE)
+    //    xiiPlugin::LoadPlugin("xiiFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
+    //#endif
+
     xiiStringBuilder sProjectDir = ">sdk/Data/Samples/GraphicsExplorer";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
-
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
-    xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiDataDirUsage::AllowWrites).IgnoreResult();
+    //#if XII_ENABLED(USE_DIRECTORY_WATCHER)
+    //    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
+    //    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
+    //#endif
+
+    xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
+    xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
+    xiiFileSystem::AddDataDirectory(">project/", "Project", "project").AssertSuccess();
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -346,7 +361,14 @@ public:
 #endif
 
       xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
-      m_pDevice                      = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
+      xiiStringView sShaderModel     = {};
+      xiiStringView sShaderCompiler  = {};
+      xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
+
+      xiiGALShaderManager::Configure(sShaderModel, true);
+      XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found.", sShaderCompiler);
+
+      m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
       XII_ASSERT_DEV(m_pDevice != nullptr, "Device implementation for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
@@ -470,7 +492,100 @@ private:
     cmd.BeginDebugGroup("Offscreen Clear");
     {
       cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
-      cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
+      // cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
+      cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
+    }
+    cmd.EndDebugGroup();
+  }
+
+  struct ProceduralTrianglePassData
+  {
+    xiiRGTextureHandle                 m_hOffScreenTexture;
+    xiiShaderResourceHandle            m_hShader;
+    xiiShaderPermutationResourceHandle m_hShaderPermutation;
+    xiiSharedPtr<xiiGALRenderPass>     m_pRenderPass;
+  };
+
+  void SetupProceduralTrianglePass(ProceduralTrianglePassData& data, xiiRGBuilder& builder)
+  {
+    data.m_hOffScreenTexture  = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::RenderTarget);        // Declare that we will read from the offscreen texture in this pass, which will create a dependency on the previous pass that writes to it and ensure proper synchronization. The returned handle references the texture at its current version, so store and use this handle for all future reads/writes.
+    data.m_hOffScreenTexture  = builder.WriteTexture(data.m_hOffScreenTexture, xiiGALResourceStateFlags::RenderTarget); // Declare that we will write to the offscreen texture again in this pass, which will bump its version and ensure proper synchronization with the previous pass.
+    data.m_hShader            = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/ProceduralTriangle.xiiShader");
+    data.m_hShaderPermutation = xiiShaderPermutationUtilities::PreloadSinglePermutation(data.m_hShader, {}, false);
+
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    xiiGALRenderPassCreationDescription renderPassDescription;
+    {
+      xiiGALRenderPassAttachmentDescription& colorAttachmentDescription = renderPassDescription.m_Attachments.ExpandAndGetRef();
+      colorAttachmentDescription.m_Format                               = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+      colorAttachmentDescription.m_uiSampleCount                        = 1U;
+      colorAttachmentDescription.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
+      colorAttachmentDescription.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
+      colorAttachmentDescription.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
+      colorAttachmentDescription.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
+
+      xiiGALSubPassDescription& subpassDesc = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+      {
+        xiiGALAttachmentReferenceDescription& colorAttachmentReferenceDescription = subpassDesc.m_RenderTargetAttachments.ExpandAndGetRef();
+        colorAttachmentReferenceDescription.m_ResourceStateFlags                  = xiiGALResourceStateFlags::RenderTarget;
+        colorAttachmentReferenceDescription.m_uiAttachmentIndex                   = 0U;
+      }
+
+      xiiGALSubPassDependencyDescription& dependencyDesc = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+      dependencyDesc.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+      dependencyDesc.m_uiDestinationSubPass              = 0U;
+      dependencyDesc.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+      dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
+    }
+    data.m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+  }
+
+  void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRGPassContext& context)
+  {
+    xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+    xiiSharedPtr<xiiGALGraphicsPipelineState> pPipelineState;
+    {
+      xiiResourceLock<xiiShaderPermutationResource> pShaderPermutation(data.m_hShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
+
+      xiiGALGraphicsPipelineStateCreationDescription graphicsPipelineStateDescription;
+      graphicsPipelineStateDescription.m_pPipelineResourceSignature            = pShaderPermutation->GetPipelineResourceSignature();
+      graphicsPipelineStateDescription.m_pVertexShader                         = pShaderPermutation->GetGALShader(xiiGALShaderType::Vertex);
+      graphicsPipelineStateDescription.m_pPixelShader                          = pShaderPermutation->GetGALShader(xiiGALShaderType::Pixel);
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pBlendState        = pShaderPermutation->GetBlendState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRasterizerState   = pShaderPermutation->GetRasterizerState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pDepthStencilState = pShaderPermutation->GetDepthStencilState();
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_pRenderPass        = data.m_pRenderPass;
+      graphicsPipelineStateDescription.m_GraphicsPipeline.m_PrimitiveTopology  = xiiGALPrimitiveTopology::TriangleList;
+
+      pPipelineState = xiiGALPipelineCache::GetPipeline(graphicsPipelineStateDescription);
+    }
+
+    xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
+    {
+      xiiGALFramebufferCreationDescription framebufferDescription;
+      framebufferDescription.m_pRenderPass       = data.m_pRenderPass;
+      framebufferDescription.m_FramebufferSize   = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
+      framebufferDescription.m_uiArraySliceCount = 1U;
+      framebufferDescription.m_Attachments.PushBack(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
+
+      pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+    }
+
+    xiiGALCommandList& cmd = context.GetCommandList();
+
+    cmd.BeginDebugGroup("Procedural Triangle");
+    {
+      cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
+      {
+        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight)); // Set the viewport to cover the entire render target.
+        cmd.SetPipelineState(pPipelineState);                                                       // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+        cmd.CommitShaderResources().IgnoreResult();                                                 // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+        cmd.Draw({3});                                                                              // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+      }
+      cmd.EndRenderPass(); // End the render pass, which will also perform necessary resource transitions to make the offscreen texture available for reading in the next pass.
     }
     cmd.EndDebugGroup();
   }
