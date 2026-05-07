@@ -17,6 +17,11 @@ JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 USE_CCACHE="${USE_CCACHE:-1}"
 EXTRA_CONFIGURE_OPTS="${EXTRA_CONFIGURE_OPTS:-}"
 
+# Optional: override generator for Windows if you want to force a specific VS generator.
+# Example for Visual Studio 18 Insider (adjust if your exact generator string differs):
+CMAKE_GENERATOR="${CMAKE_GENERATOR:-Visual Studio 18 2024}"
+CMAKE_GENERATOR_PLATFORM="${CMAKE_GENERATOR_PLATFORM:-x64}"
+
 # --- Relative paths ---
 ROOT_DIR="$(pwd)"
 SRC_ROOT="$ROOT_DIR/src"
@@ -29,9 +34,6 @@ exec > >(tee -a "$LOG") 2>&1
 
 # --- Helpers ---
 log(){ printf '%s\n' "$*"; }
-err(){ printf 'ERROR: %s\n' "$*' >&2"; exit 1; }  # note: single-quote in err fixed below
-
-# Fix err function (corrected)
 err(){ printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
 command_exists(){ command -v "$1" >/dev/null 2>&1; }
@@ -183,7 +185,8 @@ windows_prepare_source(){
 
 windows_build(){
   map_config
-  for tool in cmake ninja python unzip; do
+  # require essential tools (ninja is NOT required when using Visual Studio generator)
+  for tool in cmake python unzip; do
     command_exists "$tool" || err "Missing required tool: $tool (install and add to PATH)"
   done
 
@@ -221,8 +224,10 @@ pushd "%~dp0"
 pushd "$SRC_DIR"
 configure.bat ${CONFIG_OPTS[*]}
 popd
-cmake --build . --config ${CMAKE_BUILD_TYPE} -- /m:${JOBS}
-cmake --install . --config ${CMAKE_BUILD_TYPE} --prefix "$WIN_PREFIX"
+REM Configure CMake for Visual Studio generator explicitly to ensure correct generator is used
+cmake -G "$CMAKE_GENERATOR" -A "$CMAKE_GENERATOR_PLATFORM" -S "$SRC_DIR" -B "%CD%"
+cmake --build "%CD%" --config ${CMAKE_BUILD_TYPE} -- /m:${JOBS}
+cmake --install "%CD%" --config ${CMAKE_BUILD_TYPE} --prefix "$WIN_PREFIX"
 popd
 EOF
 
