@@ -82,6 +82,15 @@ XII_END_COMPONENT_TYPE;
 
 namespace
 {
+  enum class ParticleSystemDescriptorVersion : xiiUInt8
+  {
+    Version1 = 1U,
+
+    ENUM_COUNT,
+
+    Current = Version1
+  };
+
   static xiiUInt32 ClampParticleCapacity(xiiUInt32 uiCapacity)
   {
     return xiiMath::Clamp(uiCapacity, 1U, xiiParticleSystemConstants::s_uiMaxSupportedParticles);
@@ -103,7 +112,8 @@ namespace
 
 void xiiParticleSystemDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
-  const xiiUInt32 uiVersion = 1U;
+  const xiiUInt8 uiVersion = (xiiUInt8)ParticleSystemDescriptorVersion::Current;
+
   ref_stream << uiVersion;
   ref_stream << m_hGraph;
   ref_stream << m_SimulationSpace;
@@ -122,7 +132,7 @@ void xiiParticleSystemDescriptor::Save(xiiStreamWriter& ref_stream) const
 
 void xiiParticleSystemDescriptor::Load(xiiStreamReader& ref_stream)
 {
-  xiiUInt32 uiVersion = 0U;
+  xiiUInt8 uiVersion = 0U;
   ref_stream >> uiVersion;
   XII_IGNORE_UNUSED(uiVersion);
 
