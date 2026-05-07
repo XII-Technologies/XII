@@ -1411,25 +1411,28 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
         }
       }
 
-      const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
-
-      if (pipelineDescription.IsAnyGraphicsPipeline())
+      if (!m_CommandListData.m_DescriptorSets.IsEmpty())
       {
-        xiiGALGraphicsPipelineStateVulkan* pGraphicsPipelineStateVulkan = xiiDynamicCast<xiiGALGraphicsPipelineStateVulkan*>(m_pPipelineState);
+        const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
 
-        m_vkCommandBuffer.bindDescriptorSets(pGraphicsPipelineStateVulkan->GetVulkanPipelineBindPoint(), pGraphicsPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_CommandListData.m_DescriptorSets.GetCount(), m_CommandListData.m_DescriptorSets.GetData(), m_CommandListData.m_DynamicUniformBufferOffsets.GetCount(), m_CommandListData.m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      }
-      else if (pipelineDescription.IsComputePipeline())
-      {
-        xiiGALComputePipelineStateVulkan* pComputePipelineStateVulkan = xiiDynamicCast<xiiGALComputePipelineStateVulkan*>(m_pPipelineState);
+        if (pipelineDescription.IsAnyGraphicsPipeline())
+        {
+          xiiGALGraphicsPipelineStateVulkan* pGraphicsPipelineStateVulkan = xiiDynamicCast<xiiGALGraphicsPipelineStateVulkan*>(m_pPipelineState);
 
-        m_vkCommandBuffer.bindDescriptorSets(pComputePipelineStateVulkan->GetVulkanPipelineBindPoint(), pComputePipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_CommandListData.m_DescriptorSets.GetCount(), m_CommandListData.m_DescriptorSets.GetData(), m_CommandListData.m_DynamicUniformBufferOffsets.GetCount(), m_CommandListData.m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
-      }
-      else if (pipelineDescription.IsRayTracingPipeline())
-      {
-        xiiGALRayTracingPipelineStateVulkan* pRayTracingPipelineStateVulkan = xiiDynamicCast<xiiGALRayTracingPipelineStateVulkan*>(m_pPipelineState);
+          m_vkCommandBuffer.bindDescriptorSets(pGraphicsPipelineStateVulkan->GetVulkanPipelineBindPoint(), pGraphicsPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_CommandListData.m_DescriptorSets.GetCount(), m_CommandListData.m_DescriptorSets.GetData(), m_CommandListData.m_DynamicUniformBufferOffsets.GetCount(), m_CommandListData.m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
+        else if (pipelineDescription.IsComputePipeline())
+        {
+          xiiGALComputePipelineStateVulkan* pComputePipelineStateVulkan = xiiDynamicCast<xiiGALComputePipelineStateVulkan*>(m_pPipelineState);
 
-        m_vkCommandBuffer.bindDescriptorSets(pRayTracingPipelineStateVulkan->GetVulkanPipelineBindPoint(), pRayTracingPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_CommandListData.m_DescriptorSets.GetCount(), m_CommandListData.m_DescriptorSets.GetData(), m_CommandListData.m_DynamicUniformBufferOffsets.GetCount(), m_CommandListData.m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+          m_vkCommandBuffer.bindDescriptorSets(pComputePipelineStateVulkan->GetVulkanPipelineBindPoint(), pComputePipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_CommandListData.m_DescriptorSets.GetCount(), m_CommandListData.m_DescriptorSets.GetData(), m_CommandListData.m_DynamicUniformBufferOffsets.GetCount(), m_CommandListData.m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
+        else if (pipelineDescription.IsRayTracingPipeline())
+        {
+          xiiGALRayTracingPipelineStateVulkan* pRayTracingPipelineStateVulkan = xiiDynamicCast<xiiGALRayTracingPipelineStateVulkan*>(m_pPipelineState);
+
+          m_vkCommandBuffer.bindDescriptorSets(pRayTracingPipelineStateVulkan->GetVulkanPipelineBindPoint(), pRayTracingPipelineStateVulkan->GetVulkanPipelineLayout(), 0, m_CommandListData.m_DescriptorSets.GetCount(), m_CommandListData.m_DescriptorSets.GetData(), m_CommandListData.m_DynamicUniformBufferOffsets.GetCount(), m_CommandListData.m_DynamicUniformBufferOffsets.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
+        }
       }
     }
 
