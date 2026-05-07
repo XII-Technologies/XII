@@ -8,25 +8,23 @@
 /// \brief Defines storage strategies for block-based container management.
 struct xiiBlockStorageType
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
-    Compact, ///< Maintains elements in contiguous memory by moving last element to fill gaps
-    FreeList ///< Uses a free list to track available slots, preserving element positions
+    Compact = 0U, ///< Maintains elements in contiguous memory by moving last element to fill gaps.
+    FreeList      ///< Uses a free list to track available slots, preserving element positions.
   };
 };
 
 /// \brief High-performance container for objects with pluggable storage strategies.
 ///
-/// This container manages objects in blocks of memory, using different strategies for handling
-/// gaps when objects are removed. It's designed for scenarios where you need fast allocation
-/// and deallocation of many objects, with the choice between compact memory layout or stable
-/// object addressing.
+/// This container manages objects in blocks of memory, using different strategies for handling gaps when objects are removed.
+/// It's designed for scenarios where you need fast allocation and deallocation of many objects, with the choice between compact memory layout or stable object addressing.
 ///
 /// Storage strategies:
-/// - Compact: Moves the last element to fill gaps when objects are deleted, maintaining
-///   contiguous memory but invalidating iterators and pointers to moved objects
-/// - FreeList: Uses a free list to reuse deleted slots, preserving object positions but
-///   potentially creating memory fragmentation
+/// - Compact: Moves the last element to fill gaps when objects are deleted, maintaining contiguous memory but invalidating iterators and pointers to moved objects
+/// - FreeList: Uses a free list to reuse deleted slots, preserving object positions but potentially creating memory fragmentation.
 template <typename T, xiiUInt32 BlockSizeInByte, xiiBlockStorageType::Enum StorageType>
 class xiiBlockStorage
 {
