@@ -2,8 +2,8 @@
 
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <GraphicsCore/Particles/ParticleGraph.h>
 #include <Foundation/Algorithm/HashingUtils.h>
+#include <GraphicsCore/Particles/ParticleGraph.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiParticleAttributeFormat, 1)
@@ -481,7 +481,7 @@ xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
 
   for (const xiiParticleGraphNodeDesc& node : m_Nodes)
   {
-    xiiUInt64 uiLow = 0U;
+    xiiUInt64 uiLow  = 0U;
     xiiUInt64 uiHigh = 0U;
     node.m_NodeId.GetValues(uiLow, uiHigh);
     HashValue(uiHash, uiLow);
@@ -503,7 +503,7 @@ xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
 
   for (const xiiParticleGraphLinkDesc& link : m_Links)
   {
-    xiiUInt64 uiLow = 0U;
+    xiiUInt64 uiLow  = 0U;
     xiiUInt64 uiHigh = 0U;
     link.m_SourceNode.GetValues(uiLow, uiHigh);
     HashValue(uiHash, uiLow);

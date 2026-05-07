@@ -109,7 +109,7 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphSchedule
 
   enum Enum : StorageType
   {
-    Once = 0U,     ///< Setup, reset, or one-shot GPU work.
+    Once = 0U,    ///< Setup, reset, or one-shot GPU work.
     Spawn,        ///< Runs for emitted particles.
     PerParticle,  ///< Runs one thread per live particle.
     PerGroup,     ///< Runs one thread group per cell/tile/batch.
@@ -168,14 +168,14 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphNodeFlags);
 /// \brief One input or output pin visible in the particle graph editor.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphPinDesc
 {
-  xiiHashedString                         m_sName;
-  xiiHashedString                         m_sAttributeName;
-  xiiEnum<xiiParticleAttributeSemantic>   m_Semantic;
-  xiiEnum<xiiParticleAttributeFormat>     m_Format;
-  xiiVariant                              m_DefaultValue;
-  bool                                    m_bRequired     = false;
-  bool                                    m_bMultiConnect = false;
-  bool                                    m_bHidden       = false;
+  xiiHashedString                       m_sName;
+  xiiHashedString                       m_sAttributeName;
+  xiiEnum<xiiParticleAttributeSemantic> m_Semantic;
+  xiiEnum<xiiParticleAttributeFormat>   m_Format;
+  xiiVariant                            m_DefaultValue;
+  bool                                  m_bRequired     = false;
+  bool                                  m_bMultiConnect = false;
+  bool                                  m_bHidden       = false;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphPinDesc);
@@ -199,18 +199,18 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiParticleGraphParameterDesc
 /// \brief A particle graph node. Nodes map to compute kernels, tool-only annotations, or custom engine callbacks.
 struct XII_GRAPHICSCORE_DLL xiiParticleGraphNodeDesc
 {
-  xiiUuid                                 m_NodeId;
-  xiiHashedString                         m_sType;
-  xiiString                               m_sDisplayName;
-  xiiString                               m_sKernelPath;
-  xiiString                               m_sEntryPoint;
-  xiiEnum<xiiParticleGraphNodeCategory>   m_Category;
-  xiiEnum<xiiParticleGraphSchedule>       m_Schedule;
-  xiiBitflags<xiiParticleGraphNodeFlags>  m_Flags;
-  xiiVec2                                 m_vEditorPosition = xiiVec2::MakeZero();
-  xiiColor                                m_DebugColor      = xiiColor::White;
-  xiiUInt32                               m_uiThreadGroupSize = 64U;
-  xiiUInt32                               m_uiEstimatedCost   = 1U;
+  xiiUuid                                m_NodeId;
+  xiiHashedString                        m_sType;
+  xiiString                              m_sDisplayName;
+  xiiString                              m_sKernelPath;
+  xiiString                              m_sEntryPoint;
+  xiiEnum<xiiParticleGraphNodeCategory>  m_Category;
+  xiiEnum<xiiParticleGraphSchedule>      m_Schedule;
+  xiiBitflags<xiiParticleGraphNodeFlags> m_Flags;
+  xiiVec2                                m_vEditorPosition   = xiiVec2::MakeZero();
+  xiiColor                               m_DebugColor        = xiiColor::White;
+  xiiUInt32                              m_uiThreadGroupSize = 64U;
+  xiiUInt32                              m_uiEstimatedCost   = 1U;
 
   xiiDynamicArray<xiiParticleGraphPinDesc>       m_Inputs;
   xiiDynamicArray<xiiParticleGraphPinDesc>       m_Outputs;
@@ -238,9 +238,9 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGraphGroupDesc
 {
   xiiUuid                  m_GroupId;
   xiiString                m_sTitle;
-  xiiColor                 m_Color       = xiiColor::White;
-  xiiVec2                  m_vPosition   = xiiVec2::MakeZero();
-  xiiVec2                  m_vSize       = xiiVec2(320.0f, 180.0f);
+  xiiColor                 m_Color     = xiiColor::White;
+  xiiVec2                  m_vPosition = xiiVec2::MakeZero();
+  xiiVec2                  m_vSize     = xiiVec2(320.0f, 180.0f);
   xiiDynamicArray<xiiUuid> m_Nodes;
 };
 
@@ -289,7 +289,7 @@ public:
   xiiParticleGraphResource();
 
   [[nodiscard]] XII_ALWAYS_INLINE const xiiParticleGraphResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
-  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 GetPipelineHash() const { return m_uiPipelineHash; }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64                                 GetPipelineHash() const { return m_uiPipelineHash; }
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;

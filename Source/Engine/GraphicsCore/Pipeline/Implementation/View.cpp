@@ -2934,7 +2934,7 @@ struct alignas(16) xiiGPUParticleSimulateConstants
   float     m_fDragCoefficient = 0.05f;
   float     m_fTurbulenceScale = 0.0f;
   xiiVec3   m_vWindVelocity    = xiiVec3::MakeZero();
-  xiiUInt32 m_uiActiveCount   = 0U;
+  xiiUInt32 m_uiActiveCount    = 0U;
 };
 
 static_assert((sizeof(xiiGPUParticleSimulateConstants) % 16U) == 0U);

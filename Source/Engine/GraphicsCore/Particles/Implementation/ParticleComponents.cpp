@@ -328,8 +328,8 @@ namespace
 
   static xiiBoundingBoxSphere MakeCapsuleBounds(float fRadius, float fHalfHeight)
   {
-    const float fSafeRadius     = xiiMath::Max(0.001f, fRadius);
-    const float fSafeHalfHeight = xiiMath::Max(0.0f, fHalfHeight);
+    const float   fSafeRadius     = xiiMath::Max(0.001f, fRadius);
+    const float   fSafeHalfHeight = xiiMath::Max(0.0f, fHalfHeight);
     const xiiVec3 vHalfExtents(fSafeRadius, fSafeRadius, fSafeRadius + fSafeHalfHeight);
     return xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), vHalfExtents, vHalfExtents.GetLength());
   }

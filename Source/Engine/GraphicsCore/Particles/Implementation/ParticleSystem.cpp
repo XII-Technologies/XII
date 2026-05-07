@@ -140,10 +140,10 @@ void xiiParticleSystemDescriptor::Load(xiiStreamReader& ref_stream)
   ref_stream >> m_fNeighborCellSize;
   ref_stream >> m_bAlwaysVisible;
 
-  m_uiMaxParticles     = ClampParticleCapacity(m_uiMaxParticles);
-  m_uiMaxEmitters      = xiiMath::Max(1U, m_uiMaxEmitters);
-  m_uiMaxSubSteps      = xiiMath::Max<xiiUInt8>(1U, m_uiMaxSubSteps);
-  m_fNeighborCellSize  = xiiMath::Max(0.0001f, m_fNeighborCellSize);
+  m_uiMaxParticles    = ClampParticleCapacity(m_uiMaxParticles);
+  m_uiMaxEmitters     = xiiMath::Max(1U, m_uiMaxEmitters);
+  m_uiMaxSubSteps     = xiiMath::Max<xiiUInt8>(1U, m_uiMaxSubSteps);
+  m_fNeighborCellSize = xiiMath::Max(0.0001f, m_fNeighborCellSize);
 }
 
 xiiParticleSystemRuntime::xiiParticleSystemRuntime()  = default;
@@ -195,11 +195,11 @@ xiiResult xiiParticleSystemRuntime::EnsureCapacity(const xiiParticleSystemDescri
     return XII_SUCCESS;
   }
 
-  m_Descriptor                 = descriptor;
-  m_uiParticleCapacity         = uiParticleCapacity;
-  m_uiEventCapacity            = uiEventCapacity;
-  m_uiNeighborPairCapacity     = uiNeighborPairCapacity;
-  m_uiReadBufferIndex          = 0U;
+  m_Descriptor             = descriptor;
+  m_uiParticleCapacity     = uiParticleCapacity;
+  m_uiEventCapacity        = uiEventCapacity;
+  m_uiNeighborPairCapacity = uiNeighborPairCapacity;
+  m_uiReadBufferIndex      = 0U;
 
   const xiiBitflags<xiiGALBindFlags> structuredReadWrite = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
 
@@ -280,7 +280,7 @@ void xiiParticleSystemRuntime::SetupSimulationPass(xiiParticleSimulationPassData
 {
   xiiStringBuilder sResourceName;
 
-  ref_data.m_hGraph            = m_Descriptor.m_hGraph;
+  ref_data.m_hGraph             = m_Descriptor.m_hGraph;
   ref_data.m_uiParticleCapacity = m_uiParticleCapacity;
   ref_data.m_uiDispatchGroups   = (m_uiParticleCapacity + xiiParticleSystemConstants::s_uiDefaultThreadGroupSize - 1U) / xiiParticleSystemConstants::s_uiDefaultThreadGroupSize;
 
@@ -435,7 +435,7 @@ xiiResult xiiParticleSystemComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_b
 
 void xiiParticleSystemComponent::SetDescriptor(const xiiParticleSystemDescriptor& descriptor)
 {
-  m_Descriptor = descriptor;
+  m_Descriptor                  = descriptor;
   m_Descriptor.m_uiMaxParticles = ClampParticleCapacity(m_Descriptor.m_uiMaxParticles);
 
   m_Runtime.Shutdown();

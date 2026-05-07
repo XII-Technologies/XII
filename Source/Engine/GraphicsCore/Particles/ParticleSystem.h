@@ -21,11 +21,11 @@ using xiiParticleSystemComponentManager = xiiComponentManager<class xiiParticleS
 /// \brief Constants shared by the CPU runtime and shader-side particle layouts.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemConstants
 {
-  static constexpr xiiUInt32 s_uiDefaultMaxParticles     = 1024U * 1024U;
-  static constexpr xiiUInt32 s_uiDefaultMaxEmitters      = 1024U;
-  static constexpr xiiUInt32 s_uiDefaultMaxEvents        = 1024U * 1024U;
-  static constexpr xiiUInt32 s_uiDefaultThreadGroupSize  = 64U;
-  static constexpr xiiUInt32 s_uiMaxSupportedParticles   = 16U * 1024U * 1024U;
+  static constexpr xiiUInt32 s_uiDefaultMaxParticles    = 1024U * 1024U;
+  static constexpr xiiUInt32 s_uiDefaultMaxEmitters     = 1024U;
+  static constexpr xiiUInt32 s_uiDefaultMaxEvents       = 1024U * 1024U;
+  static constexpr xiiUInt32 s_uiDefaultThreadGroupSize = 64U;
+  static constexpr xiiUInt32 s_uiMaxSupportedParticles  = 16U * 1024U * 1024U;
 };
 
 /// \brief Simulation space for particle data.
@@ -54,19 +54,19 @@ struct XII_GRAPHICSCORE_DLL xiiParticleSystemFlags
 
   enum Enum : StorageType
   {
-    None                 = 0U,
-    GPUDriven            = XII_BIT(0),
-    AsyncCompute         = XII_BIT(1),
-    IndirectDraw         = XII_BIT(2),
-    GPUCulling           = XII_BIT(3),
-    SortByDepth          = XII_BIT(4),
-    StableParticleIds    = XII_BIT(5),
-    EnableEvents         = XII_BIT(6),
-    EnableReadback       = XII_BIT(7),
-    Deterministic        = XII_BIT(8),
-    MolecularDynamics    = XII_BIT(9),
-    NeighborSearch       = XII_BIT(10),
-    DoubleBufferedState  = XII_BIT(11),
+    None                = 0U,
+    GPUDriven           = XII_BIT(0),
+    AsyncCompute        = XII_BIT(1),
+    IndirectDraw        = XII_BIT(2),
+    GPUCulling          = XII_BIT(3),
+    SortByDepth         = XII_BIT(4),
+    StableParticleIds   = XII_BIT(5),
+    EnableEvents        = XII_BIT(6),
+    EnableReadback      = XII_BIT(7),
+    Deterministic       = XII_BIT(8),
+    MolecularDynamics   = XII_BIT(9),
+    NeighborSearch      = XII_BIT(10),
+    DoubleBufferedState = XII_BIT(11),
 
     Default = GPUDriven | AsyncCompute | IndirectDraw | GPUCulling | StableParticleIds | DoubleBufferedState
   };
@@ -96,17 +96,17 @@ struct alignas(16) XII_GRAPHICSCORE_DLL xiiParticleGPUState
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiVec4 m_vPositionAge;             ///< xyz = position, w = age.
-  xiiVec4 m_vPreviousPositionRadius;  ///< xyz = previous position, w = radius.
-  xiiVec4 m_vVelocityLifetime;        ///< xyz = velocity, w = lifetime.
-  xiiVec4 m_vColor;                   ///< rgba.
-  xiiVec4 m_vForceInverseMass;        ///< xyz = accumulated force, w = inverse mass.
-  xiiVec4 m_vCustom0;                 ///< graph-owned custom payload.
-  xiiVec4 m_vCustom1;                 ///< graph-owned custom payload.
-  xiiUInt32 m_uiId       = 0U;
-  xiiUInt32 m_uiFlags    = 0U;
-  xiiUInt32 m_uiEmitter  = 0U;
-  xiiUInt32 m_uiCellId   = 0U;
+  xiiVec4   m_vPositionAge;            ///< xyz = position, w = age.
+  xiiVec4   m_vPreviousPositionRadius; ///< xyz = previous position, w = radius.
+  xiiVec4   m_vVelocityLifetime;       ///< xyz = velocity, w = lifetime.
+  xiiVec4   m_vColor;                  ///< rgba.
+  xiiVec4   m_vForceInverseMass;       ///< xyz = accumulated force, w = inverse mass.
+  xiiVec4   m_vCustom0;                ///< graph-owned custom payload.
+  xiiVec4   m_vCustom1;                ///< graph-owned custom payload.
+  xiiUInt32 m_uiId      = 0U;
+  xiiUInt32 m_uiFlags   = 0U;
+  xiiUInt32 m_uiEmitter = 0U;
+  xiiUInt32 m_uiCellId  = 0U;
 };
 
 static_assert((sizeof(xiiParticleGPUState) % 16U) == 0U);
@@ -125,19 +125,19 @@ struct XII_GRAPHICSCORE_DLL xiiParticleGPUCounters
 /// \brief Runtime descriptor for large GPU particle simulations.
 struct XII_GRAPHICSCORE_DLL xiiParticleSystemDescriptor
 {
-  xiiParticleGraphResourceHandle        m_hGraph;
-  xiiEnum<xiiParticleSimulationSpace>   m_SimulationSpace;
-  xiiBitflags<xiiParticleSystemFlags>   m_Flags;
-  xiiBoundingBoxSphere                  m_LocalBounds = xiiBoundingBoxSphere::MakeZero();
-  xiiUInt32                             m_uiMaxParticles = xiiParticleSystemConstants::s_uiDefaultMaxParticles;
-  xiiUInt32                             m_uiMaxEmitters  = xiiParticleSystemConstants::s_uiDefaultMaxEmitters;
-  xiiUInt32                             m_uiMaxEvents    = xiiParticleSystemConstants::s_uiDefaultMaxEvents;
-  xiiUInt32                             m_uiMaxNeighborPairs = 0U;
-  xiiUInt32                             m_uiRandomSeed = 0U;
-  xiiUInt8                              m_uiMaxSubSteps = 1U;
-  float                                 m_fFixedTimeStep = 1.0f / 60.0f;
-  float                                 m_fNeighborCellSize = 1.0f;
-  bool                                  m_bAlwaysVisible = false;
+  xiiParticleGraphResourceHandle      m_hGraph;
+  xiiEnum<xiiParticleSimulationSpace> m_SimulationSpace;
+  xiiBitflags<xiiParticleSystemFlags> m_Flags;
+  xiiBoundingBoxSphere                m_LocalBounds        = xiiBoundingBoxSphere::MakeZero();
+  xiiUInt32                           m_uiMaxParticles     = xiiParticleSystemConstants::s_uiDefaultMaxParticles;
+  xiiUInt32                           m_uiMaxEmitters      = xiiParticleSystemConstants::s_uiDefaultMaxEmitters;
+  xiiUInt32                           m_uiMaxEvents        = xiiParticleSystemConstants::s_uiDefaultMaxEvents;
+  xiiUInt32                           m_uiMaxNeighborPairs = 0U;
+  xiiUInt32                           m_uiRandomSeed       = 0U;
+  xiiUInt8                            m_uiMaxSubSteps      = 1U;
+  float                               m_fFixedTimeStep     = 1.0f / 60.0f;
+  float                               m_fNeighborCellSize  = 1.0f;
+  bool                                m_bAlwaysVisible     = false;
 
   xiiVec3 GetLocalBoundsCenter() const { return m_LocalBounds.m_vCenter; }
   void    SetLocalBoundsCenter(xiiVec3 vCenter) { m_LocalBounds.m_vCenter = vCenter; }
@@ -280,13 +280,13 @@ public:
 
   virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
 
-  void SetDescriptor(const xiiParticleSystemDescriptor& descriptor);
+  void                               SetDescriptor(const xiiParticleSystemDescriptor& descriptor);
   const xiiParticleSystemDescriptor& GetDescriptor() const;
 
-  void SetParticleGraph(const xiiParticleGraphResourceHandle& hGraph);
+  void                                  SetParticleGraph(const xiiParticleGraphResourceHandle& hGraph);
   const xiiParticleGraphResourceHandle& GetParticleGraph() const;
 
-  [[nodiscard]] xiiResult PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
+  [[nodiscard]] xiiResult                 PrepareRuntimeResources(xiiSharedPtr<xiiGALDevice> pDevice) const;
   [[nodiscard]] xiiParticleSystemRuntime& GetRuntime() const { return m_Runtime; }
 
 protected:

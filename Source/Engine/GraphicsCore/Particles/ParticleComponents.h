@@ -262,14 +262,14 @@ public:
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
-  void                               SetShape(xiiEnum<xiiParticleEmitterShape> shape);
-  xiiEnum<xiiParticleEmitterShape>   GetShape() const { return m_Shape; }
-  void     SetRadius(float fRadius);
-  float    GetRadius() const { return m_fRadius; }
-  void     SetBoxExtents(xiiVec3 vExtents);
-  xiiVec3  GetBoxExtents() const { return m_vBoxExtents; }
-  void     SetConeAngle(float fAngleDegree) { m_fConeAngleDegree = xiiMath::Clamp(fAngleDegree, 0.0f, 179.0f); }
-  float    GetConeAngle() const { return m_fConeAngleDegree; }
+  void                             SetShape(xiiEnum<xiiParticleEmitterShape> shape);
+  xiiEnum<xiiParticleEmitterShape> GetShape() const { return m_Shape; }
+  void                             SetRadius(float fRadius);
+  float                            GetRadius() const { return m_fRadius; }
+  void                             SetBoxExtents(xiiVec3 vExtents);
+  xiiVec3                          GetBoxExtents() const { return m_vBoxExtents; }
+  void                             SetConeAngle(float fAngleDegree) { m_fConeAngleDegree = xiiMath::Clamp(fAngleDegree, 0.0f, 179.0f); }
+  float                            GetConeAngle() const { return m_fConeAngleDegree; }
 
 protected:
   void OnMsgUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const;
@@ -278,21 +278,21 @@ private:
   void UpdateLocalBounds();
 
 private:
-  xiiHashedString              m_sSystemBinding;
+  xiiHashedString                  m_sSystemBinding;
   xiiEnum<xiiParticleEmitterShape> m_Shape;
   xiiEnum<xiiParticleEmitterMode>  m_Mode;
-  xiiUInt32                    m_uiMaxParticles = 0U;
-  xiiUInt32                    m_uiBurstCount   = 1024U;
-  xiiUInt32                    m_uiRandomSeed   = 0U;
-  float                        m_fSpawnRate     = 1000.0f;
-  float                        m_fLifetime      = 5.0f;
-  float                        m_fInitialSpeed  = 1.0f;
-  float                        m_fRadius        = 1.0f;
-  float                        m_fConeAngleDegree = 25.0f;
-  xiiVec3                      m_vBoxExtents    = xiiVec3(1.0f);
-  bool                         m_bSurfaceOnly   = false;
-  bool                         m_bInheritOwnerVelocity = false;
-  bool                         m_bDeterministic = false;
+  xiiUInt32                        m_uiMaxParticles        = 0U;
+  xiiUInt32                        m_uiBurstCount          = 1024U;
+  xiiUInt32                        m_uiRandomSeed          = 0U;
+  float                            m_fSpawnRate            = 1000.0f;
+  float                            m_fLifetime             = 5.0f;
+  float                            m_fInitialSpeed         = 1.0f;
+  float                            m_fRadius               = 1.0f;
+  float                            m_fConeAngleDegree      = 25.0f;
+  xiiVec3                          m_vBoxExtents           = xiiVec3(1.0f);
+  bool                             m_bSurfaceOnly          = false;
+  bool                             m_bInheritOwnerVelocity = false;
+  bool                             m_bDeterministic        = false;
 };
 
 class XII_GRAPHICSCORE_DLL xiiParticleForceFieldComponent : public xiiComponent
@@ -318,14 +318,14 @@ private:
 private:
   xiiHashedString                    m_sSystemBinding;
   xiiEnum<xiiParticleForceFieldType> m_Type;
-  xiiVec3                            m_vDirection = xiiVec3(0.0f, 0.0f, 1.0f);
-  float                              m_fStrength  = 1.0f;
-  float                              m_fRadius    = 10.0f;
-  float                              m_fFalloff   = 1.0f;
-  float                              m_fDrag      = 0.0f;
-  float                              m_fFrequency = 1.0f;
-  float                              m_fSeed      = 0.0f;
-  bool                               m_bNormalizeDirection = true;
+  xiiVec3                            m_vDirection                 = xiiVec3(0.0f, 0.0f, 1.0f);
+  float                              m_fStrength                  = 1.0f;
+  float                              m_fRadius                    = 10.0f;
+  float                              m_fFalloff                   = 1.0f;
+  float                              m_fDrag                      = 0.0f;
+  float                              m_fFrequency                 = 1.0f;
+  float                              m_fSeed                      = 0.0f;
+  bool                               m_bNormalizeDirection        = true;
   bool                               m_bAffectsMolecularParticles = true;
 };
 
@@ -340,12 +340,12 @@ public:
   virtual void SerializeComponent(xiiWorldWriter& inout_stream) const override;
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
-  void                               SetShape(xiiEnum<xiiParticleColliderShape> shape);
-  xiiEnum<xiiParticleColliderShape>  GetShape() const { return m_Shape; }
-  void     SetRadius(float fRadius);
-  float    GetRadius() const { return m_fRadius; }
-  void     SetExtents(xiiVec3 vExtents);
-  xiiVec3  GetExtents() const { return m_vExtents; }
+  void                              SetShape(xiiEnum<xiiParticleColliderShape> shape);
+  xiiEnum<xiiParticleColliderShape> GetShape() const { return m_Shape; }
+  void                              SetRadius(float fRadius);
+  float                             GetRadius() const { return m_fRadius; }
+  void                              SetExtents(xiiVec3 vExtents);
+  xiiVec3                           GetExtents() const { return m_vExtents; }
 
 protected:
   void OnMsgUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const;
@@ -354,19 +354,19 @@ private:
   void UpdateLocalBounds();
 
 private:
-  xiiHashedString                 m_sSystemBinding;
+  xiiHashedString                   m_sSystemBinding;
   xiiEnum<xiiParticleColliderShape> m_Shape;
-  xiiMeshResourceHandle           m_hCollisionMesh;
-  xiiTexture2DResourceHandle      m_hSignedDistanceField;
-  xiiUInt32                       m_uiCollisionLayer = 0U;
-  float                           m_fRadius      = 1.0f;
-  float                           m_fCapsuleHalfHeight = 1.0f;
-  xiiVec3                         m_vExtents     = xiiVec3(1.0f);
-  float                           m_fRestitution = 0.5f;
-  float                           m_fFriction    = 0.2f;
-  float                           m_fThickness   = 0.01f;
-  bool                            m_bKillOnContact = false;
-  bool                            m_bInvert       = false;
+  xiiMeshResourceHandle             m_hCollisionMesh;
+  xiiTexture2DResourceHandle        m_hSignedDistanceField;
+  xiiUInt32                         m_uiCollisionLayer   = 0U;
+  float                             m_fRadius            = 1.0f;
+  float                             m_fCapsuleHalfHeight = 1.0f;
+  xiiVec3                           m_vExtents           = xiiVec3(1.0f);
+  float                             m_fRestitution       = 0.5f;
+  float                             m_fFriction          = 0.2f;
+  float                             m_fThickness         = 0.01f;
+  bool                              m_bKillOnContact     = false;
+  bool                              m_bInvert            = false;
 };
 
 class XII_GRAPHICSCORE_DLL xiiParticleRendererComponent : public xiiComponent
@@ -381,19 +381,19 @@ public:
   virtual void DeserializeComponent(xiiWorldReader& inout_stream) override;
 
 private:
-  xiiHashedString                    m_sSystemBinding;
-  xiiEnum<xiiParticleRendererType>   m_RendererType;
-  xiiMaterialResourceHandle          m_hMaterial;
-  xiiMeshResourceHandle              m_hMesh;
-  xiiColor                           m_Tint = xiiColor::White;
-  float                              m_fSize = 0.05f;
-  float                              m_fStretch = 1.0f;
-  float                              m_fSoftParticleDistance = 0.0f;
-  xiiUInt8                           m_uiSortPriority = 128U;
-  bool                               m_bSortByDepth = false;
-  bool                               m_bReceiveLighting = false;
-  bool                               m_bCastShadows = false;
-  bool                               m_bMotionVectors = true;
+  xiiHashedString                  m_sSystemBinding;
+  xiiEnum<xiiParticleRendererType> m_RendererType;
+  xiiMaterialResourceHandle        m_hMaterial;
+  xiiMeshResourceHandle            m_hMesh;
+  xiiColor                         m_Tint                  = xiiColor::White;
+  float                            m_fSize                 = 0.05f;
+  float                            m_fStretch              = 1.0f;
+  float                            m_fSoftParticleDistance = 0.0f;
+  xiiUInt8                         m_uiSortPriority        = 128U;
+  bool                             m_bSortByDepth          = false;
+  bool                             m_bReceiveLighting      = false;
+  bool                             m_bCastShadows          = false;
+  bool                             m_bMotionVectors        = true;
 };
 
 class XII_GRAPHICSCORE_DLL xiiParticleSimulationDomainComponent : public xiiComponent
@@ -409,10 +409,10 @@ public:
 
   void                                      SetShape(xiiEnum<xiiParticleSimulationDomainShape> shape);
   xiiEnum<xiiParticleSimulationDomainShape> GetShape() const { return m_Shape; }
-  void     SetRadius(float fRadius);
-  float    GetRadius() const { return m_fRadius; }
-  void     SetExtents(xiiVec3 vExtents);
-  xiiVec3  GetExtents() const { return m_vExtents; }
+  void                                      SetRadius(float fRadius);
+  float                                     GetRadius() const { return m_fRadius; }
+  void                                      SetExtents(xiiVec3 vExtents);
+  xiiVec3                                   GetExtents() const { return m_vExtents; }
 
 protected:
   void OnMsgUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const;
@@ -421,15 +421,15 @@ private:
   void UpdateLocalBounds();
 
 private:
-  xiiHashedString                            m_sSystemBinding;
-  xiiEnum<xiiParticleSimulationDomainShape>  m_Shape;
+  xiiHashedString                               m_sSystemBinding;
+  xiiEnum<xiiParticleSimulationDomainShape>     m_Shape;
   xiiBitflags<xiiParticleSimulationDomainFlags> m_Flags;
-  xiiVec3                                    m_vExtents = xiiVec3(20.0f);
-  float                                      m_fRadius  = 10.0f;
-  float                                      m_fCellSize = 1.0f;
-  xiiUInt32                                  m_uiMaxGridCells = 1024U * 1024U;
-  bool                                       m_bWorldSpace = true;
-  bool                                       m_bAdaptiveBounds = false;
+  xiiVec3                                       m_vExtents        = xiiVec3(20.0f);
+  float                                         m_fRadius         = 10.0f;
+  float                                         m_fCellSize       = 1.0f;
+  xiiUInt32                                     m_uiMaxGridCells  = 1024U * 1024U;
+  bool                                          m_bWorldSpace     = true;
+  bool                                          m_bAdaptiveBounds = false;
 };
 
 class XII_GRAPHICSCORE_DLL xiiParticleMolecularDynamicsComponent : public xiiComponent
@@ -448,17 +448,17 @@ private:
   xiiEnum<xiiParticleMolecularIntegrator> m_Integrator;
   xiiEnum<xiiParticleMolecularPotential>  m_Potential;
   xiiEnum<xiiParticleMolecularEnsemble>   m_Ensemble;
-  float                                   m_fTimeStep = 0.001f;
-  xiiUInt8                                m_uiSubSteps = 1U;
-  float                                   m_fCutoffRadius = 2.5f;
-  float                                   m_fNeighborSkin = 0.3f;
-  float                                   m_fTargetTemperature = 300.0f;
-  float                                   m_fTargetPressure = 1.0f;
-  float                                   m_fParticleMass = 1.0f;
+  float                                   m_fTimeStep            = 0.001f;
+  xiiUInt8                                m_uiSubSteps           = 1U;
+  float                                   m_fCutoffRadius        = 2.5f;
+  float                                   m_fNeighborSkin        = 0.3f;
+  float                                   m_fTargetTemperature   = 300.0f;
+  float                                   m_fTargetPressure      = 1.0f;
+  float                                   m_fParticleMass        = 1.0f;
   float                                   m_fLennardJonesEpsilon = 1.0f;
-  float                                   m_fLennardJonesSigma = 1.0f;
-  float                                   m_fCoulombScale = 1.0f;
+  float                                   m_fLennardJonesSigma   = 1.0f;
+  float                                   m_fCoulombScale        = 1.0f;
   bool                                    m_bUseHalfNeighborList = true;
-  bool                                    m_bDeterministic = true;
-  bool                                    m_bEnableReadback = false;
+  bool                                    m_bDeterministic       = true;
+  bool                                    m_bEnableReadback      = false;
 };
