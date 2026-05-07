@@ -4,6 +4,8 @@
 # Usage examples:
 #   # Bash on Windows (started from VS Developer Prompt) or Linux:
 #   ./qt-build-multi-config.sh
+# This variant will automatically download the Qt source archive into ./src if it's missing.
+# Usage:
 #   ENGINE_CONFIG=Shipping JOBS=8 ./qt-build-multi-config.sh
 set -euo pipefail
 IFS=$'\n\t'
@@ -12,7 +14,8 @@ IFS=$'\n\t'
 QT_VERSION="${QT_VERSION:-6.11.0}"
 ENGINE_CONFIG="${ENGINE_CONFIG:-Dev}"   # Debug | Dev | Shipping
 BUILD_FROM_SOURCE="${BUILD_FROM_SOURCE:-1}"  # Linux: 0 = use distro packages, 1 = build from source
-SRC_ARCHIVE="${SRC_ARCHIVE:-src/qt-everywhere-src-${QT_VERSION}.zip}"  # relative to CWD by default
+# If you want to force a specific archive filename, set SRC_ARCHIVE (relative to CWD or absolute).
+SRC_ARCHIVE="${SRC_ARCHIVE:-src/qt-everywhere-src-${QT_VERSION}.zip}"  # default for convenience on Windows
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 USE_CCACHE="${USE_CCACHE:-1}"
 EXTRA_CONFIGURE_OPTS="${EXTRA_CONFIGURE_OPTS:-}"
@@ -65,6 +68,121 @@ is_windows(){
   esac
 }
 
+# --- Download helpers ---
+# Construct official Qt download URL for the single archive layout:
+# https://download.qt.io/official_releases/qt/<major.minor>/<full-version>/single/<archive>
+qt_download_url_for() {
+  local version="$1"
+  local tarball="$2"
+  local major_minor="${version%.*}"
+  printf "https://download.qt.io/official_releases/qt/%s/%s/single/%s" "$major_minor" "$version" "$tarball"
+}
+
+download_with_available_tool() {
+  local url="$1"
+  local out="$2"
+
+  # try curl, wget, then PowerShell (Windows)
+  if command_exists curl; then
+    log "Downloading $url -> $out (curl)"
+    curl -L --fail --retry 5 -o "$out" "$url"
+    return 0
+  fi
+  if command_exists wget; then
+    log "Downloading $url -> $out (wget)"
+    wget -c -O "$out" "$url"
+    return 0
+  fi
+  # Try PowerShell (Windows) via powershell.exe or pwsh
+  if command_exists powershell.exe; then
+    log "Downloading $url -> $out (powershell.exe)"
+    powershell.exe -NoProfile -Command "try { Invoke-WebRequest -Uri '$url' -OutFile '$out' -UseBasicParsing } catch { exit 1 }"
+    return $?
+  fi
+  if command_exists pwsh; then
+    log "Downloading $url -> $out (pwsh)"
+    pwsh -NoProfile -Command "try { Invoke-WebRequest -Uri '$url' -OutFile '$out' } catch { exit 1 }"
+    return $?
+  fi
+
+  return 1
+}
+
+# Determine default archive name based on platform if user didn't set SRC_ARCHIVE explicitly
+determine_default_archive() {
+  if is_windows; then
+    echo "src/qt-everywhere-src-${QT_VERSION}.zip"
+  else
+    echo "src/qt-everywhere-src-${QT_VERSION}.tar.xz"
+  fi
+}
+
+# Ensure the source archive exists locally; if not, attempt to download it.
+ensure_source_archive() {
+  mkdir -p "$SRC_ROOT"
+  # If user provided a relative path, keep it; if they left default placeholder, ensure extension matches platform
+  if [ -z "${SRC_ARCHIVE:-}" ] || [ "$SRC_ARCHIVE" = "src/qt-everywhere-src-${QT_VERSION}.zip" ] && ! is_windows; then
+    SRC_ARCHIVE="$(determine_default_archive)"
+  fi
+
+  # If SRC_ARCHIVE is relative, make it absolute for checks
+  if [[ "$SRC_ARCHIVE" != /* && "$SRC_ARCHIVE" != ~* && ! "$SRC_ARCHIVE" =~ ^[A-Za-z]:\\ ]]; then
+    SRC_ARCHIVE="$ROOT_DIR/$SRC_ARCHIVE"
+  fi
+
+  if [ -f "$SRC_ARCHIVE" ]; then
+    log "Found Qt source archive at $SRC_ARCHIVE"
+    return 0
+  fi
+
+  # Not found: attempt to download using default tarball name for platform
+  local tarball
+  if is_windows; then
+    tarball="qt-everywhere-src-${QT_VERSION}.zip"
+  else
+    # prefer .tar.xz for Unix
+    tarball="qt-everywhere-src-${QT_VERSION}.tar.xz"
+  fi
+
+  local url
+  url="$(qt_download_url_for "$QT_VERSION" "$tarball")"
+  local out="$SRC_ROOT/$tarball"
+
+  log "Qt source archive not found locally. Attempting to download $tarball from official Qt servers."
+  if download_with_available_tool "$url" "$out"; then
+    log "Downloaded Qt archive to $out"
+    SRC_ARCHIVE="$out"
+    return 0
+  fi
+
+  # If download failed, try alternate extension (zip/tar.xz) as a fallback
+  if is_windows; then
+    # try tar.xz as fallback
+    tarball="qt-everywhere-src-${QT_VERSION}.tar.xz"
+    url="$(qt_download_url_for "$QT_VERSION" "$tarball")"
+    out="$SRC_ROOT/$tarball"
+    log "Primary download failed; trying fallback $tarball"
+    if download_with_available_tool "$url" "$out"; then
+      log "Downloaded Qt archive to $out"
+      SRC_ARCHIVE="$out"
+      return 0
+    fi
+  else
+    # try zip fallback
+    tarball="qt-everywhere-src-${QT_VERSION}.zip"
+    url="$(qt_download_url_for "$QT_VERSION" "$tarball")"
+    out="$SRC_ROOT/$tarball"
+    log "Primary download failed; trying fallback $tarball"
+    if download_with_available_tool "$url" "$out"; then
+      log "Downloaded Qt archive to $out"
+      SRC_ARCHIVE="$out"
+      return 0
+    fi
+  fi
+
+  err "Failed to download Qt source archive. Please download it manually and place it at $SRC_ROOT or set SRC_ARCHIVE to a valid path."
+}
+
 # --- Linux functions ---
 linux_install_packages(){
   if command_exists apt-get; then
@@ -81,21 +199,36 @@ linux_install_packages(){
 }
 
 linux_prepare_source(){
-  mkdir -p "$SRC_ROOT"
+  ensure_source_archive
+
   cd "$SRC_ROOT"
-  if [ ! -d "qt-everywhere-src" ]; then
-    if [ -f "$ROOT_DIR/$SRC_ARCHIVE" ]; then
-      case "$SRC_ARCHIVE" in
-        *.tar.*|*.tgz) tar -xf "$ROOT_DIR/$SRC_ARCHIVE" ;;
-        *.zip) unzip -q "$ROOT_DIR/$SRC_ARCHIVE" ;;
-        *) err "Unknown archive format: $SRC_ARCHIVE" ;;
-      esac
-      # normalize
-      EXTRACTED_DIR=$(ls -d qt-everywhere* 2>/dev/null | head -n1 || true)
-      [ -n "$EXTRACTED_DIR" ] && mv "$EXTRACTED_DIR" qt-everywhere-src || true
-    else
-      err "Source archive not found at $ROOT_DIR/$SRC_ARCHIVE"
-    fi
+  # If already extracted, skip
+  if [ -d "qt-everywhere-src" ]; then
+    log "Source already extracted at $SRC_ROOT/qt-everywhere-src"
+    return 0
+  fi
+
+  case "$SRC_ARCHIVE" in
+    *.tar.*|*.tgz|*.tar.xz)
+      log "Extracting $SRC_ARCHIVE"
+      tar -xf "$SRC_ARCHIVE"
+      ;;
+    *.zip)
+      log "Extracting $SRC_ARCHIVE"
+      unzip -q "$SRC_ARCHIVE"
+      ;;
+    *)
+      err "Unknown archive format: $SRC_ARCHIVE"
+      ;;
+  esac
+
+  # normalize extracted directory name
+  EXTRACTED_DIR=$(ls -d qt-everywhere* 2>/dev/null | head -n1 || true)
+  if [ -n "$EXTRACTED_DIR" ]; then
+    mv -f "$EXTRACTED_DIR" qt-everywhere-src || true
+    log "Source prepared at $SRC_ROOT/qt-everywhere-src"
+  else
+    err "Could not find extracted Qt source directory after unpacking."
   fi
 }
 
@@ -171,15 +304,34 @@ windows_locate_vcvars(){
 }
 
 windows_prepare_source(){
-  mkdir -p "$SRC_ROOT"
+  ensure_source_archive
+
   cd "$SRC_ROOT"
-  if [ ! -d "qt-everywhere-src" ]; then
-    if [ -f "$ROOT_DIR/$SRC_ARCHIVE" ]; then
-      unzip -q "$ROOT_DIR/$SRC_ARCHIVE"
-      mv qt-everywhere-src-* qt-everywhere-src || true
-    else
-      err "Qt source archive not found at $ROOT_DIR/$SRC_ARCHIVE"
-    fi
+  if [ -d "qt-everywhere-src" ]; then
+    log "Source already extracted at $SRC_ROOT/qt-everywhere-src"
+    return 0
+  fi
+
+  case "$SRC_ARCHIVE" in
+    *.zip)
+      log "Extracting $SRC_ARCHIVE"
+      unzip -q "$SRC_ARCHIVE"
+      ;;
+    *.tar.*|*.tgz|*.tar.xz)
+      log "Extracting $SRC_ARCHIVE"
+      tar -xf "$SRC_ARCHIVE"
+      ;;
+    *)
+      err "Unknown archive format: $SRC_ARCHIVE"
+      ;;
+  esac
+
+  EXTRACTED_DIR=$(ls -d qt-everywhere* 2>/dev/null | head -n1 || true)
+  if [ -n "$EXTRACTED_DIR" ]; then
+    mv -f "$EXTRACTED_DIR" qt-everywhere-src || true
+    log "Source prepared at $SRC_ROOT/qt-everywhere-src"
+  else
+    err "Could not find extracted Qt source directory after unpacking."
   fi
 }
 
