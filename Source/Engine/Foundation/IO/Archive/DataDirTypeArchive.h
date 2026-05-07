@@ -3,7 +3,6 @@
 #pragma once
 
 #include <Foundation/IO/Archive/ArchiveReader.h>
-#include <Foundation/IO/CompressedStreamZlib.h>
 #include <Foundation/IO/CompressedStreamZstd.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>
@@ -54,10 +53,6 @@ namespace xiiDataDirectory
     xiiHybridArray<xiiUniquePtr<ArchiveReaderZstd>, 4> m_ReadersZstd;
     xiiHybridArray<ArchiveReaderZstd*, 4>              m_FreeReadersZstd;
 #endif
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-    xiiHybridArray<xiiUniquePtr<ArchiveReaderZip>, 4> m_ReadersZip;
-    xiiHybridArray<ArchiveReaderZip*, 4>              m_FreeReadersZip;
-#endif
   };
 
   class XII_FOUNDATION_DLL ArchiveReaderCommon : public xiiDataDirectoryReader
@@ -107,26 +102,6 @@ namespace xiiDataDirectory
     virtual void      InternalClose() override;
 
     xiiCompressedStreamReaderZstd m_CompressedStreamReader;
-  };
-#endif
-
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-  class XII_FOUNDATION_DLL ArchiveReaderZip : public ArchiveReaderUncompressed
-  {
-    XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderZip);
-
-  public:
-    ArchiveReaderZip(xiiInt32 iDataDirUserData);
-    ~ArchiveReaderZip();
-
-    virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
-
-  protected:
-    virtual xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
-
-    friend class ArchiveType;
-
-    xiiCompressedStreamReaderZip m_CompressedStreamReader;
   };
 #endif
 } // namespace xiiDataDirectory

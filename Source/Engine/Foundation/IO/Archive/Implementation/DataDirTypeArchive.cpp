@@ -96,22 +96,6 @@ xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(xiiStringV
         break;
       }
 #endif
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-      case xiiArchiveCompressionMode::Compressed_zip:
-      {
-        if (!m_FreeReadersZip.IsEmpty())
-        {
-          pReader = m_FreeReadersZip.PeekBack();
-          m_FreeReadersZip.PopBack();
-        }
-        else
-        {
-          m_ReadersZip.PushBack(XII_DEFAULT_NEW(ArchiveReaderZip, 2));
-          pReader = m_ReadersZip.PeekBack().Borrow();
-        }
-        break;
-      }
-#endif
 
       default:
         XII_REPORT_FAILURE("Compression mode {} is unknown (or not compiled in)", (xiiUInt8)pEntry->m_CompressionMode);
@@ -192,11 +176,6 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
 
   xiiHybridArray<xiiString, 4, xiiStaticAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
 
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-  extensions.PushBack("zip");
-  extensions.PushBack("apk");
-#endif
-
   for (const auto& ext : extensions)
   {
     const xiiUInt32 uiLength = ext.GetElementCount();
@@ -256,14 +235,6 @@ void xiiDataDirectory::ArchiveType::OnReaderWriterClose(xiiDataDirectoryReaderWr
   if (pClosed->GetDataDirUserData() == 1)
   {
     m_FreeReadersZstd.PushBack(static_cast<ArchiveReaderZstd*>(pClosed));
-    return;
-  }
-#endif
-
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-  if (pClosed->GetDataDirUserData() == 2)
-  {
-    m_FreeReadersZip.PushBack(static_cast<ArchiveReaderZip*>(pClosed));
     return;
   }
 #endif
@@ -343,34 +314,6 @@ void xiiDataDirectory::ArchiveReaderZstd::InternalClose()
 {
   // nothing to do
 }
-#endif
-
-//////////////////////////////////////////////////////////////////////////
-
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-
-xiiDataDirectory::ArchiveReaderZip::ArchiveReaderZip(xiiInt32 iDataDirUserData) :
-  ArchiveReaderUncompressed(iDataDirUserData)
-{
-}
-
-xiiDataDirectory::ArchiveReaderZip::~ArchiveReaderZip() = default;
-
-xiiUInt64 xiiDataDirectory::ArchiveReaderZip::Read(void* pBuffer, xiiUInt64 uiBytes)
-{
-  return m_CompressedStreamReader.ReadBytes(pBuffer, uiBytes);
-}
-
-xiiResult xiiDataDirectory::ArchiveReaderZip::InternalOpen(xiiFileShareMode::Enum fileShareMode)
-{
-  XII_IGNORE_UNUSED(fileShareMode);
-
-  XII_ASSERT_DEBUG(fileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
-
-  m_CompressedStreamReader.SetInputStream(&m_MemStreamReader, m_uiCompressedSize);
-  return XII_SUCCESS;
-}
-
 #endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_DataDirTypeArchive);

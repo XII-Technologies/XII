@@ -5,7 +5,6 @@
 #include <Foundation/IO/Archive/ArchiveUtils.h>
 
 #include <Foundation/Algorithm/HashStream.h>
-#include <Foundation/IO/CompressedStreamZlib.h>
 #include <Foundation/IO/CompressedStreamZstd.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryMappedFile.h>
@@ -249,16 +248,6 @@ public:
 
 #endif
 
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-
-class xiiCompressedStreamReaderZipWithSource : public xiiCompressedStreamReaderZip
-{
-public:
-  xiiRawMemoryStreamReader m_Source;
-};
-
-#endif
-
 xiiUniquePtr<xiiStreamReader> xiiArchiveUtils::CreateEntryReader(const xiiArchiveEntry& entry, const void* pStartOfArchiveData)
 {
   xiiUniquePtr<xiiStreamReader> reader;
@@ -280,16 +269,6 @@ xiiUniquePtr<xiiStreamReader> xiiArchiveUtils::CreateEntryReader(const xiiArchiv
       xiiCompressedStreamReaderZstdWithSource* pRawReader = static_cast<xiiCompressedStreamReaderZstdWithSource*>(reader.Borrow());
       ConfigureRawMemoryStreamReader(entry, pStartOfArchiveData, pRawReader->m_Source);
       pRawReader->SetInputStream(&pRawReader->m_Source);
-    }
-    break;
-#endif
-#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
-    case xiiArchiveCompressionMode::Compressed_zip:
-    {
-      reader                                             = XII_DEFAULT_NEW(xiiCompressedStreamReaderZipWithSource);
-      xiiCompressedStreamReaderZipWithSource* pRawReader = static_cast<xiiCompressedStreamReaderZipWithSource*>(reader.Borrow());
-      ConfigureRawMemoryStreamReader(entry, pStartOfArchiveData, pRawReader->m_Source);
-      pRawReader->SetInputStream(&pRawReader->m_Source, entry.m_uiStoredDataSize);
     }
     break;
 #endif
@@ -487,187 +466,6 @@ xiiResult xiiArchiveUtils::ExtractTOC(xiiUInt64 uiArchiveEndingDataSize, const v
 xiiResult xiiArchiveUtils::ExtractTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion)
 {
   return ExtractTOC(memFile.GetFileSize(), memFile.GetReadPointer(), ref_toc, uiArchiveVersion);
-}
-
-namespace ZipFormat
-{
-  constexpr xiiUInt32 EndOfCDMagicSignature = 0x06054b50;
-  constexpr xiiUInt32 EndOfCDHeaderLength   = 22;
-
-  constexpr xiiUInt32 MaxCommentLength       = 65535;
-  constexpr xiiUInt64 MaxEndOfCDSearchLength = MaxCommentLength + EndOfCDHeaderLength;
-
-  constexpr xiiUInt32 LocalFileMagicSignature = 0x04034b50;
-  constexpr xiiUInt32 LocalFileHeaderLength   = 30;
-
-  constexpr xiiUInt32 CDFileMagicSignature = 0x02014b50;
-  constexpr xiiUInt32 CDFileHeaderLength   = 46;
-
-  enum CompressionType
-  {
-    Uncompressed = 0,
-    Deflate      = 8,
-
-  };
-
-  struct EndOfCDHeader
-  {
-    xiiUInt32 signature;
-    xiiUInt16 diskNumber;
-    xiiUInt16 diskWithCD;
-    xiiUInt16 diskEntries;
-    xiiUInt16 totalEntries;
-    xiiUInt32 cdSize;
-    xiiUInt32 cdOffset;
-    xiiUInt16 commentLength;
-  };
-
-  xiiStreamReader& operator>>(xiiStreamReader& ref_stream, EndOfCDHeader& ref_value)
-  {
-    ref_stream >> ref_value.signature >> ref_value.diskNumber >> ref_value.diskWithCD >> ref_value.diskEntries >> ref_value.totalEntries >> ref_value.cdSize;
-    ref_stream >> ref_value.cdOffset >> ref_value.commentLength;
-    XII_ASSERT_DEBUG(ref_value.signature == EndOfCDMagicSignature, "ZIP: Corrupt end of central directory header.");
-    return ref_stream;
-  }
-
-  struct CDFileHeader
-  {
-    xiiUInt32 signature;
-    xiiUInt16 version;
-    xiiUInt16 versionNeeded;
-    xiiUInt16 flags;
-    xiiUInt16 compression;
-    xiiUInt16 modTime;
-    xiiUInt16 modDate;
-    xiiUInt32 crc32;
-    xiiUInt32 compressedSize;
-    xiiUInt32 uncompressedSize;
-    xiiUInt16 fileNameLength;
-    xiiUInt16 extraFieldLength;
-    xiiUInt16 fileCommentLength;
-    xiiUInt16 diskNumStart;
-    xiiUInt16 internalAttr;
-    xiiUInt32 externalAttr;
-    xiiUInt32 offsetLocalHeader;
-  };
-
-  xiiStreamReader& operator>>(xiiStreamReader& ref_stream, CDFileHeader& ref_value)
-  {
-    ref_stream >> ref_value.signature >> ref_value.version >> ref_value.versionNeeded >> ref_value.flags >> ref_value.compression >> ref_value.modTime >> ref_value.modDate;
-    ref_stream >> ref_value.crc32 >> ref_value.compressedSize >> ref_value.uncompressedSize >> ref_value.fileNameLength >> ref_value.extraFieldLength;
-    ref_stream >> ref_value.fileCommentLength >> ref_value.diskNumStart >> ref_value.internalAttr >> ref_value.externalAttr >> ref_value.offsetLocalHeader;
-    XII_IGNORE_UNUSED(CDFileMagicSignature);
-    XII_ASSERT_DEBUG(ref_value.signature == CDFileMagicSignature, "ZIP: Corrupt central directory file entry header.");
-    return ref_stream;
-  }
-
-  struct LocalFileHeader
-  {
-    xiiUInt32 signature;
-    xiiUInt16 version;
-    xiiUInt16 flags;
-    xiiUInt16 compression;
-    xiiUInt16 modTime;
-    xiiUInt16 modDate;
-    xiiUInt32 crc32;
-    xiiUInt32 compressedSize;
-    xiiUInt32 uncompressedSize;
-    xiiUInt16 fileNameLength;
-    xiiUInt16 extraFieldLength;
-  };
-
-  xiiStreamReader& operator>>(xiiStreamReader& ref_stream, LocalFileHeader& ref_value)
-  {
-    ref_stream >> ref_value.signature >> ref_value.version >> ref_value.flags >> ref_value.compression >> ref_value.modTime >> ref_value.modDate >> ref_value.crc32;
-    ref_stream >> ref_value.compressedSize >> ref_value.uncompressedSize >> ref_value.fileNameLength >> ref_value.extraFieldLength;
-    XII_ASSERT_DEBUG(ref_value.signature == LocalFileMagicSignature, "ZIP: Corrupt local file entry header.");
-    return ref_stream;
-  }
-}; // namespace ZipFormat
-
-xiiResult xiiArchiveUtils::ReadZipHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion)
-{
-  using namespace ZipFormat;
-
-  xiiUInt32 header;
-  ref_stream >> header;
-  if (header == LocalFileMagicSignature)
-  {
-    out_uiVersion = 0;
-    return XII_SUCCESS;
-  }
-  return XII_SUCCESS;
-}
-
-xiiResult xiiArchiveUtils::ExtractZipTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc)
-{
-  using namespace ZipFormat;
-
-  const xiiUInt8* pEndOfCDStart = nullptr;
-  {
-    // Find End of CD signature by searching from the end of the file.
-    // As a comment can come after it we have to potentially walk max comment length backwards.
-    const xiiUInt64 SearchEnd    = memFile.GetFileSize() - xiiMath::Min(MaxEndOfCDSearchLength, memFile.GetFileSize());
-    const xiiUInt8* pSearchEnd   = static_cast<const xiiUInt8*>(memFile.GetReadPointer(SearchEnd, xiiMemoryMappedFile::OffsetBase::End));
-    const xiiUInt8* pSearchStart = static_cast<const xiiUInt8*>(memFile.GetReadPointer(EndOfCDHeaderLength, xiiMemoryMappedFile::OffsetBase::End));
-    while (pSearchStart >= pSearchEnd)
-    {
-      if (*reinterpret_cast<const xiiUInt32*>(pSearchStart) == EndOfCDMagicSignature)
-      {
-        pEndOfCDStart = pSearchStart;
-        break;
-      }
-      pSearchStart--;
-    }
-    if (pEndOfCDStart == nullptr)
-      return XII_FAILURE;
-  }
-
-  xiiRawMemoryStreamReader tocReader(pEndOfCDStart, EndOfCDHeaderLength);
-  EndOfCDHeader            ecdHeader;
-  tocReader >> ecdHeader;
-
-  ref_toc.m_Entries.Reserve(ecdHeader.diskEntries);
-  ref_toc.m_PathToEntryIndex.Reserve(ecdHeader.diskEntries);
-
-  xiiStringBuilder sLowerCaseHash;
-  xiiUInt64        uiEntryOffset = 0;
-  for (xiiUInt16 uiEntry = 0; uiEntry < ecdHeader.diskEntries; ++uiEntry)
-  {
-    // First, read the current file's header from the central directory
-    const void*              pCdfStart = memFile.GetReadPointer(ecdHeader.cdOffset + uiEntryOffset, xiiMemoryMappedFile::OffsetBase::Start);
-    xiiRawMemoryStreamReader cdfReader(pCdfStart, ecdHeader.cdSize - uiEntryOffset);
-    CDFileHeader             cdfHeader;
-    cdfReader >> cdfHeader;
-
-    if (cdfHeader.compression == CompressionType::Uncompressed || cdfHeader.compression == CompressionType::Deflate)
-    {
-      auto& entry                    = ref_toc.m_Entries.ExpandAndGetRef();
-      entry.m_uiUncompressedDataSize = cdfHeader.uncompressedSize;
-      entry.m_uiStoredDataSize       = cdfHeader.compressedSize;
-      entry.m_uiPathStringOffset     = ref_toc.m_AllPathStrings.GetCount();
-      entry.m_CompressionMode        = cdfHeader.compression == CompressionType::Uncompressed ? xiiArchiveCompressionMode::Uncompressed : xiiArchiveCompressionMode::Compressed_zip;
-
-      auto nameBuffer = xiiArrayPtr<const xiiUInt8>(static_cast<const xiiUInt8*>(pCdfStart) + CDFileHeaderLength, cdfHeader.fileNameLength);
-      ref_toc.m_AllPathStrings.PushBackRange(nameBuffer);
-      ref_toc.m_AllPathStrings.PushBack(0);
-      const char* szName = reinterpret_cast<const char*>(ref_toc.m_AllPathStrings.GetData() + entry.m_uiPathStringOffset);
-      sLowerCaseHash     = szName;
-      sLowerCaseHash.ToLower();
-      ref_toc.m_PathToEntryIndex.Insert(xiiArchiveStoredString(xiiHashingUtils::StringHash(sLowerCaseHash), entry.m_uiPathStringOffset), ref_toc.m_Entries.GetCount() - 1);
-
-      // Compute data stream start location. We need to skip past the local (and redundant) file header to find it.
-      const void*              pLfStart = memFile.GetReadPointer(cdfHeader.offsetLocalHeader, xiiMemoryMappedFile::OffsetBase::Start);
-      xiiRawMemoryStreamReader lfReader(pLfStart, memFile.GetFileSize() - cdfHeader.offsetLocalHeader);
-      LocalFileHeader          lfHeader;
-      lfReader >> lfHeader;
-      entry.m_uiDataStartOffset = cdfHeader.offsetLocalHeader + LocalFileHeaderLength + lfHeader.fileNameLength + lfHeader.extraFieldLength;
-    }
-    // Compute next file header location.
-    uiEntryOffset += CDFileHeaderLength + cdfHeader.fileNameLength + cdfHeader.extraFieldLength + cdfHeader.fileCommentLength;
-  }
-
-  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveUtils);
