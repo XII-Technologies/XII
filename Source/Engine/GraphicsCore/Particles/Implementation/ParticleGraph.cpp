@@ -499,7 +499,7 @@ xiiResult xiiParticleGraphResourceDescriptor::Validate(xiiStringBuilder* out_pEr
 
 xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
 {
-  xiiUInt64 uiHash    = 0x9E3779B185EBCA87ULL;
+  xiiUInt64 uiHash = 0x9E3779B185EBCA87ULL;
 
   HashValue(uiHash, ParticleGraphResourceDescriptorVersion::Current);
   HashString(uiHash, m_sGraphName);
