@@ -21,6 +21,7 @@ using xiiShaderResourceHandle            = xiiTypedResourceHandle<class xiiShade
 using xiiShaderPermutationResourceHandle = xiiTypedResourceHandle<class xiiShaderPermutationResource>;
 using xiiDecalResourceHandle             = xiiTypedResourceHandle<class xiiDecalResource>;
 using xiiDecalAtlasResourceHandle        = xiiTypedResourceHandle<class xiiDecalAtlasResource>;
+using xiiParticleGraphResourceHandle     = xiiTypedResourceHandle<class xiiParticleGraphResource>;
 
 struct XII_GRAPHICSCORE_DLL xiiMeshImportTransform
 {
