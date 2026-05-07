@@ -11,9 +11,8 @@ class xiiRawMemoryStreamReader;
 /// \brief Compression modes for xiiArchive file entries
 enum class xiiArchiveCompressionMode : xiiUInt8
 {
-  Uncompressed,
+  Uncompressed = 0U,
   Compressed_zstd,
-  Compressed_zip,
 };
 
 /// \brief Data for a single file entry in a xiiArchive file

@@ -83,8 +83,4 @@ namespace xiiArchiveUtils
   /// Under the hood it may create different types of stream readers to uncompress or decode the data.
   XII_FOUNDATION_DLL xiiUniquePtr<xiiStreamReader> CreateEntryReader(const xiiArchiveEntry& entry, const void* pStartOfArchiveData);
 
-  XII_FOUNDATION_DLL xiiResult ReadZipHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion);
-  XII_FOUNDATION_DLL xiiResult ExtractZipTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc);
-
-
 } // namespace xiiArchiveUtils

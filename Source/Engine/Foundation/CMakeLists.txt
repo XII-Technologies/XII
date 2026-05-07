@@ -59,10 +59,6 @@ if(XII_3RDPARTY_ZSTD_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PUBLIC zstd)
 endif()
 
-if(XII_3RDPARTY_ZLIB_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PUBLIC zlib)
-endif()
-
 if(XII_3RDPARTY_TRACELOGGING_LTTNG_SUPPORT)
   target_link_libraries(${PROJECT_NAME} PRIVATE tracelogging)
 endif()
