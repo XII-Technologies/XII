@@ -54,11 +54,11 @@ private:
 
   void Clear();
 
-  template <typename HandleType, typename DescType, typename KeyType>
-  XII_ALWAYS_INLINE HandleType TryGetPipeline(const DescType& description, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
+  template <typename HandleType, typename DescriptorType, typename KeyType>
+  XII_ALWAYS_INLINE HandleType TryGetPipeline(const DescriptorType& description, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
 
-  template <typename HandleType, typename DescType, typename KeyType>
-  XII_ALWAYS_INLINE xiiResult TryInsertPipeline(const DescType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
+  template <typename HandleType, typename DescriptorType, typename KeyType>
+  XII_ALWAYS_INLINE xiiResult TryInsertPipeline(const DescriptorType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, CacheKeyHasher>& table);
 
 private:
   xiiMutex                                                                                          m_Mutex;

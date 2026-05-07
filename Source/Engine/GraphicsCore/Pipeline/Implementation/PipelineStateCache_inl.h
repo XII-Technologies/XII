@@ -2,8 +2,8 @@
 
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
-template <typename HandleType, typename DescType, typename KeyType>
-HandleType xiiGALPipelineCache::TryGetPipeline(const DescType& description, xiiHashTable<KeyType, HandleType, xiiGALPipelineCache::CacheKeyHasher>& table)
+template <typename HandleType, typename DescriptorType, typename KeyType>
+HandleType xiiGALPipelineCache::TryGetPipeline(const DescriptorType& description, xiiHashTable<KeyType, HandleType, xiiGALPipelineCache::CacheKeyHasher>& table)
 {
   XII_ASSERT_DEV(m_pDevice != nullptr, "GAL device not initialized.");
 
@@ -23,8 +23,8 @@ HandleType xiiGALPipelineCache::TryGetPipeline(const DescType& description, xiiH
   return {};
 }
 
-template <typename HandleType, typename DescType, typename KeyType>
-XII_ALWAYS_INLINE xiiResult xiiGALPipelineCache::TryInsertPipeline(const DescType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, xiiGALPipelineCache::CacheKeyHasher>& table)
+template <typename HandleType, typename DescriptorType, typename KeyType>
+XII_ALWAYS_INLINE xiiResult xiiGALPipelineCache::TryInsertPipeline(const DescriptorType& description, HandleType hNewPipeline, xiiHashTable<KeyType, HandleType, xiiGALPipelineCache::CacheKeyHasher>& table)
 {
   KeyType key;
   key.m_Description = description;
