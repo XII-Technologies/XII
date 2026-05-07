@@ -30,6 +30,7 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
+#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
@@ -539,7 +540,7 @@ private:
       dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
       dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
     }
-    data.m_pRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+    data.m_pRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
   }
 
   void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRGPassContext& context)
