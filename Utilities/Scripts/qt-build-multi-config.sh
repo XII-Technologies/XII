@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# qt-build-relative.sh
+# qt-build-multi-config.sh
 # Cross-platform Qt build helper that keeps all files relative to the current working directory.
 # Usage examples:
 #   # Bash on Windows (started from VS Developer Prompt) or Linux:
-#   ./qt-build-relative.sh
-#   ENGINE_CONFIG=Shipping JOBS=8 ./qt-build-relative.sh
+#   ./qt-build-multi-config.sh
+#   ENGINE_CONFIG=Shipping JOBS=8 ./qt-build-multi-config.sh
 set -euo pipefail
 IFS=$'\n\t'
 
-# --- User-configurable environment variables (all paths are relative to CWD by default) ---
+# --- Configurable env vars (override before running) ---
 QT_VERSION="${QT_VERSION:-6.11.0}"
 ENGINE_CONFIG="${ENGINE_CONFIG:-Dev}"   # Debug | Dev | Shipping
-BUILD_FROM_SOURCE="${BUILD_FROM_SOURCE:-1}"  # On Linux: 0 = use distro packages, 1 = build from source
-SRC_ARCHIVE="${SRC_ARCHIVE:-qt-everywhere-src-${QT_VERSION}.zip}"  # place archive in ./src or set absolute path
+BUILD_FROM_SOURCE="${BUILD_FROM_SOURCE:-1}"  # Linux: 0 = use distro packages, 1 = build from source
+SRC_ARCHIVE="${SRC_ARCHIVE:-src/qt-everywhere-src-${QT_VERSION}.zip}"  # relative to CWD by default
 JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 USE_CCACHE="${USE_CCACHE:-1}"
 EXTRA_CONFIGURE_OPTS="${EXTRA_CONFIGURE_OPTS:-}"
 
-# --- All paths relative to current working directory ---
+# --- Relative paths ---
 ROOT_DIR="$(pwd)"
 SRC_ROOT="$ROOT_DIR/src"
 BUILD_ROOT="$ROOT_DIR/build"
@@ -25,21 +25,17 @@ INSTALL_ROOT="$ROOT_DIR/install"
 ARTIFACTS_DIR="$ROOT_DIR/artifacts"
 LOG="$ROOT_DIR/qt-build.log"
 
-# Ensure log capture
 exec > >(tee -a "$LOG") 2>&1
 
-# Platform detection
-is_windows() {
-  case "$(uname -s 2>/dev/null || echo Windows)" in
-    MINGW*|MSYS*|CYGWIN*|Windows) return 0;;
-    *) return 1;;
-  esac
-}
-
+# --- Helpers ---
 log(){ printf '%s\n' "$*"; }
-err(){ printf 'ERROR: %s\n' "$*"; exit 1; }
+err(){ printf 'ERROR: %s\n' "$*' >&2"; exit 1; }  # note: single-quote in err fixed below
 
-# Map engine config to CMake build type and configure flags
+# Fix err function (corrected)
+err(){ printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+
+command_exists(){ command -v "$1" >/dev/null 2>&1; }
+
 map_config(){
   case "$ENGINE_CONFIG" in
     Debug)
@@ -60,9 +56,14 @@ map_config(){
   esac
 }
 
-command_exists(){ command -v "$1" >/dev/null 2>&1; }
+is_windows(){
+  case "$(uname -s 2>/dev/null || echo Windows)" in
+    MINGW*|MSYS*|CYGWIN*|Windows) return 0;;
+    *) return 1;;
+  esac
+}
 
-# --- Linux helpers ---
+# --- Linux functions ---
 linux_install_packages(){
   if command_exists apt-get; then
     sudo apt-get update
@@ -73,7 +74,7 @@ linux_install_packages(){
     sudo dnf install -y gcc-c++ cmake ninja-build python3 perl git \
       fontconfig-devel freetype-devel libX11-devel libXkbCommon-devel pkgconfig ccache || true
   else
-    log "Unsupported package manager. Please install build deps manually."
+    log "Unsupported package manager; install deps manually."
   fi
 }
 
@@ -81,17 +82,17 @@ linux_prepare_source(){
   mkdir -p "$SRC_ROOT"
   cd "$SRC_ROOT"
   if [ ! -d "qt-everywhere-src" ]; then
-    if [ -f "$SRC_ARCHIVE" ]; then
+    if [ -f "$ROOT_DIR/$SRC_ARCHIVE" ]; then
       case "$SRC_ARCHIVE" in
-        *.tar.*|*.tgz) tar -xf "$SRC_ARCHIVE" ;;
-        *.zip) unzip -q "$SRC_ARCHIVE" ;;
+        *.tar.*|*.tgz) tar -xf "$ROOT_DIR/$SRC_ARCHIVE" ;;
+        *.zip) unzip -q "$ROOT_DIR/$SRC_ARCHIVE" ;;
         *) err "Unknown archive format: $SRC_ARCHIVE" ;;
       esac
       # normalize
       EXTRACTED_DIR=$(ls -d qt-everywhere* 2>/dev/null | head -n1 || true)
       [ -n "$EXTRACTED_DIR" ] && mv "$EXTRACTED_DIR" qt-everywhere-src || true
     else
-      err "Source archive not found at $SRC_ROOT/$SRC_ARCHIVE. Place it there or set SRC_ARCHIVE."
+      err "Source archive not found at $ROOT_DIR/$SRC_ARCHIVE"
     fi
   fi
 }
@@ -152,7 +153,7 @@ linux_build(){
   log "Linux build finished."
 }
 
-# --- Windows helpers (bash running on Windows, e.g., Git Bash started from Developer Prompt) ---
+# --- Windows functions ---
 windows_locate_vcvars(){
   if command_exists vswhere; then
     VSROOT=$(vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>/dev/null || true)
@@ -171,11 +172,11 @@ windows_prepare_source(){
   mkdir -p "$SRC_ROOT"
   cd "$SRC_ROOT"
   if [ ! -d "qt-everywhere-src" ]; then
-    if [ -f "$SRC_ARCHIVE" ]; then
-      unzip -q "$SRC_ARCHIVE"
+    if [ -f "$ROOT_DIR/$SRC_ARCHIVE" ]; then
+      unzip -q "$ROOT_DIR/$SRC_ARCHIVE"
       mv qt-everywhere-src-* qt-everywhere-src || true
     else
-      err "Qt source archive not found at $SRC_ROOT/$SRC_ARCHIVE"
+      err "Qt source archive not found at $ROOT_DIR/$SRC_ARCHIVE"
     fi
   fi
 }
@@ -198,7 +199,9 @@ windows_build(){
     err "MSVC not found. Start Git Bash from a Visual Studio Developer Prompt or ensure vcvarsall.bat is available."
   fi
 
+  # Windows-style install prefix under the relative install folder
   WIN_PREFIX="${INSTALL_ROOT//\//\\}\\$QT_VERSION\\$CMAKE_BUILD_TYPE"
+
   CONFIG_OPTS=(
     -prefix "\"$WIN_PREFIX\""
     "${CONFIGURE_FLAGS[@]}"
@@ -209,21 +212,21 @@ windows_build(){
     CONFIG_OPTS+=($EXTRA_CONFIGURE_OPTS)
   fi
 
-  # Create a temporary .cmd that calls vcvarsall and runs configure/build/install so MSVC env is active
+  # Create a temporary .cmd that calls vcvarsall and runs configure/build/install
   CMD_SCRIPT="$(mktemp --suffix=.cmd)"
-  cat > "$CMD_SCRIPT" <<-CMD
-    @echo off
-    CALL "${VCVARS:-vcvarsall.bat}" amd64 2>nul || echo "vcvarsall not called; ensure you are in a Developer Prompt"
-    pushd "%~dp0"
-    pushd "$SRC_DIR"
-    configure.bat ${CONFIG_OPTS[*]}
-    popd
-    cmake --build . --config ${CMAKE_BUILD_TYPE} -- /m:${JOBS}
-    cmake --install . --config ${CMAKE_BUILD_TYPE} --prefix "$WIN_PREFIX"
-    popd
-    CMD
+  cat > "$CMD_SCRIPT" <<EOF
+@echo off
+CALL "${VCVARS:-vcvarsall.bat}" amd64 2>nul || echo "vcvarsall not called; ensure you are in a Developer Prompt"
+pushd "%~dp0"
+pushd "$SRC_DIR"
+configure.bat ${CONFIG_OPTS[*]}
+popd
+cmake --build . --config ${CMAKE_BUILD_TYPE} -- /m:${JOBS}
+cmake --install . --config ${CMAKE_BUILD_TYPE} --prefix "$WIN_PREFIX"
+popd
+EOF
 
-  log "Running Windows build via cmd.exe"
+  log "Running Windows build via cmd.exe (script: $CMD_SCRIPT)"
   cmd.exe /c "$CMD_SCRIPT" || { rm -f "$CMD_SCRIPT"; err "Windows build failed"; }
   rm -f "$CMD_SCRIPT"
 
@@ -252,7 +255,7 @@ main(){
     linux_build
   fi
 
-  log "Artifacts (install, logs) are under $ROOT_DIR"
+  log "Done. Install trees under $INSTALL_ROOT"
 }
 
 main "$@"
