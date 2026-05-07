@@ -30,10 +30,10 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
-#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Pipeline/RenderGraph.h>
 #include <GraphicsCore/Pipeline/RenderGraphBlackboard.h>
 #include <GraphicsCore/Pipeline/RenderGraphResourceCache.h>
+#include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
