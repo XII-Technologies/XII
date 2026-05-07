@@ -301,6 +301,7 @@ class XII_GRAPHICSCORE_DLL xiiParticleGraphResource final : public xiiResource
 
 public:
   xiiParticleGraphResource();
+  ~xiiParticleGraphResource();
 
   /// \brief Returns a const reference to the descriptor that defines the contents of this particle graph resource.
   [[nodiscard]] XII_ALWAYS_INLINE const xiiParticleGraphResourceDescriptor& GetDescriptor() const { return m_Descriptor; }

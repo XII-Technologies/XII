@@ -550,7 +550,7 @@ xiiUInt64 xiiParticleGraphResourceDescriptor::ComputePipelineHash() const
 
 void xiiParticleGraphResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 {
-  const xiiUInt32 uiVersion = xiiGetStaticRTTI<xiiParticleGraphResourceDescriptor>()->GetTypeVersion();
+  const xiiUInt8 uiVersion = (xiiUInt8)ParticleGraphResourceDescriptorVersion::Current;
 
   ref_stream << uiVersion;
   ref_stream << m_sGraphName;
@@ -587,7 +587,7 @@ void xiiParticleGraphResourceDescriptor::Save(xiiStreamWriter& ref_stream) const
 
 void xiiParticleGraphResourceDescriptor::Load(xiiStreamReader& ref_stream)
 {
-  xiiUInt32 uiVersion = 0U;
+  xiiUInt8 uiVersion = 0U;
   ref_stream >> uiVersion;
   XII_IGNORE_UNUSED(uiVersion);
 
@@ -629,6 +629,8 @@ xiiParticleGraphResource::xiiParticleGraphResource() :
   xiiResource(DoUpdate::OnAnyThread, 1U)
 {
 }
+
+xiiParticleGraphResource::~xiiParticleGraphResource() = default;
 
 xiiResourceLoadDesc xiiParticleGraphResource::UnloadData(Unload WhatToUnload)
 {
