@@ -94,18 +94,18 @@ xiiString xiiGameApplication::FindProjectDirectory() const
 
   // first check if the path is relative to the SDK special directory
   {
-    xiiStringBuilder relToSdk(m_sAppProjectPath);
+    xiiStringBuilder sPathRelativeToSDK(m_sAppProjectPath);
 
-    if (!relToSdk.StartsWith_NoCase(">sdk/"))
+    if (!sPathRelativeToSDK.StartsWith_NoCase(">sdk/"))
     {
-      relToSdk.Prepend(">sdk/");
+      sPathRelativeToSDK.Prepend(">sdk/");
     }
 
-    xiiStringBuilder absToSdk;
-    if (xiiFileSystem::ResolveSpecialDirectory(relToSdk, absToSdk).Succeeded())
+    xiiStringBuilder sAbsolutePathToSDK;
+    if (xiiFileSystem::ResolveSpecialDirectory(sPathRelativeToSDK, sAbsolutePathToSDK).Succeeded())
     {
-      if (xiiOSFile::ExistsDirectory(absToSdk))
-        return absToSdk;
+      if (xiiOSFile::ExistsDirectory(sAbsolutePathToSDK))
+        return sAbsolutePathToSDK;
     }
   }
 
@@ -120,13 +120,7 @@ xiiString xiiGameApplication::FindProjectDirectory() const
 
 xiiGameUpdateMode xiiGameApplication::GetGameUpdateMode() const
 {
-  const bool bViewsScheduled     = !xiiRenderWorld::GetMainViews().IsEmpty();
-  const bool bRenderingScheduled = xiiRenderWorld::IsRenderingScheduled();
-  if (bViewsScheduled)
-  {
-    return xiiGameUpdateMode::UpdateInputAndRender;
-  }
-  return bRenderingScheduled ? xiiGameUpdateMode::Render : xiiGameUpdateMode::Skip;
+  return xiiGameUpdateMode::UpdateInputAndRender;
 }
 
 void xiiGameApplication::Run_WorldUpdateAndRender()
