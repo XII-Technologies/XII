@@ -16,13 +16,12 @@
 xiiWindowOutputTargetGAL::xiiWindowOutputTargetGAL(const xiiGALSwapChainCreationDescription& description, OnSwapChainChanged onSwapChainChanged) :
   m_OnSwapChainChanged(onSwapChainChanged)
 {
-  m_pImageCapture = XII_DEFAULT_NEW(xiiGALImageCapture, xiiGALDevice::GetDefaultDevice());
-
   xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
 
   m_pSwapChain = pDevice->CreateSwapChain(description);
-
   XII_ASSERT_DEV(m_pSwapChain != nullptr, "Failed to create swap chain.");
+
+  m_pImageCapture = XII_DEFAULT_NEW(xiiGALImageCapture, pDevice);
 }
 
 xiiWindowOutputTargetGAL::~xiiWindowOutputTargetGAL()
@@ -85,7 +84,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
   }
 
   xiiSharedPtr<xiiGALDevice> pDevice        = xiiGALDevice::GetDefaultDevice();
-  auto                       pGraphicsQueue = xiiGALDevice::GetDefaultDevice()->GetCommandQueue();
+  auto                       pGraphicsQueue = pDevice->GetCommandQueue();
 
   xiiSharedPtr<xiiGALCommandList> pCommandList = pDevice->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics});
   XII_ASSERT_DEV(pCommandList != nullptr, "Failed to create command list!");
