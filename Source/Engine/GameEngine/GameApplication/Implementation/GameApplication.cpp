@@ -97,11 +97,6 @@ xiiString xiiGameApplication::FindProjectDirectory() const
   return result;
 }
 
-xiiGameUpdateMode xiiGameApplication::GetGameUpdateMode() const
-{
-  return xiiGameUpdateMode::UpdateInputAndRender;
-}
-
 void xiiGameApplication::Run_WorldUpdateAndRender()
 {
   XII_PROFILE_SCOPE("Run_WorldUpdateAndRender");

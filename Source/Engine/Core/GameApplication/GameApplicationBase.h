@@ -49,13 +49,6 @@ struct xiiGameApplicationExecutionEvent
   Type m_Type;
 };
 
-enum class xiiGameUpdateMode : xiiUInt8
-{
-  Skip = 0U,            ///< Do not update or render anything.
-  Render,               ///< Only render, no input update.
-  UpdateInputAndRender, ///< Update input and render.
-};
-
 /// \brief The xiiGameApplicationBase class is the base class for all game applications. It provides common functionality for managing the game state, taking screenshots, and capturing frames.
 class XII_CORE_DLL xiiGameApplicationBase : public xiiApplication
 {
@@ -258,12 +251,8 @@ public:
   xiiTime GetFrameTime() const { return m_FrameTime; }
 
 protected:
-  virtual xiiGameUpdateMode GetGameUpdateMode() const { return xiiGameUpdateMode::UpdateInputAndRender; }
-
   virtual void Run_InputUpdate();
   virtual bool Run_ProcessApplicationInput();
-  /// \brief This function can be used to acquire a new window from a swap-chain or do any other update operations on windows before the multi-threaded rendering and update phase starts.
-  virtual void Run_AcquireImage();
   virtual void Run_WorldUpdateAndRender() = 0;
   virtual void Run_BeforeWorldUpdate();
   virtual void Run_AfterWorldUpdate();
