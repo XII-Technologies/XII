@@ -179,7 +179,17 @@ $configureArgs = "-prefix `"$winPrefix`" -release -nomake examples -nomake tests
 
 # Build the full cmd script (single-line) to run under cmd /c
 # Use double quotes around the whole command for cmd /c, and escape inner quotes properly.
-$cmdScript = "call `"$vcvars64`" amd64 && pushd `"$winSrc`" && call `"$winSrc\configure.bat`" $configureArgs && cmake -G `"Ninja`" -S `"$winSrc`" -B `"$winSrc`" -D CMAKE_BUILD_TYPE=RelWithDebInfo -D CMAKE_INSTALL_PREFIX=`"$winPrefix`" && cmake --build `"$winSrc`" --parallel $Jobs && cmake --install `"$winSrc`" --prefix `"$winPrefix`" && popd"
+$cmdScript = @"
+call "$vcvars64" amd64 ^
+  && cl 2>&1 | findstr /C:"for x64" >nul ^
+  || (echo ERROR: MSVC is not 64-bit & exit /b 1) ^
+  && pushd "$winSrc" ^
+  && call "$winSrc\configure.bat" $configureArgs ^
+  && cmake -G "Ninja" -S "$winSrc" -B "$winSrc" -D CMAKE_BUILD_TYPE=RelWithDebInfo -D CMAKE_INSTALL_PREFIX="$winPrefix" ^
+  && cmake --build "$winSrc" --parallel $Jobs ^
+  && cmake --install "$winSrc" --prefix "$winPrefix" ^
+  && popd
+"@
 
 Log "Running configure, build and install inside a single cmd.exe session (this ensures vcvars64 is active for all steps)."
 Log "Command: cmd /c <vcvars64 && configure && cmake build && cmake install>"
