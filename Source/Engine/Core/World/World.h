@@ -9,13 +9,10 @@ class xiiEventMessageHandlerComponent;
 
 /// \brief A world encapsulates a scene graph of game objects and various component managers and their components.
 ///
-/// There can be multiple worlds active at a time, but only 256 at most. The world manages all object storage and might move objects around
-/// in memory. Thus it is not allowed to store pointers to objects. They should be referenced by handles.\n The world has a multi-phase
-/// update mechanism which is divided in the following phases:\n
+/// There can be multiple worlds active at a time, but only 256 at most. The world manages all object storage and might move objects around in memory.
+/// Thus it is not allowed to store pointers to objects. They should be referenced by handles.\n The world has a multi-phase update mechanism which is divided in the following phases:\n
 /// * Pre-async phase: The corresponding component manager update functions are called synchronously in the order of their dependencies.
-/// * Async phase: The update functions are called in batches asynchronously on multiple threads. There is absolutely no guarantee in which
-/// order the functions are called.
-///   Thus it is not allowed to access any data other than the components own data during that phase.
+/// * Async phase: The update functions are called in batches asynchronously on multiple threads. There is absolutely no guarantee in which order the functions are called. Thus it is not allowed to access any data other than the components own data during that phase.
 /// * Post-async phase: Another synchronous phase like the pre-async phase.
 /// * Actual deletion of dead objects and components are done now.
 /// * Transform update: The global transformation of dynamic objects is updated.
