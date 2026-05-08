@@ -35,27 +35,6 @@ xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> 
 xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");
 xiiCVarBool xiiGameApplication::cvar_AppShowFPS("App.ShowFPS", false, xiiCVarFlags::Save, "Show frames per second counter");
 
-namespace
-{
-  static xiiView* TryGetViewFromModule(xiiWorld* pWorld, xiiViewHandle hView)
-  {
-    if (pWorld == nullptr)
-      return nullptr;
-
-    const xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>();
-    if (pRenderWorldModule == nullptr)
-      return nullptr;
-
-    xiiView* pView = nullptr;
-    if (pRenderWorldModule->TryGetView(hView, pView))
-    {
-      return pView;
-    }
-
-    return nullptr;
-  }
-} // namespace
-
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :
   xiiGameApplicationBase(sAppName), m_sAppProjectPath(sProjectPath)
 {
@@ -126,12 +105,8 @@ xiiGameUpdateMode xiiGameApplication::GetGameUpdateMode() const
 void xiiGameApplication::Run_WorldUpdateAndRender()
 {
   XII_PROFILE_SCOPE("Run_WorldUpdateAndRender");
-  // If multi-threaded rendering is disabled, the same content is updated/extracted and rendered in the same frame.
-  // As xiiRenderWorld::BeginFrame applies the render pipeline properties that were set during the update phase, it needs to be done after update/extraction but before rendering.
-  if (!xiiRenderWorld::GetUseMultithreadedRendering())
-  {
-    UpdateWorldsAndExtractViews();
-  }
+
+  UpdateWorldsAndExtractViews();
 
   xiiRenderWorld::BeginFrame();
 
