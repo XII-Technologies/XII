@@ -67,7 +67,7 @@ void xiiWindowOutputTargetGAL::Resize(const xiiSizeU32& newSize)
 
   const xiiGALSwapChainCreationDescription& description = m_pSwapChain->GetDescription();
 
-  m_pSwapChain->Resize(newSize, description.m_PreTransform);
+  m_pSwapChain->Resize(newSize, description.m_PreTransform).IgnoreResult();
 
   if (m_OnSwapChainChanged.IsValid())
   {
