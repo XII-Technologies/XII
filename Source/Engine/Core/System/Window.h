@@ -26,22 +26,29 @@ class XII_CORE_DLL xiiWindowBase
 public:
   virtual ~xiiWindowBase() = default;
 
-  virtual xiiSizeU32      GetClientAreaSize() const     = 0;
+  /// \brief Returns the size of the client area of the window, i.e. the area that can be drawn into.
+  virtual xiiSizeU32 GetClientAreaSize() const = 0;
+
+  /// \brief Returns the position and size of the entire window, including borders and title bar.
   virtual xiiWindowHandle GetNativeWindowHandle() const = 0;
 
-  /// \brief Whether the window is a fullscreen window
-  /// or should be one - some platforms may enforce this via the GALSwapchain)
+  /// \brief Whether the window is a fullscreen window or should be one - some platforms may enforce this via the GALSwapchain.
   ///
   /// If bOnlyProperFullscreenMode, the caller accepts borderless windows that cover the entire screen as "fullscreen".
   virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const = 0;
 
   /// \brief Whether the window can potentially be seen by the user.
+  ///
   /// Windows that are minimized or hidden are not visible.
   virtual bool IsVisible() const = 0;
 
+  /// \brief Processes all pending window messages, such as input or resize events. This should be called regularly (typically once per frame) to keep the window responsive.
   virtual void ProcessWindowMessages() = 0;
 
-  virtual void AddReference()    = 0;
+  /// \brief Adds a reference to the window. The window will not be destroyed until all references are removed.
+  virtual void AddReference() = 0;
+
+  /// \brief Removes a reference from the window. If this was the last reference, the window will be destroyed.
   virtual void RemoveReference() = 0;
 };
 
@@ -52,7 +59,7 @@ struct XII_CORE_DLL xiiWindowMode
 
   enum Enum : StorageType
   {
-    WindowFixedResolution,                ///< The resolution and size are what the user picked and will not be changed. The window will not be resizable.
+    WindowFixedResolution = 0U,           ///< The resolution and size are what the user picked and will not be changed. The window will not be resizable.
     WindowResizable,                      ///< The resolution and size are what the user picked and will not be changed. Allows window resizing by the user.
     FullscreenBorderlessNativeResolution, ///< A borderless window, the position and resolution are taken from the monitor on which the window shall appear.
     FullscreenFixedResolution,            ///< A full-screen window using the user provided resolution. Tries to change the monitor resolution accordingly.
@@ -88,40 +95,17 @@ struct XII_CORE_DLL xiiWindowCreationDescription
   /// Deserializes the configuration from DDL.
   xiiResult LoadFromDDL(xiiStringView sFile);
 
-
-  /// The window title to be displayed.
-  xiiString m_Title = "XII";
-
-  /// Defines how the window size is determined.
-  xiiEnum<xiiWindowMode> m_WindowMode;
-
-  /// The monitor index is as given by xiiScreen::EnumerateScreens.
-  /// -1 as the index means to pick the primary monitor.
-  xiiInt8 m_iMonitor = -1;
-
-  /// The virtual position of the window. Determines on which monitor the window ends up.
-  xiiVec2I32 m_Position = xiiVec2I32(0x80000000, 0x80000000); // Magic number on windows that positions the window at a 'good default position'
-
-  /// The pixel resolution of the window.
-  xiiSizeU32 m_Resolution = xiiSizeU32(1280U, 720U);
-
-  /// The number of the window. This is mostly used for setting up the input system, which then reports
-  /// different mouse positions for each window.
-  xiiUInt8 m_uiWindowNumber = 0;
-
-  /// Whether the mouse cursor should be trapped inside the window or not.
-  /// \see xiiStandardInputDevice::SetClipMouseCursor
-  bool m_bClipMouseCursor = true;
-
-  /// Whether the mouse cursor should be visible or not.
-  /// \see xiiStandardInputDevice::SetShowMouseCursor
-  bool m_bShowMouseCursor = false;
-
-  /// Whether the window is activated and focused on Initialize()
-  bool m_bSetForegroundOnInit = true;
-
-  /// Whether the window is centered on the display.
-  bool m_bCenterWindowOnDisplay = true;
+public:
+  xiiString              m_Title = "XII";                                               ///< The title of the window. This is just a hint and may be ignored by some platforms or window modes.
+  xiiEnum<xiiWindowMode> m_WindowMode;                                                  ///< The window mode determines how the position and resolution for the window are picked. For windowed modes, the position and resolution are taken from the corresponding members of this struct. For fullscreen modes, the position and resolution are taken from the monitor and the corresponding members of this struct are ignored (depending on the fullscreen mode).
+  xiiInt8                m_iMonitor               = -1;                                 ///< The monitor index is as given by xiiScreen::EnumerateScreens. -1 as the index means to pick the primary monitor. For windowed modes, this is just a hint which monitor to use for picking the default position. For fullscreen modes, this is the monitor on which the window will appear and from which the position and resolution are taken (depending on m_WindowMode).
+  xiiVec2I32             m_Position               = xiiVec2I32(0x80000000, 0x80000000); ///< The default position is a special value that means "let the OS decide". The user can change this to a specific position, which will be used for windowed modes. For fullscreen modes, the position is taken from the monitor and this value is ignored.
+  xiiSizeU32             m_Resolution             = xiiSizeU32(1280U, 720U);            ///< The resolution of the window. For windowed modes, this is the resolution of the client area. For fullscreen modes, this is the requested resolution, which may be different from the actual resolution if the monitor does not support it.
+  xiiUInt8               m_uiWindowNumber         = 0;                                  ///< The number of the window. This is mostly used for setting up the input system, which then reports different mouse positions for each window.
+  bool                   m_bClipMouseCursor       = true;                               ///< Whether the mouse cursor should be trapped inside the window or not. This is only relevant for windowed modes and is ignored for fullscreen modes, which always clip the mouse cursor.
+  bool                   m_bShowMouseCursor       = false;                              ///< Whether the mouse cursor should be visible or not.
+  bool                   m_bSetForegroundOnInit   = true;                               ///< If true, the window will be activated and focused when it is initialized. This is ignored for fullscreen modes, which are always activated and focused.
+  bool                   m_bCenterWindowOnDisplay = true;                               ///< If true, the window will be centered on the display. This is only relevant for windowed modes and is ignored for fullscreen modes.
 };
 
 /// \brief A simple abstraction for platform specific window creation.
