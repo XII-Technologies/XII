@@ -39,7 +39,7 @@ class XII_GAMEENGINE_DLL xiiGameApplication : public xiiGameApplicationBase
 {
 public:
   static xiiCVarBool cvar_AppVSync;
-  static xiiCVarBool cvar_AppShowFPS;
+  static xiiCVarBool cvar_AppShowFrameStats;
 
 public:
   using SUPER = xiiGameApplicationBase;

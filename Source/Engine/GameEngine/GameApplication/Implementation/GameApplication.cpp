@@ -32,8 +32,8 @@
 xiiGameApplication*                                                             xiiGameApplication::s_pGameApplicationInstance = nullptr;
 xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
-xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");
-xiiCVarBool xiiGameApplication::cvar_AppShowFPS("App.ShowFPS", false, xiiCVarFlags::Save, "Show frames per second counter");
+xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Synchronizes frame presentation with the display refresh to reduce or eliminate screen tearing. This may introduce input latency and cap the framerate to the monitor's refresh rate. Useful for visual fidelity and stable presentation.");
+xiiCVarBool xiiGameApplication::cvar_AppShowFrameStats("App.ShowFrameStats", false, xiiCVarFlags::Save, "Displays a live frames-stats overlay on-screen to aid profiling and spot frame-time spikes during development and debugging. Provides an immediate performance readout without affecting rendering state.");
 
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :
   xiiGameApplicationBase(sAppName), m_sAppProjectPath(sProjectPath)
