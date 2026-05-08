@@ -36,35 +36,7 @@
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
-static xiiUInt32 g_uiWindowWidth  = 960;
-static xiiUInt32 g_uiWindowHeight = 540;
-static bool      g_bWindowResized = false;
-
-class xiiGraphicsExplorerWindow : public xiiWindow
-{
-public:
-  xiiGraphicsExplorerWindow() :
-    xiiWindow()
-  {
-    m_bCloseRequested = false;
-  }
-
-  virtual void       OnClickClose() override { m_bCloseRequested = true; }
-  virtual xiiSizeU32 GetClientAreaSize() const override { return xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight); }
-  virtual void       OnResize(const xiiSizeU32& newWindowSize) override
-  {
-    xiiWindow::OnResize(newWindowSize);
-
-    if (g_uiWindowWidth != newWindowSize.width || g_uiWindowHeight != newWindowSize.height)
-    {
-      g_uiWindowWidth  = newWindowSize.width;
-      g_uiWindowHeight = newWindowSize.height;
-      g_bWindowResized = true;
-    }
-  }
-
-  bool m_bCloseRequested;
-};
+static bool g_bWindowResized = false;
 
 class xiiGraphicsExplorerApp : public xiiApplication
 {
@@ -93,7 +65,7 @@ public:
       UpdateSwapChain();
     }
 
-    if (m_pWindow->m_bCloseRequested || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
+    if (WasQuitRequested() || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
       return Execution::Quit;
 
     // Make sure time goes on
@@ -341,15 +313,27 @@ public:
 
     // Create a window for rendering
     {
-      xiiWindowCreationDescription WindowCreationDesc;
-      WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
-      WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
-      WindowCreationDesc.m_Title             = "Graphics Explorer";
-      WindowCreationDesc.m_bShowMouseCursor  = true;
-      WindowCreationDesc.m_bClipMouseCursor  = false;
-      WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;
-      m_pWindow                              = XII_DEFAULT_NEW(xiiGraphicsExplorerWindow);
-      m_pWindow->Initialize(WindowCreationDesc).AssertSuccess();
+      xiiWindowCreationDescription WindowCreationDescription;
+      WindowCreationDescription.m_Resolution.width  = 960;
+      WindowCreationDescription.m_Resolution.height = 540;
+      WindowCreationDescription.m_Title             = "Graphics Explorer";
+      WindowCreationDescription.m_bShowMouseCursor  = true;
+      WindowCreationDescription.m_bClipMouseCursor  = false;
+      WindowCreationDescription.m_WindowMode        = xiiWindowMode::WindowResizable;
+      m_pWindow                                     = XII_DEFAULT_NEW(xiiWindow);
+      m_pWindow->Initialize(WindowCreationDescription).AssertSuccess();
+
+      m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& e) -> void {
+        if (e.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
+        {
+          this->RequestQuit();
+        }
+
+        if (e.m_Type == xiiWindowEvent::Type::SizeChanged)
+        {
+          g_bWindowResized = true;
+        }
+      });
     }
 
     {
@@ -448,7 +432,7 @@ public:
     }
     else
     {
-      auto currentSize = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
+      auto currentSize = m_pWindow->GetClientAreaSize();
 
       if (m_pSwapChain->GetCurrentSize() != currentSize)
       {
@@ -468,11 +452,10 @@ private:
   void SetupOffscreenPass(OffscreenPassData& data, xiiRGBuilder& builder)
   {
     xiiGALTextureCreationDescription textureDescription;
-    textureDescription.m_Type        = xiiGALResourceDimension::Texture2D;
-    textureDescription.m_Size.width  = g_uiWindowWidth;
-    textureDescription.m_Size.height = g_uiWindowHeight;
-    textureDescription.m_Format      = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-    textureDescription.m_BindFlags   = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
+    textureDescription.m_Type      = xiiGALResourceDimension::Texture2D;
+    textureDescription.m_Size      = m_pWindow->GetClientAreaSize();
+    textureDescription.m_Format    = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
 
     // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
@@ -565,14 +548,16 @@ private:
     }
 
     xiiSharedPtr<xiiGALFramebuffer> pFramebuffer;
+    xiiSizeU32                      framebufferSize;
     {
       xiiGALFramebufferCreationDescription framebufferDescription;
       framebufferDescription.m_pRenderPass       = data.m_pRenderPass;
-      framebufferDescription.m_FramebufferSize   = xiiSizeU32(g_uiWindowWidth, g_uiWindowHeight);
+      framebufferDescription.m_FramebufferSize   = m_pWindow->GetClientAreaSize();
       framebufferDescription.m_uiArraySliceCount = 1U;
       framebufferDescription.m_Attachments.PushBack(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
-      pFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
+      pFramebuffer    = pDevice->CreateFramebuffer(framebufferDescription);
+      framebufferSize = framebufferDescription.m_FramebufferSize;
     }
 
     xiiGALCommandList& cmd = context.GetCommandList();
@@ -581,10 +566,10 @@ private:
     {
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight)); // Set the viewport to cover the entire render target.
-        cmd.SetPipelineState(pPipelineState);                                                       // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
-        cmd.CommitShaderResources().IgnoreResult();                                                 // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
-        cmd.Draw({3});                                                                              // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
+        cmd.SetPipelineState(pPipelineState);                                                                   // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+        cmd.CommitShaderResources().IgnoreResult();                                                             // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+        cmd.Draw({3});                                                                                          // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
       }
       cmd.EndRenderPass(); // End the render pass, which will also perform necessary resource transitions to make the offscreen texture available for reading in the next pass.
     }
@@ -633,7 +618,7 @@ private:
   xiiUniquePtr<xiiRenderGraphResourceCache>     m_pRenderGraphResourceCache;
   xiiUniquePtr<xiiRenderGraphTimestampProfiler> m_pRenderGraphProfiler;
   xiiUInt64                                     m_uiFrameIndex = 0ULL;
-  xiiUniquePtr<xiiGraphicsExplorerWindow>       m_pWindow;
+  xiiUniquePtr<xiiWindow>                       m_pWindow;
 };
 
 XII_CONSOLEAPP_ENTRY_POINT(xiiGraphicsExplorerApp);
