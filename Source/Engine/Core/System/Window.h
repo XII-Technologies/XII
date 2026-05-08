@@ -9,6 +9,7 @@
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/UniquePtr.h>
 
+class xiiImage;
 class xiiOpenDdlWriter;
 class xiiOpenDdlReader;
 class xiiOpenDdlReaderElement;
@@ -108,6 +109,32 @@ public:
   bool                   m_bCenterWindowOnDisplay = true;                               ///< If true, the window will be centered on the display. This is only relevant for windowed modes and is ignored for fullscreen modes.
 };
 
+/// \brief Base class for window output targets
+///
+/// A window output target is usually tied tightly to a window (\sa xiiWindowBase) and represents the graphics APIs side of the render output.
+/// E.g. in a Vulkan or DirectX implementation this would be a swap chain.
+class XII_CORE_DLL xiiWindowOutputTargetBase
+{
+public:
+  xiiWindowOutputTargetBase()          = default;
+  virtual ~xiiWindowOutputTargetBase() = default;
+
+  /// \brief Returns whether VSync is enabled for this output target.
+  virtual bool GetVSyncEnabled() const = 0;
+
+  /// \brief Enables or disables VSync for this output target.
+  virtual void SetVSyncEnabled(bool bEnableVSync) = 0;
+
+  /// \brief Presents the current back buffer to the screen. This should be called every frame after rendering is done.
+  virtual void PresentImage() = 0;
+
+  /// \brief Resizes the output target to the new size. This should be called when the window is resized.
+  virtual void Resize(const xiiSizeU32& newSize) = 0;
+
+  /// \brief Captures the current back buffer and stores it in the given image. This can be used for screenshots or similar purposes.
+  virtual xiiResult CaptureImage(xiiImage& out_image) = 0;
+};
+
 /// \brief A simple abstraction for platform specific window creation.
 ///
 /// Will handle basic message looping. Notable events can be listened to by overriding the corresponding callbacks.
@@ -195,11 +222,7 @@ public:
   virtual void OnResize(const xiiSizeU32& newWindowSize);
 
   /// \brief Called when the window position is changed. Not possible on all OSes.
-  virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY)
-  {
-    XII_IGNORE_UNUSED(iNewPosX);
-    XII_IGNORE_UNUSED(iNewPosY);
-  }
+  virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY);
 
   /// \brief Called when the window gets focus or loses focus.
   virtual void OnFocus(bool bHasFocus) { XII_IGNORE_UNUSED(bHasFocus); }
@@ -210,28 +233,17 @@ public:
   /// \brief Called when the close button of the window is clicked. Does nothing by default.
   virtual void OnClickClose() {}
 
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  /// \brief Called on any window message.
-  ///
-  /// You can use this function for example to dispatch the message to another system.
-  ///
-  /// \remarks
-  ///   Will be called <i>after</i> the On[...] callbacks!
-  ///
-  /// \see OnResizeMessage
-  virtual void OnWindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam);
-
-#elif XII_ENABLED(XII_PLATFORM_OSX)
-
-#elif XII_ENABLED(XII_PLATFORM_LINUX)
-
-#else
-#  error "Missing code for xiiWindow on this platform!"
-#endif
-
   /// \brief Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
+
+  /// \brief Sets the output target for this window.
+  ///
+  /// Output targets are destroyed before the window to ensure proper cleanup order.
+  /// Setting a new output target replaces any existing one.
+  void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget);
+
+  /// \brief Gets the output target for this window.
+  xiiWindowOutputTargetBase* GetOutputTarget() const;
 
   /// \brief Returns a number that can be used as a window number in xiiWindowCreationDescription.
   ///
@@ -245,14 +257,14 @@ protected:
   xiiWindowCreationDescription m_CreationDescription;
 
 private:
-  bool m_bInitialized = false;
-  bool m_bVisible     = true;
+  bool m_bInitialized = false; ///< Whether the window is initialized and has a valid native handle.
+  bool m_bVisible     = true;  ///< Whether the window is visible.
 
-  xiiUniquePtr<xiiStandardInputDevice> m_pInputDevice;
+  xiiUniquePtr<xiiStandardInputDevice>    m_pInputDevice;  ///< The input device attached to this window, typically providing mouse and keyboard input.
+  xiiUniquePtr<xiiWindowOutputTargetBase> m_pOutputTarget; ///< The output target for this window, typically representing the graphics API side of the render output.
 
-  mutable xiiWindowInternalHandle m_hWindowHandle = xiiWindowInternalHandle();
+  mutable xiiWindowInternalHandle m_hWindowHandle = xiiWindowInternalHandle(); ///< The platform specific window handle.
 
-  /// This is incremented whenever a xiiWindow is created, to retrieve a free window index easily.
-  static xiiUInt8    s_uiNextUnusedWindowNumber;
-  xiiAtomicInteger32 m_iReferenceCount = 0;
+  static xiiUInt8    s_uiNextUnusedWindowNumber; ///< This just increments whenever a xiiWindow is created. It starts at zero.
+  xiiAtomicInteger32 m_iReferenceCount = 0;      ///< The reference count for this window. The window will be destroyed when this reaches zero.
 };

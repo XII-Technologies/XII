@@ -788,7 +788,9 @@ void xiiGALSwapChainVulkan::Present()
   {
     ++m_uiSemaphoreIndex;
     if (m_uiSemaphoreIndex >= m_Description.m_uiBufferCount)
+    {
       m_uiSemaphoreIndex = 0U;
+    }
 
     bool       bEnableVSync = m_PresentMode == xiiGALPresentMode::VSync;
     vk::Result result       = (m_bIsVSyncEnabled == bEnableVSync) ? AcquireNextImage() : vk::Result::eErrorOutOfDateKHR;

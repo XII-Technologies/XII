@@ -9,7 +9,6 @@
 #include <Foundation/Types/UniquePtr.h>
 
 class xiiWindowBase;
-class xiiWindowOutputTargetBase;
 
 using xiiRegisteredWindowHandleData = xiiGenericId<16, 16>;
 
@@ -76,15 +75,6 @@ public:
   /// The callback receives the window handle as parameter. Only one callback can be set per window, setting a new callback replaces the previous one.
   void SetDestroyCallback(xiiRegisteredWindowHandle hWindow, xiiWindowDestroyFunc onDestroyCallback);
 
-  /// \brief Associates an output target with a registered window.
-  ///
-  /// Output targets are destroyed before the window to ensure proper cleanup order.
-  /// Setting a new output target replaces any existing one.
-  void SetOutputTarget(xiiRegisteredWindowHandle hWindow, xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget);
-
-  /// \brief Gets the output target associated with a window.
-  xiiWindowOutputTargetBase* GetOutputTarget(xiiRegisteredWindowHandle hWindow) const;
-
   /// \brief Closes and unregisters a specific window.
   ///
   /// This first calls any registered destroy callback, then destroys the output target, then the window.
@@ -101,11 +91,10 @@ public:
 private:
   struct Data
   {
-    xiiString                               m_sName;
-    const void*                             m_pCreatedBy = nullptr;
-    xiiUniquePtr<xiiWindowBase>             m_pWindow;
-    xiiUniquePtr<xiiWindowOutputTargetBase> m_pOutputTarget;
-    xiiWindowDestroyFunc                    m_OnDestroy;
+    xiiString                   m_sName;                ///< Human-readable name for debugging purposes.
+    const void*                 m_pCreatedBy = nullptr; ///< Pointer identifying the creator of the window, used for bulk operations.
+    xiiUniquePtr<xiiWindowBase> m_pWindow;              ///< The registered window instance.
+    xiiWindowDestroyFunc        m_OnDestroy;            ///< Optional callback to invoke when the window is destroyed.
   };
 
   xiiIdTable<xiiRegisteredWindowHandleData, xiiUniquePtr<Data>> m_Data;

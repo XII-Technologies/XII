@@ -4,7 +4,6 @@
 
 #include <Core/Configuration/PlatformProfile.h>
 #include <Core/Console/ConsoleFunction.h>
-#include <Core/GameApplication/WindowOutputTargetBase.h>
 #include <Core/GameState/GameStateBase.h>
 #include <Core/System/Window.h>
 #include <Foundation/Application/Application.h>

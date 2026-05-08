@@ -210,15 +210,34 @@ xiiWindow::~xiiWindow()
   XII_ASSERT_DEV(m_iReferenceCount == 0, "The window is still being referenced, probably by a swapchain. Make sure to destroy all swapchains and call xiiGALDevice::WaitIdle before destroying a window.");
 }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-void xiiWindow::OnWindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam)
+void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
 {
-  XII_IGNORE_UNUSED(hWnd);
-  XII_IGNORE_UNUSED(msg);
-  XII_IGNORE_UNUSED(wparam);
-  XII_IGNORE_UNUSED(lparam);
+  xiiLog::Info("Window resized to ({0}, {1})", newWindowSize.width, newWindowSize.height);
+
+  if (m_pOutputTarget)
+  {
+    m_pOutputTarget->Resize(newWindowSize);
+  }
 }
-#endif
+
+void xiiWindow::OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY)
+{
+  XII_IGNORE_UNUSED(iNewPosX);
+  XII_IGNORE_UNUSED(iNewPosY);
+}
+
+void xiiWindow::SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget)
+{
+  m_pOutputTarget = std::move(pOutputTarget);
+}
+
+xiiWindowOutputTargetBase* xiiWindow::GetOutputTarget() const
+{
+  if (!m_pOutputTarget)
+    return nullptr;
+
+  return m_pOutputTarget.Borrow();
+}
 
 xiiUInt8 xiiWindow::GetNextUnusedWindowNumber()
 {

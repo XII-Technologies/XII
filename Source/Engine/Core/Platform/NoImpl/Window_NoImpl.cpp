@@ -29,9 +29,10 @@ void xiiWindow::ProcessWindowMessages()
   XII_ASSERT_NOT_IMPLEMENTED;
 }
 
-void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
+void xiiWindow::OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_IGNORE_UNUSED(iNewPosX);
+  XII_IGNORE_UNUSED(iNewPosY);
 }
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const

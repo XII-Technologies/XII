@@ -1,6 +1,5 @@
 #include <Core/CorePCH.h>
 
-#include <Core/GameApplication/WindowOutputTargetBase.h>
 #include <Core/System/Window.h>
 #include <Core/System/WindowManager.h>
 #include <Foundation/Configuration/Startup.h>
@@ -73,14 +72,6 @@ void xiiWindowManager::Close(xiiRegisteredWindowHandle hWindow)
     pData->m_OnDestroy(hWindow);
   }
 
-  // The window output target has a dependency to the window, e.g. the swap chain renders to it.
-  // Explicitly destroy it first to ensure correct destruction order.
-
-  if (pData->m_pOutputTarget)
-  {
-    pData->m_pOutputTarget.Clear();
-  }
-
   if (pData->m_pWindow)
   {
     pData->m_pWindow.Clear();
@@ -138,15 +129,6 @@ xiiRegisteredWindowHandle xiiWindowManager::Register(xiiStringView sName, const 
   return xiiRegisteredWindowHandle(m_Data.Insert(std::move(pData)));
 }
 
-void xiiWindowManager::SetOutputTarget(xiiRegisteredWindowHandle hWindow, xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget)
-{
-  xiiUniquePtr<Data>* pDataPtr = nullptr;
-  if (!m_Data.TryGetValue(hWindow.GetInternalID(), pDataPtr))
-    return;
-
-  (*pDataPtr)->m_pOutputTarget = std::move(pOutputTarget);
-}
-
 void xiiWindowManager::SetDestroyCallback(xiiRegisteredWindowHandle hWindow, xiiWindowDestroyFunc onDestroyCallback)
 {
   xiiUniquePtr<Data>* pDataPtr = nullptr;
@@ -170,14 +152,6 @@ xiiWindowBase* xiiWindowManager::GetWindow(xiiRegisteredWindowHandle hWindow) co
     return nullptr;
 
   return m_Data[hWindow.GetInternalID()]->m_pWindow.Borrow();
-}
-
-xiiWindowOutputTargetBase* xiiWindowManager::GetOutputTarget(xiiRegisteredWindowHandle hWindow) const
-{
-  if (!m_Data.Contains(hWindow.GetInternalID()))
-    return nullptr;
-
-  return m_Data[hWindow.GetInternalID()]->m_pOutputTarget.Borrow();
 }
 
 XII_STATICLINK_FILE(Core, Core_System_Implementation_WindowManager);

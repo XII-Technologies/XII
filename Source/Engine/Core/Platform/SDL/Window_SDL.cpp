@@ -202,7 +202,8 @@ xiiResult xiiWindow::Destroy()
   XII_LOG_BLOCK("xiiWindow::Destroy");
 
   m_pInputDevice.Clear();
-  m_pInputDevice = nullptr;
+
+  m_pOutputTarget.Clear();
 
   SDL_DestroyWindow(m_hWindowHandle);
 
@@ -375,11 +376,6 @@ void xiiWindow::ProcessWindowMessages()
       pInputDevice->WindowMessage(&event);
     }
   }
-}
-
-void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
-{
-  xiiLog::Info("Window resized to ({0}, {1})", newWindowSize.width, newWindowSize.height);
 }
 
 xiiWindowHandle xiiWindow::GetNativeWindowHandle() const
