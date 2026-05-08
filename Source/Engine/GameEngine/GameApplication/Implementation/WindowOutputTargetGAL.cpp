@@ -13,98 +13,66 @@
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/Image.h>
 
-xiiWindowOutputTargetGAL::xiiWindowOutputTargetGAL(OnSwapChainChanged onSwapChainChanged) :
+xiiWindowOutputTargetGAL::xiiWindowOutputTargetGAL(const xiiGALSwapChainCreationDescription& description, OnSwapChainChanged onSwapChainChanged) :
   m_OnSwapChainChanged(onSwapChainChanged)
 {
   m_pImageCapture = XII_DEFAULT_NEW(xiiGALImageCapture, xiiGALDevice::GetDefaultDevice());
+
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
+  m_pSwapChain = pDevice->CreateSwapChain(description);
+
+  XII_ASSERT_DEV(m_pSwapChain != nullptr, "Failed to create swap chain.");
 }
 
 xiiWindowOutputTargetGAL::~xiiWindowOutputTargetGAL()
 {
+  xiiSharedPtr<xiiGALDevice> pDevice = xiiGALDevice::GetDefaultDevice();
+
   m_pImageCapture.Clear();
   m_pSwapChain.Clear();
 
-  // After the swapchain is destroyed it can still be used in the renderer. As right after this usually the window is destroyed we must ensure that nothing still renders to it.
-  xiiGALDevice::GetDefaultDevice()->WaitIdle();
+  // After the Swap Chain is destroyed it can still be used in the renderer.
+  // As right after this usually the window is destroyed we must ensure that nothing still renders to it.
+  pDevice->WaitIdle();
 }
 
-void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDescription& desc)
+bool xiiWindowOutputTargetGAL::GetVSyncEnabled() const
 {
-  m_CurrentDesc = desc;
-  // xiiWindowOutputTargetGAL takes over the present mode and keeps it up to date with cvar_AppVSync.
-  m_Size        = desc.m_pWindow->GetClientAreaSize();
-  m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+  if (!m_pSwapChain)
+    return false;
 
-  xiiSharedPtr<xiiGALDevice> pDevice           = xiiGALDevice::GetDefaultDevice();
-  const bool                 bSwapChainExisted = m_pSwapChain != nullptr;
-
-  if (bSwapChainExisted)
-  {
-    m_pSwapChain->SetPresentMode(m_PresentMode);
-    m_pSwapChain->Resize(m_Size).AssertSuccess("Failed to resize swap chain!");
-
-    if (m_OnSwapChainChanged.IsValid())
-    {
-      // The swapchain may have a different size than the window advertised, e.g. if the window has been resized further in the meantime.
-      xiiSizeU32 currentSize = m_pSwapChain->GetCurrentSize();
-
-      m_OnSwapChainChanged(m_pSwapChain, currentSize);
-    }
-  }
-  else
-  {
-    m_pSwapChain = pDevice->CreateSwapChain(m_CurrentDesc);
-
-    m_pSwapChain->SetPresentMode(m_PresentMode);
-  }
+  return m_pSwapChain->GetPresentMode() == xiiGALPresentMode::VSync;
 }
 
-void xiiWindowOutputTargetGAL::AcquireImage()
-{
-  if (!m_OnSwapChainChanged.IsValid())
-    return;
-
-  xiiEnum<xiiGALPresentMode> presentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
-
-  // Detect window size or vsync mode changes.
-  if (m_Size != m_CurrentDesc.m_pWindow->GetClientAreaSize() || m_PresentMode != presentMode)
-  {
-    CreateSwapchain(m_CurrentDesc);
-  }
-
-  // Detect swapchain size changes that happen outside of window events.
-  CheckForSwapChainResize();
-}
-
-void xiiWindowOutputTargetGAL::PresentImage(bool bEnableVSync)
-{
-  if (m_pSwapChain == nullptr)
-    return;
-
-  m_pSwapChain->SetPresentMode(bEnableVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
-  m_pSwapChain->Present();
-}
-
-void xiiWindowOutputTargetGAL::CheckForSwapChainResize()
+void xiiWindowOutputTargetGAL::SetVSyncEnabled(bool bEnableVSync)
 {
   if (!m_pSwapChain)
     return;
 
-  // Query the actual swapchain size
-  xiiSizeU32 actualSize = m_pSwapChain->GetCurrentSize();
+  m_pSwapChain->SetPresentMode(bEnableVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
+}
 
-  // If the swapchain size has changed (e.g., due to OS/driver adjustments)
-  if (actualSize != m_Size)
+void xiiWindowOutputTargetGAL::PresentImage()
+{
+  if (!m_pSwapChain)
+    return;
+
+  m_pSwapChain->Present();
+}
+
+void xiiWindowOutputTargetGAL::Resize(const xiiSizeU32& newSize)
+{
+  if (!m_pSwapChain)
+    return;
+
+  const xiiGALSwapChainCreationDescription& description = m_pSwapChain->GetDescription();
+
+  m_pSwapChain->Resize(newSize, description.m_PreTransform);
+
+  if (m_OnSwapChainChanged.IsValid())
   {
-    m_Size = actualSize;
-
-    // Resize the swapchain to match the new size
-    m_pSwapChain->Resize(m_Size).AssertSuccess("Failed to resize swap chain!");
-
-    if (m_OnSwapChainChanged.IsValid())
-    {
-      m_OnSwapChainChanged(m_pSwapChain, m_Size);
-    }
+    m_OnSwapChainChanged(m_pSwapChain, newSize);
   }
 }
 
@@ -112,7 +80,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
   if (m_pSwapChain == nullptr)
   {
-    xiiLog::Error("No swapchain available for image capture.");
+    xiiLog::Error("No Swap Chain available for image capture.");
     return XII_FAILURE;
   }
 
@@ -155,7 +123,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
       }
       else
       {
-        xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
+        xiiLog::Error("Failed to map texture sub-resource for reading back-buffer data.");
       }
 
       pCommandList->UnmapTextureSubresource(capture.m_pTexture, mipLevelData).IgnoreResult();
