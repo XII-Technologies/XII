@@ -5,20 +5,14 @@
 .DESCRIPTION
   - Downloads (aria2 / BITS / Invoke-WebRequest) or uses local archive.
   - Extracts Qt sources to ./src.
-  - Runs configure.bat once (single-line).
-  - Runs cmake -G "Ninja", builds and installs.
+  - Runs configure.bat once (single-line) inside a cmd session that sources vcvars64.bat.
+  - Runs cmake -G "Ninja", builds and installs (in-source).
   - Logs to qt-build-powershell.log.
 
 USAGE
-  Open Developer PowerShell (x64) and run:
+  Open PowerShell and run:
     Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
     .\build-qt.ps1 -QtVersion 6.11.0 -Jobs 8
-
-PARAMETERS
-  -QtVersion  Qt version string (default 6.11.0)
-  -SrcArchive Optional path to local archive
-  -Jobs       Parallel build jobs (default 8)
-  -FastBrowserDownload If set, prints download URL and exits
 #>
 
 param(
@@ -46,7 +40,8 @@ if ($SrcArchive -ne "") {
 }
 
 $SrcDir = Join-Path $SrcRoot "qt-everywhere-src"
-$BuildDir = Join-Path $Root "build\ninja"
+# Build in-source: Qt configure expects building in the source tree for host tools
+$BuildDir = $SrcDir
 $InstallDir = Join-Path $Root "install\qtbase"
 
 # Helpers
@@ -82,52 +77,49 @@ foreach ($t in @("cmake","ninja","python")) {
   }
 }
 
-# Ensure MSVC environment
-$vcvars = $null
-if ($env:VSCMD_ARG_TGT_ARCH) {
-  Log "Detected Developer PowerShell environment."
-} else {
-  # try to locate vcvarsall.bat via VSINSTALLDIR or common locations
+# Locate vcvars64.bat robustly (use vswhere if present)
+function Find-Vcvars64 {
+  # Try VSINSTALLDIR first
   if ($env:VSINSTALLDIR) {
-    $vcvars = Join-Path $env:VSINSTALLDIR "VC\Auxiliary\Build\vcvarsall.bat"
-  } else {
-    $possible = @(
-      "C:\Program Files (x86)\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvarsall.bat",
-      "C:\Program Files (x86)\Microsoft Visual Studio\2026\Professional\VC\Auxiliary\Build\vcvarsall.bat",
-      "C:\Program Files (x86)\Microsoft Visual Studio\2026\Enterprise\VC\Auxiliary\Build\vcvarsall.bat",
-      "C:\Program Files\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvarsall.bat"
+    $candidate = Join-Path $env:VSINSTALLDIR "VC\Auxiliary\Build\vcvars64.bat"
+    if (Test-Path $candidate) { return $candidate }
+  }
 
-      "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat",
-      "C:\Program Files (x86)\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvarsall.bat",
-      "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat",
-      "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
-    )
-    foreach ($p in $possible) { if (Test-Path $p) { $vcvars = $p; break } }
-  }
-  if (-not $vcvars) {
-    Stop-Transcript
-    throw "vcvars not found. Run this script from Developer PowerShell or set VSINSTALLDIR."
-  } else {
-    Log "Sourcing vcvars to ensure MSVC toolchain is available."
-    # run vcvars in a cmd child so environment is applied to child only; we need it in this session
-    # capture environment and import into PowerShell session
-    $envText = cmd /c "`"$vcvars`" amd64 >nul 2>&1 && set"
-    $envText -split "`r?`n" | ForEach-Object {
-      if ($_ -match '^(.*?)=(.*)$') {
-        $name = $matches[1]; $value = $matches[2]
-        # avoid overwriting PowerShell-only variables
-        Set-Item -Path "Env:$name" -Value $value
+  # Try vswhere if available
+  if (Get-Command vswhere -ErrorAction SilentlyContinue) {
+    try {
+      $vsPath = & vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
+      if ($vsPath) {
+        $candidate = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+        if (Test-Path $candidate) { return $candidate }
       }
-    }
+    } catch { }
   }
+
+  # Common fallback locations (cover VS 2022/2026 Community/Professional/Enterprise)
+  $possible = @(
+    "C:\Program Files\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvars64.bat",
+    "C:\Program Files\Microsoft Visual Studio\2026\Professional\VC\Auxiliary\Build\vcvars64.bat",
+    "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\VC\Auxiliary\Build\vcvars64.bat",
+    "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+  )
+  foreach ($p in $possible) { if (Test-Path $p) { return $p } }
+  return $null
 }
 
-# Ensure source archive present or download
+$vcvars64 = Find-Vcvars64
+if (-not $vcvars64) {
+  Stop-Transcript
+  throw "vcvars64.bat not found. Run this script from Developer PowerShell (x64) or install Visual Studio and ensure vcvars64.bat is available."
+}
+Log "Found vcvars64: $vcvars64"
+
+# Ensure source archive present or download and extract
 if (-not (Test-Path $SrcDir)) {
   New-Item -ItemType Directory -Force -Path $SrcRoot | Out-Null
 
   if (-not (Test-Path $ArchivePath)) {
-    # prefer zip on Windows
     $url = Get-QtDownloadUrl $QtVersion $ArchiveNameZip
     if ($FastBrowserDownload) {
       Log "FAST_DOWNLOAD requested. Download URL:"
@@ -140,11 +132,8 @@ if (-not (Test-Path $SrcDir)) {
     } catch {
       Log "Primary download failed, trying tar.xz fallback"
       $url2 = Get-QtDownloadUrl $QtVersion $ArchiveNameTar
-      Download-File $url2 (Join-Path $SrcRoot $ArchiveNameTar)
-      # prefer zip if available; set ArchivePath accordingly
-      if (Test-Path (Join-Path $SrcRoot $ArchiveNameTar)) {
-        $ArchivePath = Join-Path $SrcRoot $ArchiveNameTar
-      }
+      $ArchivePath = Join-Path $SrcRoot $ArchiveNameTar
+      Download-File $url2 $ArchivePath
     }
   } else {
     Log "Using provided archive: $ArchivePath"
@@ -156,7 +145,6 @@ if (-not (Test-Path $SrcDir)) {
     Expand-Archive -Path $ArchivePath -DestinationPath $SrcRoot -Force
   } else {
     Log "Extracting tar.xz $ArchivePath"
-    # Use tar if available
     if (Get-Command tar -ErrorAction SilentlyContinue) {
       tar -xf $ArchivePath -C $SrcRoot
     } else {
@@ -178,36 +166,30 @@ if (-not (Test-Path $SrcDir)) {
   Log "Source already extracted at $SrcDir"
 }
 
-# Run configure.bat (single-line) under cmd.exe
+# Build commands to run inside a single cmd.exe session that first calls vcvars64.bat
+# We use 'call' so batch files return control to cmd and '&&' to stop on failure.
 $winSrc = $SrcDir
 $winPrefix = $InstallDir
+
+# Ensure install dir exists
+New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+
+# Configure args (adjust as needed)
 $configureArgs = "-prefix `"$winPrefix`" -release -nomake examples -nomake tests"
-$configureCmd = "`"$winSrc\configure.bat`" $configureArgs"
-Log "Running configure.bat (this may take a while)"
-$cfgExit = cmd /c $configureCmd
+
+# Build the full cmd script (single-line) to run under cmd /c
+# Use double quotes around the whole command for cmd /c, and escape inner quotes properly.
+$cmdScript = "call `"$vcvars64`" amd64 && pushd `"$winSrc`" && call `"$winSrc\configure.bat`" $configureArgs && cmake -G `"Ninja`" -S `"$winSrc`" -B `"$winSrc`" -D CMAKE_BUILD_TYPE=RelWithDebInfo -D CMAKE_INSTALL_PREFIX=`"$winPrefix`" && cmake --build `"$winSrc`" --parallel $Jobs && cmake --install `"$winSrc`" --prefix `"$winPrefix`" && popd"
+
+Log "Running configure, build and install inside a single cmd.exe session (this ensures vcvars64 is active for all steps)."
+Log "Command: cmd /c <vcvars64 && configure && cmake build && cmake install>"
+
+# Execute the command in cmd.exe so batch files run correctly
+& cmd /c $cmdScript
 if ($LASTEXITCODE -ne 0) {
   Stop-Transcript
-  throw "configure.bat failed with exit code $LASTEXITCODE. See log for details."
+  throw "Build sequence failed with exit code $LASTEXITCODE. See log for details."
 }
-
-# Configure CMake for Ninja and build
-New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
-Push-Location $BuildDir
-try {
-  Log "Configuring CMake (Ninja)"
-  cmake -G "Ninja" -S $SrcDir -B $BuildDir -D CMAKE_BUILD_TYPE=RelWithDebInfo -D CMAKE_INSTALL_PREFIX=$InstallDir
-
-  Log "Building with Ninja ($Jobs jobs)"
-  cmake --build $BuildDir --parallel $Jobs
-
-  Log "Installing to $InstallDir"
-  cmake --install $BuildDir --prefix $InstallDir
-} catch {
-  Pop-Location
-  Stop-Transcript
-  throw "Build failed: $_"
-}
-Pop-Location
 
 Stop-Transcript
 Log "Build finished. Install tree at $InstallDir"
