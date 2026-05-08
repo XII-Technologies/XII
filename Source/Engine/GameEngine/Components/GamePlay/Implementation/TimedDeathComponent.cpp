@@ -8,10 +8,10 @@
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <GameEngine/Gameplay/TimedDeathComponent.h>
+#include <GameEngine/Components/Gameplay/TimedDeathComponent.h>
 
 // clang-format off
-XII_BEGIN_COMPONENT_TYPE(xiiTimedDeathComponent, 2, xiiComponentMode::Static)
+XII_BEGIN_COMPONENT_TYPE(xiiTimedDeathComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {

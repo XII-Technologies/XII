@@ -6,7 +6,7 @@
 #include <Core/World/GameObject.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
-#include <GameEngine/Gameplay/TriggerDelayModifierComponent.h>
+#include <GameEngine/Components/Gameplay/TriggerDelayModifierComponent.h>
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiTriggerDelayModifierComponent, 1 /* version */, xiiComponentMode::Static)
