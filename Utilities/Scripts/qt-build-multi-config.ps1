@@ -18,7 +18,7 @@ USAGE
 param(
   [string]$QtVersion = "6.11.0",
   [string]$SrcArchive = "",
-  [int]$Jobs = 8,
+  [int]$Jobs = [Environment]::ProcessorCount,
   [switch]$FastBrowserDownload
 )
 
