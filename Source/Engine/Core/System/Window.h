@@ -109,6 +109,58 @@ public:
   bool                   m_bCenterWindowOnDisplay = true;                               ///< If true, the window will be centered on the display. This is only relevant for windowed modes and is ignored for fullscreen modes.
 };
 
+/// Broadcast when various things happen to a window.
+///
+/// Subscribe through the WindowEvents() function to be notified.
+struct xiiWindowEvent
+{
+  enum Type : xiiUInt8
+  {
+    WindowDestruction = 0U, ///< This is broadcast when a window is about to be destroyed. The window is still valid at this point, but will become invalid after the event has been processed.
+    VisibilityChanged,      ///< This is broadcast when a window's visibility changes, e.g., when it is minimized or restored.
+    FocusChanged,           ///< This is broadcast when a window's focus state changes, e.g., when it is activated or deactivated.
+    SizeChanged,            ///< This is broadcast when a window's size changes.
+    PositionChanged,        ///< This is broadcast when a window's position changes.
+    CloseButtonClicked,     ///< This is broadcast when the user clicks the close button of a window. Note that this event is not guaranteed to be triggered for all platforms or window modes, e.g., it may not be triggered for fullscreen windows.
+
+    UserEvent = 0xFFU,
+  };
+
+  Type             m_Type;
+  class xiiWindow* m_pWindow = nullptr;
+
+  union Payload
+  {
+    struct
+    {
+      bool m_bVisible; ///< Whether the window is now visible or not.
+    } visibility;      ///< This is only relevant for the VisibilityChanged event.
+    struct
+    {
+      bool m_bFocused; ///< Whether the window is now focused or not.
+    } focus;           ///< This is only relevant for the FocusChanged event.
+    struct
+    {
+      xiiInt32 m_iWidth;  ///< The new width of the window in pixel.
+      xiiInt32 m_iHeight; ///< The new height of the window in pixel.
+    } size;               ///< This is only relevant for the SizeChanged event.
+    struct
+    {
+      xiiInt32 m_iX; ///< The new X position of the window in pixel.
+      xiiInt32 m_iY; ///< The new Y position of the window in pixel.
+    } position;      ///< This is only relevant for the PositionChanged event.
+    struct
+    {
+      xiiUInt32 m_uiUserCode; ///< The user code is an arbitrary value that can be used to distinguish different user events.
+    } user;                   ///< This is only relevant for the UserEvent event.
+
+    Payload() :
+      user{0}
+    {
+    }
+  } m_Payload;
+};
+
 /// \brief Base class for window output targets
 ///
 /// A window output target is usually tied tightly to a window (\sa xiiWindowBase) and represents the graphics APIs side of the render output.
@@ -155,15 +207,10 @@ public:
   /// \brief Returns the currently active description struct.
   inline const xiiWindowCreationDescription& GetCreationDescription() const { return m_CreationDescription; }
 
-  /// \brief Returns the size of the client area / ie. the window resolution.
   virtual xiiSizeU32 GetClientAreaSize() const override { return m_CreationDescription.m_Resolution; }
 
-  /// \brief Returns the platform specific window handle.
   virtual xiiWindowHandle GetNativeWindowHandle() const override;
 
-  /// \brief Returns whether the window covers an entire monitor.
-  ///
-  /// If bOnlyProperFullscreenMode == false, this includes borderless windows.
   virtual bool IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override
   {
     if (bOnlyProperFullscreenMode)
@@ -175,12 +222,9 @@ public:
   virtual bool IsVisible() const override { return m_bVisible; }
 
   virtual void AddReference() override { m_iReferenceCount.Increment(); }
+
   virtual void RemoveReference() override { m_iReferenceCount.Decrement(); }
 
-
-  /// \brief Runs the platform specific message pump.
-  ///
-  /// You should call ProcessWindowMessages every frame to keep the window responsive.
   virtual void ProcessWindowMessages() override;
 
   /// \brief Creates a new platform specific window with the current settings
@@ -201,6 +245,7 @@ public:
   xiiResult Initialize(const xiiWindowCreationDescription& creationDescription)
   {
     m_CreationDescription = creationDescription;
+
     return Initialize();
   }
 
@@ -225,13 +270,13 @@ public:
   virtual void OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY);
 
   /// \brief Called when the window gets focus or loses focus.
-  virtual void OnFocus(bool bHasFocus) { XII_IGNORE_UNUSED(bHasFocus); }
+  virtual void OnFocus(bool bHasFocus);
 
   /// \brief Called when the window gets focus or loses focus.
-  virtual void OnVisibleChange(bool bVisible) { m_bVisible = bVisible; }
+  virtual void OnVisibleChange(bool bVisible);
 
-  /// \brief Called when the close button of the window is clicked. Does nothing by default.
-  virtual void OnClickClose() {}
+  /// \brief Called when the close button of the window is clicked.
+  virtual void OnClickClose();
 
   /// \brief Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
@@ -245,6 +290,11 @@ public:
   /// \brief Gets the output target for this window.
   xiiWindowOutputTargetBase* GetOutputTarget() const;
 
+  /// \brief Allows to subscribe to window events.
+  ///
+  /// Note that AddEventHandler() is a const function, so can be called on the returned const xiiEvent reference.
+  const xiiEvent<xiiWindowEvent>& GetWindowEvents() const { return m_WindowEvents; }
+
   /// \brief Returns a number that can be used as a window number in xiiWindowCreationDescription.
   ///
   /// This number just increments whenever a xiiWindow is created. It starts at zero.
@@ -256,9 +306,11 @@ protected:
   /// \remarks That means that messages like Resize will also have no effect on this variable.
   xiiWindowCreationDescription m_CreationDescription;
 
-private:
+  xiiEvent<xiiWindowEvent> m_WindowEvents; ///< This event is broadcast when various things happen to the window, such as when it is resized or when the close button is clicked. You can subscribe to this event to be notified about these events.
+
   bool m_bInitialized = false; ///< Whether the window is initialized and has a valid native handle.
   bool m_bVisible     = true;  ///< Whether the window is visible.
+  bool m_bHasFocus    = true;  ///< Whether the window has focus.
 
   xiiUniquePtr<xiiStandardInputDevice>    m_pInputDevice;  ///< The input device attached to this window, typically providing mouse and keyboard input.
   xiiUniquePtr<xiiWindowOutputTargetBase> m_pOutputTarget; ///< The output target for this window, typically representing the graphics API side of the render output.

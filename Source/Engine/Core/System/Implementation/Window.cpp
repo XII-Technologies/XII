@@ -203,27 +203,78 @@ xiiWindow::xiiWindow()
 
 xiiWindow::~xiiWindow()
 {
+  XII_ASSERT_DEV(m_iReferenceCount == 0, "The window is still being referenced, probably by a swapchain. Make sure to destroy all swapchains and call xiiGALDevice::WaitIdle before destroying a window.");
+
+  xiiWindowEvent e;
+  e.m_Type    = xiiWindowEvent::Type::WindowDestruction;
+  e.m_pWindow = this;
+
+  m_WindowEvents.Broadcast(e);
+
   if (m_bInitialized)
   {
     Destroy().IgnoreResult();
   }
-  XII_ASSERT_DEV(m_iReferenceCount == 0, "The window is still being referenced, probably by a swapchain. Make sure to destroy all swapchains and call xiiGALDevice::WaitIdle before destroying a window.");
 }
 
 void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
 {
-  xiiLog::Info("Window resized to ({0}, {1})", newWindowSize.width, newWindowSize.height);
-
   if (m_pOutputTarget)
   {
     m_pOutputTarget->Resize(newWindowSize);
   }
+
+  xiiWindowEvent e;
+  e.m_Type                   = xiiWindowEvent::Type::SizeChanged;
+  e.m_pWindow                = this;
+  e.m_Payload.size.m_iWidth  = newWindowSize.width;
+  e.m_Payload.size.m_iHeight = newWindowSize.height;
+
+  m_WindowEvents.Broadcast(e);
 }
 
 void xiiWindow::OnWindowMove(const xiiInt32 iNewPosX, const xiiInt32 iNewPosY)
 {
-  XII_IGNORE_UNUSED(iNewPosX);
-  XII_IGNORE_UNUSED(iNewPosY);
+  xiiWindowEvent e;
+  e.m_Type                  = xiiWindowEvent::Type::PositionChanged;
+  e.m_pWindow               = this;
+  e.m_Payload.position.m_iX = iNewPosX;
+  e.m_Payload.position.m_iY = iNewPosY;
+
+  m_WindowEvents.Broadcast(e);
+}
+
+void xiiWindow::OnFocus(bool bHasFocus)
+{
+  m_bHasFocus = bHasFocus;
+
+  xiiWindowEvent e;
+  e.m_Type                     = xiiWindowEvent::Type::FocusChanged;
+  e.m_pWindow                  = this;
+  e.m_Payload.focus.m_bFocused = bHasFocus;
+
+  m_WindowEvents.Broadcast(e);
+}
+
+void xiiWindow::OnVisibleChange(bool bVisible)
+{
+  m_bVisible = bVisible;
+
+  xiiWindowEvent e;
+  e.m_Type                          = xiiWindowEvent::Type::VisibilityChanged;
+  e.m_pWindow                       = this;
+  e.m_Payload.visibility.m_bVisible = bVisible;
+
+  m_WindowEvents.Broadcast(e);
+}
+
+void xiiWindow::OnClickClose()
+{
+  xiiWindowEvent e;
+  e.m_Type    = xiiWindowEvent::Type::CloseButtonClicked;
+  e.m_pWindow = this;
+
+  m_WindowEvents.Broadcast(e);
 }
 
 void xiiWindow::SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget)
