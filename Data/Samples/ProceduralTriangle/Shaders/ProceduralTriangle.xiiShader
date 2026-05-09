@@ -43,20 +43,19 @@ static const float3 gBary[3] =
 
 void main(in uint uiVertexID : SV_VertexID, out VSOut OUT)
 {
-  // Positions are provided in a -0.5..0.5 local screen-space range.
-  // Expand to clip space (-1..1) while preserving aspect ratio so the triangle
-  // covers the same relative area regardless of window size.
+  // Local positions in -0.5..0.5 range
   float2 pos = gPositions[uiVertexID].xy;
 
-  // preserve aspect: scale X by aspect so triangle doesn't squash on non-square windows
-  float aspect = vResolution.x > 0.0 ? (vResolution.x / vResolution.y) : 1.0;
-  float2 clipPos = float2(pos.x * aspect * 2.0, pos.y * 2.0); // *2 to map -0.5..0.5 -> -1..1
+  // Inverse-aspect correction so the triangle preserves shape across window sizes.
+  // Use height/width to scale X down on wide windows (prevents the triangle from overflowing).
+  float aspectInv = (vResolution.x > 0.0) ? (vResolution.y / vResolution.x) : 1.0;
+  float2 clipPos = float2(pos.x * 2.0 * aspectInv, pos.y * 2.0); // map -0.5..0.5 -> -1..1
 
   OUT.Position = float4(clipPos, 0.0, 1.0);
   OUT.Color    = gColors[uiVertexID];
   OUT.Bary     = gBary[uiVertexID];
 
-  // flat normal (not used for world lighting in screen-space mode, but kept for compatibility)
+  // flat normal (kept for compatibility with existing PS)
   float3 p0 = gPositions[0];
   float3 p1 = gPositions[1];
   float3 p2 = gPositions[2];
