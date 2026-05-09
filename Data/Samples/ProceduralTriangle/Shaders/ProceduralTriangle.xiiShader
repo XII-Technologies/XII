@@ -99,48 +99,38 @@ float noise(float2 uv)
   return lerp(lerp(a,b,u.x), lerp(c,d,u.x), u.y);
 }
 
+// Neon: high saturation, additive highlights, punchy rim
 float4 main(PSIn IN) : SV_TARGET
 {
-  // base color from barycentric interpolation of vertex palette
-  float3 c0 = float3(1.0, 0.25, 0.15);
-  float3 c1 = float3(0.15, 1.0, 0.25);
-  float3 c2 = float3(0.25, 0.35, 1.0);
+  float3 c0 = float3(1.0, 0.15, 0.05);
+  float3 c1 = float3(0.05, 1.0, 0.15);
+  float3 c2 = float3(0.15, 0.25, 1.0);
   float3 baseColor = IN.Bary.x * c0 + IN.Bary.y * c1 + IN.Bary.z * c2;
 
-  // animated pulse (screen-space)
-  float pulse = 0.6 + 0.4 * sin(fTime * 2.0 + dot(IN.ScreenUV, float2(12.0, 7.0)));
-  baseColor *= pulse;
+  float pulse = 0.5 + 0.5 * sin(fTime * 3.0 + IN.ScreenUV.x * 8.0);
+  baseColor *= pulse * 1.5;
 
-  // screen-space rim / vignette (gives a soft highlight toward center)
-  float2 center = float2(0.5, 0.5);
-  float2 d = IN.ScreenUV - center;
-  float rim = pow(1.0 - saturate(length(d) * 1.6), 2.0);
-  float3 rimCol = float3(1.0, 0.9, 0.7) * rim * 0.35;
+  float2 d = IN.ScreenUV - 0.5;
+  float rim = pow(1.0 - saturate(length(d) * 1.2), 2.0);
+  float3 rimCol = float3(1.0, 0.8, 0.6) * rim * 1.0;
 
-  // soft silhouette via barycentric distance to nearest edge
   float minB = min(min(IN.Bary.x, IN.Bary.y), IN.Bary.z);
-
-  // approximate pixel scale for edge width using derivatives
   float px = length(ddx(IN.Position.xy)) + length(ddy(IN.Position.xy));
   float edgePx = max(1.0, fWireWidth) * 0.5 * px;
   float edgeFade = smoothstep(0.0, edgePx * 0.9, minB);
 
-  // wire overlay: thin dark lines near edges
-  float wire = smoothstep(0.0, edgePx * 0.6, minB);
-  float wireLine = 1.0 - wire;
-  float3 wireColor = float3(0.06, 0.06, 0.06);
+  float n = noise(IN.ScreenUV * vResolution * 0.5 + fTime * 1.2);
+  float grain = (n - 0.5) * 0.04;
 
-  // subtle procedural grain (screen-space, resolution-aware)
-  float n = noise(IN.ScreenUV * vResolution * 0.25 + fTime * 0.7);
-  float grain = (n - 0.5) * 0.02;
-
-  // combine components
   float3 col = baseColor + rimCol;
-  col = lerp(wireColor, col, saturate(edgeFade));
+  col = lerp(float3(0.02,0.02,0.02), col, saturate(edgeFade));
   col += grain;
 
-  // simple tonemap and gamma
-  col = col / (col + 1.0);
+  // additive highlight boost to simulate bloom
+  col += pow(max(col - 0.6, 0.0), float3(1.6,1.6,1.6)) * 0.9;
+
+  // clamp then gamma
+  col = saturate(col);
   col = pow(col, 1.0 / 2.2);
 
   return float4(col, 1.0);
