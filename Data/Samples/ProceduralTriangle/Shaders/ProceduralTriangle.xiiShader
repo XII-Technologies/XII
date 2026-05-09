@@ -8,46 +8,127 @@ CullMode    = CullMode_None
 
 [VERTEX_SHADER]
 
-struct PSInput 
-{ 
- float4 Position : SV_POSITION; 
- float3 Color    : COLOR; 
+#include "ProceduralTriangleConstants.h"
+
+struct VSOut
+{
+  float4 Position : SV_POSITION;
+  float3 Color    : COLOR0;
+  float3 Bary     : TEXCOORD0;
+  float3 Normal   : TEXCOORD1;
+  float2 ScreenUV : TEXCOORD2;
 };
 
-void main(in uint uiVertexID : SV_VertexID, out PSInput PSIn) 
+static const float3 gPositions[3] =
 {
-  static const float4 positions[3] =
-  {
-    float4(-0.5, -0.5, 0.0, 1.0),
-    float4( 0.0, +0.5, 0.0, 1.0),
-    float4(+0.5, -0.5, 0.0, 1.0)
-  };
+  float3(-0.5, -0.5, 0.0),
+  float3( 0.0,  0.5, 0.0),
+  float3( 0.5, -0.5, 0.0)
+};
 
-  static const float3 colors[3] =
-  {
-    float3(1.0, 0.0, 0.0), // red
-    float3(0.0, 1.0, 0.0), // green
-    float3(0.0, 0.0, 1.0)  // blue
-  };
+static const float3 gColors[3] =
+{
+  float3(1.0, 0.2, 0.15),
+  float3(0.15, 1.0, 0.2),
+  float3(0.2, 0.3, 1.0)
+};
 
-  PSIn.Position = positions[uiVertexID];
-  PSIn.Color    = colors[uiVertexID];
+static const float3 gBary[3] =
+{
+  float3(1,0,0),
+  float3(0,1,0),
+  float3(0,0,1)
+};
+
+void main(in uint uiVertexID : SV_VertexID, out VSOut OUT)
+{
+  float3 pos   = gPositions[uiVertexID];
+  float4 clip  = mul(mModelViewMatrix, float4(pos, 1.0));
+  OUT.Position = clip;
+  OUT.Color    = gColors[uiVertexID];
+  OUT.Bary     = gBary[uiVertexID];
+
+  // face normal (flat)
+  float3 p0  = gPositions[0];
+  float3 p1  = gPositions[1];
+  float3 p2  = gPositions[2];
+  OUT.Normal = normalize(cross(p1 - p0, p2 - p0));
+
+  float2 ndc   = OUT.Position.xy / OUT.Position.w;
+  OUT.ScreenUV = ndc * 0.5 + 0.5;
 }
 
-[PIXEL_SHADER]  
+[PIXEL_SHADER]
 
-struct PSInput 
-{ 
-  float4 Position : SV_POSITION; 
-  float3 Color    : COLOR; 
+#include "ProceduralTriangleConstants.h"
+
+struct PSIn
+{
+  float4 Position : SV_POSITION;
+  float3 Color    : COLOR0;
+  float3 Bary     : TEXCOORD0;
+  float3 Normal   : TEXCOORD1;
+  float2 ScreenUV : TEXCOORD2;
 };
 
-struct PSOutput
+float hash21(float2 p)
 {
-  float4 Color : SV_TARGET;
-};
+  p  = frac(p * float2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return frac(p.x * p.y);
+}
 
-void main(in PSInput PSIn, out PSOutput PSOut)
+float noise(float2 uv)
 {
-  PSOut.Color = float4(PSIn.Color.rgb, 1.0);
+  float2 i = floor(uv);
+  float2 f = frac(uv);
+  float a  = hash21(i);
+  float b  = hash21(i + float2(1,0));
+  float c  = hash21(i + float2(0,1));
+  float d  = hash21(i + float2(1,1));
+  float2 u = f * f * (3.0 - 2.0 * f);
+  return lerp(lerp(a,b,u.x), lerp(c,d,u.x), u.y);
+}
+
+float4 main(PSIn IN) : SV_TARGET
+{
+  // animated color pulse
+  float pulse = 0.65 + 0.35 * sin(fTime * 2.0 + dot(IN.ScreenUV, float2(12.0,7.0)));
+  float3 base = IN.Color * pulse;
+
+  // rim/fresnel
+  float3 viewDir = normalize(vCameraPos - (IN.Position.xyz / IN.Position.w));
+  float NdotV    = saturate(dot(normalize(IN.Normal), viewDir));
+  float rim      = pow(1.0 - NdotV, 2.0);
+  float3 rimCol  = float3(1.0, 0.85, 0.6) * rim * 0.45;
+
+  // soft silhouette via barycentric
+  float minB = min(min(IN.Bary.x, IN.Bary.y), IN.Bary.z);
+
+  // approximate pixel scale for edge width
+  float px       = length(ddx(IN.Position.xy)) + length(ddy(IN.Position.xy));
+  float edgePx   = max(1.0, fWireWidth) * 0.5 * px;
+  float edgeFade = smoothstep(0.0, edgePx * 0.9, minB);
+
+  // wire overlay
+  float wire       = smoothstep(0.0, edgePx * 0.6, minB);
+  float wireLine   = 1.0 - wire;
+  float3 wireColor = float3(0.06, 0.06, 0.06);
+
+  // subtle procedural grain
+  float n     = noise(IN.ScreenUV * vResolution * 0.25 + fTime * 0.7);
+  float grain = (n - 0.5) * 0.02;
+
+  // combine
+  float3 col = base + rimCol;
+  col        = lerp(wireColor, col, saturate(edgeFade));
+  col       += grain;
+
+  // simple ACES-like tonemap approximation
+  col = col / (col + 1.0);
+
+  // gamma
+  col = pow(col, 1.0 / 2.2);
+
+  return float4(col, 1.0);
 }
