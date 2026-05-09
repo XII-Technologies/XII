@@ -19,6 +19,7 @@ struct VSOut
   float2 ScreenUV : TEXCOORD2;
 };
 
+// triangle defined in normalized screen-space extents (-0.5..0.5)
 static const float3 gPositions[3] =
 {
   float3(-0.5, -0.5, 0.0),
@@ -42,19 +43,27 @@ static const float3 gBary[3] =
 
 void main(in uint uiVertexID : SV_VertexID, out VSOut OUT)
 {
-  float3 pos   = gPositions[uiVertexID];
-  float4 clip  = mul(mModelViewMatrix, float4(pos, 1.0));
-  OUT.Position = clip;
+  // Positions are provided in a -0.5..0.5 local screen-space range.
+  // Expand to clip space (-1..1) while preserving aspect ratio so the triangle
+  // covers the same relative area regardless of window size.
+  float2 pos = gPositions[uiVertexID].xy;
+
+  // preserve aspect: scale X by aspect so triangle doesn't squash on non-square windows
+  float aspect = vResolution.x > 0.0 ? (vResolution.x / vResolution.y) : 1.0;
+  float2 clipPos = float2(pos.x * aspect * 2.0, pos.y * 2.0); // *2 to map -0.5..0.5 -> -1..1
+
+  OUT.Position = float4(clipPos, 0.0, 1.0);
   OUT.Color    = gColors[uiVertexID];
   OUT.Bary     = gBary[uiVertexID];
 
-  // face normal (flat)
-  float3 p0  = gPositions[0];
-  float3 p1  = gPositions[1];
-  float3 p2  = gPositions[2];
+  // flat normal (not used for world lighting in screen-space mode, but kept for compatibility)
+  float3 p0 = gPositions[0];
+  float3 p1 = gPositions[1];
+  float3 p2 = gPositions[2];
   OUT.Normal = normalize(cross(p1 - p0, p2 - p0));
 
-  float2 ndc   = OUT.Position.xy / OUT.Position.w;
+  // ScreenUV in 0..1 for screen-space effects
+  float2 ndc = OUT.Position.xy / OUT.Position.w;
   OUT.ScreenUV = ndc * 0.5 + 0.5;
 }
 
@@ -71,6 +80,7 @@ struct PSIn
   float2 ScreenUV : TEXCOORD2;
 };
 
+// cheap hash / value noise for subtle grain
 float hash21(float2 p)
 {
   p  = frac(p * float2(123.34, 456.21));
@@ -92,42 +102,46 @@ float noise(float2 uv)
 
 float4 main(PSIn IN) : SV_TARGET
 {
-  // animated color pulse
-  float pulse = 0.65 + 0.35 * sin(fTime * 2.0 + dot(IN.ScreenUV, float2(12.0,7.0)));
-  float3 base = IN.Color * pulse;
+  // base color from barycentric interpolation of vertex palette
+  float3 c0 = float3(1.0, 0.25, 0.15);
+  float3 c1 = float3(0.15, 1.0, 0.25);
+  float3 c2 = float3(0.25, 0.35, 1.0);
+  float3 baseColor = IN.Bary.x * c0 + IN.Bary.y * c1 + IN.Bary.z * c2;
 
-  // rim/fresnel
-  float3 viewDir = normalize(vCameraPos - (IN.Position.xyz / IN.Position.w));
-  float NdotV    = saturate(dot(normalize(IN.Normal), viewDir));
-  float rim      = pow(1.0 - NdotV, 2.0);
-  float3 rimCol  = float3(1.0, 0.85, 0.6) * rim * 0.45;
+  // animated pulse (screen-space)
+  float pulse = 0.6 + 0.4 * sin(fTime * 2.0 + dot(IN.ScreenUV, float2(12.0, 7.0)));
+  baseColor *= pulse;
 
-  // soft silhouette via barycentric
+  // screen-space rim / vignette (gives a soft highlight toward center)
+  float2 center = float2(0.5, 0.5);
+  float2 d = IN.ScreenUV - center;
+  float rim = pow(1.0 - saturate(length(d) * 1.6), 2.0);
+  float3 rimCol = float3(1.0, 0.9, 0.7) * rim * 0.35;
+
+  // soft silhouette via barycentric distance to nearest edge
   float minB = min(min(IN.Bary.x, IN.Bary.y), IN.Bary.z);
 
-  // approximate pixel scale for edge width
-  float px       = length(ddx(IN.Position.xy)) + length(ddy(IN.Position.xy));
-  float edgePx   = max(1.0, fWireWidth) * 0.5 * px;
+  // approximate pixel scale for edge width using derivatives
+  float px = length(ddx(IN.Position.xy)) + length(ddy(IN.Position.xy));
+  float edgePx = max(1.0, fWireWidth) * 0.5 * px;
   float edgeFade = smoothstep(0.0, edgePx * 0.9, minB);
 
-  // wire overlay
-  float wire       = smoothstep(0.0, edgePx * 0.6, minB);
-  float wireLine   = 1.0 - wire;
+  // wire overlay: thin dark lines near edges
+  float wire = smoothstep(0.0, edgePx * 0.6, minB);
+  float wireLine = 1.0 - wire;
   float3 wireColor = float3(0.06, 0.06, 0.06);
 
-  // subtle procedural grain
-  float n     = noise(IN.ScreenUV * vResolution * 0.25 + fTime * 0.7);
+  // subtle procedural grain (screen-space, resolution-aware)
+  float n = noise(IN.ScreenUV * vResolution * 0.25 + fTime * 0.7);
   float grain = (n - 0.5) * 0.02;
 
-  // combine
-  float3 col = base + rimCol;
-  col        = lerp(wireColor, col, saturate(edgeFade));
-  col       += grain;
+  // combine components
+  float3 col = baseColor + rimCol;
+  col = lerp(wireColor, col, saturate(edgeFade));
+  col += grain;
 
-  // simple ACES-like tonemap approximation
+  // simple tonemap and gamma
   col = col / (col + 1.0);
-
-  // gamma
   col = pow(col, 1.0 / 2.2);
 
   return float4(col, 1.0);

@@ -550,11 +550,9 @@ private:
         // Map the constant buffer and write the data for this frame. The render graph will ensure proper synchronization so that the GPU is not still reading from it when we write to it.
         xiiGALMapHelper<xiiProceduralTriangleConstants> pConstants(cmd, context.GetBuffer(data.m_hTriangleConstantBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
 
-        pConstants->mModelViewMatrix = xiiMat4::MakeIdentity();
-        pConstants->vCameraPos       = xiiVec3::MakeZero();
-        pConstants->fTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 1000.0);
-        pConstants->vResolution      = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
-        pConstants->fWireWidth       = 1.0f;
+        pConstants->fTime       = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 1000.0);
+        pConstants->vResolution = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
+        pConstants->fWireWidth  = 1.0f;
       }
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
