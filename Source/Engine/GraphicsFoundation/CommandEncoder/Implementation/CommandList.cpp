@@ -495,7 +495,7 @@ void xiiGALCommandList::SetConstantBuffer(const xiiGALPipelineResourceDescriptio
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::ConstantBuffer && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -525,7 +525,7 @@ void xiiGALCommandList::SetShaderResourceBufferView(const xiiGALPipelineResource
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::BufferSRV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -555,7 +555,7 @@ void xiiGALCommandList::SetShaderResourceTextureView(const xiiGALPipelineResourc
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && (resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -585,7 +585,7 @@ void xiiGALCommandList::SetUnorderedAccessBufferView(const xiiGALPipelineResourc
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::BufferUAV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -615,7 +615,7 @@ void xiiGALCommandList::SetUnorderedAccessTextureView(const xiiGALPipelineResour
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::TextureUAV && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -645,7 +645,7 @@ void xiiGALCommandList::SetSampler(const xiiGALPipelineResourceDescription& bind
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -673,7 +673,7 @@ void xiiGALCommandList::SetAccelerationStructure(const xiiGALPipelineResourceDes
 
     for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
     {
-      if (resource.m_sName == bindingInformation.m_sName && resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && resource.m_ShaderStages.AreAllSet(bindingInformation.m_ShaderStages))
+      if (resource == bindingInformation)
       {
         bResourceFound = true;
         break;
@@ -698,7 +698,7 @@ void xiiGALCommandList::ResolveAndSetConstantBuffer(const xiiTempHashedString& s
   {
     if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::ConstantBuffer && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetConstantBuffer(resource, pConstantBuffer);
+      SetConstantBuffer(resource, pConstantBuffer);
     }
   }
 }
@@ -714,7 +714,7 @@ void xiiGALCommandList::ResolveAndSetShaderResourceBufferView(const xiiTempHashe
   {
     if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferSRV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetShaderResourceBufferView(resource, pBufferView);
+      SetShaderResourceBufferView(resource, pBufferView);
     }
   }
 }
@@ -730,7 +730,7 @@ void xiiGALCommandList::ResolveAndSetShaderResourceTextureView(const xiiTempHash
   {
     if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::TextureSRV || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetShaderResourceTextureView(resource, pTextureView);
+      SetShaderResourceTextureView(resource, pTextureView);
     }
   }
 }
@@ -746,7 +746,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessBufferView(const xiiTempHash
   {
     if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::BufferUAV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetUnorderedAccessBufferView(resource, pBufferView);
+      SetUnorderedAccessBufferView(resource, pBufferView);
     }
   }
 }
@@ -762,7 +762,7 @@ void xiiGALCommandList::ResolveAndSetUnorderedAccessTextureView(const xiiTempHas
   {
     if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::TextureUAV && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetUnorderedAccessTextureView(resource, pTextureView);
+      SetUnorderedAccessTextureView(resource, pTextureView);
     }
   }
 }
@@ -778,7 +778,7 @@ void xiiGALCommandList::ResolveAndSetSampler(const xiiTempHashedString& sResourc
   {
     if (resource.m_sName == sResourceName && (resource.m_ResourceType == xiiGALShaderResourceType::Sampler || resource.m_ResourceType == xiiGALShaderResourceType::TextureAndSampler) && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetSampler(resource, pSampler);
+      SetSampler(resource, pSampler);
     }
   }
 }
@@ -794,7 +794,7 @@ void xiiGALCommandList::ResolveAndSetAccelerationStructure(const xiiTempHashedSt
   {
     if (resource.m_sName == sResourceName && resource.m_ResourceType == xiiGALShaderResourceType::AccelerationStructure && (!shaderStages.IsAnyFlagSet() || resource.m_ShaderStages.AreAllSet(shaderStages)))
     {
-      return SetAccelerationStructure(resource, pTopLevelAS);
+      SetAccelerationStructure(resource, pTopLevelAS);
     }
   }
 }
