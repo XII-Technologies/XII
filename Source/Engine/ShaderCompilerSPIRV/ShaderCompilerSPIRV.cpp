@@ -379,7 +379,7 @@ xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, x
 
     if (stageData.m_bWriteToDisk == false)
     {
-      xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderType::Names[it.Key()]);
+      xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(it.Key())]);
       continue;
     }
 

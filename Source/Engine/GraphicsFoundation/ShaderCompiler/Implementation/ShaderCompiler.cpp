@@ -612,7 +612,7 @@ void xiiGALShaderCompiler::WriteFailedShaderSource(xiiGALShaderProgramData& spd,
     {
       xiiStringBuilder sShaderStageFile = xiiGALShaderManager::GetCacheDirectory();
       sShaderStageFile.AppendPath(xiiGALShaderManager::GetActivePlatform());
-      sShaderStageFile.AppendFormat("/_Failed_{0}_{1}.xiiShaderSource", xiiGALShaderType::Names[it.Key()], xiiArgU(stageData.m_uiSourceHash, 8, true, 16, true));
+      sShaderStageFile.AppendFormat("/_Failed_{0}_{1}.xiiShaderSource", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(it.Key())], xiiArgU(stageData.m_uiSourceHash, 8, true, 16, true));
 
       xiiFileWriter StageFileOut;
       if (StageFileOut.Open(sShaderStageFile).Succeeded())

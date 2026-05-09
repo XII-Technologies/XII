@@ -102,7 +102,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
     if (pStageBinary == nullptr)
     {
-      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded.", GetResourceID(), xiiGALShaderType::Names[it.Key()]);
+      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded.", GetResourceID(), xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(it.Key())]);
       return res;
     }
 
@@ -120,7 +120,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
       }
     }
 
-    XII_ASSERT_DEV(pStageBinary->GetByteCode()->m_ShaderStage == it.Key(), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[it.Key()], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBinary->GetByteCode()->m_ShaderStage.GetValue())]);
+    XII_ASSERT_DEV(pStageBinary->GetByteCode()->m_ShaderStage == it.Key(), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(it.Key())], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBinary->GetByteCode()->m_ShaderStage.GetValue())]);
 
     if (pStageBinary->GetByteCode()->IsValid())
     {
@@ -134,7 +134,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
       if (!pShaderData->m_pShader)
       {
-        xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[it.Key()]);
+        xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(it.Key())]);
         return res;
       }
       pShaderData->m_pShader->SetDebugName(GetResourceID());
