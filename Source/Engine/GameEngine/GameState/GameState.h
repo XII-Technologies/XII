@@ -7,6 +7,7 @@
 #include <Core/GameState/GameStateBase.h>
 #include <Core/Graphics/Camera.h>
 #include <Core/ResourceManager/ResourceHandle.h>
+#include <Core/System/WindowManager.h>
 #include <Foundation/Math/Size.h>
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/SharedPtr.h>
@@ -15,14 +16,12 @@
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
+class xiiView;
 class xiiWindow;
 class xiiWindowOutputTargetBase;
-class xiiView;
-struct xiiActorEvent;
 class xiiWindowOutputTargetGAL;
-class xiiActor;
 
-using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
+struct xiiWindowEvent;
 
 /// \brief xiiGameState implements the xiiGameStateBase interface and adds several convenience features.
 ///
@@ -30,18 +29,17 @@ using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPi
 /// https://xiiengine.net/pages/docs/runtime/application/game-state.html
 ///
 /// The xiiGameState adds some default functionality:
-/// * Creation of a main window and render pipeline
-/// * A main view handle
-/// * A main camera object
-/// * A main world that is currently active
-/// * Background loading of scenes
-/// * A separate world used as a loading screen
-/// * automatic player prefab spawning if a xiiPlayerStartPointComponent is part of the scene
-/// * automatically applies the state of the "Main View" xiiCameraComponent in the scene
-/// * Many additional hooks to customize only specific parts, such as the window creation
+/// * Creation of a main window and render pipeline.
+/// * A main view handle.
+/// * A main camera object.
+/// * A main world that is currently active.
+/// * Background loading of scenes.
+/// * A separate world used as a loading screen.
+/// * automatic player prefab spawning if a xiiPlayerStartPointComponent is part of the scene.
+/// * automatically applies the state of the "Main View" xiiCameraComponent in the scene.
+/// * Many additional hooks to customize only specific parts, such as the window creation.
 ///
-/// Typically you would derive from xiiGameState and then override functions like
-/// `ProcessInput()` and `ConfigureMainCamera()`. Take a look at `xiiFallbackGameState` for inspiration.
+/// Typically you would derive from xiiGameState and then override functions like `ProcessInput()` and `ConfigureMainCamera()`. Take a look at `xiiFallbackGameState` for inspiration.
 class XII_GAMEENGINE_DLL xiiGameState : public xiiGameStateBase
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGameState, xiiGameStateBase)
@@ -73,7 +71,7 @@ public:
 
   /// \brief Called upon game startup.
   ///
-  /// Calls CreateActors() to create the game's main window and setup input devices.
+  /// Calls CreateWindows() to create the game's main window and setup input devices.
   /// Calls ConfigureInputActions() to setup input actions.
   /// Finally switches to pWorld (if available) or starts loading the scene that GetStartupOptions() returns.
   ///
@@ -89,7 +87,7 @@ public:
   /// \brief Simply stores that the game should stop.
   ///
   /// Override this to add more elaborate logic, if necessary.
-  virtual void RequestQuit() override;
+  virtual void RequestQuit(xiiStringView sRequestedBy) override;
 
   /// \brief Whether WasQuitRequested() was called before.
   virtual bool WasQuitRequested() const override;
@@ -137,7 +135,7 @@ protected:
   /// \brief Creates an actor with a default window (xiiGameStateWindow) adds it to the application
   ///
   /// The base implementation calls CreateMainWindow(), CreateMainOutputTarget() and SetupMainView() to configure the main window.
-  virtual void CreateActors();
+  virtual void CreateWindows();
 
   /// \brief Adds custom input actions, if necessary.
   /// Unless overridden OnActivation() will call this.
@@ -170,17 +168,17 @@ protected:
   /// Override this for custom camera logic.
   virtual void ConfigureMainCamera() override;
 
-  /// \brief Override this to modify the default window creation behavior. Called by CreateActors().
+  /// \brief Override this to modify the default window creation behavior. Called by CreateWindows().
   virtual xiiUniquePtr<xiiWindow> CreateMainWindow();
 
-  /// \brief Override this to modify the default output target creation behavior. Called by CreateActors().
+  /// \brief Override this to modify the default output target creation behavior. Called by CreateWindows().
   virtual xiiUniquePtr<xiiWindowOutputTargetGAL> CreateMainOutputTarget(xiiWindow* pMainWindow);
 
   /// \brief Creates a default render view. Unless overridden, OnActivation() will do this for the main window.
   virtual void SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize);
 
   /// \brief Configures available input devices, e.g. sets mouse speed, cursor clipping, etc.
-  /// Called by CreateActors() with the result of CreateMainWindow().
+  /// Called by CreateWindows() with the result of CreateMainWindow().
   virtual void ConfigureMainWindowInputDevices(xiiWindow* pWindow);
 
   /// \brief Returns the path to the scene file and the corresponding preload collection to load at startup.
@@ -213,9 +211,13 @@ protected:
   /// \brief Called by `CancelBackgroundSceneLoading()` when scene loading gets canceled.
   virtual void OnBackgroundSceneLoadingCanceled();
 
+  /// \brief Forwards window events from the platform window. Override this to react to window events, such as resizing.
+  virtual void OnWindowEvent(const xiiWindowEvent& e);
+
+protected:
   static xiiGameState* s_pActiveGameState;
 
-  xiiViewHandle m_hMainView;
+  xiiViewHandle                 m_hMainView;
   xiiSharedPtr<xiiGALSwapChain> m_pMainSwapChain;
   xiiSizeU32                    m_MainViewportSize = xiiSizeU32(0, 0);
 

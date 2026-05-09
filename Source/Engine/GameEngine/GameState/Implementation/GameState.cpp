@@ -2,12 +2,9 @@
 
 #include <GameEngine/GameEnginePCH.h>
 
-#include <Core/ActorSystem/Actor.h>
-#include <Core/ActorSystem/ActorManager.h>
-#include <Core/ActorSystem/ActorPluginWindow.h>
 #include <Core/GameApplication/GameApplicationBase.h>
-#include <Core/GameState/GameStateWindow.h>
 #include <Core/Prefabs/PrefabResource.h>
+#include <Core/System/WindowManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -62,7 +59,7 @@ void xiiGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, 
 {
   s_pActiveGameState = this;
 
-  CreateActors();
+  CreateWindows();
   ConfigureInputActions();
 
   if (pWorld)
@@ -107,8 +104,10 @@ void xiiGameState::AddMainViewsToRender()
   // Views are managed by xiiRenderWorldModule and automatically scheduled for rendering upon creation
 }
 
-void xiiGameState::RequestQuit()
+void xiiGameState::RequestQuit(xiiStringView sRequestedBy)
 {
+  XII_IGNORE_UNUSED(sRequestedBy);
+
   m_bStateWantsToQuit = true;
 }
 
@@ -162,12 +161,12 @@ bool xiiGameState::IsInLoadingScreen() const
   return m_pMainWorld == m_pLoadingScreenWorld;
 }
 
-void xiiGameState::CreateActors()
+void xiiGameState::CreateWindows()
 {
-  XII_LOG_BLOCK("CreateActors");
+  XII_LOG_BLOCK("CreateWindows");
 
   xiiUniquePtr<xiiWindow> pMainWindow = CreateMainWindow();
-  XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateActors().");
+  XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateWindows().");
 
   xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
 
@@ -176,6 +175,24 @@ void xiiGameState::CreateActors()
 
   {
     // Default flat window
+    auto pWindowManager = xiiWindowManager::GetSingleton();
+
+    xiiRegisteredWindowHandle hWindow = pWindowManager->Register("Main Window", this, std::move(pMainWindow));
+
+
+    //pWindowManager->SetDestroyCallback(hWindow, [this](xiiRegisteredWindowHandle hClosedWindow) {
+    //  if (m_pMainWorld != nullptr && !m_hMainView.IsInvalidated())
+    //  {
+    //    if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
+    //    {
+    //      pRenderWorldModule->DestroyView(m_hMainView);
+    //    }
+    //    m_hMainView.Invalidate();
+    //  }
+    //  m_pMainSwapChain.Clear();
+    //  m_MainViewportSize = xiiSizeU32(0, 0);
+    //});
+
     xiiUniquePtr<xiiActorPluginWindowOwner> pWindowPlugin = XII_DEFAULT_NEW(xiiActorPluginWindowOwner);
     pWindowPlugin->m_pWindow                              = std::move(pMainWindow);
     pWindowPlugin->m_pWindowOutputTarget                  = std::move(pOutput);
@@ -381,18 +398,11 @@ void xiiGameState::ConfigureMainCamera()
 
 xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 {
-  if (false)
-  {
-    xiiHybridArray<xiiScreenInfo, 2> screens;
-    xiiScreen::EnumerateScreens(screens).IgnoreResult();
-    xiiScreen::PrintScreenInfo(screens);
-  }
-
   xiiStringBuilder sWindowConfig = opt_Window.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
 
   if (!sWindowConfig.IsEmpty() && !xiiFileSystem::ExistsFile(sWindowConfig))
   {
-    xiiLog::Dev("Window Config file does not exist: '{0}'", sWindowConfig);
+    xiiLog::Dev("Window configuration file does not exist: '{0}'", sWindowConfig);
     sWindowConfig.Clear();
   }
 
@@ -413,29 +423,30 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 
   xiiWindowCreationDescription windowDescription;
   windowDescription.LoadFromDDL(sWindowConfig).IgnoreResult();
+  windowDescription.AdjustWindowSizeAndPosition().IgnoreResult();
 
-  xiiUniquePtr<xiiGameStateWindow> pWindow = XII_DEFAULT_NEW(xiiGameStateWindow, windowDescription, [] {});
-  pWindow->ResetOnClickClose([this]() { this->RequestQuit(); });
+  xiiUniquePtr<xiiWindow> pWindow = XII_DEFAULT_NEW(xiiWindow);
+  pWindow->Initialize(windowDescription).AssertSuccess("Failed to create window.");
+
+  pWindow->GetWindowEvents().AddEventHandler(xiiMakeDelegate(&xiiGameState::OnWindowEvent, this));
 
   return pWindow;
 }
 
 xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiWindow* pMainWindow)
 {
-  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize) -> void {
+  xiiGALSwapChainCreationDescription description;
+  description.m_pWindow               = pMainWindow;
+  description.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  description.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
+  description.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+  description.m_uiBufferCount         = 2U;
+  description.m_fDefaultDepthValue    = 1.0f;
+  description.m_uiDefaultStencilValue = 0U;
+
+  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, description, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize) -> void {
     SetupMainView(pSwapChain, vSize);
   });
-
-  xiiGALSwapChainCreationDescription desc;
-  desc.m_pWindow               = pMainWindow;
-  desc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-  desc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
-  desc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-  desc.m_uiBufferCount         = 2U;
-  desc.m_fDefaultDepthValue    = 1.0f;
-  desc.m_uiDefaultStencilValue = 0U;
-
-  pOutput->CreateSwapchain(desc);
 
   return pOutput;
 }
@@ -558,6 +569,15 @@ void xiiGameState::OnBackgroundSceneLoadingFailed(xiiStringView sReason)
 void xiiGameState::OnBackgroundSceneLoadingCanceled()
 {
   xiiLog::Dev("Cancelled background loading of scene '{}'.", m_pBackgroundSceneLoad->GetRequestedScene());
+}
+
+void xiiGameState::OnWindowEvent(const xiiWindowEvent& e)
+{
+  if (e.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
+  {
+    // Forward the event to the game state, so that it can decide what to do with it. For example, it may want to show a confirmation dialog before actually quitting.
+    RequestQuit("Game");
+  }
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);

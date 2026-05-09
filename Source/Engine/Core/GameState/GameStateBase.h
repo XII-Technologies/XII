@@ -69,7 +69,9 @@ public:
   /// \brief Call this to signal that a game state requested the application to quit.
   ///
   /// xiiGameApplication will shut down when this happens. xiiEditor will stop play-the-game mode when it is running.
-  virtual void RequestQuit() = 0;
+  /// When calling this, pass a string to identify where the request comes from, e.g. "window" for when clicking the window close button, "game" when game logic (UI) decided to quite, etc.
+  /// xiiEditor will pass in "editor-esc" and "editor-force" when a game-state should be shut down due to the user pressing Escape or clicking the "stop" button.
+  virtual void RequestQuit(xiiStringView sRequestedBy) = 0;
 
   /// \brief Returns whether the game state wants to quit the application.
   virtual bool WasQuitRequested() const = 0;
