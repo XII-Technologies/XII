@@ -552,7 +552,7 @@ private:
 
         pConstants->mModelViewMatrix = xiiMat4::MakeIdentity();
         pConstants->vCameraPos       = xiiVec3::MakeZero();
-        pConstants->fTime            = xiiClock::GetGlobalClock()->GetAccumulatedTime().AsFloatInSeconds();
+        pConstants->fTime            = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 1000.0);
         pConstants->vResolution      = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
         pConstants->fWireWidth       = 1.0f;
       }
