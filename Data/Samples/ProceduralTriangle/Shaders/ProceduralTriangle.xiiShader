@@ -16,15 +16,19 @@ struct PSInput
 
 void main(in uint uiVertexID : SV_VertexID, out PSInput PSIn) 
 {
-  float4 positions[3];
-  positions[0] = float4(-0.5, -0.5, 0.0, 1.0);
-  positions[1] = float4( 0.0, +0.5, 0.0, 1.0);
-  positions[2] = float4(+0.5, -0.5, 0.0, 1.0);
+  static const float4 positions[3] =
+  {
+    float4(-0.5, -0.5, 0.0, 1.0),
+    float4( 0.0, +0.5, 0.0, 1.0),
+    float4(+0.5, -0.5, 0.0, 1.0)
+  };
 
-  float3 colors[3];
-  colors[0] = float3(1.0, 0.0, 0.0); // red
-  colors[1] = float3(0.0, 1.0, 0.0); // green
-  colors[2] = float3(0.0, 0.0, 1.0); // blue
+  static const float3 colors[3] =
+  {
+    float3(1.0, 0.0, 0.0), // red
+    float3(0.0, 1.0, 0.0), // green
+    float3(0.0, 0.0, 1.0)  // blue
+  };
 
   PSIn.Position = positions[uiVertexID];
   PSIn.Color    = colors[uiVertexID];
