@@ -21,6 +21,32 @@ class xiiOpenDdlReaderElement;
 #  include <Core/Platform/NoImpl/WindowDeclaration_NoImpl.h>
 #endif
 
+/// \brief Base class for window output targets
+///
+/// A window output target is usually tied tightly to a window (\sa xiiWindowBase) and represents the graphics APIs side of the render output.
+/// E.g. in a Vulkan or DirectX implementation this would be a swap chain.
+class XII_CORE_DLL xiiWindowOutputTargetBase
+{
+public:
+  xiiWindowOutputTargetBase()          = default;
+  virtual ~xiiWindowOutputTargetBase() = default;
+
+  /// \brief Returns whether VSync is enabled for this output target.
+  virtual bool GetVSyncEnabled() const = 0;
+
+  /// \brief Enables or disables VSync for this output target.
+  virtual void SetVSyncEnabled(bool bEnableVSync) = 0;
+
+  /// \brief Presents the current back buffer to the screen. This should be called every frame after rendering is done.
+  virtual void PresentImage() = 0;
+
+  /// \brief Resizes the output target to the new size. This should be called when the window is resized.
+  virtual void Resize(const xiiSizeU32& newSize) = 0;
+
+  /// \brief Captures the current back buffer and stores it in the given image. This can be used for screenshots or similar purposes.
+  virtual xiiResult CaptureImage(xiiImage& out_image) = 0;
+};
+
 /// \brief Base class of all window classes that have a client area and a native window handle.
 class XII_CORE_DLL xiiWindowBase
 {
@@ -51,6 +77,15 @@ public:
 
   /// \brief Removes a reference from the window. If this was the last reference, the window will be destroyed.
   virtual void RemoveReference() = 0;
+
+  /// \brief Sets the output target for this window.
+  ///
+  /// Output targets are destroyed before the window to ensure proper cleanup order.
+  /// Setting a new output target replaces any existing one.
+  virtual void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) = 0;
+
+  /// \brief Gets the output target for this window.
+  virtual xiiWindowOutputTargetBase* GetOutputTarget() const = 0;
 };
 
 /// \brief Determines how the position and resolution for a window are picked
@@ -161,32 +196,6 @@ struct xiiWindowEvent
   } m_Payload;
 };
 
-/// \brief Base class for window output targets
-///
-/// A window output target is usually tied tightly to a window (\sa xiiWindowBase) and represents the graphics APIs side of the render output.
-/// E.g. in a Vulkan or DirectX implementation this would be a swap chain.
-class XII_CORE_DLL xiiWindowOutputTargetBase
-{
-public:
-  xiiWindowOutputTargetBase()          = default;
-  virtual ~xiiWindowOutputTargetBase() = default;
-
-  /// \brief Returns whether VSync is enabled for this output target.
-  virtual bool GetVSyncEnabled() const = 0;
-
-  /// \brief Enables or disables VSync for this output target.
-  virtual void SetVSyncEnabled(bool bEnableVSync) = 0;
-
-  /// \brief Presents the current back buffer to the screen. This should be called every frame after rendering is done.
-  virtual void PresentImage() = 0;
-
-  /// \brief Resizes the output target to the new size. This should be called when the window is resized.
-  virtual void Resize(const xiiSizeU32& newSize) = 0;
-
-  /// \brief Captures the current back buffer and stores it in the given image. This can be used for screenshots or similar purposes.
-  virtual xiiResult CaptureImage(xiiImage& out_image) = 0;
-};
-
 /// \brief A simple abstraction for platform specific window creation.
 ///
 /// Will handle basic message looping. Notable events can be listened to by overriding the corresponding callbacks.
@@ -281,14 +290,9 @@ public:
   /// \brief Returns the input device that is attached to this window and typically provides mouse / keyboard input.
   xiiStandardInputDevice* GetInputDevice() const { return m_pInputDevice.Borrow(); }
 
-  /// \brief Sets the output target for this window.
-  ///
-  /// Output targets are destroyed before the window to ensure proper cleanup order.
-  /// Setting a new output target replaces any existing one.
-  void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget);
+  virtual void SetOutputTarget(xiiUniquePtr<xiiWindowOutputTargetBase>&& pOutputTarget) override;
 
-  /// \brief Gets the output target for this window.
-  xiiWindowOutputTargetBase* GetOutputTarget() const;
+  virtual xiiWindowOutputTargetBase* GetOutputTarget() const override;
 
   /// \brief Allows to subscribe to window events.
   ///

@@ -35,19 +35,20 @@ xiiCVarBool xiiGameApplication::cvar_AppShowFrameStats("App.ShowFrameStats", fal
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :
   xiiGameApplicationBase(sAppName), m_sAppProjectPath(sProjectPath)
 {
-  m_pUpdateTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "UpdateWorldsAndExtractViews", xiiTaskNesting::Never, xiiMakeDelegate(&xiiGameApplication::UpdateWorldsAndExtractViews, this));
-  m_pUpdateTask->ConfigureTask("GameApplication.Update", xiiTaskNesting::Maybe);
-
   s_pGameApplicationInstance = this;
   m_bWasQuitRequested        = false;
 
   m_pConsole = XII_DEFAULT_NEW(xiiQuakeConsole);
   xiiConsole::SetMainConsole(m_pConsole.Borrow());
+
+  m_CVarChangeSubscriptionID = cvar_AppVSync.m_CVarEvents.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnVSyncChanged, this));
 }
 
 xiiGameApplication::~xiiGameApplication()
 {
   s_pGameApplicationInstance = nullptr;
+
+  cvar_AppVSync.m_CVarEvents.RemoveEventHandler(m_CVarChangeSubscriptionID);
 }
 
 // static
@@ -85,170 +86,79 @@ xiiString xiiGameApplication::FindProjectDirectory() const
     }
   }
 
-  xiiStringBuilder result;
-  if (xiiFileSystem::FindFolderWithSubPath(result, xiiOSFile::GetApplicationDirectory(), m_sAppProjectPath).Failed())
+  xiiStringBuilder sResult;
+  if (xiiFileSystem::FindFolderWithSubPath(sResult, xiiOSFile::GetApplicationDirectory(), m_sAppProjectPath).Failed())
   {
     xiiLog::Error("Could not find the project directory.");
   }
 
-  return result;
+  return sResult;
 }
 
 void xiiGameApplication::Run_WorldUpdateAndRender()
 {
   XII_PROFILE_SCOPE("Run_WorldUpdateAndRender");
 
-  UpdateWorldsAndExtractViews();
+  Run_BeforeWorldUpdate();
 
-  xiiRenderWorld::BeginFrame();
-
-  xiiTaskGroupID updateTaskID;
-  if (xiiRenderWorld::GetUseMultithreadedRendering())
+  xiiTaskGroupID updateWorldsTaskID = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
   {
-    updateTaskID = xiiTaskSystem::StartSingleTask(m_pUpdateTask, xiiTaskPriority::EarlyThisFrame);
-  }
+    xiiWorld* pWorld = xiiWorld::GetWorld(i);
 
-  RenderFps();
-  RenderConsole();
-
-  xiiRenderWorld::Render(xiiRenderContext::GetDefaultInstance());
-
-  if (xiiRenderWorld::GetUseMultithreadedRendering())
-  {
-    XII_PROFILE_SCOPE("Wait for UpdateWorldsAndExtractViews");
-    xiiTaskSystem::WaitForGroup(updateTaskID);
-  }
-}
-
-void xiiGameApplication::Run_AcquireImage()
-{
-  xiiHybridArray<xiiActor*, 8> allActors;
-  xiiActorManager::GetSingleton()->GetAllActors(allActors);
-
-  for (xiiActor* pActor : allActors)
-  {
-    XII_PROFILE_SCOPE(pActor->GetName());
-
-    xiiActorPluginWindow* pWindowPlugin = pActor->GetPlugin<xiiActorPluginWindow>();
-
-    if (pWindowPlugin == nullptr)
-      continue;
-
-    // Ignore actors without an output target
-    if (auto pOutput = pWindowPlugin->GetOutputTarget())
+    if (pWorld->GetWorldSimulationEnabled())
     {
-      XII_PROFILE_SCOPE("AcquireImage");
-
-      pOutput->AcquireImage();
+      xiiTaskSystem::AddTaskToGroup(updateWorldsTaskID, pWorld->GetUpdateTask());
     }
   }
+  xiiTaskSystem::StartTaskGroup(updateWorldsTaskID);
+  xiiTaskSystem::WaitForGroup(updateWorldsTaskID);
+
+  Run_AfterWorldUpdate();
+
+  Run_UpdatePlugins();
 }
 
 void xiiGameApplication::Run_PresentImage()
 {
-  xiiHybridArray<xiiActor*, 8> allActors;
-  xiiActorManager::GetSingleton()->GetAllActors(allActors);
+  auto pWindowManager = xiiWindowManager::GetSingleton();
+
+  xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
+  pWindowManager->GetRegistered(windows);
 
   bool bExecutedFrameCapture = false;
-  for (xiiActor* pActor : allActors)
+  for (xiiRegisteredWindowHandle hWindow : windows)
   {
-    XII_PROFILE_SCOPE(pActor->GetName());
-
-    xiiActorPluginWindow* pWindowPlugin = pActor->GetPlugin<xiiActorPluginWindow>();
-
-    if (pWindowPlugin == nullptr)
+    xiiWindowBase* pWindow = pWindowManager->GetWindow(hWindow);
+    if (pWindow == nullptr)
       continue;
 
-    // Ignore actors without an output target
-    if (auto pOutput = pWindowPlugin->GetOutputTarget())
+    if (xiiWindowOutputTargetBase* pOutput = pWindow->GetOutputTarget())
     {
-      // if we have multiple actors, append the actor name to each screenshot
-      xiiStringBuilder ctxt;
-      if (allActors.GetCount() > 1)
+      // if we have multiple actors, append the actor name to each screenshot.
+      xiiStringBuilder sContext;
+      if (windows.GetCount() > 1)
       {
-        ctxt.Append(" - ", pActor->GetName());
+        sContext.Append(" - ", pWindowManager->GetName(hWindow));
       }
 
-      ExecuteTakeScreenshot(pOutput, ctxt);
+      ExecuteTakeScreenshot(pOutput, sContext);
 
-      if (pWindowPlugin->GetWindow() && !bExecutedFrameCapture)
+      if (!bExecutedFrameCapture)
       {
-        ExecuteFrameCapture(pWindowPlugin->GetWindow()->GetNativeWindowHandle(), ctxt);
+        ExecuteFrameCapture(pWindow->GetNativeWindowHandle(), sContext);
         bExecutedFrameCapture = true;
       }
 
       XII_PROFILE_SCOPE("PresentImage");
-      pOutput->PresentImage(cvar_AppVSync);
+      pOutput->PresentImage();
     }
   }
 }
 
 void xiiGameApplication::Run_FinishFrame()
 {
-  xiiRenderWorld::EndFrame();
-
   SUPER::Run_FinishFrame();
-}
-
-void xiiGameApplication::UpdateWorldsAndExtractViews()
-{
-  xiiStringBuilder sb;
-  sb.SetFormat("UPDATE FRAME {}", xiiRenderWorld::GetFrameCounter());
-  XII_PROFILE_SCOPE(sb.GetView());
-
-  Run_BeforeWorldUpdate();
-
-  static xiiHybridArray<xiiWorld*, 16> worldsToUpdate;
-  worldsToUpdate.Clear();
-
-  auto mainViews = xiiRenderWorld::GetMainViews();
-  for (auto hView : mainViews)
-  {
-    // Iterate through all worlds to find which one owns this view
-    xiiHybridArray<xiiWorld*, 16> allWorlds;
-    xiiWorld::GetWorlds(allWorlds);
-
-    for (xiiWorld* pWorld : allWorlds)
-    {
-      xiiView* pView = TryGetViewFromModule(pWorld, hView);
-      if (pView != nullptr)
-      {
-        if (!worldsToUpdate.Contains(pWorld))
-        {
-          worldsToUpdate.PushBack(pWorld);
-        }
-        break;
-      }
-    }
-  }
-
-  if (xiiRenderWorld::GetUseMultithreadedRendering())
-  {
-    xiiTaskGroupID updateWorldsTaskID = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
-    for (xiiUInt32 i = 0; i < worldsToUpdate.GetCount(); ++i)
-    {
-      xiiTaskSystem::AddTaskToGroup(updateWorldsTaskID, worldsToUpdate[i]->GetUpdateTask());
-    }
-    xiiTaskSystem::StartTaskGroup(updateWorldsTaskID);
-    xiiTaskSystem::WaitForGroup(updateWorldsTaskID);
-  }
-  else
-  {
-    for (xiiUInt32 i = 0; i < worldsToUpdate.GetCount(); ++i)
-    {
-      xiiWorld* pWorld = worldsToUpdate[i];
-      XII_LOCK(pWorld->GetWriteMarker());
-
-      pWorld->Update();
-    }
-  }
-
-  Run_AfterWorldUpdate();
-
-  // do this now, in parallel to the view extraction
-  Run_UpdatePlugins();
-
-  xiiRenderWorld::ExtractMainViews();
 }
 
 void xiiGameApplication::RenderFps()
@@ -359,6 +269,27 @@ void xiiGameApplication::RenderConsole()
   }
 }
 
+void xiiGameApplication::OnVSyncChanged(const xiiCVarEvent& e)
+{
+  auto pWindowManager = xiiWindowManager::GetSingleton();
+
+  xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
+  pWindowManager->GetRegistered(windows);
+
+  bool bExecutedFrameCapture = false;
+  for (xiiRegisteredWindowHandle hWindow : windows)
+  {
+    xiiWindowBase* pWindow = pWindowManager->GetWindow(hWindow);
+    if (pWindow == nullptr)
+      continue;
+
+    if (xiiWindowOutputTargetBase* pOutput = pWindow->GetOutputTarget())
+    {
+      pOutput->SetVSyncEnabled(cvar_AppVSync);
+    }
+  }
+}
+
 namespace
 {
   const char* s_szInputSet               = "GameApp";
@@ -436,7 +367,7 @@ bool xiiGameApplication::Run_ProcessApplicationInput()
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szShowFpsAction) == xiiKeyState::Pressed)
   {
-    cvar_AppShowFPS = !cvar_AppShowFPS;
+    cvar_AppShowFrameStats = !cvar_AppShowFrameStats;
   }
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szReloadResourcesAction) == xiiKeyState::Pressed)
