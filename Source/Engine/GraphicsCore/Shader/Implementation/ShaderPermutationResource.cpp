@@ -148,94 +148,136 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
       static xiiTempHashedString sPointSampler("PointSampler");
       static xiiTempHashedString sPointClampSampler("PointClampSampler");
 
-      for (const auto& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
+      for (const xiiGALShaderResourceDescription& resource : pStageBinary->GetByteCode()->m_ShaderResourceBindings)
       {
-        auto& resourceSignature = resourceSignatureDescription.m_Resources.ExpandAndGetRef();
-
-        resourceSignature.m_sName                 = resource.m_sName;
-        resourceSignature.m_ResourceType          = resource.m_Type;
-        resourceSignature.m_ShaderStages          = resource.m_ShaderStages;
-        resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
-        resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
-        resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-        resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
-
-        // Immutable Samplers.
-        if (resourceSignature.m_ResourceType == xiiGALShaderResourceType::Sampler)
+        // Try to find an existing resource with the same bind set and bind slot.
+        xiiGALPipelineResourceDescription* pExistingResource = nullptr;
+        for (xiiGALPipelineResourceDescription& existing : resourceSignatureDescription.m_Resources)
         {
-          if (resourceSignature.m_sName == sLinearSampler)
+          if (existing.m_uiBindSet == resource.m_uiDescriptorSet && existing.m_uiBindSlot == resource.m_uiBindIndex)
           {
-            xiiGALImmutableSamplerDescription& linearSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
-            linearSampler.m_SamplerOrTextureName                    = resource.m_sName;
-            linearSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
-            linearSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-            linearSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
-            linearSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
-            linearSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
-            linearSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
-            linearSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
-            linearSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
-            linearSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
-            linearSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
-            linearSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Wrap;
-            linearSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Wrap;
-            linearSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+            pExistingResource = &existing;
+            break;
           }
-          else if (resourceSignature.m_sName == sLinearClampSampler)
+        }
+
+        if (pExistingResource)
+        {
+          // Merge shader stages and reconcile array size.
+          pExistingResource->m_ShaderStages |= resource.m_ShaderStages;
+          pExistingResource->m_uiArraySize = xiiMath::Max(pExistingResource->m_uiArraySize, resource.m_uiArraySize);
+
+          // If resource types differ, prefer the existing one but log a warning.
+          if (pExistingResource->m_ResourceType != resource.m_Type)
           {
-            xiiGALImmutableSamplerDescription& linearClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
-            linearClampSampler.m_SamplerOrTextureName                    = resource.m_sName;
-            linearClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
-            linearClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-            linearClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
-            linearClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
-            linearClampSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
-            linearClampSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
-            linearClampSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
-            linearClampSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
-            linearClampSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
-            linearClampSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
-            linearClampSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Clamp;
-            linearClampSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Clamp;
-            linearClampSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Clamp;
+            xiiLog::Warning("Shader Permutation '{0}': Resource bind point set {1} slot {2} has conflicting types ({3} vs {4}). Keeping existing type.", GetResourceID(), resource.m_uiDescriptorSet, resource.m_uiBindIndex, pExistingResource->m_ResourceType, resource.m_Type);
           }
-          else if (resourceSignature.m_sName == sPointSampler)
+        }
+        else
+        {
+          // No existing resource at this bind point -> create new entry.
+          xiiGALPipelineResourceDescription& resourceSignature = resourceSignatureDescription.m_Resources.ExpandAndGetRef();
+
+          resourceSignature.m_sName                 = resource.m_sName;
+          resourceSignature.m_ResourceType          = resource.m_Type;
+          resourceSignature.m_ShaderStages          = resource.m_ShaderStages;
+          resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
+          resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
+          resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
+          resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
+        }
+
+        // Immutable Samplers: only add if resource is a sampler and not already present.
+        if (resource.m_Type == xiiGALShaderResourceType::Sampler)
+        {
+          const xiiHashedString& sImmutableSamplerName = resource.m_sName;
+
+          // Check if an immutable sampler with this name already exists.
+          bool bImmutableSamplerExists = false;
+          for (const xiiGALImmutableSamplerDescription& immutableSampler : resourceSignatureDescription.m_ImmutableSamplers)
           {
-            xiiGALImmutableSamplerDescription& pointSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
-            pointSampler.m_SamplerOrTextureName                    = resource.m_sName;
-            pointSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
-            pointSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-            pointSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
-            pointSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
-            pointSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
-            pointSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
-            pointSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
-            pointSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
-            pointSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
-            pointSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
-            pointSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Wrap;
-            pointSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Wrap;
-            pointSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+            if (immutableSampler.m_SamplerOrTextureName == sImmutableSamplerName)
+            {
+              bImmutableSamplerExists = true;
+              break;
+            }
           }
-          else if (resourceSignature.m_sName == sPointClampSampler)
+
+          if (!bImmutableSamplerExists)
           {
-            xiiGALImmutableSamplerDescription& pointClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
-            pointClampSampler.m_SamplerOrTextureName                    = resource.m_sName;
-            pointClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
-            pointClampSampler.m_SamplerOrTextureName                    = resource.m_sName;
-            pointClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
-            pointClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
-            pointClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
-            pointClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
-            pointClampSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
-            pointClampSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
-            pointClampSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
-            pointClampSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
-            pointClampSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
-            pointClampSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
-            pointClampSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Clamp;
-            pointClampSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Clamp;
-            pointClampSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Clamp;
+            // Create immutable sampler based on known names.
+            if (sImmutableSamplerName == sLinearSampler)
+            {
+              xiiGALImmutableSamplerDescription& linearSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+              linearSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
+              linearSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              linearSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+              linearSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
+              linearSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
+              linearSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
+              linearSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
+              linearSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
+              linearSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
+              linearSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
+              linearSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
+              linearSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Wrap;
+              linearSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Wrap;
+              linearSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+            }
+            else if (sImmutableSamplerName == sLinearClampSampler)
+            {
+              xiiGALImmutableSamplerDescription& linearClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+              linearClampSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
+              linearClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              linearClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+              linearClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
+              linearClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
+              linearClampSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
+              linearClampSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
+              linearClampSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
+              linearClampSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
+              linearClampSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
+              linearClampSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
+              linearClampSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Clamp;
+              linearClampSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Clamp;
+              linearClampSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Clamp;
+            }
+            else if (sImmutableSamplerName == sPointSampler)
+            {
+              xiiGALImmutableSamplerDescription& pointSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+              pointSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
+              pointSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              pointSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+              pointSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
+              pointSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
+              pointSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
+              pointSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
+              pointSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
+              pointSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
+              pointSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
+              pointSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
+              pointSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Wrap;
+              pointSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Wrap;
+              pointSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Wrap;
+            }
+            else if (sImmutableSamplerName == sPointClampSampler)
+            {
+              xiiGALImmutableSamplerDescription& pointClampSampler        = resourceSignatureDescription.m_ImmutableSamplers.ExpandAndGetRef();
+              pointClampSampler.m_SamplerOrTextureName                    = sImmutableSamplerName;
+              pointClampSampler.m_ShaderStages                            = xiiGALShaderType::AllGraphics;
+              pointClampSampler.m_SamplerDescription.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+              pointClampSampler.m_SamplerDescription.m_BorderColor        = xiiColor::Black;
+              pointClampSampler.m_SamplerDescription.m_fMipLODBias        = 0.0f;
+              pointClampSampler.m_SamplerDescription.m_fMinLOD            = -1.0f;
+              pointClampSampler.m_SamplerDescription.m_fMaxLOD            = 42000.0f;
+              pointClampSampler.m_SamplerDescription.m_uiMaxAnisotropy    = 4U;
+              pointClampSampler.m_SamplerDescription.m_MinFilter          = xiiGALFilterType::Linear;
+              pointClampSampler.m_SamplerDescription.m_MagFilter          = xiiGALFilterType::Linear;
+              pointClampSampler.m_SamplerDescription.m_MipFilter          = xiiGALFilterType::Linear;
+              pointClampSampler.m_SamplerDescription.m_AddressU           = xiiGALTextureAddressMode::Clamp;
+              pointClampSampler.m_SamplerDescription.m_AddressV           = xiiGALTextureAddressMode::Clamp;
+              pointClampSampler.m_SamplerDescription.m_AddressW           = xiiGALTextureAddressMode::Clamp;
+            }
           }
         }
       }
