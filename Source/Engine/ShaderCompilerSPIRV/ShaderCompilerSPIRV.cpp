@@ -441,7 +441,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
     args.PushBack(L"-O3"); // Optimization Level 3
   }
 
-  xiiHybridArray<LPCWSTR, 16> pszArgs;
+  xiiTemporaryHybridArray<LPCWSTR, 16> pszArgs;
   pszArgs.SetCount(args.GetCount());
   for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
   {
@@ -535,7 +535,7 @@ xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& in
 xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
 {
   // Determine which indices are hard-coded in the shader already.
-  xiiHybridArray<xiiHybridBitfield<64>, 4> slotInUseInSet;
+  xiiTemporaryHybridArray<xiiHybridBitfield<64>, 4> slotInUseInSet;
 
   for (auto it : inout_resourceBinding)
   {
@@ -553,7 +553,7 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
   }
 
   // Create stable oder of resources in each set.
-  xiiHybridArray<xiiHybridArray<xiiHashedString, 16>, 4> orderInSet;
+  xiiTemporaryHybridArray<xiiHybridArray<xiiHashedString, 16>, 4> orderInSet;
   orderInSet.SetCount(slotInUseInSet.GetCount());
 
   for (auto it : data.m_StageData)
@@ -580,7 +580,7 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
     xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>::Iterator itSampler;
     xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>::Iterator itTexture;
   };
-  xiiHybridArray<TextureAndSamplerTuple, 2> autoSamplers;
+  xiiTemporaryHybridArray<TextureAndSamplerTuple, 2> autoSamplers;
 
   if (PermitCombinedImageSamplers())
   {
@@ -710,7 +710,7 @@ xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& in
       return XII_FAILURE;
     }
 
-    xiiDynamicArray<SpvReflectInterfaceVariable*> inputVariables;
+    xiiTemporaryArray<SpvReflectInterfaceVariable*> inputVariables;
     inputVariables.SetCount(uiNumInputVariables);
 
     if (spvReflectEnumerateInputVariables(&reflectShaderModule, &uiNumInputVariables, inputVariables.GetData()) != SPV_REFLECT_RESULT_SUCCESS)
@@ -755,7 +755,7 @@ xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& in
       return XII_FAILURE;
     }
 
-    xiiDynamicArray<SpvReflectDescriptorBinding*> descriptorBindings;
+    xiiTemporaryArray<SpvReflectDescriptorBinding*> descriptorBindings;
     descriptorBindings.SetCount(uiNumDescriptorBindings);
 
     if (spvReflectEnumerateDescriptorBindings(&reflectShaderModule, &uiNumDescriptorBindings, descriptorBindings.GetData()) != SPV_REFLECT_RESULT_SUCCESS)
