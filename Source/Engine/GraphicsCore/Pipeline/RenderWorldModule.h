@@ -66,7 +66,7 @@ public:
   bool TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const;
 
   /// \brief Retrieves a view by its usage hint. If multiple views share the same hint, the first one found is returned.
-  xiiView* GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint) const;
+  xiiView* GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint = {}) const;
 
   /// \brief Creates render data that is only valid for this frame. The data is automatically deleted after the frame has been rendered.
   template <typename T>

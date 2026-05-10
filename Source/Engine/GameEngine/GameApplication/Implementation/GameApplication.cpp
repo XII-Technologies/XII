@@ -183,25 +183,33 @@ void xiiGameApplication::RenderFps()
     uiFrames = 0;
   }
 
-  if (cvar_AppShowFPS)
+  if (cvar_AppShowFrameStats)
   {
-    if (const xiiView* pView = xiiRenderWorld::GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
+    if (xiiGameState* pGameState = xiiDynamicCast<xiiGameState*>(m_pGameState.Borrow()))
     {
-      if (uiFPS >= 60)
+      if (xiiWorld* pMainWorld = pGameState->GetMainWorld())
       {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
-      }
-      else if (uiFPS >= 30)
-      {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
-      }
-      else if (uiFPS >= 15)
-      {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
-      }
-      else
-      {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
+        xiiRenderWorldModule* pRenderWorldModule = pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
+
+        if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
+        {
+          if (uiFPS >= 60)
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
+          }
+          else if (uiFPS >= 30)
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
+          }
+          else if (uiFPS >= 15)
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
+          }
+          else
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
+          }
+        }
       }
     }
   }
@@ -214,57 +222,64 @@ void xiiGameApplication::RenderConsole()
   if (!m_bShowConsole || !m_pConsole)
     return;
 
-  const xiiView* pView = xiiRenderWorld::GetViewByUsageHint(xiiCameraUsageHint::MainView);
-  if (pView == nullptr)
-    return;
-
-  xiiViewHandle hView = pView->GetHandle();
-
-  const float fViewWidth             = pView->GetViewport().width;
-  const float fViewHeight            = pView->GetViewport().height;
-  const float fGlyphWidth            = xiiDebugRenderer::GetTextGlyphWidth();
-  const float fLineHeight            = xiiDebugRenderer::GetTextLineHeight();
-  const float fConsoleHeight         = (fViewHeight / 2.0f);
-  const float fBorderWidth           = 3.0f;
-  const float fConsoleTextAreaHeight = fConsoleHeight - fLineHeight - (2.0f * fBorderWidth);
-
-  const xiiInt32 iTextHeight = (xiiInt32)fLineHeight;
-  const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
-
+  if (xiiGameState* pGameState = xiiDynamicCast<xiiGameState*>(m_pGameState.Borrow()))
   {
-    xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
-
-    xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
-  }
-
-  {
-    XII_LOCK(m_pConsole->GetMutex());
-
-    auto& consoleStrings = m_pConsole->GetConsoleStrings();
-
-    xiiUInt32 uiNumConsoleLines = (xiiUInt32)(xiiMath::Ceil(fConsoleTextAreaHeight / fLineHeight));
-    xiiInt32  iFirstLinePos     = (xiiInt32)fConsoleTextAreaHeight - uiNumConsoleLines * iTextHeight;
-    xiiInt32  uiFirstLine       = m_pConsole->GetScrollPosition() + uiNumConsoleLines - 1;
-    xiiInt32  uiSkippedLines    = xiiMath::Max(uiFirstLine - (xiiInt32)consoleStrings.GetCount() + 1, 0);
-
-    for (xiiUInt32 i = uiSkippedLines; i < uiNumConsoleLines; ++i)
+    if (xiiWorld* pMainWorld = pGameState->GetMainWorld())
     {
-      auto& consoleString = consoleStrings[uiFirstLine - i];
-      xiiDebugRenderer::Draw2DText(hView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
-    }
+      xiiRenderWorldModule* pRenderWorldModule = pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
 
-    xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
+      if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView))
+      {
+        xiiViewHandle hView = pView->GetHandle();
 
-    if (xiiMath::Fraction(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds()) > 0.5)
-    {
-      const float fCaretPosition = (float)m_pConsole->GetCaretPosition();
-      const float fCaretX        = fBorderWidth + (fCaretPosition + 0.5f) * fGlyphWidth;
-      const float fCaretY        = fConsoleTextAreaHeight + fBorderWidth + 1.0f;
-      xiiColor    caretColor(1.0f, 1.0f, 1.0f, 0.5f);
-      xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
+        const float fViewWidth             = pView->GetViewport().width;
+        const float fViewHeight            = pView->GetViewport().height;
+        const float fGlyphWidth            = xiiDebugRenderer::GetTextGlyphWidth();
+        const float fLineHeight            = xiiDebugRenderer::GetTextLineHeight();
+        const float fConsoleHeight         = (fViewHeight / 2.0f);
+        const float fBorderWidth           = 3.0f;
+        const float fConsoleTextAreaHeight = fConsoleHeight - fLineHeight - (2.0f * fBorderWidth);
+
+        const xiiInt32 iTextHeight = (xiiInt32)fLineHeight;
+        const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
+
+        {
+          xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
+          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
+
+          xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
+          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
+          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
+        }
+
+        {
+          XII_LOCK(m_pConsole->GetMutex());
+
+          auto& consoleStrings = m_pConsole->GetConsoleStrings();
+
+          xiiUInt32 uiNumConsoleLines = (xiiUInt32)(xiiMath::Ceil(fConsoleTextAreaHeight / fLineHeight));
+          xiiInt32  iFirstLinePos     = (xiiInt32)fConsoleTextAreaHeight - uiNumConsoleLines * iTextHeight;
+          xiiInt32  uiFirstLine       = m_pConsole->GetScrollPosition() + uiNumConsoleLines - 1;
+          xiiInt32  uiSkippedLines    = xiiMath::Max(uiFirstLine - (xiiInt32)consoleStrings.GetCount() + 1, 0);
+
+          for (xiiUInt32 i = uiSkippedLines; i < uiNumConsoleLines; ++i)
+          {
+            auto& consoleString = consoleStrings[uiFirstLine - i];
+            xiiDebugRenderer::Draw2DText(hView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
+          }
+
+          xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
+
+          if (xiiMath::Fraction(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds()) > 0.5)
+          {
+            const float fCaretPosition = (float)m_pConsole->GetCaretPosition();
+            const float fCaretX        = fBorderWidth + (fCaretPosition + 0.5f) * fGlyphWidth;
+            const float fCaretY        = fConsoleTextAreaHeight + fBorderWidth + 1.0f;
+            xiiColor    caretColor(1.0f, 1.0f, 1.0f, 0.5f);
+            xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
+          }
+        }
+      }
     }
   }
 }
