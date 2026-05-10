@@ -96,9 +96,9 @@ namespace xiiRGBlackboardKeys
 
   // Stage 8 - Transparency.
 
-  constexpr xiiStringView k_OITAccumulateBuffer = "OITAccumulate"_xiisv; ///< xiiRGTextureHandle - WBOIT weighted accumulation target (R16G16B16A16F).
-  constexpr xiiStringView k_OITRevealBuffer     = "OITReveal"_xiisv;     ///< xiiRGTextureHandle - WBOIT reveal (transmittance) target (R8_UNORM).
-  constexpr xiiStringView k_DecalDataBuffer     = "DecalData"_xiisv;     ///< xiiRGBufferHandle - packed decal instance records uploaded from extracted render data.
+  constexpr xiiStringView k_OITAccumulateBuffer = "OITAccumulate"_xiisv;      ///< xiiRGTextureHandle - WBOIT weighted accumulation target (R16G16B16A16F).
+  constexpr xiiStringView k_OITRevealBuffer     = "OITReveal"_xiisv;          ///< xiiRGTextureHandle - WBOIT reveal (transmittance) target (R8_UNORM).
+  constexpr xiiStringView k_DecalDataBuffer     = "DecalData"_xiisv;          ///< xiiRGBufferHandle - packed decal instance records uploaded from extracted render data.
   constexpr xiiStringView k_DecalVisibleList    = "DecalVisibleList"_xiisv;   ///< xiiRGBufferHandle - GPU-visible decal indices, [0]=count.
   constexpr xiiStringView k_DecalDrawCommands   = "DecalDrawCommands"_xiisv;  ///< xiiRGBufferHandle - GPU-built mesh decal command/index stream.
   constexpr xiiStringView k_DecalTileList       = "DecalTileList"_xiisv;      ///< xiiRGBufferHandle - per-tile projected decal index list.

@@ -17,9 +17,9 @@
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GraphicsCore/Decals/DecalResource.h>
-#include <GraphicsCore/Particles/ParticleGraph.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Particles/ParticleGraph.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
