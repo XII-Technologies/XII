@@ -74,10 +74,10 @@ struct XII_GRAPHICSCORE_DLL xiiAnimationClipResourceDescriptor
   bool      m_bAdditive         = false;
   xiiUInt16 m_uiRootMotionJoint = xiiMath::MaxValue<xiiUInt16>();
 
-  xiiHybridArray<xiiAnimationClipJointTrack, 96> m_JointTracks;
-  xiiHybridArray<xiiAnimationClipEvent, 8>       m_Events;
-  xiiDynamicArray<xiiUInt8>                      m_OzzAnimationData;
-  xiiUInt32                                      m_uiRuntimeHash = 0U;
+  xiiDynamicArray<xiiAnimationClipJointTrack> m_JointTracks;
+  xiiDynamicArray<xiiAnimationClipEvent>      m_Events;
+  xiiDynamicArray<xiiUInt8>                   m_OzzAnimationData;
+  xiiUInt32                                   m_uiRuntimeHash = 0U;
 };
 
 class XII_GRAPHICSCORE_DLL xiiAnimationClipResource final : public xiiResource
