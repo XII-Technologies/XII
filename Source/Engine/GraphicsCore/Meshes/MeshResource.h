@@ -223,16 +223,16 @@ public:
 
   xiiSkeletonResourceHandle                      m_hDefaultSkeleton;            ///< Handle to the default skeleton resource for this mesh, used for skeletal animation when no specific skeleton is assigned.
   xiiHashTable<xiiHashedString, xiiMeshBoneData> m_Bones;                       ///< Hash table mapping bone names to bone data for this mesh, used for skeletal animation.
-  xiiHybridArray<xiiMeshMorphTarget, 4>          m_MorphTargets;                ///< Array of morph targets for this mesh, used for shape animation.
+  xiiDynamicArray<xiiMeshMorphTarget>            m_MorphTargets;                ///< Array of morph targets for this mesh, used for shape animation.
   float                                          m_fMaxBoneVertexOffset = 0.0f; ///< Maximum vertex offset caused by bone influences in this mesh, used for bounding volume calculations and culling of skinned meshes.
 
 private:
-  xiiHybridArray<xiiString, 8>      m_Materials;                                    ///< Array of material paths for this mesh, used to reference materials for rendering.
-  xiiHybridArray<xiiMeshSection, 8> m_Sections;                                     ///< Array of mesh sections (sub-meshes) for this mesh, used for rendering and culling.
-  xiiHybridArray<xiiMeshLOD, 4>     m_LODs;                                         ///< Array of LODs for this mesh, used for LOD selection and rendering.
-  xiiMeshBufferResourceDescriptor   m_MeshBufferDescriptor;                         ///< Descriptor for the mesh buffer resource associated with this mesh, used to define the vertex/index/meshlet data for this mesh.
-  xiiMeshBufferResourceHandle       m_hMeshBuffer;                                  ///< Handle to the mesh buffer resource associated with this mesh, used to reference the GPU buffers for rendering.
-  xiiBoundingBoxSphere              m_Bounds = xiiBoundingBoxSphere::MakeInvalid(); ///< Bounding volume for this mesh, used for culling and LOD selection.
+  xiiDynamicArray<xiiString>      m_Materials;                                    ///< Array of material paths for this mesh, used to reference materials for rendering.
+  xiiDynamicArray<xiiMeshSection> m_Sections;                                     ///< Array of mesh sections (sub-meshes) for this mesh, used for rendering and culling.
+  xiiDynamicArray<xiiMeshLOD>     m_LODs;                                         ///< Array of LODs for this mesh, used for LOD selection and rendering.
+  xiiMeshBufferResourceDescriptor m_MeshBufferDescriptor;                         ///< Descriptor for the mesh buffer resource associated with this mesh, used to define the vertex/index/meshlet data for this mesh.
+  xiiMeshBufferResourceHandle     m_hMeshBuffer;                                  ///< Handle to the mesh buffer resource associated with this mesh, used to reference the GPU buffers for rendering.
+  xiiBoundingBoxSphere            m_Bounds = xiiBoundingBoxSphere::MakeInvalid(); ///< Bounding volume for this mesh, used for culling and LOD selection.
 };
 
 /// \brief Mesh resource class representing a renderable mesh in the engine, containing geometry, materials, LODs, and other properties for rendering and animation.
@@ -295,7 +295,7 @@ private:
   void LoadMaterialSlots(const xiiMeshResourceDescriptor& descriptor);
 
 private:
-  xiiMeshResourceDescriptor                    m_Descriptor;
-  xiiMeshBufferResourceHandle                  m_hMeshBuffer;
-  xiiHybridArray<xiiMaterialResourceHandle, 8> m_hMaterials;
+  xiiMeshResourceDescriptor                  m_Descriptor;
+  xiiMeshBufferResourceHandle                m_hMeshBuffer;
+  xiiDynamicArray<xiiMaterialResourceHandle> m_hMaterials;
 };

@@ -6,10 +6,8 @@
 
 #  include <Core/Platform/NoImpl/InputDevice_NoImpl.h>
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiStandardInputDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber) {}
 xiiStandardInputDevice::~xiiStandardInputDevice() = default;

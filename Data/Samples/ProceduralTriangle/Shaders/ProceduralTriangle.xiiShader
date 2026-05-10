@@ -1,0 +1,178 @@
+[PLATFORMS]
+ALL
+
+[RENDERSTATE]
+
+DepthEnable = false
+CullMode    = CullMode_None
+
+[VERTEX_SHADER]
+
+#include "ProceduralTriangleConstants.h"
+
+struct VSOut
+{
+  float4 Position : SV_POSITION;
+  float3 Color    : COLOR0;
+  float3 Bary     : TEXCOORD0;
+  float3 Normal   : TEXCOORD1;
+  float2 ScreenUV : TEXCOORD2;
+};
+
+// triangle defined in normalized screen-space extents (-0.5..0.5)
+static const float3 gPositions[3] =
+{
+  float3(-0.5, -0.5, 0.0),
+  float3( 0.0,  0.5, 0.0),
+  float3( 0.5, -0.5, 0.0)
+};
+
+static const float3 gColors[3] =
+{
+  float3(1.0, 0.2, 0.15),
+  float3(0.15, 1.0, 0.2),
+  float3(0.2, 0.3, 1.0)
+};
+
+static const float3 gBary[3] =
+{
+  float3(1,0,0),
+  float3(0,1,0),
+  float3(0,0,1)
+};
+
+void main(in uint uiVertexID : SV_VertexID, out VSOut OUT)
+{
+  // Local positions in -0.5..0.5 range
+  float2 pos = gPositions[uiVertexID].xy;
+
+  // Inverse-aspect correction so the triangle preserves shape across window sizes.
+  // Use height/width to scale X down on wide windows (prevents the triangle from overflowing).
+  float aspectInv = (vResolution.x > 0.0) ? (vResolution.y / vResolution.x) : 1.0;
+  float2 clipPos = float2(pos.x * 2.0 * aspectInv, pos.y * 2.0); // map -0.5..0.5 -> -1..1
+
+  OUT.Position = float4(clipPos, 0.0, 1.0);
+  OUT.Color    = gColors[uiVertexID];
+  OUT.Bary     = gBary[uiVertexID];
+
+  // flat normal (kept for compatibility with existing PS)
+  float3 p0 = gPositions[0];
+  float3 p1 = gPositions[1];
+  float3 p2 = gPositions[2];
+  OUT.Normal = normalize(cross(p1 - p0, p2 - p0));
+
+  // ScreenUV in 0..1 for screen-space effects
+  float2 ndc = OUT.Position.xy / OUT.Position.w;
+  OUT.ScreenUV = ndc * 0.5 + 0.5;
+}
+
+[PIXEL_SHADER]
+
+#include "ProceduralTriangleConstants.h"
+
+struct PSIn
+{
+  float4 Position : SV_POSITION;
+  float3 Color    : COLOR0;
+  float3 Bary     : TEXCOORD0;
+  float3 Normal   : TEXCOORD1;
+  float2 ScreenUV : TEXCOORD2;
+};
+
+// cheap hash / value noise for grain and micro-variation
+float hash21(float2 p)
+{
+  p  = frac(p * float2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return frac(p.x * p.y);
+}
+
+float noise(float2 uv)
+{
+  float2 i = floor(uv);
+  float2 f = frac(uv);
+  float a  = hash21(i);
+  float b  = hash21(i + float2(1,0));
+  float c  = hash21(i + float2(0,1));
+  float d  = hash21(i + float2(1,1));
+  float2 u = f * f * (3.0 - 2.0 * f);
+  return lerp(lerp(a,b,u.x), lerp(c,d,u.x), u.y);
+}
+
+// Utility: simple saturation
+float3 SaturateColor(float3 c, float sat)
+{
+  float lum = dot(c, float3(0.2126, 0.7152, 0.0722));
+  return lerp(float3(lum,lum,lum), c, sat);
+}
+
+// Main pixel shader: boosted neon / bloom-like effect
+float4 main(PSIn IN) : SV_TARGET
+{
+  // --- Base palette (vertex-driven via barycentric interpolation)
+  float3 c0 = float3(1.0, 0.12, 0.05); // warm red
+  float3 c1 = float3(0.05, 1.0, 0.12); // neon green
+  float3 c2 = float3(0.12, 0.18, 1.0); // electric blue
+  float3 baseColor = IN.Bary.x * c0 + IN.Bary.y * c1 + IN.Bary.z * c2;
+
+  // --- Strong animated pulse (boost amplitude and frequency)
+  float pulseFreq = 3.6;            // higher frequency
+  float pulseAmp  = 1.2;            // stronger amplitude
+  float pulse = 0.45 + 0.55 * sin(fTime * pulseFreq + IN.ScreenUV.x * 10.0 + IN.ScreenUV.y * 6.0);
+  baseColor *= (1.0 + pulseAmp * (pulse - 0.5)); // center the pulse and amplify
+
+  // --- Screen-space rim / vignette (punchy)
+  float2 center = float2(0.5, 0.5);
+  float2 d = IN.ScreenUV - center;
+  float rim = pow(1.0 - saturate(length(d) * 1.1), 3.0); // sharper falloff
+  float3 rimCol = float3(1.0, 0.9, 0.7) * rim * 1.25;    // stronger rim color
+
+  // --- Edge / wire detection (barycentric)
+  float minB = min(min(IN.Bary.x, IN.Bary.y), IN.Bary.z);
+  float px = length(ddx(IN.Position.xy)) + length(ddy(IN.Position.xy));
+  float edgePx = max(1.0, fWireWidth) * 0.5 * px;
+  float edgeFade = smoothstep(0.0, edgePx * 0.9, minB);
+  float wire = smoothstep(0.0, edgePx * 0.5, minB);
+  float3 wireColor = float3(0.02, 0.02, 0.02);
+
+  // --- Micro detail / grain (resolution-aware)
+  float n = noise(IN.ScreenUV * vResolution * 0.6 + fTime * 1.6);
+  float grain = (n - 0.5) * 0.06; // stronger grain to break midtones
+
+  // --- Chromatic offset for subtle fringing (adds perceived saturation)
+  float2 uv = IN.ScreenUV;
+  float2 chromaOffset = float2(0.0025, -0.0015) * (1.0 - rim); // less offset near rim
+  float3 chromaSampleR = baseColor; // baseColor is procedural; we fake chroma by tinting
+  float3 chromaSampleB = baseColor;
+  chromaSampleR.r += 0.12; // push red channel
+  chromaSampleB.b += 0.12; // push blue channel
+
+  // --- Combine base + rim + chroma
+  float3 col = baseColor + rimCol;
+  // apply chroma tinting as an additive boost (cheap approximation)
+  col.r = lerp(col.r, chromaSampleR.r, 0.12);
+  col.b = lerp(col.b, chromaSampleB.b, 0.12);
+
+  // --- Edge blending and wire overlay
+  col = lerp(wireColor, col, saturate(edgeFade));
+  col += grain;
+
+  // --- Additive highlight / bloom simulation (aggressive)
+  // amplify bright areas non-linearly to simulate bloom without extra passes
+  float3 bright = max(col - 0.55, 0.0);
+  col += pow(bright, float3(1.8, 1.8, 1.8)) * 1.6; // strong additive boost
+
+  // --- Contrast and saturation boost
+  col = SaturateColor(col, 1.35); // increase saturation
+  float lum = dot(col, float3(0.2126, 0.7152, 0.0722));
+  col = lerp(float3(lum,lum,lum), col, 1.12); // slight contrast boost
+
+  // --- Soft tonemap (milder than ACES to preserve highlights)
+  col = col / (col + 0.9);
+
+  // --- Final clamp and gamma
+  col = saturate(col);
+  col = pow(col, 1.0 / 2.2);
+
+  return float4(col, 1.0);
+}

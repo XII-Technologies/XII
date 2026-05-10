@@ -7,11 +7,6 @@ XII_STATICLINK_LIBRARY(Core)
   if (bReturn)
     return;
 
-  XII_STATICLINK_REFERENCE(Core_ActorSystem_Implementation_Actor);
-  XII_STATICLINK_REFERENCE(Core_ActorSystem_Implementation_ActorApiService);
-  XII_STATICLINK_REFERENCE(Core_ActorSystem_Implementation_ActorManager);
-  XII_STATICLINK_REFERENCE(Core_ActorSystem_Implementation_ActorPlugin);
-  XII_STATICLINK_REFERENCE(Core_ActorSystem_Implementation_ActorPluginWindow);
   XII_STATICLINK_REFERENCE(Core_Assets_Implementation_AssetFileHeader);
   XII_STATICLINK_REFERENCE(Core_Collection_Implementation_CollectionComponent);
   XII_STATICLINK_REFERENCE(Core_Collection_Implementation_CollectionResource);
@@ -64,6 +59,7 @@ XII_STATICLINK_LIBRARY(Core)
   XII_STATICLINK_REFERENCE(Core_Scripting_LuaWrapper_Variables);
   XII_STATICLINK_REFERENCE(Core_System_Implementation_ControllerInput);
   XII_STATICLINK_REFERENCE(Core_System_Implementation_Window);
+  XII_STATICLINK_REFERENCE(Core_System_Implementation_WindowManager);
   XII_STATICLINK_REFERENCE(Core_Scripting_Implementation_ScriptAttributes);
   XII_STATICLINK_REFERENCE(Core_Scripting_Implementation_ScriptClassResource);
   XII_STATICLINK_REFERENCE(Core_Scripting_Implementation_ScriptComponent);

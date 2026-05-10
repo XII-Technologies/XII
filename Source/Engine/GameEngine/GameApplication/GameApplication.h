@@ -39,7 +39,7 @@ class XII_GAMEENGINE_DLL xiiGameApplication : public xiiGameApplicationBase
 {
 public:
   static xiiCVarBool cvar_AppVSync;
-  static xiiCVarBool cvar_AppShowFPS;
+  static xiiCVarBool cvar_AppShowFrameStats;
 
 public:
   using SUPER = xiiGameApplicationBase;
@@ -81,10 +81,7 @@ protected:
   virtual void Init_SetupGraphicsDevice() override;
   virtual void Deinit_ShutdownGraphicsDevice() override;
 
-  virtual xiiGameUpdateMode GetGameUpdateMode() const override;
-
   virtual bool Run_ProcessApplicationInput() override;
-  virtual void Run_AcquireImage() override;
   virtual void Run_WorldUpdateAndRender() override;
   virtual void Run_PresentImage() override;
   virtual void Run_FinishFrame() override;
@@ -99,11 +96,13 @@ protected:
   void RenderFps();
   void RenderConsole();
 
-  void                                UpdateWorldsAndExtractViews();
-  xiiSharedPtr<xiiDelegateTask<void>> m_pUpdateTask;
+  void OnVSyncChanged(const xiiCVarEvent& e);
 
+protected:
   static xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> s_DefaultDeviceCreator;
 
   bool                          m_bShowConsole = false;
   xiiUniquePtr<xiiQuakeConsole> m_pConsole;
+
+  xiiEventSubscriptionID m_CVarChangeSubscriptionID;
 };

@@ -75,7 +75,7 @@ struct xiiCVarEvent
   {
     ValueChanged,            ///< Sent whenever the 'Current' value of the CVar is changed.
     DelayedSyncValueChanged, ///< Sent whenever the 'DelayedSync' value of the CVar changes. It might actually change back to the 'Current' value though.
-    ListOfVarsChanged,       ///< A CVar was added or removed dynamically (not just by loading a plugin), some stuff may need to update its state
+    ListOfVarsChanged,       ///< A CVar was added or removed dynamically (not just by loading a plugin), some stuff may need to update its state.
   };
 
   /// \brief The type of this event.

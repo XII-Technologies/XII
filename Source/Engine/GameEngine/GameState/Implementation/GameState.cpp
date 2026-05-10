@@ -2,12 +2,9 @@
 
 #include <GameEngine/GameEnginePCH.h>
 
-#include <Core/ActorSystem/Actor.h>
-#include <Core/ActorSystem/ActorManager.h>
-#include <Core/ActorSystem/ActorPluginWindow.h>
 #include <Core/GameApplication/GameApplicationBase.h>
-#include <Core/GameState/GameStateWindow.h>
 #include <Core/Prefabs/PrefabResource.h>
+#include <Core/System/WindowManager.h>
 #include <Core/World/World.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
@@ -27,26 +24,11 @@ xiiCommandLineOptionPath opt_Window("GameState", "-wnd", "Path to the window con
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);
-
-namespace
-{
-  static xiiRenderWorldModule* GetRenderWorldModule(xiiWorld* pWorld)
-  {
-    return pWorld != nullptr ? pWorld->GetOrCreateModule<xiiRenderWorldModule>() : nullptr;
-  }
-
-  static const xiiRenderWorldModule* GetRenderWorldModule(const xiiWorld* pWorld)
-  {
-    return pWorld != nullptr ? pWorld->GetModule<xiiRenderWorldModule>() : nullptr;
-  }
-} // namespace
-
 xiiGameState* xiiGameState::s_pActiveGameState = nullptr;
 
 xiiGameState::xiiGameState()
 {
-  // initialize camera to default values
+  // Initialize camera to default values.
   m_MainCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 60.0f, 0.1f, 1000.0f);
   m_MainCamera.LookAt(xiiVec3::MakeZero(), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
 }
@@ -62,7 +44,7 @@ void xiiGameState::OnActivation(xiiWorld* pWorld, xiiStringView sStartPosition, 
 {
   s_pActiveGameState = this;
 
-  CreateActors();
+  CreateWindows();
   ConfigureInputActions();
 
   if (pWorld)
@@ -88,27 +70,20 @@ void xiiGameState::OnDeactivation()
 
   if (m_pMainWorld != nullptr && !m_hMainView.IsInvalidated())
   {
-    if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
-    {
-      pRenderWorldModule->DestroyView(m_hMainView);
-    }
+    xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetModule<xiiRenderWorldModule>();
+
+    pRenderWorldModule->DestroyView(m_hMainView);
 
     m_hMainView.Invalidate();
   }
 
-  m_pMainSwapChain.Clear();
-  m_MainViewportSize = xiiSizeU32(0, 0);
-
   s_pActiveGameState = nullptr;
 }
 
-void xiiGameState::AddMainViewsToRender()
+void xiiGameState::RequestQuit(xiiStringView sRequestedBy)
 {
-  // Views are managed by xiiRenderWorldModule and automatically scheduled for rendering upon creation
-}
+  XII_IGNORE_UNUSED(sRequestedBy);
 
-void xiiGameState::RequestQuit()
-{
   m_bStateWantsToQuit = true;
 }
 
@@ -124,8 +99,12 @@ void xiiGameState::ProcessInput()
 
 xiiView* xiiGameState::GetMainView()
 {
+  if (!m_pMainWorld)
+    return nullptr;
+
   xiiView* pView = nullptr;
-  if (const xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
+
+  if (const xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetModule<xiiRenderWorldModule>())
   {
     if (pRenderWorldModule->TryGetView(m_hMainView, pView))
     {
@@ -133,7 +112,7 @@ xiiView* xiiGameState::GetMainView()
     }
   }
 
-  return nullptr;
+  return pView;
 }
 
 bool xiiGameState::IsLoadingSceneInBackground(float* out_pProgress) const
@@ -147,6 +126,7 @@ bool xiiGameState::IsLoadingSceneInBackground(float* out_pProgress) const
       *out_pProgress = m_pBackgroundSceneLoad->GetLoadingProgress();
 
       auto state = m_pBackgroundSceneLoad->GetLoadingState();
+
       if (state != xiiSceneLoadUtility::LoadingState::FinishedSuccessfully)
       {
         *out_pProgress = xiiMath::Min(*out_pProgress, 0.99f);
@@ -162,76 +142,60 @@ bool xiiGameState::IsInLoadingScreen() const
   return m_pMainWorld == m_pLoadingScreenWorld;
 }
 
-void xiiGameState::CreateActors()
+void xiiGameState::CreateWindows()
 {
-  XII_LOG_BLOCK("CreateActors");
+  XII_LOG_BLOCK("CreateWindows");
 
   xiiUniquePtr<xiiWindow> pMainWindow = CreateMainWindow();
-  XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateActors().");
+  XII_ASSERT_DEV(pMainWindow != nullptr, "To change the main window creation behavior, override xiiGameState::CreateWindows().");
 
   xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = CreateMainOutputTarget(pMainWindow.Borrow());
 
   ConfigureMainWindowInputDevices(pMainWindow.Borrow());
+
+  CreateMainView();
+
   SetupMainView(pOutput->m_pSwapChain, pMainWindow->GetClientAreaSize());
 
-  {
-    // Default flat window
-    xiiUniquePtr<xiiActorPluginWindowOwner> pWindowPlugin = XII_DEFAULT_NEW(xiiActorPluginWindowOwner);
-    pWindowPlugin->m_pWindow                              = std::move(pMainWindow);
-    pWindowPlugin->m_pWindowOutputTarget                  = std::move(pOutput);
-    xiiUniquePtr<xiiActor> pActor                         = XII_DEFAULT_NEW(xiiActor, "Main Window", this);
-    pActor->AddPlugin(std::move(pWindowPlugin));
-    xiiActorManager::GetSingleton()->AddActor(std::move(pActor));
-  }
+  pMainWindow->SetOutputTarget(std::move(pOutput));
+
+  auto                      pWindowManager = xiiWindowManager::GetSingleton();
+  xiiRegisteredWindowHandle hWindowId      = pWindowManager->Register("Game", this, std::move(pMainWindow));
+  XII_IGNORE_UNUSED(hWindowId);
 }
 
 void xiiGameState::ConfigureMainWindowInputDevices(xiiWindow* pWindow) {}
 
 void xiiGameState::ConfigureInputActions() {}
 
-void xiiGameState::SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize)
+void xiiGameState::SetupMainView(xiiGALSwapChain* pSwapChain, xiiSizeU32 viewportSize)
 {
-  m_pMainSwapChain   = std::move(pSwapChain);
-  m_MainViewportSize = viewportSize;
-
-  xiiView* pView = GetMainView();
-  if (pView == nullptr)
+  if (xiiView* pView = GetMainView())
   {
-    return;
+    pView->SetSwapChain(pSwapChain);
+    pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)viewportSize.width, (float)viewportSize.height));
   }
-
-  pView->SetSwapChain(m_pMainSwapChain);
-  pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)m_MainViewportSize.width, (float)m_MainViewportSize.height));
 }
 
 xiiView* xiiGameState::CreateMainView()
 {
   XII_ASSERT_DEV(m_hMainView.IsInvalidated(), "CreateMainView was already called.");
-  XII_ASSERT_DEV(m_pMainWorld != nullptr, "CreateMainView requires an active world.");
 
   XII_LOG_BLOCK("CreateMainView");
-  xiiView* pView = nullptr;
-  if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(m_pMainWorld))
-  {
-    m_hMainView = pRenderWorldModule->CreateView("MainView", pView);
-  }
 
-  if (pView == nullptr)
-  {
+  if (m_pMainWorld == nullptr)
     return nullptr;
-  }
+
+  xiiView*              pView              = nullptr;
+  xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
+  m_hMainView                              = pRenderWorldModule->CreateView("MainView", pView);
 
   pView->SetCameraUsageHint(xiiCameraUsageHint::MainView);
   pView->SetCamera(&m_MainCamera);
 
   const xiiTag& tagEditor = xiiTagRegistry::GetGlobalRegistry().RegisterTag("Editor");
-  // exclude all editor objects from rendering in proper game views
-  pView->m_ExcludeTags.Set(tagEditor);
 
-  if (m_pMainSwapChain != nullptr)
-  {
-    SetupMainView(m_pMainSwapChain, m_MainViewportSize);
-  }
+  pView->m_ExcludeTags.Set(tagEditor); // Exclude all editor objects from rendering in proper game views.
 
   return pView;
 }
@@ -305,32 +269,28 @@ void xiiGameState::ChangeMainWorld(xiiWorld* pNewMainWorld, xiiStringView sStart
   if (m_pMainWorld == pNewMainWorld)
     return;
 
-  xiiWorld* pPrevWorld = m_pMainWorld;
+  xiiWorld* pPreviousWorld = m_pMainWorld;
+  m_pMainWorld             = pNewMainWorld;
 
-  if (pPrevWorld != nullptr && !m_hMainView.IsInvalidated())
+  if (pPreviousWorld != nullptr && !m_hMainView.IsInvalidated())
   {
-    if (xiiRenderWorldModule* pRenderWorldModule = GetRenderWorldModule(pPrevWorld))
+    if (xiiRenderWorldModule* pRenderWorldModule = pPreviousWorld->GetModule<xiiRenderWorldModule>())
     {
       pRenderWorldModule->DestroyView(m_hMainView);
+
+      m_hMainView.Invalidate();
     }
-
-    m_hMainView.Invalidate();
   }
 
-  m_pMainWorld = pNewMainWorld;
+  CreateMainView();
 
-  if (m_pMainWorld != nullptr)
-  {
-    CreateMainView();
-  }
-
-  OnChangedMainWorld(pPrevWorld, pNewMainWorld, sStartPosition, startPositionOffset);
+  OnChangedMainWorld(pPreviousWorld, pNewMainWorld, sStartPosition, startPositionOffset);
 
   // make sure the camera gets re-initialized for the new world
   ConfigureMainCamera();
 }
 
-void xiiGameState::OnChangedMainWorld(xiiWorld* pPrevWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
+void xiiGameState::OnChangedMainWorld(xiiWorld* pPreviousWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
   if (pNewWorld != m_pLoadingScreenWorld)
   {
@@ -381,18 +341,11 @@ void xiiGameState::ConfigureMainCamera()
 
 xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 {
-  if (false)
-  {
-    xiiHybridArray<xiiScreenInfo, 2> screens;
-    xiiScreen::EnumerateScreens(screens).IgnoreResult();
-    xiiScreen::PrintScreenInfo(screens);
-  }
-
   xiiStringBuilder sWindowConfig = opt_Window.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
 
   if (!sWindowConfig.IsEmpty() && !xiiFileSystem::ExistsFile(sWindowConfig))
   {
-    xiiLog::Dev("Window Config file does not exist: '{0}'", sWindowConfig);
+    xiiLog::Dev("Window configuration file does not exist: '{0}'", sWindowConfig);
     sWindowConfig.Clear();
   }
 
@@ -413,29 +366,30 @@ xiiUniquePtr<xiiWindow> xiiGameState::CreateMainWindow()
 
   xiiWindowCreationDescription windowDescription;
   windowDescription.LoadFromDDL(sWindowConfig).IgnoreResult();
+  windowDescription.AdjustWindowSizeAndPosition().IgnoreResult();
 
-  xiiUniquePtr<xiiGameStateWindow> pWindow = XII_DEFAULT_NEW(xiiGameStateWindow, windowDescription, [] {});
-  pWindow->ResetOnClickClose([this]() { this->RequestQuit(); });
+  xiiUniquePtr<xiiWindow> pWindow = XII_DEFAULT_NEW(xiiWindow);
+  pWindow->Initialize(windowDescription).AssertSuccess("Failed to create window.");
+
+  pWindow->GetWindowEvents().AddEventHandler(xiiMakeDelegate(&xiiGameState::OnWindowEvent, this));
 
   return pWindow;
 }
 
 xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiWindow* pMainWindow)
 {
-  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize) -> void {
+  xiiGALSwapChainCreationDescription description;
+  description.m_pWindow               = pMainWindow;
+  description.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+  description.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
+  description.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+  description.m_uiBufferCount         = 2U;
+  description.m_fDefaultDepthValue    = 1.0f;
+  description.m_uiDefaultStencilValue = 0U;
+
+  xiiUniquePtr<xiiWindowOutputTargetGAL> pOutput = XII_DEFAULT_NEW(xiiWindowOutputTargetGAL, description, [this](xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize) -> void {
     SetupMainView(pSwapChain, vSize);
   });
-
-  xiiGALSwapChainCreationDescription desc;
-  desc.m_pWindow               = pMainWindow;
-  desc.m_ColorBufferFormat     = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
-  desc.m_UsageFlags            = xiiGALSwapChainUsageFlags::RenderTarget | xiiGALSwapChainUsageFlags::ShaderResource;
-  desc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
-  desc.m_uiBufferCount         = 2U;
-  desc.m_fDefaultDepthValue    = 1.0f;
-  desc.m_uiDefaultStencilValue = 0U;
-
-  pOutput->CreateSwapchain(desc);
 
   return pOutput;
 }
@@ -504,6 +458,7 @@ void xiiGameState::CancelBackgroundSceneLoading()
   if (m_pBackgroundSceneLoad)
   {
     OnBackgroundSceneLoadingCanceled();
+
     m_pBackgroundSceneLoad.Clear();
   }
 }
@@ -521,21 +476,29 @@ void xiiGameState::UpdateBackgroundSceneLoading()
 
       case xiiSceneLoadUtility::LoadingState::NotStarted:
       case xiiSceneLoadUtility::LoadingState::Ongoing:
+      {
         m_pBackgroundSceneLoad->TickSceneLoading();
-        break;
+      }
+      break;
 
       case xiiSceneLoadUtility::LoadingState::FinishedSuccessfully:
+      {
         if (m_bTransitionWhenReady)
         {
           OnBackgroundSceneLoadingFinished(m_pBackgroundSceneLoad->RetrieveLoadedScene());
+
           m_pBackgroundSceneLoad.Clear();
         }
-        break;
+      }
+      break;
 
       case xiiSceneLoadUtility::LoadingState::Failed:
+      {
         OnBackgroundSceneLoadingFailed(m_pBackgroundSceneLoad->GetLoadingFailureReason());
+
         m_pBackgroundSceneLoad.Clear();
-        break;
+      }
+      break;
     }
   }
 }
@@ -545,8 +508,11 @@ void xiiGameState::OnBackgroundSceneLoadingFinished(xiiUniquePtr<xiiWorld>&& pWo
   xiiLog::Success("Finished loading scene '{}'.", m_pBackgroundSceneLoad->GetRequestedScene());
 
   m_pLoadedWorld = std::move(pWorld);
+
   ChangeMainWorld(m_pLoadedWorld.Borrow(), m_sTargetSceneSpawnPoint, m_TargetSceneSpawnOffset);
+
   m_sTargetSceneSpawnPoint.Clear();
+
   m_TargetSceneSpawnOffset = xiiTransform::MakeIdentity();
 }
 
@@ -558,6 +524,15 @@ void xiiGameState::OnBackgroundSceneLoadingFailed(xiiStringView sReason)
 void xiiGameState::OnBackgroundSceneLoadingCanceled()
 {
   xiiLog::Dev("Cancelled background loading of scene '{}'.", m_pBackgroundSceneLoad->GetRequestedScene());
+}
+
+void xiiGameState::OnWindowEvent(const xiiWindowEvent& e)
+{
+  if (e.m_Type == xiiWindowEvent::Type::CloseButtonClicked)
+  {
+    // Forward the event to the game state, so that it can decide what to do with it. For example, it may want to show a confirmation dialog before actually quitting.
+    RequestQuit("Game");
+  }
 }
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_GameState_Implementation_GameState);

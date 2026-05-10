@@ -16,10 +16,10 @@
 #include <GameEngine/Resources/ImageDataResource.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
-// #include <GraphicsCore/Decals/DecalAtlasResource.h>
-// #include <GraphicsCore/Decals/DecalResource.h>
+#include <GraphicsCore/Decals/DecalResource.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
+#include <GraphicsCore/Particles/ParticleGraph.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
@@ -31,7 +31,7 @@
 
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "Vulkan";
-#elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #else
 constexpr const char* szDefaultGraphicsAPI = "";
@@ -56,20 +56,23 @@ void xiiGameApplication::Init_ConfigureAssetManagement()
   xiiResourceManager::RegisterResourceForAssetType("Collection", xiiGetStaticRTTI<xiiCollectionResource>());
   xiiResourceManager::RegisterResourceForAssetType("ColorGradient", xiiGetStaticRTTI<xiiColorGradientResource>());
   xiiResourceManager::RegisterResourceForAssetType("Curve1D", xiiGetStaticRTTI<xiiCurve1DResource>());
-  // xiiResourceManager::RegisterResourceForAssetType("Decal", xiiGetStaticRTTI<xiiDecalResource>());
-  // xiiResourceManager::RegisterResourceForAssetType("Decal Atlas", xiiGetStaticRTTI<xiiDecalAtlasResource>());
+  xiiResourceManager::RegisterResourceForAssetType("Decal", xiiGetStaticRTTI<xiiDecalResource>());
+  xiiResourceManager::RegisterResourceForAssetType("Decal Atlas", xiiGetStaticRTTI<xiiDecalAtlasResource>());
   xiiResourceManager::RegisterResourceForAssetType("Image Data", xiiGetStaticRTTI<xiiImageDataResource>());
   xiiResourceManager::RegisterResourceForAssetType("LUT", xiiGetStaticRTTI<xiiTexture3DResource>());
   xiiResourceManager::RegisterResourceForAssetType("Material", xiiGetStaticRTTI<xiiMaterialResource>());
   xiiResourceManager::RegisterResourceForAssetType("Mesh", xiiGetStaticRTTI<xiiMeshResource>());
   xiiResourceManager::RegisterResourceForAssetType("Prefab", xiiGetStaticRTTI<xiiPrefabResource>());
   xiiResourceManager::RegisterResourceForAssetType("Render Target", xiiGetStaticRTTI<xiiTexture2DResource>());
+  xiiResourceManager::RegisterResourceForAssetType("Shader", xiiGetStaticRTTI<xiiShaderResource>());
   xiiResourceManager::RegisterResourceForAssetType("Skeleton", xiiGetStaticRTTI<xiiSkeletonResource>());
   xiiResourceManager::RegisterResourceForAssetType("StateMachine", xiiGetStaticRTTI<xiiStateMachineResource>());
   xiiResourceManager::RegisterResourceForAssetType("Substance Texture", xiiGetStaticRTTI<xiiTexture2DResource>());
   xiiResourceManager::RegisterResourceForAssetType("Surface", xiiGetStaticRTTI<xiiSurfaceResource>());
   xiiResourceManager::RegisterResourceForAssetType("Texture 2D", xiiGetStaticRTTI<xiiTexture2DResource>());
+  xiiResourceManager::RegisterResourceForAssetType("Texture 3D", xiiGetStaticRTTI<xiiTexture3DResource>());
   xiiResourceManager::RegisterResourceForAssetType("Texture Cube", xiiGetStaticRTTI<xiiTextureCubeResource>());
+  xiiResourceManager::RegisterResourceForAssetType("Particle Graph", xiiGetStaticRTTI<xiiParticleGraphResource>());
 }
 
 void xiiGameApplication::Init_SetupDefaultResources()
@@ -174,10 +177,9 @@ void xiiGameApplication::Init_SetupDefaultResources()
 
   // Prefabs
   {
-    // xiiPrefabResourceDescriptor emptyPrefab;
-    // xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::CreateResource<xiiPrefabResource>("MissingPrefabResource", emptyPrefab, "MissingPrefabResource");
+    xiiPrefabResourceDescriptor emptyPrefab;
+    xiiPrefabResourceHandle     hMissingPrefab = xiiResourceManager::CreateResource<xiiPrefabResource>("MissingPrefabResource", std::move(emptyPrefab), "MissingPrefabResource");
 
-    xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>("Prefabs/MissingPrefab.xiiBinPrefab");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiPrefabResource>(hMissingPrefab);
   }
 
@@ -210,27 +212,6 @@ void xiiGameApplication::Init_SetupDefaultResources()
 
     xiiCurve1DResourceHandle hResource = xiiResourceManager::CreateResource<xiiCurve1DResource>("MissingCurve1D", std::move(cd), "Missing Curve1D Resource");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiCurve1DResource>(hResource);
-  }
-
-  // Animation Skeleton
-  {
-    xiiSkeletonResourceDescriptor desc;
-
-    xiiSkeletonResourceHandle hResource = xiiResourceManager::CreateResource<xiiSkeletonResource>("MissingSkeleton", std::move(desc), "Missing Skeleton Resource");
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiSkeletonResource>(hResource);
-  }
-
-  // Animation Clip
-  {
-    xiiAnimationClipResourceDescriptor desc;
-
-    xiiAnimationClipResourceHandle hResource = xiiResourceManager::CreateResource<xiiAnimationClipResource>("MissingAnimationClip", std::move(desc), "Missing Animation Clip Resource");
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiAnimationClipResource>(hResource);
-  }
-
-  // Decal Atlas
-  {
-    xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<xiiDecalAtlasResource, xiiTexture2DResource>();
   }
 }
 

@@ -2,12 +2,12 @@
 
 #include <Core/CorePCH.h>
 
-#include <Core/ActorSystem/ActorManager.h>
 #include <Core/GameApplication/GameApplicationBase.h>
 #include <Core/Input/InputManager.h>
 #include <Core/Interfaces/FrameCaptureInterface.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
+#include <Core/System/WindowManager.h>
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Singleton.h>
@@ -62,7 +62,7 @@ void xiiGameApplicationBase::TakeProfilingCapture()
       if (fileWriter.Open(sPath) == XII_SUCCESS)
       {
         m_profilingData.Write(fileWriter).IgnoreResult();
-        xiiLog::Info("Profiling capture saved to '{0}'.", fileWriter.GetFilePathAbsolute().GetData());
+        xiiLog::Info("Profiling capture saved to '{0}'.", fileWriter.GetFilePathAbsolute().GetView());
       }
       else
       {
@@ -99,7 +99,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sCo
   private:
     virtual void Execute() override
     {
-      // Remove the Alpha channel before saving
+      // Remove the Alpha channel before saving.
       m_Image.Convert(xiiImageFormat::R8G8B8_UNORM_SRGB).IgnoreResult();
 
       if (m_Image.SaveTo(m_sPath).Succeeded())
@@ -120,7 +120,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sCo
 
   // We move the file writing off to another thread to save some time.
   // If we moved it to the 'FileAccess' thread, writing a screenshot would block resource loading, which can reduce game performance
-  // 'LongRunning' will give it even less priority and let the task system do them in parallel to other things
+  // 'LongRunning' will give it even less priority and let the task system do them in parallel to other things.
   xiiTaskSystem::StartSingleTask(pWriteTask, xiiTaskPriority::LongRunning);
 }
 
@@ -129,6 +129,7 @@ void xiiGameApplicationBase::ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pO
   if (m_bTakeScreenshot)
   {
     XII_PROFILE_SCOPE("ExecuteTakeScreenshot");
+
     xiiImage img;
     if (pOutputTarget->CaptureImage(img).Succeeded())
     {
@@ -168,7 +169,8 @@ void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHan
     return;
 
   XII_PROFILE_SCOPE("ExecuteFrameCapture");
-  // If we still have a running capture (i.e., if no one else has taken the capture so far), finish it
+
+  // If we still have a running capture (i.e., if no one else has taken the capture so far), finish it.
   if (pCaptureInterface->IsFrameCapturing())
   {
     if (m_bCaptureFrame)
@@ -199,7 +201,7 @@ void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHan
     }
   }
 
-  // Start capturing the next frame if
+  // Start capturing the next frame if,
   // (a) we want to capture the very next frame, or
   // (b) we capture every frame and later decide if we want to persist or discard it.
   if (m_bCaptureFrame || m_bContinuousFrameCapture)
@@ -212,7 +214,7 @@ void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHan
 
 void xiiGameApplicationBase::ActivateGameState(xiiWorld* pWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset)
 {
-  XII_ASSERT_DEBUG(m_pGameState == nullptr, "ActivateGameState cannot be called when another GameState is already active");
+  XII_ASSERT_DEBUG(m_pGameState == nullptr, "ActivateGameState cannot be called when another GameState is already active.");
 
   m_pGameState = CreateGameState();
 
@@ -240,7 +242,7 @@ void xiiGameApplicationBase::DeactivateGameState()
 
   m_pGameState->OnDeactivation();
 
-  xiiActorManager::GetSingleton()->DestroyAllActors(m_pGameState.Borrow());
+  xiiWindowManager::GetSingleton()->CloseAll(m_pGameState.Borrow());
 
   m_pGameState = nullptr;
 }
@@ -251,41 +253,40 @@ xiiUniquePtr<xiiGameStateBase> xiiGameApplicationBase::CreateGameState()
 
   xiiUniquePtr<xiiGameStateBase> pCurState;
 
-  xiiRTTI::ForEachDerivedType<xiiGameStateBase>(
-    [&](const xiiRTTI* pRtti) {
-      xiiUniquePtr<xiiGameStateBase> pNewState = pRtti->GetAllocator()->Allocate<xiiGameStateBase>();
+  xiiRTTI::ForEachDerivedType<xiiGameStateBase>([&](const xiiRTTI* pRtti) -> void {
+    xiiUniquePtr<xiiGameStateBase> pNewState = pRtti->GetAllocator()->Allocate<xiiGameStateBase>();
 
-      if (pCurState == nullptr)
+    if (pCurState == nullptr)
+    {
+      pCurState = std::move(pNewState);
+      return;
+    }
+
+    if (pCurState->IsFallbackGameState() && !pNewState->IsFallbackGameState())
+    {
+      pCurState = std::move(pNewState);
+      return;
+    }
+
+    if (pCurState->IsFallbackGameState() && pNewState->IsFallbackGameState())
+    {
+      if (pNewState->GetDynamicRTTI()->IsDerivedFrom(pCurState->GetDynamicRTTI()))
       {
         pCurState = std::move(pNewState);
         return;
       }
 
-      if (pCurState->IsFallbackGameState() && !pNewState->IsFallbackGameState())
-      {
-        pCurState = std::move(pNewState);
-        return;
-      }
+      xiiLog::Warning("Multiple fallback game states found: '{}' and '{}'", pNewState->GetDynamicRTTI()->GetTypeName(), pCurState->GetDynamicRTTI()->GetTypeName());
+      return;
+    }
 
-      if (pCurState->IsFallbackGameState() && pNewState->IsFallbackGameState())
-      {
-        if (pNewState->GetDynamicRTTI()->IsDerivedFrom(pCurState->GetDynamicRTTI()))
-        {
-          pCurState = std::move(pNewState);
-          return;
-        }
-
-        xiiLog::Warning("Multiple fallback game states found: '{}' and '{}'", pNewState->GetDynamicRTTI()->GetTypeName(), pCurState->GetDynamicRTTI()->GetTypeName());
-        return;
-      }
-
-      if (!pCurState->IsFallbackGameState() && !pNewState->IsFallbackGameState())
-      {
-        xiiLog::Warning("Multiple game state implementations found: '{}' and '{}'", pNewState->GetDynamicRTTI()->GetTypeName(), pCurState->GetDynamicRTTI()->GetTypeName());
-        return;
-      }
-    },
-    xiiRTTI::ForEachOptions::ExcludeNotConcrete);
+    if (!pCurState->IsFallbackGameState() && !pNewState->IsFallbackGameState())
+    {
+      xiiLog::Warning("Multiple game state implementations found: '{}' and '{}'", pNewState->GetDynamicRTTI()->GetTypeName(), pCurState->GetDynamicRTTI()->GetTypeName());
+      return;
+    }
+  },
+                                                xiiRTTI::ForEachOptions::ExcludeNotConcrete);
 
   return pCurState;
 }
@@ -310,9 +311,8 @@ void xiiGameApplicationBase::AfterCoreSystemsStartup()
 
   ExecuteInitFunctions();
 
-  // If one of the init functions already requested the application to quit,
-  // something must have gone wrong. Don't continue initialization and let the
-  // application exit.
+  // If one of the initialization functions already requested the application to quit, something must have gone wrong.
+  // Do not continue initialization and let the application exit.
   if (WasQuitRequested())
     return;
 
@@ -340,10 +340,9 @@ void xiiGameApplicationBase::BeforeHighLevelSystemsShutdown()
 
 void xiiGameApplicationBase::BeforeCoreSystemsShutdown()
 {
-  // Shut down all actors and APIs that may have been in use.
-  if (xiiActorManager::GetSingleton() != nullptr)
+  if (auto pWindowManager = xiiWindowManager::GetSingleton())
   {
-    xiiActorManager::GetSingleton()->Shutdown();
+    pWindowManager->CloseAll(nullptr);
   }
 
   {
@@ -397,27 +396,24 @@ void xiiGameApplicationBase::RunOneFrame()
   xiiProfilingSystem::StartNewFrame();
 
   XII_PROFILE_SCOPE("Run");
+
   s_bUpdatePluginsExecuted = false;
 
-  xiiActorManager::GetSingleton()->Update();
-
-  const xiiGameUpdateMode state = GetGameUpdateMode();
-  if (state == xiiGameUpdateMode::Skip)
-    return;
+  xiiWindowManager::GetSingleton()->Update();
 
   {
-    // for plugins that need to hook into this without a link dependency on this lib
+    // For plugins that need to hook into this without a link dependency on this library.
+
     XII_PROFILE_SCOPE("GameApp_BeginAppTick");
+
     XII_BROADCAST_EVENT(GameApp_BeginAppTick);
+
     xiiGameApplicationExecutionEvent e;
     e.m_Type = xiiGameApplicationExecutionEvent::Type::BeginAppTick;
     m_ExecutionEvents.Broadcast(e);
   }
 
-  if (state == xiiGameUpdateMode::UpdateInputAndRender)
-    Run_InputUpdate();
-
-  Run_AcquireImage();
+  Run_InputUpdate();
 
   Run_WorldUpdateAndRender();
 
@@ -429,8 +425,9 @@ void xiiGameApplicationBase::RunOneFrame()
   }
 
   {
-    // For plugins that need to hook into this without a link dependency on this lib.
+    // For plugins that need to hook into this without a link dependency on this library.
     XII_PROFILE_SCOPE("GameApp_EndAppTick");
+
     XII_BROADCAST_EVENT(GameApp_EndAppTick);
 
     xiiGameApplicationExecutionEvent e;
@@ -487,10 +484,6 @@ void xiiGameApplicationBase::Run_InputUpdate()
 bool xiiGameApplicationBase::Run_ProcessApplicationInput()
 {
   return true;
-}
-
-void xiiGameApplicationBase::Run_AcquireImage()
-{
 }
 
 void xiiGameApplicationBase::Run_BeforeWorldUpdate()

@@ -68,10 +68,10 @@ class XII_FOUNDATION_DLL xiiApplication
 
 public:
   /// \brief Defines the possible return values for the xiiApplication::Run() function.
-  enum class Execution
+  enum class Execution : xiiUInt8
   {
-    Continue, ///< The 'Run' function should return this to keep the application running
-    Quit,     ///< The 'Run' function should return this to quit the application
+    Continue = 0U, ///< The 'Run' function should return this to keep the application running
+    Quit,          ///< The 'Run' function should return this to quit the application
   };
 
   /// \brief Constructor.

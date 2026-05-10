@@ -276,7 +276,7 @@ void xiiGameApplicationBase::Deinit_UnloadPlugins()
 void xiiGameApplicationBase::Deinit_ShutdownLogging()
 {
 #if XII_DISABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  // during development, keep these loggers active
+  // During development, keep these loggers active.
   xiiGlobalLog::RemoveLogWriter(m_LogToConsoleID);
   xiiGlobalLog::RemoveLogWriter(m_LogToVsID);
 #endif

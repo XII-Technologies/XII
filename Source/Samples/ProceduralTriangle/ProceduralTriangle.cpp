@@ -27,6 +27,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/Tools/MapHelper.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsCore/Pipeline/PipelineStateCache.h>
@@ -36,15 +37,17 @@
 #include <GraphicsCore/Pipeline/RenderPassCache.h>
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
+#include <Shaders/ProceduralTriangleConstants.h>
+
 static bool g_bWindowResized = false;
 
-class xiiGraphicsExplorerApp : public xiiApplication
+class xiiProceduralTriangleApp : public xiiApplication
 {
 public:
   using SUPER = xiiApplication;
 
-  xiiGraphicsExplorerApp() :
-    xiiApplication("Graphics Explorer")
+  xiiProceduralTriangleApp() :
+    xiiApplication("Procedural Triangle")
   {
   }
 
@@ -147,9 +150,9 @@ public:
 
         m_pRenderGraph->BeginSetup(m_uiFrameIndex);
         {
-          m_pRenderGraph->AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteOffscreenPass, this));
-          m_pRenderGraph->AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteProceduralTrianglePass, this));
-          m_pRenderGraph->AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiGraphicsExplorerApp::SetupBlitPass, this), xiiMakeDelegate(&xiiGraphicsExplorerApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
+          m_pRenderGraph->AddPass<OffscreenPassData>("OffscreenPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupOffscreenPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteOffscreenPass, this));
+          m_pRenderGraph->AddPass<ProceduralTrianglePassData>("ProceduralTrianglePass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupProceduralTrianglePass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteProceduralTrianglePass, this));
+          m_pRenderGraph->AddPass<BlitPassData>("BlitPass", xiiGALCommandQueueFlags::Graphics, xiiMakeDelegate(&xiiProceduralTriangleApp::SetupBlitPass, this), xiiMakeDelegate(&xiiProceduralTriangleApp::ExecuteBlitPass, this), /*bHasSideEffects=*/true);
         }
         m_pRenderGraph->EndSetup();
 
@@ -188,9 +191,6 @@ public:
       m_pDevice->EndFrame();
     }
 
-    // Make sure telemetry is sent out regularly.
-    xiiTelemetry::PerFrameUpdate();
-
     // Needs to be called once per frame
     xiiResourceManager::PerFrameUpdate();
 
@@ -204,19 +204,10 @@ public:
 
   virtual void AfterCoreSystemsStartup() override
   {
-    //#if XII_ENABLED(USE_FILESERVE)
-    //    xiiPlugin::LoadPlugin("xiiFileservePlugin").AssertSuccess("Failed to load FileServe plugin.");
-    //#endif
-
-    xiiStringBuilder sProjectDir = ">sdk/Data/Samples/GraphicsExplorer";
+    xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ProceduralTriangle";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
-
-    //#if XII_ENABLED(USE_DIRECTORY_WATCHER)
-    //    m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
-    //    m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).AssertSuccess("Failed to watch project directory");
-    //#endif
 
     xiiFileSystem::AddDataDirectory(">sdk/Output/", "ShaderCache", "shadercache", xiiDataDirUsage::AllowWrites).AssertSuccess();
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").AssertSuccess();
@@ -224,18 +215,6 @@ public:
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    xiiTelemetry::SetServerName("Graphics Explorer");
-
-    // Activate xiiTelemetry such that the inspector plugin can use the network connection.
-    xiiTelemetry::CreateServer();
-
-    // Load the inspector plugin.
-    // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
-    // When you are using xiiApplication, this is done automatically.
-    xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
-#endif
 
     // Register Input
     {
@@ -316,7 +295,7 @@ public:
       xiiWindowCreationDescription WindowCreationDescription;
       WindowCreationDescription.m_Resolution.width  = 960;
       WindowCreationDescription.m_Resolution.height = 540;
-      WindowCreationDescription.m_Title             = "Graphics Explorer";
+      WindowCreationDescription.m_Title             = GetApplicationName();
       WindowCreationDescription.m_bShowMouseCursor  = true;
       WindowCreationDescription.m_bClipMouseCursor  = false;
       WindowCreationDescription.m_WindowMode        = xiiWindowMode::WindowResizable;
@@ -379,11 +358,6 @@ public:
   virtual void BeforeCoreSystemsShutdown() override
   {
     xiiPlugin::UnloadAllPlugins();
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    // Shut down telemetry if it was set up.
-    xiiTelemetry::CloseConnection();
-#endif
 
     SUPER::BeforeCoreSystemsShutdown();
   }
@@ -476,7 +450,6 @@ private:
     cmd.BeginDebugGroup("Offscreen Clear");
     {
       cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
-      // cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::MakeHSV(data.m_fGlobalTime, 1.0f, 0.5f + 0.5f * sinf(data.m_fGlobalTime * 0.5f)));
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
     }
     cmd.EndDebugGroup();
@@ -485,6 +458,7 @@ private:
   struct ProceduralTrianglePassData
   {
     xiiRGTextureHandle                 m_hOffScreenTexture;
+    xiiRGBufferHandle                  m_hTriangleConstantBuffer;
     xiiShaderResourceHandle            m_hShader;
     xiiShaderPermutationResourceHandle m_hShaderPermutation;
     xiiSharedPtr<xiiGALRenderPass>     m_pRenderPass;
@@ -524,6 +498,14 @@ private:
       dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::RenderTargetWrite;
     }
     data.m_pRenderPass = xiiGALRenderPassCache::GetRenderPass(renderPassDescription);
+
+    xiiGALBufferCreationDescription triangleConstantBufferDescription;
+    triangleConstantBufferDescription.m_BindFlags           = xiiGALBindFlags::UniformBuffer;
+    triangleConstantBufferDescription.m_uiElementByteStride = 0U;
+    triangleConstantBufferDescription.m_uiSize              = sizeof(xiiProceduralTriangleConstants);
+    triangleConstantBufferDescription.m_Usage               = xiiGALResourceUsage::Dynamic;
+    triangleConstantBufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    data.m_hTriangleConstantBuffer                          = builder.WriteBuffer("TriangleConstantBuffer", triangleConstantBufferDescription, xiiGALResourceStateFlags::ConstantBuffer);
   }
 
   void ExecuteProceduralTrianglePass(const ProceduralTrianglePassData& data, xiiRGPassContext& context)
@@ -564,12 +546,21 @@ private:
 
     cmd.BeginDebugGroup("Procedural Triangle");
     {
+      {
+        // Map the constant buffer and write the data for this frame. The render graph will ensure proper synchronization so that the GPU is not still reading from it when we write to it.
+        xiiGALMapHelper<xiiProceduralTriangleConstants> pConstants(cmd, context.GetBuffer(data.m_hTriangleConstantBuffer), xiiGALMapType::Write, xiiGALMapFlags::Discard);
+
+        pConstants->fTime       = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 1000.0);
+        pConstants->vResolution = xiiVec2::Make((float)framebufferSize.width, (float)framebufferSize.height);
+        pConstants->fWireWidth  = 1.0f;
+      }
       cmd.BeginRenderPass({data.m_pRenderPass.Borrow(), pFramebuffer}); // Begin a render pass on the offscreen framebuffer we created, which will also perform the necessary resource transitions for the offscreen texture and depth buffer.
       {
-        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height)); // Set the viewport to cover the entire render target.
-        cmd.SetPipelineState(pPipelineState);                                                                   // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
-        cmd.CommitShaderResources().IgnoreResult();                                                             // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
-        cmd.Draw({3});                                                                                          // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
+        cmd.SetViewport(xiiRectFloat(0.0f, 0.0f, (float)framebufferSize.width, (float)framebufferSize.height));                               // Set the viewport to cover the entire render target.
+        cmd.SetPipelineState(pPipelineState);                                                                                                 // Set the pipeline state we created in the setup function. This will also bind the shaders and their resources (none in this case).
+        cmd.ResolveAndSetConstantBuffer(XII_PP_STRINGIFY(xiiProceduralTriangleConstants), context.GetBuffer(data.m_hTriangleConstantBuffer)); // This will bind the constant buffer to the correct slot based on the shader reflection data, and also ensure proper resource state transitions.
+        cmd.CommitShaderResources(xiiGALStateTransitionMode::Verify).IgnoreResult();                                                          // This will bind the offscreen texture as render target, as well as any other resources used by the shader (none in this case).
+        cmd.Draw({3});                                                                                                                        // We will draw a single triangle with 3 vertices, generated procedurally in the vertex shader.
       }
       cmd.EndRenderPass(); // End the render pass, which will also perform necessary resource transitions to make the offscreen texture available for reading in the next pass.
     }
@@ -621,4 +612,4 @@ private:
   xiiUniquePtr<xiiWindow>                       m_pWindow;
 };
 
-XII_CONSOLEAPP_ENTRY_POINT(xiiGraphicsExplorerApp);
+XII_CONSOLEAPP_ENTRY_POINT(xiiProceduralTriangleApp);

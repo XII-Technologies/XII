@@ -4,58 +4,51 @@
 
 #include <Core/Configuration/PlatformProfile.h>
 #include <Core/Console/ConsoleFunction.h>
-#include <Core/GameApplication/WindowOutputTargetBase.h>
 #include <Core/GameState/GameStateBase.h>
 #include <Core/System/Window.h>
 #include <Foundation/Application/Application.h>
 #include <Foundation/Types/UniquePtr.h>
 
-class xiiWindowBase;
-struct xiiWindowCreationDescription;
 class xiiWorld;
+class xiiWindowBase;
 
-/// Allows custom code to inject logic at specific points during
-/// initialization or during shutdown. The events are listed in
-/// the order in which they typically happen.
+struct xiiWindowCreationDescription;
+
+/// \brief Allows custom code to inject logic at specific points during initialization or during shutdown.
+///
+/// The events are listed in the order in which they typically happen.
 struct xiiGameApplicationStaticEvent
 {
-  enum class Type
+  enum class Type : xiiUInt8
   {
-    AfterGameStateActivated,
-    BeforeGameStateDeactivated
+    AfterGameStateActivated = 0U, ///< This is the first event that is triggered during the lifetime of the application. It is triggered after the game state has been activated, but before any worlds have been created or any scenes have been loaded.
+    BeforeGameStateDeactivated    ///< This is the last event that is triggered during the lifetime of the application. It is triggered before the game state is deactivated, but after all worlds have been destroyed and all scenes have been unloaded.
   };
 
   Type m_Type;
 };
 
 /// Allows custom code to inject logic at specific update points.
+///
 /// The events are listed in the order in which they typically happen.
 struct xiiGameApplicationExecutionEvent
 {
-  enum class Type
+  enum class Type : xiiUInt8
   {
-    BeginAppTick,
-    BeforeWorldUpdates,
-    AfterWorldUpdates,
-    BeforeUpdatePlugins,
-    AfterUpdatePlugins,
-    BeforePresent,
-    AfterPresent,
-    EndAppTick,
+    BeginAppTick = 0U,   ///< This is the first event that is triggered during the update phase of the application. It is triggered before any input is processed or any world is updated.
+    BeforeWorldUpdates,  ///< This event is triggered after input has been processed, but before any world is updated. It is triggered once per frame, even if the application is paused.
+    AfterWorldUpdates,   ///< This event is triggered after all worlds have been updated, but before any views are extracted. It is triggered once per frame, even if the application is paused.
+    BeforeUpdatePlugins, ///< This event is triggered after all worlds have been updated and all views have been extracted, but before any plugins are updated. It is triggered once per frame, even if the application is paused.
+    AfterUpdatePlugins,  ///< This event is triggered after all plugins have been updated, but before any rendering has started. It is triggered once per frame, even if the application is paused.
+    BeforePresent,       ///< This event is triggered after all rendering has been completed, but before the back buffer is presented. It is triggered once per frame, even if the application is paused.
+    AfterPresent,        ///< This is the last event that is triggered during the update phase of the application. It is triggered after the back buffer has been presented, but before any new frame has started. It is triggered once per frame, even if the application is paused.
+    EndAppTick,          ///< This event is triggered at the very end of the update phase of the application, after all other events have been triggered. It is triggered once per frame, even if the application is paused.
   };
 
   Type m_Type;
 };
 
-enum class xiiGameUpdateMode
-{
-  Skip,                 ///< Do not update or render anything.
-  Render,               ///< Only render, no input update.
-  UpdateInputAndRender, ///< Update input and render.
-};
-
-// TODO: Document this and update xiiGameApplication comments
-
+/// \brief The xiiGameApplicationBase class is the base class for all game applications. It provides common functionality for managing the game state, taking screenshots, and capturing frames.
 class XII_CORE_DLL xiiGameApplicationBase : public xiiApplication
 {
 public:
@@ -95,8 +88,7 @@ protected:
 
   bool m_bTakeScreenshot = false;
 
-  /// expose TakeScreenshot() as a console function
-  xiiConsoleFunction<void()> m_ConFunc_TakeScreenshot;
+  xiiConsoleFunction<void()> m_ConFunc_TakeScreenshot; ///< Expose TakeScreenshot() as a console function, so that it can be triggered by automated tests, e.g., when an image comparison fails, and game code.
 
   ///@}
   /// \name Frame Captures
@@ -258,12 +250,8 @@ public:
   xiiTime GetFrameTime() const { return m_FrameTime; }
 
 protected:
-  virtual xiiGameUpdateMode GetGameUpdateMode() const { return xiiGameUpdateMode::UpdateInputAndRender; }
-
   virtual void Run_InputUpdate();
   virtual bool Run_ProcessApplicationInput();
-  /// \brief This function can be used to acquire a new window from a swap-chain or do any other update operations on windows before the multi-threaded rendering and update phase starts.
-  virtual void Run_AcquireImage();
   virtual void Run_WorldUpdateAndRender() = 0;
   virtual void Run_BeforeWorldUpdate();
   virtual void Run_AfterWorldUpdate();

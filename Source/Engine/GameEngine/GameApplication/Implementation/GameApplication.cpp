@@ -2,9 +2,6 @@
 
 #include <GameEngine/GameEnginePCH.h>
 
-#include <Core/ActorSystem/Actor.h>
-#include <Core/ActorSystem/ActorManager.h>
-#include <Core/ActorSystem/ActorPluginWindow.h>
 #include <Core/Console/QuakeConsole.h>
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -32,46 +29,26 @@
 xiiGameApplication*                                                             xiiGameApplication::s_pGameApplicationInstance = nullptr;
 xiiDelegate<xiiSharedPtr<xiiGALDevice>(const xiiGALDeviceCreationDescription&)> xiiGameApplication::s_DefaultDeviceCreator;
 
-xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Enables V-Sync");
-xiiCVarBool xiiGameApplication::cvar_AppShowFPS("App.ShowFPS", false, xiiCVarFlags::Save, "Show frames per second counter");
-
-namespace
-{
-  static xiiView* TryGetViewFromModule(xiiWorld* pWorld, xiiViewHandle hView)
-  {
-    if (pWorld == nullptr)
-      return nullptr;
-
-    const xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>();
-    if (pRenderWorldModule == nullptr)
-      return nullptr;
-
-    xiiView* pView = nullptr;
-    if (pRenderWorldModule->TryGetView(hView, pView))
-    {
-      return pView;
-    }
-
-    return nullptr;
-  }
-} // namespace
+xiiCVarBool xiiGameApplication::cvar_AppVSync("App.VSync", true, xiiCVarFlags::Save, "Synchronizes frame presentation with the display refresh to reduce or eliminate screen tearing. This may introduce input latency and cap the framerate to the monitor's refresh rate. Useful for visual fidelity and stable presentation.");
+xiiCVarBool xiiGameApplication::cvar_AppShowFrameStats("App.ShowFrameStats", false, xiiCVarFlags::Save, "Displays a live frames-stats overlay on-screen to aid profiling and spot frame-time spikes during development and debugging. Provides an immediate performance readout without affecting rendering state.");
 
 xiiGameApplication::xiiGameApplication(xiiStringView sAppName, xiiStringView sProjectPath /*= {}*/) :
   xiiGameApplicationBase(sAppName), m_sAppProjectPath(sProjectPath)
 {
-  m_pUpdateTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "UpdateWorldsAndExtractViews", xiiTaskNesting::Never, xiiMakeDelegate(&xiiGameApplication::UpdateWorldsAndExtractViews, this));
-  m_pUpdateTask->ConfigureTask("GameApplication.Update", xiiTaskNesting::Maybe);
-
   s_pGameApplicationInstance = this;
   m_bWasQuitRequested        = false;
 
   m_pConsole = XII_DEFAULT_NEW(xiiQuakeConsole);
   xiiConsole::SetMainConsole(m_pConsole.Borrow());
+
+  m_CVarChangeSubscriptionID = cvar_AppVSync.m_CVarEvents.AddEventHandler(xiiMakeDelegate(&xiiGameApplication::OnVSyncChanged, this));
 }
 
 xiiGameApplication::~xiiGameApplication()
 {
   s_pGameApplicationInstance = nullptr;
+
+  cvar_AppVSync.m_CVarEvents.RemoveEventHandler(m_CVarChangeSubscriptionID);
 }
 
 // static
@@ -94,200 +71,94 @@ xiiString xiiGameApplication::FindProjectDirectory() const
 
   // first check if the path is relative to the SDK special directory
   {
-    xiiStringBuilder relToSdk(m_sAppProjectPath);
+    xiiStringBuilder sPathRelativeToSDK(m_sAppProjectPath);
 
-    if (!relToSdk.StartsWith_NoCase(">sdk/"))
+    if (!sPathRelativeToSDK.StartsWith_NoCase(">sdk/"))
     {
-      relToSdk.Prepend(">sdk/");
+      sPathRelativeToSDK.Prepend(">sdk/");
     }
 
-    xiiStringBuilder absToSdk;
-    if (xiiFileSystem::ResolveSpecialDirectory(relToSdk, absToSdk).Succeeded())
+    xiiStringBuilder sAbsolutePathToSDK;
+    if (xiiFileSystem::ResolveSpecialDirectory(sPathRelativeToSDK, sAbsolutePathToSDK).Succeeded())
     {
-      if (xiiOSFile::ExistsDirectory(absToSdk))
-        return absToSdk;
+      if (xiiOSFile::ExistsDirectory(sAbsolutePathToSDK))
+        return sAbsolutePathToSDK;
     }
   }
 
-  xiiStringBuilder result;
-  if (xiiFileSystem::FindFolderWithSubPath(result, xiiOSFile::GetApplicationDirectory(), m_sAppProjectPath).Failed())
+  xiiStringBuilder sResult;
+  if (xiiFileSystem::FindFolderWithSubPath(sResult, xiiOSFile::GetApplicationDirectory(), m_sAppProjectPath).Failed())
   {
     xiiLog::Error("Could not find the project directory.");
   }
 
-  return result;
-}
-
-xiiGameUpdateMode xiiGameApplication::GetGameUpdateMode() const
-{
-  const bool bViewsScheduled     = !xiiRenderWorld::GetMainViews().IsEmpty();
-  const bool bRenderingScheduled = xiiRenderWorld::IsRenderingScheduled();
-  if (bViewsScheduled)
-  {
-    return xiiGameUpdateMode::UpdateInputAndRender;
-  }
-  return bRenderingScheduled ? xiiGameUpdateMode::Render : xiiGameUpdateMode::Skip;
+  return sResult;
 }
 
 void xiiGameApplication::Run_WorldUpdateAndRender()
 {
   XII_PROFILE_SCOPE("Run_WorldUpdateAndRender");
-  // If multi-threaded rendering is disabled, the same content is updated/extracted and rendered in the same frame.
-  // As xiiRenderWorld::BeginFrame applies the render pipeline properties that were set during the update phase, it needs to be done after update/extraction but before rendering.
-  if (!xiiRenderWorld::GetUseMultithreadedRendering())
+
+  Run_BeforeWorldUpdate();
+
+  xiiTaskGroupID updateWorldsTaskID = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
+  for (xiiUInt32 i = 0; i < xiiWorld::GetWorldCount(); ++i)
   {
-    UpdateWorldsAndExtractViews();
-  }
+    xiiWorld* pWorld = xiiWorld::GetWorld(i);
 
-  xiiRenderWorld::BeginFrame();
-
-  xiiTaskGroupID updateTaskID;
-  if (xiiRenderWorld::GetUseMultithreadedRendering())
-  {
-    updateTaskID = xiiTaskSystem::StartSingleTask(m_pUpdateTask, xiiTaskPriority::EarlyThisFrame);
-  }
-
-  RenderFps();
-  RenderConsole();
-
-  xiiRenderWorld::Render(xiiRenderContext::GetDefaultInstance());
-
-  if (xiiRenderWorld::GetUseMultithreadedRendering())
-  {
-    XII_PROFILE_SCOPE("Wait for UpdateWorldsAndExtractViews");
-    xiiTaskSystem::WaitForGroup(updateTaskID);
-  }
-}
-
-void xiiGameApplication::Run_AcquireImage()
-{
-  xiiHybridArray<xiiActor*, 8> allActors;
-  xiiActorManager::GetSingleton()->GetAllActors(allActors);
-
-  for (xiiActor* pActor : allActors)
-  {
-    XII_PROFILE_SCOPE(pActor->GetName());
-
-    xiiActorPluginWindow* pWindowPlugin = pActor->GetPlugin<xiiActorPluginWindow>();
-
-    if (pWindowPlugin == nullptr)
-      continue;
-
-    // Ignore actors without an output target
-    if (auto pOutput = pWindowPlugin->GetOutputTarget())
+    if (pWorld->GetWorldSimulationEnabled())
     {
-      XII_PROFILE_SCOPE("AcquireImage");
-
-      pOutput->AcquireImage();
+      xiiTaskSystem::AddTaskToGroup(updateWorldsTaskID, pWorld->GetUpdateTask());
     }
   }
+  xiiTaskSystem::StartTaskGroup(updateWorldsTaskID);
+  xiiTaskSystem::WaitForGroup(updateWorldsTaskID);
+
+  Run_AfterWorldUpdate();
+
+  Run_UpdatePlugins();
 }
 
 void xiiGameApplication::Run_PresentImage()
 {
-  xiiHybridArray<xiiActor*, 8> allActors;
-  xiiActorManager::GetSingleton()->GetAllActors(allActors);
+  auto pWindowManager = xiiWindowManager::GetSingleton();
+
+  xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
+  pWindowManager->GetRegistered(windows);
 
   bool bExecutedFrameCapture = false;
-  for (xiiActor* pActor : allActors)
+  for (xiiRegisteredWindowHandle hWindow : windows)
   {
-    XII_PROFILE_SCOPE(pActor->GetName());
-
-    xiiActorPluginWindow* pWindowPlugin = pActor->GetPlugin<xiiActorPluginWindow>();
-
-    if (pWindowPlugin == nullptr)
+    xiiWindowBase* pWindow = pWindowManager->GetWindow(hWindow);
+    if (pWindow == nullptr)
       continue;
 
-    // Ignore actors without an output target
-    if (auto pOutput = pWindowPlugin->GetOutputTarget())
+    if (xiiWindowOutputTargetBase* pOutput = pWindow->GetOutputTarget())
     {
-      // if we have multiple actors, append the actor name to each screenshot
-      xiiStringBuilder ctxt;
-      if (allActors.GetCount() > 1)
+      // if we have multiple actors, append the actor name to each screenshot.
+      xiiStringBuilder sContext;
+      if (windows.GetCount() > 1)
       {
-        ctxt.Append(" - ", pActor->GetName());
+        sContext.Append(" - ", pWindowManager->GetName(hWindow));
       }
 
-      ExecuteTakeScreenshot(pOutput, ctxt);
+      ExecuteTakeScreenshot(pOutput, sContext);
 
-      if (pWindowPlugin->GetWindow() && !bExecutedFrameCapture)
+      if (!bExecutedFrameCapture)
       {
-        ExecuteFrameCapture(pWindowPlugin->GetWindow()->GetNativeWindowHandle(), ctxt);
+        ExecuteFrameCapture(pWindow->GetNativeWindowHandle(), sContext);
         bExecutedFrameCapture = true;
       }
 
       XII_PROFILE_SCOPE("PresentImage");
-      pOutput->PresentImage(cvar_AppVSync);
+      pOutput->PresentImage();
     }
   }
 }
 
 void xiiGameApplication::Run_FinishFrame()
 {
-  xiiRenderWorld::EndFrame();
-
   SUPER::Run_FinishFrame();
-}
-
-void xiiGameApplication::UpdateWorldsAndExtractViews()
-{
-  xiiStringBuilder sb;
-  sb.SetFormat("UPDATE FRAME {}", xiiRenderWorld::GetFrameCounter());
-  XII_PROFILE_SCOPE(sb.GetView());
-
-  Run_BeforeWorldUpdate();
-
-  static xiiHybridArray<xiiWorld*, 16> worldsToUpdate;
-  worldsToUpdate.Clear();
-
-  auto mainViews = xiiRenderWorld::GetMainViews();
-  for (auto hView : mainViews)
-  {
-    // Iterate through all worlds to find which one owns this view
-    xiiHybridArray<xiiWorld*, 16> allWorlds;
-    xiiWorld::GetWorlds(allWorlds);
-
-    for (xiiWorld* pWorld : allWorlds)
-    {
-      xiiView* pView = TryGetViewFromModule(pWorld, hView);
-      if (pView != nullptr)
-      {
-        if (!worldsToUpdate.Contains(pWorld))
-        {
-          worldsToUpdate.PushBack(pWorld);
-        }
-        break;
-      }
-    }
-  }
-
-  if (xiiRenderWorld::GetUseMultithreadedRendering())
-  {
-    xiiTaskGroupID updateWorldsTaskID = xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::EarlyThisFrame);
-    for (xiiUInt32 i = 0; i < worldsToUpdate.GetCount(); ++i)
-    {
-      xiiTaskSystem::AddTaskToGroup(updateWorldsTaskID, worldsToUpdate[i]->GetUpdateTask());
-    }
-    xiiTaskSystem::StartTaskGroup(updateWorldsTaskID);
-    xiiTaskSystem::WaitForGroup(updateWorldsTaskID);
-  }
-  else
-  {
-    for (xiiUInt32 i = 0; i < worldsToUpdate.GetCount(); ++i)
-    {
-      xiiWorld* pWorld = worldsToUpdate[i];
-      XII_LOCK(pWorld->GetWriteMarker());
-
-      pWorld->Update();
-    }
-  }
-
-  Run_AfterWorldUpdate();
-
-  // do this now, in parallel to the view extraction
-  Run_UpdatePlugins();
-
-  xiiRenderWorld::ExtractMainViews();
 }
 
 void xiiGameApplication::RenderFps()
@@ -312,25 +183,33 @@ void xiiGameApplication::RenderFps()
     uiFrames = 0;
   }
 
-  if (cvar_AppShowFPS)
+  if (cvar_AppShowFrameStats)
   {
-    if (const xiiView* pView = xiiRenderWorld::GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
+    if (xiiGameState* pGameState = xiiDynamicCast<xiiGameState*>(m_pGameState.Borrow()))
     {
-      if (uiFPS >= 60)
+      if (xiiWorld* pMainWorld = pGameState->GetMainWorld())
       {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
-      }
-      else if (uiFPS >= 30)
-      {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
-      }
-      else if (uiFPS >= 15)
-      {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
-      }
-      else
-      {
-        xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
+        xiiRenderWorldModule* pRenderWorldModule = pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
+
+        if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView, xiiCameraUsageHint::EditorView))
+        {
+          if (uiFPS >= 60)
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Green);
+          }
+          else if (uiFPS >= 30)
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::LightGreen);
+          }
+          else if (uiFPS >= 15)
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Yellow);
+          }
+          else
+          {
+            xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::BottomLeft, "FPS", xiiFmt("{0} FPS, {1} ms", uiFPS, xiiArgF(tDisplayedFrameTime.GetMilliseconds(), 1, false, 4)), xiiColor::Red);
+          }
+        }
       }
     }
   }
@@ -343,57 +222,85 @@ void xiiGameApplication::RenderConsole()
   if (!m_bShowConsole || !m_pConsole)
     return;
 
-  const xiiView* pView = xiiRenderWorld::GetViewByUsageHint(xiiCameraUsageHint::MainView);
-  if (pView == nullptr)
-    return;
-
-  xiiViewHandle hView = pView->GetHandle();
-
-  const float fViewWidth             = pView->GetViewport().width;
-  const float fViewHeight            = pView->GetViewport().height;
-  const float fGlyphWidth            = xiiDebugRenderer::GetTextGlyphWidth();
-  const float fLineHeight            = xiiDebugRenderer::GetTextLineHeight();
-  const float fConsoleHeight         = (fViewHeight / 2.0f);
-  const float fBorderWidth           = 3.0f;
-  const float fConsoleTextAreaHeight = fConsoleHeight - fLineHeight - (2.0f * fBorderWidth);
-
-  const xiiInt32 iTextHeight = (xiiInt32)fLineHeight;
-  const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
-
+  if (xiiGameState* pGameState = xiiDynamicCast<xiiGameState*>(m_pGameState.Borrow()))
   {
-    xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
-
-    xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
-    xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
-  }
-
-  {
-    XII_LOCK(m_pConsole->GetMutex());
-
-    auto& consoleStrings = m_pConsole->GetConsoleStrings();
-
-    xiiUInt32 uiNumConsoleLines = (xiiUInt32)(xiiMath::Ceil(fConsoleTextAreaHeight / fLineHeight));
-    xiiInt32  iFirstLinePos     = (xiiInt32)fConsoleTextAreaHeight - uiNumConsoleLines * iTextHeight;
-    xiiInt32  uiFirstLine       = m_pConsole->GetScrollPosition() + uiNumConsoleLines - 1;
-    xiiInt32  uiSkippedLines    = xiiMath::Max(uiFirstLine - (xiiInt32)consoleStrings.GetCount() + 1, 0);
-
-    for (xiiUInt32 i = uiSkippedLines; i < uiNumConsoleLines; ++i)
+    if (xiiWorld* pMainWorld = pGameState->GetMainWorld())
     {
-      auto& consoleString = consoleStrings[uiFirstLine - i];
-      xiiDebugRenderer::Draw2DText(hView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
+      xiiRenderWorldModule* pRenderWorldModule = pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
+
+      if (const xiiView* pView = pRenderWorldModule->GetViewByUsageHint(xiiCameraUsageHint::MainView))
+      {
+        xiiViewHandle hView = pView->GetHandle();
+
+        const float fViewWidth             = pView->GetViewport().width;
+        const float fViewHeight            = pView->GetViewport().height;
+        const float fGlyphWidth            = xiiDebugRenderer::GetTextGlyphWidth();
+        const float fLineHeight            = xiiDebugRenderer::GetTextLineHeight();
+        const float fConsoleHeight         = (fViewHeight / 2.0f);
+        const float fBorderWidth           = 3.0f;
+        const float fConsoleTextAreaHeight = fConsoleHeight - fLineHeight - (2.0f * fBorderWidth);
+
+        const xiiInt32 iTextHeight = (xiiInt32)fLineHeight;
+        const xiiInt32 iTextLeft   = (xiiInt32)(fBorderWidth);
+
+        {
+          xiiColor backgroundColor(0.0f, 0.0f, 0.0f, 0.7f);
+          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(0.0f, 0.0f, fViewWidth, fConsoleHeight), 0.0f, backgroundColor);
+
+          xiiColor foregroundColor(0.0f, 0.0f, 0.0f, 0.8f);
+          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, 0.0f, fViewWidth - (2.0f * fBorderWidth), fConsoleTextAreaHeight), 0.0f, foregroundColor);
+          xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fBorderWidth, fConsoleTextAreaHeight + fBorderWidth, fViewWidth - (2.0f * fBorderWidth), fLineHeight), 0.0f, foregroundColor);
+        }
+
+        {
+          XII_LOCK(m_pConsole->GetMutex());
+
+          auto& consoleStrings = m_pConsole->GetConsoleStrings();
+
+          xiiUInt32 uiNumConsoleLines = (xiiUInt32)(xiiMath::Ceil(fConsoleTextAreaHeight / fLineHeight));
+          xiiInt32  iFirstLinePos     = (xiiInt32)fConsoleTextAreaHeight - uiNumConsoleLines * iTextHeight;
+          xiiInt32  uiFirstLine       = m_pConsole->GetScrollPosition() + uiNumConsoleLines - 1;
+          xiiInt32  uiSkippedLines    = xiiMath::Max(uiFirstLine - (xiiInt32)consoleStrings.GetCount() + 1, 0);
+
+          for (xiiUInt32 i = uiSkippedLines; i < uiNumConsoleLines; ++i)
+          {
+            auto& consoleString = consoleStrings[uiFirstLine - i];
+            xiiDebugRenderer::Draw2DText(hView, consoleString.m_sText.GetData(), xiiVec2I32(iTextLeft, iFirstLinePos + i * iTextHeight), consoleString.GetColor());
+          }
+
+          xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
+
+          if (xiiMath::Fraction(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds()) > 0.5)
+          {
+            const float fCaretPosition = (float)m_pConsole->GetCaretPosition();
+            const float fCaretX        = fBorderWidth + (fCaretPosition + 0.5f) * fGlyphWidth;
+            const float fCaretY        = fConsoleTextAreaHeight + fBorderWidth + 1.0f;
+            xiiColor    caretColor(1.0f, 1.0f, 1.0f, 0.5f);
+            xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
+          }
+        }
+      }
     }
+  }
+}
 
-    xiiDebugRenderer::Draw2DText(hView, m_pConsole->GetInputLine(), xiiVec2I32(iTextLeft, (xiiInt32)(fConsoleTextAreaHeight + fBorderWidth + (fLineHeight * 0.5f))), xiiColor::White, 16, xiiDebugTextHAlign::Default, xiiDebugTextVAlign::Center);
+void xiiGameApplication::OnVSyncChanged(const xiiCVarEvent& e)
+{
+  auto pWindowManager = xiiWindowManager::GetSingleton();
 
-    if (xiiMath::Fraction(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds()) > 0.5)
+  xiiTemporaryHybridArray<xiiRegisteredWindowHandle, 8> windows;
+  pWindowManager->GetRegistered(windows);
+
+  bool bExecutedFrameCapture = false;
+  for (xiiRegisteredWindowHandle hWindow : windows)
+  {
+    xiiWindowBase* pWindow = pWindowManager->GetWindow(hWindow);
+    if (pWindow == nullptr)
+      continue;
+
+    if (xiiWindowOutputTargetBase* pOutput = pWindow->GetOutputTarget())
     {
-      const float fCaretPosition = (float)m_pConsole->GetCaretPosition();
-      const float fCaretX        = fBorderWidth + (fCaretPosition + 0.5f) * fGlyphWidth;
-      const float fCaretY        = fConsoleTextAreaHeight + fBorderWidth + 1.0f;
-      xiiColor    caretColor(1.0f, 1.0f, 1.0f, 0.5f);
-      xiiDebugRenderer::Draw2DRectangle(hView, xiiRectFloat(fCaretX, fCaretY, 2.0f, fLineHeight - 2.0f), 0.0f, caretColor);
+      pOutput->SetVSyncEnabled(cvar_AppVSync);
     }
   }
 }
@@ -475,7 +382,7 @@ bool xiiGameApplication::Run_ProcessApplicationInput()
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szShowFpsAction) == xiiKeyState::Pressed)
   {
-    cvar_AppShowFPS = !cvar_AppShowFPS;
+    cvar_AppShowFrameStats = !cvar_AppShowFrameStats;
   }
 
   if (xiiInputManager::GetInputActionState(s_szInputSet, s_szReloadResourcesAction) == xiiKeyState::Pressed)
