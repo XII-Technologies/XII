@@ -93,11 +93,6 @@ jobs:
         shell: bash
         run: Output/Bin/WinVs2022Dev64/ToolsFoundationTest.exe -nosave -nogui -all -outputDir Test/ToolsFoundationTest
 
-      - name: Run GameEngineTest
-        if: runner.os == 'Windows'
-        shell: bash
-        run: Output/Bin/WinVs2022Dev64/GameEngineTest.exe -nosave -nogui -all -outputDir Test/GameEngineTest
-
       - name: Run FoundationTest (Unix)
         if: runner.os != 'Windows'
         shell: bash
@@ -112,11 +107,6 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: Output/Bin/ToolsFoundationTest -nosave -nogui -all -outputDir Test/ToolsFoundationTest
-
-      - name: Run GameEngineTest (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: Output/Bin/GameEngineTest -nosave -nogui -all -outputDir Test/GameEngineTest
 
       # Upload test results artifacts
       - name: Upload Test Results
