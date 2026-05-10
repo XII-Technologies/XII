@@ -81,9 +81,6 @@ public:
   /// \brief Cleans up the main window before the game is shut down.
   virtual void OnDeactivation() override;
 
-  /// \brief Makes sure m_hMainView gets rendered. Mainly needed by the editor.
-  virtual void AddMainViewsToRender() override;
-
   /// \brief Simply stores that the game should stop.
   ///
   /// Override this to add more elaborate logic, if necessary.
@@ -161,7 +158,7 @@ protected:
   /// Override this to be informed about scene changes.
   /// This happens right at startup (both for given worlds and custom created ones)
   /// and when the game needs to switch to a new level.
-  virtual void OnChangedMainWorld(xiiWorld* pPrevWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
+  virtual void OnChangedMainWorld(xiiWorld* pPreviousWorld, xiiWorld* pNewWorld, xiiStringView sStartPosition, const xiiTransform& startPositionOffset);
 
   /// \brief Searches for a "Main View" xiiCameraComponent in the world and uses that for the camera position, if available.
   ///
@@ -175,7 +172,7 @@ protected:
   virtual xiiUniquePtr<xiiWindowOutputTargetGAL> CreateMainOutputTarget(xiiWindow* pMainWindow);
 
   /// \brief Creates a default render view. Unless overridden, OnActivation() will do this for the main window.
-  virtual void SetupMainView(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 viewportSize);
+  virtual void SetupMainView(xiiGALSwapChain* pSwapChain, xiiSizeU32 viewportSize);
 
   /// \brief Configures available input devices, e.g. sets mouse speed, cursor clipping, etc.
   /// Called by CreateWindows() with the result of CreateMainWindow().
@@ -217,14 +214,11 @@ protected:
 protected:
   static xiiGameState* s_pActiveGameState;
 
-  xiiViewHandle                 m_hMainView;
-  xiiSharedPtr<xiiGALSwapChain> m_pMainSwapChain;
-  xiiSizeU32                    m_MainViewportSize = xiiSizeU32(0, 0);
+  xiiWorld*     m_pMainWorld = nullptr;
+  xiiCamera     m_MainCamera;
+  xiiViewHandle m_hMainView;
 
-  xiiWorld* m_pMainWorld = nullptr;
-
-  xiiCamera m_MainCamera;
-  bool      m_bStateWantsToQuit = false;
+  bool m_bStateWantsToQuit = false;
 
   bool                              m_bTransitionWhenReady = false;
   xiiUniquePtr<xiiSceneLoadUtility> m_pBackgroundSceneLoad;

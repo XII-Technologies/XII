@@ -60,12 +60,6 @@ public:
   /// and uses it's transform for the main camera.
   virtual void ConfigureMainCamera() {}
 
-  /// \brief Has to call xiiRenderLoop::AddMainView for all views that need to be rendered.
-  ///
-  /// This will be called every frame by the editor, to ensure that only the relevant views are rendered,
-  /// but during stand-alone game execution this may never be called.
-  virtual void AddMainViewsToRender() = 0;
-
   /// \brief Call this to signal that a game state requested the application to quit.
   ///
   /// xiiGameApplication will shut down when this happens. xiiEditor will stop play-the-game mode when it is running.
