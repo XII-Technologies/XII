@@ -34,14 +34,17 @@ $SrcRoot = Join-Path $Root "src"
 $ArchiveNameZip = "qt-everywhere-src-$QtVersion.zip"
 $ArchiveNameTar = "qt-everywhere-src-$QtVersion.tar.xz"
 if ($SrcArchive -ne "") {
+  if (-not (Test-Path $SrcArchive)) {
+    Stop-Transcript
+    throw "Provided archive path '$SrcArchive' does not exist."
+  }
   $ArchivePath = (Resolve-Path $SrcArchive).ProviderPath
-} else {
+}
+else {
   $ArchivePath = Join-Path $SrcRoot $ArchiveNameZip
 }
 
 $SrcDir = Join-Path $SrcRoot "qt-everywhere-src"
-# Build in-source: Qt configure expects building in the source tree for host tools
-$BuildDir = $SrcDir
 $InstallDir = Join-Path $Root "install\qtbase"
 
 # Helpers
@@ -70,7 +73,16 @@ function Download-File($url, $out) {
 }
 
 # Ensure required tools
-foreach ($t in @("cmake","ninja","python")) {
+$pythonCmd = if (Get-Command python -ErrorAction SilentlyContinue) { "python" }
+elseif (Get-Command py -ErrorAction SilentlyContinue) { "py" }
+else { $null }
+
+if (-not $pythonCmd) {
+  Stop-Transcript
+  throw "Missing required tool: python (or py). Install Python and ensure it's in PATH."
+}
+
+foreach ($t in @("cmake", "ninja")) {
   if (-not (Get-Command $t -ErrorAction SilentlyContinue)) {
     Stop-Transcript
     throw "Missing required tool: $t. Install and ensure it's in PATH."
@@ -93,7 +105,8 @@ function Find-Vcvars64 {
         $candidate = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
         if (Test-Path $candidate) { return $candidate }
       }
-    } catch { }
+    }
+    catch { }
   }
 
   # Common fallback locations (cover VS 2022/2026 Community/Professional/Enterprise)
@@ -129,13 +142,15 @@ if (-not (Test-Path $SrcDir)) {
     }
     try {
       Download-File $url $ArchivePath
-    } catch {
+    }
+    catch {
       Log "Primary download failed, trying tar.xz fallback"
       $url2 = Get-QtDownloadUrl $QtVersion $ArchiveNameTar
       $ArchivePath = Join-Path $SrcRoot $ArchiveNameTar
       Download-File $url2 $ArchivePath
     }
-  } else {
+  }
+  else {
     Log "Using provided archive: $ArchivePath"
   }
 
@@ -143,11 +158,13 @@ if (-not (Test-Path $SrcDir)) {
   if ($ArchivePath -like "*.zip") {
     Log "Extracting zip $ArchivePath"
     Expand-Archive -Path $ArchivePath -DestinationPath $SrcRoot -Force
-  } else {
+  }
+  else {
     Log "Extracting tar.xz $ArchivePath"
     if (Get-Command tar -ErrorAction SilentlyContinue) {
       tar -xf $ArchivePath -C $SrcRoot
-    } else {
+    }
+    else {
       Stop-Transcript
       throw "tar not found to extract $ArchivePath"
     }
@@ -162,7 +179,8 @@ if (-not (Test-Path $SrcDir)) {
   if ($ex.FullName -ne $SrcDir) {
     Move-Item -Path $ex.FullName -Destination $SrcDir -Force
   }
-} else {
+}
+else {
   Log "Source already extracted at $SrcDir"
 }
 
@@ -179,7 +197,7 @@ $configureArgs = "-prefix `"$winPrefix`" -release -nomake examples -nomake tests
 
 # Build the full cmd script (single-line) to run under cmd /c
 # Use double quotes around the whole command for cmd /c, and escape inner quotes properly.
-$cmdScript = "call `"$vcvars64`" amd64 && pushd `"$winSrc`" && call `"$winSrc\configure.bat`" $configureArgs && cmake -G `"Ninja`" -S `"$winSrc`" -B `"$winSrc`" -D CMAKE_BUILD_TYPE=RelWithDebInfo -D CMAKE_INSTALL_PREFIX=`"$winPrefix`" && cmake --build `"$winSrc`" --parallel $Jobs && cmake --install `"$winSrc`" --prefix `"$winPrefix`" && popd"
+$cmdScript = "call `"$vcvars64`" amd64 && pushd `"$winSrc`" && call `"$winSrc\configure.bat`" $configureArgs && cmake -G `"Ninja`" -S `"$winSrc`" -B `"$winSrc`" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=`"$winPrefix`" && cmake --build `"$winSrc`" --parallel $Jobs && cmake --install `"$winSrc`" --prefix `"$winPrefix`" && popd"
 
 Log "Running configure, build and install inside a single cmd.exe session (this ensures vcvars64 is active for all steps)."
 Log "Command: cmd /c <vcvars64 && configure && cmake build && cmake install>"
