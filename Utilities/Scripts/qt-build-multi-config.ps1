@@ -151,6 +151,32 @@ if (-not $vcvars64)
 }
 Log "Found vcvars64: $vcvars64"
 
+# Helper: check free space on target drive (fail if < 10% free)
+function Get-And-Ensure-FreeSpace($path)
+{
+  $drive = (Get-Item $path).PSDrive
+  if ($null -eq $drive) { return }
+
+  $free = $drive.Free
+  $used = $drive.Used
+
+  # Avoid division by zero and compute percent free
+  if (($free + $used) -eq 0)
+  {
+    $freePct = 100
+  }
+  else
+  {
+    $freePct = [math]::Round(($free / ($free + $used)) * 100, 2)
+  }
+
+  # Threshold: 10 GB or less than 10% free
+  if ($free -lt 10GB -or $freePct -lt 10)
+  {
+    Log "Warning: Low free disk space on $($drive.Name). Extraction may fail or be very slow."
+  }
+}
+
 # Ensure source archive present or download and extract
 if (-not (Test-Path $SrcDir))
 {
@@ -184,36 +210,87 @@ if (-not (Test-Path $SrcDir))
   }
 
   # Extract
+  Get-And-Ensure-FreeSpace $SrcRoot
+
+  # Choose extractor: prefer 7z if available
+  $has7z = (Get-Command 7z -ErrorAction SilentlyContinue) -is [System.Management.Automation.CommandInfo]
+  $hasTar = (Get-Command tar -ErrorAction SilentlyContinue) -is [System.Management.Automation.CommandInfo]
+
   if ($ArchivePath -like "*.zip")
   {
-    Log "Extracting zip $ArchivePath"
-    Expand-Archive -Path $ArchivePath -DestinationPath $SrcRoot -Force
-  }
-  else
-  {
-    Log "Extracting tar.xz $ArchivePath"
-    if (Get-Command tar -ErrorAction SilentlyContinue)
+    Log "Archive appears to be ZIP: $ArchivePath"
+    if ($has7z)
     {
-      tar -xf $ArchivePath -C $SrcRoot
+      Log "Using 7z for fast extraction"
+      # 7z x supports multithreading; -mmt=on enables multi-threading
+      & 7z x $ArchivePath "-o$SrcRoot" -y -mmt=on
+      if ($LASTEXITCODE -ne 0) { throw "7z failed to extract $ArchivePath (exit $LASTEXITCODE)" }
     }
     else
     {
-      Stop-Transcript
-      throw "tar not found to extract $ArchivePath"
+      Log "7z not found; falling back to Expand-Archive (slower)"
+      try
+      {
+        Expand-Archive -Path $ArchivePath -DestinationPath $SrcRoot -Force
+      }
+      catch
+      {
+        throw "Expand-Archive failed: $_"
+      }
     }
   }
+  elseif ($ArchivePath -like "*.tar.xz" -or $ArchivePath -like "*.txz")
+  {
+    Log "Archive appears to be TAR.XZ: $ArchivePath"
+    if ($has7z)
+    {
+      Log "Using 7z to extract .tar.xz (two-step)"
+      # Extract .tar from .xz
+      Push-Location $SrcRoot
+      try
+      {
+        & 7z x $ArchivePath -y -mmt=on
+        if ($LASTEXITCODE -ne 0) { throw "7z failed to extract .xz (exit $LASTEXITCODE)" }
+        # Find the produced .tar (there may be one)
+        $tar = Get-ChildItem -Path $SrcRoot -Filter *.tar -Recurse -Depth 1 | Select-Object -First 1
+        if (-not $tar) { throw "No .tar produced by 7z from $ArchivePath" }
+        & 7z x $tar.FullName -y -mmt=on
+        if ($LASTEXITCODE -ne 0) { throw "7z failed to extract .tar (exit $LASTEXITCODE)" }
+        # Remove intermediate .tar to save space
+        Remove-Item $tar.FullName -Force -ErrorAction SilentlyContinue
+      }
+      finally
+      {
+        Pop-Location
+      }
+    }
+    elseif ($hasTar)
+    {
+      Log "Using tar to extract .tar.xz"
+      & tar -xf $ArchivePath -C $SrcRoot
+      if ($LASTEXITCODE -ne 0) { throw "tar failed to extract $ArchivePath (exit $LASTEXITCODE)" }
+    }
+    else
+    {
+      throw "No tool available to extract .tar.xz. Install 7z or ensure 'tar' is available."
+    }
+  }
+  else
+  {
+    throw "Unknown archive type: $ArchivePath"
+  }
 
-  # Normalize extracted directory name
+  # Normalize extracted directory name (same as before)
   $ex = Get-ChildItem -Path $SrcRoot -Directory | Where-Object { $_.Name -like "qt-everywhere*" } | Select-Object -First 1
   if (-not $ex)
   {
-    Stop-Transcript
-    throw "Could not find extracted Qt source directory under $SrcRoot"
+    throw "Could not find extracted Qt source directory under $SrcRoot after extraction"
   }
   if ($ex.FullName -ne $SrcDir)
   {
     Move-Item -Path $ex.FullName -Destination $SrcDir -Force
   }
+  Log "Extraction complete: $SrcDir"
 }
 else
 {
