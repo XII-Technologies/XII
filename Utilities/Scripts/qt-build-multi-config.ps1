@@ -57,7 +57,7 @@ function Get-QtDownloadUrl([string]$version, [string]$file)
   return "https://download.qt.io/official_releases/qt/$majorMinor/$version/single/$file"
 }
 
-function Download-File($url, $out)
+function Get-Download-File($url, $out)
 {
   New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
 
@@ -168,14 +168,14 @@ if (-not (Test-Path $SrcDir))
     }
     try
     {
-      Download-File $url $ArchivePath
+      Get-Download-File $url $ArchivePath
     }
     catch
     {
       Log "Primary download failed, trying tar.xz fallback"
       $url2 = Get-QtDownloadUrl $QtVersion $ArchiveNameTar
       $ArchivePath = Join-Path $SrcRoot $ArchiveNameTar
-      Download-File $url2 $ArchivePath
+      Get-Download-File $url2 $ArchivePath
     }
   }
   else
