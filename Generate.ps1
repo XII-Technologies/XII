@@ -151,6 +151,18 @@ if ($CMAKE_ARGS -contains "-DCMAKE_C_COMPILER=clang-cl")
   }
 }
 
+# Tell CMake to use the bundled ninja executable.
+$BundledNinjaExe = "$PSScriptRoot\Data\Tools\Precompiled\ninja\ninja.exe"
+if (Test-Path $BundledNinjaExe)
+{
+  $CMAKE_ARGS += "-DCMAKE_MAKE_PROGRAM:FILEPATH=$BundledNinjaExe"
+  Write-Host "Pointing CMake to ninja: $BundledNinjaExe"
+}
+else
+{
+  Write-Warning "ninja.exe not found at $BundledNinjaExe"
+}
+
 Write-Host ""
 Write-Host "Running cmake.exe $CMAKE_ARGS" -ForegroundColor Green
 Write-Host ""
