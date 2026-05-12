@@ -1,7 +1,7 @@
 param
 (
   [Parameter(Mandatory = $True)]
-  [ValidateSet('Win64Ninja', 'Win32Ninja', 'Win64vs2026', 'Win32vs2026', 'Win64vs2022', 'Win32vs2022')]
+  [ValidateSet('Ninja', 'Win64vs2026', 'Win32vs2026', 'Win64vs2022', 'Win32vs2022')]
   [string] $Target,
 
   [switch]$NoUnityBuild,
@@ -17,7 +17,7 @@ param
 
 Set-Location $PSScriptRoot
 
-# Submodule update
+# Submodule update.
 if (-not $NoSubmoduleUpdate)
 {
   $CURRENT_COMMIT = git log -n 1 --format=%H
@@ -67,18 +67,19 @@ if ($SolutionName -ne "") { $CMAKE_ARGS += "-DXII_SOLUTION_NAME:STRING='$Solutio
 $IsCustomWorkspaceDirectory = $False
 if ($WorkspaceDirectory -ne "") { $IsCustomWorkspaceDirectory = $True }
 
+# Generator selection and workspace setup.
 $UseVisualStudioGenerator = $False
 
-# Ninja-first logic (Ninja Multi-Config is default)
-if ($Target -match 'Ninja$')
+# Ninja-first logic (single Ninja target, 64-bit implied)
+if ($Target -eq 'Ninja')
 {
   Write-Host "=== Generating Ninja Multi-Config build files for target $Target ==="
 
-  if ($Target -like 'Win64*') { $Arch = 'x64'; $WorkspaceName = 'Win64Ninja' }
-  elseif ($Target -like 'Win32*') { $Arch = 'Win32'; $WorkspaceName = 'Win32Ninja' }
-  else { throw "Unknown architecture in target '$Target'." }
+  # Ninja is only supported for 64-bit in this environment; use a single Ninja workspace name.
+  $Arch = 'x64'
+  $WorkspaceName = 'Ninja'
 
-  # Use Ninja Multi-Config generator (requires CMake 3.17+). This allows building Debug/Dev/Shipping from the same generated files, similar to Visual Studio.
+  # Use Ninja Multi-Config generator (requires CMake 3.17+).
   $CMAKE_ARGS += "-G"; $CMAKE_ARGS += "Ninja Multi-Config"
 
   # Expose configuration names and set the default.
@@ -86,13 +87,9 @@ if ($Target -match 'Ninja$')
   $CMAKE_ARGS += "-DCMAKE_DEFAULT_BUILD_TYPE=$Configuration"
 
   # Also set CMAKE_BUILD_TYPE in the cache so legacy checks that read it get the expected value.
-  # This does not break multi-config behavior and helps projects that still query CMAKE_BUILD_TYPE.
   $CMAKE_ARGS += "-DCMAKE_BUILD_TYPE:STRING=$Configuration"
 
-  # Platform and explicit config variables.
-  $CMAKE_ARGS += "-DCMAKE_GENERATOR_PLATFORM=$Arch"
-
-  # Use clang-cl for MSVC ABI compatibility.
+  # Prefer clang-cl for MSVC ABI compatibility when using Ninja (optional).
   $CMAKE_ARGS += "-DCMAKE_C_COMPILER=clang-cl"
   $CMAKE_ARGS += "-DCMAKE_CXX_COMPILER=clang-cl"
 
@@ -108,9 +105,11 @@ elseif ($Target -match 'vs2026$' -or $Target -match 'vs2022$')
 
   Write-Host "=== Generating Solution for $GeneratorName $Arch ==="
 
+  # Visual Studio generator: pass generator name and architecture via -A
   $CMAKE_ARGS += "-G"; $CMAKE_ARGS += $GeneratorName
   $CMAKE_ARGS += "-A"; $CMAKE_ARGS += $Arch
 
+  # For VS generators we do not force clang-cl here; let the generator choose the toolchain.
   if (-not $IsCustomWorkspaceDirectory) { $WorkspaceDirectory = $WorkspaceName }
 
   $UseVisualStudioGenerator = $True
@@ -151,7 +150,7 @@ if ($CMAKE_ARGS -contains "-DCMAKE_C_COMPILER=clang-cl")
   }
 }
 
-# Tell CMake to use the bundled ninja executable.
+# Tell CMake to use the bundled ninja executable if present, otherwise rely on PATH.
 $BundledNinjaExe = "$PSScriptRoot\Data\Tools\Precompiled\ninja\ninja.exe"
 if (Test-Path $BundledNinjaExe)
 {
@@ -160,13 +159,39 @@ if (Test-Path $BundledNinjaExe)
 }
 else
 {
-  Write-Warning "ninja.exe not found at $BundledNinjaExe"
+  # If not bundled, check PATH and warn if missing.
+  $foundNinja = (Get-Command ninja -ErrorAction SilentlyContinue).Path
+  if (-not $foundNinja)
+  {
+    Write-Warning "ninja.exe not found on PATH and no bundled ninja present. Install ninja or place it on PATH."
+  }
+  else
+  {
+    Write-Host "Found ninja on PATH: $foundNinja"
+  }
 }
 
+# If the project requires CSharp, try to point CMake to a C# compiler (csc or dotnet).
+$CSharpCompiler = (Get-Command csc -ErrorAction SilentlyContinue).Path
+if (-not $CSharpCompiler) { $CSharpCompiler = (Get-Command dotnet -ErrorAction SilentlyContinue).Path }
+if ($CSharpCompiler)
+{
+  $CMAKE_ARGS += "-DCMAKE_CSharp_COMPILER:FILEPATH=$CSharpCompiler"
+  Write-Host "Pointing CMake to C# compiler: $CSharpCompiler"
+}
+else
+{
+  Write-Host "No C# compiler detected on PATH. If your project requires CSharp, use a Visual Studio generator or install dotnet/csc." -ForegroundColor Yellow
+}
+
+# Prepare to run CMake
+$CMakeExe = "$PSScriptRoot\Data\Tools\Precompiled\cmake\bin\cmake.exe"
 Write-Host ""
-Write-Host "Running cmake.exe $CMAKE_ARGS" -ForegroundColor Green
+Write-Host "Running $CMakeExe $CMAKE_ARGS" -ForegroundColor Green
 Write-Host ""
-&Data\Tools\Precompiled\cmake\bin\cmake.exe $CMAKE_ARGS
+
+# Invoke CMake
+& $CMakeExe @CMAKE_ARGS
 
 if (!$?) { throw "CMake failed with exit code '$LASTEXITCODE'." }
 
@@ -180,13 +205,13 @@ if ($Build)
   if ($UseVisualStudioGenerator)
   {
     # Visual Studio: multi-config, use MSBuild parallel switch.
-    cmake --build $BuildDir --config $Configuration -- /m:$Jobs
+    & $CMakeExe --build $BuildDir --config $Configuration -- /m:$Jobs
     if (!$?) { throw "Build failed with exit code '$LASTEXITCODE'." }
   }
   else
   {
-    # Ninja Multi-Config: cmake --build supports --config, we pass -j to ninja via the -- separator.
-    cmake --build $BuildDir --config $Configuration -- -j $Jobs
+    # Ninja Multi-Config: cmake --build supports --config, pass -j to ninja via the -- separator.
+    & $CMakeExe --build $BuildDir --config $Configuration -- -j $Jobs
     if (!$?) { throw "Build failed with exit code '$LASTEXITCODE'." }
   }
 
