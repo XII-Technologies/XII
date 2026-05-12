@@ -70,12 +70,12 @@ if ($WorkspaceDirectory -ne "") { $IsCustomWorkspaceDirectory = $True }
 # Generator selection and workspace setup.
 $UseVisualStudioGenerator = $False
 
-# Ninja-first logic (single Ninja target, 64-bit implied)
+# Ninja-first logic (single Ninja target, 64-bit only).
 if ($Target -eq 'Ninja')
 {
   Write-Host "=== Generating Ninja Multi-Config build files for target $Target ==="
 
-  # Ninja is only supported for 64-bit in this environment; use a single Ninja workspace name.
+  # Ninja is supported only for 64-bit in this configuration.
   $Arch = 'x64'
   $WorkspaceName = 'Ninja'
 
@@ -169,19 +169,6 @@ else
   {
     Write-Host "Found ninja on PATH: $foundNinja"
   }
-}
-
-# If the project requires CSharp, try to point CMake to a C# compiler (csc or dotnet).
-$CSharpCompiler = (Get-Command csc -ErrorAction SilentlyContinue).Path
-if (-not $CSharpCompiler) { $CSharpCompiler = (Get-Command dotnet -ErrorAction SilentlyContinue).Path }
-if ($CSharpCompiler)
-{
-  $CMAKE_ARGS += "-DCMAKE_CSharp_COMPILER:FILEPATH=$CSharpCompiler"
-  Write-Host "Pointing CMake to C# compiler: $CSharpCompiler"
-}
-else
-{
-  Write-Host "No C# compiler detected on PATH. If your project requires CSharp, use a Visual Studio generator or install dotnet/csc." -ForegroundColor Yellow
 }
 
 # Prepare to run CMake
