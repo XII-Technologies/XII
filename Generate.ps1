@@ -8,7 +8,7 @@ param
   [switch]$NoSubmoduleUpdate,
   [string]$SolutionName = "",
   [string]$WorkspaceDirectory = "",
-  [ValidateSet('Debug', 'Dev', 'Shipping')][string] $Configuration = 'Debug',
+  [ValidateSet('Debug', 'Dev', 'Shipping')][string] $Configuration = 'Dev',
   [switch]$Build,
   [int]$Jobs = [int]([Environment]::ProcessorCount),
   [Nullable[bool]]$D3D12Support,
@@ -17,7 +17,7 @@ param
 
 Set-Location $PSScriptRoot
 
-# Submodule update (unchanged)
+# Submodule update
 if (-not $NoSubmoduleUpdate)
 {
   $CURRENT_COMMIT = git log -n 1 --format=%H
@@ -67,48 +67,30 @@ if ($SolutionName -ne "") { $CMAKE_ARGS += "-DXII_SOLUTION_NAME:STRING='$Solutio
 $IsCustomWorkspaceDirectory = $False
 if ($WorkspaceDirectory -ne "") { $IsCustomWorkspaceDirectory = $True }
 
-# Map configuration to CMake build type and VS config
-switch ($Configuration)
-{
-  'Debug' { $CMakeBuildType = 'Debug'; $VSConfig = 'Debug' }
-  'Dev' { $CMakeBuildType = 'RelWithDebInfo'; $VSConfig = 'RelWithDebInfo' }
-  'Shipping' { $CMakeBuildType = 'Release'; $VSConfig = 'Release' }
-  default { $CMakeBuildType = 'Debug'; $VSConfig = 'Debug' }
-}
+$UseVisualStudioGenerator = $False
 
-# Determine arch and generator from Target
-# Ninja branch first (Ninja is treated as default flow)
+# Ninja-first logic (Ninja is default)
 if ($Target -match 'Ninja$')
 {
-  # Examples: Win64Ninja, Win32Ninja
   Write-Host "=== Generating Ninja build files for target $Target ==="
 
-  # Extract architecture prefix (Win64 or Win32)
-  if ($Target -like 'Win64*') { $Arch = 'x64' ; $WorkspaceName = 'Win64Ninja' }
-  elseif ($Target -like 'Win32*') { $Arch = 'Win32' ; $WorkspaceName = 'Win32Ninja' }
+  if ($Target -like 'Win64*') { $Arch = 'x64'; $WorkspaceName = 'Win64Ninja' }
+  elseif ($Target -like 'Win32*') { $Arch = 'Win32'; $WorkspaceName = 'Win32Ninja' }
   else { throw "Unknown architecture in target '$Target'." }
 
-  $CMAKE_ARGS += "-G"
-  $CMAKE_ARGS += "Ninja"
+  $CMAKE_ARGS += "-G"; $CMAKE_ARGS += "Ninja"
 
-  # Ensure 64/32-bit platform for Ninja on Windows and set build type
   $CMAKE_ARGS += "-DCMAKE_GENERATOR_PLATFORM=$Arch"
-  $CMAKE_ARGS += "-DCMAKE_BUILD_TYPE=$CMakeBuildType"
+  $CMAKE_ARGS += "-DCMAKE_BUILD_TYPE=$Configuration"
 
-  # Use clang-cl as the default compiler for Ninja (MSVC ABI compatible)
+  # Use clang-cl for MSVC ABI compatibility (Ninja).
   $CMAKE_ARGS += "-DCMAKE_C_COMPILER=clang-cl"
   $CMAKE_ARGS += "-DCMAKE_CXX_COMPILER=clang-cl"
-
-  if ($Configuration -eq "Shipping")
-  {
-    $CMAKE_ARGS += "-DCMAKE_CXX_FLAGS_RELEASE=/DNDEBUG"
-  }
 
   if (-not $IsCustomWorkspaceDirectory) { $WorkspaceDirectory = $WorkspaceName }
 }
 elseif ($Target -match 'vs2026$' -or $Target -match 'vs2022$')
 {
-  # Visual Studio branch
   if ($Target -like 'Win64vs2026') { $Arch = 'x64'; $GeneratorName = 'Visual Studio 18 2026'; $WorkspaceName = 'Win64vs2026' }
   elseif ($Target -like 'Win32vs2026') { $Arch = 'Win32'; $GeneratorName = 'Visual Studio 18 2026'; $WorkspaceName = 'Win32vs2026' }
   elseif ($Target -like 'Win64vs2022') { $Arch = 'x64'; $GeneratorName = 'Visual Studio 17 2022'; $WorkspaceName = 'Win64vs2022' }
@@ -117,10 +99,8 @@ elseif ($Target -match 'vs2026$' -or $Target -match 'vs2022$')
 
   Write-Host "=== Generating Solution for $GeneratorName $Arch ==="
 
-  $CMAKE_ARGS += "-G"
-  $CMAKE_ARGS += $GeneratorName
-  $CMAKE_ARGS += "-A"
-  $CMAKE_ARGS += $Arch
+  $CMAKE_ARGS += "-G"; $CMAKE_ARGS += $GeneratorName
+  $CMAKE_ARGS += "-A"; $CMAKE_ARGS += $Arch
 
   if (-not $IsCustomWorkspaceDirectory) { $WorkspaceDirectory = $WorkspaceName }
 
@@ -131,7 +111,7 @@ else
   throw "Unknown target '$Target'."
 }
 
-# Add build directory to cmake arguments if not already added
+# Add build directory.
 if (-not ($CMAKE_ARGS -contains "-B"))
 {
   $CMAKE_ARGS += "-B"
@@ -140,22 +120,21 @@ if (-not ($CMAKE_ARGS -contains "-B"))
 
 Write-Host "Using workspace directory: $PSScriptRoot\Workspace\$WorkspaceDirectory"
 
-# Set custom output directories to avoid conflicts between different build targets.
+# Custom output directories.
 if ($IsCustomWorkspaceDirectory)
 {
   $CMAKE_ARGS += "-DXII_OUTPUT_DIRECTORY_DLL:PATH=$PSScriptRoot\Workspace\$WorkspaceDirectory-output\Bin"
   $CMAKE_ARGS += "-DXII_OUTPUT_DIRECTORY_LIB:PATH=$PSScriptRoot\Workspace\$WorkspaceDirectory-output\Lib"
-
   Write-Host "Custom output directories: Workspace\$WorkspaceDirectory-output\"
 }
 
-# Check for clang-cl on PATH when using Ninja + clang-cl
+# Warn if clang-cl missing when using Ninja.
 if ($CMAKE_ARGS -contains "-DCMAKE_C_COMPILER=clang-cl")
 {
   $clangPath = (Get-Command clang-cl -ErrorAction SilentlyContinue).Path
   if (-not $clangPath)
   {
-    Write-Warning "clang-cl not found on PATH. Please ensure clang-cl is installed and C:\LLVM\bin (or equivalent) is on PATH."
+    Write-Warning "clang-cl not found on PATH. Ensure clang-cl is installed and on PATH."
   }
   else
   {
@@ -170,21 +149,23 @@ Write-Host ""
 
 if (!$?) { throw "CMake failed with exit code '$LASTEXITCODE'." }
 
-# Optionally run the build step
+# Build step: for VS use --config <Configuration>,
+# for Ninja use cmake --build (single-config) — Ninja will use the CMAKE_BUILD_TYPE you passed above.
 if ($Build)
 {
   Write-Host ""
   Write-Host "Starting build (Configuration = $Configuration, Jobs = $Jobs)" -ForegroundColor Green
-
   $BuildDir = "$PSScriptRoot\Workspace\$WorkspaceDirectory"
 
   if ($UseVisualStudioGenerator)
   {
-    cmake --build $BuildDir --config $VSConfig -- /m:$Jobs
+    # Visual Studio is multi-config; pass your configuration name verbatim
+    cmake --build $BuildDir --config $Configuration -- /m:$Jobs
     if (!$?) { throw "Build failed with exit code '$LASTEXITCODE'." }
   }
   else
   {
+    # Ninja (single-config): cmake will invoke ninja with the build type you set above
     cmake --build $BuildDir -- -j $Jobs
     if (!$?) { throw "Build failed with exit code '$LASTEXITCODE'." }
   }
