@@ -2,15 +2,13 @@
 
 #include <GameEngine/GameEnginePCH.h>
 
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
-
 #  include <Core/Input/InputManager.h>
 #  include <Foundation/Configuration/Startup.h>
 #  include <Foundation/Time/Clock.h>
-#  include <GameEngine/DearImgui/DearImgui.h>
+#  include <DearImguiPlugin/DearImgui.h>
 #  include <GameEngine/GameApplication/GameApplication.h>
 #  include <GraphicsCore/Pipeline/View.h>
-#  include <GraphicsCore/RenderWorld/RenderWorld.h>
+#  include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #  include <GraphicsCore/Textures/Texture2DResource.h>
 
 #  include <Imgui/imgui_internal.h>
@@ -262,7 +260,5 @@ void xiiImgui::GameApplicationEventHandler(const xiiGameApplicationExecutionEven
     ImGui::EndFrame();
   }
 }
-
-#endif
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_DearImgui_Implementation_DearImgui);

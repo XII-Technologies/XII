@@ -2,8 +2,6 @@
 
 #include <GameEngine/GameEnginePCH.h>
 
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
-
 #  include <Foundation/IO/TypeVersionContext.h>
 #  include <GameEngine/DearImgui/DearImgui.h>
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
@@ -258,7 +256,5 @@ void xiiImguiRenderer::SetupRenderer()
     }
   }
 }
-
-#endif
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_DearImgui_Implementation_DearImguiRenderer);

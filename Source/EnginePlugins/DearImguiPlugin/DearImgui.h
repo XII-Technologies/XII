@@ -2,8 +2,6 @@
 
 #pragma once
 
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
-
 #  include <GameEngine/GameEngineDLL.h>
 
 #  include <Core/ResourceManager/ResourceHandle.h>
@@ -33,13 +31,12 @@ using xiiImguiConfigStyleCallback = xiiDelegate<void(ImGuiStyle&)>;
 ///
 /// \note Don't forget that to see the GUI on screen, your render pipeline must contain a xiiImguiExtractor
 /// and you need to have a xiiImguiRenderer set (typically on a xiiSimpleRenderPass).
-class XII_GAMEENGINE_DLL xiiImgui
+class XII_DEARIMGUIPLUGIN_DLL xiiImgui
 {
   XII_DECLARE_SINGLETON(xiiImgui);
 
 public:
-  xiiImgui(xiiImguiConfigFontCallback  configFontCallback  = xiiImguiConfigFontCallback(),
-           xiiImguiConfigStyleCallback configStyleCallback = xiiImguiConfigStyleCallback());
+  xiiImgui(xiiImguiConfigFontCallback  configFontCallback  = xiiImguiConfigFontCallback(), xiiImguiConfigStyleCallback configStyleCallback = xiiImguiConfigStyleCallback());
   ~xiiImgui();
 
   /// \brief Sets the ImGui context for the given view
@@ -92,5 +89,3 @@ private:
   xiiMutex                             m_ViewToContextTableMutex;
   xiiHashTable<xiiViewHandle, Context> m_ViewToContextTable;
 };
-
-#endif

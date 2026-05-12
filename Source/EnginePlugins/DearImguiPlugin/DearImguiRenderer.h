@@ -2,8 +2,6 @@
 
 #pragma once
 
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
-
 #  include <GameEngine/GameEngineDLL.h>
 
 #  include <Core/ResourceManager/ResourceHandle.h>
@@ -82,5 +80,3 @@ protected:
   xiiSharedPtr<xiiGALBuffer> m_pIndexBuffer;
   xiiInputLayoutInfo         m_InputLayoutInfo;
 };
-
-#endif
