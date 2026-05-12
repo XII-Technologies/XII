@@ -69,21 +69,30 @@ if ($WorkspaceDirectory -ne "") { $IsCustomWorkspaceDirectory = $True }
 
 $UseVisualStudioGenerator = $False
 
-# Ninja-first logic (Ninja is default)
+# Ninja-first logic (Ninja Multi-Config is default)
 if ($Target -match 'Ninja$')
 {
-  Write-Host "=== Generating Ninja build files for target $Target ==="
+  Write-Host "=== Generating Ninja Multi-Config build files for target $Target ==="
 
   if ($Target -like 'Win64*') { $Arch = 'x64'; $WorkspaceName = 'Win64Ninja' }
   elseif ($Target -like 'Win32*') { $Arch = 'Win32'; $WorkspaceName = 'Win32Ninja' }
   else { throw "Unknown architecture in target '$Target'." }
 
-  $CMAKE_ARGS += "-G"; $CMAKE_ARGS += "Ninja"
+  # Use Ninja Multi-Config generator (requires CMake 3.17+). This allows building Debug/Dev/Shipping from the same generated files, similar to Visual Studio.
+  $CMAKE_ARGS += "-G"; $CMAKE_ARGS += "Ninja Multi-Config"
 
+  # Expose configuration names and set the default.
+  $CMAKE_ARGS += "-DCMAKE_CONFIGURATION_TYPES=Debug;Dev;Shipping"
+  $CMAKE_ARGS += "-DCMAKE_DEFAULT_BUILD_TYPE=$Configuration"
+
+  # Also set CMAKE_BUILD_TYPE in the cache so legacy checks that read it get the expected value.
+  # This does not break multi-config behavior and helps projects that still query CMAKE_BUILD_TYPE.
+  $CMAKE_ARGS += "-DCMAKE_BUILD_TYPE:STRING=$Configuration"
+
+  # Platform and explicit config variables.
   $CMAKE_ARGS += "-DCMAKE_GENERATOR_PLATFORM=$Arch"
-  $CMAKE_ARGS += "-DCMAKE_BUILD_TYPE=$Configuration"
 
-  # Use clang-cl for MSVC ABI compatibility (Ninja).
+  # Use clang-cl for MSVC ABI compatibility.
   $CMAKE_ARGS += "-DCMAKE_C_COMPILER=clang-cl"
   $CMAKE_ARGS += "-DCMAKE_CXX_COMPILER=clang-cl"
 
@@ -149,8 +158,7 @@ Write-Host ""
 
 if (!$?) { throw "CMake failed with exit code '$LASTEXITCODE'." }
 
-# Build step: for VS use --config <Configuration>,
-# for Ninja use cmake --build (single-config) — Ninja will use the CMAKE_BUILD_TYPE you passed above.
+# Build step: always use --config <Configuration> so both VS and Ninja Multi-Config behave the same.
 if ($Build)
 {
   Write-Host ""
@@ -159,14 +167,14 @@ if ($Build)
 
   if ($UseVisualStudioGenerator)
   {
-    # Visual Studio is multi-config; pass your configuration name verbatim
+    # Visual Studio: multi-config, use MSBuild parallel switch.
     cmake --build $BuildDir --config $Configuration -- /m:$Jobs
     if (!$?) { throw "Build failed with exit code '$LASTEXITCODE'." }
   }
   else
   {
-    # Ninja (single-config): cmake will invoke ninja with the build type you set above
-    cmake --build $BuildDir -- -j $Jobs
+    # Ninja Multi-Config: cmake --build supports --config, we pass -j to ninja via the -- separator.
+    cmake --build $BuildDir --config $Configuration -- -j $Jobs
     if (!$?) { throw "Build failed with exit code '$LASTEXITCODE'." }
   }
 
