@@ -70,29 +70,80 @@ if ($WorkspaceDirectory -ne "") { $IsCustomWorkspaceDirectory = $True }
 # Generator selection and workspace setup.
 $UseVisualStudioGenerator = $False
 
+function Find-RCCompiler
+{
+  $possibleRoots = @(
+    "C:/Program Files/Windows Kits/10/bin",
+    "C:/Program Files (x86)/Windows Kits/10/bin"
+  )
+
+  foreach ($root in $possibleRoots)
+  {
+    if (-not (Test-Path $root)) { continue }
+
+    # Find all SDK versions (10.x.x.x)
+    $versions = Get-ChildItem $root |
+      Where-Object { $_.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
+        Sort-Object Name -Descending
+
+    foreach ($v in $versions)
+    {
+      $x64 = Join-Path $root "$($v.Name)/x64/rc.exe"
+      $x86 = Join-Path $root "$($v.Name)/x86/rc.exe"
+
+      if (Test-Path $x64) { return $x64 }
+      if (Test-Path $x86) { return $x86 }
+    }
+  }
+
+  return $null
+}
+
 # Ninja-first logic (single Ninja target, 64-bit only).
 if ($Target -eq 'Ninja')
 {
   Write-Host "=== Generating Ninja Multi-Config build files for target $Target ==="
 
-  # Ninja is supported only for 64-bit in this configuration.
   $Arch = 'x64'
   $WorkspaceName = 'Ninja'
 
-  # Use Ninja Multi-Config generator (requires CMake 3.17+).
+  # Use Ninja Multi-Config generator
   $CMAKE_ARGS += "-G"; $CMAKE_ARGS += "Ninja Multi-Config"
 
-  # Expose configuration names and set the default.
+  # Multi-config setup
   $CMAKE_ARGS += "-DCMAKE_CONFIGURATION_TYPES=Debug;Dev;Shipping"
   $CMAKE_ARGS += "-DCMAKE_DEFAULT_BUILD_TYPE=$Configuration"
-
-  # Also set CMAKE_BUILD_TYPE in the cache so legacy checks that read it get the expected value.
   $CMAKE_ARGS += "-DCMAKE_BUILD_TYPE:STRING=$Configuration"
 
-  # Prefer clang-cl for MSVC ABI compatibility when using Ninja (optional).
-  $CMAKE_ARGS += "-DCMAKE_C_COMPILER=clang-cl"
-  $CMAKE_ARGS += "-DCMAKE_CXX_COMPILER=clang-cl"
+  # === GNU-mode Clang ===
+  $clang = "C:/LLVM/bin/clang.exe"
+  $clangxx = "C:/LLVM/bin/clang++.exe"
 
+  $CMAKE_ARGS += "-DCMAKE_C_COMPILER=$clang"
+  $CMAKE_ARGS += "-DCMAKE_CXX_COMPILER=$clangxx"
+
+  Write-Host "Using GNU-mode Clang:"
+  Write-Host "  C compiler:   $clang"
+  Write-Host "  C++ compiler: $clangxx"
+
+  # === RC compiler (required for Windows) ===
+  $RCPath = Find-RCCompiler
+
+  if (-not $RCPath)
+  {
+    Write-Warning "No RC compiler found. Install Windows 10/11 SDK."
+  }
+  else
+  {
+    # Convert to forward slashes so CMake never mis-parses it
+    $RCPathCMake = $RCPath -replace '\\', '/'
+
+    Write-Host "Using RC compiler: $RCPathCMake"
+    $CMAKE_ARGS += "-DCMAKE_RC_COMPILER=$RCPathCMake"
+    $CMAKE_ARGS += "-DCMAKE_RC_COMPILER_INIT=rc"
+  }
+
+  # Workspace
   if (-not $IsCustomWorkspaceDirectory) { $WorkspaceDirectory = $WorkspaceName }
 }
 elseif ($Target -match 'vs2026$' -or $Target -match 'vs2022$')
