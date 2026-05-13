@@ -15,8 +15,8 @@ set_property(GLOBAL PROPERTY XII_CMAKE_RELPATH_CODE "Source")
 
 set_property(GLOBAL PROPERTY XII_CONFIG_PATH_7ZA "Data/Tools/Precompiled/7z.exe")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_VERSION "Qt6-6.4.0-vs143-x64")
-set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL "https://github.com/ezEngine/thirdparty/releases/download/Qt6-6.4.0-vs143-x64/Qt6-6.4.0-vs143-x64.7z")
+set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_VERSION "Qt6-6.11.0-MSVC-14.51.36231-VS143-x64")
+set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL "https://github.com/XII-Technologies/PrecompiledTools/releases/download/Qt6-6.11.0-MSVC-14.51.36231-VS143-x64/Qt6-6.11.0-MSVC-14.51.36231-VS143-x64.7z")
 
 set_property(GLOBAL PROPERTY XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_VERSION "1.8.2505.1")
 set_property(GLOBAL PROPERTY XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_URL "https://github.com/microsoft/DirectXShaderCompiler/releases/download/v1.8.2505.1/linux_dxc_2025_07_14.x86_64.tar.gz")

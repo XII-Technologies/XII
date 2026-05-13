@@ -54,7 +54,7 @@ macro(xii_platform_detect_generator)
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_MSVC ON)
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_PREFIX "Vs")
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_CONFIGURATION $<CONFIGURATION>)
-  elseif(CMAKE_GENERATOR MATCHES "Ninja") # Ninja makefiles. Only makefile format supported by Visual Studio Open Folder
+  elseif(CMAKE_GENERATOR MATCHES "Ninja" OR CMAKE_GENERATOR MATCHES "Ninja Multi-Config") # Ninja makefiles. Only makefile format supported by Visual Studio Open Folder
     message(STATUS "Buildsystem is Ninja (XII_CMAKE_GENERATOR_NINJA)")
 
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_NINJA ON)
@@ -88,33 +88,35 @@ endmacro()
 
 macro(xii_platformhook_find_qt)
   if(XII_CMAKE_COMPILER_CLANG)
-  # The qt6 interface compile options contain msvc specific flags which don't exist for clang.
-  set_target_properties(Qt6::Platform PROPERTIES INTERFACE_COMPILE_OPTIONS "")
+    # The qt6 interface compile options contain msvc specific flags which don't exist for clang.
+    set_target_properties(Qt6::Platform PROPERTIES INTERFACE_COMPILE_OPTIONS "")
 
-  # Qt6 link options include '-NXCOMPAT' which does not exist on clang.
-  get_target_property(QtLinkOptions Qt6::PlatformCommonInternal INTERFACE_LINK_OPTIONS)
-  string(REPLACE "-NXCOMPAT;" "" QtLinkOptions "${QtLinkOptions}")
-  set_target_properties(Qt6::PlatformCommonInternal PROPERTIES INTERFACE_LINK_OPTIONS ${QtLinkOptions})
+    # Qt6 link options include '-NXCOMPAT' which does not exist on clang.
+    get_target_property(QtLinkOptions Qt6::PlatformCommonInternal INTERFACE_LINK_OPTIONS)
+    string(REPLACE "-NXCOMPAT;" "" QtLinkOptions "${QtLinkOptions}")
+    set_target_properties(Qt6::PlatformCommonInternal PROPERTIES INTERFACE_LINK_OPTIONS ${QtLinkOptions})
   endif()
 endmacro()
 
 macro(xii_platformhook_download_qt)
   # Currently only implemented for x64
   if(XII_CMAKE_ARCHITECTURE_64BIT)
-    # Upgrade from Qt5 to Qt6 if the XII_QT_DIR points to a previously automatically downloaded Qt5 package.
-    if("${XII_QT_DIR}" MATCHES ".*Qt-5\\.13\\.0-vs141-x64")
-      set(XII_QT_DIR "XII_QT_DIR-NOTFOUND" CACHE PATH "Directory of the Qt installation" FORCE)
-    endif()
-
     if(XII_CMAKE_ARCHITECTURE_64BIT)
       set(XII_SDK_VERSION "${XII_CONFIG_QT_WINX64_VERSION}")
       set(XII_SDK_URL "${XII_CONFIG_QT_WINX64_URL}")
     endif()
 
+    # Reset XII_QT_DIR if it points to an auto-managed Qt package that no longer matches the configured version, so the correct version gets downloaded automatically.
+    # User-specified custom paths (not matching the "Qt6-" naming convention) are left alone.
+    set(XII_EXPECTED_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}")
+    if(NOT "${XII_QT_DIR}" STREQUAL "${XII_EXPECTED_QT_DIR}" AND "${XII_QT_DIR}" MATCHES "Qt6-")
+      set(XII_QT_DIR "XII_QT_DIR-NOTFOUND" CACHE PATH "Directory of the Qt installation." FORCE)
+    endif()
+
     if((XII_QT_DIR STREQUAL "XII_QT_DIR-NOTFOUND") OR(XII_QT_DIR STREQUAL ""))
       xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}/.." "${XII_SDK_VERSION}")
 
-      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
+      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation." FORCE)
     endif()
   endif()
 endmacro()
