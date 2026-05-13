@@ -82,22 +82,25 @@ void xiiRenderWorldModule::OnSimulationStarted()
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
 {
   ViewDetail viewDetail;
-  viewDetail.m_pView = XII_DEFAULT_NEW(xiiView);
-  {
-    XII_LOCK(m_ViewMutex);
-
-    viewDetail.m_pView->m_InternalId = m_ViewIdTable.Insert(std::move(viewDetail));
-  }
-  viewDetail.m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData), GetWorld(), viewDetail.m_pView->GetHandle();
+  viewDetail.m_pView          = XII_DEFAULT_NEW(xiiView);
+  viewDetail.m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
 
   viewDetail.m_pView->SetName(sName);
-  viewDetail.m_pView->SetExtractedRenderData(viewDetail.m_pExtractedData.Borrow());
 
-  m_ViewCreatedEvent.Broadcast(viewDetail.m_pView.Borrow());
+  XII_LOCK(m_ViewMutex);
 
-  out_pView = viewDetail.m_pView.Borrow();
+  ViewDetail*     pViewDetail;
+  const xiiViewId viewId = m_ViewIdTable.Insert(std::move(viewDetail));
+  XII_VERIFY(m_ViewIdTable.TryGetValue(viewId, pViewDetail), "Failed to retrieve view detail after valid insert.");
 
-  return viewDetail.m_pView->GetHandle();
+  pViewDetail->m_pView->m_InternalId = viewId;
+  pViewDetail->m_pView->SetExtractedRenderData(pViewDetail->m_pExtractedData.Borrow());
+
+  m_ViewCreatedEvent.Broadcast(pViewDetail->m_pView.Borrow());
+
+  out_pView = pViewDetail->m_pView.Borrow();
+
+  return pViewDetail->m_pView->GetHandle();
 }
 
 void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
