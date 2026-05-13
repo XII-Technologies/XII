@@ -217,7 +217,7 @@ void DockManagerPrivate::loadStylesheet()
 #endif
     FileName += ".css";
 	QFile StyleSheetFile(FileName);
-	StyleSheetFile.open(QIODevice::ReadOnly);
+	[[maybe_unused]] bool Succeeded = StyleSheetFile.open(QIODevice::ReadOnly);
 	QTextStream StyleSheetStream(&StyleSheetFile);
 	Result = StyleSheetStream.readAll();
 	StyleSheetFile.close();
