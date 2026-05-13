@@ -104,7 +104,7 @@ xiiView* xiiGameState::GetMainView()
 
   xiiView* pView = nullptr;
 
-  if (const xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetModule<xiiRenderWorldModule>())
+  if (const xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetModuleReadOnly<xiiRenderWorldModule>())
   {
     if (pRenderWorldModule->TryGetView(m_hMainView, pView))
     {
