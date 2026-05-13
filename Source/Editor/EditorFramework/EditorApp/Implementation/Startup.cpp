@@ -455,6 +455,9 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
   connect(m_pAutoSaveTimer, SIGNAL(timeout()), this, SLOT(SlotAutoSave()), Qt::QueuedConnection);
   m_pAutoSaveTimer->start(20 * 1000);
 
+  // The docking system (ADS) sometimes leaves a resize cursor stuck after layout restore.
+  QTimer::singleShot(500, []() { while (QApplication::overrideCursor()) { QApplication::restoreOverrideCursor(); } });
+
   if (m_bWroteCrashIndicatorFile)
   {
     QTimer::singleShot(1000, [this]() -> void {
