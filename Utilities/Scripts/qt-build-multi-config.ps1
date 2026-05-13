@@ -154,26 +154,16 @@ Log "Found vcvars64: $vcvars64"
 # Helper: check free space on target drive (fail if < 10% free)
 function Get-And-Ensure-FreeSpace($path)
 {
-  $drive = (Get-Item $path).PSDrive
-  if ($null -eq $drive) { return }
-
+  $root = (Get-Item -Path (Split-Path -Path $path -Qualifier))
+  if (-not $root) { return }
+  $drive = Get-PSDrive -Name $root.Name
+  if (-not $drive) { return }
   $free = $drive.Free
-  $used = $drive.Used
-
-  # Avoid division by zero and compute percent free
-  if (($free + $used) -eq 0)
-  {
-    $freePct = 100
-  }
-  else
-  {
-    $freePct = [math]::Round(($free / ($free + $used)) * 100, 2)
-  }
-
-  # Threshold: 10 GB or less than 10% free
+  $total = $drive.Used + $drive.Free
+  $freePct = if ($total -eq 0) { 100 } else { [math]::Round(($free / $total) * 100, 2) }
   if ($free -lt 10GB -or $freePct -lt 10)
   {
-    Log "Warning: Low free disk space on $($drive.Name). Extraction may fail or be very slow."
+    Log "Warning: Low free disk space on $($drive.Name). Extraction may fail or be slow."
   }
 }
 
@@ -306,7 +296,7 @@ $winPrefix = $InstallDir
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 
 # Configure args (adjust as needed)
-$configureArgs = "-prefix `"$winPrefix`" -release -nomake examples -nomake tests"
+$configureArgs = '-submodules qtsvg,qtbase -nomake examples -nomake tests -prefix "' + $winPrefix + '" -debug-and-release -force-debug-info'
 
 # Create a temporary batch file to run all steps under cmd with vcvars64 loaded
 $batchFile = Join-Path $env:TEMP "qt-build-$$.cmd"
