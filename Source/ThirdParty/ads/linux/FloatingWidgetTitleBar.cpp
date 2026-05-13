@@ -194,7 +194,7 @@ void CFloatingWidgetTitleBar::mouseMoveEvent(QMouseEvent *ev)
 	{
 		if(d->FloatingWidget->isMaximized())
 		{
-			d->FloatingWidget->showNormal();
+			d->FloatingWidget->showNormal(true);
 		}
 		d->FloatingWidget->moveFloating();
 		Super::mouseMoveEvent(ev);
@@ -235,6 +235,20 @@ void CFloatingWidgetTitleBar::mouseDoubleClickEvent(QMouseEvent *event)
     else
     {
         QWidget::mouseDoubleClickEvent(event);
+    }
+}
+
+//============================================================================
+QSize CFloatingWidgetTitleBar::sizeHint() const
+{
+    if (isVisible())
+    {
+        return QFrame::sizeHint();
+    }
+    else
+    {
+        // Allow titlebar to collapse when set invisible.
+        return QSize();
     }
 }
 
