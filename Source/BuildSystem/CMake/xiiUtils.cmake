@@ -318,6 +318,7 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.rcss"
     "${ROOT_DIR}/*.json"
     "${ROOT_DIR}/*.yml"
+    "${ROOT_DIR}/*.css"
   )
 
   set(${RESULT_ALL_SOURCES} ${RELEVANT_FILES} PARENT_SCOPE)
