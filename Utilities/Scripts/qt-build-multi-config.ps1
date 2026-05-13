@@ -1,125 +1,86 @@
-<#
-.SYNOPSIS
-  Minimal Qt 6 build helper for Windows using Ninja and MSVC.
-
-.DESCRIPTION
-  - Downloads (aria2 / BITS / Invoke-WebRequest) or uses local archive.
-  - Extracts Qt sources to ./src.
-  - Runs configure.bat once (single-line) inside a cmd session that sources vcvars64.bat.
-  - Runs cmake -G "Ninja", builds and installs (in-source).
-  - Logs to qt-build-powershell.log.
-
-USAGE
-  Open PowerShell and run:
-    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-    .\build-qt.ps1 -QtVersion 6.11.0 -Jobs 8
-#>
-
 param(
-  [string]$QtVersion = "6.11.0",
-  [string]$SrcArchive = "",
-  [int]$Jobs = [Environment]::ProcessorCount,
-  [switch]$FastBrowserDownload
+  [string]$QtVersion = "v6.11.0",
+  [string]$RepoUrl = "https://code.qt.io/qt/qt5.git",
+  [int]$CloneDepth = 1,
+  [int]$Jobs = [Environment]::ProcessorCount
 )
 
 $ErrorActionPreference = 'Stop'
 $Root = (Get-Location).ProviderPath
 $LogFile = Join-Path $Root "qt-build-powershell.log"
+
 Start-Transcript -Path $LogFile -Force
 
-function Log { param($m) Write-Output $m }
-
-# Paths
-$SrcRoot = Join-Path $Root "src"
-$ArchiveNameZip = "qt-everywhere-src-$QtVersion.zip"
-$ArchiveNameTar = "qt-everywhere-src-$QtVersion.tar.xz"
-if ($SrcArchive -ne "")
+try
 {
-  if (-not (Test-Path $SrcArchive))
+  function Log { param($m) Write-Output $m }
+
+  # ------------------------------------------------------------
+  # 1. Resolve REAL Git
+  # ------------------------------------------------------------
+  function Resolve-RealGit
   {
-    Stop-Transcript
-    throw "Provided archive path '$SrcArchive' does not exist."
-  }
-  $ArchivePath = (Resolve-Path $SrcArchive).ProviderPath
-}
-else
-{
-  $ArchivePath = Join-Path $SrcRoot $ArchiveNameZip
-}
+    $candidates = @(
+      "C:\Program Files\Git\cmd\git.exe",
+      "C:\Program Files\Git\bin\git.exe",
+      "C:\Program Files (x86)\Git\cmd\git.exe"
+    )
 
-$SrcDir = Join-Path $SrcRoot "qt-everywhere-src"
-$InstallDir = Join-Path $Root "install\qtbase"
-
-# Helpers
-function Get-QtDownloadUrl([string]$version, [string]$file)
-{
-  $majorMinor = $version.Substring(0, $version.LastIndexOf('.'))
-  return "https://download.qt.io/official_releases/qt/$majorMinor/$version/single/$file"
-}
-
-function Get-Download-File($url, $out)
-{
-  New-Item -ItemType Directory -Force -Path (Split-Path $out) | Out-Null
-
-  try
-  {
-    if (Get-Command aria2c -ErrorAction SilentlyContinue)
+    foreach ($c in $candidates)
     {
-      Log "Using aria2c to download $url"
-      & aria2c -x16 -s16 --continue=true -d (Split-Path $out) -o (Split-Path $out -Leaf) $url
-      if ($LASTEXITCODE -ne 0) { throw "aria2c failed with exit code $LASTEXITCODE" }
+      if (Test-Path $c)
+      {
+        # Validate it is real Git
+        $ver = & $c --version 2>$null
+        if ($ver -match "git version")
+        {
+          return $c
+        }
+      }
     }
-    elseif (Get-Command Start-BitsTransfer -ErrorAction SilentlyContinue)
+
+    # Fallback: search PATH but filter out known bad locations
+    $all = (Get-Command git.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)
+    foreach ($p in $all)
     {
-      Log "Using Start-BitsTransfer to download $url"
-      Start-BitsTransfer -Source $url -Destination $out -Priority Foreground
+      if ($p -match "Program Files\\Git" -and -not ($p -match "GitHub" -or $p -match "Qt" -or $p -match "Microsoft Visual Studio"))
+      {
+        return $p
+      }
     }
-    else
+
+    throw "Could not locate a valid Git for Windows installation."
+  }
+
+  $Git = Resolve-RealGit
+  Log "Using Git: $Git"
+
+  # Resolve cmake and ninja absolutely
+  function Resolve-Tool($name)
+  {
+    $cmd = Get-Command $name -ErrorAction SilentlyContinue
+    if (-not $cmd) { throw "Missing required tool: $name" }
+    return $cmd.Source
+  }
+
+  $CMake = Resolve-Tool "cmake"
+  $Ninja = Resolve-Tool "ninja"
+
+  Log "Using CMake: $CMake"
+  Log "Using Ninja: $Ninja"
+
+  # ------------------------------------------------------------
+  # 2. Locate vcvars64.bat
+  # ------------------------------------------------------------
+  function Find-Vcvars64
+  {
+    if ($env:VSINSTALLDIR)
     {
-      Log "Using Invoke-WebRequest to download $url"
-      Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing
+      $candidate = Join-Path $env:VSINSTALLDIR "VC\Auxiliary\Build\vcvars64.bat"
+      if (Test-Path $candidate) { return $candidate }
     }
-  }
-  catch
-  {
-    throw "Download failed: $_"
-  }
-}
 
-# Ensure required tools
-$pythonCmd = if (Get-Command python -ErrorAction SilentlyContinue) { "python" }
-elseif (Get-Command py -ErrorAction SilentlyContinue) { "py" }
-else { $null }
-
-if (-not $pythonCmd)
-{
-  Stop-Transcript
-  throw "Missing required tool: python (or py). Install Python and ensure it's in PATH."
-}
-
-foreach ($t in @("cmake", "ninja"))
-{
-  if (-not (Get-Command $t -ErrorAction SilentlyContinue))
-  {
-    Stop-Transcript
-    throw "Missing required tool: $t. Install and ensure it's in PATH."
-  }
-}
-
-# Locate vcvars64.bat robustly (use vswhere if present)
-function Find-Vcvars64
-{
-  # Try VSINSTALLDIR first
-  if ($env:VSINSTALLDIR)
-  {
-    $candidate = Join-Path $env:VSINSTALLDIR "VC\Auxiliary\Build\vcvars64.bat"
-    if (Test-Path $candidate) { return $candidate }
-  }
-
-  # Try vswhere if available
-  if (Get-Command vswhere -ErrorAction SilentlyContinue)
-  {
-    try
+    if (Get-Command vswhere -ErrorAction SilentlyContinue)
     {
       $vsPath = & vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2>$null
       if ($vsPath)
@@ -128,140 +89,146 @@ function Find-Vcvars64
         if (Test-Path $candidate) { return $candidate }
       }
     }
-    catch { }
+
+    $fallbacks = @(
+      "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat",
+      "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat",
+      "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+    )
+
+    foreach ($p in $fallbacks) { if (Test-Path $p) { return $p } }
+    return $null
   }
 
-  # Common fallback locations (cover VS 2022/2026 Community/Professional/Enterprise)
-  $possible = @(
-    "C:\Program Files\Microsoft Visual Studio\2026\Community\VC\Auxiliary\Build\vcvars64.bat",
-    "C:\Program Files\Microsoft Visual Studio\2026\Professional\VC\Auxiliary\Build\vcvars64.bat",
-    "C:\Program Files\Microsoft Visual Studio\2026\Enterprise\VC\Auxiliary\Build\vcvars64.bat",
-    "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat",
-    "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
-  )
-  foreach ($p in $possible) { if (Test-Path $p) { return $p } }
-  return $null
-}
+  $vcvars64 = Find-Vcvars64
+  if (-not $vcvars64) { throw "vcvars64.bat not found." }
+  Log "Found vcvars64: $vcvars64"
 
-$vcvars64 = Find-Vcvars64
-if (-not $vcvars64)
-{
-  Stop-Transcript
-  throw "vcvars64.bat not found. Run this script from Developer PowerShell (x64) or install Visual Studio and ensure vcvars64.bat is available."
-}
-Log "Found vcvars64: $vcvars64"
+  # ------------------------------------------------------------
+  # 3. Paths
+  # ------------------------------------------------------------
+  $SrcRoot = Join-Path $Root "src"
+  $SrcDir = Join-Path $SrcRoot "qt"
+  $InstallDir = Join-Path $Root "install\qt"
 
-# Ensure source archive present or download and extract
-if (-not (Test-Path $SrcDir))
-{
-  New-Item -ItemType Directory -Force -Path $SrcRoot | Out-Null
-
-  if (-not (Test-Path $ArchivePath))
+  # ------------------------------------------------------------
+  # 4. Clone Qt repository
+  # ------------------------------------------------------------
+  if (-not (Test-Path $SrcDir))
   {
-    $url = Get-QtDownloadUrl $QtVersion $ArchiveNameZip
-    if ($FastBrowserDownload)
+    New-Item -ItemType Directory -Force -Path $SrcRoot | Out-Null
+
+    $tmpClone = Join-Path $SrcRoot ("qt-clone-tmp-{0}" -f ([guid]::NewGuid()))
+    New-Item -ItemType Directory -Force -Path $tmpClone | Out-Null
+
+    Log "Cloning Qt from $RepoUrl (branch $QtVersion, depth $CloneDepth)"
+
+    $gitArgs = @("clone")
+
+    if ($QtVersion)
     {
-      Log "FAST_DOWNLOAD requested. Download URL:"
-      Log $url
-      Stop-Transcript
-      exit 0
+      $gitArgs += "--branch"
+      $gitArgs += $QtVersion
     }
-    try
+
+    if ($CloneDepth -gt 0)
     {
-      Get-Download-File $url $ArchivePath
+      $gitArgs += "--depth"
+      $gitArgs += $CloneDepth.ToString()
+      $gitArgs += "--shallow-submodules"
     }
-    catch
+
+    $gitArgs += "--recurse-submodules"
+    $gitArgs += $RepoUrl
+    $gitArgs += $tmpClone
+
+    Log "Running: $Git $($gitArgs -join ' ')"
+
+    $proc = Start-Process -FilePath $Git -ArgumentList $gitArgs -NoNewWindow -Wait -PassThru
+    if ($proc.ExitCode -ne 0)
     {
-      Log "Primary download failed, trying tar.xz fallback"
-      $url2 = Get-QtDownloadUrl $QtVersion $ArchiveNameTar
-      $ArchivePath = Join-Path $SrcRoot $ArchiveNameTar
-      Get-Download-File $url2 $ArchivePath
+      Remove-Item -Recurse -Force $tmpClone -ErrorAction SilentlyContinue
+      throw "git clone failed with exit code $($proc.ExitCode)"
     }
+
+    Move-Item -Path $tmpClone -Destination $SrcDir -Force
+    Log "Clone complete: $SrcDir"
   }
   else
   {
-    Log "Using provided archive: $ArchivePath"
+    Log "Source already present at $SrcDir; skipping clone"
   }
 
-  # Extract
-  if ($ArchivePath -like "*.zip")
+  # ------------------------------------------------------------
+  # 5. Initialize submodules (qtbase + qtsvg)
+  # ------------------------------------------------------------
+  Push-Location $SrcDir
+  try
   {
-    Log "Extracting zip $ArchivePath"
-    Expand-Archive -Path $ArchivePath -DestinationPath $SrcRoot -Force
-  }
-  else
-  {
-    Log "Extracting tar.xz $ArchivePath"
-    if (Get-Command tar -ErrorAction SilentlyContinue)
+    $initScript = Join-Path $SrcDir "init-repository.bat"
+    if (-not (Test-Path $initScript))
     {
-      tar -xf $ArchivePath -C $SrcRoot
+      throw "init-repository.bat missing in $SrcDir"
     }
-    else
+
+    $subset = "qtbase,qtsvg"
+    Log "Initializing submodules: $subset"
+
+    $initProc = Start-Process -FilePath $initScript -ArgumentList "--module-subset=$subset" -NoNewWindow -Wait -PassThru
+    if ($initProc.ExitCode -ne 0)
     {
-      Stop-Transcript
-      throw "tar not found to extract $ArchivePath"
+      throw "init-repository.bat failed with exit code $($initProc.ExitCode)"
     }
-  }
 
-  # Normalize extracted directory name
-  $ex = Get-ChildItem -Path $SrcRoot -Directory | Where-Object { $_.Name -like "qt-everywhere*" } | Select-Object -First 1
-  if (-not $ex)
+    Log "Submodules initialized."
+  }
+  finally
   {
-    Stop-Transcript
-    throw "Could not find extracted Qt source directory under $SrcRoot"
+    Pop-Location
   }
-  if ($ex.FullName -ne $SrcDir)
-  {
-    Move-Item -Path $ex.FullName -Destination $SrcDir -Force
-  }
-}
-else
-{
-  Log "Source already extracted at $SrcDir"
-}
 
-# Build commands to run inside a single cmd.exe session that first calls vcvars64.bat
-# We use 'call' so batch files return control to cmd and '&&' to stop on failure.
-$winSrc = $SrcDir
-$winPrefix = $InstallDir
+  # ------------------------------------------------------------
+  # 6. Build Qt (debug+release)
+  # ------------------------------------------------------------
+  New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 
-# Ensure install dir exists
-New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+  $configureArgs = '-submodules qtsvg,qtbase -nomake examples -nomake tests -prefix "' + $InstallDir + '" -debug-and-release -force-debug-info'
 
-# Configure args (adjust as needed)
-$configureArgs = "-prefix `"$winPrefix`" -release -nomake examples -nomake tests"
-
-# Create a temporary batch file to run all steps under cmd with vcvars64 loaded
-$batchFile = Join-Path $env:TEMP "qt-build-$$.cmd"
-$batchContent = @"
+  $batchFile = Join-Path $env:TEMP ("qt-build-{0}.cmd" -f $PID)
+  $batchContent = @"
 @echo off
 call "$vcvars64" amd64
 if errorlevel 1 exit /b %ERRORLEVEL%
-pushd "$winSrc"
+pushd "$SrcDir"
 if errorlevel 1 exit /b %ERRORLEVEL%
-call "$winSrc\configure.bat" $configureArgs
+call "$SrcDir\configure.bat" $configureArgs
 if errorlevel 1 exit /b %ERRORLEVEL%
-cmake -G "Ninja" -S "$winSrc" -B "$winSrc" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$winPrefix"
+"$CMake" -G "Ninja" -S "$SrcDir" -B "$SrcDir" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$InstallDir"
 if errorlevel 1 exit /b %ERRORLEVEL%
-cmake --build "$winSrc" --parallel $Jobs
+"$CMake" --build "$SrcDir" --parallel $Jobs
 if errorlevel 1 exit /b %ERRORLEVEL%
-cmake --install "$winSrc" --prefix "$winPrefix"
+"$CMake" --install "$SrcDir" --prefix "$InstallDir"
 if errorlevel 1 exit /b %ERRORLEVEL%
 popd
 exit /b 0
 "@
-Set-Content -Path $batchFile -Value $batchContent -Encoding ASCII
 
-Log "Running build batch: $batchFile"
-& cmd /c $batchFile
-$rc = $LASTEXITCODE
-Remove-Item $batchFile -ErrorAction SilentlyContinue
+  Set-Content -Path $batchFile -Value $batchContent -Encoding ASCII
 
-if ($rc -ne 0)
-{
-  Stop-Transcript
-  throw "Build sequence failed with exit code $rc. See log for details."
+  Log "Running build batch: $batchFile"
+  & cmd /c $batchFile
+  $rc = $LASTEXITCODE
+  Remove-Item $batchFile -ErrorAction SilentlyContinue
+
+  if ($rc -ne 0)
+  {
+    throw "Build failed with exit code $rc"
+  }
+
+  Log "Build finished. Installed to $InstallDir"
+
 }
-
-Stop-Transcript
-Log "Build finished. Install tree at $InstallDir"
+finally
+{
+  try { Stop-Transcript } catch { }
+}

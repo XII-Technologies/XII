@@ -54,7 +54,7 @@ macro(xii_platform_detect_generator)
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_MSVC ON)
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_PREFIX "Vs")
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_CONFIGURATION $<CONFIGURATION>)
-  elseif(CMAKE_GENERATOR MATCHES "Ninja") # Ninja makefiles. Only makefile format supported by Visual Studio Open Folder
+  elseif(CMAKE_GENERATOR MATCHES "Ninja" OR CMAKE_GENERATOR MATCHES "Ninja Multi-Config") # Ninja makefiles. Only makefile format supported by Visual Studio Open Folder
     message(STATUS "Buildsystem is Ninja (XII_CMAKE_GENERATOR_NINJA)")
 
     set_property(GLOBAL PROPERTY XII_CMAKE_GENERATOR_NINJA ON)
@@ -67,8 +67,20 @@ endmacro()
 
 macro(xii_platformhook_find_vulkan)
   if(XII_CMAKE_ARCHITECTURE_64BIT AND XII_CMAKE_ARCHITECTURE_X86)
-    set(XII_DXC_DIR "${XII_ROOT}/Workspace/shared/DXC-WinX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}")
-    xii_download_and_extract("${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_URL}" "${XII_DXC_DIR}" "DXC-WinX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}")
+
+    # Parent folder for DXC
+    set(XII_DXC_PARENT "${XII_ROOT}/Workspace/shared")
+
+    # Final extracted folder
+    set(XII_DXC_DIR "${XII_DXC_PARENT}/DXC-WinX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}")
+
+    # Download + extract into parent, creating the versioned folder
+    xii_download_and_extract(
+      "${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_URL}"
+      "${XII_DXC_PARENT}"
+      "DXC-WinX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}"
+    )
+
   else()
     message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")
   endif()
@@ -76,45 +88,45 @@ macro(xii_platformhook_find_vulkan)
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(XIIVulkan DEFAULT_MSG XII_DXC_DIR)
 
-  if(XII_CMAKE_ARCHITECTURE_64BIT AND XII_CMAKE_ARCHITECTURE_X86)
-    add_library(XIIVulkan::DXC SHARED IMPORTED)
-    set_target_properties(XIIVulkan::DXC PROPERTIES IMPORTED_LOCATION "${XII_DXC_DIR}/bin/x64/dxcompiler.dll")
-    set_target_properties(XIIVulkan::DXC PROPERTIES IMPORTED_IMPLIB "${XII_DXC_DIR}/lib/x64/dxcompiler.lib")
-    set_target_properties(XIIVulkan::DXC PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_DXC_DIR}/inc")
-  else()
-    message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")
-  endif() 
+  add_library(XIIVulkan::DXC SHARED IMPORTED)
+  set_target_properties(XIIVulkan::DXC PROPERTIES
+    IMPORTED_LOCATION "${XII_DXC_DIR}/bin/x64/dxcompiler.dll"
+    IMPORTED_IMPLIB  "${XII_DXC_DIR}/lib/x64/dxcompiler.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "${XII_DXC_DIR}/inc"
+  )
 endmacro()
 
 macro(xii_platformhook_find_qt)
   if(XII_CMAKE_COMPILER_CLANG)
-  # The qt6 interface compile options contain msvc specific flags which don't exist for clang.
-  set_target_properties(Qt6::Platform PROPERTIES INTERFACE_COMPILE_OPTIONS "")
+    # The qt6 interface compile options contain msvc specific flags which don't exist for clang.
+    set_target_properties(Qt6::Platform PROPERTIES INTERFACE_COMPILE_OPTIONS "")
 
-  # Qt6 link options include '-NXCOMPAT' which does not exist on clang.
-  get_target_property(QtLinkOptions Qt6::PlatformCommonInternal INTERFACE_LINK_OPTIONS)
-  string(REPLACE "-NXCOMPAT;" "" QtLinkOptions "${QtLinkOptions}")
-  set_target_properties(Qt6::PlatformCommonInternal PROPERTIES INTERFACE_LINK_OPTIONS ${QtLinkOptions})
+    # Qt6 link options include '-NXCOMPAT' which does not exist on clang.
+    get_target_property(QtLinkOptions Qt6::PlatformCommonInternal INTERFACE_LINK_OPTIONS)
+    string(REPLACE "-NXCOMPAT;" "" QtLinkOptions "${QtLinkOptions}")
+    set_target_properties(Qt6::PlatformCommonInternal PROPERTIES INTERFACE_LINK_OPTIONS "${QtLinkOptions}")
   endif()
 endmacro()
 
 macro(xii_platformhook_download_qt)
   # Currently only implemented for x64
   if(XII_CMAKE_ARCHITECTURE_64BIT)
-    # Upgrade from Qt5 to Qt6 if the XII_QT_DIR points to a previously automatically downloaded Qt5 package.
-    if("${XII_QT_DIR}" MATCHES ".*Qt-5\\.13\\.0-vs141-x64")
-      set(XII_QT_DIR "XII_QT_DIR-NOTFOUND" CACHE PATH "Directory of the Qt installation" FORCE)
-    endif()
-
     if(XII_CMAKE_ARCHITECTURE_64BIT)
       set(XII_SDK_VERSION "${XII_CONFIG_QT_WINX64_VERSION}")
       set(XII_SDK_URL "${XII_CONFIG_QT_WINX64_URL}")
     endif()
 
+    # Reset XII_QT_DIR if it points to an auto-managed Qt package that no longer matches the configured version, so the correct version gets downloaded automatically.
+    # User-specified custom paths (not matching the "Qt6-" naming convention) are left alone.
+    set(XII_EXPECTED_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}")
+    if(NOT "${XII_QT_DIR}" STREQUAL "${XII_EXPECTED_QT_DIR}" AND "${XII_QT_DIR}" MATCHES "Qt6-")
+      set(XII_QT_DIR "XII_QT_DIR-NOTFOUND" CACHE PATH "Directory of the Qt installation." FORCE)
+    endif()
+
     if((XII_QT_DIR STREQUAL "XII_QT_DIR-NOTFOUND") OR(XII_QT_DIR STREQUAL ""))
       xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}/.." "${XII_SDK_VERSION}")
 
-      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
+      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/../${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation." FORCE)
     endif()
   endif()
 endmacro()

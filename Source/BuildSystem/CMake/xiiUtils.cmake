@@ -318,6 +318,7 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.rcss"
     "${ROOT_DIR}/*.json"
     "${ROOT_DIR}/*.yml"
+    "${ROOT_DIR}/*.css"
   )
 
   set(${RESULT_ALL_SOURCES} ${RELEVANT_FILES} PARENT_SCOPE)
@@ -626,6 +627,7 @@ endfunction()
 # ## xii_download_and_extract(<url-to-download> <dest-folder-path> <dest-filename-without-extension>)
 # #####################################
 function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
+  # Determine package type.
   if(${URL} MATCHES ".tar.gz$")
     set(PKG_TYPE "tar.gz")
   elseif(${URL} MATCHES ".tar.xz$")
@@ -634,66 +636,69 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
     set(PKG_TYPE "exe")
   else()
     get_filename_component(PKG_TYPE ${URL} LAST_EXT)
-    # get_filename_component can return an extension starting with a dot (e.g. ".7z").
-    # Normalize by removing a leading dot so we don't end up with filenames like
-    # "pkgname..7z" when composing FULL_FILENAME below.
     string(REGEX REPLACE "^\\." "" PKG_TYPE "${PKG_TYPE}")
   endif()
 
   set(FULL_FILENAME "${DEST_FILENAME}.${PKG_TYPE}")
   set(PKG_FILE "${DEST_FOLDER}/${FULL_FILENAME}")
-  set(EXTRACT_MARKER "${PKG_FILE}.extracted")
 
+  # Extraction directory.
+  set(EXTRACT_DIR "${DEST_FOLDER}/${DEST_FILENAME}")
+  set(EXTRACT_MARKER "${EXTRACT_DIR}.extracted")
+
+  # Skip if already extracted.
   if(EXISTS "${EXTRACT_MARKER}")
     return()
   endif()
 
-  # if the "URL" is actually a file path
+  # If URL is actually a file path.
   if(NOT "${URL}" MATCHES "http*")
     set(PKG_FILE "${URL}")
   endif()
 
+  # Download if needed.
   if(NOT EXISTS "${PKG_FILE}")
     message(STATUS "Downloading '${FULL_FILENAME}'...")
     file(DOWNLOAD ${URL} "${PKG_FILE}" SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
-
     list(GET DOWNLOAD_STATUS 0 DOWNLOAD_STATUS_CODE)
 
     if(NOT DOWNLOAD_STATUS_CODE EQUAL 0)
       message(FATAL_ERROR "Download failed: ${DOWNLOAD_STATUS}")
-      return()
     endif()
   endif()
 
+  # Ensure extraction directory exists.
+  file(MAKE_DIRECTORY "${EXTRACT_DIR}")
+
   xii_pull_config_vars()
 
-  message(STATUS "Extracting '${FULL_FILENAME}'...")
+  message(STATUS "Extracting '${FULL_FILENAME}' into '${EXTRACT_DIR}'...")
 
+  # Extract
   if(NOT ${PKG_TYPE} MATCHES "exe")
     if(${PKG_TYPE} MATCHES "7z")
       set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
-      execute_process(COMMAND "${FULL_7ZA_PATH}"
-        x "${PKG_FILE}"
-        -aoa
-        WORKING_DIRECTORY "${DEST_FOLDER}"
+      execute_process(
+        COMMAND "${FULL_7ZA_PATH}" x "${PKG_FILE}" -aoa
+        WORKING_DIRECTORY "${EXTRACT_DIR}"
         COMMAND_ERROR_IS_FATAL ANY
-        RESULT_VARIABLE CMD_STATUS)
-
+        RESULT_VARIABLE CMD_STATUS
+      )
     else()
-      execute_process(COMMAND ${CMAKE_COMMAND}
-        -E tar -xf "${PKG_FILE}"
-        WORKING_DIRECTORY "${DEST_FOLDER}"
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E tar -xf "${PKG_FILE}"
+        WORKING_DIRECTORY "${EXTRACT_DIR}"
         COMMAND_ERROR_IS_FATAL ANY
-        RESULT_VARIABLE CMD_STATUS)
+        RESULT_VARIABLE CMD_STATUS
+      )
     endif()
 
     if(NOT CMD_STATUS EQUAL 0)
       message(FATAL_ERROR "Extracting package '${FULL_FILENAME}' failed.")
-      return()
     endif()
   endif()
 
-  file(TOUCH ${EXTRACT_MARKER})
+  file(TOUCH "${EXTRACT_MARKER}")
 endfunction()
 
 function(xii_get_export_location DST_VAR)

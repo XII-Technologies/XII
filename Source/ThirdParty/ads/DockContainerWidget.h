@@ -86,6 +86,9 @@ private:
 	friend AutoHideDockContainerPrivate;
 	friend CAutoHideSideBar;
 
+private Q_SLOTS:
+	void removeFromDockManager();
+
 protected:
 	/**
 	 * Handles activation events to update zOrderIndex
@@ -219,7 +222,7 @@ public:
 	/**
 	 * Virtual Destructor
 	 */
-	virtual ~CDockContainerWidget();
+    ~CDockContainerWidget() override;
 
 	/**
 	 * Adds dockwidget into the given area.

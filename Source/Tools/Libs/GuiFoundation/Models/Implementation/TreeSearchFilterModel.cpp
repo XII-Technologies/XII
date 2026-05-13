@@ -25,7 +25,8 @@ void xiiQtTreeSearchFilterModel::SetFilterText(const QString& sText)
     RecomputeVisibleItems();
   }
 
-  invalidateFilter();
+  beginFilterChange();
+  endFilterChange();
 }
 
 void xiiQtTreeSearchFilterModel::SetIncludeChildren(bool bInclude)
@@ -35,7 +36,9 @@ void xiiQtTreeSearchFilterModel::SetIncludeChildren(bool bInclude)
   if (!m_Filter.IsEmpty())
   {
     RecomputeVisibleItems();
-    invalidateFilter();
+
+    beginFilterChange();
+    endFilterChange();
   }
 }
 

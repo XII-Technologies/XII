@@ -30,9 +30,7 @@ macro(xii_find_qt)
     Svg
   )
 
-  # XII requires at least Qt 6.3 because earlier versions have a bug which prevents the 3d viewport in the
-  # Editor from working correctly.
-  SET(XII_REQUIRED_QT_VERSION "6.3")
+  SET(XII_REQUIRED_QT_VERSION "6.11.0")
 
   if(XII_ENABLE_QT_SUPPORT)
     if(XII_QT_DIR)

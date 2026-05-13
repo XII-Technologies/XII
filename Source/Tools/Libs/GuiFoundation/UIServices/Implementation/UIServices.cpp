@@ -150,19 +150,25 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
         xiiOSFile::CreateDirectoryStructure(sTempFolder).AssertSuccess();
 
         QFile fileOut(sTempIconFile.GetData());
-        fileOut.open(QIODeviceBase::OpenModeFlag::WriteOnly);
-        fileOut.write(sContent.GetData(), sContent.GetElementCount());
-        fileOut.flush();
-        fileOut.close();
+        if (fileOut.open(QIODeviceBase::OpenModeFlag::WriteOnly))
+        {
+          fileOut.write(sContent.GetData(), sContent.GetElementCount());
+          fileOut.flush();
+          fileOut.close();
+        }
       }
     }
 
     QIcon icon(sTempIconFile.GetData());
 
     if (!icon.pixmap(QSize(16, 16)).isNull())
+    {
       map[sFullIdentifier] = icon;
+    }
     else
+    {
       map[sFullIdentifier] = QIcon();
+    }
 
     xiiTime local = sw.GetRunningTotal();
     g_Total += local;
@@ -180,12 +186,18 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
 
       // Workaround for QIcon being stupid and treating failed to load icons as not-null.
       if (!icon.pixmap(QSize(16, 16)).isNull())
+      {
         map[sFullIdentifier] = icon;
+      }
       else
+      {
         map[sFullIdentifier] = QIcon();
+      }
     }
     else
+    {
       map[sFullIdentifier] = QIcon();
+    }
   }
 
   return map[sFullIdentifier];
