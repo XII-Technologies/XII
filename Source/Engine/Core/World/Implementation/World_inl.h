@@ -559,6 +559,7 @@ XII_ALWAYS_INLINE float xiiWorld::GetInvDeltaSeconds() const
     return 1.0f / fDelta;
   }
 
-  // when the clock is paused just use zero
+  // Use zero instead of infinity to avoid potential issues with infinite values in other parts of the code.
+  // A zero value will just lead to no time-based changes, which is the expected behavior when the clock is paused.
   return 0.0f;
 }

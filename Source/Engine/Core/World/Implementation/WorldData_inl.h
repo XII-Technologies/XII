@@ -241,8 +241,7 @@ namespace xiiInternal
     if (m_Data.m_WriteThreadID != xiiThreadUtils::GetCurrentThreadID())
     {
       XII_ASSERT_DEV(m_Data.m_iReadCounter == 0, "World '{0}' cannot be marked for writing because it is already marked for reading.", m_Data.m_sName);
-      XII_ASSERT_DEV(m_Data.m_WriteThreadID == (xiiThreadID)0,
-                     "World '{0}' cannot be marked for writing because it is already marked for writing by another thread.", m_Data.m_sName);
+      XII_ASSERT_DEV(m_Data.m_WriteThreadID == (xiiThreadID)0, "World '{0}' cannot be marked for writing because it is already marked for writing by another thread.", m_Data.m_sName);
 
       m_Data.m_WriteThreadID = xiiThreadUtils::GetCurrentThreadID();
       m_Data.m_iReadCounter.Increment(); // allow reading as well
