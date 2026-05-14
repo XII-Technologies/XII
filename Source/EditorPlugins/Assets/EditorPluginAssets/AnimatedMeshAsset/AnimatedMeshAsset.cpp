@@ -6,7 +6,7 @@
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
 #include <Foundation/Utilities/Progress.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
-#include <ModelImporter2/ModelImporter.h>
+#include <ModelImporter/ModelImporter.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 8, xiiRTTINoAllocator)
@@ -64,11 +64,11 @@ xiiStatus xiiAnimatedMeshAssetDocument::CreateMeshFromFile(xiiAnimatedMeshAssetP
     return xiiStatus(xiiFmt("Couldn't make path absolute: '{0};", sAbsFilename));
   }
 
-  xiiUniquePtr<xiiModelImporter2::Importer> pImporter = xiiModelImporter2::RequestImporterForFileType(sAbsFilename);
+  xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(sAbsFilename);
   if (pImporter == nullptr)
     return xiiStatus("No known importer for this file type.");
 
-  xiiModelImporter2::ImportOptions opt;
+  xiiModelImporter::ImportOptions opt;
   opt.m_sSourceFile               = sAbsFilename;
   opt.m_bImportSkinningData       = true;
   opt.m_bRecomputeNormals         = pProp->m_bRecalculateNormals;

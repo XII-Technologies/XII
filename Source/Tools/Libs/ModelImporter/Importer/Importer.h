@@ -4,7 +4,7 @@
 
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
-#include <ModelImporter2/ModelImporterDLL.h>
+#include <ModelImporter/ModelImporterDLL.h>
 
 class xiiLogInterface;
 class xiiProgress;
@@ -12,7 +12,7 @@ class xiiEditableSkeleton;
 class xiiMeshResourceDescriptor;
 struct xiiAnimationClipResourceDescriptor;
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   struct ImportOptions
   {
@@ -107,4 +107,4 @@ namespace xiiModelImporter2
     xiiProgress*  m_pProgress = nullptr;
   };
 
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

@@ -8,7 +8,7 @@
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
-#include <ModelImporter2/ModelImporter.h>
+#include <ModelImporter/ModelImporter.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,13 +114,13 @@ xiiTransformStatus xiiAnimationClipAssetDocument::InternalTransformAsset(xiiStre
     return xiiStatus(xiiFmt("Could not make path absolute: '{0};", sAbsFilename));
   }
 
-  xiiUniquePtr<xiiModelImporter2::Importer> pImporter = xiiModelImporter2::RequestImporterForFileType(sAbsFilename);
+  xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(sAbsFilename);
   if (pImporter == nullptr)
     return xiiStatus("No known importer for this file type.");
 
   xiiEditableSkeleton skeleton;
 
-  xiiModelImporter2::ImportOptions opt;
+  xiiModelImporter::ImportOptions opt;
   opt.m_sSourceFile = sAbsFilename;
   // opt.m_pSkeletonOutput = &skeleton; // TODO: may be needed later to optimize the clip
   opt.m_pAnimationOutput    = &desc;
@@ -426,10 +426,10 @@ xiiStatus xiiAnimationClipAssetDocumentGenerator::Generate(xiiStringView sInputF
 
   if (sMode == "AnimationClipImport_All")
   {
-    xiiModelImporter2::ImportOptions opt;
+    xiiModelImporter::ImportOptions opt;
     opt.m_sSourceFile = sInputFileAbs;
 
-    xiiUniquePtr<xiiModelImporter2::Importer> pImporter = xiiModelImporter2::RequestImporterForFileType(opt.m_sSourceFile);
+    xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(opt.m_sSourceFile);
     if (pImporter == nullptr)
       return xiiStatus("No known importer for this file type.");
 

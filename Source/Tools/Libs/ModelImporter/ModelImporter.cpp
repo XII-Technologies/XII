@@ -1,13 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
-#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
-#include <ModelImporter2/ImporterMagicaVoxel/ImporterMagicaVoxel.h>
-#include <ModelImporter2/ImporterSourceBSP/ImporterSourceBSP.h>
-#include <ModelImporter2/ModelImporter.h>
+#include <ModelImporter/ImporterAssimp/ImporterAssimp.h>
+#include <ModelImporter/ModelImporter.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   xiiUniquePtr<Importer> RequestImporterForFileType(xiiStringView sFile)
   {
@@ -15,17 +13,6 @@ namespace xiiModelImporter2
     {
       return XII_DEFAULT_NEW(ImporterAssimp);
     }
-
-    if (sFile.HasExtension(".bsp"))
-    {
-      return XII_DEFAULT_NEW(ImporterSourceBSP);
-    }
-
-    if (sFile.HasExtension(".vox"))
-    {
-      return XII_DEFAULT_NEW(ImporterMagicaVoxel);
-    }
-
     return nullptr;
   }
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

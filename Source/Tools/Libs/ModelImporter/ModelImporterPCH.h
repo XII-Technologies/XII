@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ModelImporter2/ModelImporterDLL.h>
+#include <ModelImporter/ModelImporterDLL.h>
 
 #include <Foundation/Basics.h>
 #include <Foundation/Containers/DynamicArray.h>

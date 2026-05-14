@@ -8,7 +8,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Declarations.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
-#include <ModelImporter2/ModelImporter.h>
+#include <ModelImporter/ModelImporter.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -322,7 +322,7 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWri
         return xiiStatus(xiiFmt("Couldn't make path absolute: '{0};", sAbsFilename));
       }
 
-      xiiUniquePtr<xiiModelImporter2::Importer> pImporter = xiiModelImporter2::RequestImporterForFileType(sAbsFilename);
+      xiiUniquePtr<xiiModelImporter::Importer> pImporter = xiiModelImporter::RequestImporterForFileType(sAbsFilename);
       if (pImporter == nullptr)
         return xiiStatus("No known importer for this file type.");
 
@@ -330,7 +330,7 @@ xiiTransformStatus xiiSkeletonAssetDocument::InternalTransformAsset(xiiStreamWri
 
       xiiEditableSkeleton newSkeleton;
 
-      xiiModelImporter2::ImportOptions opt;
+      xiiModelImporter::ImportOptions opt;
       opt.m_sSourceFile     = sAbsFilename;
       opt.m_pSkeletonOutput = &newSkeleton;
 
