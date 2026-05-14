@@ -203,8 +203,6 @@ xiiWindow::xiiWindow()
 
 xiiWindow::~xiiWindow()
 {
-  XII_ASSERT_DEV(m_iReferenceCount == 0, "The window is still being referenced, probably by a swapchain. Make sure to destroy all swapchains and call xiiGALDevice::WaitIdle before destroying a window.");
-
   xiiWindowEvent e;
   e.m_Type    = xiiWindowEvent::Type::WindowDestruction;
   e.m_pWindow = this;
@@ -215,6 +213,8 @@ xiiWindow::~xiiWindow()
   {
     Destroy().IgnoreResult();
   }
+
+  XII_ASSERT_DEV(m_iReferenceCount == 0, "The window is still being referenced, probably by a swapchain. Make sure to destroy all swapchains and call xiiGALDevice::WaitIdle before destroying a window.");
 }
 
 void xiiWindow::OnResize(const xiiSizeU32& newWindowSize)
