@@ -1,13 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
 #include <assimp/matrix4x4.h>
 #include <assimp/quaternion.h>
 #include <assimp/types.h>
 #include <assimp/vector3.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   xiiColor ConvertAssimpType(const aiColor4D& value, bool bInvert /*= false*/)
   {
@@ -60,4 +60,4 @@ namespace xiiModelImporter2
     return value;
   }
 
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

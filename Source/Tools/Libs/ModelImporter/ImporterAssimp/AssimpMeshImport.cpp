@@ -1,9 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
 #include <Foundation/Logging/Log.h>
-#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
+#include <ModelImporter/ImporterAssimp/ImporterAssimp.h>
 
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
@@ -13,7 +13,7 @@
 #include <meshoptimizer/meshoptimizer.h>
 #include <mikktspace/mikktspace.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   struct StreamIndices
   {
@@ -750,4 +750,4 @@ namespace xiiModelImporter2
 
     return XII_SUCCESS;
   }
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

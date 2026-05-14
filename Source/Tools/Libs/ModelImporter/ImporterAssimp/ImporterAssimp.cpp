@@ -1,9 +1,9 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
 #include <Foundation/Logging/Log.h>
-#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
+#include <ModelImporter/ImporterAssimp/ImporterAssimp.h>
 
 #include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -13,7 +13,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   ImporterAssimp::ImporterAssimp()  = default;
   ImporterAssimp::~ImporterAssimp() = default;
@@ -285,4 +285,4 @@ namespace xiiModelImporter2
     return XII_SUCCESS;
   }
 
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

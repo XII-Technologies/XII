@@ -1,13 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
 #include <Foundation/Logging/Log.h>
 #include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
-#include <ModelImporter2/Importer/Importer.h>
+#include <ModelImporter/Importer/Importer.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   Importer::Importer()  = default;
   Importer::~Importer() = default;
@@ -45,4 +45,4 @@ namespace xiiModelImporter2
     out_sName.ChangeFileExtension(m_sFileFormatExtension);
   }
 
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

@@ -1,15 +1,15 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/PathUtils.h>
-#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
+#include <ModelImporter/ImporterAssimp/ImporterAssimp.h>
 #include <assimp/material.h>
 #include <assimp/scene.h>
 #include <assimp/texture.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   static const void MakeValidMaterialName(xiiString& ref_sTarget, const char* szSource, xiiUInt32 uiMatIdx, xiiSet<xiiString>& ref_knownMaterialNames)
   {
@@ -94,4 +94,4 @@ namespace xiiModelImporter2
 
     return XII_SUCCESS;
   }
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

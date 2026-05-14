@@ -9,7 +9,7 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/Progress.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
-#include <ModelImporter2/Importer/Importer.h>
+#include <ModelImporter/Importer/Importer.h>
 
 namespace xiiMeshImportUtils
 {
@@ -18,7 +18,7 @@ namespace xiiMeshImportUtils
     sSeparated.Split(false, out_list, ";", "*", ".");
   }
 
-  xiiString ImportOrResolveTexture(const char* szImportSourceFolder, const char* szImportTargetFolder, xiiStringView sTexturePath, xiiModelImporter2::TextureSemantic hint, bool bTextureClamp, const xiiModelImporter2::Importer* pImporter)
+  xiiString ImportOrResolveTexture(const char* szImportSourceFolder, const char* szImportTargetFolder, xiiStringView sTexturePath, xiiModelImporter::TextureSemantic hint, bool bTextureClamp, const xiiModelImporter::Importer* pImporter)
   {
     if (!xiiUnicodeUtils::IsValidUtf8(sTexturePath.GetStartPointer(), sTexturePath.GetEndPointer()))
     {
@@ -91,35 +91,35 @@ namespace xiiMeshImportUtils
       xiiEnum<xiiTexConvUsage> usage;
       switch (hint)
       {
-        case xiiModelImporter2::TextureSemantic::DiffuseMap:
+        case xiiModelImporter::TextureSemantic::DiffuseMap:
           usage = xiiTexConvUsage::Color;
           break;
 
-        case xiiModelImporter2::TextureSemantic::DiffuseAlphaMap:
+        case xiiModelImporter::TextureSemantic::DiffuseAlphaMap:
           usage          = xiiTexConvUsage::Color;
           channelMapping = xiiTexture2DChannelMappingEnum::RGBA1;
           break;
-        case xiiModelImporter2::TextureSemantic::OcclusionMap: // Making wild guesses here.
-        case xiiModelImporter2::TextureSemantic::EmissiveMap:
+        case xiiModelImporter::TextureSemantic::OcclusionMap: // Making wild guesses here.
+        case xiiModelImporter::TextureSemantic::EmissiveMap:
           usage = xiiTexConvUsage::Color;
           break;
 
-        case xiiModelImporter2::TextureSemantic::RoughnessMap:
-        case xiiModelImporter2::TextureSemantic::MetallicMap:
+        case xiiModelImporter::TextureSemantic::RoughnessMap:
+        case xiiModelImporter::TextureSemantic::MetallicMap:
           channelMapping = xiiTexture2DChannelMappingEnum::R1;
           usage          = xiiTexConvUsage::Linear;
           break;
 
-        case xiiModelImporter2::TextureSemantic::OrmMap:
+        case xiiModelImporter::TextureSemantic::OrmMap:
           channelMapping = xiiTexture2DChannelMappingEnum::RGB1;
           usage          = xiiTexConvUsage::Linear;
           break;
 
-        case xiiModelImporter2::TextureSemantic::NormalMap:
+        case xiiModelImporter::TextureSemantic::NormalMap:
           usage = xiiTexConvUsage::NormalMap;
           break;
 
-        case xiiModelImporter2::TextureSemantic::DisplacementMap:
+        case xiiModelImporter::TextureSemantic::DisplacementMap:
           usage          = xiiTexConvUsage::Linear;
           channelMapping = xiiTexture2DChannelMappingEnum::R1;
           break;
@@ -151,7 +151,7 @@ namespace xiiMeshImportUtils
     }
   };
 
-  void SetMeshAssetMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, const xiiModelImporter2::Importer* pImporter)
+  void SetMeshAssetMaterialSlots(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, const xiiModelImporter::Importer* pImporter)
   {
     const auto& opt = pImporter->GetImportOptions();
 
@@ -176,7 +176,7 @@ namespace xiiMeshImportUtils
     }
   }
 
-  static void ImportMeshAssetMaterialProperties(xiiMaterialAssetDocument* pMaterialDoc, const xiiModelImporter2::OutputMaterial& material, const char* szImportSourceFolder, const char* szImportTargetFolder, const xiiModelImporter2::Importer* pImporter)
+  static void ImportMeshAssetMaterialProperties(xiiMaterialAssetDocument* pMaterialDoc, const xiiModelImporter::OutputMaterial& material, const char* szImportSourceFolder, const char* szImportTargetFolder, const xiiModelImporter::Importer* pImporter)
   {
     xiiStringBuilder materialName = xiiPathUtils::GetFileName(pMaterialDoc->GetDocumentPath());
 
@@ -200,9 +200,9 @@ namespace xiiMeshImportUtils
     xiiVariant propertyValue;
 
     xiiString textureAo, textureRoughness, textureMetallic;
-    material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::OcclusionMap, textureAo);
-    material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::RoughnessMap, textureRoughness);
-    material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::MetallicMap, textureMetallic);
+    material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::OcclusionMap, textureAo);
+    material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::RoughnessMap, textureRoughness);
+    material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::MetallicMap, textureMetallic);
 
     const bool bHasOrmTexture = !textureRoughness.IsEmpty() && ((textureAo == textureRoughness) || (textureMetallic == textureRoughness));
 
@@ -211,10 +211,10 @@ namespace xiiMeshImportUtils
     {
       xiiString textureDiffuse;
 
-      if (material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::DiffuseMap, textureDiffuse))
+      if (material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::DiffuseMap, textureDiffuse))
       {
         pAccessor->SetValueByName(pMaterialProperties, "UseBaseTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "BaseTexture", xiiVariant(xiiMeshImportUtils::ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureDiffuse, xiiModelImporter2::TextureSemantic::DiffuseMap, false, pImporter))).LogFailure();
+        pAccessor->SetValueByName(pMaterialProperties, "BaseTexture", xiiVariant(xiiMeshImportUtils::ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureDiffuse, xiiModelImporter::TextureSemantic::DiffuseMap, false, pImporter))).LogFailure();
       }
       else
       {
@@ -226,17 +226,17 @@ namespace xiiMeshImportUtils
     {
       xiiString textureNormal;
 
-      if (!material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::NormalMap, textureNormal))
+      if (!material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::NormalMap, textureNormal))
       {
         // Due to the lack of options in stuff like obj files, people stuff normals into the bump slot.
-        material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::DisplacementMap, textureNormal);
+        material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::DisplacementMap, textureNormal);
       }
 
       if (!textureNormal.IsEmpty())
       {
         pAccessor->SetValueByName(pMaterialProperties, "UseNormalTexture", true).LogFailure();
 
-        pAccessor->SetValueByName(pMaterialProperties, "NormalTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureNormal, xiiModelImporter2::TextureSemantic::NormalMap, false, pImporter))).LogFailure();
+        pAccessor->SetValueByName(pMaterialProperties, "NormalTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureNormal, xiiModelImporter::TextureSemantic::NormalMap, false, pImporter))).LogFailure();
       }
       else
       {
@@ -250,7 +250,7 @@ namespace xiiMeshImportUtils
       {
         pAccessor->SetValueByName(pMaterialProperties, "UseRoughnessTexture", true).LogFailure();
 
-        pAccessor->SetValueByName(pMaterialProperties, "RoughnessTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter2::TextureSemantic::RoughnessMap, false, pImporter))).LogFailure();
+        pAccessor->SetValueByName(pMaterialProperties, "RoughnessTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter::TextureSemantic::RoughnessMap, false, pImporter))).LogFailure();
       }
       else
       {
@@ -264,7 +264,7 @@ namespace xiiMeshImportUtils
       if (!textureMetallic.IsEmpty())
       {
         pAccessor->SetValueByName(pMaterialProperties, "UseMetallicTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "MetallicTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureMetallic, xiiModelImporter2::TextureSemantic::MetallicMap, false, pImporter))).LogFailure();
+        pAccessor->SetValueByName(pMaterialProperties, "MetallicTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureMetallic, xiiModelImporter::TextureSemantic::MetallicMap, false, pImporter))).LogFailure();
       }
     }
 
@@ -272,10 +272,10 @@ namespace xiiMeshImportUtils
     {
       xiiString textureEmissive;
 
-      if (material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::EmissiveMap, textureEmissive))
+      if (material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::EmissiveMap, textureEmissive))
       {
         pAccessor->SetValueByName(pMaterialProperties, "UseEmissiveTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "EmissiveTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureEmissive, xiiModelImporter2::TextureSemantic::EmissiveMap, false, pImporter))).LogFailure();
+        pAccessor->SetValueByName(pMaterialProperties, "EmissiveTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureEmissive, xiiModelImporter::TextureSemantic::EmissiveMap, false, pImporter))).LogFailure();
       }
     }
 
@@ -284,35 +284,35 @@ namespace xiiMeshImportUtils
     {
       xiiString textureAo;
 
-      if (material.m_TextureReferences.TryGetValue(xiiModelImporter2::TextureSemantic::OcclusionMap, textureAo))
+      if (material.m_TextureReferences.TryGetValue(xiiModelImporter::TextureSemantic::OcclusionMap, textureAo))
       {
         pAccessor->SetValueByName(pMaterialProperties, "UseOcclusionTexture", true).LogFailure();
-        pAccessor->SetValueByName(pMaterialProperties, "OcclusionTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureAo, xiiModelImporter2::TextureSemantic::OcclusionMap, false, pImporter))).LogFailure();
+        pAccessor->SetValueByName(pMaterialProperties, "OcclusionTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureAo, xiiModelImporter::TextureSemantic::OcclusionMap, false, pImporter))).LogFailure();
       }
     }
 
     // TODO: ambient occlusion texture
 
     // Set base color property
-    if (material.m_Properties.TryGetValue(xiiModelImporter2::PropertySemantic::DiffuseColor, propertyValue) && propertyValue.IsA<xiiColor>())
+    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::DiffuseColor, propertyValue) && propertyValue.IsA<xiiColor>())
     {
       pAccessor->SetValueByName(pMaterialProperties, "BaseColor", propertyValue).LogFailure();
     }
 
     // Set emissive color property
-    if (material.m_Properties.TryGetValue(xiiModelImporter2::PropertySemantic::EmissiveColor, propertyValue) && propertyValue.IsA<xiiColor>())
+    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::EmissiveColor, propertyValue) && propertyValue.IsA<xiiColor>())
     {
       pAccessor->SetValueByName(pMaterialProperties, "EmissiveColor", propertyValue).LogFailure();
     }
 
     // Set two-sided property
-    if (material.m_Properties.TryGetValue(xiiModelImporter2::PropertySemantic::TwosidedValue, propertyValue) && propertyValue.IsNumber())
+    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::TwosidedValue, propertyValue) && propertyValue.IsNumber())
     {
       pAccessor->SetValueByName(pMaterialProperties, "TWO_SIDED", propertyValue.ConvertTo<bool>()).LogFailure();
     }
 
     // Set metallic property
-    if (material.m_Properties.TryGetValue(xiiModelImporter2::PropertySemantic::MetallicValue, propertyValue) && propertyValue.IsNumber())
+    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::MetallicValue, propertyValue) && propertyValue.IsNumber())
     {
       float value = propertyValue.ConvertTo<float>();
 
@@ -326,7 +326,7 @@ namespace xiiMeshImportUtils
     }
 
     // Set roughness property
-    if (material.m_Properties.TryGetValue(xiiModelImporter2::PropertySemantic::RoughnessValue, propertyValue) && propertyValue.IsNumber())
+    if (material.m_Properties.TryGetValue(xiiModelImporter::PropertySemantic::RoughnessValue, propertyValue) && propertyValue.IsNumber())
     {
       float value = propertyValue.ConvertTo<float>();
 
@@ -356,7 +356,7 @@ namespace xiiMeshImportUtils
       pAccessor->SetValueByName(pMaterialProperties, "RoughnessValue", 1.0f).LogFailure();
       pAccessor->SetValueByName(pMaterialProperties, "MetallicValue", 0.0f).LogFailure();
 
-      pAccessor->SetValueByName(pMaterialProperties, "OrmTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter2::TextureSemantic::OrmMap, false, pImporter))).LogFailure();
+      pAccessor->SetValueByName(pMaterialProperties, "OrmTexture", xiiVariant(ImportOrResolveTexture(szImportSourceFolder, szImportTargetFolder, textureRoughness, xiiModelImporter::TextureSemantic::OrmMap, false, pImporter))).LogFailure();
     }
 
     // Todo:
@@ -366,7 +366,7 @@ namespace xiiMeshImportUtils
     pAccessor->FinishTransaction();
   }
 
-  void ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, xiiStringView sDocumentDirectory, const xiiModelImporter2::Importer* pImporter)
+  void ImportMeshAssetMaterials(xiiHybridArray<xiiMaterialResourceSlot, 8>& inout_materialSlots, xiiStringView sDocumentDirectory, const xiiModelImporter::Importer* pImporter)
   {
     XII_PROFILE_SCOPE("ImportMeshAssetMaterials");
 
@@ -385,7 +385,7 @@ namespace xiiMeshImportUtils
 
     xiiProgressRange range("Importing Materials", uiNumSubmeshes, false);
 
-    xiiHashTable<const xiiModelImporter2::OutputMaterial*, xiiString> importMatToGuid;
+    xiiHashTable<const xiiModelImporter::OutputMaterial*, xiiString> importMatToGuid;
 
     xiiHybridArray<xiiDocument*, 32> pendingSaveTasks;
 

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ModelImporter2/Importer/Importer.h>
+#include <ModelImporter/Importer/Importer.h>
 
 #include <assimp/Importer.hpp>
 
@@ -10,7 +10,7 @@ class xiiEditableSkeletonJoint;
 struct aiNode;
 struct aiMesh;
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   class ImporterAssimp : public Importer
   {
@@ -61,4 +61,4 @@ namespace xiiModelImporter2
   extern float    ConvertAssimpType(float value, bool bDummy = false);
   extern int      ConvertAssimpType(int value, bool bDummy = false);
 
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter

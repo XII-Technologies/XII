@@ -13,7 +13,7 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE
   EditorFramework
   SharedPluginAssets
-  ModelImporter2
+  ModelImporter
   GameEngine
 )
 

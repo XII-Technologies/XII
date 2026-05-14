@@ -1,11 +1,11 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ModelImporter2/ModelImporterPCH.h>
+#include <ModelImporter/ModelImporterPCH.h>
 
 #include <Foundation/Logging/Log.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
-#include <ModelImporter2/ImporterAssimp/ImporterAssimp.h>
+#include <ModelImporter/ImporterAssimp/ImporterAssimp.h>
 #include <assimp/anim.h>
 #include <assimp/scene.h>
 #include <ozz/animation/offline/additive_animation_builder.h>
@@ -14,7 +14,7 @@
 #include <ozz/animation/offline/raw_animation_utils.h>
 #include <ozz/animation/runtime/skeleton.h>
 
-namespace xiiModelImporter2
+namespace xiiModelImporter
 {
   XII_FORCE_INLINE void ai2ozz(const aiVector3D& in, ozz::math::Float3& ref_out)
   {
@@ -261,4 +261,4 @@ namespace xiiModelImporter2
 
     return XII_FAILURE;
   }
-} // namespace xiiModelImporter2
+} // namespace xiiModelImporter
