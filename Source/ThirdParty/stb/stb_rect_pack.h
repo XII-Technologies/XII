@@ -1,8 +1,14 @@
-// stb_rect_pack.h - v1.00 - public domain - rectangle packing
+// stb_rect_pack.h - v1.01 - public domain - rectangle packing
 // Sean Barrett 2014
 //
 // Useful for e.g. packing rectangular textures into an atlas.
 // Does not do rotation.
+//
+// Before #including,
+//
+//    #define STB_RECT_PACK_IMPLEMENTATION
+//
+// in the file that you want to have the implementation.
 //
 // Not necessarily the awesomest packing method, but better than
 // the totally naive one in stb_truetype (which is primarily what
@@ -35,6 +41,7 @@
 //
 // Version history:
 //
+//     1.01  (2021-07-11)  always use large rect mode, expose STBRP__MAXVAL in public section
 //     1.00  (2019-02-25)  avoid small space waste; gracefully fail too-wide rectangles
 //     0.99  (2019-02-07)  warning fixes
 //     0.11  (2017-03-03)  return packing success/fail result
@@ -68,7 +75,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// Start xiiEngine edit
+// Start XII Engine edit
 // Configure the DLL Import/Export Define
 #undef STBRP_DEF
 #ifdef BUILDSYSTEM_COMPILE_ENGINE_AS_DLL
@@ -84,7 +91,7 @@
 #else
 #  define STBRP_DEF
 #endif
-// End xiiEngine edit
+// End XII Engine edit
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef __cplusplus
@@ -95,11 +102,10 @@ typedef struct stbrp_context stbrp_context;
 typedef struct stbrp_node    stbrp_node;
 typedef struct stbrp_rect    stbrp_rect;
 
-#ifdef STBRP_LARGE_RECTS
 typedef int            stbrp_coord;
-#else
-typedef unsigned short stbrp_coord;
-#endif
+
+#define STBRP__MAXVAL  0x7fffffff
+// Mostly for internal use, but this is the maximum supported coordinate value.
 
 STBRP_DEF int stbrp_pack_rects (stbrp_context *context, stbrp_rect *rects, int num_rects);
 // Assign packed locations to rectangles. The rectangles are of type
@@ -229,8 +235,10 @@ struct stbrp_context
 
 #ifdef _MSC_VER
 #define STBRP__NOTUSED(v)  (void)(v)
+#define STBRP__CDECL       __cdecl
 #else
 #define STBRP__NOTUSED(v)  (void)sizeof(v)
+#define STBRP__CDECL
 #endif
 
 enum
@@ -273,9 +281,6 @@ STBRP_DEF void stbrp_setup_allow_out_of_mem(stbrp_context *context, int allow_ou
 STBRP_DEF void stbrp_init_target(stbrp_context *context, int width, int height, stbrp_node *nodes, int num_nodes)
 {
    int i;
-#ifndef STBRP_LARGE_RECTS
-   STBRP_ASSERT(width <= 0xffff && height <= 0xffff);
-#endif
 
    for (i=0; i < num_nodes-1; ++i)
       nodes[i].next = &nodes[i+1];
@@ -294,11 +299,7 @@ STBRP_DEF void stbrp_init_target(stbrp_context *context, int width, int height, 
    context->extra[0].y = 0;
    context->extra[0].next = &context->extra[1];
    context->extra[1].x = (stbrp_coord) width;
-#ifdef STBRP_LARGE_RECTS
    context->extra[1].y = (1<<30);
-#else
-   context->extra[1].y = 65535;
-#endif
    context->extra[1].next = NULL;
 }
 
@@ -326,8 +327,7 @@ static int stbrp__skyline_find_min_y(stbrp_context *c, stbrp_node *first, int x0
    min_y = 0;
    waste_area = 0;
    visited_width = 0;
-   while (node->x < static_cast<decltype(node->x)>(x1))
-   {
+   while (node->x < x1) {
       if (node->y > min_y) {
          // raise min_y higher.
          // we've accounted for all waste up to min_y,
@@ -428,7 +428,7 @@ static stbrp__findresult stbrp__skyline_find_best_pos(stbrp_context *c, int widt
       node = c->active_head;
       prev = &c->active_head;
       // find first node that's admissible
-      while (tail->x < static_cast<decltype(tail->x)>(width))
+      while (tail->x < width)
          tail = tail->next;
       while (tail) {
          int xpos = tail->x - width;
@@ -500,8 +500,7 @@ static stbrp__findresult stbrp__skyline_pack_rectangle(stbrp_context *context, i
 
    // from here, traverse cur and free the nodes, until we get to one
    // that shouldn't be freed
-   while (cur->next && cur->next->x <= static_cast<decltype(cur->next->x)>(res.x + width))
-   {
+   while (cur->next && cur->next->x <= res.x + width) {
       stbrp_node *next = cur->next;
       // move the current node to the free list
       cur->next = context->free_head;
@@ -542,7 +541,7 @@ static stbrp__findresult stbrp__skyline_pack_rectangle(stbrp_context *context, i
    return res;
 }
 
-static int rect_height_compare(const void *a, const void *b)
+static int STBRP__CDECL rect_height_compare(const void *a, const void *b)
 {
    const stbrp_rect *p = (const stbrp_rect *) a;
    const stbrp_rect *q = (const stbrp_rect *) b;
@@ -553,18 +552,12 @@ static int rect_height_compare(const void *a, const void *b)
    return (p->w > q->w) ? -1 : (p->w < q->w);
 }
 
-static int rect_original_order(const void *a, const void *b)
+static int STBRP__CDECL rect_original_order(const void *a, const void *b)
 {
    const stbrp_rect *p = (const stbrp_rect *) a;
    const stbrp_rect *q = (const stbrp_rect *) b;
    return (p->was_packed < q->was_packed) ? -1 : (p->was_packed > q->was_packed);
 }
-
-#ifdef STBRP_LARGE_RECTS
-#define STBRP__MAXVAL  0xffffffff
-#else
-#define STBRP__MAXVAL  0xffff
-#endif
 
 STBRP_DEF int stbrp_pack_rects(stbrp_context *context, stbrp_rect *rects, int num_rects)
 {

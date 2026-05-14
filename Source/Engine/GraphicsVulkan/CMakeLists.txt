@@ -12,8 +12,7 @@ xii_create_target(LIBRARY ${PROJECT_NAME})
 xii_enable_strict_warnings(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
-  PUBLIC
-  Foundation
+  PRIVATE
   GraphicsFoundation
   Vulkan-Headers
   VulkanMemoryAllocator
