@@ -14,9 +14,9 @@ xii_enable_strict_warnings(${PROJECT_NAME})
 xii_link_target_d3d12(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
-  PUBLIC
-  Foundation
+  PRIVATE
   GraphicsFoundation
+  DirectX-Headers
   D3D12MemoryAllocator
 )
 
