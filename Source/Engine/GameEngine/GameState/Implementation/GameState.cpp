@@ -70,6 +70,8 @@ void xiiGameState::OnDeactivation()
 
   if (m_pMainWorld != nullptr && !m_hMainView.IsInvalidated())
   {
+    XII_LOCK(m_pMainWorld->GetWriteMarker());
+
     xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetModule<xiiRenderWorldModule>();
 
     pRenderWorldModule->DestroyView(m_hMainView);
@@ -185,6 +187,8 @@ xiiView* xiiGameState::CreateMainView()
 
   if (m_pMainWorld == nullptr)
     return nullptr;
+
+  XII_LOCK(m_pMainWorld->GetWriteMarker());
 
   xiiView*              pView              = nullptr;
   xiiRenderWorldModule* pRenderWorldModule = m_pMainWorld->GetOrCreateModule<xiiRenderWorldModule>();
