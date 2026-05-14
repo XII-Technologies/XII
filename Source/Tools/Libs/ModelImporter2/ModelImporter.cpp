@@ -9,10 +9,8 @@
 
 namespace xiiModelImporter2
 {
-  xiiUniquePtr<Importer> RequestImporterForFileType(const char* szFile)
+  xiiUniquePtr<Importer> RequestImporterForFileType(xiiStringView sFile)
   {
-    xiiStringBuilder sFile = szFile;
-
     if (sFile.HasExtension(".fbx") || sFile.HasExtension(".obj") || sFile.HasExtension(".gltf") || sFile.HasExtension(".glb") || sFile.HasExtension(".blend"))
     {
       return XII_DEFAULT_NEW(ImporterAssimp);

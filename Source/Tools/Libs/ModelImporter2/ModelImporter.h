@@ -7,5 +7,5 @@
 
 namespace xiiModelImporter2
 {
-  XII_MODELIMPORTER2_DLL xiiUniquePtr<Importer> RequestImporterForFileType(const char* szFile);
+  XII_MODELIMPORTER2_DLL xiiUniquePtr<Importer> RequestImporterForFileType(xiiStringView sFile);
 } // namespace xiiModelImporter2
