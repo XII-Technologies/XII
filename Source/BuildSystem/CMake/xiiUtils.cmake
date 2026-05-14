@@ -296,6 +296,7 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.cc"
     "${ROOT_DIR}/*.h"
     "${ROOT_DIR}/*.hpp"
+    "${ROOT_DIR}/*.hh"
     "${ROOT_DIR}/*.inl"
     "${ROOT_DIR}/*.c"
     "${ROOT_DIR}/*.cs"
