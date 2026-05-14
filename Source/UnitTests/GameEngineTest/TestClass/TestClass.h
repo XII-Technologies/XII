@@ -21,7 +21,7 @@ class xiiGameEngineTestApplication : public xiiGameApplication
 public:
   using SUPER = xiiGameApplication;
 
-  xiiGameEngineTestApplication(const char* szProjectDirName);
+  xiiGameEngineTestApplication(xiiStringView sProjectDirName);
 
   virtual xiiString FindProjectDirectory() const final override;
   virtual xiiString GetProjectDataDirectoryPath() const final override;
@@ -29,7 +29,7 @@ public:
   /// \brief Camera must have a global key named "Camera4" if `uiCameraNumber` was 4.
   void SwitchToCamera(xiiUInt32 uiCameraNumber);
 
-  xiiResult LoadScene(const char* szSceneFile);
+  xiiResult LoadScene(xiiStringView sSceneFile);
   xiiWorld* GetWorld() const { return m_pWorld.Borrow(); }
 
 protected:
