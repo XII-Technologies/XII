@@ -68,12 +68,12 @@ xiiResult xiiGameEngineTest::InitializeSubTest(xiiInt32 iIdentifier)
 //////////////////////////////////////////////////////////////////////////
 
 
-xiiGameEngineTestApplication::xiiGameEngineTestApplication(const char* szProjectDirName) : xiiGameApplication("xiiGameEngineTest", nullptr)
+xiiGameEngineTestApplication::xiiGameEngineTestApplication(xiiStringView sProjectDirName) :
+  xiiGameApplication("xiiGameEngineTest", nullptr)
 {
   m_pWorld          = nullptr;
-  m_sProjectDirName = szProjectDirName;
+  m_sProjectDirName = sProjectDirName;
 }
-
 
 xiiString xiiGameEngineTestApplication::FindProjectDirectory() const
 {
@@ -110,7 +110,7 @@ void xiiGameEngineTestApplication::SwitchToCamera(xiiUInt32 uiCameraNumber)
   }
 }
 
-xiiResult xiiGameEngineTestApplication::LoadScene(const char* szSceneFile)
+xiiResult xiiGameEngineTestApplication::LoadScene(xiiStringView sSceneFile)
 {
   XII_LOCK(m_pWorld->GetWriteMarker());
   m_pWorld->Clear();
@@ -119,7 +119,7 @@ xiiResult xiiGameEngineTestApplication::LoadScene(const char* szSceneFile)
 
   xiiFileReader file;
 
-  if (file.Open(szSceneFile).Succeeded())
+  if (file.Open(sSceneFile).Succeeded())
   {
     // File Header
     {
@@ -140,7 +140,7 @@ xiiResult xiiGameEngineTestApplication::LoadScene(const char* szSceneFile)
   }
   else
   {
-    xiiLog::Error("Failed to load scene '{0}'", szSceneFile);
+    xiiLog::Error("Failed to load scene '{0}'", sSceneFile);
     return XII_FAILURE;
   }
 }
@@ -155,7 +155,6 @@ xiiResult xiiGameEngineTestApplication::BeforeCoreSystemsStartup()
 
   return XII_SUCCESS;
 }
-
 
 void xiiGameEngineTestApplication::AfterCoreSystemsStartup()
 {
@@ -176,9 +175,9 @@ void xiiGameEngineTestApplication::AfterCoreSystemsStartup()
 
 void xiiGameEngineTestApplication::BeforeHighLevelSystemsShutdown()
 {
-  m_pWorld = nullptr;
-
   SUPER::BeforeHighLevelSystemsShutdown();
+
+  m_pWorld = nullptr;
 }
 
 void xiiGameEngineTestApplication::StoreScreenshot(xiiImage&& image, xiiStringView sContext)

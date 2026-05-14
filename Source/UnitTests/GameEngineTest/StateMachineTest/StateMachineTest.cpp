@@ -16,6 +16,7 @@ const char* xiiGameEngineTestStateMachine::GetTestName() const
 xiiGameEngineTestApplication* xiiGameEngineTestStateMachine::CreateApplication()
 {
   m_pOwnApplication = XII_DEFAULT_NEW(xiiGameEngineTestApplication, "StateMachine");
+
   return m_pOwnApplication;
 }
 
