@@ -9,6 +9,77 @@
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
+#include <VersionHelpers.h>
+#include <dxgi1_4.h>
+
+namespace
+{
+  XII_ALWAYS_INLINE DXGI_MODE_SCALING GetScalingMode(xiiGALScalingModeD3D12::Enum e)
+  {
+    switch (e)
+    {
+      case xiiGALScalingModeD3D12::Unspecified:
+        return DXGI_MODE_SCALING_UNSPECIFIED;
+      case xiiGALScalingModeD3D12::Centered:
+        return DXGI_MODE_SCALING_CENTERED;
+      case xiiGALScalingModeD3D12::Stretched:
+        return DXGI_MODE_SCALING_STRETCHED;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+    return DXGI_MODE_SCALING_UNSPECIFIED;
+  }
+
+  XII_ALWAYS_INLINE xiiGALScalingModeD3D12::Enum GetGALScalingMode(DXGI_MODE_SCALING e)
+  {
+    switch (e)
+    {
+      case DXGI_MODE_SCALING_UNSPECIFIED:
+        return xiiGALScalingModeD3D12::Unspecified;
+      case DXGI_MODE_SCALING_CENTERED:
+        return xiiGALScalingModeD3D12::Centered;
+      case DXGI_MODE_SCALING_STRETCHED:
+        return xiiGALScalingModeD3D12::Stretched;
+    }
+    return xiiGALScalingModeD3D12::Unspecified;
+  }
+
+  XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER GetScanLineOrder(xiiGALScanLineOrderD3D12::Enum e)
+  {
+    switch (e)
+    {
+      case xiiGALScanLineOrderD3D12::Unspecified:
+        return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+      case xiiGALScanLineOrderD3D12::Progressive:
+        return DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
+      case xiiGALScanLineOrderD3D12::UpperFieldFirst:
+        return DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST;
+      case xiiGALScanLineOrderD3D12::LowerFieldFirst:
+        return DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+    return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+  }
+
+  XII_ALWAYS_INLINE xiiGALScanLineOrderD3D12::Enum GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
+  {
+    switch (e)
+    {
+      case DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED:
+        return xiiGALScanLineOrderD3D12::Unspecified;
+      case DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE:
+        return xiiGALScanLineOrderD3D12::Progressive;
+      case DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST:
+        return xiiGALScanLineOrderD3D12::UpperFieldFirst;
+      case DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST:
+        return xiiGALScanLineOrderD3D12::LowerFieldFirst;
+    }
+    return xiiGALScanLineOrderD3D12::Unspecified;
+  }
+
+} // namespace
+
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScalingModeD3D12, 1)
   XII_ENUM_CONSTANT(xiiGALScalingModeD3D12::Unspecified),
@@ -154,9 +225,11 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   swapChainDescription.Scaling     = DXGI_SCALING_NONE;
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-  // DXGI_SCALING_NONE is supported starting with Windows 8
+  // DXGI_SCALING_NONE is supported starting with Windows 8.
   if (!IsWindows8OrGreater())
+  {
     swapChainDescription.Scaling = DXGI_SCALING_STRETCH;
+  }
 #endif
 
   // DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL is the flip presentation model, where the contents of the back
@@ -210,8 +283,8 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   fullScreenDescription.Windowed                = D3D12_BOOL(!m_FullScreenMode.m_bIsFullScreen);
   fullScreenDescription.RefreshRate.Numerator   = m_FullScreenMode.m_uiRefreshRateNumerator;
   fullScreenDescription.RefreshRate.Denominator = m_FullScreenMode.m_uiRefreshRateDenominator;
-  fullScreenDescription.Scaling                 = xiiD3D12TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
-  fullScreenDescription.ScanlineOrdering        = xiiD3D12TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
+  fullScreenDescription.Scaling                 = GetScalingMode(m_FullScreenMode.m_ScalingMode);
+  fullScreenDescription.ScanlineOrdering        = GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
   HRESULT hResult = pDXGIFactory2->CreateSwapChainForHwnd(pCommandQueueD3D12->GetD3D12CommandQueue(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
   if (FAILED(hResult))
