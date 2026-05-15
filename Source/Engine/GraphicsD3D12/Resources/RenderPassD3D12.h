@@ -20,6 +20,4 @@ protected:
   virtual ~xiiGALRenderPassD3D12();
 
   virtual xiiResult InitPlatform() override final;
-
-private:
 };

@@ -17,7 +17,7 @@ xiiGALRenderPassD3D12::~xiiGALRenderPassD3D12() = default;
 
 xiiResult xiiGALRenderPassD3D12::InitPlatform()
 {
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_RenderPassD3D12);
