@@ -30,10 +30,13 @@
 #include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
 #include <GraphicsD3D12/States/TilePipelineStateD3D12.h>
 
+#include <dxgi1_4.h>
+#include <dxgidebug.h>
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceD3D12, pAllocator, description);
 }
@@ -63,7 +66,7 @@ XII_END_SUBSYSTEM_DECLARATION;
     if (!(expression)) { return XII_FAILURE; } \
   } while (false)
 
-xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description) :
+xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(pAllocator, description)
 {
 }
@@ -103,7 +106,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
   // Load Direct3D 12 dynamic library.
-  // XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
+  XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
 
   // Enable the D3D12 debug layer.
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
