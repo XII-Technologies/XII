@@ -15,7 +15,7 @@ namespace D3D12MA
 struct ID3D12Device;
 struct IDXGIAdapter1;
 
-class XII_GRAPHICSD3D12_DLL xiiMemoryAllocatorD3D12
+class XII_GRAPHICSD3D12_DLL xiiD3D12MemoryAllocator
 {
 public:
   xiiProxyAllocator*  GetProxyAllocator() { return m_pAllocator.Borrow(); }
@@ -25,8 +25,8 @@ private:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceD3D12;
 
-  xiiMemoryAllocatorD3D12(IDXGIAdapter1* pDXGIAdapter, ID3D12Device* pDeviceD3D12);
-  ~xiiMemoryAllocatorD3D12();
+  xiiD3D12MemoryAllocator(IDXGIAdapter1* pDXGIAdapter, ID3D12Device* pDeviceD3D12);
+  ~xiiD3D12MemoryAllocator();
 
   xiiUniquePtr<xiiProxyAllocator> m_pAllocator;
   D3D12MA::Allocator*             m_pD3D12MAAllocator = nullptr;

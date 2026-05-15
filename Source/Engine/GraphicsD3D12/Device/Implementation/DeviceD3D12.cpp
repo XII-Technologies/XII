@@ -28,6 +28,7 @@
 #include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 #include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
+#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsD3D12/States/TilePipelineStateD3D12.h>
 
 #include <dxgi1_4.h>
@@ -77,19 +78,16 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
 
   if (m_pGraphicsCommandQueue != nullptr)
   {
-    m_pGraphicsCommandQueue->DeInitializePlatform();
     m_pGraphicsCommandQueue.Clear();
   }
 
   if (m_pComputeCommandQueue != nullptr)
   {
-    m_pComputeCommandQueue->DeInitializePlatform();
     m_pComputeCommandQueue.Clear();
   }
 
   if (m_pTransferCommandQueue != nullptr)
   {
-    m_pTransferCommandQueue->DeInitializePlatform();
     m_pTransferCommandQueue.Clear();
   }
 
@@ -212,7 +210,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   }
 
   // Create D3D12 Memory Allocator.
-  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, pD3D12Device);
+  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator, m_pDXGIAdapter, pD3D12Device);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
@@ -296,24 +294,22 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
         xiiGALCommandQueueD3D12* pCommandQueueD3D12 = nullptr;
         if (queueType == xiiGALCommandQueueFlags::Graphics)
         {
-          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
+          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
           pCommandQueueD3D12      = m_pGraphicsCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Compute)
         {
-          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
+          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
           pCommandQueueD3D12     = m_pComputeCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Transfer)
         {
-          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
+          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
           pCommandQueueD3D12      = m_pTransferCommandQueue.Borrow();
         }
 
         if (pCommandQueueD3D12 != nullptr)
         {
-          pCommandQueueD3D12->InitializePlatform();
-
           xiiStringBuilder sb;
           sb.SetFormat("Command Queue ({})", sName);
           pCommandQueueD3D12->SetDebugName(sb);

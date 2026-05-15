@@ -17,12 +17,7 @@ xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVu
   m_pQueueFence = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCpuWaitOnlyFenceVulkan, pDeviceVulkan);
 }
 
-xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
-{
-  m_pQueueFence.Clear();
-
-  m_CommandBufferPool.Clear();
-}
+xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
 
 xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 {

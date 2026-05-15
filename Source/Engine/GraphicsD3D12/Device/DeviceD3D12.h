@@ -14,7 +14,7 @@ struct IDXGIFactory4;
 struct ID3D12Device1;
 struct ID3D12Debug;
 
-XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
+class xiiD3D12MemoryAllocator;
 
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
@@ -33,13 +33,12 @@ public:
 
   // Internal objects retrieval.
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator* GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*            GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12MemoryAllocator* GetD3D12Allocator() const { return m_pAllocatorD3D12.Borrow(); }
 
-  XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }
-  XII_ALWAYS_INLINE IDXGIAdapter1* GetDXGIAdapter() const { return m_pDXGIAdapter; }
-  XII_ALWAYS_INLINE IDXGIFactory4* GetDXGIFactory() const { return m_pDXGIFactory; }
-
-  XII_ALWAYS_INLINE xiiMemoryAllocatorD3D12* GetD3D12Allocator() const { return m_pAllocatorD3D12.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }
+  [[nodiscard]] XII_ALWAYS_INLINE IDXGIAdapter1* GetDXGIAdapter() const { return m_pDXGIAdapter; }
+  [[nodiscard]] XII_ALWAYS_INLINE IDXGIFactory4* GetDXGIFactory() const { return m_pDXGIFactory; }
 
   void ReportLiveGPUObjects();
 
@@ -86,11 +85,16 @@ private:
   ID3D12Device1* m_pD3D12Device = nullptr;
   ID3D12Debug1*  m_pD3D12Debug  = nullptr;
 
-  xiiUniquePtr<xiiMemoryAllocatorD3D12> m_pAllocatorD3D12;
+  xiiUniquePtr<xiiD3D12MemoryAllocator> m_pAllocatorD3D12;
 
   xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12> m_DisplayModes;
 
+  xiiGALQueueInformationD3D12           m_GraphicsQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueD3D12> m_pGraphicsCommandQueue;
+
+  xiiGALQueueInformationD3D12           m_ComputeQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueD3D12> m_pComputeCommandQueue;
+
+  xiiGALQueueInformationD3D12           m_TransferQueueInformation;
   xiiUniquePtr<xiiGALCommandQueueD3D12> m_pTransferCommandQueue;
 };

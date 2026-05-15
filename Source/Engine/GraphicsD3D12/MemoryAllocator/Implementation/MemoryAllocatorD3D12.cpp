@@ -9,7 +9,7 @@ void* xiiD3D12AllocatePtr(size_t uiSize, size_t uiAlignment, void* pPrivateData)
 {
   XII_ASSERT_DEV(pPrivateData, "Allocation private data is invalid!");
 
-  return static_cast<xiiMemoryAllocatorD3D12*>(pPrivateData)->GetProxyAllocator()->Allocate(uiSize, uiAlignment);
+  return static_cast<xiiD3D12MemoryAllocator*>(pPrivateData)->GetProxyAllocator()->Allocate(uiSize, uiAlignment);
 }
 
 void xiiD3D12FreePtr(void* pMemory, void* pPrivateData)
@@ -19,11 +19,11 @@ void xiiD3D12FreePtr(void* pMemory, void* pPrivateData)
   // `pMemory = nullptr` should be accepted and ignored.
   if (pMemory)
   {
-    static_cast<xiiMemoryAllocatorD3D12*>(pPrivateData)->GetProxyAllocator()->Deallocate(pMemory);
+    static_cast<xiiD3D12MemoryAllocator*>(pPrivateData)->GetProxyAllocator()->Deallocate(pMemory);
   }
 }
 
-xiiMemoryAllocatorD3D12::xiiMemoryAllocatorD3D12(IDXGIAdapter1* pDXGIAdapter, ID3D12Device* pDeviceD3D12)
+xiiD3D12MemoryAllocator::xiiD3D12MemoryAllocator(IDXGIAdapter1* pDXGIAdapter, ID3D12Device* pDeviceD3D12)
 {
   m_pAllocator = XII_DEFAULT_NEW(xiiProxyAllocator, "D3D12-MemoryAllocator", xiiFoundation::GetAlignedAllocator());
 
@@ -44,7 +44,7 @@ xiiMemoryAllocatorD3D12::xiiMemoryAllocatorD3D12(IDXGIAdapter1* pDXGIAdapter, ID
   XII_VERIFY(SUCCEEDED(D3D12MA::CreateAllocator(&allocatorDescription, &m_pD3D12MAAllocator)), "Failed to initialize D3D12 Memory Allocator.");
 }
 
-xiiMemoryAllocatorD3D12::~xiiMemoryAllocatorD3D12()
+xiiD3D12MemoryAllocator::~xiiD3D12MemoryAllocator()
 {
   XII_GAL_D3D12_RELEASE(m_pD3D12MAAllocator);
 

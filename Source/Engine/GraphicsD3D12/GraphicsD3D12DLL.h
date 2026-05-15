@@ -73,3 +73,11 @@ class xiiGALPipelineResourceSignatureD3D12;
 
 struct xiiGALDisplayModeDescriptionD3D12;
 struct xiiGALFullScreenModeDescriptionD3D12;
+
+struct XII_GRAPHICSD3D12_DLL xiiGALQueueInformationD3D12
+{
+  XII_DECLARE_POD_TYPE();
+
+  ID3D12CommandQueue* m_pCommandQueue;
+  xiiUInt32           m_uiQueueFamilyIndex = xiiInvalidIndex;
+};
