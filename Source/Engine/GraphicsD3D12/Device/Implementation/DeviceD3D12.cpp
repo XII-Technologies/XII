@@ -214,8 +214,6 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   // Create D3D12 Memory Allocator.
   m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, pD3D12Device);
 
-  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALResourceFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
-
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
     if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(m_pD3D12Debug), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&m_pD3D12Debug)))))
@@ -1072,50 +1070,6 @@ xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEA
   }
 
   return DXGIAdapters;
-}
-
-void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALResourceFormat> format, xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12>& displayModes)
-{
-  auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
-
-  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetFormat(format);
-  IDXGIOutput* pOutput    = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pOutput));
-
-  if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
-  {
-    DXGI_ADAPTER_DESC1 adapterDescription;
-    pDXGIAdapter->GetDesc1(&adapterDescription);
-
-    xiiLog::Error("Failed to enumerate output {0} of adapter {1} ({2}).", uiOutputID, adapterDescription.DeviceId, xiiStringUtf8(adapterDescription.Description).GetData());
-    return;
-  }
-
-  // Retrieve the display mode count.
-  xiiUInt32 uiModeCount = 0;
-  if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
-  {
-    // Retireve the display mode descriptions.
-    xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
-    dxgiDisplayModes.SetCount(uiModeCount);
-
-    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, dxgiDisplayModes.GetData())))
-    {
-      displayModes.Clear();
-      for (xiiUInt32 i = 0; i < uiModeCount; ++i)
-      {
-        const auto& dxgiDisplayMode = dxgiDisplayModes[i];
-        auto&       galDisplayMode  = displayModes.ExpandAndGetRef();
-
-        galDisplayMode.m_Resolution               = xiiSizeU32(dxgiDisplayMode.Width, dxgiDisplayMode.Height);
-        galDisplayMode.m_ResourceFormat           = xiiD3D12TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
-        galDisplayMode.m_uiRefreshRateNumerator   = dxgiDisplayMode.RefreshRate.Numerator;
-        galDisplayMode.m_uiRefreshRateDenominator = dxgiDisplayMode.RefreshRate.Denominator;
-        galDisplayMode.m_ScalingMode              = xiiD3D12TypeConversions::GetGALScalingMode(dxgiDisplayMode.Scaling);
-        galDisplayMode.m_ScanLineOrder            = xiiD3D12TypeConversions::GetGALScanLineOrder(dxgiDisplayMode.ScanlineOrdering);
-      }
-    }
-  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);
