@@ -5,14 +5,13 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Shader/InputLayoutD3D12.h>
 #include <GraphicsD3D12/Shader/ShaderD3D12.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 static const char* GALSemanticToD3D[] = {"UNDEFINED", "POSITION", "NORMAL", "TANGENT", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR",
                                          "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
-                                         "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
+                                         "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS", "DATAOFFSETS"};
 
 static_assert(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D array size does not match input layout semantic count.");
 

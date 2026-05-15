@@ -11,9 +11,6 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-#include <d3d12.h>
-#include <dxgitype.h>
-
 class XII_GRAPHICSD3D12_DLL xiiD3D12TypeConversions
 {
 public:

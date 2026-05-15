@@ -9,9 +9,6 @@
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
-#include <VersionHelpers.h>
-#include <dxgi1_4.h>
-
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScalingModeD3D12, 1)
   XII_ENUM_CONSTANT(xiiGALScalingModeD3D12::Unspecified),

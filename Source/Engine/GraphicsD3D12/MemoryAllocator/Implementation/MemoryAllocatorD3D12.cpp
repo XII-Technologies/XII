@@ -2,7 +2,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
-#include <D3D12MemoryAllocator/D3D12MemAlloc.h>
+#include <D3D12MemoryAllocator/include/D3D12MemAlloc.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 
 void* xiiD3D12AllocatePtr(size_t uiSize, size_t uiAlignment, void* pPrivateData)

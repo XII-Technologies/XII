@@ -20,8 +20,4 @@ protected:
   virtual ~xiiGALTilePipelineStateD3D12();
 
   virtual xiiResult InitPlatform() override final;
-
-  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
-
-private:
 };

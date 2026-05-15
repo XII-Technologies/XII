@@ -14,12 +14,9 @@ xiiGALTilePipelineStateD3D12::~xiiGALTilePipelineStateD3D12() = default;
 
 xiiResult xiiGALTilePipelineStateD3D12::InitPlatform()
 {
-  return XII_FAILURE;
-}
+  XII_ASSERT_NOT_IMPLEMENTED;
 
-void xiiGALTilePipelineStateD3D12::SetDebugNamePlatform(xiiStringView sName) const
-{
-  XII_IGNORE_UNUSED(sName);
+  return XII_FAILURE;
 }
 
 XII_STATICLINK_FILE(TileD3D12, TileD3D12_States_Implementation_TilePipelineStateD3D12);

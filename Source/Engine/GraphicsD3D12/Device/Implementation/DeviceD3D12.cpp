@@ -30,10 +30,6 @@
 #include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
 #include <GraphicsD3D12/States/TilePipelineStateD3D12.h>
 
-#include <dxgi1_4.h>
-#include <dxgidebug.h>
-#include <sdkddkver.h>
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
