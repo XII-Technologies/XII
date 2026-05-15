@@ -22,4 +22,4 @@ void xiiGALComputePipelineStateD3D12::SetDebugNamePlatform(xiiStringView sName) 
   XII_IGNORE_UNUSED(sName);
 }
 
-XII_STATICLINK_FILE(ComputeD3D12, ComputeD3D12_States_Implementation_ComputePipelineStateD3D12);
+XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_States_Implementation_ComputePipelineStateD3D12);
