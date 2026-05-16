@@ -223,7 +223,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
         newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
         newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
 #else
-        XII_ASSERT_NOT_IMPLEMENTED;
+        xiiLog::Error("Exportable shared Vulkan buffer allocations are unsupported on this platform.");
+        return vk::Result::eErrorFeatureNotPresent;
 #endif
       }
 
@@ -301,7 +302,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
         newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
         newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
 #else
-        XII_ASSERT_NOT_IMPLEMENTED;
+        xiiLog::Error("Exportable shared Vulkan image allocations are unsupported on this platform.");
+        return vk::Result::eErrorFeatureNotPresent;
 #endif
       }
 
