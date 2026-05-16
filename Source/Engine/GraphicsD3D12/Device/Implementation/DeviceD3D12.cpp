@@ -255,8 +255,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-// We can prevent the GPU from overclocking or underclocking to get consistent timings.
-// m_pD3D12Device->SetStablePowerState(TRUE);
+    // We can prevent the GPU from overclocking or underclocking to get consistent timings.
+    m_pD3D12Device->SetStablePowerState(TRUE);
 #endif
   }
 
