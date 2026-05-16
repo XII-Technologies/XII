@@ -221,13 +221,10 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
       if (SUCCEEDED(m_pD3D12Debug->QueryInterface(&pD3D12InfoQueue)))
       {
-        // Suppress whole categories of messages
-        // D3D12_MESSAGE_CATEGORY categories[] = {};
-
-        // Suppress messages based on their severity level
+        // Suppress messages based on their severity level.
         D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 
-        // Suppress individual messages by their ID
+        // Suppress individual messages by their ID.
         D3D12_MESSAGE_ID denyIDs[] =
           {
             // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
@@ -242,12 +239,10 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
           };
 
         D3D12_INFO_QUEUE_FILTER queueFilter = {};
-        // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
-        // queueFilter.DenyList.pCategoryList = categories;
-        queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
-        queueFilter.DenyList.pSeverityList = severities;
-        queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
-        queueFilter.DenyList.pIDList       = denyIDs;
+        queueFilter.DenyList.NumSeverities  = XII_ARRAY_SIZE(severities);
+        queueFilter.DenyList.pSeverityList  = severities;
+        queueFilter.DenyList.NumIDs         = XII_ARRAY_SIZE(denyIDs);
+        queueFilter.DenyList.pIDList        = denyIDs;
 
         XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
@@ -290,9 +285,9 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
         queueCountPerContext[i] += 1;
 
         D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
-        queueDescriptionD3D12.Priority                  = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-        queueDescriptionD3D12.Flags                     = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        queueDescriptionD3D12.NodeMask                  = 0U;
+        queueDescriptionD3D12.Priority                 = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        queueDescriptionD3D12.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        queueDescriptionD3D12.NodeMask                 = 0U;
 
         if (queueType == xiiGALCommandQueueFlags::Graphics)
         {
@@ -324,19 +319,19 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
         {
           m_GraphicsQueueInformation = queueInformation;
           m_pGraphicsCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
-          pCommandQueueD3D12      = m_pGraphicsCommandQueue.Borrow();
+          pCommandQueueD3D12         = m_pGraphicsCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Compute)
         {
           m_ComputeQueueInformation = queueInformation;
           m_pComputeCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
-          pCommandQueueD3D12     = m_pComputeCommandQueue.Borrow();
+          pCommandQueueD3D12        = m_pComputeCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Transfer)
         {
           m_TransferQueueInformation = queueInformation;
           m_pTransferCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
-          pCommandQueueD3D12      = m_pTransferCommandQueue.Borrow();
+          pCommandQueueD3D12         = m_pTransferCommandQueue.Borrow();
         }
 
         if (pCommandQueueD3D12 != nullptr)
