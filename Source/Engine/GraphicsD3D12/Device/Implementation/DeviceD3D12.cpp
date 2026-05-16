@@ -28,7 +28,6 @@
 #include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 #include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
-#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsD3D12/States/TilePipelineStateD3D12.h>
 
 #include <dxgi1_4.h>
@@ -45,17 +44,21 @@ xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocato
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
-ON_CORESYSTEMS_STARTUP
-{
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
 
-  xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
-}
+  ON_CORESYSTEMS_STARTUP
+  {
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
 
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiGALDeviceFactory::UnregisterImplementation("D3D12");
-}
+    xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDeviceFactory::UnregisterImplementation("D3D12");
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
@@ -103,9 +106,6 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
-  // Load Direct3D 12 dynamic library.
-  XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
-
   // Enable the D3D12 debug layer.
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
@@ -135,7 +135,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   IDXGIAdapter1* pHardwareAdapter = nullptr;
   if (m_Description.m_uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
   {
-    /// \todo GraphicsD3D12: Select best adapter ID by default, based on memory size, number of command queues, and prefer Discrete over Integrated over Software adapters.
+    // Use the first compatible hardware adapter by default.
     GetHardwareAdapter(m_pDXGIFactory, &pHardwareAdapter, minFeatureLevel);
     XII_VERIFY_D3D12(pHardwareAdapter != nullptr, "No suitable hardware adapter found.");
   }
@@ -275,7 +275,7 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 {
   xiiUInt32 queueCountPerContext[16U] = {};
 
-  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueFlags> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueFlags> queueType, xiiStringView sName) {
     const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
 
     for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
@@ -289,22 +289,53 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       {
         queueCountPerContext[i] += 1;
 
+        D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
+        queueDescriptionD3D12.Priority                  = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        queueDescriptionD3D12.Flags                     = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        queueDescriptionD3D12.NodeMask                  = 0U;
+
+        if (queueType == xiiGALCommandQueueFlags::Graphics)
+        {
+          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+        else if (queueType == xiiGALCommandQueueFlags::Compute)
+        {
+          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        else
+        {
+          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+        }
+
+        xiiGALQueueInformationD3D12 queueInformation = {};
+        queueInformation.m_uiQueueFamilyIndex        = i;
+
+        HRESULT hResult = m_pD3D12Device->CreateCommandQueue(&queueDescriptionD3D12, IID_PPV_ARGS(&queueInformation.m_pCommandQueue));
+        if (FAILED(hResult))
+        {
+          xiiLog::Error("Failed to create D3D12 command queue '{}': {}.", sName, xiiHRESULTtoString(hResult));
+          return false;
+        }
+
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = queueType};
 
         xiiGALCommandQueueD3D12* pCommandQueueD3D12 = nullptr;
         if (queueType == xiiGALCommandQueueFlags::Graphics)
         {
-          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
+          m_GraphicsQueueInformation = queueInformation;
+          m_pGraphicsCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
           pCommandQueueD3D12      = m_pGraphicsCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Compute)
         {
-          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
+          m_ComputeQueueInformation = queueInformation;
+          m_pComputeCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
           pCommandQueueD3D12     = m_pComputeCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Transfer)
         {
-          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
+          m_TransferQueueInformation = queueInformation;
+          m_pTransferCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
           pCommandQueueD3D12      = m_pTransferCommandQueue.Borrow();
         }
 
@@ -323,11 +354,11 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
     return false;
   };
 
-  if (!CreateCommandQueue(xiiGALCommandQueueFlags::Graphics, "Default Graphics", m_Description.m_uiAdapterID))
+  if (!CreateCommandQueue(xiiGALCommandQueueFlags::Graphics, "Default Graphics"))
     return XII_FAILURE;
 
-  CreateCommandQueue(xiiGALCommandQueueFlags::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
-  CreateCommandQueue(xiiGALCommandQueueFlags::Compute, "Default Compute", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueFlags::Transfer, "Default Transfer");
+  CreateCommandQueue(xiiGALCommandQueueFlags::Compute, "Default Compute");
 
   return XII_SUCCESS;
 }
@@ -635,16 +666,17 @@ xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceD3D12::CreateTileP
 
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
-  ///\todo Idle all command queues.
-
-  ///\todo Release stale resources.
+  if (m_pGraphicsCommandQueue != nullptr)
+    m_pGraphicsCommandQueue->WaitForIdle();
+  if (m_pComputeCommandQueue != nullptr)
+    m_pComputeCommandQueue->WaitForIdle();
+  if (m_pTransferCommandQueue != nullptr)
+    m_pTransferCommandQueue->WaitForIdle();
 }
 
 xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
-
-  /// \todo GraphicsD3D12: Assert that structure sizes has not been modified.
 
   // Set graphics adapter properties.
   {
@@ -710,11 +742,11 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     // Set queue information.
     xiiGALCommandQueueFlags::Enum queueIndexType[] = {xiiGALCommandQueueFlags::Graphics, xiiGALCommandQueueFlags::Compute, xiiGALCommandQueueFlags::Transfer};
-    m_AdapterDescription.m_CommandQueueProperties.SetCount(XII_ARRAY_SIZE(queueIndexType));
+    m_AdapterDescription.m_CommandQueueProperties.SetCountUninitialized(XII_ARRAY_SIZE(queueIndexType));
 
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
-      xiiGALCommandQueueProperties& queueProperty = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      xiiGALCommandQueueProperties& queueProperty = m_AdapterDescription.m_CommandQueueProperties[i];
       queueProperty.m_Flags                       = queueIndexType[i];
       queueProperty.m_uiMaxDeviceContexts         = 0xFFU;
 
