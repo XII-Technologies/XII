@@ -76,6 +76,12 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
+  xiiResult      EnumerateAdapters(xiiDynamicArray<IDXGIAdapter1*>& out_adapters);
+  bool           IsAdapterCompatible(IDXGIAdapter1* pAdapter, D3D_FEATURE_LEVEL minFeatureLevel, bool bPermitSoftwareAdapters);
+  xiiResult      GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel, xiiDynamicArray<IDXGIAdapter1*>& out_CompatibleAdapters, bool bPermitSoftwareAdapters);
+  IDXGIAdapter1* SelectBestAdapter(xiiArrayPtr<IDXGIAdapter1*> pCompatibleAdapters);
+  xiiResult      SelectAdapterByIndex(xiiUInt32 uiAdapterIndex, D3D_FEATURE_LEVEL minFeatureLevel, IDXGIAdapter1** out_ppAdapter, bool bPermitSoftwareAdapter = false, bool bPreferBestIfIndexInvalid = true);
+
   void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
   xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
 

@@ -33,6 +33,28 @@
 #include <dxgi1_4.h>
 #include <dxgidebug.h>
 
+namespace
+{
+  XII_ALWAYS_INLINE const char* GetD3D12FeatureLevelName(D3D_FEATURE_LEVEL featureLevel)
+  {
+    switch (featureLevel)
+    {
+      case D3D_FEATURE_LEVEL_12_2:
+        return "12.2";
+      case D3D_FEATURE_LEVEL_12_1:
+        return "12.1";
+      case D3D_FEATURE_LEVEL_12_0:
+        return "12.0";
+      case D3D_FEATURE_LEVEL_11_1:
+        return "11.1";
+      case D3D_FEATURE_LEVEL_11_0:
+        return "11.0";
+      default:
+        return "Unknown";
+    }
+  }
+} // namespace
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -124,87 +146,43 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   XII_VERIFY_D3D12(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
   // Direct3D12 does not allow feature levels below 11.0 (D3D12CreateDevice fails to create a device).
-  const D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
+  constexpr D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
   IDXGIAdapter1* pHardwareAdapter = nullptr;
   if (m_Description.m_uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
   {
-    // Use the first compatible hardware adapter by default.
-    GetHardwareAdapter(m_pDXGIFactory, &pHardwareAdapter, minFeatureLevel);
-    XII_VERIFY_D3D12(pHardwareAdapter != nullptr, "No suitable hardware adapter found.");
+    // Select best hardware adapter available that meets the minimum feature level requirement. This is typically the primary GPU in the system, but may not be the case in multi-GPU setups or systems with both integrated and discrete graphics.
+    xiiTemporaryArray<IDXGIAdapter1*> compatibleAdapters;
+    XII_SUCCEED_OR_RETURN(GetCompatibleAdapters(minFeatureLevel, compatibleAdapters, false));
+
+    if (compatibleAdapters.IsEmpty())
+    {
+      xiiLog::Error("No compatible hardware adapters found that support Direct3D 12 with feature level {0}. Attempting to create a WARP device.", minFeatureLevel);
+    }
+    else
+    {
+      pHardwareAdapter = SelectBestAdapter(compatibleAdapters);
+      XII_VERIFY(compatibleAdapters.RemoveAndSwap(pHardwareAdapter), "Unexpected error.");
+
+      XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters);
+    }
   }
   else
   {
-    xiiDynamicArray<IDXGIAdapter1*> compatibleAdapters = GetCompatibleAdapters(minFeatureLevel);
-
-    XII_VERIFY_D3D12(m_Description.m_uiAdapterID < compatibleAdapters.GetCount(), "{0} is not a valid adapter ID. The total number of compatible adapters on this system is {1}.", m_Description.m_uiAdapterID, compatibleAdapters.GetCount());
-
-    pHardwareAdapter = compatibleAdapters[m_Description.m_uiAdapterID];
-    compatibleAdapters.RemoveAtAndSwap(m_Description.m_uiAdapterID);
-
-    XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters);
+    XII_SUCCEED_OR_RETURN(SelectAdapterByIndex(m_Description.m_uiAdapterID, minFeatureLevel, &pHardwareAdapter, false, true));
   }
   m_pDXGIAdapter = pHardwareAdapter;
 
-  const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
-  const char*             targetFeatureLevelNames[] = {"12.2", "12.1", "12.0", "11.1", "11.0"};
-  xiiUInt32               uiFeatureLevelIndex       = 0U;
-  HRESULT                 hResult                   = E_FAIL;
-
-  ID3D12Device* pD3D12Device = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12Device));
-
-  for (const auto& featureLevel : targetFeatureLevels)
+  // Create the D3D12 device.
+  if (FAILED(D3D12CreateDevice(m_pDXGIAdapter, minFeatureLevel, __uuidof(m_pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)))))
   {
-    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
+    xiiLog::Error("Failed to create D3D12 device. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
-    if (SUCCEEDED(hResult))
-      break;
-
-    ++uiFeatureLevelIndex;
-  }
-
-  if (FAILED(hResult))
-  {
-    xiiLog::Error("Failed to create D3D12 hardware device. Attempting to create a WARP device.");
-
-    // Try to create a WARP device (a high-performance software device that has the capabilities of a hardware device).
-    XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
-
-    IDXGIAdapter1* pWarpAdapter = nullptr;
-    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter.");
-    m_pDXGIAdapter = pWarpAdapter;
-
-    uiFeatureLevelIndex = 0U;
-
-    for (const auto& featureLevel : targetFeatureLevels)
-    {
-      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
-
-      if (SUCCEEDED(hResult))
-      {
-        xiiLog::Info("Initialized D3D12 WARP device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
-        break;
-      }
-
-      ++uiFeatureLevelIndex;
-    }
-
-    XII_VERIFY_D3D12(SUCCEEDED(hResult), "Failed to create D3D12 WARP device.");
-  }
-  else
-  {
-    xiiLog::Info("Initialized D3D12 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
-  }
-
-  if (FAILED(pD3D12Device->QueryInterface(__uuidof(m_pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)))))
-  {
-    xiiLog::Error("Failed to retrieve ID3D12Device1 from device interface.");
     return XII_FAILURE;
   }
 
   // Create D3D12 Memory Allocator.
-  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator, m_pDXGIAdapter, pD3D12Device);
+  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator, m_pDXGIAdapter, m_pD3D12Device);
 
   // Set validation and debugging options.
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -254,9 +232,6 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     m_pD3D12Device->SetStablePowerState(TRUE);
   }
 #endif
-
-  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
-  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
   return XII_SUCCESS;
 }
@@ -349,6 +324,9 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 
   CreateCommandQueue(xiiGALCommandQueueFlags::Transfer, "Default Transfer");
   CreateCommandQueue(xiiGALCommandQueueFlags::Compute, "Default Compute");
+
+  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
   return XII_SUCCESS;
 }
@@ -1028,6 +1006,216 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   return XII_SUCCESS;
 }
 
+xiiResult xiiGALDeviceD3D12::EnumerateAdapters(xiiDynamicArray<IDXGIAdapter1*>& out_adapters)
+{
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "DXGI factory is not initialized.");
+
+  out_adapters.Clear();
+
+  xiiUInt32      uiIndex  = 0;
+  IDXGIAdapter1* pAdapter = nullptr;
+  while (SUCCEEDED(m_pDXGIFactory->EnumAdapters1(uiIndex, &pAdapter))) // If EnumAdapters1 returned DXGI_ERROR_NOT_FOUND, that's expected when enumeration ends.
+  {
+    out_adapters.PushBack(pAdapter);
+
+    ++uiIndex;
+  }
+
+  return XII_SUCCESS;
+}
+
+bool xiiGALDeviceD3D12::IsAdapterCompatible(IDXGIAdapter1* pAdapter, D3D_FEATURE_LEVEL minFeatureLevel, bool bPermitSoftwareAdapters)
+{
+  if (pAdapter == nullptr)
+    return false;
+
+  DXGI_ADAPTER_DESC1 adapterDescription;
+  if (FAILED(pAdapter->GetDesc1(&adapterDescription)))
+    return false;
+
+  // Skip software adapters if not permitted.
+  if (!bPermitSoftwareAdapters && (adapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE))
+    return false;
+
+  ID3D12Device* pD3D12Device;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12Device));
+
+  // Try to create a D3D12 device with the given adapter and feature level to check compatibility.
+  if (FAILED(D3D12CreateDevice(pAdapter, minFeatureLevel, __uuidof(ID3D12Device), reinterpret_cast<void**>(&pD3D12Device))))
+    return false;
+
+  return true;
+}
+
+xiiResult xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel, xiiDynamicArray<IDXGIAdapter1*>& out_CompatibleAdapters, bool bPermitSoftwareAdapters)
+{
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "DXGI factory is not initialized.");
+
+  xiiTemporaryArray<IDXGIAdapter1*> allAdapters;
+  XII_SUCCEED_OR_RETURN(EnumerateAdapters(allAdapters));
+
+  out_CompatibleAdapters.Clear();
+  out_CompatibleAdapters.Reserve(allAdapters.GetCount());
+
+  for (xiiUInt32 i = 0; i < allAdapters.GetCount(); ++i)
+  {
+    if (IsAdapterCompatible(allAdapters[i], minFeatureLevel, bPermitSoftwareAdapters))
+    {
+      out_CompatibleAdapters.PushBack(allAdapters[i]);
+    }
+    else
+    {
+      // Release incompatible adapter.
+      XII_GAL_D3D12_RELEASE(allAdapters[i]);
+    }
+  }
+
+  return XII_SUCCESS;
+}
+
+IDXGIAdapter1* xiiGALDeviceD3D12::SelectBestAdapter(xiiArrayPtr<IDXGIAdapter1*> pCompatibleAdapters)
+{
+  // Rank adapters and pick the best one. Our strategy is to:
+  // 1. Prefer discrete GPUs (non-software, non-integrated).
+  // 2. Prefer higher dedicated video memory.
+  // 3. Prefer adapters with more outputs (useful heuristic).
+
+  if (pCompatibleAdapters.IsEmpty())
+    return nullptr;
+
+  struct AdapterRank
+  {
+    XII_DECLARE_POD_TYPE();
+
+    IDXGIAdapter1* m_pAdapter;
+    xiiUInt64      m_uiScore; // Higher score means better adapter.
+  };
+
+  xiiTemporaryArray<AdapterRank> rankedAdapters;
+  rankedAdapters.Reserve(pCompatibleAdapters.GetCount());
+
+  for (xiiUInt32 i = 0; i < pCompatibleAdapters.GetCount(); ++i)
+  {
+    IDXGIAdapter1* pAdapter = pCompatibleAdapters[i];
+
+    DXGI_ADAPTER_DESC1 adapterDescription;
+    if (FAILED(pAdapter->GetDesc1(&adapterDescription)))
+      continue;
+
+    xiiUInt64 uiScore = 0ULL;
+
+    // Heuristic 1: Discrete GPUs get a big score boost.
+    if (!(adapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE))
+    {
+      if (adapterDescription.DedicatedVideoMemory != 0U)
+      {
+        uiScore += 1000000ULL; // Discrete GPU.
+      }
+      else
+      {
+        uiScore += 500000ULL; // Integrated GPU.
+      }
+    }
+
+    // Heuristic 2: Prefer more dedicated video memory.
+    uiScore += static_cast<xiiUInt64>(adapterDescription.DedicatedVideoMemory / (1024 * 1024)); // MB weight.
+
+    // Heuristic 3: Prefer adapters with more outputs (monitors).
+    xiiUInt32    uiOutputCount = 0U;
+    IDXGIOutput* pOutput       = nullptr;
+    for (xiiUInt32 j = 0; SUCCEEDED(pAdapter->EnumOutputs(j, &pOutput)); ++j)
+    {
+      ++uiOutputCount;
+
+      XII_GAL_D3D12_RELEASE(pOutput);
+    }
+
+    uiScore += static_cast<xiiUInt64>(uiOutputCount) * 100ULL; // Output count weight.
+
+    rankedAdapters.PushBack({pAdapter, uiScore});
+  }
+
+  if (rankedAdapters.IsEmpty())
+    return nullptr;
+
+  rankedAdapters.Sort([](const AdapterRank& a, const AdapterRank& b) { return a.m_uiScore > b.m_uiScore; });
+
+  return rankedAdapters[0].m_pAdapter;
+}
+
+xiiResult xiiGALDeviceD3D12::SelectAdapterByIndex(xiiUInt32 uiAdapterIndex, D3D_FEATURE_LEVEL minFeatureLevel, IDXGIAdapter1** out_ppAdapter, bool bPermitSoftwareAdapter, bool bPreferBestIfIndexInvalid)
+{
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "DXGI factory is not initialized.");
+
+  *out_ppAdapter = nullptr;
+
+  xiiTemporaryArray<IDXGIAdapter1*> compatibleAdapters;
+  XII_SUCCEED_OR_RETURN(GetCompatibleAdapters(minFeatureLevel, compatibleAdapters, bPermitSoftwareAdapter));
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters));
+
+  if (compatibleAdapters.IsEmpty())
+  {
+    xiiLog::Warning("No compatible adapters found for feature level {}.", GetD3D12FeatureLevelName(minFeatureLevel));
+
+    // Try to create a WARP device (a high-performance software device that has the capabilities of a hardware device).
+    IDXGIAdapter1* pWARPAdapter = nullptr;
+    if (SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(IDXGIAdapter1), reinterpret_cast<void**>(&pWARPAdapter))))
+    {
+      if (IsAdapterCompatible(pWARPAdapter, minFeatureLevel, bPermitSoftwareAdapter))
+      {
+        *out_ppAdapter = pWARPAdapter;
+
+        return XII_SUCCESS;
+      }
+      else
+      {
+        xiiLog::Warning("WARP adapter is not compatible with feature level {}.", GetD3D12FeatureLevelName(minFeatureLevel));
+
+        XII_GAL_D3D12_RELEASE(pWARPAdapter);
+      }
+    }
+    else
+    {
+      xiiLog::Warning("Failed to enumerate WARP adapter.");
+    }
+  }
+
+  if (uiAdapterIndex < compatibleAdapters.GetCount())
+  {
+    *out_ppAdapter = compatibleAdapters[uiAdapterIndex];
+
+    compatibleAdapters.RemoveAndSwap(*out_ppAdapter); // Remove the selected adapter from the list to avoid releasing it in the scope exit.
+
+    return XII_SUCCESS;
+  }
+  else
+  {
+    xiiLog::Warning("Requested adapter index {} is out of range. {} compatible adapter(s) found for feature level {}.", uiAdapterIndex, compatibleAdapters.GetCount(), GetD3D12FeatureLevelName(minFeatureLevel));
+
+    if (bPreferBestIfIndexInvalid)
+    {
+      IDXGIAdapter1* pBestAdapter = SelectBestAdapter(compatibleAdapters);
+
+      if (pBestAdapter != nullptr)
+      {
+        *out_ppAdapter = pBestAdapter;
+
+        xiiLog::Info("Selected the best available adapter instead: {}.", GetD3D12FeatureLevelName(minFeatureLevel));
+
+        compatibleAdapters.RemoveAndSwap(*out_ppAdapter); // Remove the selected adapter from the list to avoid releasing it in the scope exit.
+
+        return XII_SUCCESS;
+      }
+      else
+      {
+        xiiLog::Warning("No suitable adapter found to select as best.");
+      }
+    }
+  }
+
+  return XII_FAILURE;
+}
+
 void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
 {
   IDXGIAdapter1* pDXGIAdapter = nullptr;
@@ -1062,13 +1250,13 @@ void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
 
 xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel)
 {
-  xiiDynamicArray<IDXGIAdapter1*> DXGIAdapters;
+  xiiDynamicArray<IDXGIAdapter1*> dxgiAdapters;
 
   IDXGIFactory2* pDXGIFactory = nullptr;
   if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory2), (void**)&pDXGIFactory)))
   {
     xiiLog::Error("Failed to create DXGI factory.");
-    return DXGIAdapters;
+    return dxgiAdapters;
   }
 
   IDXGIAdapter1* pDXGIAdapter = nullptr;
@@ -1079,7 +1267,7 @@ xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEA
 
     if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, minFeatureLevel, __uuidof(ID3D12Device), nullptr)))
     {
-      DXGIAdapters.PushBack(pDXGIAdapter);
+      dxgiAdapters.PushBack(pDXGIAdapter);
     }
     else
     {
@@ -1087,7 +1275,7 @@ xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEA
     }
   }
 
-  return DXGIAdapters;
+  return dxgiAdapters;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);
