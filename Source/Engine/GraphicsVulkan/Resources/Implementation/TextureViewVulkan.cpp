@@ -243,7 +243,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform()
   VK_SUCCEED_OR_RETURN_XII_FAILURE(vkLogicalDevice.createImageView(&vkImageViewCreateInfo, nullptr, &m_vkImageView, pDeviceVulkan->GetVulkanDynamicDispatchLoader()));
 
   m_vkDescriptorImageInfo.imageView   = m_vkImageView;
-  m_vkDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral; // TODO
+  m_vkDescriptorImageInfo.imageLayout = xiiVulkanTypeConversions::GetImageLayout(pTextureVulkan->GetResourceState(), false, pDeviceVulkan->GetVulkanLogicalDeviceExtensionFeatures().m_FragmentDensityMap.fragmentDensityMap != vk::False);
 
   return XII_SUCCESS;
 }
