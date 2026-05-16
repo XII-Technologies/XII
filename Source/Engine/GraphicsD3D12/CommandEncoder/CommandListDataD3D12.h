@@ -4,15 +4,15 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
 #include <GraphicsD3D12/Pools/DynamicBufferPoolD3D12.h>
 #include <GraphicsD3D12/Pools/StagingBufferPoolD3D12.h>
-#include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
+#include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 #include <GraphicsD3D12/Resources/TopLevelASD3D12.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
 {
@@ -51,15 +51,6 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
     m_AttachmentClearValues       = std::move(other.m_AttachmentClearValues);
     m_bPipelineStateModified      = other.m_bPipelineStateModified;
     m_ResourceSets                = std::move(other.m_ResourceSets);
-    m_DescriptorSets              = std::move(other.m_DescriptorSets);
-    m_DynamicUniformBuffers       = std::move(other.m_DynamicUniformBuffers);
-    m_DynamicUniformBufferOffsets = std::move(other.m_DynamicUniformBufferOffsets);
-    m_bDescriptorsModified        = other.m_bDescriptorsModified;
-    m_pDynamicBufferPoolD3D12    = std::move(other.m_pDynamicBufferPoolD3D12);
-    m_pUploadStagingBufferPool    = std::move(other.m_pUploadStagingBufferPool);
-    m_pDescriptorSetPoolD3D12    = std::move(other.m_pDescriptorSetPoolD3D12);
-    m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
-    m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
   }
 
@@ -72,15 +63,7 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
     m_AttachmentClearValues       = std::move(other.m_AttachmentClearValues);
     m_bPipelineStateModified      = other.m_bPipelineStateModified;
     m_ResourceSets                = std::move(other.m_ResourceSets);
-    m_DescriptorSets              = std::move(other.m_DescriptorSets);
-    m_DynamicUniformBuffers       = std::move(other.m_DynamicUniformBuffers);
-    m_DynamicUniformBufferOffsets = std::move(other.m_DynamicUniformBufferOffsets);
-    m_bDescriptorsModified        = other.m_bDescriptorsModified;
-    m_pDynamicBufferPoolD3D12    = std::move(other.m_pDynamicBufferPoolD3D12);
-    m_pUploadStagingBufferPool    = std::move(other.m_pUploadStagingBufferPool);
-    m_pDescriptorSetPoolD3D12    = std::move(other.m_pDescriptorSetPoolD3D12);
-    m_pNullVertexBuffer           = std::move(other.m_pNullVertexBuffer);
-    m_TemporaryQueryPools         = std::move(other.m_TemporaryQueryPools);
+
     m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
 
     return *this;
@@ -99,10 +82,6 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
       setBindings.m_pBoundSamplerStates.Clear();
     }
 
-    m_DescriptorSets.Clear();
-    m_DynamicUniformBuffers.Clear();
-    m_DynamicUniformBufferOffsets.Clear();
-    m_bDescriptorsModified   = false;
     m_bPipelineStateModified = true;
 
     m_pBoundRenderTargets.Clear();
@@ -116,39 +95,18 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
   XII_ALWAYS_INLINE void Reset()
   {
     Invalidate();
-
-    if (m_pDynamicBufferPoolD3D12)
-    {
-      m_pDynamicBufferPoolD3D12->Reset();
-    }
-    if (m_pUploadStagingBufferPool)
-    {
-      m_pUploadStagingBufferPool->Reset();
-    }
   }
 
   xiiHybridArray<xiiSharedPtr<xiiGALTextureViewD3D12>, 2U> m_pBoundRenderTargets;
   xiiSharedPtr<xiiGALTextureViewD3D12>                     m_pBoundDepthStencilTarget;
-  xiiUInt32                                                 m_uiBoundRenderTargetCount = 0U;
+  xiiUInt32                                                m_uiBoundRenderTargetCount = 0U;
 
-  xiiUInt32                          m_uiSubpassIndex = 0U;
+  xiiUInt32                             m_uiSubpassIndex = 0U;
   xiiHybridArray<D3D12_CLEAR_VALUE, 2U> m_AttachmentClearValues;
 
   bool m_bPipelineStateModified = false;
 
-  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
-  xiiHybridArray<D3D12_DESCRIPTOR_SET, 4U>   m_DescriptorSets;
-  xiiDeque<D3D12_DESCRIPTOR_BUFFER_INFO>      m_DynamicUniformBuffers;
-  xiiHybridArray<xiiUInt32, 6U>           m_DynamicUniformBufferOffsets;
-  bool                                    m_bDescriptorsModified = false;
-
-  xiiUniquePtr<xiiGALDynamicBufferPoolD3D12> m_pDynamicBufferPoolD3D12;
-  xiiUniquePtr<xiiGALStagingBufferPoolD3D12> m_pUploadStagingBufferPool;
-  xiiUniquePtr<xiiGALDescriptorSetPoolD3D12> m_pDescriptorSetPoolD3D12;
-
-  xiiSharedPtr<xiiGALBufferD3D12> m_pNullVertexBuffer; ///< In D3D12, we cannot bind a null vertex buffer, so we have to create a zeroed-out vertex buffer.
-
-  xiiDynamicArray<D3D12_QUERY_POOL> m_TemporaryQueryPools; ///< Query pools created while recording and destroyed after GPU execution completes.
+  xiiHybridArray<ResourceSetBindings, 1U>  m_ResourceSets;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

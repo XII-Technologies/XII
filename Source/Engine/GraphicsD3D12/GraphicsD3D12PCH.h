@@ -13,3 +13,5 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
+
+XII_DEFINE_AS_POD_TYPE(D3D12_CLEAR_VALUE);

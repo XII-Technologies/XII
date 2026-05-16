@@ -16,7 +16,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D12, xiiGALCommandList);
 
 public:
-  XII_ALWAYS_INLINE ID3D12CommandList* GetD3D12CommandList() const { return m_pCommandList; }
+  XII_ALWAYS_INLINE ID3D12CommandList* GetD3D12CommandList() const { return nullptr; }
 
   struct CommandListState
   {
@@ -173,113 +173,5 @@ private:
   void PrepareForRayTracing();
 
 private:
-  struct PipelineBarrier
-  {
-    xiiUInt32 m_uiTextureBarriers = 0;
-  };
 
-  struct MappedTextureKey
-  {
-    xiiGALTextureD3D12* m_pTextureD3D12;
-    xiiUInt32 const     m_uiMipLevel;
-    xiiUInt32 const     m_uiArraySlice;
-
-    bool operator==(const MappedTextureKey& rhs) const
-    {
-      return m_pTextureD3D12 == rhs.m_pTextureD3D12 && m_uiMipLevel == rhs.m_uiMipLevel && m_uiArraySlice == rhs.m_uiArraySlice;
-    }
-
-    struct Hasher
-    {
-      static xiiUInt32 Hash(const MappedTextureKey& key)
-      {
-        xiiHashStreamWriter32 writer;
-
-        writer << key.m_pTextureD3D12;
-        writer << key.m_uiMipLevel;
-        writer << key.m_uiArraySlice;
-
-        return writer.GetHashValue();
-      }
-
-      static bool Equal(const MappedTextureKey& a, const MappedTextureKey& b)
-      {
-        return a == b;
-      }
-    };
-  };
-
-  struct MappedTexture
-  {
-    xiiGALBufferToTextureCopyDescription m_CopyDescription;
-    // xiiGALDynamicBufferAllocationD3D12  m_DynamicAllocation;
-  };
-
-  struct MappedBufferKey
-  {
-    xiiGALBufferD3D12*     m_pBufferD3D12 = nullptr;
-    xiiEnum<xiiGALMapType> m_MapType;
-
-    bool operator==(const MappedBufferKey& rhs) const
-    {
-      return m_pBufferD3D12 == rhs.m_pBufferD3D12 && m_MapType == rhs.m_MapType;
-    }
-
-    struct Hasher
-    {
-      static xiiUInt32 Hash(const MappedBufferKey& key)
-      {
-        xiiHashStreamWriter32 writer;
-
-        writer << key.m_pBufferD3D12;
-        writer << key.m_MapType;
-
-        return writer.GetHashValue();
-      }
-
-      static bool Equal(const MappedBufferKey& a, const MappedBufferKey& b)
-      {
-        return a == b;
-      }
-    };
-  };
-
-  struct MappedBuffer
-  {
-    xiiEnum<xiiGALMapType> m_MapType = xiiGALMapType::ENUM_COUNT;
-    // xiiGALDynamicBufferAllocationD3D12 m_DynamicAllocation;
-  };
-
-  struct FenceInfo
-  {
-    xiiGALFenceD3D12* m_pFenceD3D12;
-    xiiUInt64         m_uiWaitValue = 0U;
-  };
-
-  ID3D12CommandList*                              m_pCommandList;
-  xiiBitflags<CommandListFlags>                   m_CommandListFlags;
-  CommandListState                                m_CommandListState;
-  xiiGALCommandListDataD3D12                      m_CommandListData;
-
-  PipelineBarrier                         m_PipelineBarrier;
-  xiiDynamicArray<vk::ImageMemoryBarrier> m_ImageBarriers;
-
-  xiiDynamicArray<vk::Semaphore>          m_vkWaitSemaphores;
-  xiiDynamicArray<vk::Semaphore>          m_vkSignalSemaphores;
-  xiiDynamicArray<vk::PipelineStageFlags> m_vkWaitDestinationStageFlags;
-
-  // Can be used only if timeline semaphore extension is enabled.
-  xiiDynamicArray<vk::DeviceSize> m_vkWaitSemaphoreValues;
-  xiiDynamicArray<vk::DeviceSize> m_vkSignalSemaphoreValues;
-
-  // List of fences to signal/wait next time the command queue is flushed.
-  xiiDynamicArray<FenceInfo> m_SignalFences;
-  xiiDynamicArray<FenceInfo> m_WaitFences;
-
-  // Graphics/Mesh, Compute, Ray Tracing.
-  static constexpr xiiUInt32 s_PipelineBindPointCount       = 3U;
-  static constexpr xiiUInt32 s_MaxDescriptorSetPerSignature = 2U;
-
-  xiiHashTable<MappedBufferKey, MappedBuffer, MappedBufferKey::Hasher>    m_MappedBuffers;
-  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
 };
