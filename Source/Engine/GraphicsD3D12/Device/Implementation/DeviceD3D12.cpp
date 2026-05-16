@@ -158,124 +158,53 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
         D3D_FEATURE_LEVEL_11_1,
         D3D_FEATURE_LEVEL_11_0};
 
-    D3D_FEATURE_LEVEL createdFeatureLevel = D3D_FEATURE_LEVEL_11_0;
-    bool              bIsDeviceCreated    = false;
-
-    //if (m_Description.m_uiAdapterID != xiiInvalidIndex)
-    //{
-    //  XII_SUCCEED_OR_RETURN(SelectAdapterByIndex(m_Description.m_AdapterIndex, minFeatureLevel, &m_pDXGIAdapter, false), "Failed to select adapter by index {}.", m_Description.m_AdapterIndex);
-
-    //  XII_VERIFY_D3D12(SelectAdapterByIndex(m_Description.m_AdapterIndex, minFeatureLevel, &m_pDXGIAdapter, true).Succeeded(), "Failed to select adapter by index {}.", m_Description.m_AdapterIndex);
-    //}
-    else
-    {
-      xiiTemporaryArray<IDXGIAdapter1*> compatibleAdapters;
-      if (GetCompatibleAdapters(minFeatureLevel, compatibleAdapters, true).Succeeded() && !compatibleAdapters.IsEmpty())
-      {
-        if (IDXGIAdapter1* pBest = SelectBestAdapter(compatibleAdapters))
-        {
-          // Remove from the array so we keep ownership of pBest.
-          XII_VERIFY(compatibleAdapters.RemoveAndSwap(pBest), "Unexpectedly failed to remove the selected adapter from the compatible adapters array.");
-
-          m_pDXGIAdapter = pBest;
-        }
-        XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters);
-      }
-    }
-
-    if (m_pDXGIAdapter == nullptr)
-    {
-      xiiLog::Error("No DXGI adapter available (neither hardware nor WARP).");
-
-      return XII_FAILURE;
-    }
-
-    // Probe feature levels on the chosen adapter.
-    for (D3D_FEATURE_LEVEL level : probeFeatureLevels)
+    for (const D3D_FEATURE_LEVEL level : probeFeatureLevels)
     {
       if (level < minFeatureLevel)
         continue;
 
-      XII_GAL_D3D12_RELEASE(m_pD3D12Device);
+      IDXGIAdapter1* pDXGIAdapter = nullptr;
 
-      HRESULT hr = D3D12CreateDevice(m_pDXGIAdapter, level, __uuidof(m_pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)));
-
-      if (SUCCEEDED(hr) && m_pD3D12Device)
+      if (m_Description.m_uiAdapterID != xiiInvalidIndex)
       {
-        createdFeatureLevel = level;
-        bIsDeviceCreated    = true;
-        break;
-      }
-    }
-
-    // If creation failed on the chosen adapter, try WARP explicitly (and replace adapter only on success).
-    if (!bIsDeviceCreated)
-    {
-      xiiLog::Warning("Device creation failed on selected adapter; trying WARP adapter as fallback.");
-
-      IDXGIAdapter* pWarpAdapter = nullptr;
-      if (SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(&pWarpAdapter))) && pWarpAdapter)
-      {
-        IDXGIAdapter1* pWarpAdapter1 = nullptr;
-        if (SUCCEEDED(pWarpAdapter->QueryInterface(__uuidof(pWarpAdapter1), reinterpret_cast<void**>(&pWarpAdapter1))) && pWarpAdapter1)
-        {
-          // Try to create device on WARP without replacing m_pDXGIAdapter yet.
-          for (D3D_FEATURE_LEVEL level : probeFeatureLevels)
-          {
-            if (level < minFeatureLevel)
-              continue;
-
-            XII_GAL_D3D12_RELEASE(m_pD3D12Device);
-            m_pD3D12Device = nullptr;
-
-            HRESULT hr = D3D12CreateDevice(
-              pWarpAdapter1,
-              level,
-              __uuidof(m_pD3D12Device),
-              reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)));
-
-            if (SUCCEEDED(hr) && m_pD3D12Device)
-            {
-              // Replace m_pDXGIAdapter with the WARP adapter (release old one first).
-              if (m_pDXGIAdapter)
-              {
-                XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
-              }
-              m_pDXGIAdapter      = pWarpAdapter1; // ownership transferred; do NOT release pWarpAdapter1 here
-              createdFeatureLevel = level;
-              bIsDeviceCreated    = true;
-              break;
-            }
-          }
-
-          // If we didn't take ownership, release the temporary pWarpAdapter1.
-          if (!bIsDeviceCreated)
-          {
-            XII_GAL_D3D12_RELEASE(pWarpAdapter1);
-          }
-        }
-        else
-        {
-          xiiLog::Warning("Failed to QI WARP adapter to IDXGIAdapter1.");
-        }
-
-        pWarpAdapter->Release();
+        if (SelectAdapterByIndex(m_Description.m_uiAdapterID, level, &pDXGIAdapter, false, false).Failed())
+          continue;
       }
       else
       {
-        xiiLog::Warning("EnumWarpAdapter failed or returned null.");
+        xiiTemporaryArray<IDXGIAdapter1*> compatibleAdapters;
+        XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters));
+
+        if (GetCompatibleAdapters(level, compatibleAdapters, true).Succeeded() && !compatibleAdapters.IsEmpty())
+        {
+          pDXGIAdapter = SelectBestAdapter(compatibleAdapters);
+
+          // Remove from the array so we keep ownership of the adapter.
+          XII_VERIFY(compatibleAdapters.RemoveAndSwap(pDXGIAdapter), "Unexpectedly failed to remove the selected adapter from the compatible adapters array.");
+        }
       }
+
+      ID3D12Device1* pD3D12Device = nullptr;
+      if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, level, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&pD3D12Device)))))
+      {
+        m_pDXGIAdapter = pDXGIAdapter;
+        m_pD3D12Device = pD3D12Device;
+
+        xiiLog::Info("Created D3D12 device with feature level {0}.", GetD3D12FeatureLevelName(level));
+
+        break;
+      }
+
+      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
     }
 
-    if (!bIsDeviceCreated || !m_pD3D12Device)
+    if (m_pD3D12Device == nullptr)
     {
-      xiiLog::Error("Failed to create D3D12 device. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+      xiiLog::Error("Failed to create a D3D12 device with the required feature level. Ensure that a compatible GPU is installed and the latest drivers are updated.");
+
       return XII_FAILURE;
     }
-
-    xiiLog::Info("Created D3D12 device with feature level {0}.", GetD3D12FeatureLevelName(createdFeatureLevel));
   }
-
 
   // Create D3D12 Memory Allocator.
   m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator, m_pDXGIAdapter, m_pD3D12Device);
