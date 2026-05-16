@@ -411,4 +411,4 @@ xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
   return vkMemoryStatistics;
 }
 
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocator);
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocatorVulkan);

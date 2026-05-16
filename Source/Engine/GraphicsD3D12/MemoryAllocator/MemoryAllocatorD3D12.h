@@ -4,30 +4,32 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-#include <Foundation/Memory/CommonAllocators.h>
-#include <Foundation/Types/UniquePtr.h>
-
-namespace D3D12MA
-{
-  class Allocator;
-}
-
-struct ID3D12Device;
-struct IDXGIAdapter1;
-
+/// \brief Direct3D 12 memory allocator wrapper.
+///
+/// Provides high-level allocation and resource management for D3D12 buffers and images.
+/// Internally wraps D3D12 Memory Allocator (D3D12MA) and custom logic to simplify memory handling.
 class XII_GRAPHICSD3D12_DLL xiiD3D12MemoryAllocator
 {
 public:
-  xiiProxyAllocator*  GetProxyAllocator() { return m_pAllocator.Borrow(); }
-  D3D12MA::Allocator* GetD3D12Allocator() { return m_pD3D12MAAllocator; }
+  xiiD3D12MemoryAllocator();
 
-private:
-  friend class xiiMemoryUtils;
-  friend class xiiGALDeviceD3D12;
-
-  xiiD3D12MemoryAllocator(IDXGIAdapter1* pDXGIAdapter, ID3D12Device* pDeviceD3D12);
   ~xiiD3D12MemoryAllocator();
 
-  xiiUniquePtr<xiiProxyAllocator> m_pAllocator;
-  D3D12MA::Allocator*             m_pD3D12MAAllocator = nullptr;
+  /// \brief Constructs the memory allocator with D3D12 device.
+  ///
+  /// \param pDeviceD3D12         - The D3D12 device implementation.
+  /// \param uiPreferredBlockSize - Optional preferred block size for allocations (Set to 0 to use default, which is currently 64 MiB.).
+  xiiResult Initialize(xiiGALDeviceD3D12* pDeviceD3D12, xiiUInt32 uiPreferredBlockSize = 0U);
+
+  /// \brief Cleans up internal resources.
+  void DeInitialize();
+
+private:
+  struct Implementation; ///< Internal implementation details.
+
+  friend void* xiiD3D12AllocatePtr(size_t uiSize, size_t uiAlignment, void* pPrivateData);
+  friend void  xiiD3D12FreePtr(void* pMemory, void* pPrivateData);
+
+private:
+  xiiUniquePtr<Implementation> m_pImplementation; ///< Pointer to the internal allocator implementation.
 };

@@ -206,9 +206,6 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     }
   }
 
-  // Create D3D12 Memory Allocator.
-  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator, m_pDXGIAdapter, m_pD3D12Device);
-
   // Set validation and debugging options.
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
@@ -263,6 +260,13 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
 xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 {
+  // Initialize Direct3D 12 Memory Allocator (D3D12MA).
+  {
+    m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator);
+
+    XII_SUCCEED_OR_RETURN(m_pAllocatorD3D12->Initialize(this));
+  }
+
   xiiUInt32 queueCountPerContext[16U] = {};
 
   auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueFlags> queueType, xiiStringView sName) {
