@@ -6,6 +6,8 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
+struct ID3D12Fence;
+
 class XII_GRAPHICSD3D12_DLL xiiGALCommandQueueD3D12 final : public xiiGALCommandQueue
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueD3D12, xiiGALCommandQueue);
@@ -16,6 +18,8 @@ public:
 
   /// \brief This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() override final;
+
+  XII_ALWAYS_INLINE ID3D12CommandQueue* GetD3D12CommandQueue() const { return m_QueueInformation.m_pCommandQueue; }
 
   XII_ALWAYS_INLINE const xiiGALQueueInformationD3D12& GetQueueInformation() const { return m_QueueInformation; };
 
@@ -35,6 +39,9 @@ protected:
 
 private:
   xiiGALQueueInformationD3D12 m_QueueInformation;
+
+  ID3D12Fence* m_pD3D12QueueFence = nullptr;
+  HANDLE       m_hFenceEvent       = nullptr;
 
   xiiAtomicIntegerU64 m_uiNextFenceValue{1ULL};
   xiiUInt64           m_uiLastSyncPointValue{0ULL};

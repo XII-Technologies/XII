@@ -11,12 +11,17 @@
 
 #include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
 
+struct ID3D12CommandAllocator;
+struct ID3D12CommandList;
+struct ID3D12GraphicsCommandList;
+
 class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandList
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D12, xiiGALCommandList);
 
 public:
-  XII_ALWAYS_INLINE ID3D12CommandList* GetD3D12CommandList() const { return nullptr; }
+  XII_ALWAYS_INLINE ID3D12CommandList*        GetD3D12CommandList() const { return reinterpret_cast<ID3D12CommandList*>(m_pD3D12CommandList); }
+  XII_ALWAYS_INLINE ID3D12GraphicsCommandList* GetD3D12GraphicsCommandList() const { return m_pD3D12CommandList; }
 
   struct CommandListState
   {
@@ -173,5 +178,6 @@ private:
   void PrepareForRayTracing();
 
 private:
-
+  ID3D12CommandAllocator*    m_pD3D12CommandAllocator = nullptr;
+  ID3D12GraphicsCommandList* m_pD3D12CommandList      = nullptr;
 };

@@ -24,6 +24,21 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
+namespace
+{
+  D3D12_COMMAND_LIST_TYPE GetCommandListType(xiiBitflags<xiiGALCommandQueueFlags> queueFlags)
+  {
+    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+      return D3D12_COMMAND_LIST_TYPE_DIRECT;
+    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
+      return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
+      return D3D12_COMMAND_LIST_TYPE_COPY;
+
+    return D3D12_COMMAND_LIST_TYPE_DIRECT;
+  }
+} // namespace
+
 xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(std::move(pDeviceD3D12), creationDescription)
 {
@@ -32,33 +47,68 @@ xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> p
 xiiGALCommandListD3D12::~xiiGALCommandListD3D12()
 {
   Reset();
+
+  XII_GAL_D3D12_RELEASE(m_pD3D12CommandList);
+  XII_GAL_D3D12_RELEASE(m_pD3D12CommandAllocator);
 }
 
 xiiResult xiiGALCommandListD3D12::InitPlatform()
 {
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  const D3D12_COMMAND_LIST_TYPE   commandListType = GetCommandListType(m_Description.m_QueueFlags);
+
+  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&m_pD3D12CommandAllocator)));
+  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandList(0U, commandListType, m_pD3D12CommandAllocator, nullptr, IID_PPV_ARGS(&m_pD3D12CommandList)));
+  XII_HRESULT_TO_FAILURE_LOG(m_pD3D12CommandList->Close());
+
   return XII_SUCCESS;
 }
 
 void xiiGALCommandListD3D12::BeginPlatform()
 {
-  
+  if (m_pD3D12CommandList == nullptr || m_pD3D12CommandAllocator == nullptr)
+    return;
+
+  m_pD3D12CommandAllocator->Reset();
+  m_pD3D12CommandList->Reset(m_pD3D12CommandAllocator, nullptr);
 
   m_RecordingState = RecordingState::Recording;
 }
 
 void xiiGALCommandListD3D12::EndPlatform()
 {
+  if (m_pD3D12CommandList != nullptr)
+  {
+    m_pD3D12CommandList->Close();
+  }
 }
 
 void xiiGALCommandListD3D12::ResetPlatform()
 {
+  if (m_pD3D12CommandList != nullptr && m_RecordingState == RecordingState::Recording)
+  {
+    m_pD3D12CommandList->Close();
+  }
 
   m_RecordingState = RecordingState::Reset;
 }
 
 void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommandList)
 {
+  if (pSecondaryCommandList == nullptr || m_pD3D12CommandList == nullptr)
+    return;
 
+  xiiGALCommandListD3D12* pSecondaryCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pSecondaryCommandList);
+  if (pSecondaryCommandListD3D12 == nullptr || pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList() == nullptr)
+    return;
+
+  if (!pSecondaryCommandListD3D12->GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    xiiLog::Warning("Ignoring D3D12 secondary command list submission for '{}': command list was not created with the Secondary flag.", pSecondaryCommandListD3D12->GetDebugName());
+    return;
+  }
+
+  m_pD3D12CommandList->ExecuteBundle(pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList());
 }
 
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -298,6 +348,24 @@ xiiResult xiiGALCommandListD3D12::UnmapTextureSubresourcePlatform(xiiGALTexture*
   return XII_SUCCESS;
 }
 
+void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
+{
+  XII_IGNORE_UNUSED(pTextureView);
+
+  xiiLog::Error("GenerateMips is currently unsupported in the D3D12 backend.");
+}
+
+void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
+{
+  for (xiiGALStateTransitionDescription& barrier : pResourceBarriers)
+  {
+    if (barrier.m_pResource == nullptr || !barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+      continue;
+
+    barrier.m_pResource->SetResourceState(barrier.m_NewState);
+  }
+}
+
 void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
 {
   
@@ -329,6 +397,25 @@ void xiiGALCommandListD3D12::InvalidateStatePlatform()
 
 void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const
 {
+  xiiStringBuilder sb;
+  const char*      szName = sName.GetData(sb);
+  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount());
+
+  if (m_pD3D12CommandAllocator != nullptr)
+  {
+    if (FAILED(m_pD3D12CommandAllocator->SetPrivateData(WKPDID_D3DDebugObjectName, uiNameLength, szName)))
+    {
+      xiiLog::Error("Failed to set the D3D12 command allocator debug name.");
+    }
+  }
+
+  if (m_pD3D12CommandList != nullptr)
+  {
+    if (FAILED(m_pD3D12CommandList->SetPrivateData(WKPDID_D3DDebugObjectName, uiNameLength, szName)))
+    {
+      xiiLog::Error("Failed to set the D3D12 command list debug name.");
+    }
+  }
 }
 
 void xiiGALCommandListD3D12::PrepareForDraw()

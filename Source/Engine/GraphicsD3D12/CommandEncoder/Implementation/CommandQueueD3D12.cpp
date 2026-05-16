@@ -13,25 +13,114 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiGALCommandQueueD3D12::xiiGALCommandQueueD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandQueueCreationDescription& creationDescription, const xiiGALQueueInformationD3D12& queueInformation) :
   xiiGALCommandQueue(pDeviceD3D12, creationDescription), m_QueueInformation(queueInformation)
 {
+  m_hFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+  if (m_hFenceEvent == nullptr)
+  {
+    xiiLog::Error("Failed to create D3D12 command queue fence event handle.");
+  }
+
+  if (FAILED(pDeviceD3D12->GetD3D12Device()->CreateFence(0U, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_pD3D12QueueFence))))
+  {
+    xiiLog::Error("Failed to create D3D12 command queue fence.");
+  }
 }
 
-xiiGALCommandQueueD3D12::~xiiGALCommandQueueD3D12() = default;
+xiiGALCommandQueueD3D12::~xiiGALCommandQueueD3D12()
+{
+  WaitForIdle();
+
+  XII_GAL_D3D12_RELEASE(m_pD3D12QueueFence);
+  XII_GAL_D3D12_RELEASE(m_QueueInformation.m_pCommandQueue);
+
+  if (m_hFenceEvent != nullptr && m_hFenceEvent != INVALID_HANDLE_VALUE)
+  {
+    CloseHandle(m_hFenceEvent);
+    m_hFenceEvent = nullptr;
+  }
+}
 
 xiiUInt64 xiiGALCommandQueueD3D12::GetCompletedFenceValue()
 {
-  return xiiMath::MaxValue<xiiUInt64>();
+  if (m_pD3D12QueueFence == nullptr)
+    return m_uiLastSyncPointValue;
+
+  const xiiUInt64 uiValue = m_pD3D12QueueFence->GetCompletedValue();
+  if (uiValue == xiiMath::MaxValue<xiiUInt64>())
+  {
+    xiiLog::Error("D3D12 command queue fence returned UINT64_MAX. The device may have been removed.");
+    return uiValue;
+  }
+
+  return uiValue;
 }
 
 xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
-  XII_IGNORE_UNUSED(pCommandList);
+  if (m_QueueInformation.m_pCommandQueue == nullptr || m_pD3D12QueueFence == nullptr)
+  {
+    xiiLog::Error("D3D12 command queue submission failed: queue or queue fence is not initialized.");
+    return m_uiLastSyncPointValue;
+  }
 
-  return xiiMath::MaxValue<xiiUInt64>();
+  xiiGALCommandListD3D12* pCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pCommandList);
+  if (pCommandListD3D12 != nullptr)
+  {
+    if (ID3D12CommandList* pD3D12CommandList = pCommandListD3D12->GetD3D12CommandList())
+    {
+      m_QueueInformation.m_pCommandQueue->ExecuteCommandLists(1U, &pD3D12CommandList);
+    }
+  }
+
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
+  const HRESULT   hResult      = m_QueueInformation.m_pCommandQueue->Signal(m_pD3D12QueueFence, uiFenceValue);
+  if (FAILED(hResult))
+  {
+    xiiLog::Error("Failed to signal D3D12 command queue fence during submit: {}.", xiiHRESULTtoString(hResult));
+    return m_uiLastSyncPointValue;
+  }
+
+  m_uiLastSyncPointValue = uiFenceValue;
+  return uiFenceValue;
 }
 
 xiiUInt64 xiiGALCommandQueueD3D12::WaitForIdle()
 {
-  return xiiMath::MaxValue<xiiUInt64>();
+  if (m_QueueInformation.m_pCommandQueue == nullptr || m_pD3D12QueueFence == nullptr)
+    return m_uiLastSyncPointValue;
+
+  const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
+
+  HRESULT hResult = m_QueueInformation.m_pCommandQueue->Signal(m_pD3D12QueueFence, uiFenceValue);
+  if (FAILED(hResult))
+  {
+    xiiLog::Error("Failed to signal D3D12 queue fence for WaitForIdle: {}.", xiiHRESULTtoString(hResult));
+    return m_uiLastSyncPointValue;
+  }
+
+  m_uiLastSyncPointValue = uiFenceValue;
+
+  if (GetCompletedFenceValue() < uiFenceValue)
+  {
+    if (m_hFenceEvent != nullptr && m_hFenceEvent != INVALID_HANDLE_VALUE)
+    {
+      hResult = m_pD3D12QueueFence->SetEventOnCompletion(uiFenceValue, m_hFenceEvent);
+      if (SUCCEEDED(hResult))
+      {
+        WaitForSingleObject(m_hFenceEvent, INFINITE);
+      }
+      else
+      {
+        xiiLog::Error("Failed to set D3D12 queue fence completion event: {}.", xiiHRESULTtoString(hResult));
+      }
+    }
+
+    while (GetCompletedFenceValue() < uiFenceValue)
+    {
+      Sleep(0U);
+    }
+  }
+
+  return uiFenceValue;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_CommandEncoder_Implementation_CommandQueueD3D12);
