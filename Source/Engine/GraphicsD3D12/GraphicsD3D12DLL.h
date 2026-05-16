@@ -78,6 +78,6 @@ struct XII_GRAPHICSD3D12_DLL xiiGALQueueInformationD3D12
 {
   XII_DECLARE_POD_TYPE();
 
-  ID3D12CommandQueue* m_pCommandQueue;
+  ID3D12CommandQueue* m_pCommandQueue   = nullptr;
   xiiUInt32           m_uiQueueFamilyIndex = xiiInvalidIndex;
 };

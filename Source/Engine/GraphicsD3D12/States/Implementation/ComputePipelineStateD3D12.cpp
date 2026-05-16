@@ -5,6 +5,9 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/States/ComputePipelineStateD3D12.h>
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALComputePipelineStateD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiGALComputePipelineStateD3D12::xiiGALComputePipelineStateD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALComputePipelineStateCreationDescription& creationDescription) :
   xiiGALComputePipelineState(std::move(pDeviceD3D12), creationDescription)
 {

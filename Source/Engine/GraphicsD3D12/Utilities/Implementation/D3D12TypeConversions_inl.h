@@ -1039,7 +1039,8 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xii
     break;
     case xiiGALValueType::Float64:
     {
-      XII_ASSERT_NOT_IMPLEMENTED;
+      xiiLog::Error("Float64 vertex formats are unsupported in D3D12.");
+      return DXGI_FORMAT_UNKNOWN;
     }
     break;
 

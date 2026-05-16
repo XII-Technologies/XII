@@ -16,7 +16,9 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsFoundation
   DirectX-Headers
   D3D12MemoryAllocator
+  d3d12.lib
   dxgi.lib
+  dxguid.lib
 )
 
 if("${XII_CMAKE_WINDOWS_SDK_VERSION}" VERSION_GREATER_EQUAL "10.0.19041.0")
