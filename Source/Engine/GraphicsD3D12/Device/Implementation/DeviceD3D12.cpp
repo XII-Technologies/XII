@@ -79,20 +79,11 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
 {
   WaitIdlePlatform();
 
-  if (m_pGraphicsCommandQueue != nullptr)
-  {
-    m_pGraphicsCommandQueue.Clear();
-  }
+  m_pTransferCommandQueue.Clear();
 
-  if (m_pComputeCommandQueue != nullptr)
-  {
-    m_pComputeCommandQueue.Clear();
-  }
+  m_pComputeCommandQueue.Clear();
 
-  if (m_pTransferCommandQueue != nullptr)
-  {
-    m_pTransferCommandQueue.Clear();
-  }
+  m_pGraphicsCommandQueue.Clear();
 
   XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
   XII_GAL_D3D12_RELEASE(m_pD3D12Device);
@@ -107,12 +98,14 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
   // Enable the D3D12 debug layer.
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
     ID3D12Debug* pDebugController = nullptr;
     if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(pDebugController), reinterpret_cast<void**>(static_cast<ID3D12Debug**>(&pDebugController)))))
     {
       pDebugController->EnableDebugLayer();
+
       if (m_Description.m_ValidationLevel == xiiGALDeviceValidationLevel::All)
       {
         ID3D12Debug1* pDebugController1 = nullptr;
@@ -126,6 +119,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     }
     XII_GAL_D3D12_RELEASE(pDebugController);
   }
+#endif
 
   XII_VERIFY_D3D12(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
@@ -212,6 +206,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   // Create D3D12 Memory Allocator.
   m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator, m_pDXGIAdapter, pD3D12Device);
 
+  // Set validation and debugging options.
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
     if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(m_pD3D12Debug), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&m_pD3D12Debug)))))
@@ -246,19 +242,18 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
         XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
         XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
         XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
         XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
-#endif
+#  endif
       }
     }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     // We can prevent the GPU from overclocking or underclocking to get consistent timings.
     m_pD3D12Device->SetStablePowerState(TRUE);
-#endif
   }
+#endif
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
