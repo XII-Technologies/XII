@@ -86,7 +86,6 @@ private:
   IDXGIFactory4* m_pDXGIFactory = nullptr;
   IDXGIAdapter1* m_pDXGIAdapter = nullptr;
   ID3D12Device1* m_pD3D12Device = nullptr;
-  ID3D12Debug1*  m_pD3D12Debug  = nullptr;
 
   xiiUniquePtr<xiiD3D12MemoryAllocator> m_pAllocatorD3D12;
 

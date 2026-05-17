@@ -107,7 +107,6 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
 
   m_pGraphicsCommandQueue.Clear();
 
-  XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
   XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D12_RELEASE(m_pDXGIFactory);
@@ -210,44 +209,41 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
-    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(m_pD3D12Debug), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&m_pD3D12Debug)))))
+    ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
+    XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
+
+    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(pD3D12InfoQueue), reinterpret_cast<void**>(static_cast<ID3D12InfoQueue**>(&pD3D12InfoQueue)))))
     {
-      ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
-      XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
+      // Suppress messages based on their severity level.
+      D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 
-      if (SUCCEEDED(m_pD3D12Debug->QueryInterface(&pD3D12InfoQueue)))
-      {
-        // Suppress messages based on their severity level.
-        D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
+      // Suppress individual messages by their ID.
+      D3D12_MESSAGE_ID denyIDs[] =
+        {
+          // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
+          // The clear operation is typically slower as a result; but will still clear to the desired value.
+          // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
+          D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
 
-        // Suppress individual messages by their ID.
-        D3D12_MESSAGE_ID denyIDs[] =
-          {
-            // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
-            // The clear operation is typically slower as a result; but will still clear to the desired value.
-            // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
-            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+          // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
+          // The clear operation is typically slower as a result; but will still clear to the desired value.
+          // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
+          D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
+        };
 
-            // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
-            // The clear operation is typically slower as a result; but will still clear to the desired value.
-            // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
-            D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
-          };
+      D3D12_INFO_QUEUE_FILTER queueFilter = {};
+      queueFilter.DenyList.NumSeverities  = XII_ARRAY_SIZE(severities);
+      queueFilter.DenyList.pSeverityList  = severities;
+      queueFilter.DenyList.NumIDs         = XII_ARRAY_SIZE(denyIDs);
+      queueFilter.DenyList.pIDList        = denyIDs;
 
-        D3D12_INFO_QUEUE_FILTER queueFilter = {};
-        queueFilter.DenyList.NumSeverities  = XII_ARRAY_SIZE(severities);
-        queueFilter.DenyList.pSeverityList  = severities;
-        queueFilter.DenyList.NumIDs         = XII_ARRAY_SIZE(denyIDs);
-        queueFilter.DenyList.pIDList        = denyIDs;
-
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
 #  endif
-      }
     }
 
     // We can prevent the GPU from overclocking or underclocking to get consistent timings.
