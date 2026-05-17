@@ -54,7 +54,7 @@ xiiGALCommandListD3D12::~xiiGALCommandListD3D12()
 
 xiiResult xiiGALCommandListD3D12::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12    = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   const D3D12_COMMAND_LIST_TYPE   commandListType = GetCommandListType(m_Description.m_QueueFlags);
 
   XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&m_pD3D12CommandAllocator)));
@@ -114,17 +114,14 @@ void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommand
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {
   XII_IGNORE_UNUSED(pPipelineState);
-
 }
 
 void xiiGALCommandListD3D12::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData)
 {
- 
 }
 
 void xiiGALCommandListD3D12::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
-  
 }
 
 void xiiGALCommandListD3D12::SetBlendFactorPlatform(const xiiColor& blendFactor)
@@ -133,7 +130,6 @@ void xiiGALCommandListD3D12::SetBlendFactorPlatform(const xiiColor& blendFactor)
 
 void xiiGALCommandListD3D12::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
-
 }
 
 void xiiGALCommandListD3D12::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
@@ -178,58 +174,48 @@ void xiiGALCommandListD3D12::SetAccelerationStructurePlatform(const xiiGALPipeli
 
 xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
 {
- 
+
   return XII_SUCCESS;
 }
 
 void xiiGALCommandListD3D12::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
- 
 }
 
 void xiiGALCommandListD3D12::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
- 
 }
 
 void xiiGALCommandListD3D12::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
-  
 }
 
 void xiiGALCommandListD3D12::NextSubpassPlatform()
 {
- 
 }
 
 void xiiGALCommandListD3D12::EndRenderPassPlatform()
 {
- 
 }
 
 void xiiGALCommandListD3D12::DrawPlatform(const xiiGALDrawDescription& description)
 {
- 
 }
 
 void xiiGALCommandListD3D12::DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description)
 {
-  
 }
 
 void xiiGALCommandListD3D12::DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)
 {
- 
 }
 
 void xiiGALCommandListD3D12::DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description)
 {
- 
 }
 
 void xiiGALCommandListD3D12::DrawMeshPlatform(const xiiGALDrawMeshDescription& description)
 {
-  
 }
 
 void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
@@ -266,7 +252,6 @@ void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription&
 
 void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription& description)
 {
-  
 }
 
 void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription& description)
@@ -325,17 +310,14 @@ void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 
 void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
-  
 }
 
 void xiiGALCommandListD3D12::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
-  
 }
 
 void xiiGALCommandListD3D12::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
 {
-  
 }
 
 xiiResult xiiGALCommandListD3D12::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
@@ -368,7 +350,6 @@ void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGAL
 
 void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
 {
-  
 }
 
 void xiiGALCommandListD3D12::EnqueueSignalPlatform(xiiGALFence* pFence, xiiUInt64 uiValue)
@@ -398,7 +379,7 @@ void xiiGALCommandListD3D12::InvalidateStatePlatform()
 void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const
 {
   xiiStringBuilder sb;
-  const char*      szName = sName.GetData(sb);
+  const char*      szName       = sName.GetData(sb);
   const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount());
 
   if (m_pD3D12CommandAllocator != nullptr)

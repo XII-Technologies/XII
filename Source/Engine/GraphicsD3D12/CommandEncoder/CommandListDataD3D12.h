@@ -44,27 +44,27 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
   XII_ALWAYS_INLINE ~xiiGALCommandListDataD3D12() = default;
   XII_ALWAYS_INLINE xiiGALCommandListDataD3D12(xiiGALCommandListDataD3D12&& other) noexcept
   {
-    m_pBoundRenderTargets         = std::move(other.m_pBoundRenderTargets);
-    m_pBoundDepthStencilTarget    = std::move(other.m_pBoundDepthStencilTarget);
-    m_uiBoundRenderTargetCount    = other.m_uiBoundRenderTargetCount;
-    m_uiSubpassIndex              = other.m_uiSubpassIndex;
-    m_AttachmentClearValues       = std::move(other.m_AttachmentClearValues);
-    m_bPipelineStateModified      = other.m_bPipelineStateModified;
-    m_ResourceSets                = std::move(other.m_ResourceSets);
-    m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
+    m_pBoundRenderTargets      = std::move(other.m_pBoundRenderTargets);
+    m_pBoundDepthStencilTarget = std::move(other.m_pBoundDepthStencilTarget);
+    m_uiBoundRenderTargetCount = other.m_uiBoundRenderTargetCount;
+    m_uiSubpassIndex           = other.m_uiSubpassIndex;
+    m_AttachmentClearValues    = std::move(other.m_AttachmentClearValues);
+    m_bPipelineStateModified   = other.m_bPipelineStateModified;
+    m_ResourceSets             = std::move(other.m_ResourceSets);
+    m_uiActiveQueriesCounter   = other.m_uiActiveQueriesCounter;
   }
 
   XII_ALWAYS_INLINE xiiGALCommandListDataD3D12& operator=(xiiGALCommandListDataD3D12&& other) noexcept
   {
-    m_pBoundRenderTargets         = std::move(other.m_pBoundRenderTargets);
-    m_pBoundDepthStencilTarget    = std::move(other.m_pBoundDepthStencilTarget);
-    m_uiBoundRenderTargetCount    = other.m_uiBoundRenderTargetCount;
-    m_uiSubpassIndex              = other.m_uiSubpassIndex;
-    m_AttachmentClearValues       = std::move(other.m_AttachmentClearValues);
-    m_bPipelineStateModified      = other.m_bPipelineStateModified;
-    m_ResourceSets                = std::move(other.m_ResourceSets);
+    m_pBoundRenderTargets      = std::move(other.m_pBoundRenderTargets);
+    m_pBoundDepthStencilTarget = std::move(other.m_pBoundDepthStencilTarget);
+    m_uiBoundRenderTargetCount = other.m_uiBoundRenderTargetCount;
+    m_uiSubpassIndex           = other.m_uiSubpassIndex;
+    m_AttachmentClearValues    = std::move(other.m_AttachmentClearValues);
+    m_bPipelineStateModified   = other.m_bPipelineStateModified;
+    m_ResourceSets             = std::move(other.m_ResourceSets);
 
-    m_uiActiveQueriesCounter      = other.m_uiActiveQueriesCounter;
+    m_uiActiveQueriesCounter = other.m_uiActiveQueriesCounter;
 
     return *this;
   }
@@ -106,7 +106,7 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
 
   bool m_bPipelineStateModified = false;
 
-  xiiHybridArray<ResourceSetBindings, 1U>  m_ResourceSets;
+  xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };

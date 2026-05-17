@@ -41,7 +41,7 @@ private:
   xiiGALQueueInformationD3D12 m_QueueInformation;
 
   ID3D12Fence* m_pD3D12QueueFence = nullptr;
-  HANDLE       m_hFenceEvent       = nullptr;
+  HANDLE       m_hFenceEvent      = nullptr;
 
   xiiAtomicIntegerU64 m_uiNextFenceValue{1ULL};
   xiiUInt64           m_uiLastSyncPointValue{0ULL};
