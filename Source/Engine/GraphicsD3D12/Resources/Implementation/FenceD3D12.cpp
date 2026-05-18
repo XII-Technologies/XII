@@ -12,8 +12,7 @@ xiiGALFenceD3D12::xiiGALFenceD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12,
 
 xiiGALFenceD3D12::~xiiGALFenceD3D12()
 {
-  /// \todo Schedule deletion on device.
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_GAL_D3D12_RELEASE(m_pD3D12Fence);
 
   if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
   {

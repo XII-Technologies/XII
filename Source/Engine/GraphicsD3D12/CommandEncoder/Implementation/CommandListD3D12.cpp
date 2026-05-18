@@ -5,58 +5,118 @@
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
-#include <GraphicsD3D12/Resources/BufferD3D12.h>
+#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
+#include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
+#include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
+#include <GraphicsD3D12/Pools/QueryPoolD3D12.h>
+#include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
+#include <GraphicsD3D12/Resources/FenceD3D12.h>
+#include <GraphicsD3D12/Resources/FramebufferD3D12.h>
+#include <GraphicsD3D12/Resources/QueryD3D12.h>
+#include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
+#include <GraphicsD3D12/Resources/TopLevelASD3D12.h>
+#include <GraphicsD3D12/States/ComputePipelineStateD3D12.h>
+#include <GraphicsD3D12/States/GraphicsPipelineStateD3D12.h>
+#include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
+#include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
 
-xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D12, pCommandQueueD3D12, creationDescription), m_pD3D12CommandQueue(nullptr), m_pD3D12CommandList(nullptr), m_uiCurrentAllocatorIndex(xiiInvalidIndex)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+namespace
 {
-  XII_ASSERT_DEV(m_D3D12CommandAllocators.IsEmpty(), "");
-  XII_ASSERT_DEV(m_D3D12CommandAllocatorFenceData.IsEmpty(), "");
-  XII_ASSERT_DEV(m_uiCurrentAllocatorIndex == xiiInvalidIndex, "");
-
-  // We will use specialized command list types for compute/copy queues.
-  D3D12_COMMAND_LIST_TYPE commandListType = D3D12_COMMAND_LIST_TYPE_DIRECT;
-  if (m_Description.m_QueueType == xiiGALCommandQueueType::Compute)
+  D3D12_COMMAND_LIST_TYPE GetCommandListType(xiiBitflags<xiiGALCommandQueueFlags> queueFlags)
   {
-    commandListType = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
+      return D3D12_COMMAND_LIST_TYPE_DIRECT;
+    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
+      return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
+      return D3D12_COMMAND_LIST_TYPE_COPY;
+
+    return D3D12_COMMAND_LIST_TYPE_DIRECT;
   }
-  else if (m_Description.m_QueueType == xiiGALCommandQueueType::Transfer)
-  {
-    commandListType = D3D12_COMMAND_LIST_TYPE_COPY;
-  }
+} // namespace
 
-  ID3D12CommandAllocator* pD3D12CommandAllocator = nullptr;
-  XII_VERIFY(SUCCEEDED(pDeviceD3D12->GetD3D12Device()->CreateCommandAllocator(commandListType, _uuidof(ID3D12CommandAllocator), (void**)&pD3D12CommandAllocator)), "Failed to create the ID3D12CommandAllocator for command list!");
-
-  m_D3D12CommandAllocators.PushBack(pD3D12CommandAllocator);
-  m_uiCurrentAllocatorIndex = 0U;
-
-  XII_VERIFY(SUCCEEDED(pDeviceD3D12->GetD3D12Device()->CreateCommandList(0U, commandListType, pD3D12CommandAllocator, nullptr, _uuidof(ID3D12GraphicsCommandList), (void**)&m_pD3D12CommandList)), "Failed to create command list from the ID3D12GraphicsCommandList interface.");
+xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(std::move(pDeviceD3D12), creationDescription)
+{
 }
 
 xiiGALCommandListD3D12::~xiiGALCommandListD3D12()
 {
+  Reset();
+
+  XII_GAL_D3D12_RELEASE(m_pD3D12CommandList);
+  XII_GAL_D3D12_RELEASE(m_pD3D12CommandAllocator);
+}
+
+xiiResult xiiGALCommandListD3D12::InitPlatform()
+{
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12    = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  const D3D12_COMMAND_LIST_TYPE   commandListType = GetCommandListType(m_Description.m_QueueFlags);
+
+  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&m_pD3D12CommandAllocator)));
+  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandList(0U, commandListType, m_pD3D12CommandAllocator, nullptr, IID_PPV_ARGS(&m_pD3D12CommandList)));
+  XII_HRESULT_TO_FAILURE_LOG(m_pD3D12CommandList->Close());
+
+  return XII_SUCCESS;
 }
 
 void xiiGALCommandListD3D12::BeginPlatform()
 {
+  if (m_pD3D12CommandList == nullptr || m_pD3D12CommandAllocator == nullptr)
+    return;
+
+  m_pD3D12CommandAllocator->Reset();
+  m_pD3D12CommandList->Reset(m_pD3D12CommandAllocator, nullptr);
+
+  m_RecordingState = RecordingState::Recording;
 }
 
 void xiiGALCommandListD3D12::EndPlatform()
 {
+  if (m_pD3D12CommandList != nullptr)
+  {
+    m_pD3D12CommandList->Close();
+  }
 }
 
 void xiiGALCommandListD3D12::ResetPlatform()
 {
+  if (m_pD3D12CommandList != nullptr && m_RecordingState == RecordingState::Recording)
+  {
+    m_pD3D12CommandList->Close();
+  }
+
+  m_RecordingState = RecordingState::Reset;
 }
 
-xiiUInt64 xiiGALCommandListD3D12::SubmitPlatform()
+void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommandList)
 {
-  return xiiUInt64();
+  if (pSecondaryCommandList == nullptr || m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALCommandListD3D12* pSecondaryCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pSecondaryCommandList);
+  if (pSecondaryCommandListD3D12 == nullptr || pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList() == nullptr)
+    return;
+
+  if (!pSecondaryCommandListD3D12->GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    xiiLog::Warning("Ignoring D3D12 secondary command list submission for '{}': command list was not created with the Secondary flag.", pSecondaryCommandListD3D12->GetDebugName());
+    return;
+  }
+
+  m_pD3D12CommandList->ExecuteBundle(pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList());
 }
 
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+{
+  XII_IGNORE_UNUSED(pPipelineState);
+}
+
+void xiiGALCommandListD3D12::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData)
 {
 }
 
@@ -68,22 +128,20 @@ void xiiGALCommandListD3D12::SetBlendFactorPlatform(const xiiColor& blendFactor)
 {
 }
 
-void xiiGALCommandListD3D12::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandListD3D12::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
 }
 
-void xiiGALCommandListD3D12::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
+void xiiGALCommandListD3D12::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
 }
 
-void xiiGALCommandListD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
+void xiiGALCommandListD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
-  m_pD3D12CommandList->IASetIndexBuffer(nullptr);
 }
 
-void xiiGALCommandListD3D12::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
+void xiiGALCommandListD3D12::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
-  m_pD3D12CommandList->IASetVertexBuffers(0U, 0U, nullptr);
 }
 
 void xiiGALCommandListD3D12::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
@@ -110,19 +168,22 @@ void xiiGALCommandListD3D12::SetSamplerPlatform(const xiiGALPipelineResourceDesc
 {
 }
 
+void xiiGALCommandListD3D12::SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS)
+{
+}
+
 xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
 {
+
   return XII_SUCCESS;
 }
 
 void xiiGALCommandListD3D12::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
-  m_pD3D12CommandList->ClearRenderTargetView({}, clearColor.GetData(), 0, nullptr);
 }
 
 void xiiGALCommandListD3D12::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  m_pD3D12CommandList->ClearDepthStencilView({}, {}, fDepthClear, uiStencilClear, 0U, nullptr);
 }
 
 void xiiGALCommandListD3D12::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
@@ -137,67 +198,80 @@ void xiiGALCommandListD3D12::EndRenderPassPlatform()
 {
 }
 
-xiiResult xiiGALCommandListD3D12::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
+void xiiGALCommandListD3D12::DrawPlatform(const xiiGALDrawDescription& description)
 {
-  m_pD3D12CommandList->DrawInstanced(uiVertexCount, 1U, uiStartVertex, 0U);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
+void xiiGALCommandListD3D12::DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description)
 {
-  m_pD3D12CommandList->DrawIndexedInstanced(uiIndexCount, 1U, uiStartIndex, uiBaseVertex, 0U);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
+void xiiGALCommandListD3D12::DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)
 {
-  m_pD3D12CommandList->DrawIndexedInstanced(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DrawIndexedInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+void xiiGALCommandListD3D12::DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description)
 {
-  // m_pD3D12CommandList->ExecuteIndirect(nullptr, 0U, nullptr, 0ULL, nullptr, 0ULL);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
+void xiiGALCommandListD3D12::DrawMeshPlatform(const xiiGALDrawMeshDescription& description)
 {
-  m_pD3D12CommandList->DrawInstanced(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DrawInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
 {
-  // m_pD3D12CommandList->ExecuteIndirect(nullptr, 0U, nullptr, 0ULL, nullptr, 0ULL);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
+void xiiGALCommandListD3D12::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
 {
-  m_pD3D12CommandList->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
+void xiiGALCommandListD3D12::MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description)
 {
-  m_pD3D12CommandList->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D12::DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
+void xiiGALCommandListD3D12::DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)
 {
-  // m_pD3D12CommandList->ExecuteIndirect(nullptr, 0U, nullptr, 0ULL, nullptr, 0ULL);
+}
 
-  return XII_SUCCESS;
+void xiiGALCommandListD3D12::DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::CopyBLASPlatform(const xiiGALCopyBLASDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::CopyTLASPlatform(const xiiGALCopyTLASDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description)
+{
+}
+
+void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description)
+{
 }
 
 void xiiGALCommandListD3D12::BeginQueryPlatform(xiiGALQuery* pQuery)
@@ -214,14 +288,10 @@ void xiiGALCommandListD3D12::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
 
 void xiiGALCommandListD3D12::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
-  const xiiUInt64 uiSize = pSourceBuffer->GetDescription().m_uiSize;
-
-  m_pD3D12CommandList->CopyBufferRegion(nullptr, 0U, nullptr, 0U, uiSize);
 }
 
 void xiiGALCommandListD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
-  m_pD3D12CommandList->CopyBufferRegion(nullptr, uiDestinationOffset, nullptr, uiSourceOffset, uiSize);
 }
 
 xiiResult xiiGALCommandListD3D12::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
@@ -240,66 +310,13 @@ void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 
 void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
-  D3D12_BOX sourceBox = {
-    .left   = 0U,
-    .top    = 0U,
-    .front  = 0U,
-    .right  = 0U,
-    .bottom = 0U,
-    .back   = 0U,
-  };
-
-  D3D12_TEXTURE_COPY_LOCATION sourceTextureCopyLocation = {
-    .pResource        = nullptr,
-    .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-    .SubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(0U, 0U, pSourceTexture->GetDescription().m_uiMipLevels),
-  };
-
-  D3D12_TEXTURE_COPY_LOCATION destinationTextureCopyLocation = {
-    .pResource        = nullptr,
-    .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-    .SubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(0U, 0U, pDestinationTexture->GetDescription().m_uiMipLevels),
-  };
-
-  m_pD3D12CommandList->CopyTextureRegion(&destinationTextureCopyLocation, 0U, 0U, 0U, &sourceTextureCopyLocation, &sourceBox);
 }
 
 void xiiGALCommandListD3D12::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
-  D3D12_BOX sourceBox = {
-    .left   = box.m_vMin.x,
-    .top    = box.m_vMin.y,
-    .front  = box.m_vMin.z,
-    .right  = box.m_vMax.x,
-    .bottom = box.m_vMax.y,
-    .back   = box.m_vMax.z,
-  };
-
-  D3D12_TEXTURE_COPY_LOCATION sourceTextureCopyLocation = {
-    .pResource        = nullptr,
-    .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-    .SubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTexture->GetDescription().m_uiMipLevels),
-  };
-
-  D3D12_TEXTURE_COPY_LOCATION destinationTextureCopyLocation = {
-    .pResource        = nullptr,
-    .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-    .SubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, pDestinationTexture->GetDescription().m_uiMipLevels),
-  };
-
-  m_pD3D12CommandList->CopyTextureRegion(&destinationTextureCopyLocation, 0U, 0U, 0U, &sourceTextureCopyLocation, &sourceBox);
 }
 
-void xiiGALCommandListD3D12::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
-{
-  const xiiUInt32   uiSourceSubResourceIndex      = xiiD3D12TypeConversions::CalculateSubResourceIndex(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTexture->GetDescription().m_uiMipLevels);
-  const xiiUInt32   uiDestinationSubResourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, pDestinationTexture->GetDescription().m_uiMipLevels);
-  const DXGI_FORMAT dxgiFormat                    = xiiD3D12TypeConversions::GetFormat(pDestinationTexture->GetDescription().m_Format);
-
-  m_pD3D12CommandList->ResolveSubresource(nullptr, uiDestinationSubResourceIndex, nullptr, uiSourceSubResourceIndex, dxgiFormat);
-}
-
-void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
+void xiiGALCommandListD3D12::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
 {
 }
 
@@ -311,6 +328,36 @@ xiiResult xiiGALCommandListD3D12::MapTextureSubresourcePlatform(xiiGALTexture* p
 xiiResult xiiGALCommandListD3D12::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
   return XII_SUCCESS;
+}
+
+void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
+{
+  XII_IGNORE_UNUSED(pTextureView);
+
+  xiiLog::Error("GenerateMips is currently unsupported in the D3D12 backend.");
+}
+
+void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
+{
+  for (xiiGALStateTransitionDescription& barrier : pResourceBarriers)
+  {
+    if (barrier.m_pResource == nullptr || !barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+      continue;
+
+    barrier.m_pResource->SetResourceState(barrier.m_NewState);
+  }
+}
+
+void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
+{
+}
+
+void xiiGALCommandListD3D12::EnqueueSignalPlatform(xiiGALFence* pFence, xiiUInt64 uiValue)
+{
+}
+
+void xiiGALCommandListD3D12::DeviceWaitForFencePlatform(xiiGALFence* pFence, xiiUInt64 uiValue)
+{
 }
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
@@ -329,8 +376,50 @@ void xiiGALCommandListD3D12::InvalidateStatePlatform()
 {
 }
 
-void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName)
+void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const
 {
+  xiiStringBuilder sb;
+  const char*      szName       = sName.GetData(sb);
+  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount());
+
+  if (m_pD3D12CommandAllocator != nullptr)
+  {
+    if (FAILED(m_pD3D12CommandAllocator->SetPrivateData(WKPDID_D3DDebugObjectName, uiNameLength, szName)))
+    {
+      xiiLog::Error("Failed to set the D3D12 command allocator debug name.");
+    }
+  }
+
+  if (m_pD3D12CommandList != nullptr)
+  {
+    if (FAILED(m_pD3D12CommandList->SetPrivateData(WKPDID_D3DDebugObjectName, uiNameLength, szName)))
+    {
+      xiiLog::Error("Failed to set the D3D12 command list debug name.");
+    }
+  }
+}
+
+void xiiGALCommandListD3D12::PrepareForDraw()
+{
+}
+
+void xiiGALCommandListD3D12::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType)
+{
+}
+
+void xiiGALCommandListD3D12::PrepareForDispatchCompute()
+{
+}
+
+void xiiGALCommandListD3D12::PrepareForRayTracing()
+{
+}
+
+[[nodiscard]] inline bool ResourceStateHasWriteAccess(xiiBitflags<xiiGALResourceStateFlags> flags)
+{
+  xiiBitflags<xiiGALResourceStateFlags> writeAccessStates = xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::BuildASWrite;
+
+  return writeAccessStates.IsAnySet(flags);
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_CommandEncoder_Implementation_CommandListD3D12);

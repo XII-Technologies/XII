@@ -19,7 +19,7 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALSamplerD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSamplerD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSamplerD3D12();
 

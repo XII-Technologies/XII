@@ -17,7 +17,7 @@ xiiGALFramebufferD3D12::~xiiGALFramebufferD3D12() = default;
 
 xiiResult xiiGALFramebufferD3D12::InitPlatform()
 {
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_FramebufferD3D12);

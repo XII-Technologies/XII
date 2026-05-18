@@ -195,7 +195,7 @@ void xiiGALQueryPoolVulkan::QueryPoolInformation::DeInitialize()
 {
   if (!IsInvalidated())
   {
-    // Nothing todo.
+    // Intentionally left blank for non-invalidated pools.
   }
 }
 

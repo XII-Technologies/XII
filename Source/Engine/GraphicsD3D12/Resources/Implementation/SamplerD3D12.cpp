@@ -8,8 +8,8 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALSamplerD3D12::xiiGALSamplerD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALSampler(pDeviceD3D12, creationDescription)
+xiiGALSamplerD3D12::xiiGALSamplerD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALSamplerCreationDescription& creationDescription) :
+  xiiGALSampler(std::move(pDeviceD3D12), creationDescription)
 {
 }
 

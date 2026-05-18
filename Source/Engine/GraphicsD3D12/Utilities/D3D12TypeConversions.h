@@ -11,9 +11,6 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-#include <d3d12.h>
-#include <dxgitype.h>
-
 class XII_GRAPHICSD3D12_DLL xiiD3D12TypeConversions
 {
 public:
@@ -44,11 +41,6 @@ public:
 
   static DXGI_FORMAT                GetFormat(xiiGALResourceFormat::Enum e);
   static xiiGALResourceFormat::Enum GetGALFormat(DXGI_FORMAT e);
-
-  static DXGI_MODE_SCALING         GetScalingMode(xiiGALScalingMode::Enum e);
-  static xiiGALScalingMode::Enum   GetGALScalingMode(DXGI_MODE_SCALING e);
-  static DXGI_MODE_SCANLINE_ORDER  GetScanLineOrder(xiiGALScanLineOrder::Enum e);
-  static xiiGALScanLineOrder::Enum GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e);
 
   static D3D12_FILTER               GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter);
   static D3D12_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiGALTextureAddressMode::Enum e);

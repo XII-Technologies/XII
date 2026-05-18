@@ -143,31 +143,21 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 
   XII_ASSERT_DEV(m_pDeferredDeletionQueue->IsEmpty(), "There should be no pending deferred deletion resources at this stage.");
 
-  {
-    if (m_TransferQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
-    {
-      m_pTransferCommandQueue.Clear();
-      m_pTransferCommandBufferPool.Clear();
-      m_pTransferCommandQueueQueryPool.Clear();
-    }
+  m_pTransferCommandQueue.Clear();
+  m_pTransferCommandBufferPool.Clear();
+  m_pTransferCommandQueueQueryPool.Clear();
 
-    if (m_ComputeQueueInformation.m_uiQueueFamilyIndex != xiiInvalidIndex)
-    {
-      m_pComputeCommandQueue.Clear();
-      m_pComputeCommandBufferPool.Clear();
-      m_pComputeCommandQueueQueryPool.Clear();
-    }
+  m_pComputeCommandQueue.Clear();
+  m_pComputeCommandBufferPool.Clear();
+  m_pComputeCommandQueueQueryPool.Clear();
 
-    m_pGraphicsCommandQueue.Clear();
-    m_pGraphicsCommandBufferPool.Clear();
-    m_pGraphicsCommandQueueQueryPool.Clear();
-  }
+  m_pGraphicsCommandQueue.Clear();
+  m_pGraphicsCommandBufferPool.Clear();
+  m_pGraphicsCommandQueueQueryPool.Clear();
 
-  {
-    m_pDeferredDeletionQueue.Clear();
-    m_pFencePool.Clear();
-    m_pSemaphorePool.Clear();
-  }
+  m_pDeferredDeletionQueue.Clear();
+  m_pFencePool.Clear();
+  m_pSemaphorePool.Clear();
 
   m_pVulkanMemoryAllocator.Clear();
 
@@ -178,6 +168,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
 
   if (m_Instance != VK_NULL_HANDLE)
   {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (m_InstanceFlags.m_DebugMode != DebugMode::Disabled)
     {
       if (m_DebugMessenger != VK_NULL_HANDLE)
@@ -190,6 +181,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan()
         m_Instance.destroyDebugReportCallbackEXT(m_DebugCallback, nullptr, m_InstanceDispatchLoader);
       }
     }
+#endif
 
     m_Instance.destroy(nullptr, m_InstanceDispatchLoader);
   }

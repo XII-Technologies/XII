@@ -5,22 +5,7 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
-XII_WARNING_PUSH()
-XII_WARNING_DISABLE_MSVC(4100) // Warning C4100 : unreferenced formal parameter.
-XII_WARNING_DISABLE_MSVC(4189) // Warning C4189 : local variable is initialized but not referenced.
-XII_WARNING_DISABLE_MSVC(4505) // Warning C4505 : unreferenced function with internal linkage has been removed.
-XII_WARNING_DISABLE_CLANG("-Wnullability-completeness")
-XII_WARNING_DISABLE_CLANG("-Wunused-variable")
-XII_WARNING_DISABLE_CLANG("-Wunused-private-field")
-
-#define VMA_IMPLEMENTATION
-#define VMA_STATIC_VULKAN_FUNCTIONS  0
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
-#define VMA_STATS_STRING_ENABLED     1
-
 #include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
-
-XII_WARNING_POP()
 
 //////////////////////////////////////////////////////////////////////////
 // Helpers: map our flags/usage -> VMA
@@ -238,7 +223,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
         newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
         newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
 #else
-        XII_ASSERT_NOT_IMPLEMENTED;
+        xiiLog::Error("Exportable shared Vulkan buffer allocations are unsupported on this platform.");
+        return vk::Result::eErrorFeatureNotPresent;
 #endif
       }
 
@@ -316,7 +302,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
         newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
         newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
 #else
-        XII_ASSERT_NOT_IMPLEMENTED;
+        xiiLog::Error("Exportable shared Vulkan image allocations are unsupported on this platform.");
+        return vk::Result::eErrorFeatureNotPresent;
 #endif
       }
 
@@ -406,14 +393,12 @@ xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
 {
   xiiVulkanMemoryStatistics vkMemoryStatistics;
 
-  const xiiUInt32 uiHeapCount = m_pImplementation->m_VmaAllocator->GetMemoryHeapCount();
-
   xiiTemporaryHybridArray<VmaBudget, 4U> vmaBudgets;
-  vmaBudgets.SetCount(uiHeapCount);
+  vmaBudgets.SetCount(m_pImplementation->m_vkMemoryProperties.memoryHeapCount);
 
   vmaGetHeapBudgets(m_pImplementation->m_VmaAllocator, vmaBudgets.GetData());
 
-  for (xiiUInt32 i = 0; i < uiHeapCount; ++i)
+  for (xiiUInt32 i = 0; i < m_pImplementation->m_vkMemoryProperties.memoryHeapCount; ++i)
   {
     const VmaBudget& budget = vmaBudgets[i];
 
@@ -426,4 +411,4 @@ xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
   return vkMemoryStatistics;
 }
 
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocator);
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocatorVulkan);

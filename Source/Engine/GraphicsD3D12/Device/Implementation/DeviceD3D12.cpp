@@ -32,12 +32,33 @@
 
 #include <dxgi1_4.h>
 #include <dxgidebug.h>
-#include <sdkddkver.h>
+
+namespace
+{
+  XII_ALWAYS_INLINE const char* GetD3D12FeatureLevelName(D3D_FEATURE_LEVEL featureLevel)
+  {
+    switch (featureLevel)
+    {
+      case D3D_FEATURE_LEVEL_12_2:
+        return "12.2";
+      case D3D_FEATURE_LEVEL_12_1:
+        return "12.1";
+      case D3D_FEATURE_LEVEL_12_0:
+        return "12.0";
+      case D3D_FEATURE_LEVEL_11_1:
+        return "11.1";
+      case D3D_FEATURE_LEVEL_11_0:
+        return "11.0";
+      default:
+        return "Unknown";
+    }
+  }
+} // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceD3D12, pAllocator, description);
 }
@@ -45,17 +66,21 @@ xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllo
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
-ON_CORESYSTEMS_STARTUP
-{
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
 
-  xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
-}
+  ON_CORESYSTEMS_STARTUP
+  {
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
 
-ON_CORESYSTEMS_SHUTDOWN
-{
-  xiiGALDeviceFactory::UnregisterImplementation("D3D12");
-}
+    xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDeviceFactory::UnregisterImplementation("D3D12");
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
@@ -67,7 +92,7 @@ XII_END_SUBSYSTEM_DECLARATION;
     if (!(expression)) { return XII_FAILURE; } \
   } while (false)
 
-xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description) :
+xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(pAllocator, description)
 {
 }
@@ -76,25 +101,12 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
 {
   WaitIdlePlatform();
 
-  if (m_pGraphicsCommandQueue != nullptr)
-  {
-    m_pGraphicsCommandQueue->DeInitializePlatform();
-    m_pGraphicsCommandQueue.Clear();
-  }
+  m_pTransferCommandQueue.Clear();
 
-  if (m_pComputeCommandQueue != nullptr)
-  {
-    m_pComputeCommandQueue->DeInitializePlatform();
-    m_pComputeCommandQueue.Clear();
-  }
+  m_pComputeCommandQueue.Clear();
 
-  if (m_pTransferCommandQueue != nullptr)
-  {
-    m_pTransferCommandQueue->DeInitializePlatform();
-    m_pTransferCommandQueue.Clear();
-  }
+  m_pGraphicsCommandQueue.Clear();
 
-  XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
   XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D12_RELEASE(m_pDXGIFactory);
@@ -106,16 +118,15 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
-  // Load Direct3D 12 dynamic library.
-  // XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
-
   // Enable the D3D12 debug layer.
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
     ID3D12Debug* pDebugController = nullptr;
     if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(pDebugController), reinterpret_cast<void**>(static_cast<ID3D12Debug**>(&pDebugController)))))
     {
       pDebugController->EnableDebugLayer();
+
       if (m_Description.m_ValidationLevel == xiiGALDeviceValidationLevel::All)
       {
         ID3D12Debug1* pDebugController1 = nullptr;
@@ -129,158 +140,132 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     }
     XII_GAL_D3D12_RELEASE(pDebugController);
   }
+#endif
 
   XII_VERIFY_D3D12(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
-  // Direct3D12 does not allow feature levels below 11.0 (D3D12CreateDevice fails to create a device).
-  const D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
-
-  IDXGIAdapter1* pHardwareAdapter = nullptr;
-  if (m_Description.m_uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
   {
-    /// \todo GraphicsD3D12: Select best adapter ID by default, based on memory size, number of command queues, and prefer Discrete over Integrated over Software adapters.
-    GetHardwareAdapter(m_pDXGIFactory, &pHardwareAdapter, minFeatureLevel);
-    XII_VERIFY_D3D12(pHardwareAdapter != nullptr, "No suitable hardware adapter found.");
-  }
-  else
-  {
-    xiiDynamicArray<IDXGIAdapter1*> compatibleAdapters = GetCompatibleAdapters(minFeatureLevel);
+    // Direct3D12 does not allow feature levels below 11.0.
+    constexpr D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
-    XII_VERIFY_D3D12(m_Description.m_uiAdapterID < compatibleAdapters.GetCount(), "{0} is not a valid adapter ID. The total number of compatible adapters on this system is {1}.", m_Description.m_uiAdapterID, compatibleAdapters.GetCount());
-
-    pHardwareAdapter = compatibleAdapters[m_Description.m_uiAdapterID];
-    compatibleAdapters.RemoveAtAndSwap(m_Description.m_uiAdapterID);
-
-    XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters);
-  }
-  m_pDXGIAdapter = pHardwareAdapter;
-
-  const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
-  const char*             targetFeatureLevelNames[] = {"12.2", "12.1", "12.0", "11.1", "11.0"};
-  xiiUInt32               uiFeatureLevelIndex       = 0U;
-  HRESULT                 hResult                   = E_FAIL;
-
-  ID3D12Device* pD3D12Device = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12Device));
-
-  for (const auto& featureLevel : targetFeatureLevels)
-  {
-    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
-
-    if (SUCCEEDED(hResult))
-      break;
-
-    ++uiFeatureLevelIndex;
-  }
-
-  if (FAILED(hResult))
-  {
-    xiiLog::Error("Failed to create D3D12 hardware device. Attempting to create a WARP device.");
-
-    // Try to create a WARP device (a high-performance software device that has the capabilities of a hardware device).
-    XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
-
-    IDXGIAdapter1* pWarpAdapter = nullptr;
-    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter.");
-    m_pDXGIAdapter = pWarpAdapter;
-
-    uiFeatureLevelIndex = 0U;
-
-    for (const auto& featureLevel : targetFeatureLevels)
-    {
-      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
-
-      if (SUCCEEDED(hResult))
+    // Probe list (highest -> lowest).
+    constexpr D3D_FEATURE_LEVEL probeFeatureLevels[] =
       {
-        xiiLog::Info("Initialized D3D12 WARP device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
+        D3D_FEATURE_LEVEL_12_2,
+        D3D_FEATURE_LEVEL_12_1,
+        D3D_FEATURE_LEVEL_12_0,
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0};
+
+    for (const D3D_FEATURE_LEVEL level : probeFeatureLevels)
+    {
+      if (level < minFeatureLevel)
+        continue;
+
+      IDXGIAdapter1* pDXGIAdapter = nullptr;
+
+      if (m_Description.m_uiAdapterID != xiiInvalidIndex)
+      {
+        if (SelectAdapterByIndex(m_Description.m_uiAdapterID, level, &pDXGIAdapter, false, false).Failed())
+          continue;
+      }
+      else
+      {
+        xiiTemporaryArray<IDXGIAdapter1*> compatibleAdapters;
+        XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters));
+
+        if (GetCompatibleAdapters(level, compatibleAdapters, true).Succeeded() && !compatibleAdapters.IsEmpty())
+        {
+          pDXGIAdapter = SelectBestAdapter(compatibleAdapters);
+
+          // Remove from the array so we keep ownership of the adapter.
+          XII_VERIFY(compatibleAdapters.RemoveAndSwap(pDXGIAdapter), "Unexpectedly failed to remove the selected adapter from the compatible adapters array.");
+        }
+      }
+
+      ID3D12Device1* pD3D12Device = nullptr;
+      if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, level, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&pD3D12Device)))))
+      {
+        m_pDXGIAdapter = pDXGIAdapter;
+        m_pD3D12Device = pD3D12Device;
+
+        xiiLog::Info("Created D3D12 device with feature level {0}.", GetD3D12FeatureLevelName(level));
+
         break;
       }
 
-      ++uiFeatureLevelIndex;
+      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
     }
 
-    XII_VERIFY_D3D12(SUCCEEDED(hResult), "Failed to create D3D12 WARP device.");
-  }
-  else
-  {
-    xiiLog::Info("Initialized D3D12 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
-  }
+    if (m_pD3D12Device == nullptr)
+    {
+      xiiLog::Error("Failed to create a D3D12 device with the required feature level. Ensure that a compatible GPU is installed and the latest drivers are updated.");
 
-  if (FAILED(pD3D12Device->QueryInterface(__uuidof(m_pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)))))
-  {
-    xiiLog::Error("Failed to retrieve ID3D12Device1 from device interface.");
-    return XII_FAILURE;
+      return XII_FAILURE;
+    }
   }
 
-  // Create D3D12 Memory Allocator.
-  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, pD3D12Device);
-
-  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALResourceFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
-
+  // Set validation and debugging options.
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
-    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(m_pD3D12Debug), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&m_pD3D12Debug)))))
+    ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
+    XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
+
+    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(pD3D12InfoQueue), reinterpret_cast<void**>(static_cast<ID3D12InfoQueue**>(&pD3D12InfoQueue)))))
     {
-      ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
-      XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
+      // Suppress messages based on their severity level.
+      D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 
-      if (SUCCEEDED(m_pD3D12Debug->QueryInterface(&pD3D12InfoQueue)))
-      {
-        // Suppress whole categories of messages
-        // D3D12_MESSAGE_CATEGORY categories[] = {};
+      // Suppress individual messages by their ID.
+      D3D12_MESSAGE_ID denyIDs[] =
+        {
+          // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
+          // The clear operation is typically slower as a result; but will still clear to the desired value.
+          // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
+          D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
 
-        // Suppress messages based on their severity level
-        D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
+          // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
+          // The clear operation is typically slower as a result; but will still clear to the desired value.
+          // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
+          D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
+        };
 
-        // Suppress individual messages by their ID
-        D3D12_MESSAGE_ID denyIDs[] =
-          {
-            // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
-            // The clear operation is typically slower as a result; but will still clear to the desired value.
-            // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
-            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+      D3D12_INFO_QUEUE_FILTER queueFilter = {};
+      queueFilter.DenyList.NumSeverities  = XII_ARRAY_SIZE(severities);
+      queueFilter.DenyList.pSeverityList  = severities;
+      queueFilter.DenyList.NumIDs         = XII_ARRAY_SIZE(denyIDs);
+      queueFilter.DenyList.pIDList        = denyIDs;
 
-            // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
-            // The clear operation is typically slower as a result; but will still clear to the desired value.
-            // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
-            D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
-          };
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
-        D3D12_INFO_QUEUE_FILTER queueFilter = {};
-        // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
-        // queueFilter.DenyList.pCategoryList = categories;
-        queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
-        queueFilter.DenyList.pSeverityList = severities;
-        queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
-        queueFilter.DenyList.pIDList       = denyIDs;
-
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
-        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
-#endif
-      }
+#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+      XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
+#  endif
     }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-// We can prevent the GPU from overclocking or underclocking to get consistent timings.
-// m_pD3D12Device->SetStablePowerState(TRUE);
-#endif
+    // We can prevent the GPU from overclocking or underclocking to get consistent timings.
+    m_pD3D12Device->SetStablePowerState(TRUE);
   }
-
-  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
-  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
+#endif
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 {
+  // Initialize Direct3D 12 Memory Allocator (D3D12MA).
+  {
+    m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiD3D12MemoryAllocator);
+
+    XII_SUCCEED_OR_RETURN(m_pAllocatorD3D12->Initialize(this));
+  }
+
   xiiUInt32 queueCountPerContext[16U] = {};
 
-  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueFlags> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueFlags> queueType, xiiStringView sName) {
     const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
 
     for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
@@ -294,29 +279,58 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       {
         queueCountPerContext[i] += 1;
 
+        D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
+        queueDescriptionD3D12.Priority                 = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        queueDescriptionD3D12.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
+        queueDescriptionD3D12.NodeMask                 = 0U;
+
+        if (queueType == xiiGALCommandQueueFlags::Graphics)
+        {
+          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        }
+        else if (queueType == xiiGALCommandQueueFlags::Compute)
+        {
+          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        else
+        {
+          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+        }
+
+        xiiGALQueueInformationD3D12 queueInformation = {};
+        queueInformation.m_uiQueueFamilyIndex        = i;
+
+        HRESULT hResult = m_pD3D12Device->CreateCommandQueue(&queueDescriptionD3D12, IID_PPV_ARGS(&queueInformation.m_pCommandQueue));
+        if (FAILED(hResult))
+        {
+          xiiLog::Error("Failed to create D3D12 command queue '{}': {}.", sName, xiiHRESULTtoString(hResult));
+          return false;
+        }
+
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = queueType};
 
         xiiGALCommandQueueD3D12* pCommandQueueD3D12 = nullptr;
         if (queueType == xiiGALCommandQueueFlags::Graphics)
         {
-          m_pGraphicsCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
-          pCommandQueueD3D12      = m_pGraphicsCommandQueue.Borrow();
+          m_GraphicsQueueInformation = queueInformation;
+          m_pGraphicsCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
+          pCommandQueueD3D12         = m_pGraphicsCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Compute)
         {
-          m_pComputeCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
-          pCommandQueueD3D12     = m_pComputeCommandQueue.Borrow();
+          m_ComputeQueueInformation = queueInformation;
+          m_pComputeCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
+          pCommandQueueD3D12        = m_pComputeCommandQueue.Borrow();
         }
         else if (queueType == xiiGALCommandQueueFlags::Transfer)
         {
-          m_pTransferCommandQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription);
-          pCommandQueueD3D12      = m_pTransferCommandQueue.Borrow();
+          m_TransferQueueInformation = queueInformation;
+          m_pTransferCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
+          pCommandQueueD3D12         = m_pTransferCommandQueue.Borrow();
         }
 
         if (pCommandQueueD3D12 != nullptr)
         {
-          pCommandQueueD3D12->InitializePlatform();
-
           xiiStringBuilder sb;
           sb.SetFormat("Command Queue ({})", sName);
           pCommandQueueD3D12->SetDebugName(sb);
@@ -330,11 +344,14 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
     return false;
   };
 
-  if (!CreateCommandQueue(xiiGALCommandQueueFlags::Graphics, "Default Graphics", m_Description.m_uiAdapterID))
+  if (!CreateCommandQueue(xiiGALCommandQueueFlags::Graphics, "Default Graphics"))
     return XII_FAILURE;
 
-  CreateCommandQueue(xiiGALCommandQueueFlags::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
-  CreateCommandQueue(xiiGALCommandQueueFlags::Compute, "Default Compute", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueFlags::Transfer, "Default Transfer");
+  CreateCommandQueue(xiiGALCommandQueueFlags::Compute, "Default Compute");
+
+  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
   return XII_SUCCESS;
 }
@@ -642,16 +659,17 @@ xiiInternal::NewInstance<xiiGALTilePipelineState> xiiGALDeviceD3D12::CreateTileP
 
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
-  ///\todo Idle all command queues.
-
-  ///\todo Release stale resources.
+  if (m_pGraphicsCommandQueue != nullptr)
+    m_pGraphicsCommandQueue->WaitForIdle();
+  if (m_pComputeCommandQueue != nullptr)
+    m_pComputeCommandQueue->WaitForIdle();
+  if (m_pTransferCommandQueue != nullptr)
+    m_pTransferCommandQueue->WaitForIdle();
 }
 
 xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
-
-  /// \todo GraphicsD3D12: Assert that structure sizes has not been modified.
 
   // Set graphics adapter properties.
   {
@@ -717,11 +735,11 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     // Set queue information.
     xiiGALCommandQueueFlags::Enum queueIndexType[] = {xiiGALCommandQueueFlags::Graphics, xiiGALCommandQueueFlags::Compute, xiiGALCommandQueueFlags::Transfer};
-    m_AdapterDescription.m_CommandQueueProperties.SetCount(XII_ARRAY_SIZE(queueIndexType));
+    m_AdapterDescription.m_CommandQueueProperties.SetCountUninitialized(XII_ARRAY_SIZE(queueIndexType));
 
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
-      xiiGALCommandQueueProperties& queueProperty = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      xiiGALCommandQueueProperties& queueProperty = m_AdapterDescription.m_CommandQueueProperties[i];
       queueProperty.m_Flags                       = queueIndexType[i];
       queueProperty.m_uiMaxDeviceContexts         = 0xFFU;
 
@@ -1013,110 +1031,214 @@ xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
+xiiResult xiiGALDeviceD3D12::EnumerateAdapters(xiiDynamicArray<IDXGIAdapter1*>& out_adapters)
 {
-  IDXGIAdapter1* pDXGIAdapter = nullptr;
-  *ppAdapter                  = nullptr;
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "DXGI factory is not initialized.");
 
-  for (xiiUInt32 uiAdapterIndex = 0; pFactory->EnumAdapters1(uiAdapterIndex, &pDXGIAdapter) != DXGI_ERROR_NOT_FOUND; ++uiAdapterIndex)
+  out_adapters.Clear();
+
+  xiiUInt32      uiIndex  = 0;
+  IDXGIAdapter1* pAdapter = nullptr;
+  while (SUCCEEDED(m_pDXGIFactory->EnumAdapters1(uiIndex, &pAdapter))) // If EnumAdapters1 returned DXGI_ERROR_NOT_FOUND, that's expected when enumeration ends.
   {
-    DXGI_ADAPTER_DESC1 adapterDescription;
-    pDXGIAdapter->GetDesc1(&adapterDescription);
+    out_adapters.PushBack(pAdapter);
 
-    if (adapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+    ++uiIndex;
+  }
+
+  return XII_SUCCESS;
+}
+
+bool xiiGALDeviceD3D12::IsAdapterCompatible(IDXGIAdapter1* pAdapter, D3D_FEATURE_LEVEL minFeatureLevel, bool bPermitSoftwareAdapters)
+{
+  if (pAdapter == nullptr)
+    return false;
+
+  DXGI_ADAPTER_DESC1 adapterDescription;
+  if (FAILED(pAdapter->GetDesc1(&adapterDescription)))
+    return false;
+
+  // Skip software adapters if not permitted.
+  if (!bPermitSoftwareAdapters && (adapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE))
+    return false;
+
+  ID3D12Device* pD3D12Device;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12Device));
+
+  // Try to create a D3D12 device with the given adapter and feature level to check compatibility.
+  if (FAILED(D3D12CreateDevice(pAdapter, minFeatureLevel, __uuidof(ID3D12Device), reinterpret_cast<void**>(&pD3D12Device))))
+    return false;
+
+  return true;
+}
+
+xiiResult xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel, xiiDynamicArray<IDXGIAdapter1*>& out_CompatibleAdapters, bool bPermitSoftwareAdapters)
+{
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "DXGI factory is not initialized.");
+
+  xiiTemporaryArray<IDXGIAdapter1*> allAdapters;
+  XII_SUCCEED_OR_RETURN(EnumerateAdapters(allAdapters));
+
+  out_CompatibleAdapters.Clear();
+  out_CompatibleAdapters.Reserve(allAdapters.GetCount());
+
+  for (xiiUInt32 i = 0; i < allAdapters.GetCount(); ++i)
+  {
+    if (IsAdapterCompatible(allAdapters[i], minFeatureLevel, bPermitSoftwareAdapters))
     {
-      // Skip software adapters.
-      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
+      out_CompatibleAdapters.PushBack(allAdapters[i]);
+    }
+    else
+    {
+      // Release incompatible adapter.
+      XII_GAL_D3D12_RELEASE(allAdapters[i]);
+    }
+  }
 
+  return XII_SUCCESS;
+}
+
+IDXGIAdapter1* xiiGALDeviceD3D12::SelectBestAdapter(xiiArrayPtr<IDXGIAdapter1*> pCompatibleAdapters)
+{
+  // Rank adapters and pick the best one. Our strategy is to:
+  // 1. Prefer discrete GPUs (non-software, non-integrated).
+  // 2. Prefer higher dedicated video memory.
+  // 3. Prefer adapters with more outputs (useful heuristic).
+
+  if (pCompatibleAdapters.IsEmpty())
+    return nullptr;
+
+  struct AdapterRank
+  {
+    XII_DECLARE_POD_TYPE();
+
+    IDXGIAdapter1* m_pAdapter;
+    xiiUInt64      m_uiScore; // Higher score means better adapter.
+  };
+
+  xiiTemporaryArray<AdapterRank> rankedAdapters;
+  rankedAdapters.Reserve(pCompatibleAdapters.GetCount());
+
+  for (xiiUInt32 i = 0; i < pCompatibleAdapters.GetCount(); ++i)
+  {
+    IDXGIAdapter1* pAdapter = pCompatibleAdapters[i];
+
+    DXGI_ADAPTER_DESC1 adapterDescription;
+    if (FAILED(pAdapter->GetDesc1(&adapterDescription)))
       continue;
-    }
 
-    // Check to see if the adapter supports Direct3D 12, but don't create the actual device yet.
-    if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, featureLevel, __uuidof(ID3D12Device), nullptr)))
+    xiiUInt64 uiScore = 0ULL;
+
+    // Heuristic 1: Discrete GPUs get a big score boost.
+    if (!(adapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE))
     {
-      break;
-    }
-    else
-    {
-      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
-    }
-  }
-
-  *ppAdapter = pDXGIAdapter;
-}
-
-xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel)
-{
-  xiiDynamicArray<IDXGIAdapter1*> DXGIAdapters;
-
-  IDXGIFactory2* pDXGIFactory = nullptr;
-  if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory2), (void**)&pDXGIFactory)))
-  {
-    xiiLog::Error("Failed to create DXGI factory.");
-    return DXGIAdapters;
-  }
-
-  IDXGIAdapter1* pDXGIAdapter = nullptr;
-  for (xiiUInt32 uiAdapterIndex = 0; pDXGIFactory->EnumAdapters1(uiAdapterIndex, &pDXGIAdapter) != DXGI_ERROR_NOT_FOUND; ++uiAdapterIndex)
-  {
-    DXGI_ADAPTER_DESC1 adapterDescription;
-    pDXGIAdapter->GetDesc1(&adapterDescription);
-
-    if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, minFeatureLevel, __uuidof(ID3D12Device), nullptr)))
-    {
-      DXGIAdapters.PushBack(pDXGIAdapter);
-    }
-    else
-    {
-      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
-    }
-  }
-
-  return DXGIAdapters;
-}
-
-void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALResourceFormat> format, xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12>& displayModes)
-{
-  auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
-
-  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetFormat(format);
-  IDXGIOutput* pOutput    = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pOutput));
-
-  if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
-  {
-    DXGI_ADAPTER_DESC1 adapterDescription;
-    pDXGIAdapter->GetDesc1(&adapterDescription);
-
-    xiiLog::Error("Failed to enumerate output {0} of adapter {1} ({2}).", uiOutputID, adapterDescription.DeviceId, xiiStringUtf8(adapterDescription.Description).GetData());
-    return;
-  }
-
-  // Retrieve the display mode count.
-  xiiUInt32 uiModeCount = 0;
-  if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
-  {
-    // Retireve the display mode descriptions.
-    xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
-    dxgiDisplayModes.SetCount(uiModeCount);
-
-    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, dxgiDisplayModes.GetData())))
-    {
-      displayModes.Clear();
-      for (xiiUInt32 i = 0; i < uiModeCount; ++i)
+      if (adapterDescription.DedicatedVideoMemory != 0U)
       {
-        const auto& dxgiDisplayMode = dxgiDisplayModes[i];
-        auto&       galDisplayMode  = displayModes.ExpandAndGetRef();
+        uiScore += 1000000ULL; // Discrete GPU.
+      }
+      else
+      {
+        uiScore += 500000ULL; // Integrated GPU.
+      }
+    }
 
-        galDisplayMode.m_Resolution               = xiiSizeU32(dxgiDisplayMode.Width, dxgiDisplayMode.Height);
-        galDisplayMode.m_ResourceFormat           = xiiD3D12TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
-        galDisplayMode.m_uiRefreshRateNumerator   = dxgiDisplayMode.RefreshRate.Numerator;
-        galDisplayMode.m_uiRefreshRateDenominator = dxgiDisplayMode.RefreshRate.Denominator;
-        galDisplayMode.m_ScalingMode              = xiiD3D12TypeConversions::GetGALScalingMode(dxgiDisplayMode.Scaling);
-        galDisplayMode.m_ScanLineOrder            = xiiD3D12TypeConversions::GetGALScanLineOrder(dxgiDisplayMode.ScanlineOrdering);
+    // Heuristic 2: Prefer more dedicated video memory.
+    uiScore += static_cast<xiiUInt64>(adapterDescription.DedicatedVideoMemory / (1024 * 1024)); // MB weight.
+
+    // Heuristic 3: Prefer adapters with more outputs (monitors).
+    xiiUInt32    uiOutputCount = 0U;
+    IDXGIOutput* pOutput       = nullptr;
+    for (xiiUInt32 j = 0; SUCCEEDED(pAdapter->EnumOutputs(j, &pOutput)); ++j)
+    {
+      ++uiOutputCount;
+
+      XII_GAL_D3D12_RELEASE(pOutput);
+    }
+
+    uiScore += static_cast<xiiUInt64>(uiOutputCount) * 100ULL; // Output count weight.
+
+    rankedAdapters.PushBack({pAdapter, uiScore});
+  }
+
+  if (rankedAdapters.IsEmpty())
+    return nullptr;
+
+  rankedAdapters.Sort([](const AdapterRank& a, const AdapterRank& b) { return a.m_uiScore > b.m_uiScore; });
+
+  return rankedAdapters[0].m_pAdapter;
+}
+
+xiiResult xiiGALDeviceD3D12::SelectAdapterByIndex(xiiUInt32 uiAdapterIndex, D3D_FEATURE_LEVEL minFeatureLevel, IDXGIAdapter1** out_ppAdapter, bool bPermitSoftwareAdapter, bool bPreferBestIfIndexInvalid)
+{
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "DXGI factory is not initialized.");
+
+  *out_ppAdapter = nullptr;
+
+  xiiTemporaryArray<IDXGIAdapter1*> compatibleAdapters;
+  XII_SUCCEED_OR_RETURN(GetCompatibleAdapters(minFeatureLevel, compatibleAdapters, bPermitSoftwareAdapter));
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters));
+
+  if (compatibleAdapters.IsEmpty())
+  {
+    xiiLog::Warning("No compatible adapters found for feature level {}.", GetD3D12FeatureLevelName(minFeatureLevel));
+
+    // Try to create a WARP device (a high-performance software device that has the capabilities of a hardware device).
+    IDXGIAdapter1* pWARPAdapter = nullptr;
+    if (SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(IDXGIAdapter1), reinterpret_cast<void**>(&pWARPAdapter))))
+    {
+      if (IsAdapterCompatible(pWARPAdapter, minFeatureLevel, bPermitSoftwareAdapter))
+      {
+        *out_ppAdapter = pWARPAdapter;
+
+        return XII_SUCCESS;
+      }
+      else
+      {
+        xiiLog::Warning("WARP adapter is not compatible with feature level {}.", GetD3D12FeatureLevelName(minFeatureLevel));
+
+        XII_GAL_D3D12_RELEASE(pWARPAdapter);
+      }
+    }
+    else
+    {
+      xiiLog::Warning("Failed to enumerate WARP adapter.");
+    }
+  }
+
+  if (uiAdapterIndex < compatibleAdapters.GetCount())
+  {
+    *out_ppAdapter = compatibleAdapters[uiAdapterIndex];
+
+    compatibleAdapters.RemoveAndSwap(*out_ppAdapter); // Remove the selected adapter from the list to avoid releasing it in the scope exit.
+
+    return XII_SUCCESS;
+  }
+  else
+  {
+    xiiLog::Warning("Requested adapter index {} is out of range. {} compatible adapter(s) found for feature level {}.", uiAdapterIndex, compatibleAdapters.GetCount(), GetD3D12FeatureLevelName(minFeatureLevel));
+
+    if (bPreferBestIfIndexInvalid)
+    {
+      IDXGIAdapter1* pBestAdapter = SelectBestAdapter(compatibleAdapters);
+
+      if (pBestAdapter != nullptr)
+      {
+        *out_ppAdapter = pBestAdapter;
+
+        xiiLog::Info("Selected the best available adapter instead: {}.", GetD3D12FeatureLevelName(minFeatureLevel));
+
+        compatibleAdapters.RemoveAndSwap(*out_ppAdapter); // Remove the selected adapter from the list to avoid releasing it in the scope exit.
+
+        return XII_SUCCESS;
+      }
+      else
+      {
+        xiiLog::Warning("No suitable adapter found to select as best.");
       }
     }
   }
+
+  return XII_FAILURE;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);

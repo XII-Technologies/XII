@@ -5,14 +5,13 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Shader/InputLayoutD3D12.h>
 #include <GraphicsD3D12/Shader/ShaderD3D12.h>
-#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 static const char* GALSemanticToD3D[] = {"UNDEFINED", "POSITION", "NORMAL", "TANGENT", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR",
                                          "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
-                                         "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
+                                         "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS", "DATAOFFSETS"};
 
 static_assert(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D array size does not match input layout semantic count.");
 
@@ -28,7 +27,7 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform(xiiGALShader* pShader)
   xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiGALShaderD3D12*              pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pShader);
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D12->GetVertexInputLayout());
+  xiiTemporaryHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D12->GetVertexInputLayout());
   auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum sematic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
     for (xiiUInt32 i = 0; i < vertexInputLayouts.GetCount(); ++i)
     {

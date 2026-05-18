@@ -485,7 +485,8 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
     m_ExternalMemoryDescription.m_uiNativeSemaphoreHandle = static_cast<uintptr_t>(iSemaphoreFD);
 
 #else
-    XII_ASSERT_NOT_IMPLEMENTED;
+    xiiLog::Error("Exporting Vulkan external memory is unsupported on this platform.");
+    return XII_FAILURE;
 #endif
   }
   else if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
@@ -669,7 +670,8 @@ xiiResult xiiGALTextureVulkan::InitializeImageExternalMemoryProperties(xiiBitfla
     m_ExternalMemoryDescription.m_uiNativeHandle = 0U;
 
 #else
-    XII_ASSERT_NOT_IMPLEMENTED;
+    xiiLog::Error("Importing Vulkan external memory is unsupported on this platform.");
+    return XII_FAILURE;
 #endif
   }
 

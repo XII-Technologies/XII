@@ -141,7 +141,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryStatistics
 /// \brief Vulkan memory allocator wrapper.
 ///
 /// Provides high-level allocation and resource management for Vulkan buffers and images.
-/// Internally wraps Vulkan Memory Allocator (VMA) or custom logic to simplify memory handling.
+/// Internally wraps Vulkan Memory Allocator (VMA) and custom logic to simplify memory handling.
 class XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryAllocator
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiVulkanMemoryAllocator);

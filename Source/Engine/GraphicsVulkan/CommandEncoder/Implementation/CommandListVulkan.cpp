@@ -1027,7 +1027,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
           vkWriteDescriptorSet.pNext                  = nullptr;
           vkWriteDescriptorSet.dstSet                 = m_CommandListData.m_DescriptorSets[uiSet];
           vkWriteDescriptorSet.dstBinding             = resourceLayout.m_uiBindingIndex;
-          vkWriteDescriptorSet.dstArrayElement        = 0U; // TODO.
+          vkWriteDescriptorSet.dstArrayElement        = 0U; // Resource arrays are written from element 0 using descriptorCount.
           vkWriteDescriptorSet.descriptorCount        = resourceLayout.m_uiArraySize;
           vkWriteDescriptorSet.descriptorType         = xiiVulkanTypeConversions::GetDescriptorType(resourceLayout.m_DescriptorType); // descriptorType must be the same type as that specified in VkDescriptorSetLayoutBinding for dstSet at dstBinding. The type of the descriptor also controls which array the descriptors are taken from. (13.2.4)
           vkWriteDescriptorSet.pImageInfo             = nullptr;
@@ -2522,7 +2522,7 @@ void xiiGALCommandListVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
     {
       if (m_CommandListState.m_vkRenderPass != VK_NULL_HANDLE)
       {
-        // TODO: Verify that this is a requirement.
+        // Vulkan requires begin/end query to occur in the same render-pass scope.
         EndRenderPass();
       }
     }

@@ -67,7 +67,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="Force a single-line header as the first line, per-file-type, preserving encoding.")
     p.add_argument('--root', default='.', help='Root directory to scan (ignored if --files is used)')
     p.add_argument('--files', nargs='*', help='Explicit list of files to process (overrides --root)')
-    p.add_argument('--omit-dir', nargs='*', default=[], help='Directory names or relative paths to omit (case-insensitive).')
+    p.add_argument('--omit-dir', action='extend', nargs='+', default=[], help='Directory names or relative paths to omit (case-insensitive).')
     p.add_argument('--body', help='Header body text (without comment prefix). Default is Theophilus header.')
     p.add_argument('--header', help='Full header line to insert (overrides body and prefix)')
     p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
@@ -236,27 +236,98 @@ def process_file(path: Path, header_line: str, dry_run: bool, backup: bool, fall
 # -------------------------
 def normalize_omit_dirs(omit_list):
     """
-    Normalize omit entries to lowercase path segments for comparison.
-    Accepts directory names or relative paths. Returns set of normalized segments.
+    Normalize omit entries into:
+      - basename_set: lowercased last path segment for quick matching (e.g., 'thirdparty')
+      - fullpath_set: lowercased full entry strings and repo-relative strings for substring matching
+      - parts_list: list of tuples of lowercased path parts for contiguous-sequence matching
+    Returns (basename_set, fullpath_set, parts_list).
     """
-    normalized = set()
+    basename_set = set()
+    fullpath_set = set()
+    parts_list = []
+    cwd = Path.cwd()
+
     for entry in omit_list or []:
         if not entry:
             continue
         p = Path(entry)
-        # Add each segment of the provided path (so "thirdparty/lib" will match "thirdparty")
-        for part in p.parts:
-            normalized.add(part.lower())
-    return normalized
+        # basename (last segment)
+        basename_set.add(p.name.lower())
 
-def path_is_omitted(path: Path, omit_segments: set):
+        # full string form
+        fullpath_set.add(str(p).lower())
+
+        # if entry is inside cwd, add its relative form too
+        try:
+            rel = p.relative_to(cwd)
+            fullpath_set.add(str(rel).lower())
+        except Exception:
+            pass
+
+        # store the sequence of parts for contiguous matching
+        parts = tuple(part.lower() for part in p.parts if part not in ('.', ''))
+        if parts:
+            parts_list.append(parts)
+
+    return basename_set, fullpath_set, parts_list
+
+
+def _has_contiguous_subsequence(path_parts, subseq):
     """
-    Return True if any path segment (case-insensitive) matches an omit segment.
+    Return True if subseq (tuple of parts) appears as a contiguous subsequence in path_parts (list).
     """
-    for part in path.parts:
-        if part.lower() in omit_segments:
+    if not subseq:
+        return False
+    n = len(path_parts)
+    m = len(subseq)
+    if m > n:
+        return False
+    for i in range(n - m + 1):
+        if tuple(path_parts[i:i + m]) == subseq:
             return True
     return False
+
+
+def path_is_omitted(path: Path, omit_basename_set: set, omit_fullpath_set: set, omit_parts_list: list):
+    """
+    Return True if the path should be omitted.
+
+    Matching strategy (in order):
+      - any path segment equals a basename in omit_basename_set (fast)
+      - any omit_parts_list tuple appears as a contiguous subsequence of the path parts
+      - any omit_fullpath_set entry is a substring of the file path (handles absolute vs relative)
+      - any omit_fullpath_set entry is a substring of the resolved absolute path (best-effort)
+    """
+    # Normalize path parts once
+    path_parts = [part.lower() for part in path.parts]
+
+    # match any path segment basename
+    for part in path_parts:
+        if part in omit_basename_set:
+            return True
+
+    # contiguous subsequence match (handles entries like "Source/ThirdParty")
+    for subseq in omit_parts_list:
+        if _has_contiguous_subsequence(path_parts, subseq):
+            return True
+
+    # substring match against the file path string
+    pstr = str(path).lower()
+    for fp in omit_fullpath_set:
+        if fp and fp in pstr:
+            return True
+
+    # try resolved absolute path substring match
+    try:
+        resolved = str(path.resolve()).lower()
+        for fp in omit_fullpath_set:
+            if fp and fp in resolved:
+                return True
+    except Exception:
+        pass
+
+    return False
+
 
 def collect_target_files(args, type_map):
     """
@@ -264,8 +335,13 @@ def collect_target_files(args, type_map):
       - If args.files provided: use that list (filter missing and omitted).
       - Otherwise: scan args.root for known extensions and filenames, skipping omitted dirs.
     """
-    omit_segments = normalize_omit_dirs(args.omit_dir)
+    # normalize_omit_dirs now returns three things: (basename_set, fullpath_set, parts_list)
+    omit_basename_set, omit_fullpath_set, omit_parts_list = normalize_omit_dirs(args.omit_dir)
     extra_exts = [e if e.startswith('.') else f".{e}" for e in (args.extensions or [])]
+
+    print("omit basenames:", sorted(list(omit_basename_set)), file=sys.stdout)
+    print("omit fullpaths sample:", list(omit_fullpath_set)[:5], file=sys.stdout)
+    print("omit parts list sample:", omit_parts_list[:5], file=sys.stdout)
 
     targets = []
     if args.files:
@@ -274,7 +350,7 @@ def collect_target_files(args, type_map):
             if not p.exists():
                 print(f"Skipping missing file: {f}", file=sys.stderr)
                 continue
-            if path_is_omitted(p, omit_segments):
+            if path_is_omitted(p, omit_basename_set, omit_fullpath_set, omit_parts_list):
                 print(f"Skipping omitted file (in omitted dir): {f}", file=sys.stdout)
                 continue
             targets.append(p)
@@ -297,7 +373,7 @@ def collect_target_files(args, type_map):
     for p in root.rglob('*'):
         if not p.is_file():
             continue
-        if path_is_omitted(p, omit_segments):
+        if path_is_omitted(p, omit_basename_set, omit_fullpath_set, omit_parts_list):
             # skip any file under an omitted directory
             continue
         if p.name in filenames or p.suffix.lower() in exts:
