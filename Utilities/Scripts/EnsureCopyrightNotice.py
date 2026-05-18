@@ -236,41 +236,51 @@ def process_file(path: Path, header_line: str, dry_run: bool, backup: bool, fall
 # -------------------------
 def normalize_omit_dirs(omit_list):
     """
-    Normalize omit entries to lowercase path segments for comparison.
-    Accepts directory names or relative paths. Returns set of normalized segments.
+    Normalize omit entries into two sets:
+      - basename_set: lowercased last path segment for quick matching (e.g., 'ThirdParty')
+      - fullpath_set: lowercased full entry strings and repo-relative strings for substring matching
+    Returns (basename_set, fullpath_set).
     """
-    normalized = set()
-    full_paths = set()
+    basename_set = set()
+    fullpath_set = set()
     cwd = Path.cwd()
     for entry in omit_list or []:
         if not entry:
             continue
         p = Path(entry)
-        # store basename (last segment) and the normalized full string
-        normalized.add(p.name.lower())
-        full_paths.add(str(p).lower())
-        # if the entry is inside the repo, add its relative path string
+        # basename (last segment)
+        basename_set.add(p.name.lower())
+        # full string form
+        fullpath_set.add(str(p).lower())
+        # if entry is inside cwd, add its relative form too
         try:
             rel = p.relative_to(cwd)
-            full_paths.add(str(rel).lower())
+            fullpath_set.add(str(rel).lower())
         except Exception:
             pass
-    return normalized, 
+    return basename_set, fullpath_set
 
-def path_is_omitted(path: Path, omit_segments: set):
+
+def path_is_omitted(path: Path, omit_basename_set: set, omit_fullpath_set: set):
     """
-    Return True if any path segment (case-insensitive) matches an omit segment.
+    Return True if the path should be omitted.
+    Matching strategy (in order):
+      - any path segment equals a basename in omit_basename_set (fast)
+      - any omit_fullpath_set entry is a substring of the file path (handles absolute vs relative)
+      - any omit_fullpath_set entry is a substring of the resolved absolute path (best-effort)
     """
-    # match any path segment basename (fast)
+    # match any path segment basename
     for part in path.parts:
         if part.lower() in omit_basename_set:
             return True
-    # match any omit full path as substring of the file path (handles absolute vs relative)
+
+    # substring match against the file path string
     pstr = str(path).lower()
     for fp in omit_fullpath_set:
         if fp and fp in pstr:
             return True
-    # try resolved absolute path segments (best-effort)
+
+    # try resolved absolute path substring match
     try:
         resolved = str(path.resolve()).lower()
         for fp in omit_fullpath_set:
@@ -286,7 +296,8 @@ def collect_target_files(args, type_map):
       - If args.files provided: use that list (filter missing and omitted).
       - Otherwise: scan args.root for known extensions and filenames, skipping omitted dirs.
     """
-    omit_segments = normalize_omit_dirs(args.omit_dir)
+    # normalize_omit_dirs now returns two sets: (basename_set, fullpath_set)
+    omit_basename_set, omit_fullpath_set = normalize_omit_dirs(args.omit_dir)
     extra_exts = [e if e.startswith('.') else f".{e}" for e in (args.extensions or [])]
 
     targets = []
@@ -296,7 +307,7 @@ def collect_target_files(args, type_map):
             if not p.exists():
                 print(f"Skipping missing file: {f}", file=sys.stderr)
                 continue
-            if path_is_omitted(p, omit_segments):
+            if path_is_omitted(p, omit_basename_set, omit_fullpath_set):
                 print(f"Skipping omitted file (in omitted dir): {f}", file=sys.stdout)
                 continue
             targets.append(p)
@@ -319,7 +330,7 @@ def collect_target_files(args, type_map):
     for p in root.rglob('*'):
         if not p.is_file():
             continue
-        if path_is_omitted(p, omit_segments):
+        if path_is_omitted(p, omit_basename_set, omit_fullpath_set):
             # skip any file under an omitted directory
             continue
         if p.name in filenames or p.suffix.lower() in exts:
