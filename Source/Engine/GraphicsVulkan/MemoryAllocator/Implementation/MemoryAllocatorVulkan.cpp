@@ -7,6 +7,41 @@
 
 #include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
+// clang-format off
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVulkanMemoryUsage, 1)
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::Auto),
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::AutoPreferDevice),
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::AutoPreferHost),
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::GpuLazilyAllocated),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiVulkanAllocationCreateFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::Dedicated),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::NeverAllocate),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::Mapped),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::UserDataCopy),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::UpperAddress),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyMinMemory),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyMinTime),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyFirstFit),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyCanAlias),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyWithinBudget),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyHostSequential),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyHostRandom),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiVulkanMemoryPropertyFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::DeviceLocal),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::HostVisible),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::HostCoherent),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::HostCached),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::LazilyAllocated),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::Protected),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+// clang-format on
+
 //////////////////////////////////////////////////////////////////////////
 // Helpers: map our flags/usage -> VMA
 
