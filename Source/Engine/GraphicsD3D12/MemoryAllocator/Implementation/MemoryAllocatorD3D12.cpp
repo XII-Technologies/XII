@@ -238,7 +238,7 @@ xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resour
   allocationDescription.CustomPool               = nullptr; // Not supported for now.
   allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
 
-    D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
+  D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
   if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
   {
     xiiLog::Error("Failed to create buffer resource with D3D12 Memory Allocator.");

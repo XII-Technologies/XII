@@ -112,10 +112,10 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSD3D12_DLL, xiiD3D12MemoryHeapFlags);
 /// \brief Describes the parameters used to create a Direct3D 12 memory allocation.
 struct XII_GRAPHICSD3D12_DLL xiiD3D12MemoryAllocationCreateInfo
 {
-  xiiBitflags<xiiD3D12AllocationFlags> m_Flags;                 ///< Flags that control allocation strategy and behavior.
-  xiiEnum<xiiD3D12MemoryHeapType>      m_HeapType;              ///< Preferred memory heap type for the allocation (e.g., Default, Upload, Readback).
-  xiiBitflags<xiiD3D12MemoryHeapFlags> m_HeapFlags;             ///< Memory heap flags that must be present in the selected heap. Used to enforce strict compatibility (e.g., Shared, AllowDisplay).
-  void*                                m_pUserData   = nullptr; ///< Optional user data pointer that can be associated with the allocation. This can be used to store custom metadata or context information relevant to the allocation, which may be useful for debugging, profiling, or custom allocation logic.
+  xiiBitflags<xiiD3D12AllocationFlags> m_Flags;               ///< Flags that control allocation strategy and behavior.
+  xiiEnum<xiiD3D12MemoryHeapType>      m_HeapType;            ///< Preferred memory heap type for the allocation (e.g., Default, Upload, Readback).
+  xiiBitflags<xiiD3D12MemoryHeapFlags> m_HeapFlags;           ///< Memory heap flags that must be present in the selected heap. Used to enforce strict compatibility (e.g., Shared, AllowDisplay).
+  void*                                m_pUserData = nullptr; ///< Optional user data pointer that can be associated with the allocation. This can be used to store custom metadata or context information relevant to the allocation, which may be useful for debugging, profiling, or custom allocation logic.
 };
 
 /// \brief Direct3D 12 memory allocator wrapper.
