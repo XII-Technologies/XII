@@ -263,92 +263,71 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
     XII_SUCCEED_OR_RETURN(m_pAllocatorD3D12->Initialize(this));
   }
 
-  xiiUInt32 queueCountPerContext[16U] = {};
+  // Create pools.
+  {
+  }
 
-  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueFlags> queueType, xiiStringView sName) {
-    const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
-
-    for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
+  // Create command queues.
+  {
     {
-      auto& currentQueue = queues[i];
+      D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
+      queueDescriptionD3D12.Type                     = D3D12_COMMAND_LIST_TYPE_DIRECT;
+      queueDescriptionD3D12.Priority                 = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+      queueDescriptionD3D12.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
+      queueDescriptionD3D12.NodeMask                 = 0U;
 
-      if (queueCountPerContext[i] >= currentQueue.m_uiMaxDeviceContexts)
-        continue;
-
-      if ((currentQueue.m_Flags & queueType) == queueType)
+      HRESULT hResult = m_pD3D12Device->CreateCommandQueue(&queueDescriptionD3D12, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(static_cast<ID3D12CommandQueue**>(&m_GraphicsQueueInformation.m_pCommandQueue)));
+      if (FAILED(hResult))
       {
-        queueCountPerContext[i] += 1;
+        xiiLog::Error("Failed to create D3D12 graphics command queue: {}.", xiiHRESULTtoString(hResult));
 
-        D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
-        queueDescriptionD3D12.Priority                 = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-        queueDescriptionD3D12.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
-        queueDescriptionD3D12.NodeMask                 = 0U;
+        return XII_FAILURE;
+      }
 
-        if (queueType == xiiGALCommandQueueFlags::Graphics)
-        {
-          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        }
-        else if (queueType == xiiGALCommandQueueFlags::Compute)
-        {
-          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        }
-        else
-        {
-          queueDescriptionD3D12.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-        }
+      xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
+      m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
 
-        xiiGALQueueInformationD3D12 queueInformation = {};
-        queueInformation.m_uiQueueFamilyIndex        = i;
+      m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
 
-        HRESULT hResult = m_pD3D12Device->CreateCommandQueue(&queueDescriptionD3D12, IID_PPV_ARGS(&queueInformation.m_pCommandQueue));
-        if (FAILED(hResult))
-        {
-          xiiLog::Error("Failed to create D3D12 command queue '{}': {}.", sName, xiiHRESULTtoString(hResult));
-          return false;
-        }
+      xiiLog::Dev("Created {}", m_pGraphicsCommandQueue->GetDebugName());
+    }
 
-        xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = queueType};
+    {
+      D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
+      queueDescriptionD3D12.Type                     = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+      queueDescriptionD3D12.Priority                 = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+      queueDescriptionD3D12.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
+      queueDescriptionD3D12.NodeMask                 = 0U;
 
-        xiiGALCommandQueueD3D12* pCommandQueueD3D12 = nullptr;
-        if (queueType == xiiGALCommandQueueFlags::Graphics)
-        {
-          m_GraphicsQueueInformation = queueInformation;
-          m_pGraphicsCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
-          pCommandQueueD3D12         = m_pGraphicsCommandQueue.Borrow();
-        }
-        else if (queueType == xiiGALCommandQueueFlags::Compute)
-        {
-          m_ComputeQueueInformation = queueInformation;
-          m_pComputeCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
-          pCommandQueueD3D12        = m_pComputeCommandQueue.Borrow();
-        }
-        else if (queueType == xiiGALCommandQueueFlags::Transfer)
-        {
-          m_TransferQueueInformation = queueInformation;
-          m_pTransferCommandQueue    = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
-          pCommandQueueD3D12         = m_pTransferCommandQueue.Borrow();
-        }
+      if (SUCCEEDED(m_pD3D12Device->CreateCommandQueue(&queueDescriptionD3D12, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(static_cast<ID3D12CommandQueue**>(&m_ComputeQueueInformation.m_pCommandQueue)))))
+      {
+        xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
+        m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
 
-        if (pCommandQueueD3D12 != nullptr)
-        {
-          xiiStringBuilder sb;
-          sb.SetFormat("Command Queue ({})", sName);
-          pCommandQueueD3D12->SetDebugName(sb);
+        m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
 
-          xiiLog::Info("Created {}", sb);
-        }
-
-        return true;
+        xiiLog::Dev("Created {}", m_pComputeCommandQueue->GetDebugName());
       }
     }
-    return false;
-  };
 
-  if (!CreateCommandQueue(xiiGALCommandQueueFlags::Graphics, "Default Graphics"))
-    return XII_FAILURE;
+    {
+      D3D12_COMMAND_QUEUE_DESC queueDescriptionD3D12 = {};
+      queueDescriptionD3D12.Type                     = D3D12_COMMAND_LIST_TYPE_COPY;
+      queueDescriptionD3D12.Priority                 = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+      queueDescriptionD3D12.Flags                    = D3D12_COMMAND_QUEUE_FLAG_NONE;
+      queueDescriptionD3D12.NodeMask                 = 0U;
 
-  CreateCommandQueue(xiiGALCommandQueueFlags::Transfer, "Default Transfer");
-  CreateCommandQueue(xiiGALCommandQueueFlags::Compute, "Default Compute");
+      if (SUCCEEDED(m_pD3D12Device->CreateCommandQueue(&queueDescriptionD3D12, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(static_cast<ID3D12CommandQueue**>(&m_TransferQueueInformation.m_pCommandQueue)))))
+      {
+        xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
+        m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
+
+        m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
+
+        xiiLog::Dev("Created {}", m_pTransferCommandQueue->GetDebugName());
+      }
+    }
+  }
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
