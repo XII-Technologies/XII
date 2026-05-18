@@ -253,9 +253,22 @@ def path_is_omitted(path: Path, omit_segments: set):
     """
     Return True if any path segment (case-insensitive) matches an omit segment.
     """
+    p_lower = str(path).lower()
+    # match any segment
     for part in path.parts:
         if part.lower() in omit_segments:
             return True
+    # match any omit entry as a substring of the full path (handles absolute vs relative)
+    for seg in omit_segments:
+        if seg in p_lower:
+            return True
+    # match resolved absolute path segments (if possible)
+    try:
+        resolved_parts = [pp.lower() for pp in path.resolve().parts]
+        if any(seg in resolved_parts for seg in omit_segments):
+            return True
+    except Exception:
+        pass
     return False
 
 def collect_target_files(args, type_map):
