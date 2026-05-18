@@ -67,7 +67,7 @@ def parse_args():
     p = argparse.ArgumentParser(description="Force a single-line header as the first line, per-file-type, preserving encoding.")
     p.add_argument('--root', default='.', help='Root directory to scan (ignored if --files is used)')
     p.add_argument('--files', nargs='*', help='Explicit list of files to process (overrides --root)')
-    p.add_argument('--omit-dir', nargs='*', default=[], help='Directory names or relative paths to omit (case-insensitive).')
+    p.add_argument('--omit-dir', action='extend', nargs='+', default=[], help='Directory names or relative paths to omit (case-insensitive).')
     p.add_argument('--body', help='Header body text (without comment prefix). Default is Theophilus header.')
     p.add_argument('--header', help='Full header line to insert (overrides body and prefix)')
     p.add_argument('--dry-run', action='store_true', help='Show changes without writing files')
