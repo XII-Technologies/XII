@@ -99,8 +99,8 @@ jobs:
             exit 0
           fi
 
-          # Example omit directories (case-insensitive path segments). Adjust as needed.
-          OMIT_DIRS=(${GITHUB_WORKSPACE}/Source/ThirdParty ${GITHUB_WORKSPACE}/Data/Tools ${GITHUB_WORKSPACE}/Source/Engine/Foundation/ThirdParty ${GITHUB_WORKSPACE}/Workspace ${GITHUB_WORKSPACE}/Output)
+          # Define directories to omit from processing (relative to repo root).
+          OMIT_DIRS=( Source/ThirdParty Data/Tools Source/Engine/Foundation/ThirdParty Workspace Output )
 
           # Build omit args array for the tool
           OMIT_ARGS=()
