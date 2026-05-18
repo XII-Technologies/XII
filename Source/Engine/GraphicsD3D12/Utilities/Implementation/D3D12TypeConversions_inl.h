@@ -1160,3 +1160,55 @@ XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(x
 {
   return uiMipSlice + (uiArraySlice * uiMipLevelCount);
 }
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e)
+{
+  D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATE_COMMON;
+
+  if (e.IsSet(xiiGALResourceStateFlags::Undefined))
+    resourceStates |= static_cast<D3D12_RESOURCE_STATES>(0);
+  if (e.IsSet(xiiGALResourceStateFlags::VertexBuffer))
+    resourceStates |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::ConstantBuffer))
+    resourceStates |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::IndexBuffer))
+    resourceStates |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::RenderTarget))
+    resourceStates |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+  if (e.IsSet(xiiGALResourceStateFlags::UnorderedAccess))
+    resourceStates |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthWrite))
+    resourceStates |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthRead))
+    resourceStates |= D3D12_RESOURCE_STATE_DEPTH_READ;
+  if (e.IsSet(xiiGALResourceStateFlags::ShaderResource))
+    resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
+    resourceStates |= D3D12_RESOURCE_STATE_STREAM_OUT;
+  if (e.IsSet(xiiGALResourceStateFlags::IndirectArgument))
+    resourceStates |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+  if (e.IsSet(xiiGALResourceStateFlags::CopyDestination))
+    resourceStates |= D3D12_RESOURCE_STATE_COPY_DEST;
+  if (e.IsSet(xiiGALResourceStateFlags::CopySource))
+    resourceStates |= D3D12_RESOURCE_STATE_COPY_SOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveDestination))
+    resourceStates |= D3D12_RESOURCE_STATE_RESOLVE_DEST;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveSource))
+    resourceStates |= D3D12_RESOURCE_STATE_RESOLVE_SOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::InputAttachment))
+    resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::Present))
+    resourceStates |= D3D12_RESOURCE_STATE_PRESENT;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
+    resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))
+    resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
+    resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  if (e.IsSet(xiiGALResourceStateFlags::Common))
+    resourceStates |= D3D12_RESOURCE_STATE_COMMON;
+  if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
+    resourceStates |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+
+  return resourceStates;
+}
