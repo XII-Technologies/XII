@@ -21,7 +21,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiD3D12AllocationFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiD3D12MemoryHeapType, 1)
-  XII_ENUM_CONSTANT(xiiD3D12MemoryHeapType::Default),
   XII_ENUM_CONSTANT(xiiD3D12MemoryHeapType::Upload),
   XII_ENUM_CONSTANT(xiiD3D12MemoryHeapType::Readback),
 XII_END_STATIC_REFLECTED_ENUM;
@@ -45,6 +44,80 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiD3D12MemoryHeapFlags, 1)
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
+
+//////////////////////////////////////////////////////////////////////////
+// Helpers: map our flags/usage -> D3D12MA
+
+namespace
+{
+  XII_ALWAYS_INLINE D3D12MA::ALLOCATION_FLAGS ConvertAllocationFlags(const xiiBitflags<xiiD3D12AllocationFlags>& flags)
+  {
+    D3D12MA::ALLOCATION_FLAGS allocationFlags = D3D12MA::ALLOCATION_FLAG_NONE;
+
+    if (flags.IsSet(xiiD3D12AllocationFlags::Committed))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_COMMITTED;
+    if (flags.IsSet(xiiD3D12AllocationFlags::NeverAllocate))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_NEVER_ALLOCATE;
+    if (flags.IsSet(xiiD3D12AllocationFlags::WithinBudget))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_WITHIN_BUDGET;
+    if (flags.IsSet(xiiD3D12AllocationFlags::UpperAddress))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_UPPER_ADDRESS;
+    if (flags.IsSet(xiiD3D12AllocationFlags::CanAlias))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_CAN_ALIAS;
+    if (flags.IsSet(xiiD3D12AllocationFlags::StrategyMinMemory))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_MEMORY;
+    if (flags.IsSet(xiiD3D12AllocationFlags::StrategyMinTime))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_TIME;
+    if (flags.IsSet(xiiD3D12AllocationFlags::StrategyMinOffset))
+      allocationFlags |= D3D12MA::ALLOCATION_FLAG_STRATEGY_MIN_OFFSET;
+
+    return allocationFlags;
+  }
+
+  XII_ALWAYS_INLINE D3D12_HEAP_TYPE ConvertHeapType(xiiEnum<xiiD3D12MemoryHeapType> heapType)
+  {
+    switch (heapType)
+    {
+      case xiiD3D12MemoryHeapType::Default:
+        return D3D12_HEAP_TYPE_DEFAULT;
+      case xiiD3D12MemoryHeapType::Upload:
+        return D3D12_HEAP_TYPE_UPLOAD;
+      case xiiD3D12MemoryHeapType::Readback:
+        return D3D12_HEAP_TYPE_READBACK;
+      default:
+        XII_REPORT_FAILURE("Unknown xiiD3D12MemoryHeapType value: {}", xiiArgEnum(heapType));
+        return D3D12_HEAP_TYPE_DEFAULT;
+    }
+  }
+
+  XII_ALWAYS_INLINE D3D12_HEAP_FLAGS ConvertHeapFlags(xiiBitflags<xiiD3D12MemoryHeapFlags> flags)
+  {
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
+
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::Shared))
+      heapFlags |= D3D12_HEAP_FLAG_SHARED;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::DenyBuffers))
+      heapFlags |= D3D12_HEAP_FLAG_DENY_BUFFERS;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::AllowDisplay))
+      heapFlags |= D3D12_HEAP_FLAG_ALLOW_DISPLAY;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::SharedCrossAdapter))
+      heapFlags |= D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::DenyRenderTargetAndDepthStencilTextures))
+      heapFlags |= D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::DenyNonRenderTargetAndDepthStencilTextures))
+      heapFlags |= D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::HardwareProtected))
+      heapFlags |= D3D12_HEAP_FLAG_HARDWARE_PROTECTED;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::AllowWriteWatch))
+      heapFlags |= D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::AllowShaderAtomics))
+      heapFlags |= D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS;
+    if (flags.IsSet(xiiD3D12MemoryHeapFlags::CreateNotResident))
+      heapFlags |= D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
+
+    return heapFlags;
+  }
+} // namespace
 
 //////////////////////////////////////////////////////////////////////////
 // Implementation struct
@@ -118,6 +191,72 @@ void xiiD3D12MemoryAllocator::DeInitialize()
   XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator, "D3D12 Memory Allocator is not initialized or already de-initialized.");
 
   XII_GAL_D3D12_RELEASE(m_pImplementation->m_pD3D12MAAllocator);
+}
+
+xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
+{
+  XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
+  XII_ASSERT_DEV(out_ppResource != nullptr, "Output resource pointer is null.");
+
+  D3D12MA::ALLOCATION_DESC allocationDescription = {};
+  allocationDescription.Flags                    = ConvertAllocationFlags(allocationCreateInfo.m_Flags);
+  allocationDescription.HeapType                 = ConvertHeapType(allocationCreateInfo.m_HeapType);
+  allocationDescription.ExtraHeapFlags           = ConvertHeapFlags(allocationCreateInfo.m_HeapFlags);
+  allocationDescription.CustomPool               = nullptr; // Not supported for now.
+  allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
+
+  D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
+  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  {
+    xiiLog::Error("Failed to create buffer resource with D3D12 Memory Allocator.");
+
+    return XII_FAILURE;
+  }
+
+  *out_pAllocation = static_cast<xiiD3D12Allocation>(pD3D12MAAllocation);
+
+  return XII_SUCCESS;
+}
+
+void xiiD3D12MemoryAllocator::DestroyBuffer(ID3D12Resource*& pResource, xiiD3D12Allocation& pAllocation)
+{
+  XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
+
+  XII_GAL_D3D12_RELEASE(pResource);
+  XII_GAL_D3D12_RELEASE(pAllocation);
+}
+
+xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, const xiiGALOptimizedClearValue* pOptimizedClearValue, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
+{
+  XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
+  XII_ASSERT_DEV(out_ppResource != nullptr, "Output resource pointer is null.");
+
+  D3D12MA::ALLOCATION_DESC allocationDescription = {};
+  allocationDescription.Flags                    = ConvertAllocationFlags(allocationCreateInfo.m_Flags);
+  allocationDescription.HeapType                 = ConvertHeapType(allocationCreateInfo.m_HeapType);
+  allocationDescription.ExtraHeapFlags           = ConvertHeapFlags(allocationCreateInfo.m_HeapFlags);
+  allocationDescription.CustomPool               = nullptr; // Not supported for now.
+  allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
+
+    D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
+  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  {
+    xiiLog::Error("Failed to create buffer resource with D3D12 Memory Allocator.");
+
+    return XII_FAILURE;
+  }
+
+  *out_pAllocation = static_cast<xiiD3D12Allocation>(pD3D12MAAllocation);
+
+  return XII_SUCCESS;
+}
+
+void xiiD3D12MemoryAllocator::DestroyImage(ID3D12Resource*& pResource, xiiD3D12Allocation& pAllocation)
+{
+  XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
+
+  XII_GAL_D3D12_RELEASE(pResource);
+  XII_GAL_D3D12_RELEASE(pAllocation);
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_MemoryAllocator_Implementation_MemoryAllocatorD3D12);
