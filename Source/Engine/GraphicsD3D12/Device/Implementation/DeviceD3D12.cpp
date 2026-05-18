@@ -338,18 +338,18 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  IDXGIDebug1* dxgiDebug = nullptr;
-  HRESULT      hResult   = DXGIGetDebugInterface1(0U, IID_PPV_ARGS(&dxgiDebug));
+  IDXGIDebug1* pDXGIDebug = nullptr;
+  HRESULT      hResult    = DXGIGetDebugInterface1(0U, __uuidof(IDXGIDebug1), reinterpret_cast<void**>(static_cast<IDXGIDebug1**>(&pDXGIDebug)));
   if (SUCCEEDED(hResult))
   {
     OutputDebugStringW(L" +++++ Live D3D12 Objects: +++++\n");
 
     // Prints to OutputDebugString
-    dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+    pDXGIDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
 
     OutputDebugStringW(L" ----- Live D3D12 Objects: -----\n");
 
-    dxgiDebug->Release();
+    pDXGIDebug->Release();
   }
 #endif
 }

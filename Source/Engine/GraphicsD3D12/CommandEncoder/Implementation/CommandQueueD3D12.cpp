@@ -14,6 +14,7 @@ xiiGALCommandQueueD3D12::xiiGALCommandQueueD3D12(xiiGALDeviceD3D12* pDeviceD3D12
   xiiGALCommandQueue(pDeviceD3D12, creationDescription), m_QueueInformation(queueInformation)
 {
   m_hFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
   if (m_hFenceEvent == nullptr)
   {
     xiiLog::Error("Failed to create D3D12 command queue fence event handle.");
@@ -35,6 +36,7 @@ xiiGALCommandQueueD3D12::~xiiGALCommandQueueD3D12()
   if (m_hFenceEvent != nullptr && m_hFenceEvent != INVALID_HANDLE_VALUE)
   {
     CloseHandle(m_hFenceEvent);
+
     m_hFenceEvent = nullptr;
   }
 }
@@ -45,9 +47,11 @@ xiiUInt64 xiiGALCommandQueueD3D12::GetCompletedFenceValue()
     return m_uiLastSyncPointValue;
 
   const xiiUInt64 uiValue = m_pD3D12QueueFence->GetCompletedValue();
+
   if (uiValue == xiiMath::MaxValue<xiiUInt64>())
   {
     xiiLog::Error("D3D12 command queue fence returned UINT64_MAX. The device may have been removed.");
+
     return uiValue;
   }
 
@@ -59,11 +63,11 @@ xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandLis
   if (m_QueueInformation.m_pCommandQueue == nullptr || m_pD3D12QueueFence == nullptr)
   {
     xiiLog::Error("D3D12 command queue submission failed: queue or queue fence is not initialized.");
+
     return m_uiLastSyncPointValue;
   }
 
-  xiiGALCommandListD3D12* pCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pCommandList);
-  if (pCommandListD3D12 != nullptr)
+  if (xiiGALCommandListD3D12* pCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pCommandList))
   {
     if (ID3D12CommandList* pD3D12CommandList = pCommandListD3D12->GetD3D12CommandList())
     {
@@ -73,6 +77,7 @@ xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandLis
 
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
   const HRESULT   hResult      = m_QueueInformation.m_pCommandQueue->Signal(m_pD3D12QueueFence, uiFenceValue);
+
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to signal D3D12 command queue fence during submit: {}.", xiiHRESULTtoString(hResult));
@@ -80,6 +85,7 @@ xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandLis
   }
 
   m_uiLastSyncPointValue = uiFenceValue;
+
   return uiFenceValue;
 }
 
@@ -91,9 +97,11 @@ xiiUInt64 xiiGALCommandQueueD3D12::WaitForIdle()
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
 
   HRESULT hResult = m_QueueInformation.m_pCommandQueue->Signal(m_pD3D12QueueFence, uiFenceValue);
+
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to signal D3D12 queue fence for WaitForIdle: {}.", xiiHRESULTtoString(hResult));
+
     return m_uiLastSyncPointValue;
   }
 
@@ -104,6 +112,7 @@ xiiUInt64 xiiGALCommandQueueD3D12::WaitForIdle()
     if (m_hFenceEvent != nullptr && m_hFenceEvent != INVALID_HANDLE_VALUE)
     {
       hResult = m_pD3D12QueueFence->SetEventOnCompletion(uiFenceValue, m_hFenceEvent);
+
       if (SUCCEEDED(hResult))
       {
         WaitForSingleObject(m_hFenceEvent, INFINITE);
@@ -116,7 +125,7 @@ xiiUInt64 xiiGALCommandQueueD3D12::WaitForIdle()
 
     while (GetCompletedFenceValue() < uiFenceValue)
     {
-      Sleep(0U);
+      xiiThreadUtils::YieldTimeSlice();
     }
   }
 
