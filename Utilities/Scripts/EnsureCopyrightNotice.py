@@ -240,33 +240,42 @@ def normalize_omit_dirs(omit_list):
     Accepts directory names or relative paths. Returns set of normalized segments.
     """
     normalized = set()
+    full_paths = set()
+    cwd = Path.cwd()
     for entry in omit_list or []:
         if not entry:
             continue
         p = Path(entry)
-        # Add each segment of the provided path (so "thirdparty/lib" will match "thirdparty")
-        for part in p.parts:
-            normalized.add(part.lower())
-    return normalized
+        # store basename (last segment) and the normalized full string
+        normalized.add(p.name.lower())
+        full_paths.add(str(p).lower())
+        # if the entry is inside the repo, add its relative path string
+        try:
+            rel = p.relative_to(cwd)
+            full_paths.add(str(rel).lower())
+        except Exception:
+            pass
+    return normalized, 
 
 def path_is_omitted(path: Path, omit_segments: set):
     """
     Return True if any path segment (case-insensitive) matches an omit segment.
     """
-    p_lower = str(path).lower()
-    # match any segment
+    # match any path segment basename (fast)
     for part in path.parts:
-        if part.lower() in omit_segments:
+        if part.lower() in omit_basename_set:
             return True
-    # match any omit entry as a substring of the full path (handles absolute vs relative)
-    for seg in omit_segments:
-        if seg in p_lower:
+    # match any omit full path as substring of the file path (handles absolute vs relative)
+    pstr = str(path).lower()
+    for fp in omit_fullpath_set:
+        if fp and fp in pstr:
             return True
-    # match resolved absolute path segments (if possible)
+    # try resolved absolute path segments (best-effort)
     try:
-        resolved_parts = [pp.lower() for pp in path.resolve().parts]
-        if any(seg in resolved_parts for seg in omit_segments):
-            return True
+        resolved = str(path.resolve()).lower()
+        for fp in omit_fullpath_set:
+            if fp and fp in resolved:
+                return True
     except Exception:
         pass
     return False
