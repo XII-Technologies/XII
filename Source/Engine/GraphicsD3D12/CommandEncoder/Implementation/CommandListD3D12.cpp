@@ -13,11 +13,14 @@
 #include <GraphicsD3D12/Pools/StagingBufferPoolD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
+#include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 #include <GraphicsD3D12/Resources/FramebufferD3D12.h>
 #include <GraphicsD3D12/Resources/QueryD3D12.h>
 #include <GraphicsD3D12/Resources/RenderPassD3D12.h>
+#include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
+#include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 #include <GraphicsD3D12/Resources/TopLevelASD3D12.h>
 #include <GraphicsD3D12/States/ComputePipelineStateD3D12.h>
 #include <GraphicsD3D12/States/GraphicsPipelineStateD3D12.h>
@@ -25,11 +28,20 @@
 #include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
+#include <vector>
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  enum class D3D12PipelineRootBindingType : xiiUInt8
+  {
+    None = 0U,
+    Graphics,
+    Compute,
+  };
+
   [[nodiscard]] bool TransitionOrVerifyResourceStateForRayTracing(ID3D12GraphicsCommandList* pD3D12CommandList, xiiGALResource* pResource, ID3D12Resource* pD3D12Resource, xiiEnum<xiiGALStateTransitionMode> transitionMode, xiiBitflags<xiiGALResourceStateFlags> trackedState, D3D12_RESOURCE_STATES d3d12State, xiiStringView sUsageName, xiiStringView sCommandListName)
   {
     if (pD3D12CommandList == nullptr || pResource == nullptr || pD3D12Resource == nullptr)
@@ -72,6 +84,23 @@ namespace
     }
 
     return true;
+  }
+
+  [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE OffsetCPUDescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE handle, xiiUInt32 uiDescriptorSize, xiiUInt32 uiDescriptorIndex)
+  {
+    handle.ptr += static_cast<SIZE_T>(uiDescriptorSize) * static_cast<SIZE_T>(uiDescriptorIndex);
+    return handle;
+  }
+
+  [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE OffsetGPUDescriptorHandle(D3D12_GPU_DESCRIPTOR_HANDLE handle, xiiUInt32 uiDescriptorSize, xiiUInt32 uiDescriptorIndex)
+  {
+    handle.ptr += static_cast<UINT64>(uiDescriptorSize) * static_cast<UINT64>(uiDescriptorIndex);
+    return handle;
+  }
+
+  [[nodiscard]] bool IsValidDescriptorAllocation(const xiiGALDescriptorSetPoolD3D12::DescriptorAllocation& descriptorAllocation)
+  {
+    return descriptorAllocation.m_pDescriptorHeap != nullptr && descriptorAllocation.m_CPUHandle.ptr != 0U && descriptorAllocation.m_GPUHandle.ptr != 0U && descriptorAllocation.m_uiDescriptorSize != 0U;
   }
 } // namespace
 
@@ -222,62 +251,755 @@ void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
 
 void xiiGALCommandListD3D12::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData)
 {
+  if (m_pD3D12CommandList == nullptr || m_pPipelineState == nullptr || m_pPipelineResourceSignature == nullptr || pData.IsEmpty())
+    return;
+
+  if ((uiOffset % sizeof(xiiUInt32)) != 0U || (pData.GetCount() % sizeof(xiiUInt32)) != 0U)
+  {
+    xiiLog::Error("Failed to set push constants on D3D12 command list '{}': offset ({}) and size ({}) must be multiples of 4 bytes.", GetDebugName(), uiOffset, pData.GetCount());
+    return;
+  }
+
+  const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+  xiiUInt32 uiRootDescriptorParameterCount = 0U;
+  for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+  {
+    D3D12_DESCRIPTOR_RANGE_TYPE rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    if (xiiD3D12TypeConversions::TryGetDescriptorRangeType(resource.m_ResourceType, rangeType))
+    {
+      ++uiRootDescriptorParameterCount;
+    }
+  }
+
+  const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
+
+  xiiUInt32 uiPushConstantRootParameterIndex = uiRootDescriptorParameterCount;
+  for (const xiiGALPushConstantRange& range : signatureDescription.m_PushConstantRanges)
+  {
+    if (range.m_uiSize == 0U)
+      continue;
+
+    const xiiUInt32 uiRangeBegin = range.m_uiOffset;
+    const xiiUInt32 uiRangeEnd   = range.m_uiOffset + range.m_uiSize;
+    const xiiUInt32 uiDataEnd    = uiOffset + pData.GetCount();
+
+    if (uiOffset >= uiRangeBegin && uiDataEnd <= uiRangeEnd)
+    {
+      const xiiUInt32 uiDestinationDWORDOffset = (uiOffset - uiRangeBegin) / sizeof(xiiUInt32);
+      const xiiUInt32 uiSourceDWORDCount       = pData.GetCount() / sizeof(xiiUInt32);
+      const xiiUInt32* pSourceConstants        = reinterpret_cast<const xiiUInt32*>(pData.GetPtr());
+
+      if (pipelineDescription.IsAnyGraphicsPipeline())
+      {
+        m_pD3D12CommandList->SetGraphicsRoot32BitConstants(uiPushConstantRootParameterIndex, uiSourceDWORDCount, pSourceConstants, uiDestinationDWORDOffset);
+      }
+      else if (pipelineDescription.IsComputePipeline() || pipelineDescription.IsRayTracingPipeline())
+      {
+        m_pD3D12CommandList->SetComputeRoot32BitConstants(uiPushConstantRootParameterIndex, uiSourceDWORDCount, pSourceConstants, uiDestinationDWORDOffset);
+      }
+      else
+      {
+        xiiLog::Error("Push constants are unsupported for pipeline type '{}' on command list '{}'.", xiiArgEnum(pipelineDescription.m_PipelineType), GetDebugName());
+      }
+
+      return;
+    }
+
+    ++uiPushConstantRootParameterIndex;
+  }
+
+  xiiLog::Error("Failed to set push constants on D3D12 command list '{}': no matching push-constant range for offset {} and size {}.", GetDebugName(), uiOffset, pData.GetCount());
 }
 
 void xiiGALCommandListD3D12::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
+  if (m_pD3D12CommandList != nullptr)
+  {
+    m_pD3D12CommandList->OMSetStencilRef(uiStencilRef);
+  }
 }
 
 void xiiGALCommandListD3D12::SetBlendFactorPlatform(const xiiColor& blendFactor)
 {
+  if (m_pD3D12CommandList != nullptr)
+  {
+    m_pD3D12CommandList->OMSetBlendFactor(blendFactor.GetData());
+  }
 }
 
 void xiiGALCommandListD3D12::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  std::vector<D3D12_VIEWPORT> d3d12Viewports;
+  d3d12Viewports.resize(pViewports.GetCount());
+
+  for (xiiUInt32 i = 0U; i < pViewports.GetCount(); ++i)
+  {
+    const xiiGALViewport& viewport = pViewports[i];
+
+    D3D12_VIEWPORT& d3d12Viewport = d3d12Viewports[static_cast<size_t>(i)];
+    d3d12Viewport.TopLeftX        = viewport.m_fTopLeftX;
+    d3d12Viewport.TopLeftY        = viewport.m_fTopLeftY;
+    d3d12Viewport.Width           = viewport.m_fWidth;
+    d3d12Viewport.Height          = viewport.m_fHeight;
+    d3d12Viewport.MinDepth        = viewport.m_fMinDepth;
+    d3d12Viewport.MaxDepth        = viewport.m_fMaxDepth;
+  }
+
+  if (!d3d12Viewports.empty())
+  {
+    m_pD3D12CommandList->RSSetViewports(static_cast<UINT>(d3d12Viewports.size()), d3d12Viewports.data());
+  }
 }
 
 void xiiGALCommandListD3D12::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  std::vector<D3D12_RECT> d3d12ScissorRects;
+  d3d12ScissorRects.resize(pRects.GetCount());
+
+  for (xiiUInt32 i = 0U; i < pRects.GetCount(); ++i)
+  {
+    const xiiRectU32& rect = pRects[i];
+
+    D3D12_RECT& d3d12Rect = d3d12ScissorRects[static_cast<size_t>(i)];
+    d3d12Rect.left        = static_cast<LONG>(rect.x);
+    d3d12Rect.top         = static_cast<LONG>(rect.y);
+    d3d12Rect.right       = static_cast<LONG>(rect.x + rect.width);
+    d3d12Rect.bottom      = static_cast<LONG>(rect.y + rect.height);
+  }
+
+  if (!d3d12ScissorRects.empty())
+  {
+    m_pD3D12CommandList->RSSetScissorRects(static_cast<UINT>(d3d12ScissorRects.size()), d3d12ScissorRects.data());
+  }
 }
 
 void xiiGALCommandListD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
+  XII_IGNORE_UNUSED(uiByteOffset);
+
+  if (pIndexBuffer == nullptr || m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pIndexBuffer);
+  if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+  {
+    xiiLog::Error("Failed to set index buffer on D3D12 command list '{}': incompatible backend buffer type.", GetDebugName());
+    return;
+  }
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(
+        m_pD3D12CommandList,
+        pBufferD3D12,
+        pBufferD3D12->GetD3D12Buffer(),
+        transitionMode,
+        xiiGALResourceStateFlags::IndexBuffer,
+        xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndexBuffer),
+        "index buffer",
+        GetDebugName()))
+  {
+    return;
+  }
 }
 
 void xiiGALCommandListD3D12::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode)
 {
+  XII_IGNORE_UNUSED(uiStartSlot);
+  XII_IGNORE_UNUSED(flags);
+
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  for (xiiUInt32 uiSlot = 0U; uiSlot < pVertexStreams.GetCount(); ++uiSlot)
+  {
+    VertexStreamDescription& vertexStream = pVertexStreams[uiSlot];
+
+    if (xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(vertexStream.m_pBuffer))
+    {
+      if (pBufferD3D12->GetD3D12Buffer() == nullptr)
+      {
+        xiiLog::Error("Failed to set vertex buffers on D3D12 command list '{}': vertex stream {} has no native buffer.", GetDebugName(), uiSlot);
+        return;
+      }
+
+      if (!TransitionOrVerifyResourceStateForRayTracing(
+        m_pD3D12CommandList,
+        pBufferD3D12,
+        pBufferD3D12->GetD3D12Buffer(),
+        transitionMode,
+        xiiGALResourceStateFlags::VertexBuffer,
+        xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::VertexBuffer),
+        "vertex buffer",
+        GetDebugName()))
+      {
+        return;
+      }
+    }
+  }
 }
 
 void xiiGALCommandListD3D12::SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)
 {
+  xiiGALBufferD3D12* pConstantBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pConstantBuffer);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundConstantBuffers.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundConstantBuffers[bindingInformation.m_uiBindSlot] = pConstantBufferD3D12 != nullptr ? pConstantBufferD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandListD3D12::SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
 {
+  xiiGALBufferViewD3D12* pBufferViewD3D12 = xiiDynamicCast<xiiGALBufferViewD3D12*>(pBufferView);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundBufferResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundBufferResourceViews[bindingInformation.m_uiBindSlot] = pBufferViewD3D12 != nullptr ? pBufferViewD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandListD3D12::SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
+  xiiGALTextureViewD3D12* pTextureViewD3D12 = xiiDynamicCast<xiiGALTextureViewD3D12*>(pTextureView);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundTextureResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundTextureResourceViews[bindingInformation.m_uiBindSlot] = pTextureViewD3D12 != nullptr ? pTextureViewD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandListD3D12::SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)
 {
+  xiiGALBufferViewD3D12* pBufferViewD3D12 = xiiDynamicCast<xiiGALBufferViewD3D12*>(pBufferView);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundUnorderedAccessBufferResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundUnorderedAccessBufferResourceViews[bindingInformation.m_uiBindSlot] = pBufferViewD3D12 != nullptr ? pBufferViewD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandListD3D12::SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)
 {
+  xiiGALTextureViewD3D12* pTextureViewD3D12 = xiiDynamicCast<xiiGALTextureViewD3D12*>(pTextureView);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundUnorderedAccessTextureResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundUnorderedAccessTextureResourceViews[bindingInformation.m_uiBindSlot] = pTextureViewD3D12 != nullptr ? pTextureViewD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandListD3D12::SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)
 {
+  xiiGALSamplerD3D12* pSamplerD3D12 = xiiDynamicCast<xiiGALSamplerD3D12*>(pSampler);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundSamplerStates.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundSamplerStates[bindingInformation.m_uiBindSlot] = pSamplerD3D12 != nullptr ? pSamplerD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 void xiiGALCommandListD3D12::SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS)
 {
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = xiiDynamicCast<xiiGALTopLevelASD3D12*>(pTopLevelAS);
+
+  m_CommandListData.m_ResourceSets.EnsureCount(bindingInformation.m_uiBindSet + 1U);
+
+  xiiGALCommandListDataD3D12::ResourceSetBindings& bindSetResources = m_CommandListData.m_ResourceSets[bindingInformation.m_uiBindSet];
+
+  bindSetResources.m_pBoundAccelerationStructures.EnsureCount(bindingInformation.m_uiBindSlot + 1U);
+  bindSetResources.m_pBoundAccelerationStructures[bindingInformation.m_uiBindSlot] = pTopLevelASD3D12 != nullptr ? pTopLevelASD3D12 : nullptr;
+
+  m_CommandListData.m_bDescriptorsModified = true;
 }
 
 xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return XII_FAILURE;
+
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  if (pDeviceD3D12 == nullptr || pDeviceD3D12->GetD3D12Device() == nullptr)
+  {
+    xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': D3D12 device is unavailable.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  D3D12PipelineRootBindingType pipelineRootBindingType = D3D12PipelineRootBindingType::None;
+
+  if (m_CommandListData.m_bPipelineStateModified)
+  {
+    if (m_pPipelineState != nullptr)
+    {
+      const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
+
+      if (pipelineDescription.IsAnyGraphicsPipeline())
+      {
+        xiiGALGraphicsPipelineStateD3D12* pGraphicsPipelineStateD3D12 = xiiDynamicCast<xiiGALGraphicsPipelineStateD3D12*>(m_pPipelineState);
+        if (pGraphicsPipelineStateD3D12 == nullptr || pGraphicsPipelineStateD3D12->GetD3D12PipelineState() == nullptr || pGraphicsPipelineStateD3D12->GetD3D12RootSignature() == nullptr)
+        {
+          xiiLog::Error("Failed to bind graphics pipeline on D3D12 command list '{}': pipeline state or root signature is unavailable.", GetDebugName());
+          return XII_FAILURE;
+        }
+
+        m_pD3D12CommandList->SetPipelineState(pGraphicsPipelineStateD3D12->GetD3D12PipelineState());
+        m_pD3D12CommandList->SetGraphicsRootSignature(pGraphicsPipelineStateD3D12->GetD3D12RootSignature());
+        m_pD3D12CommandList->IASetPrimitiveTopology(pGraphicsPipelineStateD3D12->GetD3D12PrimitiveTopology());
+
+        pipelineRootBindingType = D3D12PipelineRootBindingType::Graphics;
+      }
+      else if (pipelineDescription.IsComputePipeline())
+      {
+        xiiGALComputePipelineStateD3D12* pComputePipelineStateD3D12 = xiiDynamicCast<xiiGALComputePipelineStateD3D12*>(m_pPipelineState);
+        if (pComputePipelineStateD3D12 == nullptr || pComputePipelineStateD3D12->GetD3D12PipelineState() == nullptr || pComputePipelineStateD3D12->GetD3D12RootSignature() == nullptr)
+        {
+          xiiLog::Error("Failed to bind compute pipeline on D3D12 command list '{}': pipeline state or root signature is unavailable.", GetDebugName());
+          return XII_FAILURE;
+        }
+
+        m_pD3D12CommandList->SetPipelineState(pComputePipelineStateD3D12->GetD3D12PipelineState());
+        m_pD3D12CommandList->SetComputeRootSignature(pComputePipelineStateD3D12->GetD3D12RootSignature());
+
+        pipelineRootBindingType = D3D12PipelineRootBindingType::Compute;
+      }
+      else if (pipelineDescription.IsRayTracingPipeline())
+      {
+        xiiGALRayTracingPipelineStateD3D12* pRayTracingPipelineStateD3D12 = xiiDynamicCast<xiiGALRayTracingPipelineStateD3D12*>(m_pPipelineState);
+        if (pRayTracingPipelineStateD3D12 == nullptr || pRayTracingPipelineStateD3D12->GetD3D12StateObject() == nullptr || pRayTracingPipelineStateD3D12->GetD3D12RootSignature() == nullptr)
+        {
+          xiiLog::Error("Failed to bind ray tracing pipeline on D3D12 command list '{}': state object or root signature is unavailable.", GetDebugName());
+          return XII_FAILURE;
+        }
+
+        ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
+        const HRESULT hResult = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+        if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
+        {
+          xiiLog::Error("Failed to bind ray tracing pipeline on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
+          return XII_FAILURE;
+        }
+
+        XII_SCOPE_EXIT(
+          {
+            XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+          });
+
+        pD3D12CommandList4->SetPipelineState1(pRayTracingPipelineStateD3D12->GetD3D12StateObject());
+        m_pD3D12CommandList->SetComputeRootSignature(pRayTracingPipelineStateD3D12->GetD3D12RootSignature());
+
+        pipelineRootBindingType = D3D12PipelineRootBindingType::Compute;
+      }
+      else
+      {
+        xiiLog::Error("Failed to bind D3D12 pipeline on command list '{}': pipeline type '{}' is unsupported.", GetDebugName(), xiiArgEnum(pipelineDescription.m_PipelineType));
+        return XII_FAILURE;
+      }
+    }
+
+    m_CommandListData.m_bPipelineStateModified = false;
+    m_CommandListData.m_bDescriptorsModified   = true; // Changes to root signature layout require descriptor-table rebinding.
+  }
+
+  if (m_CommandListData.m_bDescriptorsModified)
+  {
+    if (m_pPipelineState != nullptr)
+    {
+      const xiiGALPipelineStateCreationDescription& pipelineDescription = m_pPipelineState->GetDescription();
+      if (pipelineRootBindingType == D3D12PipelineRootBindingType::None)
+      {
+        if (pipelineDescription.IsAnyGraphicsPipeline())
+          pipelineRootBindingType = D3D12PipelineRootBindingType::Graphics;
+        else if (pipelineDescription.IsComputePipeline() || pipelineDescription.IsRayTracingPipeline())
+          pipelineRootBindingType = D3D12PipelineRootBindingType::Compute;
+      }
+    }
+
+    if (m_pPipelineResourceSignature != nullptr)
+    {
+      if (pipelineRootBindingType == D3D12PipelineRootBindingType::None)
+      {
+        xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no compatible pipeline state is bound.", GetDebugName());
+        return XII_FAILURE;
+      }
+
+      xiiGALDescriptorSetPoolD3D12* pDescriptorPoolD3D12 = m_CommandListData.m_pDescriptorSetPoolD3D12.Borrow();
+      if (pDescriptorPoolD3D12 == nullptr)
+      {
+        xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': descriptor pool is unavailable.", GetDebugName());
+        return XII_FAILURE;
+      }
+
+      const xiiGALPipelineResourceSignatureCreationDescription& signatureDescription = m_pPipelineResourceSignature->GetDescription();
+
+      xiiUInt32 uiCBVSRVUAVDescriptorCount = 0U;
+      xiiUInt32 uiSamplerDescriptorCount   = 0U;
+
+      for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+      {
+        D3D12_DESCRIPTOR_RANGE_TYPE rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        if (!xiiD3D12TypeConversions::TryGetDescriptorRangeType(resource.m_ResourceType, rangeType))
+          continue;
+
+        const xiiUInt32 uiDescriptorCount = xiiMath::Max(1U, resource.m_uiArraySize);
+        if (rangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER)
+        {
+          uiSamplerDescriptorCount += uiDescriptorCount;
+        }
+        else
+        {
+          uiCBVSRVUAVDescriptorCount += uiDescriptorCount;
+        }
+      }
+
+      xiiGALDescriptorSetPoolD3D12::DescriptorAllocation cbvSrvUavAllocation = {};
+      xiiGALDescriptorSetPoolD3D12::DescriptorAllocation samplerAllocation    = {};
+
+      if (uiCBVSRVUAVDescriptorCount > 0U)
+      {
+        cbvSrvUavAllocation = pDescriptorPoolD3D12->RequestDescriptorAllocation(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, uiCBVSRVUAVDescriptorCount);
+        if (!IsValidDescriptorAllocation(cbvSrvUavAllocation))
+        {
+          xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': shader-resource descriptor allocation failed.", GetDebugName());
+          return XII_FAILURE;
+        }
+      }
+
+      if (uiSamplerDescriptorCount > 0U)
+      {
+        samplerAllocation = pDescriptorPoolD3D12->RequestDescriptorAllocation(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, uiSamplerDescriptorCount);
+        if (!IsValidDescriptorAllocation(samplerAllocation))
+        {
+          xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': sampler descriptor allocation failed.", GetDebugName());
+          return XII_FAILURE;
+        }
+      }
+
+      ID3D12DescriptorHeap* pDescriptorHeaps[2] = {};
+      xiiUInt32             uiDescriptorHeapCount = 0U;
+
+      if (cbvSrvUavAllocation.m_pDescriptorHeap != nullptr)
+      {
+        pDescriptorHeaps[uiDescriptorHeapCount++] = cbvSrvUavAllocation.m_pDescriptorHeap;
+      }
+      if (samplerAllocation.m_pDescriptorHeap != nullptr)
+      {
+        pDescriptorHeaps[uiDescriptorHeapCount++] = samplerAllocation.m_pDescriptorHeap;
+      }
+
+      if (uiDescriptorHeapCount > 0U)
+      {
+        m_pD3D12CommandList->SetDescriptorHeaps(uiDescriptorHeapCount, pDescriptorHeaps);
+      }
+
+      xiiUInt32 uiRootParameterIndex      = 0U;
+      xiiUInt32 uiCBVSRVUAVDescriptorBase = 0U;
+      xiiUInt32 uiSamplerDescriptorBase   = 0U;
+
+      for (const xiiGALPipelineResourceDescription& resource : signatureDescription.m_Resources)
+      {
+        D3D12_DESCRIPTOR_RANGE_TYPE rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        if (!xiiD3D12TypeConversions::TryGetDescriptorRangeType(resource.m_ResourceType, rangeType))
+          continue;
+
+        const xiiUInt32 uiDescriptorCount = xiiMath::Max(1U, resource.m_uiArraySize);
+
+        const bool bSamplerRange = rangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+        const xiiGALDescriptorSetPoolD3D12::DescriptorAllocation& activeAllocation = bSamplerRange ? samplerAllocation : cbvSrvUavAllocation;
+        xiiUInt32& uiDescriptorBase = bSamplerRange ? uiSamplerDescriptorBase : uiCBVSRVUAVDescriptorBase;
+
+        if (!IsValidDescriptorAllocation(activeAllocation))
+        {
+          xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': descriptor allocation is invalid while binding resource '{}'.", GetDebugName(), resource.m_sName.GetView());
+          return XII_FAILURE;
+        }
+
+        const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandleBase = OffsetCPUDescriptorHandle(activeAllocation.m_CPUHandle, activeAllocation.m_uiDescriptorSize, uiDescriptorBase);
+        const D3D12_GPU_DESCRIPTOR_HANDLE destinationGPUHandleBase = OffsetGPUDescriptorHandle(activeAllocation.m_GPUHandle, activeAllocation.m_uiDescriptorSize, uiDescriptorBase);
+
+        if (resource.m_uiBindSet >= m_CommandListData.m_ResourceSets.GetCount())
+        {
+          xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no resources were bound for descriptor set {} (resource '{}').", GetDebugName(), resource.m_uiBindSet, resource.m_sName.GetView());
+          return XII_FAILURE;
+        }
+
+        xiiGALCommandListDataD3D12::ResourceSetBindings& boundSetResources = m_CommandListData.m_ResourceSets[resource.m_uiBindSet];
+
+        auto BindDescriptorTable = [&](xiiUInt32 uiRootIndex, D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle) {
+          if (pipelineRootBindingType == D3D12PipelineRootBindingType::Graphics)
+          {
+            m_pD3D12CommandList->SetGraphicsRootDescriptorTable(uiRootIndex, gpuHandle);
+          }
+          else
+          {
+            m_pD3D12CommandList->SetComputeRootDescriptorTable(uiRootIndex, gpuHandle);
+          }
+        };
+
+        switch (resource.m_ResourceType)
+        {
+          case xiiGALShaderResourceType::ConstantBuffer:
+          {
+            xiiGALBufferD3D12* pConstantBufferD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundConstantBuffers.GetCount() ? boundSetResources.m_pBoundConstantBuffers[resource.m_uiBindSlot] : nullptr;
+            if (pConstantBufferD3D12 == nullptr || pConstantBufferD3D12->GetD3D12Buffer() == nullptr)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no constant buffer bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            if (mode != xiiGALStateTransitionMode::None)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pConstantBufferD3D12, pConstantBufferD3D12->GetD3D12Buffer(), mode, xiiGALResourceStateFlags::ConstantBuffer, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ConstantBuffer), resource.m_sName.GetView(), GetDebugName()))
+                return XII_FAILURE;
+            }
+
+            const xiiUInt64 uiMaxConstantBufferRange = static_cast<xiiUInt64>(D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT) * sizeof(float) * 4U;
+            xiiUInt64 uiConstantBufferSizeInBytes = xiiMath::Min(pConstantBufferD3D12->GetSize(), uiMaxConstantBufferRange);
+            uiConstantBufferSizeInBytes = xiiMemoryUtils::AlignSize(uiConstantBufferSizeInBytes, static_cast<xiiUInt64>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+            uiConstantBufferSizeInBytes = xiiMath::Min(uiConstantBufferSizeInBytes, uiMaxConstantBufferRange);
+
+            if (uiConstantBufferSizeInBytes == 0U || (uiConstantBufferSizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT) != 0U)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': invalid constant-buffer size {} for '{}'.", GetDebugName(), uiConstantBufferSizeInBytes, resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferView = {};
+            constantBufferView.BufferLocation = pConstantBufferD3D12->GetD3D12BufferGPUVirtualAddress();
+            constantBufferView.SizeInBytes    = static_cast<UINT>(uiConstantBufferSizeInBytes);
+
+            if (constantBufferView.BufferLocation == 0ULL)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': constant-buffer GPU virtual address is invalid for '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CreateConstantBufferView(&constantBufferView, destinationCPUHandle);
+            }
+          }
+          break;
+
+          case xiiGALShaderResourceType::BufferSRV:
+          {
+            xiiGALBufferViewD3D12* pBufferViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundBufferResourceViews.GetCount() ? boundSetResources.m_pBoundBufferResourceViews[resource.m_uiBindSlot] : nullptr;
+            if (pBufferViewD3D12 == nullptr || pBufferViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no shader-resource buffer view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            xiiSharedPtr<xiiGALBufferD3D12> pBufferD3D12 = pBufferViewD3D12->GetBuffer().Downcast<xiiGALBufferD3D12>();
+            if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': shader-resource buffer view '{}' references an invalid backing buffer.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            if (mode != xiiGALStateTransitionMode::None)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pBufferD3D12.Borrow(), pBufferD3D12->GetD3D12Buffer(), mode, xiiGALResourceStateFlags::ShaderResource, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ShaderResource), resource.m_sName.GetView(), GetDebugName()))
+                return XII_FAILURE;
+            }
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CopyDescriptorsSimple(1U, destinationCPUHandle, pBufferViewD3D12->GetCPUDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            }
+          }
+          break;
+
+          case xiiGALShaderResourceType::TextureSRV:
+          case xiiGALShaderResourceType::TextureAndSampler:
+          case xiiGALShaderResourceType::InputAttachment:
+          {
+            xiiGALTextureViewD3D12* pTextureViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundTextureResourceViews.GetCount() ? boundSetResources.m_pBoundTextureResourceViews[resource.m_uiBindSlot] : nullptr;
+            if (pTextureViewD3D12 == nullptr || pTextureViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no shader-resource texture view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            xiiSharedPtr<xiiGALTextureD3D12> pTextureD3D12 = pTextureViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+            if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': shader-resource texture view '{}' references an invalid backing texture.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            const xiiBitflags<xiiGALResourceStateFlags> expectedTextureState = pTextureD3D12->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil) ? xiiGALResourceStateFlags::DepthRead : xiiGALResourceStateFlags::ShaderResource;
+
+            if (mode != xiiGALStateTransitionMode::None)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12.Borrow(), pTextureD3D12->GetD3D12Texture(), mode, expectedTextureState, xiiD3D12TypeConversions::GetResourceState(expectedTextureState), resource.m_sName.GetView(), GetDebugName()))
+                return XII_FAILURE;
+            }
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CopyDescriptorsSimple(1U, destinationCPUHandle, pTextureViewD3D12->GetCPUDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            }
+          }
+          break;
+
+          case xiiGALShaderResourceType::BufferUAV:
+          {
+            xiiGALBufferViewD3D12* pBufferViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundUnorderedAccessBufferResourceViews.GetCount() ? boundSetResources.m_pBoundUnorderedAccessBufferResourceViews[resource.m_uiBindSlot] : nullptr;
+            if (pBufferViewD3D12 == nullptr || pBufferViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no unordered-access buffer view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            xiiSharedPtr<xiiGALBufferD3D12> pBufferD3D12 = pBufferViewD3D12->GetBuffer().Downcast<xiiGALBufferD3D12>();
+            if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': unordered-access buffer view '{}' references an invalid backing buffer.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            if (mode != xiiGALStateTransitionMode::None)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pBufferD3D12.Borrow(), pBufferD3D12->GetD3D12Buffer(), mode, xiiGALResourceStateFlags::UnorderedAccess, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::UnorderedAccess), resource.m_sName.GetView(), GetDebugName()))
+                return XII_FAILURE;
+            }
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CopyDescriptorsSimple(1U, destinationCPUHandle, pBufferViewD3D12->GetCPUDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            }
+          }
+          break;
+
+          case xiiGALShaderResourceType::TextureUAV:
+          {
+            xiiGALTextureViewD3D12* pTextureViewD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundUnorderedAccessTextureResourceViews.GetCount() ? boundSetResources.m_pBoundUnorderedAccessTextureResourceViews[resource.m_uiBindSlot] : nullptr;
+            if (pTextureViewD3D12 == nullptr || pTextureViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no unordered-access texture view bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            xiiSharedPtr<xiiGALTextureD3D12> pTextureD3D12 = pTextureViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+            if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': unordered-access texture view '{}' references an invalid backing texture.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            if (mode != xiiGALStateTransitionMode::None)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12.Borrow(), pTextureD3D12->GetD3D12Texture(), mode, xiiGALResourceStateFlags::UnorderedAccess, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::UnorderedAccess), resource.m_sName.GetView(), GetDebugName()))
+                return XII_FAILURE;
+            }
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CopyDescriptorsSimple(1U, destinationCPUHandle, pTextureViewD3D12->GetCPUDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            }
+          }
+          break;
+
+          case xiiGALShaderResourceType::Sampler:
+          {
+            xiiGALSamplerD3D12* pSamplerD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundSamplerStates.GetCount() ? boundSetResources.m_pBoundSamplerStates[resource.m_uiBindSlot] : nullptr;
+            if (pSamplerD3D12 == nullptr || pSamplerD3D12->GetCPUDescriptorHandle().ptr == 0U)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no sampler bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CopyDescriptorsSimple(1U, destinationCPUHandle, pSamplerD3D12->GetCPUDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            }
+          }
+          break;
+
+          case xiiGALShaderResourceType::AccelerationStructure:
+          {
+            xiiGALTopLevelASD3D12* pTopLevelASD3D12 = resource.m_uiBindSlot < boundSetResources.m_pBoundAccelerationStructures.GetCount() ? boundSetResources.m_pBoundAccelerationStructures[resource.m_uiBindSlot] : nullptr;
+            if (pTopLevelASD3D12 == nullptr || pTopLevelASD3D12->GetD3D12Resource() == nullptr)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': no acceleration structure bound at '{}'.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            if (mode != xiiGALStateTransitionMode::None)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTopLevelASD3D12, pTopLevelASD3D12->GetD3D12Resource(), mode, xiiGALResourceStateFlags::RayTracing, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::RayTracing), resource.m_sName.GetView(), GetDebugName()))
+                return XII_FAILURE;
+            }
+
+            const D3D12_GPU_VIRTUAL_ADDRESS d3d12TopLevelASAddress = pTopLevelASD3D12->GetD3D12GPUVirtualAddress();
+            if (d3d12TopLevelASAddress == 0ULL)
+            {
+              xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': acceleration structure '{}' has invalid GPU virtual address.", GetDebugName(), resource.m_sName.GetView());
+              return XII_FAILURE;
+            }
+
+            D3D12_SHADER_RESOURCE_VIEW_DESC d3d12AccelerationStructureView = {};
+            d3d12AccelerationStructureView.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            d3d12AccelerationStructureView.ViewDimension                   = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+            d3d12AccelerationStructureView.RaytracingAccelerationStructure.Location = d3d12TopLevelASAddress;
+
+            for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
+            {
+              const D3D12_CPU_DESCRIPTOR_HANDLE destinationCPUHandle = OffsetCPUDescriptorHandle(destinationCPUHandleBase, activeAllocation.m_uiDescriptorSize, i);
+              pDeviceD3D12->GetD3D12Device()->CreateShaderResourceView(nullptr, &d3d12AccelerationStructureView, destinationCPUHandle);
+            }
+          }
+          break;
+
+          default:
+            xiiLog::Error("Failed to commit shader resources on D3D12 command list '{}': unsupported shader resource type '{}' for '{}'.", GetDebugName(), xiiArgEnum(resource.m_ResourceType), resource.m_sName.GetView());
+            return XII_FAILURE;
+        }
+
+        BindDescriptorTable(uiRootParameterIndex, destinationGPUHandleBase);
+
+        uiDescriptorBase += uiDescriptorCount;
+        ++uiRootParameterIndex;
+      }
+    }
+
+    m_CommandListData.m_bDescriptorsModified = false;
+  }
 
   return XII_SUCCESS;
 }
@@ -1054,10 +1776,94 @@ void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const
 
 void xiiGALCommandListD3D12::PrepareForDraw()
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  for (xiiUInt32 uiSlot = 0U; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
+  {
+    if (xiiGALBuffer* pBuffer = m_VertexStreams[uiSlot].m_pBuffer)
+    {
+      VerifyBufferState(pBuffer, xiiGALResourceStateFlags::VertexBuffer, "Using vertex buffers");
+    }
+  }
+#endif
+
+  if (m_VertexStreams.IsEmpty())
+    return;
+
+  std::vector<D3D12_VERTEX_BUFFER_VIEW> d3d12VertexBufferViews;
+  d3d12VertexBufferViews.resize(m_VertexStreams.GetCount());
+  for (D3D12_VERTEX_BUFFER_VIEW& vertexBufferView : d3d12VertexBufferViews)
+  {
+    vertexBufferView.BufferLocation = 0ULL;
+    vertexBufferView.SizeInBytes    = 0U;
+    vertexBufferView.StrideInBytes  = 0U;
+  }
+
+  for (xiiUInt32 uiSlot = 0U; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
+  {
+    const VertexStreamDescription& vertexStream = m_VertexStreams[uiSlot];
+    xiiGALBufferD3D12* pVertexBufferD3D12       = xiiDynamicCast<xiiGALBufferD3D12*>(vertexStream.m_pBuffer);
+    if (pVertexBufferD3D12 == nullptr || pVertexBufferD3D12->GetD3D12Buffer() == nullptr)
+      continue;
+
+    const xiiUInt64 uiVertexBufferSize = pVertexBufferD3D12->GetSize();
+    if (vertexStream.m_uiOffset >= uiVertexBufferSize)
+      continue;
+
+    D3D12_VERTEX_BUFFER_VIEW& vertexBufferView = d3d12VertexBufferViews[static_cast<size_t>(uiSlot)];
+    vertexBufferView.BufferLocation             = pVertexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + vertexStream.m_uiOffset;
+    vertexBufferView.SizeInBytes                = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiVertexBufferSize - vertexStream.m_uiOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
+    vertexBufferView.StrideInBytes              = pVertexBufferD3D12->GetDescription().m_uiElementByteStride;
+  }
+
+  m_pD3D12CommandList->IASetVertexBuffers(0U, static_cast<UINT>(d3d12VertexBufferViews.size()), d3d12VertexBufferViews.data());
 }
 
 void xiiGALCommandListD3D12::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType)
 {
+  PrepareForDraw();
+
+  if (m_pD3D12CommandList == nullptr || m_pIndexBuffer == nullptr)
+    return;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  VerifyBufferState(m_pIndexBuffer, xiiGALResourceStateFlags::IndexBuffer, "Indexed draw call");
+#endif
+
+  xiiGALBufferD3D12* pIndexBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(m_pIndexBuffer);
+  if (pIndexBufferD3D12 == nullptr || pIndexBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  DXGI_FORMAT d3d12IndexFormat = DXGI_FORMAT_UNKNOWN;
+  if (indexType == xiiGALValueType::UInt16)
+  {
+    d3d12IndexFormat = DXGI_FORMAT_R16_UINT;
+  }
+  else if (indexType == xiiGALValueType::UInt32)
+  {
+    d3d12IndexFormat = DXGI_FORMAT_R32_UINT;
+  }
+  else
+  {
+    xiiLog::Error("Failed to prepare indexed draw on D3D12 command list '{}': unsupported index type '{}'.", GetDebugName(), xiiArgEnum(indexType));
+    return;
+  }
+
+  const xiiUInt64 uiIndexBufferSize = pIndexBufferD3D12->GetSize();
+  if (m_uiIndexDataOffset >= uiIndexBufferSize)
+  {
+    xiiLog::Error("Failed to prepare indexed draw on D3D12 command list '{}': index-buffer offset {} exceeds buffer size {}.", GetDebugName(), m_uiIndexDataOffset, uiIndexBufferSize);
+    return;
+  }
+
+  D3D12_INDEX_BUFFER_VIEW d3d12IndexBufferView = {};
+  d3d12IndexBufferView.BufferLocation           = pIndexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + m_uiIndexDataOffset;
+  d3d12IndexBufferView.SizeInBytes              = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiIndexBufferSize - m_uiIndexDataOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
+  d3d12IndexBufferView.Format                   = d3d12IndexFormat;
+
+  m_pD3D12CommandList->IASetIndexBuffer(&d3d12IndexBufferView);
 }
 
 void xiiGALCommandListD3D12::PrepareForDispatchCompute()
