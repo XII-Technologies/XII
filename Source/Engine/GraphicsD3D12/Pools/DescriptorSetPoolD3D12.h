@@ -29,8 +29,9 @@ public:
 private:
   friend class xiiMemoryUtils;
   friend class xiiGALCommandListD3D12;
+  friend class xiiGALDeviceD3D12;
 
-  xiiGALDescriptorSetPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiUInt32 uiBaseHeapSize = 1024U);
+  xiiGALDescriptorSetPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiUInt32 uiBaseHeapSize = 1024U, bool bShaderVisibleDescriptorHeaps = true);
   ~xiiGALDescriptorSetPoolD3D12();
 
   struct HeapBlock
@@ -51,6 +52,9 @@ private:
 private:
   xiiGALDeviceD3D12* m_pDeviceD3D12   = nullptr;
   xiiUInt32          m_uiBaseHeapSize = 0U;
+  bool               m_bShaderVisibleDescriptorHeaps = true;
+
+  mutable xiiMutex m_PoolMutex;
 
   xiiStaticArray<xiiDynamicArray<HeapBlock>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_DescriptorHeaps;
   xiiStaticArray<xiiUInt32, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>                  m_uiCurrentHeapIndex;

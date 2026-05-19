@@ -38,6 +38,7 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolD3D12* GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolD3D12* GetD3D12FencePool() const { return m_pFencePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolD3D12* GetResourceDescriptorPool() const { return m_pResourceDescriptorPool.Borrow(); }
 
   // Internal objects retrieval.
 
@@ -122,6 +123,7 @@ private:
   xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pTransferCommandListPool;
 
   xiiUniquePtr<xiiGALFencePoolD3D12> m_pFencePool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolD3D12> m_pResourceDescriptorPool;
 };
 
 #include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>
