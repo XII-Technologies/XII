@@ -134,13 +134,20 @@ xiiGALBufferD3D12::~xiiGALBufferD3D12()
 
   if (m_pD3D12Buffer != nullptr)
   {
-    if (m_Description.m_Usage == xiiGALResourceUsage::Sparse || m_BufferAllocation == nullptr)
+    if (pDeviceD3D12 == nullptr)
     {
       XII_GAL_D3D12_RELEASE(m_pD3D12Buffer);
+      XII_GAL_D3D12_RELEASE(m_BufferAllocation);
+    }
+    else if (m_Description.m_Usage == xiiGALResourceUsage::Sparse || m_BufferAllocation == nullptr)
+    {
+      IUnknown* pObject = m_pD3D12Buffer;
+      pDeviceD3D12->SafeReleaseDeviceObject(pObject);
+      m_pD3D12Buffer = nullptr;
     }
     else
     {
-      pDeviceD3D12->GetD3D12Allocator()->DestroyBuffer(m_pD3D12Buffer, m_BufferAllocation);
+      pDeviceD3D12->SafeReleaseBuffer(m_pD3D12Buffer, m_BufferAllocation);
     }
   }
 

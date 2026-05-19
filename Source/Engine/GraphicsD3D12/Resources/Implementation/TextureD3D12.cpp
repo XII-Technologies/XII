@@ -363,20 +363,20 @@ xiiGALTextureD3D12::~xiiGALTextureD3D12()
 
   if (m_pD3D12Texture != nullptr)
   {
-    if (IsNativeObjectWrapper() || m_TextureAllocation == nullptr || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+    if (pDeviceD3D12 == nullptr)
     {
       XII_GAL_D3D12_RELEASE(m_pD3D12Texture);
+      XII_GAL_D3D12_RELEASE(m_TextureAllocation);
+    }
+    else if (IsNativeObjectWrapper() || m_TextureAllocation == nullptr || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+    {
+      IUnknown* pObject = m_pD3D12Texture;
+      pDeviceD3D12->SafeReleaseDeviceObject(pObject);
+      m_pD3D12Texture = nullptr;
     }
     else
     {
-      if (m_Description.m_Usage == xiiGALResourceUsage::Staging)
-      {
-        pDeviceD3D12->GetD3D12Allocator()->DestroyBuffer(m_pD3D12Texture, m_TextureAllocation);
-      }
-      else
-      {
-        pDeviceD3D12->GetD3D12Allocator()->DestroyImage(m_pD3D12Texture, m_TextureAllocation);
-      }
+      pDeviceD3D12->SafeReleaseTexture(m_pD3D12Texture, m_TextureAllocation, m_Description.m_Usage == xiiGALResourceUsage::Staging);
     }
   }
 

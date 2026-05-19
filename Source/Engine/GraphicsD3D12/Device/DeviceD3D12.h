@@ -13,6 +13,8 @@ struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D12Device1;
 struct ID3D12Debug;
+struct ID3D12Resource;
+struct IUnknown;
 
 class xiiD3D12MemoryAllocator;
 
@@ -39,6 +41,10 @@ public:
   [[nodiscard]] XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }
   [[nodiscard]] XII_ALWAYS_INLINE IDXGIAdapter1* GetDXGIAdapter() const { return m_pDXGIAdapter; }
   [[nodiscard]] XII_ALWAYS_INLINE IDXGIFactory4* GetDXGIFactory() const { return m_pDXGIFactory; }
+
+  void SafeReleaseDeviceObject(IUnknown*& pObject);
+  void SafeReleaseBuffer(ID3D12Resource*& pResource, xiiD3D12Allocation& allocation);
+  void SafeReleaseTexture(ID3D12Resource*& pResource, xiiD3D12Allocation& allocation, bool bIsStagingTexture);
 
   void ReportLiveGPUObjects();
 
@@ -76,6 +82,8 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
+  class DeferredDeletionQueue;
+
   xiiResult      EnumerateAdapters(xiiDynamicArray<IDXGIAdapter1*>& out_adapters);
   bool           IsAdapterCompatible(IDXGIAdapter1* pAdapter, D3D_FEATURE_LEVEL minFeatureLevel, bool bPermitSoftwareAdapters);
   xiiResult      GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel, xiiDynamicArray<IDXGIAdapter1*>& out_CompatibleAdapters, bool bPermitSoftwareAdapters);
@@ -88,6 +96,7 @@ private:
   ID3D12Device1* m_pD3D12Device = nullptr;
 
   xiiUniquePtr<xiiD3D12MemoryAllocator> m_pAllocatorD3D12;
+  xiiUniquePtr<DeferredDeletionQueue>   m_pDeferredDeletionQueue;
 
   xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12> m_DisplayModes;
 
