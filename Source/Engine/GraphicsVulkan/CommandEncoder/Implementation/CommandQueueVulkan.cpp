@@ -26,19 +26,10 @@ xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
-  xiiGALDeviceVulkan*      pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALCommandListVulkan* pCommandListVulkan     = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
-  auto                     pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
+  xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandListVulkan* pCommandListVulkan = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
 
   bool bTimelineSemaphoreInUse = false;
-  if (pDeferredDeletionQueue->HasTimelineSemaphore())
-  {
-    xiiUInt64 uiSignalValue = pDeferredDeletionQueue->ReserveSubmitValue();
-
-    pCommandListVulkan->AddSignalSemaphore(pDeferredDeletionQueue->GetVulkanTimelineSemaphore(), uiSignalValue);
-
-    bTimelineSemaphoreInUse = true;
-  }
 
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {

@@ -102,77 +102,7 @@ public:
     vk::ExternalMemoryPropertiesKHR                       m_ExternalMemoryProperty;
   };
 
-  class DeferredDeletionQueue
-  {
-  public:
-    DeferredDeletionQueue(xiiGALDeviceVulkan* pDeviceVulkan);
-    ~DeferredDeletionQueue();
-
-    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject);
-    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
-    void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory);
-
-    void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore);
-    void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool);
-    void EnqueueResource(xiiGALFencePoolVulkan* pFencePool, vk::Fence vkFence);
-
-    void ReleaseResources(bool bForceReleaseAll = false);
-
-    [[nodiscard]] XII_ALWAYS_INLINE bool IsEmpty() const
-    {
-      XII_LOCK(m_DeletionQueueMutex);
-      return m_DeletionQueue.IsEmpty();
-    }
-
-    [[nodiscard]] XII_ALWAYS_INLINE bool HasTimelineSemaphore() const { return static_cast<bool>(m_bHasTimelineSemaphore); }
-
-    [[nodiscard]] XII_ALWAYS_INLINE vk::Semaphore GetVulkanTimelineSemaphore() const { return m_vkTimelineSemaphore; }
-
-    /// \brief Reserve and return the next submit value atomically. This avoids holding the deletion queue mutex during reservation and reduces contention.
-    /// The value returned is the value that will be signaled for the next timeline submit.
-    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64 ReserveSubmitValue() { return m_uiNextSubmitValue.PostIncrement(); }
-
-  private:
-    struct DeletionEntry
-    {
-      xiiUInt64 m_uiFenceValue = 0ULL;
-
-      vk::ObjectType      m_vkObjectType     = vk::ObjectType::eUnknown;
-      void*               m_pObject          = VK_NULL_HANDLE;
-      xiiVulkanAllocation m_VulkanAllocation = VK_NULL_HANDLE;
-      vk::DeviceMemory    m_vkExternalMemory = VK_NULL_HANDLE;
-
-      xiiGALSemaphorePoolVulkan* m_pSemaphorePool = nullptr;
-      vk::Semaphore              m_vkSemaphore    = VK_NULL_HANDLE;
-
-      xiiGALFencePoolVulkan* m_pFencePool = nullptr;
-      vk::Fence              m_vkFence    = VK_NULL_HANDLE;
-
-      xiiGALDescriptorSetPoolVulkan* m_pDescriptorSetPool = nullptr;
-      vk::DescriptorPool             m_vkDescriptorPool   = VK_NULL_HANDLE;
-
-      XII_ALWAYS_INLINE constexpr bool operator==(const DeletionEntry& rhs) const
-      {
-        return m_vkObjectType == rhs.m_vkObjectType && m_pObject == rhs.m_pObject && m_VulkanAllocation == rhs.m_VulkanAllocation && m_vkFence == rhs.m_vkFence && m_vkSemaphore == rhs.m_vkSemaphore && m_vkDescriptorPool == rhs.m_vkDescriptorPool;
-      }
-    };
-
-    void DestroyObject(vk::Device vkLogicalDevice, vk::ObjectType vkObjectType, void* pObject);
-    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, xiiVulkanAllocation allocation);
-    void DestroyObject(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory);
-
-    void DestroySemaphore(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore&& vkSemaphore);
-    void DestroyFence(xiiGALFencePoolVulkan* pFencePool, vk::Fence&& vkReclaimFence);
-    void DestroyDescriptorSetPool(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool&& vkDescriptorPool);
-
-    xiiGALDeviceVulkan*     m_pDeviceVulkan;
-    xiiDeque<DeletionEntry> m_DeletionQueue;
-    mutable xiiMutex        m_DeletionQueueMutex;
-
-    vk::Semaphore       m_vkTimelineSemaphore = VK_NULL_HANDLE;
-    xiiAtomicBool       m_bHasTimelineSemaphore{false};
-    xiiAtomicIntegerU64 m_uiNextSubmitValue{1ULL};
-  };
+  class DeferredDeletionQueue;
 
 public:
   virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
@@ -229,7 +159,6 @@ public:
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolVulkan*     GetVulkanFencePool() const { return m_pFencePool.Borrow(); }
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALSemaphorePoolVulkan* GetVulkanSemaphorePool() const { return m_pSemaphorePool.Borrow(); }
-  [[nodiscard]] XII_ALWAYS_INLINE DeferredDeletionQueue*     GetDeferredDeletionQueue() const { return m_pDeferredDeletionQueue.Borrow(); }
 
   // Deactivate Doxygen document generation for the following block. (API implementation only)
   /// \cond
