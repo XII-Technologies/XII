@@ -1926,49 +1926,402 @@ void xiiGALCommandListD3D12::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandListD3D12::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
+  if (m_pD3D12CommandList == nullptr || pBuffer == nullptr || pSourceData.IsEmpty())
+    return;
+
+  xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
+  if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+  {
+    xiiLog::Error("Failed to update D3D12 buffer on command list '{}': incompatible backend buffer type.", GetDebugName());
+    return;
+  }
+
+  const xiiUInt64 uiUpdateSize = pSourceData.GetCount();
+  if (uiDestinationOffset + uiUpdateSize > pBufferD3D12->GetSize())
+  {
+    xiiLog::Error("Failed to update D3D12 buffer '{}': destination range [{}..{}) exceeds buffer size {}.", pBufferD3D12->GetDebugName(), uiDestinationOffset, uiDestinationOffset + uiUpdateSize, pBufferD3D12->GetSize());
+    return;
+  }
+
+  const xiiGALBufferCreationDescription& bufferDescription = pBufferD3D12->GetDescription();
+  if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic || bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
+  {
+    void*       pMappedData = nullptr;
+    D3D12_RANGE readRange   = {0U, 0U};
+    if (FAILED(pBufferD3D12->GetD3D12Buffer()->Map(0U, &readRange, &pMappedData)) || pMappedData == nullptr)
+    {
+      xiiLog::Error("Failed to map host-visible D3D12 buffer '{}' for UpdateBuffer().", pBufferD3D12->GetDebugName());
+      return;
+    }
+
+    xiiMemoryUtils::RawByteCopy(xiiMemoryUtils::AddByteOffset(pMappedData, static_cast<size_t>(uiDestinationOffset)), pSourceData.GetPtr(), static_cast<size_t>(uiUpdateSize));
+
+    D3D12_RANGE writeRange = {static_cast<SIZE_T>(uiDestinationOffset), static_cast<SIZE_T>(uiDestinationOffset + uiUpdateSize)};
+    pBufferD3D12->GetD3D12Buffer()->Unmap(0U, &writeRange);
+    return;
+  }
+
+  xiiGALStagingBufferAllocationD3D12 stagingAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(static_cast<xiiUInt32>(uiUpdateSize));
+  if (stagingAllocation.m_pD3D12Buffer == nullptr || stagingAllocation.m_pMappedAddress == nullptr)
+  {
+    xiiLog::Error("Failed to allocate upload staging memory for D3D12 UpdateBuffer().");
+    return;
+  }
+
+  xiiMemoryUtils::RawByteCopy(stagingAllocation.m_pMappedAddress, pSourceData.GetPtr(), static_cast<size_t>(uiUpdateSize));
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pBufferD3D12, pBufferD3D12->GetD3D12Buffer(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopyDestination), "buffer update destination", GetDebugName()))
+    return;
+
+  m_pD3D12CommandList->CopyBufferRegion(pBufferD3D12->GetD3D12Buffer(), static_cast<UINT64>(uiDestinationOffset), stagingAllocation.m_pD3D12Buffer, stagingAllocation.m_uiOffset, static_cast<UINT64>(uiUpdateSize));
 }
 
 void xiiGALCommandListD3D12::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
 {
+  if (pSourceBuffer == nullptr || pDestinationBuffer == nullptr)
+    return;
+
+  xiiGALBufferD3D12* pSourceBufferD3D12      = xiiDynamicCast<xiiGALBufferD3D12*>(pSourceBuffer);
+  xiiGALBufferD3D12* pDestinationBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pDestinationBuffer);
+  if (pSourceBufferD3D12 == nullptr || pDestinationBufferD3D12 == nullptr || pSourceBufferD3D12->GetD3D12Buffer() == nullptr || pDestinationBufferD3D12->GetD3D12Buffer() == nullptr)
+  {
+    xiiLog::Error("Failed to copy D3D12 buffers on command list '{}': incompatible backend buffer types.", GetDebugName());
+    return;
+  }
+
+  CopyBufferRegionPlatform(pSourceBufferD3D12, 0U, pDestinationBufferD3D12, 0U, pSourceBufferD3D12->GetSize());
 }
 
 void xiiGALCommandListD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
+  if (m_pD3D12CommandList == nullptr || pSourceBuffer == nullptr || pDestinationBuffer == nullptr || uiSize == 0U)
+    return;
+
+  xiiGALBufferD3D12* pSourceBufferD3D12      = xiiDynamicCast<xiiGALBufferD3D12*>(pSourceBuffer);
+  xiiGALBufferD3D12* pDestinationBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pDestinationBuffer);
+  if (pSourceBufferD3D12 == nullptr || pDestinationBufferD3D12 == nullptr || pSourceBufferD3D12->GetD3D12Buffer() == nullptr || pDestinationBufferD3D12->GetD3D12Buffer() == nullptr)
+  {
+    xiiLog::Error("Failed to copy D3D12 buffer region on command list '{}': incompatible backend buffer types.", GetDebugName());
+    return;
+  }
+
+  if (uiSourceOffset + uiSize > pSourceBufferD3D12->GetSize() || uiDestinationOffset + uiSize > pDestinationBufferD3D12->GetSize())
+  {
+    xiiLog::Error("Failed to copy D3D12 buffer region on command list '{}': source/destination range exceeds buffer bounds.", GetDebugName());
+    return;
+  }
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSourceBufferD3D12, pSourceBufferD3D12->GetD3D12Buffer(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopySource, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopySource), "copy source buffer", GetDebugName()))
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationBufferD3D12, pDestinationBufferD3D12->GetD3D12Buffer(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopyDestination), "copy destination buffer", GetDebugName()))
+    return;
+
+  m_pD3D12CommandList->CopyBufferRegion(pDestinationBufferD3D12->GetD3D12Buffer(), uiDestinationOffset, pSourceBufferD3D12->GetD3D12Buffer(), uiSourceOffset, uiSize);
 }
 
 xiiResult xiiGALCommandListD3D12::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
+  XII_IGNORE_UNUSED(mapFlags);
+
+  pMappedData = nullptr;
+  if (pBuffer == nullptr)
+    return XII_FAILURE;
+
+  xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
+  if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+  {
+    xiiLog::Error("Failed to map D3D12 buffer: incompatible backend buffer type.");
+    return XII_FAILURE;
+  }
+
+  const xiiGALBufferCreationDescription& description = pBufferD3D12->GetDescription();
+  if ((mapType == xiiGALMapType::Read || mapType == xiiGALMapType::ReadWrite) && !description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
+  {
+    xiiLog::Error("Failed to map D3D12 buffer '{}' for reading: CPU read access flag is missing.", pBufferD3D12->GetDebugName());
+    return XII_FAILURE;
+  }
+  if ((mapType == xiiGALMapType::Write || mapType == xiiGALMapType::ReadWrite) && !description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+  {
+    xiiLog::Error("Failed to map D3D12 buffer '{}' for writing: CPU write access flag is missing.", pBufferD3D12->GetDebugName());
+    return XII_FAILURE;
+  }
+
+  D3D12_RANGE readRange = {};
+  if (mapType == xiiGALMapType::Read || mapType == xiiGALMapType::ReadWrite)
+  {
+    readRange.Begin = 0U;
+    readRange.End   = static_cast<SIZE_T>(pBufferD3D12->GetSize());
+  }
+
+  if (FAILED(pBufferD3D12->GetD3D12Buffer()->Map(0U, &readRange, &pMappedData)) || pMappedData == nullptr)
+  {
+    xiiLog::Error("Failed to map D3D12 buffer '{}'.", pBufferD3D12->GetDebugName());
+    return XII_FAILURE;
+  }
+
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListD3D12::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
+  if (pBuffer == nullptr)
+    return XII_FAILURE;
+
+  xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
+  if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+  {
+    xiiLog::Error("Failed to unmap D3D12 buffer: incompatible backend buffer type.");
+    return XII_FAILURE;
+  }
+
+  D3D12_RANGE writtenRange = {};
+  if (mapType == xiiGALMapType::Write || mapType == xiiGALMapType::ReadWrite)
+  {
+    writtenRange.Begin = 0U;
+    writtenRange.End   = static_cast<SIZE_T>(pBufferD3D12->GetSize());
+  }
+  pBufferD3D12->GetD3D12Buffer()->Unmap(0U, &writtenRange);
+
   return XII_SUCCESS;
 }
 
 void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
+  if (m_pD3D12CommandList == nullptr || pTexture == nullptr || subresourceData.m_pData.IsEmpty())
+    return;
+
+  xiiGALTextureD3D12* pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(pTexture);
+  if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+  {
+    xiiLog::Error("Failed to update D3D12 texture on command list '{}': incompatible backend texture type.", GetDebugName());
+    return;
+  }
+
+  const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+  if (textureDescription.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    xiiGALMappedTextureSubresource mappedSubresource = {};
+    if (MapTextureSubresourcePlatform(pTextureD3D12, textureMiplevelData, xiiGALMapType::Write, xiiGALMapFlags::None, nullptr, mappedSubresource).Failed())
+      return;
+
+    const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+    const xiiUInt32 uiRowCount = (textureBox.m_vMax.y - textureBox.m_vMin.y) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U);
+    const xiiUInt32 uiDepth = textureBox.m_vMax.z - textureBox.m_vMin.z;
+    const xiiUInt32 uiBoxWidthInBlocks = (textureBox.m_vMax.x - textureBox.m_vMin.x) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockWidth, 1U);
+    const xiiUInt64 uiRowSize = static_cast<xiiUInt64>(uiBoxWidthInBlocks) * static_cast<xiiUInt64>(formatProperties.GetElementSize());
+    xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, uiRowCount, uiDepth, uiRowSize, mappedSubresource.m_pData, mappedSubresource.m_uiStride, mappedSubresource.m_uiDepthStride);
+    XII_IGNORE_UNUSED(UnmapTextureSubresourcePlatform(pTextureD3D12, textureMiplevelData));
+    return;
+  }
+
+  D3D12_RESOURCE_DESC d3d12TextureDescription = pTextureD3D12->GetD3D12Texture()->GetDesc();
+  const UINT          uiSubresourceIndex      = xiiD3D12TypeConversions::CalculateSubResourceIndex(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
+
+  D3D12_PLACED_SUBRESOURCE_FOOTPRINT placedFootprint = {};
+  UINT                                uiRowsCount     = 0U;
+  UINT64                              uiRowSize       = 0U;
+  UINT64                              uiRequiredSize  = 0U;
+  m_pDevice.Downcast<xiiGALDeviceD3D12>()->GetD3D12Device()->GetCopyableFootprints(&d3d12TextureDescription, uiSubresourceIndex, 1U, 0U, &placedFootprint, &uiRowsCount, &uiRowSize, &uiRequiredSize);
+
+  xiiGALStagingBufferAllocationD3D12 stagingAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(static_cast<xiiUInt32>(uiRequiredSize));
+  if (stagingAllocation.m_pD3D12Buffer == nullptr || stagingAllocation.m_pMappedAddress == nullptr)
+  {
+    xiiLog::Error("Failed to allocate D3D12 staging memory for UpdateTexture().");
+    return;
+  }
+
+  const xiiUInt32 uiDepth = textureBox.m_vMax.z - textureBox.m_vMin.z;
+  xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, uiRowsCount, uiDepth, uiRowSize, stagingAllocation.m_pMappedAddress, placedFootprint.Footprint.RowPitch, placedFootprint.Footprint.RowPitch * uiRowsCount);
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12, pTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopyDestination), "texture update destination", GetDebugName()))
+    return;
+
+  D3D12_TEXTURE_COPY_LOCATION destinationLocation = {};
+  destinationLocation.pResource                   = pTextureD3D12->GetD3D12Texture();
+  destinationLocation.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+  destinationLocation.SubresourceIndex            = uiSubresourceIndex;
+
+  D3D12_TEXTURE_COPY_LOCATION sourceLocation = {};
+  sourceLocation.pResource                   = stagingAllocation.m_pD3D12Buffer;
+  sourceLocation.Type                        = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+  sourceLocation.PlacedFootprint             = placedFootprint;
+  sourceLocation.PlacedFootprint.Offset      = stagingAllocation.m_uiOffset;
+
+  D3D12_BOX sourceBox = {};
+  sourceBox.left      = 0U;
+  sourceBox.top       = 0U;
+  sourceBox.front     = 0U;
+  sourceBox.right     = textureBox.m_vMax.x - textureBox.m_vMin.x;
+  sourceBox.bottom    = textureBox.m_vMax.y - textureBox.m_vMin.y;
+  sourceBox.back      = textureBox.m_vMax.z - textureBox.m_vMin.z;
+
+  m_pD3D12CommandList->CopyTextureRegion(&destinationLocation, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, &sourceLocation, &sourceBox);
 }
 
 void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
+  if (pSourceTexture == nullptr || pDestinationTexture == nullptr)
+    return;
+
+  xiiGALTextureD3D12* pSourceTextureD3D12      = xiiDynamicCast<xiiGALTextureD3D12*>(pSourceTexture);
+  xiiGALTextureD3D12* pDestinationTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(pDestinationTexture);
+  if (pSourceTextureD3D12 == nullptr || pDestinationTextureD3D12 == nullptr)
+    return;
+
+  const xiiGALTextureCreationDescription& sourceDescription = pSourceTextureD3D12->GetDescription();
+
+  xiiBoundingBoxU32 copyBox = xiiBoundingBoxU32::MakeZero();
+  const xiiGALMipLevelProperties sourceMipProperties = xiiGALTextureUtilities::GetMipLevelProperties(sourceDescription, 0U);
+  copyBox.m_vMax = xiiVec3U32(sourceMipProperties.m_LogicalSize.width, sourceMipProperties.m_LogicalSize.height, sourceMipProperties.m_uiDepth);
+
+  xiiGALTextureMipLevelData sourceMipData      = {};
+  xiiGALTextureMipLevelData destinationMipData = {};
+  sourceMipData.m_uiMipLevel                   = 0U;
+  sourceMipData.m_uiArraySlice                 = 0U;
+  destinationMipData.m_uiMipLevel              = 0U;
+  destinationMipData.m_uiArraySlice            = 0U;
+  CopyTextureRegionPlatform(pSourceTextureD3D12, sourceMipData, copyBox, pDestinationTextureD3D12, destinationMipData, xiiVec3U32::MakeZero());
 }
 
 void xiiGALCommandListD3D12::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
+  if (m_pD3D12CommandList == nullptr || pSourceTexture == nullptr || pDestinationTexture == nullptr)
+    return;
+
+  xiiGALTextureD3D12* pSourceTextureD3D12      = xiiDynamicCast<xiiGALTextureD3D12*>(pSourceTexture);
+  xiiGALTextureD3D12* pDestinationTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(pDestinationTexture);
+  if (pSourceTextureD3D12 == nullptr || pDestinationTextureD3D12 == nullptr || pSourceTextureD3D12->GetD3D12Texture() == nullptr || pDestinationTextureD3D12->GetD3D12Texture() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSourceTextureD3D12, pSourceTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopySource, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopySource), "texture copy source", GetDebugName()))
+    return;
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationTextureD3D12, pDestinationTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopyDestination), "texture copy destination", GetDebugName()))
+    return;
+
+  const xiiUInt32 uiSourceSubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTextureD3D12->GetDescription().m_uiMipLevels);
+  const xiiUInt32 uiDestinationSubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, pDestinationTextureD3D12->GetDescription().m_uiMipLevels);
+
+  D3D12_TEXTURE_COPY_LOCATION sourceLocation = {};
+  sourceLocation.pResource                   = pSourceTextureD3D12->GetD3D12Texture();
+  sourceLocation.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+  sourceLocation.SubresourceIndex            = uiSourceSubresourceIndex;
+
+  D3D12_TEXTURE_COPY_LOCATION destinationLocation = {};
+  destinationLocation.pResource                   = pDestinationTextureD3D12->GetD3D12Texture();
+  destinationLocation.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+  destinationLocation.SubresourceIndex            = uiDestinationSubresourceIndex;
+
+  D3D12_BOX sourceBox = {};
+  sourceBox.left      = box.m_vMin.x;
+  sourceBox.top       = box.m_vMin.y;
+  sourceBox.front     = box.m_vMin.z;
+  sourceBox.right     = box.m_vMax.x;
+  sourceBox.bottom    = box.m_vMax.y;
+  sourceBox.back      = box.m_vMax.z;
+
+  m_pD3D12CommandList->CopyTextureRegion(&destinationLocation, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z, &sourceLocation, &sourceBox);
 }
 
 void xiiGALCommandListD3D12::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || pSourceTexture == nullptr || pDestinationTexture == nullptr)
+    return;
+
+  xiiGALTextureD3D12* pSourceTextureD3D12      = xiiDynamicCast<xiiGALTextureD3D12*>(pSourceTexture);
+  xiiGALTextureD3D12* pDestinationTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(pDestinationTexture);
+  if (pSourceTextureD3D12 == nullptr || pDestinationTextureD3D12 == nullptr || pSourceTextureD3D12->GetD3D12Texture() == nullptr || pDestinationTextureD3D12->GetD3D12Texture() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSourceTextureD3D12, pSourceTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::ResolveSource, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ResolveSource), "resolve source texture", GetDebugName()))
+    return;
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationTextureD3D12, pDestinationTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::ResolveDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ResolveDestination), "resolve destination texture", GetDebugName()))
+    return;
+
+  const UINT uiSourceSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(description.m_uiSourceMipLevel, description.m_uiSourceSlice, pSourceTextureD3D12->GetDescription().m_uiMipLevels);
+  const UINT uiDestinationSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(description.m_uiDestinationMipLevel, description.m_uiDestinationSlice, pDestinationTextureD3D12->GetDescription().m_uiMipLevels);
+  const DXGI_FORMAT dxgiFormat = xiiD3D12TypeConversions::GetFormat(description.m_Format == xiiGALResourceFormat::Unknown ? pDestinationTextureD3D12->GetDescription().m_Format : description.m_Format);
+
+  m_pD3D12CommandList->ResolveSubresource(pDestinationTextureD3D12->GetD3D12Texture(), uiDestinationSubresource, pSourceTextureD3D12->GetD3D12Texture(), uiSourceSubresource, dxgiFormat);
 }
 
 xiiResult xiiGALCommandListD3D12::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
+  XII_IGNORE_UNUSED(mapFlags);
+
+  mappedData = {};
+  if (pTexture == nullptr)
+    return XII_FAILURE;
+
+  xiiGALTextureD3D12* pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(pTexture);
+  if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+    return XII_FAILURE;
+
+  const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+  if (textureDescription.m_Usage != xiiGALResourceUsage::Staging)
+  {
+    xiiLog::Error("Only staging textures can be mapped in the D3D12 backend.");
+    return XII_FAILURE;
+  }
+
+  if ((mapType == xiiGALMapType::Read || mapType == xiiGALMapType::ReadWrite) && !textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
+    return XII_FAILURE;
+  if ((mapType == xiiGALMapType::Write || mapType == xiiGALMapType::ReadWrite) && !textureDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+    return XII_FAILURE;
+
+  xiiBoundingBoxU32 resolvedBox = xiiBoundingBoxU32::MakeZero();
+  if (pTextureBox == nullptr)
+  {
+    const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
+    resolvedBox.m_vMax = xiiVec3U32(mipLevelProperties.m_LogicalSize.width, mipLevelProperties.m_LogicalSize.height, mipLevelProperties.m_uiDepth);
+    pTextureBox        = &resolvedBox;
+  }
+
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+  const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
+
+  void*       pMappedMemory = nullptr;
+  D3D12_RANGE readRange     = {};
+  if (mapType == xiiGALMapType::Read || mapType == xiiGALMapType::ReadWrite)
+  {
+    readRange.Begin = 0U;
+    readRange.End   = static_cast<SIZE_T>(pTextureD3D12->GetD3D12Texture()->GetDesc().Width);
+  }
+
+  if (FAILED(pTextureD3D12->GetD3D12Texture()->Map(0U, &readRange, &pMappedMemory)) || pMappedMemory == nullptr)
+    return XII_FAILURE;
+
+  const xiiUInt64 uiSubresourceOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(textureDescription, textureMipLevelData.m_uiArraySlice, textureMipLevelData.m_uiMipLevel, 4U);
+  const xiiUInt64 uiMapOffset =
+    uiSubresourceOffset +
+    ((pTextureBox->m_vMin.z * mipLevelProperties.m_StorageSize.height + pTextureBox->m_vMin.y) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U)) * mipLevelProperties.m_uiRowSize +
+    (pTextureBox->m_vMin.x / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockWidth, 1U)) * static_cast<xiiUInt64>(formatProperties.GetElementSize());
+
+  mappedData.m_pData         = xiiMemoryUtils::AddByteOffset(pMappedMemory, static_cast<size_t>(uiMapOffset));
+  mappedData.m_uiStride      = mipLevelProperties.m_uiRowSize;
+  mappedData.m_uiDepthStride = mipLevelProperties.m_uiDepthSliceSize;
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListD3D12::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
+  XII_IGNORE_UNUSED(textureMipLevelData);
+
+  if (pTexture == nullptr)
+    return XII_FAILURE;
+
+  xiiGALTextureD3D12* pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(pTexture);
+  if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+    return XII_FAILURE;
+
+  D3D12_RANGE writtenRange = {};
+  if (pTextureD3D12->GetDescription().m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+  {
+    writtenRange.Begin = 0U;
+    writtenRange.End   = static_cast<SIZE_T>(pTextureD3D12->GetD3D12Texture()->GetDesc().Width);
+  }
+  pTextureD3D12->GetD3D12Texture()->Unmap(0U, &writtenRange);
+
   return XII_SUCCESS;
 }
 
