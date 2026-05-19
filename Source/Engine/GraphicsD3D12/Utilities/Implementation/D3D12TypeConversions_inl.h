@@ -831,6 +831,87 @@ XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xi
   return D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
 }
 
+XII_ALWAYS_INLINE D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS xiiD3D12TypeConversions::GetAccelerationStructureBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
+{
+  D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS d3d12Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
+
+  return d3d12Flags;
+}
+
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetBLASTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
+{
+  if (triangle.m_VertexValueType == xiiGALValueType::Float32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? DXGI_FORMAT_R32G32_FLOAT : DXGI_FORMAT_R32G32B32_FLOAT;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Float16)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? DXGI_FORMAT_R16G16_FLOAT : DXGI_FORMAT_R16G16B16A16_FLOAT;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Int32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? DXGI_FORMAT_R32G32_SINT : DXGI_FORMAT_R32G32B32_SINT;
+  }
+
+  XII_REPORT_FAILURE("Unsupported BLAS triangle vertex value type: {}.", xiiArgEnum(triangle.m_VertexValueType));
+  return DXGI_FORMAT_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetBLASIndexFormat(xiiEnum<xiiGALValueType> indexType)
+{
+  switch (indexType)
+  {
+    case xiiGALValueType::UInt16:
+      return DXGI_FORMAT_R16_UINT;
+    case xiiGALValueType::UInt32:
+      return DXGI_FORMAT_R32_UINT;
+    case xiiGALValueType::Undefined:
+      return DXGI_FORMAT_UNKNOWN;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return DXGI_FORMAT_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::GetBLASTriangleVertexStride(const xiiGALBLASTriangleDescription& triangle)
+{
+  if (triangle.m_VertexValueType == xiiGALValueType::Float16 && triangle.m_uiVertexComponentCount == 3U)
+  {
+    // D3D12 does not expose a packed 3x16-bit float triangle format for DXR geometry descriptors.
+    // Use 4-component alignment for descriptor validation and expect padded vertex data.
+    return sizeof(xiiUInt16) * 4U;
+  }
+
+  xiiUInt32 uiComponentSize = 0U;
+  switch (triangle.m_VertexValueType)
+  {
+    case xiiGALValueType::Float16:
+      uiComponentSize = sizeof(xiiUInt16);
+      break;
+    case xiiGALValueType::Float32:
+    case xiiGALValueType::Int32:
+      uiComponentSize = sizeof(xiiUInt32);
+      break;
+    default:
+      XII_REPORT_FAILURE("Unsupported BLAS triangle vertex value type for stride: {}.", xiiArgEnum(triangle.m_VertexValueType));
+      return 0U;
+  }
+
+  return triangle.m_uiVertexComponentCount * uiComponentSize;
+}
+
 XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized)
 {
   switch (e)
