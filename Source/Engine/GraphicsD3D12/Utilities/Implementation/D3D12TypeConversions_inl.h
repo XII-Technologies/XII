@@ -813,6 +813,65 @@ XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTexture
   return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
+XII_ALWAYS_INLINE D3D12_SHADER_VISIBILITY xiiD3D12TypeConversions::GetShaderVisibility(xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  if (shaderStages == xiiGALShaderType::Vertex)
+    return D3D12_SHADER_VISIBILITY_VERTEX;
+  if (shaderStages == xiiGALShaderType::Hull)
+    return D3D12_SHADER_VISIBILITY_HULL;
+  if (shaderStages == xiiGALShaderType::Domain)
+    return D3D12_SHADER_VISIBILITY_DOMAIN;
+  if (shaderStages == xiiGALShaderType::Geometry)
+    return D3D12_SHADER_VISIBILITY_GEOMETRY;
+  if (shaderStages == xiiGALShaderType::Pixel)
+    return D3D12_SHADER_VISIBILITY_PIXEL;
+
+  return D3D12_SHADER_VISIBILITY_ALL;
+}
+
+XII_ALWAYS_INLINE bool xiiD3D12TypeConversions::TryGetDescriptorRangeType(xiiEnum<xiiGALShaderResourceType> resourceType, D3D12_DESCRIPTOR_RANGE_TYPE& out_rangeType)
+{
+  switch (resourceType)
+  {
+    case xiiGALShaderResourceType::ConstantBuffer:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+      return true;
+
+    case xiiGALShaderResourceType::TextureSRV:
+    case xiiGALShaderResourceType::BufferSRV:
+    case xiiGALShaderResourceType::InputAttachment:
+    case xiiGALShaderResourceType::AccelerationStructure:
+    case xiiGALShaderResourceType::TextureAndSampler:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+      return true;
+
+    case xiiGALShaderResourceType::TextureUAV:
+    case xiiGALShaderResourceType::BufferUAV:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+      return true;
+
+    case xiiGALShaderResourceType::Sampler:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+      return true;
+
+    default:
+      break;
+  }
+
+  return false;
+}
+
+XII_ALWAYS_INLINE D3D12_STATIC_BORDER_COLOR xiiD3D12TypeConversions::GetStaticBorderColor(const xiiColor& color)
+{
+  if (color.a <= 0.0f)
+    return D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+
+  if (color.r <= 0.0f && color.g <= 0.0f && color.b <= 0.0f)
+    return D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+
+  return D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+}
+
 XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiGALQueryType::Enum e)
 {
   switch (e)
@@ -1223,6 +1282,35 @@ XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D12TypeConversions::GetPrimitiveTo
   return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
+XII_ALWAYS_INLINE D3D12_PRIMITIVE_TOPOLOGY_TYPE xiiD3D12TypeConversions::GetPrimitiveTopologyType(xiiEnum<xiiGALPrimitiveTopology> primitiveTopology)
+{
+  if (primitiveTopology >= xiiGALPrimitiveTopology::ControlPointPatchList1 && primitiveTopology <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+    return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+
+  switch (primitiveTopology)
+  {
+    case xiiGALPrimitiveTopology::PointList:
+      return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+
+    case xiiGALPrimitiveTopology::LineList:
+    case xiiGALPrimitiveTopology::LineStrip:
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+
+    case xiiGALPrimitiveTopology::TriangleList:
+    case xiiGALPrimitiveTopology::TriangleStrip:
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+      return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+    default:
+      break;
+  }
+
+  return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+}
+
 XII_ALWAYS_INLINE D3D12_INPUT_CLASSIFICATION xiiD3D12TypeConversions::GetElementFrequency(xiiGALInputElementFrequency::Enum e)
 {
   switch (e)
@@ -1292,6 +1380,61 @@ XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceStat
     resourceStates |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
 
   return resourceStates;
+}
+
+XII_ALWAYS_INLINE D3D12_SHADING_RATE xiiD3D12TypeConversions::GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e)
+{
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateFlags::_1X1:
+      return D3D12_SHADING_RATE_1X1;
+    case xiiGALShadingRateFlags::_1X2:
+      return D3D12_SHADING_RATE_1X2;
+    case xiiGALShadingRateFlags::_2X1:
+      return D3D12_SHADING_RATE_2X1;
+    case xiiGALShadingRateFlags::_2X2:
+      return D3D12_SHADING_RATE_2X2;
+    case xiiGALShadingRateFlags::_2X4:
+      return D3D12_SHADING_RATE_2X4;
+    case xiiGALShadingRateFlags::_4X2:
+      return D3D12_SHADING_RATE_4X2;
+    case xiiGALShadingRateFlags::_4X4:
+      return D3D12_SHADING_RATE_4X4;
+
+    case xiiGALShadingRateFlags::_1X4:
+    case xiiGALShadingRateFlags::_4X1:
+      xiiLog::Error("Shading rate '{}' is unsupported by Direct3D12.", xiiArgEnum(e));
+      return D3D12_SHADING_RATE_1X1;
+
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate value.");
+      return D3D12_SHADING_RATE_1X1;
+  }
+}
+
+XII_ALWAYS_INLINE D3D12_SHADING_RATE_COMBINER xiiD3D12TypeConversions::GetShadingRateCombiner(xiiBitflags<xiiGALShadingRateCombinerFlags> e)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(e.GetValue()), "Expected a single combiner flag.");
+
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateCombinerFlags::PassThrough:
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+    case xiiGALShadingRateCombinerFlags::CombinerOverride:
+      return D3D12_SHADING_RATE_COMBINER_OVERRIDE;
+    case xiiGALShadingRateCombinerFlags::CombinerMin:
+      return D3D12_SHADING_RATE_COMBINER_MIN;
+    case xiiGALShadingRateCombinerFlags::CombinerMax:
+      return D3D12_SHADING_RATE_COMBINER_MAX;
+    case xiiGALShadingRateCombinerFlags::CombinerSum:
+      return D3D12_SHADING_RATE_COMBINER_SUM;
+    case xiiGALShadingRateCombinerFlags::CombinerMul:
+      xiiLog::Error("Shading rate combiner '{}' is unsupported by Direct3D12.", xiiArgEnum(e));
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate combiner.");
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+  }
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiD3D12TypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
