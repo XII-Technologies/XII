@@ -35,6 +35,26 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
+  [[nodiscard]] ID3D12CommandSignature* CreateIndirectCommandSignature(ID3D12Device* pD3D12Device, D3D12_INDIRECT_ARGUMENT_TYPE argumentType, xiiUInt32 uiByteStride)
+  {
+    if (pD3D12Device == nullptr)
+      return nullptr;
+
+    D3D12_INDIRECT_ARGUMENT_DESC argumentDescription = {};
+    argumentDescription.Type                         = argumentType;
+
+    D3D12_COMMAND_SIGNATURE_DESC signatureDescription = {};
+    signatureDescription.ByteStride                   = uiByteStride;
+    signatureDescription.NumArgumentDescs             = 1U;
+    signatureDescription.pArgumentDescs               = &argumentDescription;
+    signatureDescription.NodeMask                     = 0U;
+
+    ID3D12CommandSignature* pCommandSignature = nullptr;
+    if (FAILED(pD3D12Device->CreateCommandSignature(&signatureDescription, nullptr, IID_PPV_ARGS(&pCommandSignature))))
+      return nullptr;
+
+    return pCommandSignature;
+  }
   enum class D3D12PipelineRootBindingType : xiiUInt8
   {
     None = 0U,
@@ -1294,22 +1314,139 @@ void xiiGALCommandListD3D12::EndRenderPassPlatform()
 
 void xiiGALCommandListD3D12::DrawPlatform(const xiiGALDrawDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  PrepareForDraw();
+
+  if (description.m_uiVertexCount == 0U || description.m_uiInstanceCount == 0U)
+    return;
+
+  m_pD3D12CommandList->DrawInstanced(description.m_uiVertexCount, description.m_uiInstanceCount, description.m_uiStartVertexLocation, description.m_uiFirstInstanceLocation);
 }
 
 void xiiGALCommandListD3D12::DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  PrepareForIndexedDraw(description.m_IndexType);
+
+  if (description.m_uiIndexCount == 0U || description.m_uiInstanceCount == 0U)
+    return;
+
+  m_pD3D12CommandList->DrawIndexedInstanced(description.m_uiIndexCount, description.m_uiInstanceCount, description.m_uiFirstIndexLocation, static_cast<INT>(description.m_uiBaseVertex), description.m_uiFirstInstanceLocation);
 }
 
 void xiiGALCommandListD3D12::DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pBuffer == nullptr || description.m_uiDrawCount == 0U)
+    return;
+
+  PrepareForDraw();
+
+  xiiGALBufferD3D12* pArgumentBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pBuffer);
+  if (pArgumentBufferD3D12 == nullptr || pArgumentBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect draw argument buffer", GetDebugName()))
+    return;
+
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, description.m_uiDrawArgumentStride);
+  if (pCommandSignature == nullptr)
+  {
+    xiiLog::Error("Failed to issue DrawIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pCommandSignature);
+    });
+
+  ID3D12Resource* pCountBuffer = nullptr;
+  if (description.m_pCounterBuffer != nullptr)
+  {
+    xiiGALBufferD3D12* pCounterBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pCounterBuffer);
+    if (pCounterBufferD3D12 == nullptr || pCounterBufferD3D12->GetD3D12Buffer() == nullptr)
+      return;
+
+    if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pCounterBufferD3D12, pCounterBufferD3D12->GetD3D12Buffer(), description.m_CounterBufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect draw count buffer", GetDebugName()))
+      return;
+
+    pCountBuffer = pCounterBufferD3D12->GetD3D12Buffer();
+  }
+
+  m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, description.m_uiDrawCount, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiDrawArgumentOffset, pCountBuffer, description.m_uiCounterOffset);
 }
 
 void xiiGALCommandListD3D12::DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pBuffer == nullptr || description.m_uiDrawCount == 0U)
+    return;
+
+  PrepareForIndexedDraw(description.m_IndexType);
+
+  xiiGALBufferD3D12* pArgumentBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pBuffer);
+  if (pArgumentBufferD3D12 == nullptr || pArgumentBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indexed indirect draw argument buffer", GetDebugName()))
+    return;
+
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, description.m_uiDrawArgumentStride);
+  if (pCommandSignature == nullptr)
+  {
+    xiiLog::Error("Failed to issue DrawIndexedIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pCommandSignature);
+    });
+
+  ID3D12Resource* pCountBuffer = nullptr;
+  if (description.m_pCounterBuffer != nullptr)
+  {
+    xiiGALBufferD3D12* pCounterBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pCounterBuffer);
+    if (pCounterBufferD3D12 == nullptr || pCounterBufferD3D12->GetD3D12Buffer() == nullptr)
+      return;
+
+    if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pCounterBufferD3D12, pCounterBufferD3D12->GetD3D12Buffer(), description.m_CounterBufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indexed indirect draw count buffer", GetDebugName()))
+      return;
+
+    pCountBuffer = pCounterBufferD3D12->GetD3D12Buffer();
+  }
+
+  m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, description.m_uiDrawCount, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiDrawArgumentOffset, pCountBuffer, description.m_uiCounterOffset);
 }
 
 void xiiGALCommandListD3D12::DrawMeshPlatform(const xiiGALDrawMeshDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  PrepareForDraw();
+
+  if (description.m_uiThreadGroupCountX == 0U || description.m_uiThreadGroupCountY == 0U || description.m_uiThreadGroupCountZ == 0U)
+    return;
+
+  ID3D12GraphicsCommandList6* pD3D12CommandList6 = nullptr;
+  if (FAILED(m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList6))) || pD3D12CommandList6 == nullptr)
+  {
+    xiiLog::Error("Failed to issue DrawMesh on D3D12 command list '{}': ID3D12GraphicsCommandList6 is unavailable.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pD3D12CommandList6);
+    });
+
+  pD3D12CommandList6->DispatchMesh(description.m_uiThreadGroupCountX, description.m_uiThreadGroupCountY, description.m_uiThreadGroupCountZ);
 }
 
 void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
@@ -1318,22 +1455,143 @@ void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndire
 
 void xiiGALCommandListD3D12::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  PrepareForDraw();
+
+  if (description.m_uiInstanceCount == 0U)
+    return;
+
+  for (const xiiGALMultiDrawItem& drawItem : description.m_pDrawItems)
+  {
+    if (drawItem.m_uiVertexCount == 0U)
+      continue;
+
+    m_pD3D12CommandList->DrawInstanced(drawItem.m_uiVertexCount, description.m_uiInstanceCount, drawItem.m_uiStartVertexLocation, description.m_uiFirstInstanceLocation);
+  }
 }
 
 void xiiGALCommandListD3D12::MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  PrepareForIndexedDraw(description.m_IndexType);
+
+  if (description.m_uiInstanceCount == 0U)
+    return;
+
+  for (const xiiGALMultiDrawIndexedItem& drawItem : description.m_pDrawItems)
+  {
+    if (drawItem.m_uiIndexCount == 0U)
+      continue;
+
+    m_pD3D12CommandList->DrawIndexedInstanced(drawItem.m_uiIndexCount, description.m_uiInstanceCount, drawItem.m_uiFirstIndexLocation, static_cast<INT>(drawItem.m_uiBaseVertex), description.m_uiFirstInstanceLocation);
+  }
 }
 
 void xiiGALCommandListD3D12::DispatchComputePlatform(const xiiGALDispatchComputeDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  PrepareForDispatchCompute();
+
+  if (description.m_uiThreadGroupCountX == 0U || description.m_uiThreadGroupCountY == 0U || description.m_uiThreadGroupCountZ == 0U)
+    return;
+
+  m_pD3D12CommandList->Dispatch(description.m_uiThreadGroupCountX, description.m_uiThreadGroupCountY, description.m_uiThreadGroupCountZ);
 }
 
 void xiiGALCommandListD3D12::DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pBuffer == nullptr)
+    return;
+
+  PrepareForDispatchCompute();
+
+  xiiGALBufferD3D12* pArgumentBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pBuffer);
+  if (pArgumentBufferD3D12 == nullptr || pArgumentBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferTransitionMode, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect dispatch argument buffer", GetDebugName()))
+    return;
+
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(D3D12_DISPATCH_ARGUMENTS));
+  if (pCommandSignature == nullptr)
+  {
+    xiiLog::Error("Failed to issue DispatchComputeIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pCommandSignature);
+    });
+
+  m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, 1U, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiDispatchArgumentOffset, nullptr, 0U);
 }
 
 void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pShaderBindingTable == nullptr)
+    return;
+
+  PrepareForRayTracing();
+
+  xiiGALBufferD3D12* pSBTBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pShaderBindingTable);
+  if (pSBTBufferD3D12 == nullptr || pSBTBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSBTBufferD3D12, pSBTBufferD3D12->GetD3D12Buffer(), description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::RayTracing, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::RayTracing), "ray tracing SBT buffer", GetDebugName()))
+    return;
+
+  ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
+  if (FAILED(m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4))) || pD3D12CommandList4 == nullptr)
+  {
+    xiiLog::Error("Failed to issue TraceRays on D3D12 command list '{}': ID3D12GraphicsCommandList4 is unavailable.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+    });
+
+  const D3D12_GPU_VIRTUAL_ADDRESS uiBaseAddress = pSBTBufferD3D12->GetD3D12BufferGPUVirtualAddress();
+  auto BuildRegion = [&](const xiiGALRayTracingSBTRegionDescription& region) -> D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
+    D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE d3d12Region = {};
+    if (region.m_uiSize == 0U)
+      return d3d12Region;
+    d3d12Region.StartAddress = uiBaseAddress + region.m_uiOffset;
+    d3d12Region.SizeInBytes  = region.m_uiSize;
+    d3d12Region.StrideInBytes = region.m_uiStride;
+    return d3d12Region;
+  };
+  auto BuildRayGen = [&](const xiiGALRayTracingSBTRegionDescription& region) -> D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
+    D3D12_GPU_VIRTUAL_ADDRESS_RANGE d3d12Region = {};
+    if (region.m_uiSize == 0U)
+      return d3d12Region;
+    d3d12Region.StartAddress = uiBaseAddress + region.m_uiOffset;
+    d3d12Region.SizeInBytes  = region.m_uiSize;
+    return d3d12Region;
+  };
+
+  D3D12_DISPATCH_RAYS_DESC dispatchRaysDescription = {};
+  dispatchRaysDescription.RayGenerationShaderRecord = BuildRayGen(description.m_RayGenerationTable);
+  dispatchRaysDescription.MissShaderTable           = BuildRegion(description.m_MissTable);
+  dispatchRaysDescription.HitGroupTable             = BuildRegion(description.m_HitTable);
+  dispatchRaysDescription.CallableShaderTable       = BuildRegion(description.m_CallableTable);
+  dispatchRaysDescription.Width                     = description.m_uiWidth;
+  dispatchRaysDescription.Height                    = description.m_uiHeight;
+  dispatchRaysDescription.Depth                     = description.m_uiDepth;
+
+  if (dispatchRaysDescription.Width > 0U && dispatchRaysDescription.Height > 0U && dispatchRaysDescription.Depth > 0U)
+  {
+    pD3D12CommandList4->DispatchRays(&dispatchRaysDescription);
+  }
 }
 
 void xiiGALCommandListD3D12::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)
@@ -1342,6 +1600,75 @@ void xiiGALCommandListD3D12::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndi
 
 void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pShaderBindingTable == nullptr)
+    return;
+
+  xiiGALRayTracingPipelineState* pPipelineState = description.m_pPipelineState != nullptr ? description.m_pPipelineState : xiiDynamicCast<xiiGALRayTracingPipelineState*>(m_pPipelineState);
+  xiiGALRayTracingPipelineStateD3D12* pPipelineStateD3D12 = xiiDynamicCast<xiiGALRayTracingPipelineStateD3D12*>(pPipelineState);
+  if (pPipelineStateD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to update SBT on D3D12 command list '{}': no compatible ray tracing pipeline state is available.", GetDebugName());
+    return;
+  }
+
+  xiiGALBufferD3D12* pSBTBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pShaderBindingTable);
+  if (pSBTBufferD3D12 == nullptr || pSBTBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  const xiiUInt32 uiHandleSize = m_pDevice.Downcast<xiiGALDeviceD3D12>()->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiShaderGroupHandleSize;
+  xiiArrayPtr<const xiiUInt8> shaderGroupHandles = pPipelineStateD3D12->GetShaderGroupHandles();
+  if (uiHandleSize == 0U || shaderGroupHandles.IsEmpty())
+    return;
+
+  struct RecordWrite
+  {
+    xiiUInt64 m_uiDestinationOffset = 0U;
+    xiiUInt32 m_uiGroupIndex        = 0U;
+  };
+
+  xiiHybridArray<RecordWrite, 16U> writes;
+  auto CollectWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex) {
+    if (region.m_uiSize == 0U || region.m_uiStride == 0U)
+      return;
+
+    const xiiUInt32 uiRecordCount = static_cast<xiiUInt32>(region.m_uiSize / region.m_uiStride);
+    for (xiiUInt32 i = 0U; i < uiRecordCount && (uiStartIndex + i) < groupIndices.GetCount(); ++i)
+    {
+      RecordWrite& write          = writes.ExpandAndGetRef();
+      write.m_uiDestinationOffset = region.m_uiOffset + static_cast<xiiUInt64>(i) * region.m_uiStride;
+      write.m_uiGroupIndex        = groupIndices[uiStartIndex + i];
+    }
+  };
+
+  CollectWrites(description.m_RayGenerationTable, pPipelineStateD3D12->GetRayGenerationGroupIndices(), description.m_uiRayGenerationShaderStartIndex);
+  CollectWrites(description.m_MissTable, pPipelineStateD3D12->GetMissGroupIndices(), description.m_uiMissShaderStartIndex);
+  CollectWrites(description.m_HitTable, pPipelineStateD3D12->GetHitGroupIndices(), description.m_uiHitGroupStartIndex);
+  CollectWrites(description.m_CallableTable, pPipelineStateD3D12->GetCallableGroupIndices(), description.m_uiCallableShaderStartIndex);
+
+  if (writes.IsEmpty())
+    return;
+
+  const xiiUInt64 uiUploadSize = static_cast<xiiUInt64>(writes.GetCount()) * uiHandleSize;
+  xiiGALStagingBufferAllocationD3D12 stagingAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(static_cast<xiiUInt32>(uiUploadSize));
+  if (stagingAllocation.m_pD3D12Buffer == nullptr || stagingAllocation.m_pMappedAddress == nullptr)
+    return;
+
+  for (xiiUInt32 i = 0U; i < writes.GetCount(); ++i)
+  {
+    const xiiUInt64 uiSourceOffset = static_cast<xiiUInt64>(writes[i].m_uiGroupIndex) * uiHandleSize;
+    if ((uiSourceOffset + uiHandleSize) > shaderGroupHandles.GetCount())
+      continue;
+
+    xiiMemoryUtils::RawByteCopy(xiiMemoryUtils::AddByteOffset(stagingAllocation.m_pMappedAddress, static_cast<size_t>(i) * uiHandleSize), shaderGroupHandles.GetPtr() + uiSourceOffset, uiHandleSize);
+  }
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSBTBufferD3D12, pSBTBufferD3D12->GetD3D12Buffer(), description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::CopyDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopyDestination), "SBT destination buffer", GetDebugName()))
+    return;
+
+  for (xiiUInt32 i = 0U; i < writes.GetCount(); ++i)
+  {
+    m_pD3D12CommandList->CopyBufferRegion(pSBTBufferD3D12->GetD3D12Buffer(), writes[i].m_uiDestinationOffset, stagingAllocation.m_pD3D12Buffer, stagingAllocation.m_uiOffset + static_cast<xiiUInt64>(i) * uiHandleSize, uiHandleSize);
+  }
 }
 
 void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription& description)
@@ -2822,10 +3149,12 @@ void xiiGALCommandListD3D12::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> inde
 
 void xiiGALCommandListD3D12::PrepareForDispatchCompute()
 {
+  XII_VERIFY(CommitShaderResourcesPlatform(xiiGALStateTransitionMode::Transition).Succeeded(), "Failed to commit shader resources for compute dispatch.");
 }
 
 void xiiGALCommandListD3D12::PrepareForRayTracing()
 {
+  XII_VERIFY(CommitShaderResourcesPlatform(xiiGALStateTransitionMode::Transition).Succeeded(), "Failed to commit shader resources for ray tracing dispatch.");
 }
 
 [[nodiscard]] inline bool ResourceStateHasWriteAccess(xiiBitflags<xiiGALResourceStateFlags> flags)
