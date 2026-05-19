@@ -50,4 +50,3 @@ private:
   xiiUInt32 m_uiPageAllocationCounter   = 0U;
   xiiUInt64 m_uiOffsetAllocationCounter = 0U;
 };
-

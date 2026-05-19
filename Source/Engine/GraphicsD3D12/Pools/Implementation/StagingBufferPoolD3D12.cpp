@@ -204,4 +204,3 @@ void xiiGALStagingBufferPoolD3D12::Reset()
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Pools_Implementation_StagingBufferPoolD3D12);
-

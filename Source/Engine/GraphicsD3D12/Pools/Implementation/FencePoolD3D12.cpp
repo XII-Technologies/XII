@@ -84,4 +84,3 @@ ID3D12Fence* xiiGALFencePoolD3D12::CreateD3D12Fence()
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Pools_Implementation_FencePoolD3D12);
-

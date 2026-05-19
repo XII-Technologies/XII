@@ -270,4 +270,3 @@ void xiiGALCommandListPoolD3D12::ResetPools()
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Pools_Implementation_CommandListPoolD3D12);
-

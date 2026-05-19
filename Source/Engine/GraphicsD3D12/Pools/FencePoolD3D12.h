@@ -28,4 +28,3 @@ private:
   xiiDynamicArray<ID3D12Fence*>    m_Fences;
   xiiDeque<ID3D12Fence*>           m_QueuedFences;
 };
-

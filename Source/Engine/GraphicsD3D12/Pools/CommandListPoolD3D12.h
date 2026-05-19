@@ -147,4 +147,3 @@ private:
   xiiMutex                                   m_PoolMutex;
   xiiMap<xiiThreadID, ThreadPool>            m_CommandListPoolsPerThread;
 };
-

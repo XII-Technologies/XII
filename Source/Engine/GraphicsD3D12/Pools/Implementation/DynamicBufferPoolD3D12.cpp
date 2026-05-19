@@ -209,4 +209,3 @@ void xiiGALDynamicBufferPoolD3D12::Reset()
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Pools_Implementation_DynamicBufferPoolD3D12);
-

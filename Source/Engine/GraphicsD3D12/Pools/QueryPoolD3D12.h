@@ -84,4 +84,3 @@ private:
   xiiGALQueueInformationD3D12 m_CommandQueueInformation;
   xiiUInt64 m_uiCounterFrequency = 0ULL;
 };
-

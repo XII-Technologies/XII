@@ -55,4 +55,3 @@ private:
   xiiStaticArray<xiiDynamicArray<HeapBlock>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_DescriptorHeaps;
   xiiStaticArray<xiiUInt32, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>                   m_uiCurrentHeapIndex;
 };
-

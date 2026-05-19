@@ -1,3 +1,4 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
 XII_ALWAYS_INLINE xiiGALCommandListPoolD3D12* xiiGALDeviceD3D12::GetCommandListPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
 {
