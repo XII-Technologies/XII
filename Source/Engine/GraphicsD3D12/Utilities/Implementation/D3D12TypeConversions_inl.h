@@ -1182,7 +1182,7 @@ XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceStat
   if (e.IsSet(xiiGALResourceStateFlags::DepthRead))
     resourceStates |= D3D12_RESOURCE_STATE_DEPTH_READ;
   if (e.IsSet(xiiGALResourceStateFlags::ShaderResource))
-    resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+    resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
   if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
     resourceStates |= D3D12_RESOURCE_STATE_STREAM_OUT;
   if (e.IsSet(xiiGALResourceStateFlags::IndirectArgument))
