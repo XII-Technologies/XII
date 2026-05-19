@@ -5,6 +5,7 @@
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
@@ -46,6 +47,14 @@ public:
   static D3D12_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiGALTextureAddressMode::Enum e);
 
   static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiGALQueryType::Enum e);
+
+  static D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
+
+  static DXGI_FORMAT GetBLASTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle);
+
+  static DXGI_FORMAT GetBLASIndexFormat(xiiEnum<xiiGALValueType> indexType);
+
+  static xiiUInt32 GetBLASTriangleVertexStride(const xiiGALBLASTriangleDescription& triangle);
 
   static DXGI_FORMAT GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized);
 

@@ -12,6 +12,7 @@
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
+#include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
 #include <GraphicsD3D12/Pools/FencePoolD3D12.h>
 #include <GraphicsD3D12/Pools/QueryPoolD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
@@ -299,6 +300,7 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
   m_pGraphicsCommandQueueQueryPool.Clear();
   m_pGraphicsCommandQueue.Clear();
 
+  m_pResourceDescriptorPool.Clear();
   m_pFencePool.Clear();
   m_pDeferredDeletionQueue.Clear();
 
@@ -555,6 +557,7 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
   // Create pools.
   {
     m_pFencePool = XII_NEW(&m_Allocator, xiiGALFencePoolD3D12, this, 16U);
+    m_pResourceDescriptorPool = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolD3D12, this, 2048U, false);
   }
 
   // Create command queues.

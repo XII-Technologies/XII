@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
+#include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerD3D12, 1, xiiRTTINoAllocator)
@@ -18,6 +19,12 @@ xiiGALSamplerD3D12::~xiiGALSamplerD3D12() = default;
 xiiResult xiiGALSamplerD3D12::InitPlatform()
 {
   xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiGALDescriptorSetPoolD3D12*   pDescriptorPoolD3D12 = pDeviceD3D12->GetResourceDescriptorPool();
+  if (pDescriptorPoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to create D3D12 sampler '{}': resource descriptor pool is unavailable.", GetDebugName());
+    return XII_FAILURE;
+  }
 
   D3D12_SAMPLER_DESC samplerDescription = {};
   samplerDescription.AddressU           = xiiD3D12TypeConversions::GetTextureAddressMode(m_Description.m_AddressU);
@@ -49,18 +56,18 @@ xiiResult xiiGALSamplerD3D12::InitPlatform()
     samplerDescription.Filter = xiiD3D12TypeConversions::GetFilter(m_Description.m_MinFilter, m_Description.m_MagFilter, m_Description.m_MipFilter);
   }
 
-  D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDescription = {};
-  samplerHeapDescription.Type                       = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-  samplerHeapDescription.NumDescriptors             = 1U;
-  samplerHeapDescription.Flags                      = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-
-  if (FAILED(pDeviceD3D12->GetD3D12Device()->CreateDescriptorHeap(&samplerHeapDescription, IID_PPV_ARGS(&m_pDescriptorHeap))))
+  const xiiGALDescriptorSetPoolD3D12::DescriptorAllocation descriptorAllocation = pDescriptorPoolD3D12->RequestDescriptorAllocation(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1U);
+  if (descriptorAllocation.m_pDescriptorHeap == nullptr || descriptorAllocation.m_CPUHandle.ptr == 0U)
   {
-    xiiLog::Info("Failed to create descriptor heap for sampler {}.", GetDebugName());
+    xiiLog::Error("Failed to allocate descriptor from the D3D12 sampler pool for sampler '{}'.", GetDebugName());
     return XII_FAILURE;
   }
 
-  pDeviceD3D12->GetD3D12Device()->CreateSampler(&samplerDescription, m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+  m_pDescriptorHeap     = descriptorAllocation.m_pDescriptorHeap;
+  m_CPUDescriptorHandle = descriptorAllocation.m_CPUHandle;
+  m_GPUDescriptorHandle = descriptorAllocation.m_GPUHandle;
+
+  pDeviceD3D12->GetD3D12Device()->CreateSampler(&samplerDescription, m_CPUDescriptorHandle);
 
   return XII_SUCCESS;
 }

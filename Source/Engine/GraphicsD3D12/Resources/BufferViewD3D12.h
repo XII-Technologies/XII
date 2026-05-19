@@ -6,6 +6,8 @@
 
 #include <GraphicsFoundation/Resources/BufferView.h>
 
+struct ID3D12DescriptorHeap;
+
 class XII_GRAPHICSD3D12_DLL xiiGALBufferViewD3D12 final : public xiiGALBufferView
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferViewD3D12, xiiGALBufferView);
@@ -23,6 +25,9 @@ public:
   };
 
   [[nodiscard]] XII_ALWAYS_INLINE const ViewMetadata& GetViewMetadata() const { return m_ViewMetadata; }
+  [[nodiscard]] XII_ALWAYS_INLINE D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle() const { return m_CPUDescriptorHandle; }
+  [[nodiscard]] XII_ALWAYS_INLINE D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle() const { return m_GPUDescriptorHandle; }
+  [[nodiscard]] XII_ALWAYS_INLINE ID3D12DescriptorHeap*       GetDescriptorHeap() const { return m_pDescriptorHeap; }
 
 protected:
   friend class xiiMemoryUtils;
@@ -38,5 +43,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  ViewMetadata m_ViewMetadata;
+  ViewMetadata                m_ViewMetadata;
+  ID3D12DescriptorHeap*       m_pDescriptorHeap     = nullptr;
+  D3D12_CPU_DESCRIPTOR_HANDLE m_CPUDescriptorHandle = {};
+  D3D12_GPU_DESCRIPTOR_HANDLE m_GPUDescriptorHandle = {};
 };

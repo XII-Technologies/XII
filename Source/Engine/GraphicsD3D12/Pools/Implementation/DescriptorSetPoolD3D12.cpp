@@ -5,8 +5,8 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
 
-xiiGALDescriptorSetPoolD3D12::xiiGALDescriptorSetPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiUInt32 uiBaseHeapSize /*= 1024U*/) :
-  m_pDeviceD3D12(pDeviceD3D12), m_uiBaseHeapSize(uiBaseHeapSize)
+xiiGALDescriptorSetPoolD3D12::xiiGALDescriptorSetPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiUInt32 uiBaseHeapSize /*= 1024U*/, bool bShaderVisibleDescriptorHeaps /*= true*/) :
+  m_pDeviceD3D12(pDeviceD3D12), m_uiBaseHeapSize(uiBaseHeapSize), m_bShaderVisibleDescriptorHeaps(bShaderVisibleDescriptorHeaps)
 {
   XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "D3D12 device must be valid.");
 
@@ -16,6 +16,8 @@ xiiGALDescriptorSetPoolD3D12::xiiGALDescriptorSetPoolD3D12(xiiGALDeviceD3D12* pD
 
 xiiGALDescriptorSetPoolD3D12::~xiiGALDescriptorSetPoolD3D12()
 {
+  XII_LOCK(m_PoolMutex);
+
   for (xiiUInt32 uiHeapType = 0U; uiHeapType < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++uiHeapType)
   {
     for (HeapBlock& heapBlock : m_DescriptorHeaps[uiHeapType])
@@ -34,6 +36,8 @@ xiiGALDescriptorSetPoolD3D12::~xiiGALDescriptorSetPoolD3D12()
 
 xiiGALDescriptorSetPoolD3D12::DescriptorAllocation xiiGALDescriptorSetPoolD3D12::RequestDescriptorAllocation(D3D12_DESCRIPTOR_HEAP_TYPE heapType, xiiUInt32 uiDescriptorCount /*= 1U*/)
 {
+  XII_LOCK(m_PoolMutex);
+
   if (uiDescriptorCount == 0U)
   {
     xiiLog::Warning("D3D12 descriptor allocation request ignored because descriptor count is zero.");
@@ -62,7 +66,14 @@ xiiGALDescriptorSetPoolD3D12::DescriptorAllocation xiiGALDescriptorSetPoolD3D12:
   const SIZE_T uiOffsetInBytes = static_cast<SIZE_T>(heapBlock.m_uiUsed) * static_cast<SIZE_T>(heapBlock.m_uiDescriptorSize);
 
   allocation.m_CPUHandle.ptr = heapBlock.m_pHeap->GetCPUDescriptorHandleForHeapStart().ptr + uiOffsetInBytes;
-  allocation.m_GPUHandle.ptr = heapBlock.m_pHeap->GetGPUDescriptorHandleForHeapStart().ptr + uiOffsetInBytes;
+  if (m_bShaderVisibleDescriptorHeaps && (heapType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || heapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER))
+  {
+    allocation.m_GPUHandle.ptr = heapBlock.m_pHeap->GetGPUDescriptorHandleForHeapStart().ptr + uiOffsetInBytes;
+  }
+  else
+  {
+    allocation.m_GPUHandle.ptr = 0U;
+  }
 
   heapBlock.m_uiUsed += uiDescriptorCount;
   m_uiCurrentHeapIndex[uiHeapTypeIndex] = uiHeapBlockIndex;
@@ -72,6 +83,8 @@ xiiGALDescriptorSetPoolD3D12::DescriptorAllocation xiiGALDescriptorSetPoolD3D12:
 
 void xiiGALDescriptorSetPoolD3D12::Reset()
 {
+  XII_LOCK(m_PoolMutex);
+
   for (xiiUInt32 uiHeapType = 0U; uiHeapType < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES; ++uiHeapType)
   {
     for (HeapBlock& heapBlock : m_DescriptorHeaps[uiHeapType])
@@ -85,6 +98,8 @@ void xiiGALDescriptorSetPoolD3D12::Reset()
 
 ID3D12DescriptorHeap* xiiGALDescriptorSetPoolD3D12::GetCurrentDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE heapType) const
 {
+  XII_LOCK(m_PoolMutex);
+
   const xiiUInt32 uiHeapTypeIndex = GetHeapTypeIndex(heapType);
   if (uiHeapTypeIndex == xiiInvalidIndex)
     return nullptr;
@@ -139,7 +154,8 @@ xiiUInt32 xiiGALDescriptorSetPoolD3D12::FindOrCreateHeap(D3D12_DESCRIPTOR_HEAP_T
   D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescription = {};
   descriptorHeapDescription.Type                       = heapType;
   descriptorHeapDescription.NumDescriptors             = uiCapacity;
-  descriptorHeapDescription.Flags                      = (heapType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || heapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+  const bool bUsesShaderVisibleHeap                    = m_bShaderVisibleDescriptorHeaps && (heapType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV || heapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+  descriptorHeapDescription.Flags                      = bUsesShaderVisibleHeap ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
   descriptorHeapDescription.NodeMask                   = 0U;
 
   ID3D12DescriptorHeap* pDescriptorHeap = nullptr;
