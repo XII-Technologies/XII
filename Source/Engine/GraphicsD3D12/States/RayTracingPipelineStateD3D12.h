@@ -15,7 +15,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALRayTracingPipelineStateD3D12 final : public xi
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRayTracingPipelineStateD3D12, xiiGALRayTracingPipelineState);
 
 public:
-  [[nodiscard]] XII_ALWAYS_INLINE ID3D12StateObject* GetD3D12StateObject() const { return m_pD3D12StateObject; }
+  [[nodiscard]] XII_ALWAYS_INLINE ID3D12StateObject*   GetD3D12StateObject() const { return m_pD3D12StateObject; }
   [[nodiscard]] XII_ALWAYS_INLINE ID3D12RootSignature* GetD3D12RootSignature() const { return m_pD3D12RootSignature; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiUInt8> GetShaderGroupHandles() const { return m_ShaderGroupHandles; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiArrayPtr<const xiiUInt32> GetRayGenerationGroupIndices() const { return m_RayGenerationGroupIndices; }

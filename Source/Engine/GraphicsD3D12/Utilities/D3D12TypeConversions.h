@@ -70,7 +70,7 @@ public:
   static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount);
 
   static D3D12_RESOURCE_STATES GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
-  static D3D12_SHADING_RATE    GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e);
+  static D3D12_SHADING_RATE          GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e);
   static D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
 
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);

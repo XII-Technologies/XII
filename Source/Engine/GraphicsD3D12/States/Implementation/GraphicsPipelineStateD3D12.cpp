@@ -116,16 +116,16 @@ namespace
       if (!xiiD3D12TypeConversions::TryGetDescriptorRangeType(resource.m_ResourceType, rangeType))
         continue;
 
-      D3D12_DESCRIPTOR_RANGE& descriptorRange = descriptorRanges.ExpandAndGetRef();
-      descriptorRange.RangeType               = rangeType;
-      descriptorRange.NumDescriptors          = xiiMath::Max(1U, resource.m_uiArraySize);
-      descriptorRange.BaseShaderRegister      = resource.m_uiBindSlot;
-      descriptorRange.RegisterSpace           = resource.m_uiBindSet;
+      D3D12_DESCRIPTOR_RANGE& descriptorRange           = descriptorRanges.ExpandAndGetRef();
+      descriptorRange.RangeType                         = rangeType;
+      descriptorRange.NumDescriptors                    = xiiMath::Max(1U, resource.m_uiArraySize);
+      descriptorRange.BaseShaderRegister                = resource.m_uiBindSlot;
+      descriptorRange.RegisterSpace                     = resource.m_uiBindSet;
       descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-      D3D12_ROOT_PARAMETER& rootParameter = rootParameters.ExpandAndGetRef();
-      rootParameter.ParameterType         = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-      rootParameter.ShaderVisibility      = xiiD3D12TypeConversions::GetShaderVisibility(resource.m_ShaderStages);
+      D3D12_ROOT_PARAMETER& rootParameter               = rootParameters.ExpandAndGetRef();
+      rootParameter.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+      rootParameter.ShaderVisibility                    = xiiD3D12TypeConversions::GetShaderVisibility(resource.m_ShaderStages);
       rootParameter.DescriptorTable.NumDescriptorRanges = 1U;
       rootParameter.DescriptorTable.pDescriptorRanges   = &descriptorRange;
     }
@@ -143,9 +143,9 @@ namespace
         return XII_FAILURE;
       }
 
-      D3D12_ROOT_PARAMETER& rootParameter = rootParameters.ExpandAndGetRef();
-      rootParameter.ParameterType         = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-      rootParameter.ShaderVisibility      = xiiD3D12TypeConversions::GetShaderVisibility(pushConstantRange.m_ShaderStages);
+      D3D12_ROOT_PARAMETER& rootParameter    = rootParameters.ExpandAndGetRef();
+      rootParameter.ParameterType            = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+      rootParameter.ShaderVisibility         = xiiD3D12TypeConversions::GetShaderVisibility(pushConstantRange.m_ShaderStages);
       rootParameter.Constants.ShaderRegister = i;
       rootParameter.Constants.RegisterSpace  = 0U;
       rootParameter.Constants.Num32BitValues = uiValueCount;
@@ -326,8 +326,8 @@ xiiResult xiiGALGraphicsPipelineStateD3D12::InitPlatform()
   if (xiiSharedPtr<xiiGALInputLayoutD3D12> pInputLayoutD3D12 = m_Description.m_GraphicsPipeline.m_pInputLayout.Downcast<xiiGALInputLayoutD3D12>())
   {
     const xiiArrayPtr<const D3D12_INPUT_ELEMENT_DESC> inputElements = pInputLayoutD3D12->GetD3D12InputLayoutElements();
-    pipelineStateDescription.InputLayout.NumElements                 = inputElements.GetCount();
-    pipelineStateDescription.InputLayout.pInputElementDescs          = inputElements.GetPtr();
+    pipelineStateDescription.InputLayout.NumElements                = inputElements.GetCount();
+    pipelineStateDescription.InputLayout.pInputElementDescs         = inputElements.GetPtr();
   }
 
   if (xiiSharedPtr<xiiGALRasterizerStateD3D12> pRasterizerStateD3D12 = m_Description.m_GraphicsPipeline.m_pRasterizerState.Downcast<xiiGALRasterizerStateD3D12>())
@@ -383,7 +383,7 @@ xiiResult xiiGALGraphicsPipelineStateD3D12::InitPlatform()
     }
 
     const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[attachmentReference.m_uiAttachmentIndex];
-    pipelineStateDescription.RTVFormats[i]                            = xiiD3D12TypeConversions::GetFormat(attachmentDescription.m_Format);
+    pipelineStateDescription.RTVFormats[i]                             = xiiD3D12TypeConversions::GetFormat(attachmentDescription.m_Format);
   }
 
   if (!subpassDescription.m_DepthStencilAttachment.IsEmpty())
@@ -398,7 +398,7 @@ xiiResult xiiGALGraphicsPipelineStateD3D12::InitPlatform()
       }
 
       const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[attachmentReference.m_uiAttachmentIndex];
-      pipelineStateDescription.DSVFormat                                = xiiD3D12TypeConversions::GetFormat(attachmentDescription.m_Format);
+      pipelineStateDescription.DSVFormat                                 = xiiD3D12TypeConversions::GetFormat(attachmentDescription.m_Format);
     }
   }
 

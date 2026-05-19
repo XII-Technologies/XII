@@ -382,9 +382,9 @@ void xiiGALCommandListD3D12::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayP
 
     if (uiOffset >= uiRangeBegin && uiDataEnd <= uiRangeEnd)
     {
-      const xiiUInt32 uiDestinationDWORDOffset = (uiOffset - uiRangeBegin) / sizeof(xiiUInt32);
-      const xiiUInt32 uiSourceDWORDCount       = pData.GetCount() / sizeof(xiiUInt32);
-      const xiiUInt32* pSourceConstants        = reinterpret_cast<const xiiUInt32*>(pData.GetPtr());
+      const xiiUInt32  uiDestinationDWORDOffset = (uiOffset - uiRangeBegin) / sizeof(xiiUInt32);
+      const xiiUInt32  uiSourceDWORDCount       = pData.GetCount() / sizeof(xiiUInt32);
+      const xiiUInt32* pSourceConstants         = reinterpret_cast<const xiiUInt32*>(pData.GetPtr());
 
       if (pipelineDescription.IsAnyGraphicsPipeline())
       {
@@ -525,14 +525,14 @@ void xiiGALCommandListD3D12::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
       }
 
       if (!TransitionOrVerifyResourceStateForRayTracing(
-        m_pD3D12CommandList,
-        pBufferD3D12,
-        pBufferD3D12->GetD3D12Buffer(),
-        transitionMode,
-        xiiGALResourceStateFlags::VertexBuffer,
-        xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::VertexBuffer),
-        "vertex buffer",
-        GetDebugName()))
+            m_pD3D12CommandList,
+            pBufferD3D12,
+            pBufferD3D12->GetD3D12Buffer(),
+            transitionMode,
+            xiiGALResourceStateFlags::VertexBuffer,
+            xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::VertexBuffer),
+            "vertex buffer",
+            GetDebugName()))
       {
         return;
       }
@@ -697,7 +697,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
         }
 
         ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-        const HRESULT hResult = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+        const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
         if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
         {
           xiiLog::Error("Failed to bind ray tracing pipeline on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -777,7 +777,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
       }
 
       xiiGALDescriptorSetPoolD3D12::DescriptorAllocation cbvSrvUavAllocation = {};
-      xiiGALDescriptorSetPoolD3D12::DescriptorAllocation samplerAllocation    = {};
+      xiiGALDescriptorSetPoolD3D12::DescriptorAllocation samplerAllocation   = {};
 
       if (uiCBVSRVUAVDescriptorCount > 0U)
       {
@@ -799,7 +799,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
         }
       }
 
-      ID3D12DescriptorHeap* pDescriptorHeaps[2] = {};
+      ID3D12DescriptorHeap* pDescriptorHeaps[2]   = {};
       xiiUInt32             uiDescriptorHeapCount = 0U;
 
       if (cbvSrvUavAllocation.m_pDescriptorHeap != nullptr)
@@ -828,9 +828,9 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
 
         const xiiUInt32 uiDescriptorCount = xiiMath::Max(1U, resource.m_uiArraySize);
 
-        const bool bSamplerRange = rangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+        const bool                                                bSamplerRange    = rangeType == D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
         const xiiGALDescriptorSetPoolD3D12::DescriptorAllocation& activeAllocation = bSamplerRange ? samplerAllocation : cbvSrvUavAllocation;
-        xiiUInt32& uiDescriptorBase = bSamplerRange ? uiSamplerDescriptorBase : uiCBVSRVUAVDescriptorBase;
+        xiiUInt32&                                                uiDescriptorBase = bSamplerRange ? uiSamplerDescriptorBase : uiCBVSRVUAVDescriptorBase;
 
         if (!IsValidDescriptorAllocation(activeAllocation))
         {
@@ -877,10 +877,10 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
                 return XII_FAILURE;
             }
 
-            const xiiUInt64 uiMaxConstantBufferRange = static_cast<xiiUInt64>(D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT) * sizeof(float) * 4U;
-            xiiUInt64 uiConstantBufferSizeInBytes = xiiMath::Min(pConstantBufferD3D12->GetSize(), uiMaxConstantBufferRange);
-            uiConstantBufferSizeInBytes = xiiMemoryUtils::AlignSize(uiConstantBufferSizeInBytes, static_cast<xiiUInt64>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-            uiConstantBufferSizeInBytes = xiiMath::Min(uiConstantBufferSizeInBytes, uiMaxConstantBufferRange);
+            const xiiUInt64 uiMaxConstantBufferRange    = static_cast<xiiUInt64>(D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT) * sizeof(float) * 4U;
+            xiiUInt64       uiConstantBufferSizeInBytes = xiiMath::Min(pConstantBufferD3D12->GetSize(), uiMaxConstantBufferRange);
+            uiConstantBufferSizeInBytes                 = xiiMemoryUtils::AlignSize(uiConstantBufferSizeInBytes, static_cast<xiiUInt64>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+            uiConstantBufferSizeInBytes                 = xiiMath::Min(uiConstantBufferSizeInBytes, uiMaxConstantBufferRange);
 
             if (uiConstantBufferSizeInBytes == 0U || (uiConstantBufferSizeInBytes % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT) != 0U)
             {
@@ -889,8 +889,8 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
             }
 
             D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferView = {};
-            constantBufferView.BufferLocation = pConstantBufferD3D12->GetD3D12BufferGPUVirtualAddress();
-            constantBufferView.SizeInBytes    = static_cast<UINT>(uiConstantBufferSizeInBytes);
+            constantBufferView.BufferLocation                  = pConstantBufferD3D12->GetD3D12BufferGPUVirtualAddress();
+            constantBufferView.SizeInBytes                     = static_cast<UINT>(uiConstantBufferSizeInBytes);
 
             if (constantBufferView.BufferLocation == 0ULL)
             {
@@ -1069,9 +1069,9 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
               return XII_FAILURE;
             }
 
-            D3D12_SHADER_RESOURCE_VIEW_DESC d3d12AccelerationStructureView = {};
-            d3d12AccelerationStructureView.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            d3d12AccelerationStructureView.ViewDimension                   = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+            D3D12_SHADER_RESOURCE_VIEW_DESC d3d12AccelerationStructureView          = {};
+            d3d12AccelerationStructureView.Shader4ComponentMapping                  = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            d3d12AccelerationStructureView.ViewDimension                            = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
             d3d12AccelerationStructureView.RaytracingAccelerationStructure.Location = d3d12TopLevelASAddress;
 
             for (xiiUInt32 i = 0U; i < uiDescriptorCount; ++i)
@@ -1352,8 +1352,8 @@ void xiiGALCommandListD3D12::DrawIndirectPlatform(const xiiGALDrawIndirectDescri
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect draw argument buffer", GetDebugName()))
     return;
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, description.m_uiDrawArgumentStride);
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature*         pCommandSignature = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DRAW, description.m_uiDrawArgumentStride);
   if (pCommandSignature == nullptr)
   {
     xiiLog::Error("Failed to issue DrawIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
@@ -1395,8 +1395,8 @@ void xiiGALCommandListD3D12::DrawIndexedIndirectPlatform(const xiiGALDrawIndexed
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indexed indirect draw argument buffer", GetDebugName()))
     return;
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, description.m_uiDrawArgumentStride);
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature*         pCommandSignature = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED, description.m_uiDrawArgumentStride);
   if (pCommandSignature == nullptr)
   {
     xiiLog::Error("Failed to issue DrawIndexedIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
@@ -1463,8 +1463,8 @@ void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndire
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect mesh draw argument buffer", GetDebugName()))
     return;
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, sizeof(D3D12_DISPATCH_ARGUMENTS));
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature*         pCommandSignature = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, sizeof(D3D12_DISPATCH_ARGUMENTS));
   if (pCommandSignature == nullptr)
   {
     xiiLog::Error("Failed to issue DrawMeshIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
@@ -1557,8 +1557,8 @@ void xiiGALCommandListD3D12::DispatchComputeIndirectPlatform(const xiiGALDispatc
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferTransitionMode, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect dispatch argument buffer", GetDebugName()))
     return;
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(D3D12_DISPATCH_ARGUMENTS));
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature*         pCommandSignature = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH, sizeof(D3D12_DISPATCH_ARGUMENTS));
   if (pCommandSignature == nullptr)
   {
     xiiLog::Error("Failed to issue DispatchComputeIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
@@ -1600,12 +1600,12 @@ void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription&
     });
 
   const D3D12_GPU_VIRTUAL_ADDRESS uiBaseAddress = pSBTBufferD3D12->GetD3D12BufferGPUVirtualAddress();
-  auto BuildRegion = [&](const xiiGALRayTracingSBTRegionDescription& region) -> D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
+  auto                            BuildRegion   = [&](const xiiGALRayTracingSBTRegionDescription& region) -> D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE d3d12Region = {};
     if (region.m_uiSize == 0U)
       return d3d12Region;
-    d3d12Region.StartAddress = uiBaseAddress + region.m_uiOffset;
-    d3d12Region.SizeInBytes  = region.m_uiSize;
+    d3d12Region.StartAddress  = uiBaseAddress + region.m_uiOffset;
+    d3d12Region.SizeInBytes   = region.m_uiSize;
     d3d12Region.StrideInBytes = region.m_uiStride;
     return d3d12Region;
   };
@@ -1618,7 +1618,7 @@ void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription&
     return d3d12Region;
   };
 
-  D3D12_DISPATCH_RAYS_DESC dispatchRaysDescription = {};
+  D3D12_DISPATCH_RAYS_DESC dispatchRaysDescription  = {};
   dispatchRaysDescription.RayGenerationShaderRecord = BuildRayGen(description.m_RayGenerationTable);
   dispatchRaysDescription.MissShaderTable           = BuildRegion(description.m_MissTable);
   dispatchRaysDescription.HitGroupTable             = BuildRegion(description.m_HitTable);
@@ -1651,8 +1651,8 @@ void xiiGALCommandListD3D12::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndi
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_ArgumentBufferTransitionMode, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect ray tracing argument buffer", GetDebugName()))
     return;
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(D3D12_DISPATCH_RAYS_DESC));
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature*         pCommandSignature = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(D3D12_DISPATCH_RAYS_DESC));
   if (pCommandSignature == nullptr)
   {
     xiiLog::Error("Failed to issue TraceRaysIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
@@ -1672,7 +1672,7 @@ void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription&
   if (m_pD3D12CommandList == nullptr || description.m_pShaderBindingTable == nullptr)
     return;
 
-  xiiGALRayTracingPipelineState* pPipelineState = description.m_pPipelineState != nullptr ? description.m_pPipelineState : xiiDynamicCast<xiiGALRayTracingPipelineState*>(m_pPipelineState);
+  xiiGALRayTracingPipelineState*      pPipelineState      = description.m_pPipelineState != nullptr ? description.m_pPipelineState : xiiDynamicCast<xiiGALRayTracingPipelineState*>(m_pPipelineState);
   xiiGALRayTracingPipelineStateD3D12* pPipelineStateD3D12 = xiiDynamicCast<xiiGALRayTracingPipelineStateD3D12*>(pPipelineState);
   if (pPipelineStateD3D12 == nullptr)
   {
@@ -1684,7 +1684,7 @@ void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription&
   if (pSBTBufferD3D12 == nullptr || pSBTBufferD3D12->GetD3D12Buffer() == nullptr)
     return;
 
-  const xiiUInt32 uiHandleSize = m_pDevice.Downcast<xiiGALDeviceD3D12>()->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiShaderGroupHandleSize;
+  const xiiUInt32             uiHandleSize       = m_pDevice.Downcast<xiiGALDeviceD3D12>()->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiShaderGroupHandleSize;
   xiiArrayPtr<const xiiUInt8> shaderGroupHandles = pPipelineStateD3D12->GetShaderGroupHandles();
   if (uiHandleSize == 0U || shaderGroupHandles.IsEmpty())
     return;
@@ -1696,7 +1696,7 @@ void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription&
   };
 
   xiiHybridArray<RecordWrite, 16U> writes;
-  auto CollectWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex) {
+  auto                             CollectWrites = [&](const xiiGALRayTracingSBTRegionDescription& region, xiiArrayPtr<const xiiUInt32> groupIndices, xiiUInt32 uiStartIndex) {
     if (region.m_uiSize == 0U || region.m_uiStride == 0U)
       return;
 
@@ -1717,7 +1717,7 @@ void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription&
   if (writes.IsEmpty())
     return;
 
-  const xiiUInt64 uiUploadSize = static_cast<xiiUInt64>(writes.GetCount()) * uiHandleSize;
+  const xiiUInt64                    uiUploadSize      = static_cast<xiiUInt64>(writes.GetCount()) * uiHandleSize;
   xiiGALStagingBufferAllocationD3D12 stagingAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(static_cast<xiiUInt32>(uiUploadSize));
   if (stagingAllocation.m_pD3D12Buffer == nullptr || stagingAllocation.m_pMappedAddress == nullptr)
     return;
@@ -2501,11 +2501,11 @@ void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
     if (MapTextureSubresourcePlatform(pTextureD3D12, textureMiplevelData, xiiGALMapType::Write, xiiGALMapFlags::None, nullptr, mappedSubresource).Failed())
       return;
 
-    const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-    const xiiUInt32 uiRowCount = (textureBox.m_vMax.y - textureBox.m_vMin.y) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U);
-    const xiiUInt32 uiDepth = textureBox.m_vMax.z - textureBox.m_vMin.z;
-    const xiiUInt32 uiBoxWidthInBlocks = (textureBox.m_vMax.x - textureBox.m_vMin.x) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockWidth, 1U);
-    const xiiUInt64 uiRowSize = static_cast<xiiUInt64>(uiBoxWidthInBlocks) * static_cast<xiiUInt64>(formatProperties.GetElementSize());
+    const xiiGALResourceFormatDescription& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+    const xiiUInt32                        uiRowCount         = (textureBox.m_vMax.y - textureBox.m_vMin.y) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U);
+    const xiiUInt32                        uiDepth            = textureBox.m_vMax.z - textureBox.m_vMin.z;
+    const xiiUInt32                        uiBoxWidthInBlocks = (textureBox.m_vMax.x - textureBox.m_vMin.x) / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockWidth, 1U);
+    const xiiUInt64                        uiRowSize          = static_cast<xiiUInt64>(uiBoxWidthInBlocks) * static_cast<xiiUInt64>(formatProperties.GetElementSize());
     xiiGALTextureUtilities::CopyTextureSubresource(subresourceData, uiRowCount, uiDepth, uiRowSize, mappedSubresource.m_pData, mappedSubresource.m_uiStride, mappedSubresource.m_uiDepthStride);
     XII_IGNORE_UNUSED(UnmapTextureSubresourcePlatform(pTextureD3D12, textureMiplevelData));
     return;
@@ -2515,9 +2515,9 @@ void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   const UINT          uiSubresourceIndex      = xiiD3D12TypeConversions::CalculateSubResourceIndex(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
   D3D12_PLACED_SUBRESOURCE_FOOTPRINT placedFootprint = {};
-  UINT                                uiRowsCount     = 0U;
-  UINT64                              uiRowSize       = 0U;
-  UINT64                              uiRequiredSize  = 0U;
+  UINT                               uiRowsCount     = 0U;
+  UINT64                             uiRowSize       = 0U;
+  UINT64                             uiRequiredSize  = 0U;
   m_pDevice.Downcast<xiiGALDeviceD3D12>()->GetD3D12Device()->GetCopyableFootprints(&d3d12TextureDescription, uiSubresourceIndex, 1U, 0U, &placedFootprint, &uiRowsCount, &uiRowSize, &uiRequiredSize);
 
   xiiGALStagingBufferAllocationD3D12 stagingAllocation = m_CommandListData.m_pUploadStagingBufferPool->Allocate(static_cast<xiiUInt32>(uiRequiredSize));
@@ -2567,9 +2567,9 @@ void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, 
 
   const xiiGALTextureCreationDescription& sourceDescription = pSourceTextureD3D12->GetDescription();
 
-  xiiBoundingBoxU32 copyBox = xiiBoundingBoxU32::MakeZero();
+  xiiBoundingBoxU32              copyBox             = xiiBoundingBoxU32::MakeZero();
   const xiiGALMipLevelProperties sourceMipProperties = xiiGALTextureUtilities::GetMipLevelProperties(sourceDescription, 0U);
-  copyBox.m_vMax = xiiVec3U32(sourceMipProperties.m_LogicalSize.width, sourceMipProperties.m_LogicalSize.height, sourceMipProperties.m_uiDepth);
+  copyBox.m_vMax                                     = xiiVec3U32(sourceMipProperties.m_LogicalSize.width, sourceMipProperties.m_LogicalSize.height, sourceMipProperties.m_uiDepth);
 
   xiiGALTextureMipLevelData sourceMipData      = {};
   xiiGALTextureMipLevelData destinationMipData = {};
@@ -2595,7 +2595,7 @@ void xiiGALCommandListD3D12::CopyTextureRegionPlatform(xiiGALTexture* pSourceTex
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationTextureD3D12, pDestinationTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::CopyDestination), "texture copy destination", GetDebugName()))
     return;
 
-  const xiiUInt32 uiSourceSubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTextureD3D12->GetDescription().m_uiMipLevels);
+  const xiiUInt32 uiSourceSubresourceIndex      = xiiD3D12TypeConversions::CalculateSubResourceIndex(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTextureD3D12->GetDescription().m_uiMipLevels);
   const xiiUInt32 uiDestinationSubresourceIndex = xiiD3D12TypeConversions::CalculateSubResourceIndex(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, pDestinationTextureD3D12->GetDescription().m_uiMipLevels);
 
   D3D12_TEXTURE_COPY_LOCATION sourceLocation = {};
@@ -2634,9 +2634,9 @@ void xiiGALCommandListD3D12::ResolveTextureSubResourcePlatform(xiiGALTexture* pS
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationTextureD3D12, pDestinationTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::ResolveDestination, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ResolveDestination), "resolve destination texture", GetDebugName()))
     return;
 
-  const UINT uiSourceSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(description.m_uiSourceMipLevel, description.m_uiSourceSlice, pSourceTextureD3D12->GetDescription().m_uiMipLevels);
-  const UINT uiDestinationSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(description.m_uiDestinationMipLevel, description.m_uiDestinationSlice, pDestinationTextureD3D12->GetDescription().m_uiMipLevels);
-  const DXGI_FORMAT dxgiFormat = xiiD3D12TypeConversions::GetFormat(description.m_Format == xiiGALResourceFormat::Unknown ? pDestinationTextureD3D12->GetDescription().m_Format : description.m_Format);
+  const UINT        uiSourceSubresource      = xiiD3D12TypeConversions::CalculateSubResourceIndex(description.m_uiSourceMipLevel, description.m_uiSourceSlice, pSourceTextureD3D12->GetDescription().m_uiMipLevels);
+  const UINT        uiDestinationSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(description.m_uiDestinationMipLevel, description.m_uiDestinationSlice, pDestinationTextureD3D12->GetDescription().m_uiMipLevels);
+  const DXGI_FORMAT dxgiFormat               = xiiD3D12TypeConversions::GetFormat(description.m_Format == xiiGALResourceFormat::Unknown ? pDestinationTextureD3D12->GetDescription().m_Format : description.m_Format);
 
   m_pD3D12CommandList->ResolveSubresource(pDestinationTextureD3D12->GetD3D12Texture(), uiDestinationSubresource, pSourceTextureD3D12->GetD3D12Texture(), uiSourceSubresource, dxgiFormat);
 }
@@ -2669,12 +2669,12 @@ xiiResult xiiGALCommandListD3D12::MapTextureSubresourcePlatform(xiiGALTexture* p
   if (pTextureBox == nullptr)
   {
     const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
-    resolvedBox.m_vMax = xiiVec3U32(mipLevelProperties.m_LogicalSize.width, mipLevelProperties.m_LogicalSize.height, mipLevelProperties.m_uiDepth);
-    pTextureBox        = &resolvedBox;
+    resolvedBox.m_vMax                                = xiiVec3U32(mipLevelProperties.m_LogicalSize.width, mipLevelProperties.m_LogicalSize.height, mipLevelProperties.m_uiDepth);
+    pTextureBox                                       = &resolvedBox;
   }
 
-  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
-  const xiiGALMipLevelProperties mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
+  const xiiGALResourceFormatDescription& formatProperties   = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+  const xiiGALMipLevelProperties         mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, textureMipLevelData.m_uiMipLevel);
 
   void*       pMappedMemory = nullptr;
   D3D12_RANGE readRange     = {};
@@ -2758,8 +2758,8 @@ void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRat
     });
 
   D3D12_SHADING_RATE_COMBINER d3d12Combiners[D3D12_RS_SET_SHADING_RATE_COMBINER_COUNT] = {};
-  d3d12Combiners[0] = xiiD3D12TypeConversions::GetShadingRateCombiner(primitiveCombinerFlags);
-  d3d12Combiners[1] = xiiD3D12TypeConversions::GetShadingRateCombiner(textureCombinerFlags);
+  d3d12Combiners[0]                                                                    = xiiD3D12TypeConversions::GetShadingRateCombiner(primitiveCombinerFlags);
+  d3d12Combiners[1]                                                                    = xiiD3D12TypeConversions::GetShadingRateCombiner(textureCombinerFlags);
 
   pD3D12CommandList5->RSSetShadingRate(xiiD3D12TypeConversions::GetShadingRate(baseRateFlags), d3d12Combiners);
 
@@ -2974,10 +2974,10 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
     xiiLog::Warning("D3D12 subpass {} on command list '{}' uses non-contiguous render-target attachment slots. Slots are compacted for OM binding.", uiSubpassIndex, GetDebugName());
   }
 
-  D3D12_CPU_DESCRIPTOR_HANDLE                d3d12DepthStencilHandle = {};
-  xiiSharedPtr<xiiGALTextureViewD3D12>       pDepthStencilViewD3D12;
-  xiiSharedPtr<xiiGALTextureD3D12>           pDepthStencilTextureD3D12;
-  xiiBitflags<xiiGALResourceStateFlags>      depthStencilState = xiiGALResourceStateFlags::DepthWrite;
+  D3D12_CPU_DESCRIPTOR_HANDLE                 d3d12DepthStencilHandle = {};
+  xiiSharedPtr<xiiGALTextureViewD3D12>        pDepthStencilViewD3D12;
+  xiiSharedPtr<xiiGALTextureD3D12>            pDepthStencilTextureD3D12;
+  xiiBitflags<xiiGALResourceStateFlags>       depthStencilState         = xiiGALResourceStateFlags::DepthWrite;
   const xiiGALAttachmentReferenceDescription* pDepthAttachmentReference = nullptr;
 
   if (!subpass.m_DepthStencilAttachment.IsEmpty())
@@ -3038,7 +3038,7 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
     if (uiDepthAttachmentIndex < renderPassDescription.m_Attachments.GetCount())
     {
       const xiiGALRenderPassAttachmentDescription& depthAttachmentDescription = renderPassDescription.m_Attachments[uiDepthAttachmentIndex];
-      const bool bFirstDepthUse = !WasAttachmentUsedInPreviousSubpass(renderPassDescription, uiDepthAttachmentIndex, uiSubpassIndex);
+      const bool                                   bFirstDepthUse             = !WasAttachmentUsedInPreviousSubpass(renderPassDescription, uiDepthAttachmentIndex, uiSubpassIndex);
 
       if (bFirstDepthUse)
       {
@@ -3064,7 +3064,7 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
 
           if (bReadyForClear)
           {
-            float   fDepthClearValue     = 1.0f;
+            float    fDepthClearValue    = 1.0f;
             xiiUInt8 uiStencilClearValue = 0U;
             if (uiDepthAttachmentIndex < m_CommandListData.m_AttachmentClearValues.GetCount())
             {
@@ -3153,8 +3153,8 @@ void xiiGALCommandListD3D12::PrepareForDraw()
 
   for (xiiUInt32 uiSlot = 0U; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
   {
-    const VertexStreamDescription& vertexStream = m_VertexStreams[uiSlot];
-    xiiGALBufferD3D12* pVertexBufferD3D12       = xiiDynamicCast<xiiGALBufferD3D12*>(vertexStream.m_pBuffer);
+    const VertexStreamDescription& vertexStream       = m_VertexStreams[uiSlot];
+    xiiGALBufferD3D12*             pVertexBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(vertexStream.m_pBuffer);
     if (pVertexBufferD3D12 == nullptr || pVertexBufferD3D12->GetD3D12Buffer() == nullptr)
       continue;
 
@@ -3163,9 +3163,9 @@ void xiiGALCommandListD3D12::PrepareForDraw()
       continue;
 
     D3D12_VERTEX_BUFFER_VIEW& vertexBufferView = d3d12VertexBufferViews[static_cast<size_t>(uiSlot)];
-    vertexBufferView.BufferLocation             = pVertexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + vertexStream.m_uiOffset;
-    vertexBufferView.SizeInBytes                = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiVertexBufferSize - vertexStream.m_uiOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
-    vertexBufferView.StrideInBytes              = pVertexBufferD3D12->GetDescription().m_uiElementByteStride;
+    vertexBufferView.BufferLocation            = pVertexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + vertexStream.m_uiOffset;
+    vertexBufferView.SizeInBytes               = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiVertexBufferSize - vertexStream.m_uiOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
+    vertexBufferView.StrideInBytes             = pVertexBufferD3D12->GetDescription().m_uiElementByteStride;
   }
 
   m_pD3D12CommandList->IASetVertexBuffers(0U, static_cast<UINT>(d3d12VertexBufferViews.size()), d3d12VertexBufferViews.data());
@@ -3209,9 +3209,9 @@ void xiiGALCommandListD3D12::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> inde
   }
 
   D3D12_INDEX_BUFFER_VIEW d3d12IndexBufferView = {};
-  d3d12IndexBufferView.BufferLocation           = pIndexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + m_uiIndexDataOffset;
-  d3d12IndexBufferView.SizeInBytes              = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiIndexBufferSize - m_uiIndexDataOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
-  d3d12IndexBufferView.Format                   = d3d12IndexFormat;
+  d3d12IndexBufferView.BufferLocation          = pIndexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + m_uiIndexDataOffset;
+  d3d12IndexBufferView.SizeInBytes             = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiIndexBufferSize - m_uiIndexDataOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
+  d3d12IndexBufferView.Format                  = d3d12IndexFormat;
 
   m_pD3D12CommandList->IASetIndexBuffer(&d3d12IndexBufferView);
 }

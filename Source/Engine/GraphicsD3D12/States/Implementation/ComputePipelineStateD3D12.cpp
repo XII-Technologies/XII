@@ -58,16 +58,16 @@ namespace
       if (!xiiD3D12TypeConversions::TryGetDescriptorRangeType(resource.m_ResourceType, rangeType))
         continue;
 
-      D3D12_DESCRIPTOR_RANGE& descriptorRange = descriptorRanges.ExpandAndGetRef();
-      descriptorRange.RangeType               = rangeType;
-      descriptorRange.NumDescriptors          = xiiMath::Max(1U, resource.m_uiArraySize);
-      descriptorRange.BaseShaderRegister      = resource.m_uiBindSlot;
-      descriptorRange.RegisterSpace           = resource.m_uiBindSet;
+      D3D12_DESCRIPTOR_RANGE& descriptorRange           = descriptorRanges.ExpandAndGetRef();
+      descriptorRange.RangeType                         = rangeType;
+      descriptorRange.NumDescriptors                    = xiiMath::Max(1U, resource.m_uiArraySize);
+      descriptorRange.BaseShaderRegister                = resource.m_uiBindSlot;
+      descriptorRange.RegisterSpace                     = resource.m_uiBindSet;
       descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-      D3D12_ROOT_PARAMETER& rootParameter = rootParameters.ExpandAndGetRef();
-      rootParameter.ParameterType         = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-      rootParameter.ShaderVisibility      = xiiD3D12TypeConversions::GetShaderVisibility(resource.m_ShaderStages);
+      D3D12_ROOT_PARAMETER& rootParameter               = rootParameters.ExpandAndGetRef();
+      rootParameter.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+      rootParameter.ShaderVisibility                    = xiiD3D12TypeConversions::GetShaderVisibility(resource.m_ShaderStages);
       rootParameter.DescriptorTable.NumDescriptorRanges = 1U;
       rootParameter.DescriptorTable.pDescriptorRanges   = &descriptorRange;
     }
@@ -85,9 +85,9 @@ namespace
         return XII_FAILURE;
       }
 
-      D3D12_ROOT_PARAMETER& rootParameter = rootParameters.ExpandAndGetRef();
-      rootParameter.ParameterType         = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-      rootParameter.ShaderVisibility      = xiiD3D12TypeConversions::GetShaderVisibility(pushConstantRange.m_ShaderStages);
+      D3D12_ROOT_PARAMETER& rootParameter    = rootParameters.ExpandAndGetRef();
+      rootParameter.ParameterType            = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+      rootParameter.ShaderVisibility         = xiiD3D12TypeConversions::GetShaderVisibility(pushConstantRange.m_ShaderStages);
       rootParameter.Constants.ShaderRegister = i;
       rootParameter.Constants.RegisterSpace  = 0U;
       rootParameter.Constants.Num32BitValues = uiValueCount;

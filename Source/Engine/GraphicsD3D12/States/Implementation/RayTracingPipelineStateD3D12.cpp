@@ -73,16 +73,16 @@ namespace
       if (!xiiD3D12TypeConversions::TryGetDescriptorRangeType(resource.m_ResourceType, rangeType))
         continue;
 
-      D3D12_DESCRIPTOR_RANGE& descriptorRange = descriptorRanges.ExpandAndGetRef();
-      descriptorRange.RangeType               = rangeType;
-      descriptorRange.NumDescriptors          = xiiMath::Max(1U, resource.m_uiArraySize);
-      descriptorRange.BaseShaderRegister      = resource.m_uiBindSlot;
-      descriptorRange.RegisterSpace           = resource.m_uiBindSet;
+      D3D12_DESCRIPTOR_RANGE& descriptorRange           = descriptorRanges.ExpandAndGetRef();
+      descriptorRange.RangeType                         = rangeType;
+      descriptorRange.NumDescriptors                    = xiiMath::Max(1U, resource.m_uiArraySize);
+      descriptorRange.BaseShaderRegister                = resource.m_uiBindSlot;
+      descriptorRange.RegisterSpace                     = resource.m_uiBindSet;
       descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-      D3D12_ROOT_PARAMETER& rootParameter = rootParameters.ExpandAndGetRef();
-      rootParameter.ParameterType         = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-      rootParameter.ShaderVisibility      = xiiD3D12TypeConversions::GetShaderVisibility(resource.m_ShaderStages);
+      D3D12_ROOT_PARAMETER& rootParameter               = rootParameters.ExpandAndGetRef();
+      rootParameter.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+      rootParameter.ShaderVisibility                    = xiiD3D12TypeConversions::GetShaderVisibility(resource.m_ShaderStages);
       rootParameter.DescriptorTable.NumDescriptorRanges = 1U;
       rootParameter.DescriptorTable.pDescriptorRanges   = &descriptorRange;
     }
@@ -100,9 +100,9 @@ namespace
         return XII_FAILURE;
       }
 
-      D3D12_ROOT_PARAMETER& rootParameter = rootParameters.ExpandAndGetRef();
-      rootParameter.ParameterType         = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-      rootParameter.ShaderVisibility      = xiiD3D12TypeConversions::GetShaderVisibility(pushConstantRange.m_ShaderStages);
+      D3D12_ROOT_PARAMETER& rootParameter    = rootParameters.ExpandAndGetRef();
+      rootParameter.ParameterType            = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+      rootParameter.ShaderVisibility         = xiiD3D12TypeConversions::GetShaderVisibility(pushConstantRange.m_ShaderStages);
       rootParameter.Constants.ShaderRegister = i;
       rootParameter.Constants.RegisterSpace  = 0U;
       rootParameter.Constants.Num32BitValues = uiValueCount;
@@ -210,10 +210,10 @@ namespace
     XII_ASSERT_DEV(pShaderD3D12 != nullptr, "Shader must be valid.");
     XII_ASSERT_DEV(pExportName != nullptr, "Export name must be valid.");
 
-    DxilLibrarySubobject& librarySubobject          = inout_librarySubobjects.ExpandAndGetRef();
-    librarySubobject.m_ExportDescription.Name       = pExportName;
+    DxilLibrarySubobject& librarySubobject              = inout_librarySubobjects.ExpandAndGetRef();
+    librarySubobject.m_ExportDescription.Name           = pExportName;
     librarySubobject.m_ExportDescription.ExportToRename = L"main";
-    librarySubobject.m_ExportDescription.Flags      = D3D12_EXPORT_FLAG_NONE;
+    librarySubobject.m_ExportDescription.Flags          = D3D12_EXPORT_FLAG_NONE;
 
     librarySubobject.m_LibraryDescription.DXILLibrary = *pShaderD3D12->GetD3D12ShaderByteCodeDescription();
     librarySubobject.m_LibraryDescription.NumExports  = 1U;
@@ -314,11 +314,11 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
     m_Description.m_ProceduralHitShaders.GetCount() +
     m_Description.m_ProceduralHitShaders.GetCount();
 
-  const xiiUInt32 uiHitGroupCount        = m_Description.m_TriangleHitShaders.GetCount() + m_Description.m_ProceduralHitShaders.GetCount();
+  const xiiUInt32 uiHitGroupCount         = m_Description.m_TriangleHitShaders.GetCount() + m_Description.m_ProceduralHitShaders.GetCount();
   const xiiUInt32 uiTotalShaderGroupCount = m_Description.m_GeneralShaders.GetCount() + uiHitGroupCount;
   const xiiUInt32 uiWideStringCount       = uiShaderLibraryCount + uiHitGroupCount;
 
-  xiiDynamicArray<std::wstring>        wideStrings;
+  xiiDynamicArray<std::wstring>         wideStrings;
   xiiDynamicArray<DxilLibrarySubobject> librarySubobjects;
   xiiDynamicArray<HitGroupSubobject>    hitGroupSubobjects;
   xiiDynamicArray<const wchar_t*>       shaderGroupExports;
@@ -429,14 +429,14 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
       return XII_FAILURE;
     }
 
-    HitGroupSubobject& hitGroupSubobject                                = hitGroupSubobjects.ExpandAndGetRef();
-    hitGroupSubobject.m_HitGroupDescription.Type                        = D3D12_HIT_GROUP_TYPE_TRIANGLES;
-    hitGroupSubobject.m_HitGroupDescription.HitGroupExport              = pHitGroupExportName;
-    hitGroupSubobject.m_HitGroupDescription.ClosestHitShaderImport      = pClosestHitExportName;
-    hitGroupSubobject.m_HitGroupDescription.AnyHitShaderImport          = pAnyHitExportName;
-    hitGroupSubobject.m_HitGroupDescription.IntersectionShaderImport    = nullptr;
-    hitGroupSubobject.m_StateSubobject.Type                             = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
-    hitGroupSubobject.m_StateSubobject.pDesc                            = &hitGroupSubobject.m_HitGroupDescription;
+    HitGroupSubobject& hitGroupSubobject                             = hitGroupSubobjects.ExpandAndGetRef();
+    hitGroupSubobject.m_HitGroupDescription.Type                     = D3D12_HIT_GROUP_TYPE_TRIANGLES;
+    hitGroupSubobject.m_HitGroupDescription.HitGroupExport           = pHitGroupExportName;
+    hitGroupSubobject.m_HitGroupDescription.ClosestHitShaderImport   = pClosestHitExportName;
+    hitGroupSubobject.m_HitGroupDescription.AnyHitShaderImport       = pAnyHitExportName;
+    hitGroupSubobject.m_HitGroupDescription.IntersectionShaderImport = nullptr;
+    hitGroupSubobject.m_StateSubobject.Type                          = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+    hitGroupSubobject.m_StateSubobject.pDesc                         = &hitGroupSubobject.m_HitGroupDescription;
 
     const xiiUInt32 uiGroupIndex = shaderGroupExports.GetCount();
     shaderGroupExports.PushBack(pHitGroupExportName);
@@ -484,14 +484,14 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
       return XII_FAILURE;
     }
 
-    HitGroupSubobject& hitGroupSubobject                                = hitGroupSubobjects.ExpandAndGetRef();
-    hitGroupSubobject.m_HitGroupDescription.Type                        = D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE;
-    hitGroupSubobject.m_HitGroupDescription.HitGroupExport              = pHitGroupExportName;
-    hitGroupSubobject.m_HitGroupDescription.ClosestHitShaderImport      = pClosestHitExportName;
-    hitGroupSubobject.m_HitGroupDescription.AnyHitShaderImport          = pAnyHitExportName;
-    hitGroupSubobject.m_HitGroupDescription.IntersectionShaderImport    = pIntersectionExportName;
-    hitGroupSubobject.m_StateSubobject.Type                             = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
-    hitGroupSubobject.m_StateSubobject.pDesc                            = &hitGroupSubobject.m_HitGroupDescription;
+    HitGroupSubobject& hitGroupSubobject                             = hitGroupSubobjects.ExpandAndGetRef();
+    hitGroupSubobject.m_HitGroupDescription.Type                     = D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE;
+    hitGroupSubobject.m_HitGroupDescription.HitGroupExport           = pHitGroupExportName;
+    hitGroupSubobject.m_HitGroupDescription.ClosestHitShaderImport   = pClosestHitExportName;
+    hitGroupSubobject.m_HitGroupDescription.AnyHitShaderImport       = pAnyHitExportName;
+    hitGroupSubobject.m_HitGroupDescription.IntersectionShaderImport = pIntersectionExportName;
+    hitGroupSubobject.m_StateSubobject.Type                          = D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
+    hitGroupSubobject.m_StateSubobject.pDesc                         = &hitGroupSubobject.m_HitGroupDescription;
 
     const xiiUInt32 uiGroupIndex = shaderGroupExports.GetCount();
     shaderGroupExports.PushBack(pHitGroupExportName);
@@ -508,23 +508,23 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
   globalRootSignature.pGlobalRootSignature        = m_pD3D12RootSignature;
 
   D3D12_STATE_SUBOBJECT globalRootSignatureSubobject = {};
-  globalRootSignatureSubobject.Type                 = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
-  globalRootSignatureSubobject.pDesc                = &globalRootSignature;
+  globalRootSignatureSubobject.Type                  = D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
+  globalRootSignatureSubobject.pDesc                 = &globalRootSignature;
 
   const xiiUInt32 uiMaxPayloadSize =
     m_Description.m_uiMaximumPayloadSize > 0U ? m_Description.m_uiMaximumPayloadSize :
 #if defined(D3D12_RAYTRACING_MAX_DECLARABLE_PAYLOAD_SIZE_IN_BYTES)
-                                                 D3D12_RAYTRACING_MAX_DECLARABLE_PAYLOAD_SIZE_IN_BYTES;
+                                                D3D12_RAYTRACING_MAX_DECLARABLE_PAYLOAD_SIZE_IN_BYTES;
 #else
-                                                 4096U;
+                                                4096U;
 #endif
 
   const xiiUInt32 uiMaxAttributeSize =
     m_Description.m_uiMaximumAttributeSize > 0U ? m_Description.m_uiMaximumAttributeSize :
 #if defined(D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES)
-                                                   D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;
+                                                  D3D12_RAYTRACING_MAX_ATTRIBUTE_SIZE_IN_BYTES;
 #else
-                                                   32U;
+                                                  32U;
 #endif
 
   D3D12_RAYTRACING_SHADER_CONFIG shaderConfiguration = {};
@@ -536,7 +536,7 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
   shaderConfigurationSubobject.pDesc                 = &shaderConfiguration;
 
   const xiiUInt32 uiDeviceMaxRecursionDepth = pDeviceD3D12->GetGraphicsDeviceAdapterProperties().m_RayTracingProperties.m_uiMaxRecursionDepth;
-  xiiUInt32       uiRecursionDepth           = xiiMath::Max<xiiUInt32>(1U, m_Description.m_RayTracingPipeline.m_uiMaxRecursionDepth);
+  xiiUInt32       uiRecursionDepth          = xiiMath::Max<xiiUInt32>(1U, m_Description.m_RayTracingPipeline.m_uiMaxRecursionDepth);
   if (uiDeviceMaxRecursionDepth > 0U)
   {
     uiRecursionDepth = xiiMath::Min(uiRecursionDepth, uiDeviceMaxRecursionDepth);
