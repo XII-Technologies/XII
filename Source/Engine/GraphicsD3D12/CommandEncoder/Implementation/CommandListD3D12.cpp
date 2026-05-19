@@ -331,10 +331,139 @@ void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLA
 
 void xiiGALCommandListD3D12::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
+  if (m_pD3D12CommandList == nullptr || pQuery == nullptr)
+    return;
+
+  xiiGALQueryD3D12* pQueryD3D12 = xiiDynamicCast<xiiGALQueryD3D12*>(pQuery);
+  if (pQueryD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to begin D3D12 query on command list '{}': incompatible query backend type.", GetDebugName());
+    return;
+  }
+
+  const xiiGALQueryType::Enum queryType = pQueryD3D12->GetDescription().m_Type;
+  if (queryType == xiiGALQueryType::Timestamp)
+  {
+    xiiLog::Error("BeginQuery() is not supported for timestamp queries in D3D12. Use EndQuery() to write timestamp values.");
+    return;
+  }
+
+  if (!pQueryD3D12->OnBeginQuery(this))
+    return;
+
+  xiiGALQueryPoolD3D12* pQueryPoolD3D12 = pQueryD3D12->GetQueryPoolD3D12();
+  if (pQueryPoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to begin D3D12 query '{}': query pool is unavailable.", pQueryD3D12->GetDebugName());
+    return;
+  }
+
+  ID3D12QueryHeap* pD3D12QueryHeap = pQueryPoolD3D12->GetQueryHeap(queryType);
+  if (pD3D12QueryHeap == nullptr)
+  {
+    xiiLog::Error("Failed to begin D3D12 query '{}': query heap is unavailable for type {}.", pQueryD3D12->GetDebugName(), xiiArgEnum(xiiEnum<xiiGALQueryType>(queryType)));
+    return;
+  }
+
+  const xiiUInt32 uiBeginQueryIndex = pQueryD3D12->GetQueryPoolIndex(0U);
+  if (uiBeginQueryIndex == xiiInvalidIndex)
+  {
+    xiiLog::Error("Failed to begin D3D12 query '{}': query index allocation failed.", pQueryD3D12->GetDebugName());
+    return;
+  }
+
+  const D3D12_QUERY_TYPE d3d12QueryType = pQueryPoolD3D12->GetD3D12QueryType(queryType);
+  if (queryType == xiiGALQueryType::Duration)
+  {
+    m_pD3D12CommandList->EndQuery(pD3D12QueryHeap, d3d12QueryType, uiBeginQueryIndex);
+  }
+  else
+  {
+    ++m_CommandListData.m_uiActiveQueriesCounter;
+    m_pD3D12CommandList->BeginQuery(pD3D12QueryHeap, d3d12QueryType, uiBeginQueryIndex);
+  }
 }
 
 void xiiGALCommandListD3D12::EndQueryPlatform(xiiGALQuery* pQuery)
 {
+  if (m_pD3D12CommandList == nullptr || pQuery == nullptr)
+    return;
+
+  xiiGALQueryD3D12* pQueryD3D12 = xiiDynamicCast<xiiGALQueryD3D12*>(pQuery);
+  if (pQueryD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to end D3D12 query on command list '{}': incompatible query backend type.", GetDebugName());
+    return;
+  }
+
+  if (!pQueryD3D12->OnEndQuery(this))
+    return;
+
+  const xiiGALQueryType::Enum queryType = pQueryD3D12->GetDescription().m_Type;
+  xiiGALQueryPoolD3D12*       pQueryPoolD3D12 = pQueryD3D12->GetQueryPoolD3D12();
+  if (pQueryPoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to end D3D12 query '{}': query pool is unavailable.", pQueryD3D12->GetDebugName());
+    return;
+  }
+
+  ID3D12QueryHeap* pD3D12QueryHeap = pQueryPoolD3D12->GetQueryHeap(queryType);
+  ID3D12Resource*  pReadbackBuffer = pQueryPoolD3D12->GetReadbackBuffer(queryType);
+  if (pD3D12QueryHeap == nullptr || pReadbackBuffer == nullptr)
+  {
+    xiiLog::Error("Failed to end D3D12 query '{}': query heap/readback resources are unavailable for type {}.", pQueryD3D12->GetDebugName(), xiiArgEnum(xiiEnum<xiiGALQueryType>(queryType)));
+    return;
+  }
+
+  const D3D12_QUERY_TYPE d3d12QueryType = pQueryPoolD3D12->GetD3D12QueryType(queryType);
+  if (queryType == xiiGALQueryType::Timestamp)
+  {
+    const xiiUInt32 uiQueryIndex = pQueryD3D12->GetQueryPoolIndex(0U);
+    if (uiQueryIndex == xiiInvalidIndex)
+    {
+      xiiLog::Error("Failed to end D3D12 timestamp query '{}': query index allocation failed.", pQueryD3D12->GetDebugName());
+      return;
+    }
+
+    m_pD3D12CommandList->EndQuery(pD3D12QueryHeap, d3d12QueryType, uiQueryIndex);
+    m_pD3D12CommandList->ResolveQueryData(pD3D12QueryHeap, d3d12QueryType, uiQueryIndex, 1U, pReadbackBuffer, pQueryPoolD3D12->GetQueryReadbackOffset(queryType, uiQueryIndex));
+    return;
+  }
+
+  if (queryType == xiiGALQueryType::Duration)
+  {
+    const xiiUInt32 uiStartQueryIndex = pQueryD3D12->GetQueryPoolIndex(0U);
+    const xiiUInt32 uiEndQueryIndex   = pQueryD3D12->GetQueryPoolIndex(1U);
+    if (uiStartQueryIndex == xiiInvalidIndex || uiEndQueryIndex == xiiInvalidIndex)
+    {
+      xiiLog::Error("Failed to end D3D12 duration query '{}': query index allocation failed.", pQueryD3D12->GetDebugName());
+      return;
+    }
+
+    m_pD3D12CommandList->EndQuery(pD3D12QueryHeap, d3d12QueryType, uiEndQueryIndex);
+    m_pD3D12CommandList->ResolveQueryData(pD3D12QueryHeap, d3d12QueryType, uiStartQueryIndex, 1U, pReadbackBuffer, pQueryPoolD3D12->GetQueryReadbackOffset(queryType, uiStartQueryIndex));
+    m_pD3D12CommandList->ResolveQueryData(pD3D12QueryHeap, d3d12QueryType, uiEndQueryIndex, 1U, pReadbackBuffer, pQueryPoolD3D12->GetQueryReadbackOffset(queryType, uiEndQueryIndex));
+    return;
+  }
+
+  if (m_CommandListData.m_uiActiveQueriesCounter == 0U)
+  {
+    xiiLog::Warning("Ending D3D12 query '{}' with no active non-timestamp queries tracked on command list '{}'.", pQueryD3D12->GetDebugName(), GetDebugName());
+  }
+  else
+  {
+    --m_CommandListData.m_uiActiveQueriesCounter;
+  }
+
+  const xiiUInt32 uiQueryIndex = pQueryD3D12->GetQueryPoolIndex(0U);
+  if (uiQueryIndex == xiiInvalidIndex)
+  {
+    xiiLog::Error("Failed to end D3D12 query '{}': query index allocation failed.", pQueryD3D12->GetDebugName());
+    return;
+  }
+
+  m_pD3D12CommandList->EndQuery(pD3D12QueryHeap, d3d12QueryType, uiQueryIndex);
+  m_pD3D12CommandList->ResolveQueryData(pD3D12QueryHeap, d3d12QueryType, uiQueryIndex, 1U, pReadbackBuffer, pQueryPoolD3D12->GetQueryReadbackOffset(queryType, uiQueryIndex));
 }
 
 void xiiGALCommandListD3D12::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
