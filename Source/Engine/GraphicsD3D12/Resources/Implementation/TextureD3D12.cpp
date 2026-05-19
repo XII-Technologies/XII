@@ -6,6 +6,7 @@
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
+#include <GraphicsD3D12/Pools/FencePoolD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
@@ -186,13 +187,31 @@ namespace
     ID3D12Resource*            pUploadBuffer      = nullptr;
     xiiD3D12Allocation         uploadAllocation   = nullptr;
     ID3D12Fence*               pUploadFence       = nullptr;
+    bool                       bPooledUploadFence = false;
     HANDLE                     hUploadFenceSignal = nullptr;
     ID3D12CommandAllocator*    pCommandAllocator  = nullptr;
     ID3D12GraphicsCommandList* pCommandList       = nullptr;
 
     XII_SCOPE_EXIT(
       {
-        XII_GAL_D3D12_RELEASE(pUploadFence);
+        if (pUploadFence != nullptr)
+        {
+          if (bPooledUploadFence)
+          {
+            if (xiiGALFencePoolD3D12* pFencePoolD3D12 = pDeviceD3D12->GetD3D12FencePool())
+            {
+              pFencePoolD3D12->ReclaimFence(pUploadFence);
+            }
+            else
+            {
+              XII_GAL_D3D12_RELEASE(pUploadFence);
+            }
+          }
+          else
+          {
+            XII_GAL_D3D12_RELEASE(pUploadFence);
+          }
+        }
         XII_GAL_D3D12_RELEASE(pCommandList);
         XII_GAL_D3D12_RELEASE(pCommandAllocator);
 
@@ -300,7 +319,22 @@ namespace
     ID3D12CommandList* pCommandLists[] = {reinterpret_cast<ID3D12CommandList*>(pCommandList)};
     pGraphicsQueue->GetD3D12CommandQueue()->ExecuteCommandLists(1U, pCommandLists);
 
-    XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateFence(0U, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pUploadFence)));
+    xiiGALFencePoolD3D12* pFencePoolD3D12 = pDeviceD3D12->GetD3D12FencePool();
+    if (pFencePoolD3D12 == nullptr)
+    {
+      xiiLog::Error("Failed to upload initial data to D3D12 texture: fence pool is unavailable.");
+      return XII_FAILURE;
+    }
+
+    pUploadFence = pFencePoolD3D12->RequestFence();
+    if (pUploadFence == nullptr)
+    {
+      xiiLog::Error("Failed to upload initial data to D3D12 texture: fence pool failed to provide a fence.");
+      return XII_FAILURE;
+    }
+
+    bPooledUploadFence = true;
+    pUploadFence->Signal(0U);
 
     constexpr xiiUInt64 uiFenceValue = 1ULL;
     XII_HRESULT_TO_FAILURE_LOG(pGraphicsQueue->GetD3D12CommandQueue()->Signal(pUploadFence, uiFenceValue));

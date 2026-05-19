@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
+#include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
@@ -359,6 +360,7 @@ xiiGALTextureViewD3D12::~xiiGALTextureViewD3D12() = default;
 
 xiiResult xiiGALTextureViewD3D12::InitPlatform()
 {
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiSharedPtr<xiiGALTextureD3D12> pTextureD3D12 = m_pTexture.Downcast<xiiGALTextureD3D12>();
   if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
   {
@@ -407,6 +409,70 @@ xiiResult xiiGALTextureViewD3D12::InitPlatform()
     default:
       xiiLog::Error("Failed to initialize D3D12 texture view '{}': unsupported view type '{}'.", GetDebugName(), xiiArgEnum(m_Description.m_ViewType));
       return XII_FAILURE;
+  }
+
+  D3D12_DESCRIPTOR_HEAP_TYPE descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+  switch (m_Description.m_ViewType)
+  {
+    case xiiGALTextureViewType::ShaderResource:
+    case xiiGALTextureViewType::UnorderedAccess:
+    case xiiGALTextureViewType::ShadingRate:
+      descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+      break;
+
+    case xiiGALTextureViewType::RenderTarget:
+      descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+      break;
+
+    case xiiGALTextureViewType::DepthStencil:
+    case xiiGALTextureViewType::ReadOnlyDepthStencil:
+      descriptorHeapType = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+      break;
+
+    default:
+      xiiLog::Error("Failed to initialize D3D12 texture view '{}': unsupported descriptor heap mapping for view type '{}'.", GetDebugName(), xiiArgEnum(m_Description.m_ViewType));
+      return XII_FAILURE;
+  }
+
+  xiiGALDescriptorSetPoolD3D12* pDescriptorPoolD3D12 = pDeviceD3D12->GetResourceDescriptorPool();
+  if (pDescriptorPoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to initialize D3D12 texture view '{}': resource descriptor pool is unavailable.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  const xiiGALDescriptorSetPoolD3D12::DescriptorAllocation descriptorAllocation = pDescriptorPoolD3D12->RequestDescriptorAllocation(descriptorHeapType, 1U);
+  if (descriptorAllocation.m_pDescriptorHeap == nullptr || descriptorAllocation.m_CPUHandle.ptr == 0U)
+  {
+    xiiLog::Error("Failed to initialize D3D12 texture view '{}': descriptor allocation from pool failed.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  m_pDescriptorHeap     = descriptorAllocation.m_pDescriptorHeap;
+  m_CPUDescriptorHandle = descriptorAllocation.m_CPUHandle;
+  m_GPUDescriptorHandle = descriptorAllocation.m_GPUHandle;
+
+  switch (m_Description.m_ViewType)
+  {
+    case xiiGALTextureViewType::ShaderResource:
+    case xiiGALTextureViewType::ShadingRate:
+      pDeviceD3D12->GetD3D12Device()->CreateShaderResourceView(pTextureD3D12->GetD3D12Texture(), &m_ViewMetadata.m_ShaderResourceView, m_CPUDescriptorHandle);
+      break;
+
+    case xiiGALTextureViewType::UnorderedAccess:
+      pDeviceD3D12->GetD3D12Device()->CreateUnorderedAccessView(pTextureD3D12->GetD3D12Texture(), nullptr, &m_ViewMetadata.m_UnorderedAccessView, m_CPUDescriptorHandle);
+      break;
+
+    case xiiGALTextureViewType::RenderTarget:
+      pDeviceD3D12->GetD3D12Device()->CreateRenderTargetView(pTextureD3D12->GetD3D12Texture(), &m_ViewMetadata.m_RenderTargetView, m_CPUDescriptorHandle);
+      break;
+
+    case xiiGALTextureViewType::DepthStencil:
+    case xiiGALTextureViewType::ReadOnlyDepthStencil:
+      pDeviceD3D12->GetD3D12Device()->CreateDepthStencilView(pTextureD3D12->GetD3D12Texture(), &m_ViewMetadata.m_DepthStencilView, m_CPUDescriptorHandle);
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return XII_SUCCESS;
