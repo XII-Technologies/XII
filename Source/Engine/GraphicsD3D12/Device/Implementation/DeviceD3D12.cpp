@@ -55,6 +55,38 @@ namespace
   }
 } // namespace
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
+{
+  return XII_NEW(pAllocator, xiiGALDeviceD3D12, pAllocator, description);
+}
+
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
+
+    xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    xiiGALDeviceFactory::UnregisterImplementation("D3D12");
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
+
+///////////////////////////////////////////////////////////////////////////
+
 class xiiGALDeviceD3D12::DeferredDeletionQueue
 {
 public:
@@ -144,19 +176,18 @@ private:
       Image
     };
 
-    Type             m_Type         = Type::Object;
-    IUnknown*        m_pObject      = nullptr;
-    xiiD3D12Allocation m_Allocation = nullptr;
-    FenceValues      m_FenceValues  = {};
+    Type               m_Type        = Type::Object;
+    IUnknown*          m_pObject     = nullptr;
+    xiiD3D12Allocation m_Allocation  = nullptr;
+    FenceValues        m_FenceValues = {};
   };
 
-  [[nodiscard]] static xiiUInt64 GetLastSubmittedFenceValue(const xiiGALCommandQueueD3D12* pCommandQueue)
+  [[nodiscard]] static xiiUInt64 GetRequiredFenceValue(const xiiGALCommandQueueD3D12* pCommandQueue)
   {
     if (pCommandQueue == nullptr)
       return 0ULL;
 
-    const xiiUInt64 uiNextFenceValue = pCommandQueue->GetNextFenceValue();
-    return uiNextFenceValue > 0ULL ? (uiNextFenceValue - 1ULL) : 0ULL;
+    return pCommandQueue->GetNextFenceValue();
   }
 
   [[nodiscard]] static xiiUInt64 GetCompletedFenceValue(xiiGALCommandQueueD3D12* pCommandQueue)
@@ -168,9 +199,9 @@ private:
   {
     FenceValues fenceValues = {};
 
-    fenceValues.m_uiGraphics = GetLastSubmittedFenceValue(m_pDeviceD3D12->m_pGraphicsCommandQueue.Borrow());
-    fenceValues.m_uiCompute  = GetLastSubmittedFenceValue(m_pDeviceD3D12->m_pComputeCommandQueue.Borrow());
-    fenceValues.m_uiTransfer = GetLastSubmittedFenceValue(m_pDeviceD3D12->m_pTransferCommandQueue.Borrow());
+    fenceValues.m_uiGraphics = GetRequiredFenceValue(m_pDeviceD3D12->m_pGraphicsCommandQueue.Borrow());
+    fenceValues.m_uiCompute  = GetRequiredFenceValue(m_pDeviceD3D12->m_pComputeCommandQueue.Borrow());
+    fenceValues.m_uiTransfer = GetRequiredFenceValue(m_pDeviceD3D12->m_pTransferCommandQueue.Borrow());
 
     return fenceValues;
   }
@@ -208,7 +239,7 @@ private:
       case DeletionEntry::Type::Buffer:
       case DeletionEntry::Type::Image:
       {
-        ID3D12Resource* pResource   = static_cast<ID3D12Resource*>(entry.m_pObject);
+        ID3D12Resource*    pResource  = static_cast<ID3D12Resource*>(entry.m_pObject);
         xiiD3D12Allocation allocation = entry.m_Allocation;
 
         if (allocation != nullptr && pAllocatorD3D12 != nullptr)
@@ -237,47 +268,12 @@ private:
     }
   }
 
-  xiiGALDeviceD3D12*     m_pDeviceD3D12 = nullptr;
+  xiiGALDeviceD3D12*      m_pDeviceD3D12 = nullptr;
   xiiDeque<DeletionEntry> m_DeletionQueue;
   mutable xiiMutex        m_DeletionQueueMutex;
 };
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-
-xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description)
-{
-  return XII_NEW(pAllocator, xiiGALDeviceD3D12, pAllocator, description);
-}
-
-// clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
-
-  BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation"
-  END_SUBSYSTEM_DEPENDENCIES
-
-  ON_CORESYSTEMS_STARTUP
-  {
-    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
-
-    xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
-  }
-
-  ON_CORESYSTEMS_SHUTDOWN
-  {
-    xiiGALDeviceFactory::UnregisterImplementation("D3D12");
-  }
-
-XII_END_SUBSYSTEM_DECLARATION;
-// clang-format on
-
-#define XII_VERIFY_D3D12(expression, ...)      \
-  do                                           \
-  {                                            \
-    XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return XII_FAILURE; } \
-  } while (false)
+///////////////////////////////////////////////////////////////////////////
 
 xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(pAllocator, description)
@@ -417,7 +413,15 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   }
 #endif
 
-  XII_VERIFY_D3D12(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+  // Create the DXGI factory to select a compatible adapter to create the D3D12 device with.
+  {
+    HRESULT hResult = CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)));
+
+    if (FAILED(hResult))
+    {
+      xiiLog::Error("Failed to create DXGI factory. Error: '{}'.", xiiHRESULTtoString(hResult));
+    }
+  }
 
   {
     // Direct3D12 does not allow feature levels below 11.0.
