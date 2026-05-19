@@ -488,17 +488,17 @@ void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription&
     const xiiUInt32 uiBoxCount = boxBuildData.m_uiBoxCount != 0U ? boxBuildData.m_uiBoxCount : boxDescription.m_uiMaxBoxCount;
     const xiiUInt64 uiStride   = boxBuildData.m_uiBoundingBoxStride != 0U ? boxBuildData.m_uiBoundingBoxStride : sizeof(float) * 6ULL;
 
-    D3D12_RAYTRACING_GEOMETRY_DESC geometryDescription   = {};
-    geometryDescription.Type                             = D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS;
-    geometryDescription.Flags                            = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
-    geometryDescription.AABBs.AABBCount                  = uiBoxCount;
-    geometryDescription.AABBs.AABBs.StartAddress         = pBoundingBoxBufferD3D12->GetD3D12BufferGPUVirtualAddress() + boxBuildData.m_uiBoundingBoxOffset;
-    geometryDescription.AABBs.AABBs.StrideInBytes        = uiStride;
+    D3D12_RAYTRACING_GEOMETRY_DESC geometryDescription = {};
+    geometryDescription.Type                           = D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS;
+    geometryDescription.Flags                          = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+    geometryDescription.AABBs.AABBCount                = uiBoxCount;
+    geometryDescription.AABBs.AABBs.StartAddress       = pBoundingBoxBufferD3D12->GetD3D12BufferGPUVirtualAddress() + boxBuildData.m_uiBoundingBoxOffset;
+    geometryDescription.AABBs.AABBs.StrideInBytes      = uiStride;
 
     d3d12Geometries.PushBack(geometryDescription);
   }
 
-  xiiBitflags<xiiGALRayTracingBuildASFlags> buildFlags = description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : blasDescription.m_BuildASFlags;
+  xiiBitflags<xiiGALRayTracingBuildASFlags>           buildFlags      = description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : blasDescription.m_BuildASFlags;
   D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS d3d12BuildFlags = xiiD3D12TypeConversions::GetAccelerationStructureBuildFlags(buildFlags);
   if (description.m_bUpdate)
   {
@@ -506,14 +506,14 @@ void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription&
   }
 
   D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC d3d12BuildDescription = {};
-  d3d12BuildDescription.Inputs.Type                                         = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-  d3d12BuildDescription.Inputs.DescsLayout                                  = D3D12_ELEMENTS_LAYOUT_ARRAY;
-  d3d12BuildDescription.Inputs.Flags                                        = d3d12BuildFlags;
-  d3d12BuildDescription.Inputs.NumDescs                                     = d3d12Geometries.GetCount();
-  d3d12BuildDescription.Inputs.pGeometryDescs                               = d3d12Geometries.GetData();
-  d3d12BuildDescription.SourceAccelerationStructureData                     = description.m_bUpdate ? pBottomLevelASD3D12->GetD3D12GPUVirtualAddress() : 0ULL;
-  d3d12BuildDescription.DestAccelerationStructureData                       = pBottomLevelASD3D12->GetD3D12GPUVirtualAddress();
-  d3d12BuildDescription.ScratchAccelerationStructureData                    = pScratchBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiScratchBufferOffset;
+  d3d12BuildDescription.Inputs.Type                                        = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+  d3d12BuildDescription.Inputs.DescsLayout                                 = D3D12_ELEMENTS_LAYOUT_ARRAY;
+  d3d12BuildDescription.Inputs.Flags                                       = d3d12BuildFlags;
+  d3d12BuildDescription.Inputs.NumDescs                                    = d3d12Geometries.GetCount();
+  d3d12BuildDescription.Inputs.pGeometryDescs                              = d3d12Geometries.GetData();
+  d3d12BuildDescription.SourceAccelerationStructureData                    = description.m_bUpdate ? pBottomLevelASD3D12->GetD3D12GPUVirtualAddress() : 0ULL;
+  d3d12BuildDescription.DestAccelerationStructureData                      = pBottomLevelASD3D12->GetD3D12GPUVirtualAddress();
+  d3d12BuildDescription.ScratchAccelerationStructureData                   = pScratchBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiScratchBufferOffset;
 
   pD3D12CommandList4->BuildRaytracingAccelerationStructure(&d3d12BuildDescription, 0U, nullptr);
 
@@ -530,7 +530,7 @@ void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription&
   if (m_pD3D12CommandList == nullptr)
     return;
 
-  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pTopLevelAS);
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12     = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pTopLevelAS);
   xiiGALBufferD3D12*     pInstanceBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pInstanceBuffer);
   xiiGALBufferD3D12*     pScratchBufferD3D12  = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pScratchBuffer);
   if (pTopLevelASD3D12 == nullptr || pInstanceBufferD3D12 == nullptr || pScratchBufferD3D12 == nullptr)
@@ -570,7 +570,7 @@ void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription&
   if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pScratchBufferD3D12, pD3D12ScratchResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, "TLAS scratch buffer", GetDebugName()))
     return;
 
-  xiiBitflags<xiiGALRayTracingBuildASFlags> buildFlags = description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : description.m_pTopLevelAS->GetDescription().m_Flags;
+  xiiBitflags<xiiGALRayTracingBuildASFlags>           buildFlags      = description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : description.m_pTopLevelAS->GetDescription().m_Flags;
   D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS d3d12BuildFlags = xiiD3D12TypeConversions::GetAccelerationStructureBuildFlags(buildFlags);
   if (description.m_bUpdate)
   {
@@ -578,14 +578,14 @@ void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription&
   }
 
   D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC d3d12BuildDescription = {};
-  d3d12BuildDescription.Inputs.Type                                         = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
-  d3d12BuildDescription.Inputs.DescsLayout                                  = D3D12_ELEMENTS_LAYOUT_ARRAY;
-  d3d12BuildDescription.Inputs.Flags                                        = d3d12BuildFlags;
-  d3d12BuildDescription.Inputs.NumDescs                                     = description.m_uiInstanceCount;
-  d3d12BuildDescription.Inputs.InstanceDescs                                = pInstanceBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiInstanceBufferOffset;
-  d3d12BuildDescription.SourceAccelerationStructureData                     = description.m_bUpdate ? pTopLevelASD3D12->GetD3D12GPUVirtualAddress() : 0ULL;
-  d3d12BuildDescription.DestAccelerationStructureData                       = pTopLevelASD3D12->GetD3D12GPUVirtualAddress();
-  d3d12BuildDescription.ScratchAccelerationStructureData                    = pScratchBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiScratchBufferOffset;
+  d3d12BuildDescription.Inputs.Type                                        = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+  d3d12BuildDescription.Inputs.DescsLayout                                 = D3D12_ELEMENTS_LAYOUT_ARRAY;
+  d3d12BuildDescription.Inputs.Flags                                       = d3d12BuildFlags;
+  d3d12BuildDescription.Inputs.NumDescs                                    = description.m_uiInstanceCount;
+  d3d12BuildDescription.Inputs.InstanceDescs                               = pInstanceBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiInstanceBufferOffset;
+  d3d12BuildDescription.SourceAccelerationStructureData                    = description.m_bUpdate ? pTopLevelASD3D12->GetD3D12GPUVirtualAddress() : 0ULL;
+  d3d12BuildDescription.DestAccelerationStructureData                      = pTopLevelASD3D12->GetD3D12GPUVirtualAddress();
+  d3d12BuildDescription.ScratchAccelerationStructureData                   = pScratchBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiScratchBufferOffset;
 
   pD3D12CommandList4->BuildRaytracingAccelerationStructure(&d3d12BuildDescription, 0U, nullptr);
 
@@ -736,8 +736,8 @@ void xiiGALCommandListD3D12::WriteBLASCompactedSizePlatform(const xiiGALWriteBLA
   }
 
   D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC postBuildDescription = {};
-  postBuildDescription.DestBuffer                                                    = d3d12DestinationAddress;
-  postBuildDescription.InfoType                                                      = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE;
+  postBuildDescription.DestBuffer                                                  = d3d12DestinationAddress;
+  postBuildDescription.InfoType                                                    = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE;
 
   pD3D12CommandList4->EmitRaytracingAccelerationStructurePostbuildInfo(&postBuildDescription, 1U, &d3d12SourceAddress);
 }
@@ -747,7 +747,7 @@ void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLA
   if (m_pD3D12CommandList == nullptr)
     return;
 
-  xiiGALTopLevelASD3D12* pTopLevelASD3D12       = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pTopLevelAS);
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12        = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pTopLevelAS);
   xiiGALBufferD3D12*     pDestinationBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pDestinationBuffer);
   if (pTopLevelASD3D12 == nullptr || pDestinationBufferD3D12 == nullptr)
   {
@@ -791,8 +791,8 @@ void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLA
   }
 
   D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC postBuildDescription = {};
-  postBuildDescription.DestBuffer                                                    = d3d12DestinationAddress;
-  postBuildDescription.InfoType                                                      = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE;
+  postBuildDescription.DestBuffer                                                  = d3d12DestinationAddress;
+  postBuildDescription.InfoType                                                    = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE;
 
   pD3D12CommandList4->EmitRaytracingAccelerationStructurePostbuildInfo(&postBuildDescription, 1U, &d3d12SourceAddress);
 }
@@ -867,7 +867,7 @@ void xiiGALCommandListD3D12::EndQueryPlatform(xiiGALQuery* pQuery)
   if (!pQueryD3D12->OnEndQuery(this))
     return;
 
-  const xiiGALQueryType::Enum queryType = pQueryD3D12->GetDescription().m_Type;
+  const xiiGALQueryType::Enum queryType       = pQueryD3D12->GetDescription().m_Type;
   xiiGALQueryPoolD3D12*       pQueryPoolD3D12 = pQueryD3D12->GetQueryPoolD3D12();
   if (pQueryPoolD3D12 == nullptr)
   {

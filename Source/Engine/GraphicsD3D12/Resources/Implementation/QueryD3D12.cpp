@@ -78,7 +78,7 @@ bool xiiGALQueryD3D12::OnEndQuery(xiiGALCommandListD3D12* pCommandListD3D12)
 
   XII_ASSERT_DEV(m_pQueryPoolD3D12 != nullptr, "");
 
-  xiiSharedPtr<xiiGALDeviceD3D12>            pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiSharedPtr<xiiGALDeviceD3D12>            pDeviceD3D12           = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   const xiiGALCommandListCreationDescription commandListDescription = pCommandListD3D12->GetDescription();
   xiiGALCommandQueueD3D12*                   pCommandQueueD3D12     = xiiDynamicCast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(commandListDescription.m_QueueFlags));
   if (pCommandQueueD3D12 == nullptr)
@@ -101,8 +101,8 @@ bool xiiGALQueryD3D12::AllocateQueries()
   XII_ASSERT_DEV(m_pCommandList != nullptr, "");
 
   const xiiGALCommandListCreationDescription commandListDescription = m_pCommandList->GetDescription();
-  m_QueryQueueFlags                                               = commandListDescription.m_QueueFlags;
-  m_pQueryPoolD3D12                                               = pDeviceD3D12->GetCommandQueueQueryPool(m_QueryQueueFlags);
+  m_QueryQueueFlags                                                 = commandListDescription.m_QueueFlags;
+  m_pQueryPoolD3D12                                                 = pDeviceD3D12->GetCommandQueueQueryPool(m_QueryQueueFlags);
   if (m_pQueryPoolD3D12 == nullptr)
   {
     xiiLog::Error("Failed to allocate D3D12 query of type '{}': query pool is unavailable for queue flags {}.", GetQueryTypeLogValue(m_Description.m_Type), xiiArgEnum(m_QueryQueueFlags));
@@ -153,7 +153,7 @@ void xiiGALQueryD3D12::DiscardQueries()
     uiQueryPoolIndex = xiiInvalidIndex;
   }
 
-  m_pQueryPoolD3D12     = nullptr;
+  m_pQueryPoolD3D12      = nullptr;
   m_uiQueryEndFenceValue = xiiInvalidIndex;
   m_QueryQueueFlags      = xiiGALCommandQueueFlags::None;
 }
@@ -216,7 +216,7 @@ bool xiiGALQueryD3D12::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInva
       xiiUInt64 uiSampleCount = 0ULL;
       if (ReadbackQueryData(0U, &uiSampleCount, sizeof(uiSampleCount)))
       {
-        auto& queryData          = *reinterpret_cast<xiiGALQueryDataOcclusion*>(pData);
+        auto& queryData           = *reinterpret_cast<xiiGALQueryDataOcclusion*>(pData);
         queryData.m_uiSampleCount = uiSampleCount;
         bIsDataAvailable          = true;
       }
@@ -228,7 +228,7 @@ bool xiiGALQueryD3D12::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInva
       xiiUInt64 uiAnySamplesPassed = 0ULL;
       if (ReadbackQueryData(0U, &uiAnySamplesPassed, sizeof(uiAnySamplesPassed)))
       {
-        auto& queryData              = *reinterpret_cast<xiiGALQueryDataBinaryOcclusion*>(pData);
+        auto& queryData               = *reinterpret_cast<xiiGALQueryDataBinaryOcclusion*>(pData);
         queryData.m_bAnySamplesPassed = uiAnySamplesPassed != 0ULL;
         bIsDataAvailable              = true;
       }
@@ -240,8 +240,8 @@ bool xiiGALQueryD3D12::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInva
       xiiUInt64 uiCounter = 0ULL;
       if (ReadbackQueryData(0U, &uiCounter, sizeof(uiCounter)))
       {
-        auto& queryData       = *reinterpret_cast<xiiGALQueryDataTimestamp*>(pData);
-        queryData.m_uiCounter = uiCounter;
+        auto& queryData         = *reinterpret_cast<xiiGALQueryDataTimestamp*>(pData);
+        queryData.m_uiCounter   = uiCounter;
         queryData.m_uiFrequency = m_pQueryPoolD3D12->GetCounterFrequency();
         bIsDataAvailable        = true;
       }

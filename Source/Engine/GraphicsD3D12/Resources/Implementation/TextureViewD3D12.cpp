@@ -360,7 +360,7 @@ xiiGALTextureViewD3D12::~xiiGALTextureViewD3D12() = default;
 
 xiiResult xiiGALTextureViewD3D12::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiSharedPtr<xiiGALDeviceD3D12>  pDeviceD3D12  = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiSharedPtr<xiiGALTextureD3D12> pTextureD3D12 = m_pTexture.Downcast<xiiGALTextureD3D12>();
   if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
   {

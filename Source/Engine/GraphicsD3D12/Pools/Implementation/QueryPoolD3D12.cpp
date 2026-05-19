@@ -347,9 +347,9 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::Discard(xiiUInt32 uiIndex, xiiU
     }
   }
 
-  StaleQuery& staleQuery      = m_StaleQueries.ExpandAndGetRef();
-  staleQuery.m_uiIndex        = uiIndex;
-  staleQuery.m_uiFenceValue   = uiFenceValue;
+  StaleQuery& staleQuery    = m_StaleQueries.ExpandAndGetRef();
+  staleQuery.m_uiIndex      = uiIndex;
+  staleQuery.m_uiFenceValue = uiFenceValue;
 }
 
 xiiUInt32 xiiGALQueryPoolD3D12::QueryPoolInformation::ResetStaleQueries(xiiUInt64 uiCompletedFenceValue)

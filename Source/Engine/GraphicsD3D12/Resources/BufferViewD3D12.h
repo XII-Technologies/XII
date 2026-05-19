@@ -43,8 +43,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  ViewMetadata                 m_ViewMetadata;
-  ID3D12DescriptorHeap*        m_pDescriptorHeap     = nullptr;
-  D3D12_CPU_DESCRIPTOR_HANDLE  m_CPUDescriptorHandle = {};
-  D3D12_GPU_DESCRIPTOR_HANDLE  m_GPUDescriptorHandle = {};
+  ViewMetadata                m_ViewMetadata;
+  ID3D12DescriptorHeap*       m_pDescriptorHeap     = nullptr;
+  D3D12_CPU_DESCRIPTOR_HANDLE m_CPUDescriptorHandle = {};
+  D3D12_GPU_DESCRIPTOR_HANDLE m_GPUDescriptorHandle = {};
 };

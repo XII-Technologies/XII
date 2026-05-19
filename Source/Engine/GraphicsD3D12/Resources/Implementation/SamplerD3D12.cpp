@@ -63,7 +63,7 @@ xiiResult xiiGALSamplerD3D12::InitPlatform()
     return XII_FAILURE;
   }
 
-  m_pDescriptorHeap    = descriptorAllocation.m_pDescriptorHeap;
+  m_pDescriptorHeap     = descriptorAllocation.m_pDescriptorHeap;
   m_CPUDescriptorHandle = descriptorAllocation.m_CPUHandle;
   m_GPUDescriptorHandle = descriptorAllocation.m_GPUHandle;
 

@@ -114,15 +114,15 @@ xiiResult xiiGALBufferViewD3D12::InitPlatform()
   {
     D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceView = {};
     shaderResourceView.ViewDimension                   = D3D12_SRV_DIMENSION_BUFFER;
-    shaderResourceView.Shader4ComponentMapping        = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    shaderResourceView.Buffer.FirstElement            = m_ViewMetadata.m_uiFirstElement;
-    shaderResourceView.Buffer.NumElements             = m_ViewMetadata.m_uiElementCount;
-    shaderResourceView.Buffer.StructureByteStride     = m_ViewMetadata.m_uiStructureByteStride;
-    shaderResourceView.Buffer.Flags                   = m_ViewMetadata.m_bRawView ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
+    shaderResourceView.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    shaderResourceView.Buffer.FirstElement             = m_ViewMetadata.m_uiFirstElement;
+    shaderResourceView.Buffer.NumElements              = m_ViewMetadata.m_uiElementCount;
+    shaderResourceView.Buffer.StructureByteStride      = m_ViewMetadata.m_uiStructureByteStride;
+    shaderResourceView.Buffer.Flags                    = m_ViewMetadata.m_bRawView ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
 
     if (m_ViewMetadata.m_bRawView)
     {
-      shaderResourceView.Format                      = DXGI_FORMAT_R32_TYPELESS;
+      shaderResourceView.Format                     = DXGI_FORMAT_R32_TYPELESS;
       shaderResourceView.Buffer.StructureByteStride = 0U;
     }
     else if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)

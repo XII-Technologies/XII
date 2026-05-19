@@ -30,7 +30,7 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  ID3D12Resource*    m_pD3D12Resource      = nullptr;
-  xiiD3D12Allocation m_ResourceAllocation  = nullptr;
+  ID3D12Resource*    m_pD3D12Resource              = nullptr;
+  xiiD3D12Allocation m_ResourceAllocation          = nullptr;
   xiiUInt64          m_uiAccelerationStructureSize = 0U;
 };

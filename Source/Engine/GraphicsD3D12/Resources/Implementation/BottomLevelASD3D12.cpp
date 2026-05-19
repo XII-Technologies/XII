@@ -40,8 +40,8 @@ xiiGALBottomLevelASD3D12::~xiiGALBottomLevelASD3D12()
     }
   }
 
-  m_pD3D12Resource      = nullptr;
-  m_ResourceAllocation  = nullptr;
+  m_pD3D12Resource              = nullptr;
+  m_ResourceAllocation          = nullptr;
   m_uiAccelerationStructureSize = 0U;
 }
 
@@ -73,7 +73,7 @@ xiiResult xiiGALBottomLevelASD3D12::InitPlatform()
   if (uiAccelerationStructureSize == 0U)
   {
     ID3D12Device5* pD3D12Device5 = nullptr;
-    HRESULT hResult = pDeviceD3D12->GetD3D12Device()->QueryInterface(IID_PPV_ARGS(&pD3D12Device5));
+    HRESULT        hResult       = pDeviceD3D12->GetD3D12Device()->QueryInterface(IID_PPV_ARGS(&pD3D12Device5));
     if (FAILED(hResult) || pD3D12Device5 == nullptr)
     {
       xiiLog::Error("Failed to create D3D12 BLAS '{}': ID3D12Device5 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -90,17 +90,17 @@ xiiResult xiiGALBottomLevelASD3D12::InitPlatform()
 
     for (const xiiGALBLASTriangleDescription& triangle : m_Description.m_Triangles)
     {
-      D3D12_RAYTRACING_GEOMETRY_DESC geometryDescription        = {};
-      geometryDescription.Type                                  = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-      geometryDescription.Flags                                 = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
-      geometryDescription.Triangles.Transform3x4                = 0U;
-      geometryDescription.Triangles.IndexFormat                 = xiiD3D12TypeConversions::GetBLASIndexFormat(triangle.m_IndexType);
-      geometryDescription.Triangles.VertexFormat                = xiiD3D12TypeConversions::GetBLASTriangleVertexFormat(triangle);
-      geometryDescription.Triangles.IndexCount                  = triangle.m_IndexType == xiiGALValueType::Undefined ? 0U : triangle.m_uiMaxPrimitiveCount * 3U;
-      geometryDescription.Triangles.VertexCount                 = triangle.m_uiMaxVertexCount;
-      geometryDescription.Triangles.IndexBuffer                 = 0U;
-      geometryDescription.Triangles.VertexBuffer.StartAddress   = 0U;
-      geometryDescription.Triangles.VertexBuffer.StrideInBytes  = xiiD3D12TypeConversions::GetBLASTriangleVertexStride(triangle);
+      D3D12_RAYTRACING_GEOMETRY_DESC geometryDescription       = {};
+      geometryDescription.Type                                 = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+      geometryDescription.Flags                                = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+      geometryDescription.Triangles.Transform3x4               = 0U;
+      geometryDescription.Triangles.IndexFormat                = xiiD3D12TypeConversions::GetBLASIndexFormat(triangle.m_IndexType);
+      geometryDescription.Triangles.VertexFormat               = xiiD3D12TypeConversions::GetBLASTriangleVertexFormat(triangle);
+      geometryDescription.Triangles.IndexCount                 = triangle.m_IndexType == xiiGALValueType::Undefined ? 0U : triangle.m_uiMaxPrimitiveCount * 3U;
+      geometryDescription.Triangles.VertexCount                = triangle.m_uiMaxVertexCount;
+      geometryDescription.Triangles.IndexBuffer                = 0U;
+      geometryDescription.Triangles.VertexBuffer.StartAddress  = 0U;
+      geometryDescription.Triangles.VertexBuffer.StrideInBytes = xiiD3D12TypeConversions::GetBLASTriangleVertexStride(triangle);
 
       if (geometryDescription.Triangles.VertexFormat == DXGI_FORMAT_UNKNOWN || geometryDescription.Triangles.VertexBuffer.StrideInBytes == 0U)
       {
@@ -116,9 +116,9 @@ xiiResult xiiGALBottomLevelASD3D12::InitPlatform()
       D3D12_RAYTRACING_GEOMETRY_DESC geometryDescription = {};
       geometryDescription.Type                           = D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS;
       geometryDescription.Flags                          = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
-      geometryDescription.AABBs.AABBCount               = boundingBox.m_uiMaxBoxCount;
-      geometryDescription.AABBs.AABBs.StartAddress      = 0U;
-      geometryDescription.AABBs.AABBs.StrideInBytes     = sizeof(float) * 6U;
+      geometryDescription.AABBs.AABBCount                = boundingBox.m_uiMaxBoxCount;
+      geometryDescription.AABBs.AABBs.StartAddress       = 0U;
+      geometryDescription.AABBs.AABBs.StrideInBytes      = sizeof(float) * 6U;
 
       d3d12Geometries.push_back(geometryDescription);
     }
@@ -188,7 +188,7 @@ void xiiGALBottomLevelASD3D12::SetDebugNamePlatform(xiiStringView sName) const
   xiiStringBuilder sResourceName;
   sResourceName.SetFormat("{} (BLAS Buffer)", sName);
 
-  const char* szName         = sResourceName.GetData();
+  const char*     szName     = sResourceName.GetData();
   const xiiUInt32 uiNameSize = static_cast<xiiUInt32>(sResourceName.GetElementCount());
 
   if (FAILED(m_pD3D12Resource->SetPrivateData(WKPDID_D3DDebugObjectName, uiNameSize, szName)))

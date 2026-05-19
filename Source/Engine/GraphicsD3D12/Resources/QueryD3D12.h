@@ -46,9 +46,9 @@ private:
 
   [[nodiscard]] bool ReadbackQueryData(xiiUInt32 uiQueryID, void* pDestinationData, xiiUInt32 uiDataSize) const;
 
-  xiiStaticArray<xiiUInt32, 2U> m_QueryPoolIndices;
-  xiiUInt64                     m_uiQueryEndFenceValue = xiiInvalidIndex;
-  xiiBitflags<xiiGALCommandQueueFlags> m_QueryQueueFlags = xiiGALCommandQueueFlags::None;
+  xiiStaticArray<xiiUInt32, 2U>        m_QueryPoolIndices;
+  xiiUInt64                            m_uiQueryEndFenceValue = xiiInvalidIndex;
+  xiiBitflags<xiiGALCommandQueueFlags> m_QueryQueueFlags      = xiiGALCommandQueueFlags::None;
 
   xiiGALQueryPoolD3D12* m_pQueryPoolD3D12 = nullptr;
 };

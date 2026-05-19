@@ -66,7 +66,7 @@ xiiResult xiiGALFenceD3D12::InitPlatform()
     return XII_FAILURE;
   }
 
-  m_bFromFencePool = true;
+  m_bFromFencePool      = true;
   const HRESULT hResult = m_pD3D12Fence->Signal(0U);
   if (FAILED(hResult))
   {
