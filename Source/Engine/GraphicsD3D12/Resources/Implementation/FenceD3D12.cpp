@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
+#include <GraphicsD3D12/Pools/FencePoolD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 
 xiiGALFenceD3D12::xiiGALFenceD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALFenceCreationDescription& creationDescription) :
@@ -15,7 +16,13 @@ xiiGALFenceD3D12::~xiiGALFenceD3D12()
   if (m_pD3D12Fence != nullptr)
   {
     xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-    if (pDeviceD3D12 != nullptr)
+    if (m_bFromFencePool && pDeviceD3D12 != nullptr && pDeviceD3D12->GetD3D12FencePool() != nullptr)
+    {
+      // Reset pooled fence value to a predictable baseline before reusing.
+      m_pD3D12Fence->Signal(0U);
+      pDeviceD3D12->GetD3D12FencePool()->ReclaimFence(m_pD3D12Fence);
+    }
+    else if (pDeviceD3D12 != nullptr)
     {
       IUnknown* pObject = m_pD3D12Fence;
       pDeviceD3D12->SafeReleaseDeviceObject(pObject);
@@ -26,6 +33,7 @@ xiiGALFenceD3D12::~xiiGALFenceD3D12()
     }
 
     m_pD3D12Fence = nullptr;
+    m_bFromFencePool = false;
   }
 
   if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
@@ -44,8 +52,26 @@ xiiResult xiiGALFenceD3D12::InitPlatform()
     return XII_FAILURE;
   }
 
-  D3D12_FENCE_FLAGS fenceFlags = D3D12_FENCE_FLAG_SHARED;
-  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateFence(0U, fenceFlags, IID_PPV_ARGS(&m_pD3D12Fence)));
+  xiiGALFencePoolD3D12* pFencePoolD3D12 = pDeviceD3D12->GetD3D12FencePool();
+  if (pFencePoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to create D3D12 fence '{}': fence pool is unavailable.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  m_pD3D12Fence = pFencePoolD3D12->RequestFence();
+  if (m_pD3D12Fence == nullptr)
+  {
+    xiiLog::Error("Failed to create D3D12 fence '{}': fence pool did not provide a fence.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  m_bFromFencePool = true;
+  const HRESULT hResult = m_pD3D12Fence->Signal(0U);
+  if (FAILED(hResult))
+  {
+    xiiLog::Warning("Failed to reset pooled D3D12 fence '{}' to zero during initialization: {}.", GetDebugName(), xiiHRESULTtoString(hResult));
+  }
 
   return XII_SUCCESS;
 }
