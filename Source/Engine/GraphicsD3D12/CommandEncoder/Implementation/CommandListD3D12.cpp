@@ -8,7 +8,9 @@
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
 #include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
+#include <GraphicsD3D12/Pools/DynamicBufferPoolD3D12.h>
 #include <GraphicsD3D12/Pools/QueryPoolD3D12.h>
+#include <GraphicsD3D12/Pools/StagingBufferPoolD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 #include <GraphicsD3D12/Resources/FramebufferD3D12.h>
@@ -24,21 +26,6 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-namespace
-{
-  D3D12_COMMAND_LIST_TYPE GetCommandListType(xiiBitflags<xiiGALCommandQueueFlags> queueFlags)
-  {
-    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Graphics))
-      return D3D12_COMMAND_LIST_TYPE_DIRECT;
-    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Compute))
-      return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-    if (queueFlags.IsSet(xiiGALCommandQueueFlags::Transfer))
-      return D3D12_COMMAND_LIST_TYPE_COPY;
-
-    return D3D12_COMMAND_LIST_TYPE_DIRECT;
-  }
-} // namespace
-
 xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(std::move(pDeviceD3D12), creationDescription)
 {
@@ -47,31 +34,74 @@ xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> p
 xiiGALCommandListD3D12::~xiiGALCommandListD3D12()
 {
   Reset();
-
-  XII_GAL_D3D12_RELEASE(m_pD3D12CommandList);
-  XII_GAL_D3D12_RELEASE(m_pD3D12CommandAllocator);
 }
 
 xiiResult xiiGALCommandListD3D12::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12    = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  const D3D12_COMMAND_LIST_TYPE   commandListType = GetCommandListType(m_Description.m_QueueFlags);
-
-  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandAllocator(commandListType, IID_PPV_ARGS(&m_pD3D12CommandAllocator)));
-  XII_HRESULT_TO_FAILURE_LOG(pDeviceD3D12->GetD3D12Device()->CreateCommandList(0U, commandListType, m_pD3D12CommandAllocator, nullptr, IID_PPV_ARGS(&m_pD3D12CommandList)));
-  XII_HRESULT_TO_FAILURE_LOG(m_pD3D12CommandList->Close());
-
   return XII_SUCCESS;
 }
 
 void xiiGALCommandListD3D12::BeginPlatform()
 {
-  if (m_pD3D12CommandList == nullptr || m_pD3D12CommandAllocator == nullptr)
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiGALCommandListPoolD3D12*     pCommandListPoolD3D12 = pDeviceD3D12->GetCommandListPool(m_Description.m_QueueFlags);
+  if (pCommandListPoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to begin D3D12 command list '{}': command-list pool is unavailable for queue flags {}.", GetDebugName(), xiiArgEnum(m_Description.m_QueueFlags));
     return;
+  }
 
-  m_pD3D12CommandAllocator->Reset();
-  m_pD3D12CommandList->Reset(m_pD3D12CommandAllocator, nullptr);
+  m_CommandListData                            = {};
+  m_CommandListData.m_pDynamicBufferPoolD3D12 = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALDynamicBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing);
+  m_CommandListData.m_pUploadStagingBufferPool = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALStagingBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::ShaderResource);
+  m_CommandListData.m_pDescriptorSetPoolD3D12  = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALDescriptorSetPoolD3D12, pDeviceD3D12.Borrow(), 1024U);
 
+  if (m_Description.m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
+  {
+    m_CommandListAllocation = pCommandListPoolD3D12->AllocateSecondaryCommandList();
+  }
+  else
+  {
+    m_CommandListAllocation = pCommandListPoolD3D12->AllocatePrimaryCommandList();
+  }
+
+  m_pD3D12CommandAllocator = m_CommandListAllocation.GetCommandAllocator();
+  m_pD3D12CommandList      = m_CommandListAllocation.GetCommandList();
+
+  if (m_pD3D12CommandAllocator == nullptr || m_pD3D12CommandList == nullptr)
+  {
+    xiiLog::Error("Failed to begin D3D12 command list '{}': command allocator/list allocation failed.", GetDebugName());
+    m_CommandListAllocation = {};
+    m_CommandListData       = {};
+    return;
+  }
+
+  if (FAILED(m_pD3D12CommandAllocator->Reset()))
+  {
+    xiiLog::Error("Failed to reset D3D12 command allocator for command list '{}'.", GetDebugName());
+    m_CommandListAllocation = {};
+    m_CommandListData       = {};
+    m_pD3D12CommandAllocator = nullptr;
+    m_pD3D12CommandList      = nullptr;
+    return;
+  }
+
+  if (FAILED(m_pD3D12CommandList->Reset(m_pD3D12CommandAllocator, nullptr)))
+  {
+    xiiLog::Error("Failed to reset D3D12 command list '{}'.", GetDebugName());
+    m_CommandListAllocation = {};
+    m_CommandListData       = {};
+    m_pD3D12CommandAllocator = nullptr;
+    m_pD3D12CommandList      = nullptr;
+    return;
+  }
+
+  if (xiiGALQueryPoolD3D12* pQueryPoolD3D12 = pDeviceD3D12->GetCommandQueueQueryPool(m_Description.m_QueueFlags))
+  {
+    pQueryPoolD3D12->ResetStaleQueries();
+  }
+
+  m_uiSubmittedFenceValue = 0ULL;
   m_RecordingState = RecordingState::Recording;
 }
 
@@ -81,6 +111,8 @@ void xiiGALCommandListD3D12::EndPlatform()
   {
     m_pD3D12CommandList->Close();
   }
+
+  m_RecordingState = RecordingState::Ended;
 }
 
 void xiiGALCommandListD3D12::ResetPlatform()
@@ -90,6 +122,27 @@ void xiiGALCommandListD3D12::ResetPlatform()
     m_pD3D12CommandList->Close();
   }
 
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiGALCommandListPoolD3D12*     pCommandListPoolD3D12 = pDeviceD3D12->GetCommandListPool(m_Description.m_QueueFlags);
+
+  if (m_CommandListAllocation.GetCommandList() != nullptr)
+  {
+    if (m_uiSubmittedFenceValue != 0ULL && pCommandListPoolD3D12 != nullptr)
+    {
+      pCommandListPoolD3D12->RecycleAfterSubmit(std::move(m_CommandListAllocation), std::move(m_CommandListData), m_uiSubmittedFenceValue);
+    }
+    else
+    {
+      m_CommandListData       = {};
+      m_CommandListAllocation = {};
+    }
+  }
+
+  m_CommandListAllocation  = {};
+  m_pD3D12CommandAllocator = nullptr;
+  m_pD3D12CommandList      = nullptr;
+  m_CommandListData        = {};
+  m_uiSubmittedFenceValue  = 0ULL;
   m_RecordingState = RecordingState::Reset;
 }
 
@@ -114,6 +167,8 @@ void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommand
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {
   XII_IGNORE_UNUSED(pPipelineState);
+
+  m_CommandListData.m_bPipelineStateModified = true;
 }
 
 void xiiGALCommandListD3D12::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData)
@@ -374,6 +429,7 @@ void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const
 
 void xiiGALCommandListD3D12::InvalidateStatePlatform()
 {
+  m_CommandListData.Invalidate();
 }
 
 void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const

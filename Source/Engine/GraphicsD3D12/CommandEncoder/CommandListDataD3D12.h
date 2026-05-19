@@ -51,6 +51,10 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
     m_AttachmentClearValues    = std::move(other.m_AttachmentClearValues);
     m_bPipelineStateModified   = other.m_bPipelineStateModified;
     m_ResourceSets             = std::move(other.m_ResourceSets);
+    m_bDescriptorsModified     = other.m_bDescriptorsModified;
+    m_pDynamicBufferPoolD3D12  = std::move(other.m_pDynamicBufferPoolD3D12);
+    m_pUploadStagingBufferPool = std::move(other.m_pUploadStagingBufferPool);
+    m_pDescriptorSetPoolD3D12  = std::move(other.m_pDescriptorSetPoolD3D12);
     m_uiActiveQueriesCounter   = other.m_uiActiveQueriesCounter;
   }
 
@@ -63,6 +67,10 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
     m_AttachmentClearValues    = std::move(other.m_AttachmentClearValues);
     m_bPipelineStateModified   = other.m_bPipelineStateModified;
     m_ResourceSets             = std::move(other.m_ResourceSets);
+    m_bDescriptorsModified     = other.m_bDescriptorsModified;
+    m_pDynamicBufferPoolD3D12  = std::move(other.m_pDynamicBufferPoolD3D12);
+    m_pUploadStagingBufferPool = std::move(other.m_pUploadStagingBufferPool);
+    m_pDescriptorSetPoolD3D12  = std::move(other.m_pDescriptorSetPoolD3D12);
 
     m_uiActiveQueriesCounter = other.m_uiActiveQueriesCounter;
 
@@ -82,6 +90,7 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
       setBindings.m_pBoundSamplerStates.Clear();
     }
 
+    m_bDescriptorsModified   = false;
     m_bPipelineStateModified = true;
 
     m_pBoundRenderTargets.Clear();
@@ -95,6 +104,19 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
   XII_ALWAYS_INLINE void Reset()
   {
     Invalidate();
+
+    if (m_pDynamicBufferPoolD3D12)
+    {
+      m_pDynamicBufferPoolD3D12->Reset();
+    }
+    if (m_pUploadStagingBufferPool)
+    {
+      m_pUploadStagingBufferPool->Reset();
+    }
+    if (m_pDescriptorSetPoolD3D12)
+    {
+      m_pDescriptorSetPoolD3D12->Reset();
+    }
   }
 
   xiiHybridArray<xiiSharedPtr<xiiGALTextureViewD3D12>, 2U> m_pBoundRenderTargets;
@@ -105,8 +127,13 @@ struct XII_GRAPHICSD3D12_DLL xiiGALCommandListDataD3D12
   xiiHybridArray<D3D12_CLEAR_VALUE, 2U> m_AttachmentClearValues;
 
   bool m_bPipelineStateModified = false;
+  bool m_bDescriptorsModified   = false;
 
   xiiHybridArray<ResourceSetBindings, 1U> m_ResourceSets;
+
+  xiiUniquePtr<xiiGALDynamicBufferPoolD3D12> m_pDynamicBufferPoolD3D12;
+  xiiUniquePtr<xiiGALStagingBufferPoolD3D12> m_pUploadStagingBufferPool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolD3D12> m_pDescriptorSetPoolD3D12;
 
   xiiUInt32 m_uiActiveQueriesCounter = 0U;
 };
