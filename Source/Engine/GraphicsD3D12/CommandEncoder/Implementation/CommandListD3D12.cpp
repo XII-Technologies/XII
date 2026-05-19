@@ -1451,6 +1451,45 @@ void xiiGALCommandListD3D12::DrawMeshPlatform(const xiiGALDrawMeshDescription& d
 
 void xiiGALCommandListD3D12::DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pBuffer == nullptr || description.m_uiCommandCount == 0U)
+    return;
+
+  PrepareForDraw();
+
+  xiiGALBufferD3D12* pArgumentBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pBuffer);
+  if (pArgumentBufferD3D12 == nullptr || pArgumentBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_BufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect mesh draw argument buffer", GetDebugName()))
+    return;
+
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH, sizeof(D3D12_DISPATCH_ARGUMENTS));
+  if (pCommandSignature == nullptr)
+  {
+    xiiLog::Error("Failed to issue DrawMeshIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pCommandSignature);
+    });
+
+  ID3D12Resource* pCountBuffer = nullptr;
+  if (description.m_pCounterBuffer != nullptr)
+  {
+    xiiGALBufferD3D12* pCounterBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pCounterBuffer);
+    if (pCounterBufferD3D12 == nullptr || pCounterBufferD3D12->GetD3D12Buffer() == nullptr)
+      return;
+
+    if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pCounterBufferD3D12, pCounterBufferD3D12->GetD3D12Buffer(), description.m_CounterBufferStateTransition, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect mesh draw count buffer", GetDebugName()))
+      return;
+
+    pCountBuffer = pCounterBufferD3D12->GetD3D12Buffer();
+  }
+
+  m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, description.m_uiCommandCount, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiDrawArgumentOffset, pCountBuffer, description.m_uiCounterOffset);
 }
 
 void xiiGALCommandListD3D12::MultiDrawPlatform(const xiiGALMultiDrawDescription& description)
@@ -1596,6 +1635,36 @@ void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription&
 
 void xiiGALCommandListD3D12::TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr || description.m_pShaderBindingTable == nullptr || description.m_pArgumentBuffer == nullptr)
+    return;
+
+  PrepareForRayTracing();
+
+  xiiGALBufferD3D12* pSBTBufferD3D12      = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pShaderBindingTable);
+  xiiGALBufferD3D12* pArgumentBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pArgumentBuffer);
+  if (pSBTBufferD3D12 == nullptr || pArgumentBufferD3D12 == nullptr || pSBTBufferD3D12->GetD3D12Buffer() == nullptr || pArgumentBufferD3D12->GetD3D12Buffer() == nullptr)
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSBTBufferD3D12, pSBTBufferD3D12->GetD3D12Buffer(), description.m_ShaderBindingTableTransitionMode, xiiGALResourceStateFlags::RayTracing, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::RayTracing), "ray tracing SBT buffer", GetDebugName()))
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pArgumentBufferD3D12, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_ArgumentBufferTransitionMode, xiiGALResourceStateFlags::IndirectArgument, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::IndirectArgument), "indirect ray tracing argument buffer", GetDebugName()))
+    return;
+
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  ID3D12CommandSignature* pCommandSignature    = CreateIndirectCommandSignature(pDeviceD3D12->GetD3D12Device(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS, sizeof(D3D12_DISPATCH_RAYS_DESC));
+  if (pCommandSignature == nullptr)
+  {
+    xiiLog::Error("Failed to issue TraceRaysIndirect on D3D12 command list '{}': command signature creation failed.", GetDebugName());
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pCommandSignature);
+    });
+
+  m_pD3D12CommandList->ExecuteIndirect(pCommandSignature, 1U, pArgumentBufferD3D12->GetD3D12Buffer(), description.m_uiArgumentOffset, nullptr, 0U);
 }
 
 void xiiGALCommandListD3D12::UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description)
