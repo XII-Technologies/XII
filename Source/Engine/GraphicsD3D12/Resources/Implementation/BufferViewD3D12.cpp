@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
+#include <GraphicsD3D12/Pools/DescriptorSetPoolD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
@@ -19,6 +20,7 @@ xiiGALBufferViewD3D12::~xiiGALBufferViewD3D12() = default;
 
 xiiResult xiiGALBufferViewD3D12::InitPlatform()
 {
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiSharedPtr<xiiGALBufferD3D12> pBufferD3D12 = m_pBuffer.Downcast<xiiGALBufferD3D12>();
 
   if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
@@ -88,6 +90,82 @@ xiiResult xiiGALBufferViewD3D12::InitPlatform()
     default:
       xiiLog::Error("Failed to initialize D3D12 buffer view '{}': unsupported buffer mode '{}'.", GetDebugName(), xiiArgEnum(bufferDescription.m_Mode));
       return XII_FAILURE;
+  }
+
+  xiiGALDescriptorSetPoolD3D12* pDescriptorPoolD3D12 = pDeviceD3D12->GetResourceDescriptorPool();
+  if (pDescriptorPoolD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to initialize D3D12 buffer view '{}': resource descriptor pool is unavailable.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  const xiiGALDescriptorSetPoolD3D12::DescriptorAllocation descriptorAllocation = pDescriptorPoolD3D12->RequestDescriptorAllocation(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1U);
+  if (descriptorAllocation.m_pDescriptorHeap == nullptr || descriptorAllocation.m_CPUHandle.ptr == 0U)
+  {
+    xiiLog::Error("Failed to initialize D3D12 buffer view '{}': descriptor allocation from pool failed.", GetDebugName());
+    return XII_FAILURE;
+  }
+
+  m_pDescriptorHeap     = descriptorAllocation.m_pDescriptorHeap;
+  m_CPUDescriptorHandle = descriptorAllocation.m_CPUHandle;
+  m_GPUDescriptorHandle = descriptorAllocation.m_GPUHandle;
+
+  if (m_Description.m_ViewType == xiiGALBufferViewType::ShaderResource)
+  {
+    D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceView = {};
+    shaderResourceView.ViewDimension                   = D3D12_SRV_DIMENSION_BUFFER;
+    shaderResourceView.Shader4ComponentMapping        = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    shaderResourceView.Buffer.FirstElement            = m_ViewMetadata.m_uiFirstElement;
+    shaderResourceView.Buffer.NumElements             = m_ViewMetadata.m_uiElementCount;
+    shaderResourceView.Buffer.StructureByteStride     = m_ViewMetadata.m_uiStructureByteStride;
+    shaderResourceView.Buffer.Flags                   = m_ViewMetadata.m_bRawView ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
+
+    if (m_ViewMetadata.m_bRawView)
+    {
+      shaderResourceView.Format                      = DXGI_FORMAT_R32_TYPELESS;
+      shaderResourceView.Buffer.StructureByteStride = 0U;
+    }
+    else if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)
+    {
+      shaderResourceView.Format = DXGI_FORMAT_UNKNOWN;
+    }
+    else
+    {
+      shaderResourceView.Format = xiiD3D12TypeConversions::GetFormat(m_Description.m_Format);
+    }
+
+    pDeviceD3D12->GetD3D12Device()->CreateShaderResourceView(pBufferD3D12->GetD3D12Buffer(), &shaderResourceView, m_CPUDescriptorHandle);
+  }
+  else if (m_Description.m_ViewType == xiiGALBufferViewType::UnorderedAccess)
+  {
+    D3D12_UNORDERED_ACCESS_VIEW_DESC unorderedAccessView = {};
+    unorderedAccessView.ViewDimension                    = D3D12_UAV_DIMENSION_BUFFER;
+    unorderedAccessView.Buffer.FirstElement              = m_ViewMetadata.m_uiFirstElement;
+    unorderedAccessView.Buffer.NumElements               = m_ViewMetadata.m_uiElementCount;
+    unorderedAccessView.Buffer.StructureByteStride       = m_ViewMetadata.m_uiStructureByteStride;
+    unorderedAccessView.Buffer.CounterOffsetInBytes      = 0U;
+    unorderedAccessView.Buffer.Flags                     = m_ViewMetadata.m_bRawView ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
+
+    if (m_ViewMetadata.m_bRawView)
+    {
+      unorderedAccessView.Format                     = DXGI_FORMAT_R32_TYPELESS;
+      unorderedAccessView.Buffer.StructureByteStride = 0U;
+    }
+    else if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)
+    {
+      unorderedAccessView.Format = DXGI_FORMAT_UNKNOWN;
+    }
+    else
+    {
+      unorderedAccessView.Format = xiiD3D12TypeConversions::GetFormat(m_Description.m_Format);
+    }
+
+    pDeviceD3D12->GetD3D12Device()->CreateUnorderedAccessView(pBufferD3D12->GetD3D12Buffer(), nullptr, &unorderedAccessView, m_CPUDescriptorHandle);
+  }
+  else
+  {
+    xiiLog::Error("Failed to initialize D3D12 buffer view '{}': unsupported buffer view type '{}'.", GetDebugName(), xiiArgEnum(m_Description.m_ViewType));
+    return XII_FAILURE;
   }
 
   return XII_SUCCESS;
