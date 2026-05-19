@@ -527,6 +527,74 @@ void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription&
 
 void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pTopLevelAS);
+  xiiGALBufferD3D12*     pInstanceBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pInstanceBuffer);
+  xiiGALBufferD3D12*     pScratchBufferD3D12  = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pScratchBuffer);
+  if (pTopLevelASD3D12 == nullptr || pInstanceBufferD3D12 == nullptr || pScratchBufferD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to build TLAS on D3D12 command list '{}': incompatible TLAS/instance/scratch backend resource types.", GetDebugName());
+    return;
+  }
+
+  ID3D12Resource* pD3D12TLASResource     = pTopLevelASD3D12->GetD3D12Resource();
+  ID3D12Resource* pD3D12InstanceResource = pInstanceBufferD3D12->GetD3D12Buffer();
+  ID3D12Resource* pD3D12ScratchResource  = pScratchBufferD3D12->GetD3D12Buffer();
+  if (pD3D12TLASResource == nullptr || pD3D12InstanceResource == nullptr || pD3D12ScratchResource == nullptr)
+  {
+    xiiLog::Error("Failed to build TLAS on D3D12 command list '{}': TLAS/instance/scratch native resources are unavailable.", GetDebugName());
+    return;
+  }
+
+  ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
+  {
+    xiiLog::Error("Failed to build TLAS on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+    });
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTopLevelASD3D12, pD3D12TLASResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS destination resource", GetDebugName()))
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pInstanceBufferD3D12, pD3D12InstanceResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::ShaderResource, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, "TLAS instance buffer", GetDebugName()))
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pScratchBufferD3D12, pD3D12ScratchResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, "TLAS scratch buffer", GetDebugName()))
+    return;
+
+  xiiBitflags<xiiGALRayTracingBuildASFlags> buildFlags = description.m_BuildFlags.IsAnyFlagSet() ? description.m_BuildFlags : description.m_pTopLevelAS->GetDescription().m_Flags;
+  D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS d3d12BuildFlags = xiiD3D12TypeConversions::GetAccelerationStructureBuildFlags(buildFlags);
+  if (description.m_bUpdate)
+  {
+    d3d12BuildFlags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+  }
+
+  D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC d3d12BuildDescription = {};
+  d3d12BuildDescription.Inputs.Type                                         = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+  d3d12BuildDescription.Inputs.DescsLayout                                  = D3D12_ELEMENTS_LAYOUT_ARRAY;
+  d3d12BuildDescription.Inputs.Flags                                        = d3d12BuildFlags;
+  d3d12BuildDescription.Inputs.NumDescs                                     = description.m_uiInstanceCount;
+  d3d12BuildDescription.Inputs.InstanceDescs                                = pInstanceBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiInstanceBufferOffset;
+  d3d12BuildDescription.SourceAccelerationStructureData                     = description.m_bUpdate ? pTopLevelASD3D12->GetD3D12GPUVirtualAddress() : 0ULL;
+  d3d12BuildDescription.DestAccelerationStructureData                       = pTopLevelASD3D12->GetD3D12GPUVirtualAddress();
+  d3d12BuildDescription.ScratchAccelerationStructureData                    = pScratchBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiScratchBufferOffset;
+
+  pD3D12CommandList4->BuildRaytracingAccelerationStructure(&d3d12BuildDescription, 0U, nullptr);
+
+  D3D12_RESOURCE_BARRIER uavBarriers[2] = {};
+  uavBarriers[0].Type                   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+  uavBarriers[0].UAV.pResource          = pD3D12TLASResource;
+  uavBarriers[1].Type                   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+  uavBarriers[1].UAV.pResource          = pD3D12ScratchResource;
+  m_pD3D12CommandList->ResourceBarrier(2U, uavBarriers);
 }
 
 void xiiGALCommandListD3D12::CopyBLASPlatform(const xiiGALCopyBLASDescription& description)
@@ -576,6 +644,47 @@ void xiiGALCommandListD3D12::CopyBLASPlatform(const xiiGALCopyBLASDescription& d
 
 void xiiGALCommandListD3D12::CopyTLASPlatform(const xiiGALCopyTLASDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALTopLevelASD3D12* pSourceTopLevelASD3D12      = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pSourceTopLevelAS);
+  xiiGALTopLevelASD3D12* pDestinationTopLevelASD3D12 = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pDestinationTopLevelAS);
+  if (pSourceTopLevelASD3D12 == nullptr || pDestinationTopLevelASD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to copy TLAS on D3D12 command list '{}': incompatible source or destination backend type.", GetDebugName());
+    return;
+  }
+
+  ID3D12Resource* pD3D12SourceResource      = pSourceTopLevelASD3D12->GetD3D12Resource();
+  ID3D12Resource* pD3D12DestinationResource = pDestinationTopLevelASD3D12->GetD3D12Resource();
+  if (pD3D12SourceResource == nullptr || pD3D12DestinationResource == nullptr)
+  {
+    xiiLog::Error("Failed to copy TLAS on D3D12 command list '{}': source or destination native resource is unavailable.", GetDebugName());
+    return;
+  }
+
+  ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
+  {
+    xiiLog::Error("Failed to copy TLAS on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+    });
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pSourceTopLevelASD3D12, pD3D12SourceResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS copy source", GetDebugName()))
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationTopLevelASD3D12, pD3D12DestinationResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASWrite, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS copy destination", GetDebugName()))
+    return;
+
+  const D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE d3d12CopyMode = description.m_Mode == xiiGALASCopyMode::Compact ? D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_COMPACT : D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE_CLONE;
+
+  pD3D12CommandList4->CopyRaytracingAccelerationStructure(pDestinationTopLevelASD3D12->GetD3D12GPUVirtualAddress(), pSourceTopLevelASD3D12->GetD3D12GPUVirtualAddress(), d3d12CopyMode);
 }
 
 void xiiGALCommandListD3D12::WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description)
@@ -635,6 +744,57 @@ void xiiGALCommandListD3D12::WriteBLASCompactedSizePlatform(const xiiGALWriteBLA
 
 void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12       = xiiDynamicCast<xiiGALTopLevelASD3D12*>(description.m_pTopLevelAS);
+  xiiGALBufferD3D12*     pDestinationBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(description.m_pDestinationBuffer);
+  if (pTopLevelASD3D12 == nullptr || pDestinationBufferD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to write TLAS compacted size on D3D12 command list '{}': incompatible TLAS/destination backend types.", GetDebugName());
+    return;
+  }
+
+  ID3D12Resource* pD3D12TLASResource              = pTopLevelASD3D12->GetD3D12Resource();
+  ID3D12Resource* pD3D12DestinationBufferResource = pDestinationBufferD3D12->GetD3D12Buffer();
+  if (pD3D12TLASResource == nullptr || pD3D12DestinationBufferResource == nullptr)
+  {
+    xiiLog::Error("Failed to write TLAS compacted size on D3D12 command list '{}': TLAS/destination native resources are unavailable.", GetDebugName());
+    return;
+  }
+
+  ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
+  {
+    xiiLog::Error("Failed to write TLAS compacted size on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pD3D12CommandList4);
+    });
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTopLevelASD3D12, pD3D12TLASResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::BuildASRead, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, "TLAS compacted-size source", GetDebugName()))
+    return;
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDestinationBufferD3D12, pD3D12DestinationBufferResource, description.m_ResourceStateTransitionMode, xiiGALResourceStateFlags::UnorderedAccess, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, "TLAS compacted-size destination buffer", GetDebugName()))
+    return;
+
+  const D3D12_GPU_VIRTUAL_ADDRESS d3d12DestinationAddress = pDestinationBufferD3D12->GetD3D12BufferGPUVirtualAddress() + description.m_uiDestinationBufferOffset;
+  const D3D12_GPU_VIRTUAL_ADDRESS d3d12SourceAddress      = pTopLevelASD3D12->GetD3D12GPUVirtualAddress();
+  if (d3d12DestinationAddress == 0ULL || d3d12SourceAddress == 0ULL)
+  {
+    xiiLog::Error("Failed to write TLAS compacted size on D3D12 command list '{}': invalid source or destination GPU virtual address.", GetDebugName());
+    return;
+  }
+
+  D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC postBuildDescription = {};
+  postBuildDescription.DestBuffer                                                    = d3d12DestinationAddress;
+  postBuildDescription.InfoType                                                      = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE;
+
+  pD3D12CommandList4->EmitRaytracingAccelerationStructurePostbuildInfo(&postBuildDescription, 1U, &d3d12SourceAddress);
 }
 
 void xiiGALCommandListD3D12::BeginQueryPlatform(xiiGALQuery* pQuery)
