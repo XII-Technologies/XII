@@ -8,6 +8,7 @@
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/Shader/ShaderByteCode.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -45,6 +46,9 @@ public:
 
   static D3D12_FILTER               GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter);
   static D3D12_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiGALTextureAddressMode::Enum e);
+  static D3D12_SHADER_VISIBILITY    GetShaderVisibility(xiiBitflags<xiiGALShaderType> shaderStages);
+  static bool                       TryGetDescriptorRangeType(xiiEnum<xiiGALShaderResourceType> resourceType, D3D12_DESCRIPTOR_RANGE_TYPE& out_rangeType);
+  static D3D12_STATIC_BORDER_COLOR  GetStaticBorderColor(const xiiColor& color);
 
   static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiGALQueryType::Enum e);
 
@@ -59,6 +63,7 @@ public:
   static DXGI_FORMAT GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized);
 
   static D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiGALPrimitiveTopology::Enum e);
+  static D3D12_PRIMITIVE_TOPOLOGY_TYPE GetPrimitiveTopologyType(xiiEnum<xiiGALPrimitiveTopology> primitiveTopology);
 
   static D3D12_INPUT_CLASSIFICATION GetElementFrequency(xiiGALInputElementFrequency::Enum e);
 
