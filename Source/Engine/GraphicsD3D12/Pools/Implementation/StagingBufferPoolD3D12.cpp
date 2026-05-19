@@ -141,10 +141,10 @@ xiiGALStagingBufferAllocationD3D12 xiiGALStagingBufferPoolD3D12::Allocate(xiiUIn
     const StagingBufferPage& largeAllocation = m_LargeAllocations.PeekBack();
 
     xiiGALStagingBufferAllocationD3D12 stagingBufferAllocation = {};
-    stagingBufferAllocation.m_pD3D12Buffer   = largeAllocation.m_pBuffer;
-    stagingBufferAllocation.m_Allocation     = largeAllocation.m_Allocation;
-    stagingBufferAllocation.m_uiOffset       = 0U;
-    stagingBufferAllocation.m_pMappedAddress = largeAllocation.m_pMappedAddress;
+    stagingBufferAllocation.m_pD3D12Buffer                     = largeAllocation.m_pBuffer;
+    stagingBufferAllocation.m_Allocation                       = largeAllocation.m_Allocation;
+    stagingBufferAllocation.m_uiOffset                         = 0U;
+    stagingBufferAllocation.m_pMappedAddress                   = largeAllocation.m_pMappedAddress;
     return stagingBufferAllocation;
   }
 
@@ -174,10 +174,10 @@ xiiGALStagingBufferAllocationD3D12 xiiGALStagingBufferPoolD3D12::Allocate(xiiUIn
   const StagingBufferPage& stagingBufferPage = m_StagingBufferPages[uiBufferID];
 
   xiiGALStagingBufferAllocationD3D12 stagingBufferAllocation = {};
-  stagingBufferAllocation.m_pD3D12Buffer   = stagingBufferPage.m_pBuffer;
-  stagingBufferAllocation.m_Allocation     = stagingBufferPage.m_Allocation;
-  stagingBufferAllocation.m_uiOffset       = uiBufferAllocationOffset;
-  stagingBufferAllocation.m_pMappedAddress = xiiMemoryUtils::AddByteOffset(stagingBufferPage.m_pMappedAddress, uiBufferAllocationOffset);
+  stagingBufferAllocation.m_pD3D12Buffer                     = stagingBufferPage.m_pBuffer;
+  stagingBufferAllocation.m_Allocation                       = stagingBufferPage.m_Allocation;
+  stagingBufferAllocation.m_uiOffset                         = uiBufferAllocationOffset;
+  stagingBufferAllocation.m_pMappedAddress                   = xiiMemoryUtils::AddByteOffset(stagingBufferPage.m_pMappedAddress, uiBufferAllocationOffset);
 
   m_uiPageAllocationCounter   = uiBufferID;
   m_uiOffsetAllocationCounter = uiBufferAllocationOffset + uiSize;

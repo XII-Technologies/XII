@@ -61,8 +61,8 @@ namespace
   {
     D3D12_SHADER_RESOURCE_VIEW_DESC& shaderResourceView = inout_viewMetadata.m_ShaderResourceView;
 
-    shaderResourceView = {};
-    shaderResourceView.Format = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
+    shaderResourceView                         = {};
+    shaderResourceView.Format                  = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
     shaderResourceView.Shader4ComponentMapping = xiiD3D12TypeConversions::GetShaderComponentMapping(viewDescription.m_ComponentSwizzle);
 
     const bool bIsMultiSampleTexture = IsMultiSampleTexture(textureDescription);
@@ -70,18 +70,18 @@ namespace
     switch (viewDescription.m_ResourceDimension)
     {
       case xiiGALResourceDimension::Texture1D:
-        shaderResourceView.ViewDimension            = D3D12_SRV_DIMENSION_TEXTURE1D;
-        shaderResourceView.Texture1D.MostDetailedMip = viewDescription.m_uiMostDetailedMip;
-        shaderResourceView.Texture1D.MipLevels      = viewDescription.m_uiMipLevelCount;
+        shaderResourceView.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE1D;
+        shaderResourceView.Texture1D.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+        shaderResourceView.Texture1D.MipLevels           = viewDescription.m_uiMipLevelCount;
         shaderResourceView.Texture1D.ResourceMinLODClamp = 0.0f;
         break;
 
       case xiiGALResourceDimension::Texture1DArray:
-        shaderResourceView.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
-        shaderResourceView.Texture1DArray.MostDetailedMip = viewDescription.m_uiMostDetailedMip;
-        shaderResourceView.Texture1DArray.MipLevels      = viewDescription.m_uiMipLevelCount;
-        shaderResourceView.Texture1DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-        shaderResourceView.Texture1DArray.ArraySize      = viewDescription.m_uiArrayOrDepthSlicesCount;
+        shaderResourceView.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+        shaderResourceView.Texture1DArray.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+        shaderResourceView.Texture1DArray.MipLevels           = viewDescription.m_uiMipLevelCount;
+        shaderResourceView.Texture1DArray.FirstArraySlice     = viewDescription.m_uiFirstArrayOrDepthSlice;
+        shaderResourceView.Texture1DArray.ArraySize           = viewDescription.m_uiArrayOrDepthSlicesCount;
         shaderResourceView.Texture1DArray.ResourceMinLODClamp = 0.0f;
         break;
 
@@ -92,10 +92,10 @@ namespace
         }
         else
         {
-          shaderResourceView.ViewDimension                = D3D12_SRV_DIMENSION_TEXTURE2D;
-          shaderResourceView.Texture2D.MostDetailedMip   = viewDescription.m_uiMostDetailedMip;
-          shaderResourceView.Texture2D.MipLevels         = viewDescription.m_uiMipLevelCount;
-          shaderResourceView.Texture2D.PlaneSlice        = 0U;
+          shaderResourceView.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+          shaderResourceView.Texture2D.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+          shaderResourceView.Texture2D.MipLevels           = viewDescription.m_uiMipLevelCount;
+          shaderResourceView.Texture2D.PlaneSlice          = 0U;
           shaderResourceView.Texture2D.ResourceMinLODClamp = 0.0f;
         }
         break;
@@ -103,42 +103,42 @@ namespace
       case xiiGALResourceDimension::Texture2DArray:
         if (bIsMultiSampleTexture)
         {
-          shaderResourceView.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+          shaderResourceView.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
           shaderResourceView.Texture2DMSArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-          shaderResourceView.Texture2DMSArray.ArraySize      = viewDescription.m_uiArrayOrDepthSlicesCount;
+          shaderResourceView.Texture2DMSArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         }
         else
         {
-          shaderResourceView.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-          shaderResourceView.Texture2DArray.MostDetailedMip  = viewDescription.m_uiMostDetailedMip;
-          shaderResourceView.Texture2DArray.MipLevels        = viewDescription.m_uiMipLevelCount;
-          shaderResourceView.Texture2DArray.FirstArraySlice  = viewDescription.m_uiFirstArrayOrDepthSlice;
-          shaderResourceView.Texture2DArray.ArraySize        = viewDescription.m_uiArrayOrDepthSlicesCount;
-          shaderResourceView.Texture2DArray.PlaneSlice       = 0U;
+          shaderResourceView.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+          shaderResourceView.Texture2DArray.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+          shaderResourceView.Texture2DArray.MipLevels           = viewDescription.m_uiMipLevelCount;
+          shaderResourceView.Texture2DArray.FirstArraySlice     = viewDescription.m_uiFirstArrayOrDepthSlice;
+          shaderResourceView.Texture2DArray.ArraySize           = viewDescription.m_uiArrayOrDepthSlicesCount;
+          shaderResourceView.Texture2DArray.PlaneSlice          = 0U;
           shaderResourceView.Texture2DArray.ResourceMinLODClamp = 0.0f;
         }
         break;
 
       case xiiGALResourceDimension::Texture3D:
-        shaderResourceView.ViewDimension               = D3D12_SRV_DIMENSION_TEXTURE3D;
-        shaderResourceView.Texture3D.MostDetailedMip  = viewDescription.m_uiMostDetailedMip;
-        shaderResourceView.Texture3D.MipLevels        = viewDescription.m_uiMipLevelCount;
+        shaderResourceView.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE3D;
+        shaderResourceView.Texture3D.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+        shaderResourceView.Texture3D.MipLevels           = viewDescription.m_uiMipLevelCount;
         shaderResourceView.Texture3D.ResourceMinLODClamp = 0.0f;
         break;
 
       case xiiGALResourceDimension::TextureCube:
-        shaderResourceView.ViewDimension               = D3D12_SRV_DIMENSION_TEXTURECUBE;
-        shaderResourceView.TextureCube.MostDetailedMip = viewDescription.m_uiMostDetailedMip;
-        shaderResourceView.TextureCube.MipLevels      = viewDescription.m_uiMipLevelCount;
+        shaderResourceView.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        shaderResourceView.TextureCube.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+        shaderResourceView.TextureCube.MipLevels           = viewDescription.m_uiMipLevelCount;
         shaderResourceView.TextureCube.ResourceMinLODClamp = 0.0f;
         break;
 
       case xiiGALResourceDimension::TextureCubeArray:
-        shaderResourceView.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
-        shaderResourceView.TextureCubeArray.MostDetailedMip = viewDescription.m_uiMostDetailedMip;
-        shaderResourceView.TextureCubeArray.MipLevels       = viewDescription.m_uiMipLevelCount;
-        shaderResourceView.TextureCubeArray.First2DArrayFace = viewDescription.m_uiFirstArrayOrDepthSlice;
-        shaderResourceView.TextureCubeArray.NumCubes        = viewDescription.m_uiArrayOrDepthSlicesCount / 6U;
+        shaderResourceView.ViewDimension                        = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+        shaderResourceView.TextureCubeArray.MostDetailedMip     = viewDescription.m_uiMostDetailedMip;
+        shaderResourceView.TextureCubeArray.MipLevels           = viewDescription.m_uiMipLevelCount;
+        shaderResourceView.TextureCubeArray.First2DArrayFace    = viewDescription.m_uiFirstArrayOrDepthSlice;
+        shaderResourceView.TextureCubeArray.NumCubes            = viewDescription.m_uiArrayOrDepthSlicesCount / 6U;
         shaderResourceView.TextureCubeArray.ResourceMinLODClamp = 0.0f;
         break;
 
@@ -160,42 +160,42 @@ namespace
     }
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC& unorderedAccessView = inout_viewMetadata.m_UnorderedAccessView;
-    unorderedAccessView = {};
-    unorderedAccessView.Format = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
+    unorderedAccessView                                   = {};
+    unorderedAccessView.Format                            = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
 
     switch (viewDescription.m_ResourceDimension)
     {
       case xiiGALResourceDimension::Texture1D:
-        unorderedAccessView.ViewDimension     = D3D12_UAV_DIMENSION_TEXTURE1D;
+        unorderedAccessView.ViewDimension      = D3D12_UAV_DIMENSION_TEXTURE1D;
         unorderedAccessView.Texture1D.MipSlice = viewDescription.m_uiMostDetailedMip;
         break;
 
       case xiiGALResourceDimension::Texture1DArray:
-        unorderedAccessView.ViewDimension           = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
-        unorderedAccessView.Texture1DArray.MipSlice = viewDescription.m_uiMostDetailedMip;
+        unorderedAccessView.ViewDimension                  = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+        unorderedAccessView.Texture1DArray.MipSlice        = viewDescription.m_uiMostDetailedMip;
         unorderedAccessView.Texture1DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-        unorderedAccessView.Texture1DArray.ArraySize = viewDescription.m_uiArrayOrDepthSlicesCount;
+        unorderedAccessView.Texture1DArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         break;
 
       case xiiGALResourceDimension::Texture2D:
-        unorderedAccessView.ViewDimension     = D3D12_UAV_DIMENSION_TEXTURE2D;
-        unorderedAccessView.Texture2D.MipSlice = viewDescription.m_uiMostDetailedMip;
+        unorderedAccessView.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+        unorderedAccessView.Texture2D.MipSlice   = viewDescription.m_uiMostDetailedMip;
         unorderedAccessView.Texture2D.PlaneSlice = 0U;
         break;
 
       case xiiGALResourceDimension::Texture2DArray:
-        unorderedAccessView.ViewDimension            = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-        unorderedAccessView.Texture2DArray.MipSlice  = viewDescription.m_uiMostDetailedMip;
+        unorderedAccessView.ViewDimension                  = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+        unorderedAccessView.Texture2DArray.MipSlice        = viewDescription.m_uiMostDetailedMip;
         unorderedAccessView.Texture2DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-        unorderedAccessView.Texture2DArray.ArraySize = viewDescription.m_uiArrayOrDepthSlicesCount;
-        unorderedAccessView.Texture2DArray.PlaneSlice = 0U;
+        unorderedAccessView.Texture2DArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
+        unorderedAccessView.Texture2DArray.PlaneSlice      = 0U;
         break;
 
       case xiiGALResourceDimension::Texture3D:
-        unorderedAccessView.ViewDimension       = D3D12_UAV_DIMENSION_TEXTURE3D;
-        unorderedAccessView.Texture3D.MipSlice  = viewDescription.m_uiMostDetailedMip;
+        unorderedAccessView.ViewDimension         = D3D12_UAV_DIMENSION_TEXTURE3D;
+        unorderedAccessView.Texture3D.MipSlice    = viewDescription.m_uiMostDetailedMip;
         unorderedAccessView.Texture3D.FirstWSlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-        unorderedAccessView.Texture3D.WSize     = viewDescription.m_uiArrayOrDepthSlicesCount;
+        unorderedAccessView.Texture3D.WSize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         break;
 
       default:
@@ -210,8 +210,8 @@ namespace
   xiiResult BuildRenderTargetViewDescription(const xiiGALTextureViewCreationDescription& viewDescription, const xiiGALTextureCreationDescription& textureDescription, xiiGALTextureViewD3D12::ViewMetadata& inout_viewMetadata)
   {
     D3D12_RENDER_TARGET_VIEW_DESC& renderTargetView = inout_viewMetadata.m_RenderTargetView;
-    renderTargetView = {};
-    renderTargetView.Format = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
+    renderTargetView                                = {};
+    renderTargetView.Format                         = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
 
     const bool bIsMultiSampleTexture = IsMultiSampleTexture(textureDescription);
 
@@ -223,10 +223,10 @@ namespace
         break;
 
       case xiiGALResourceDimension::Texture1DArray:
-        renderTargetView.ViewDimension             = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
-        renderTargetView.Texture1DArray.MipSlice  = viewDescription.m_uiMostDetailedMip;
+        renderTargetView.ViewDimension                  = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
+        renderTargetView.Texture1DArray.MipSlice        = viewDescription.m_uiMostDetailedMip;
         renderTargetView.Texture1DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-        renderTargetView.Texture1DArray.ArraySize  = viewDescription.m_uiArrayOrDepthSlicesCount;
+        renderTargetView.Texture1DArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         break;
 
       case xiiGALResourceDimension::Texture2D:
@@ -236,8 +236,8 @@ namespace
         }
         else
         {
-          renderTargetView.ViewDimension      = D3D12_RTV_DIMENSION_TEXTURE2D;
-          renderTargetView.Texture2D.MipSlice = viewDescription.m_uiMostDetailedMip;
+          renderTargetView.ViewDimension        = D3D12_RTV_DIMENSION_TEXTURE2D;
+          renderTargetView.Texture2D.MipSlice   = viewDescription.m_uiMostDetailedMip;
           renderTargetView.Texture2D.PlaneSlice = 0U;
         }
         break;
@@ -245,17 +245,17 @@ namespace
       case xiiGALResourceDimension::Texture2DArray:
         if (bIsMultiSampleTexture)
         {
-          renderTargetView.ViewDimension                = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+          renderTargetView.ViewDimension                    = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
           renderTargetView.Texture2DMSArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-          renderTargetView.Texture2DMSArray.ArraySize   = viewDescription.m_uiArrayOrDepthSlicesCount;
+          renderTargetView.Texture2DMSArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         }
         else
         {
-          renderTargetView.ViewDimension               = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-          renderTargetView.Texture2DArray.MipSlice     = viewDescription.m_uiMostDetailedMip;
+          renderTargetView.ViewDimension                  = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+          renderTargetView.Texture2DArray.MipSlice        = viewDescription.m_uiMostDetailedMip;
           renderTargetView.Texture2DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-          renderTargetView.Texture2DArray.ArraySize    = viewDescription.m_uiArrayOrDepthSlicesCount;
-          renderTargetView.Texture2DArray.PlaneSlice   = 0U;
+          renderTargetView.Texture2DArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
+          renderTargetView.Texture2DArray.PlaneSlice      = 0U;
         }
         break;
 
@@ -284,8 +284,8 @@ namespace
     }
 
     D3D12_DEPTH_STENCIL_VIEW_DESC& depthStencilView = inout_viewMetadata.m_DepthStencilView;
-    depthStencilView = {};
-    depthStencilView.Format = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
+    depthStencilView                                = {};
+    depthStencilView.Format                         = xiiD3D12TypeConversions::GetFormat(viewDescription.m_Format);
 
     if (viewDescription.m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
     {
@@ -306,10 +306,10 @@ namespace
         break;
 
       case xiiGALResourceDimension::Texture1DArray:
-        depthStencilView.ViewDimension             = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
-        depthStencilView.Texture1DArray.MipSlice  = viewDescription.m_uiMostDetailedMip;
+        depthStencilView.ViewDimension                  = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
+        depthStencilView.Texture1DArray.MipSlice        = viewDescription.m_uiMostDetailedMip;
         depthStencilView.Texture1DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-        depthStencilView.Texture1DArray.ArraySize  = viewDescription.m_uiArrayOrDepthSlicesCount;
+        depthStencilView.Texture1DArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         break;
 
       case xiiGALResourceDimension::Texture2D:
@@ -327,16 +327,16 @@ namespace
       case xiiGALResourceDimension::Texture2DArray:
         if (bIsMultiSampleTexture)
         {
-          depthStencilView.ViewDimension                 = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+          depthStencilView.ViewDimension                    = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
           depthStencilView.Texture2DMSArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-          depthStencilView.Texture2DMSArray.ArraySize   = viewDescription.m_uiArrayOrDepthSlicesCount;
+          depthStencilView.Texture2DMSArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         }
         else
         {
-          depthStencilView.ViewDimension                = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-          depthStencilView.Texture2DArray.MipSlice      = viewDescription.m_uiMostDetailedMip;
+          depthStencilView.ViewDimension                  = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+          depthStencilView.Texture2DArray.MipSlice        = viewDescription.m_uiMostDetailedMip;
           depthStencilView.Texture2DArray.FirstArraySlice = viewDescription.m_uiFirstArrayOrDepthSlice;
-          depthStencilView.Texture2DArray.ArraySize     = viewDescription.m_uiArrayOrDepthSlicesCount;
+          depthStencilView.Texture2DArray.ArraySize       = viewDescription.m_uiArrayOrDepthSlicesCount;
         }
         break;
 
@@ -379,10 +379,10 @@ xiiResult xiiGALTextureViewD3D12::InitPlatform()
     return XII_FAILURE;
   }
 
-  m_ViewMetadata                   = {};
-  m_ViewMetadata.m_ViewType        = m_Description.m_ViewType;
+  m_ViewMetadata                     = {};
+  m_ViewMetadata.m_ViewType          = m_Description.m_ViewType;
   m_ViewMetadata.m_ResourceDimension = m_Description.m_ResourceDimension;
-  m_ViewMetadata.m_Format          = m_Description.m_Format;
+  m_ViewMetadata.m_Format            = m_Description.m_Format;
 
   switch (m_Description.m_ViewType)
   {

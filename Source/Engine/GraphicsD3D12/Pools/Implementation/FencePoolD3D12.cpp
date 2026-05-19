@@ -71,7 +71,7 @@ void xiiGALFencePoolD3D12::ReclaimFence(ID3D12Fence*& pFence)
 
 ID3D12Fence* xiiGALFencePoolD3D12::CreateD3D12Fence()
 {
-  ID3D12Fence* pFence = nullptr;
+  ID3D12Fence*  pFence  = nullptr;
   const HRESULT hResult = m_pDeviceD3D12->GetD3D12Device()->CreateFence(0U, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence));
   if (FAILED(hResult))
   {

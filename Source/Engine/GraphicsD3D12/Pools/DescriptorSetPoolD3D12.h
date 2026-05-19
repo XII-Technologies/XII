@@ -37,10 +37,10 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    ID3D12DescriptorHeap*      m_pHeap          = nullptr;
-    D3D12_DESCRIPTOR_HEAP_TYPE m_HeapType       = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    xiiUInt32                  m_uiCapacity     = 0U;
-    xiiUInt32                  m_uiUsed         = 0U;
+    ID3D12DescriptorHeap*      m_pHeap            = nullptr;
+    D3D12_DESCRIPTOR_HEAP_TYPE m_HeapType         = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    xiiUInt32                  m_uiCapacity       = 0U;
+    xiiUInt32                  m_uiUsed           = 0U;
     xiiUInt32                  m_uiDescriptorSize = 0U;
   };
 
@@ -49,9 +49,9 @@ private:
   xiiUInt32        GetDefaultHeapSize(D3D12_DESCRIPTOR_HEAP_TYPE heapType) const;
 
 private:
-  xiiGALDeviceD3D12* m_pDeviceD3D12 = nullptr;
+  xiiGALDeviceD3D12* m_pDeviceD3D12   = nullptr;
   xiiUInt32          m_uiBaseHeapSize = 0U;
 
   xiiStaticArray<xiiDynamicArray<HeapBlock>, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> m_DescriptorHeaps;
-  xiiStaticArray<xiiUInt32, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>                   m_uiCurrentHeapIndex;
+  xiiStaticArray<xiiUInt32, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES>                  m_uiCurrentHeapIndex;
 };

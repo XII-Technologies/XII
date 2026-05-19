@@ -25,9 +25,9 @@ void xiiGALCommandListPoolD3D12::ThreadPool::PushInFlight(CommandListEntry&& com
   XII_LOCK(m_Mutex);
 
   InFlightCommandList& inFlightCommandList = m_InFlightCommandLists.ExpandAndGetRef();
-  inFlightCommandList.m_CommandList         = commandListEntry;
-  inFlightCommandList.m_CommandListData     = std::move(commandListData);
-  inFlightCommandList.m_uiFenceValue        = uiFenceValue;
+  inFlightCommandList.m_CommandList        = commandListEntry;
+  inFlightCommandList.m_CommandListData    = std::move(commandListData);
+  inFlightCommandList.m_uiFenceValue       = uiFenceValue;
 }
 
 xiiGALCommandListPoolD3D12::xiiGALCommandListPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, D3D12_COMMAND_LIST_TYPE commandListType, xiiUInt32 uiInitialCountPerThread /*= 0U*/) :
@@ -73,7 +73,7 @@ xiiGALCommandListPoolD3D12::ThreadPool& xiiGALCommandListPoolD3D12::GetOrCreateT
   XII_LOCK(m_PoolMutex);
 
   bool bExisted = false;
-  auto it = m_CommandListPoolsPerThread.FindOrAdd(uiThreadID, &bExisted);
+  auto it       = m_CommandListPoolsPerThread.FindOrAdd(uiThreadID, &bExisted);
 
   if (!bExisted)
   {
@@ -186,7 +186,7 @@ void xiiGALCommandListPoolD3D12::RecycleAfterSubmit(AutoCommandList&& commandLis
   if (commandList.m_pOwner == nullptr || commandList.m_CommandListEntry.m_pCommandList == nullptr)
     return;
 
-  ThreadPool* pOwner = commandList.m_pOwner;
+  ThreadPool*      pOwner           = commandList.m_pOwner;
   CommandListEntry commandListEntry = commandList.m_CommandListEntry;
 
   commandList.m_pOwner           = nullptr;

@@ -170,11 +170,11 @@ public:
 
     XII_LOCK(m_DeletionQueueMutex);
 
-    DeletionEntry& entry      = m_DeletionQueue.ExpandAndGetRef();
-    entry.m_QueueSyncData     = CaptureSubmittedQueueSyncData();
-    entry.m_vkObjectType      = vkObjectType;
-    entry.m_pObject           = pObject;
-    entry.m_VulkanAllocation  = allocation;
+    DeletionEntry& entry     = m_DeletionQueue.ExpandAndGetRef();
+    entry.m_QueueSyncData    = CaptureSubmittedQueueSyncData();
+    entry.m_vkObjectType     = vkObjectType;
+    entry.m_pObject          = pObject;
+    entry.m_VulkanAllocation = allocation;
   }
 
   void EnqueueResource(vk::ObjectType vkObjectType, void* pObject, vk::DeviceMemory vkExternalMemory)
@@ -185,11 +185,11 @@ public:
 
     XII_LOCK(m_DeletionQueueMutex);
 
-    DeletionEntry& entry      = m_DeletionQueue.ExpandAndGetRef();
-    entry.m_QueueSyncData     = CaptureSubmittedQueueSyncData();
-    entry.m_vkObjectType      = vkObjectType;
-    entry.m_pObject           = pObject;
-    entry.m_vkExternalMemory  = vkExternalMemory;
+    DeletionEntry& entry     = m_DeletionQueue.ExpandAndGetRef();
+    entry.m_QueueSyncData    = CaptureSubmittedQueueSyncData();
+    entry.m_vkObjectType     = vkObjectType;
+    entry.m_pObject          = pObject;
+    entry.m_vkExternalMemory = vkExternalMemory;
   }
 
   void EnqueueResource(xiiGALSemaphorePoolVulkan* pSemaphorePool, vk::Semaphore vkSemaphore)
@@ -199,10 +199,10 @@ public:
 
     XII_LOCK(m_DeletionQueueMutex);
 
-    DeletionEntry& entry     = m_DeletionQueue.ExpandAndGetRef();
-    entry.m_QueueSyncData    = CaptureSubmittedQueueSyncData();
-    entry.m_pSemaphorePool   = pSemaphorePool;
-    entry.m_vkSemaphore      = vkSemaphore;
+    DeletionEntry& entry   = m_DeletionQueue.ExpandAndGetRef();
+    entry.m_QueueSyncData  = CaptureSubmittedQueueSyncData();
+    entry.m_pSemaphorePool = pSemaphorePool;
+    entry.m_vkSemaphore    = vkSemaphore;
   }
 
   void EnqueueResource(xiiGALDescriptorSetPoolVulkan* pDescriptorSetPool, vk::DescriptorPool vkDescriptorPool)
@@ -225,10 +225,10 @@ public:
 
     XII_LOCK(m_DeletionQueueMutex);
 
-    DeletionEntry& entry   = m_DeletionQueue.ExpandAndGetRef();
-    entry.m_QueueSyncData  = CaptureSubmittedQueueSyncData();
-    entry.m_pFencePool     = pFencePool;
-    entry.m_vkFence        = vkFence;
+    DeletionEntry& entry  = m_DeletionQueue.ExpandAndGetRef();
+    entry.m_QueueSyncData = CaptureSubmittedQueueSyncData();
+    entry.m_pFencePool    = pFencePool;
+    entry.m_vkFence       = vkFence;
   }
 
   void ReleaseResources(bool bForceReleaseAll = false)

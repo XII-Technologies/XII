@@ -144,11 +144,11 @@ xiiGALDynamicBufferAllocationD3D12 xiiGALDynamicBufferPoolD3D12::Allocate(xiiUIn
     const DynamicBufferPage& largeAllocation = m_LargeAllocations.PeekBack();
 
     xiiGALDynamicBufferAllocationD3D12 dynamicBufferAllocation = {};
-    dynamicBufferAllocation.m_pD3D12Buffer      = largeAllocation.m_pBuffer;
-    dynamicBufferAllocation.m_Allocation        = largeAllocation.m_Allocation;
-    dynamicBufferAllocation.m_uiOffset          = 0U;
-    dynamicBufferAllocation.m_uiGPUVirtualAddress = largeAllocation.m_uiGPUAddress;
-    dynamicBufferAllocation.m_pMappedAddress    = largeAllocation.m_pMappedAddress;
+    dynamicBufferAllocation.m_pD3D12Buffer                     = largeAllocation.m_pBuffer;
+    dynamicBufferAllocation.m_Allocation                       = largeAllocation.m_Allocation;
+    dynamicBufferAllocation.m_uiOffset                         = 0U;
+    dynamicBufferAllocation.m_uiGPUVirtualAddress              = largeAllocation.m_uiGPUAddress;
+    dynamicBufferAllocation.m_pMappedAddress                   = largeAllocation.m_pMappedAddress;
     return dynamicBufferAllocation;
   }
 
@@ -178,11 +178,11 @@ xiiGALDynamicBufferAllocationD3D12 xiiGALDynamicBufferPoolD3D12::Allocate(xiiUIn
   const DynamicBufferPage& dynamicBufferPage = m_DynamicBufferPages[uiBufferID];
 
   xiiGALDynamicBufferAllocationD3D12 dynamicBufferAllocation = {};
-  dynamicBufferAllocation.m_pD3D12Buffer      = dynamicBufferPage.m_pBuffer;
-  dynamicBufferAllocation.m_Allocation        = dynamicBufferPage.m_Allocation;
-  dynamicBufferAllocation.m_uiOffset          = uiBufferAllocationOffset;
-  dynamicBufferAllocation.m_uiGPUVirtualAddress = dynamicBufferPage.m_uiGPUAddress + uiBufferAllocationOffset;
-  dynamicBufferAllocation.m_pMappedAddress    = xiiMemoryUtils::AddByteOffset(dynamicBufferPage.m_pMappedAddress, uiBufferAllocationOffset);
+  dynamicBufferAllocation.m_pD3D12Buffer                     = dynamicBufferPage.m_pBuffer;
+  dynamicBufferAllocation.m_Allocation                       = dynamicBufferPage.m_Allocation;
+  dynamicBufferAllocation.m_uiOffset                         = uiBufferAllocationOffset;
+  dynamicBufferAllocation.m_uiGPUVirtualAddress              = dynamicBufferPage.m_uiGPUAddress + uiBufferAllocationOffset;
+  dynamicBufferAllocation.m_pMappedAddress                   = xiiMemoryUtils::AddByteOffset(dynamicBufferPage.m_pMappedAddress, uiBufferAllocationOffset);
 
   m_uiPageAllocationCounter   = uiBufferID;
   m_uiOffsetAllocationCounter = uiBufferAllocationOffset + uiSize;

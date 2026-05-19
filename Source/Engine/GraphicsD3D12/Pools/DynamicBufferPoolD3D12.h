@@ -13,11 +13,11 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    ID3D12Resource*    m_pBuffer         = nullptr;
-    xiiD3D12Allocation m_Allocation      = nullptr;
-    xiiUInt64          m_uiSize          = 0U;
-    xiiUInt64          m_uiGPUAddress    = 0U;
-    void*              m_pMappedAddress  = nullptr;
+    ID3D12Resource*    m_pBuffer        = nullptr;
+    xiiD3D12Allocation m_Allocation     = nullptr;
+    xiiUInt64          m_uiSize         = 0U;
+    xiiUInt64          m_uiGPUAddress   = 0U;
+    void*              m_pMappedAddress = nullptr;
   };
 
   void CreateDynamicBufferPage();

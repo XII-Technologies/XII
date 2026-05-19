@@ -94,10 +94,10 @@ xiiGALQueryPoolD3D12::xiiGALQueryPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiG
 
   m_QueryPools.SetCount(xiiGALQueryType::ENUM_COUNT);
 
-  const xiiGALCommandQueueCreationDescription& queueDescription = m_pCommandQueueD3D12->GetDescription();
-  const bool bGraphicsQueue = IsGraphicsQueue(queueDescription);
-  const bool bTransferOnlyQueue = IsTransferOnlyQueue(queueDescription);
-  const bool bTransferTimestampSupported = m_pDeviceD3D12->GetDescription().m_DeviceFeatures.m_TransferQueueTimestampQueries != xiiGALDeviceFeatureState::Disabled;
+  const xiiGALCommandQueueCreationDescription& queueDescription            = m_pCommandQueueD3D12->GetDescription();
+  const bool                                   bGraphicsQueue              = IsGraphicsQueue(queueDescription);
+  const bool                                   bTransferOnlyQueue          = IsTransferOnlyQueue(queueDescription);
+  const bool                                   bTransferTimestampSupported = m_pDeviceD3D12->GetDescription().m_DeviceFeatures.m_TransferQueueTimestampQueries != xiiGALDeviceFeatureState::Disabled;
 
   for (xiiUInt32 uiQueryType = xiiGALQueryType::Undefined + 1U; uiQueryType < xiiGALQueryType::ENUM_COUNT; ++uiQueryType)
   {
@@ -118,9 +118,9 @@ xiiGALQueryPoolD3D12::xiiGALQueryPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiG
 
     m_QueryPools[queryType] = XII_NEW(pDeviceD3D12->GetAllocator(), QueryPoolInformation, pDeviceD3D12);
 
-    const D3D12_QUERY_HEAP_TYPE queryHeapType = xiiD3D12TypeConversions::GetQueryType(queryType);
-    const D3D12_QUERY_TYPE d3d12QueryType = GetD3D12QueryType(queryType);
-    xiiUInt32 uiQueryCount = s_uiQueryPoolSizes[uiQueryType];
+    const D3D12_QUERY_HEAP_TYPE queryHeapType  = xiiD3D12TypeConversions::GetQueryType(queryType);
+    const D3D12_QUERY_TYPE      d3d12QueryType = GetD3D12QueryType(queryType);
+    xiiUInt32                   uiQueryCount   = s_uiQueryPoolSizes[uiQueryType];
     if (queryType == xiiGALQueryType::Duration)
     {
       uiQueryCount *= 2U;

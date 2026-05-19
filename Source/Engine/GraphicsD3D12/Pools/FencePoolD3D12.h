@@ -24,7 +24,7 @@ private:
 private:
   xiiGALDeviceD3D12* m_pDeviceD3D12 = nullptr;
 
-  mutable xiiMutex                 m_PoolMutex;
-  xiiDynamicArray<ID3D12Fence*>    m_Fences;
-  xiiDeque<ID3D12Fence*>           m_QueuedFences;
+  mutable xiiMutex              m_PoolMutex;
+  xiiDynamicArray<ID3D12Fence*> m_Fences;
+  xiiDeque<ID3D12Fence*>        m_QueuedFences;
 };

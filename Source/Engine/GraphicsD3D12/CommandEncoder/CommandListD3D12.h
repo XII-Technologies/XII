@@ -179,8 +179,8 @@ private:
 
 private:
   xiiGALCommandListPoolD3D12::AutoCommandList m_CommandListAllocation;
-  ID3D12CommandAllocator*                      m_pD3D12CommandAllocator = nullptr;
-  ID3D12GraphicsCommandList*                   m_pD3D12CommandList      = nullptr;
-  xiiGALCommandListDataD3D12                   m_CommandListData;
-  xiiUInt64                                    m_uiSubmittedFenceValue   = 0ULL;
+  ID3D12CommandAllocator*                     m_pD3D12CommandAllocator = nullptr;
+  ID3D12GraphicsCommandList*                  m_pD3D12CommandList      = nullptr;
+  xiiGALCommandListDataD3D12                  m_CommandListData;
+  xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
 };

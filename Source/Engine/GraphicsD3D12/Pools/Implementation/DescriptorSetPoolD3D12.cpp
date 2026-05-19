@@ -143,18 +143,18 @@ xiiUInt32 xiiGALDescriptorSetPoolD3D12::FindOrCreateHeap(D3D12_DESCRIPTOR_HEAP_T
   descriptorHeapDescription.NodeMask                   = 0U;
 
   ID3D12DescriptorHeap* pDescriptorHeap = nullptr;
-  const HRESULT hResult = m_pDeviceD3D12->GetD3D12Device()->CreateDescriptorHeap(&descriptorHeapDescription, IID_PPV_ARGS(&pDescriptorHeap));
+  const HRESULT         hResult         = m_pDeviceD3D12->GetD3D12Device()->CreateDescriptorHeap(&descriptorHeapDescription, IID_PPV_ARGS(&pDescriptorHeap));
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to create D3D12 descriptor heap (type={}, count={}): {}.", static_cast<xiiUInt32>(heapType), uiCapacity, xiiHRESULTtoString(hResult));
     return xiiInvalidIndex;
   }
 
-  HeapBlock& heapBlock      = m_DescriptorHeaps[uiHeapTypeIndex].ExpandAndGetRef();
-  heapBlock.m_pHeap         = pDescriptorHeap;
-  heapBlock.m_HeapType      = heapType;
-  heapBlock.m_uiCapacity    = uiCapacity;
-  heapBlock.m_uiUsed        = 0U;
+  HeapBlock& heapBlock         = m_DescriptorHeaps[uiHeapTypeIndex].ExpandAndGetRef();
+  heapBlock.m_pHeap            = pDescriptorHeap;
+  heapBlock.m_HeapType         = heapType;
+  heapBlock.m_uiCapacity       = uiCapacity;
+  heapBlock.m_uiUsed           = 0U;
   heapBlock.m_uiDescriptorSize = m_pDeviceD3D12->GetD3D12Device()->GetDescriptorHandleIncrementSize(heapType);
 
   return m_DescriptorHeaps[uiHeapTypeIndex].GetCount() - 1U;

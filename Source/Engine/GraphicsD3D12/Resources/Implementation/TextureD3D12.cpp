@@ -119,9 +119,9 @@ namespace
     {
       for (xiiUInt32 uiMipLevel = 0U; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
       {
-        const xiiGALTextureSubResourceData& subresourceData = initialData.m_pSubResources[uiSubresourceIndex++];
-        const xiiGALMipLevelProperties      mipLevelData    = xiiGALTextureUtilities::GetMipLevelProperties(description, uiMipLevel);
-        const xiiUInt64 uiDestinationOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(description, uiArraySlice, uiMipLevel, 4U);
+        const xiiGALTextureSubResourceData& subresourceData     = initialData.m_pSubResources[uiSubresourceIndex++];
+        const xiiGALMipLevelProperties      mipLevelData        = xiiGALTextureUtilities::GetMipLevelProperties(description, uiMipLevel);
+        const xiiUInt64                     uiDestinationOffset = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(description, uiArraySlice, uiMipLevel, 4U);
 
         const xiiUInt32 uiRowCount          = mipLevelData.m_StorageSize.height / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U);
         const xiiUInt64 uiSourceRowStride   = subresourceData.m_uiStride != 0U ? subresourceData.m_uiStride : mipLevelData.m_uiRowSize;
@@ -130,7 +130,7 @@ namespace
         BYTE* pDestinationSubresourceData = xiiMemoryUtils::AddByteOffset(static_cast<BYTE*>(pMappedMemory), uiDestinationOffset);
         for (xiiUInt32 uiDepthSlice = 0U; uiDepthSlice < mipLevelData.m_uiDepth; ++uiDepthSlice)
         {
-          const BYTE* pSourceDepthSlice = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), uiDepthSlice * uiSourceDepthStride);
+          const BYTE* pSourceDepthSlice      = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), uiDepthSlice * uiSourceDepthStride);
           BYTE*       pDestinationDepthSlice = xiiMemoryUtils::AddByteOffset(pDestinationSubresourceData, uiDepthSlice * mipLevelData.m_uiDepthSliceSize);
 
           for (xiiUInt32 uiRow = 0U; uiRow < uiRowCount; ++uiRow)
@@ -183,12 +183,12 @@ namespace
 
     xiiD3D12MemoryAllocator* pD3D12Allocator = pDeviceD3D12->GetD3D12Allocator();
 
-    ID3D12Resource*     pUploadBuffer      = nullptr;
-    xiiD3D12Allocation  uploadAllocation   = nullptr;
-    ID3D12Fence*        pUploadFence       = nullptr;
-    HANDLE              hUploadFenceSignal = nullptr;
-    ID3D12CommandAllocator*    pCommandAllocator = nullptr;
-    ID3D12GraphicsCommandList* pCommandList      = nullptr;
+    ID3D12Resource*            pUploadBuffer      = nullptr;
+    xiiD3D12Allocation         uploadAllocation   = nullptr;
+    ID3D12Fence*               pUploadFence       = nullptr;
+    HANDLE                     hUploadFenceSignal = nullptr;
+    ID3D12CommandAllocator*    pCommandAllocator  = nullptr;
+    ID3D12GraphicsCommandList* pCommandList       = nullptr;
 
     XII_SCOPE_EXIT(
       {
@@ -227,18 +227,18 @@ namespace
     {
       for (xiiUInt32 uiMipLevel = 0U; uiMipLevel < textureDescription.m_uiMipLevels; ++uiMipLevel)
       {
-        const xiiUInt32 uiSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(uiMipLevel, uiArraySlice, textureDescription.m_uiMipLevels);
+        const xiiUInt32                     uiSubresource   = xiiD3D12TypeConversions::CalculateSubResourceIndex(uiMipLevel, uiArraySlice, textureDescription.m_uiMipLevels);
         const xiiGALTextureSubResourceData& subresourceData = initialData.m_pSubResources[uiSubresource];
         const xiiGALMipLevelProperties      mipLevelData    = xiiGALTextureUtilities::GetMipLevelProperties(textureDescription, uiMipLevel);
 
-        const xiiUInt32 uiRowCount        = mipLevelData.m_StorageSize.height / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U);
-        const xiiUInt64 uiSourceRowStride = subresourceData.m_uiStride != 0U ? subresourceData.m_uiStride : mipLevelData.m_uiRowSize;
+        const xiiUInt32 uiRowCount          = mipLevelData.m_StorageSize.height / xiiMath::Max<xiiUInt32>(formatProperties.m_uiBlockHeight, 1U);
+        const xiiUInt64 uiSourceRowStride   = subresourceData.m_uiStride != 0U ? subresourceData.m_uiStride : mipLevelData.m_uiRowSize;
         const xiiUInt64 uiSourceDepthStride = subresourceData.m_uiDepthStride != 0U ? subresourceData.m_uiDepthStride : uiSourceRowStride * uiRowCount;
 
         BYTE* pDestinationSubresourceData = xiiMemoryUtils::AddByteOffset(static_cast<BYTE*>(pMappedUploadData), placedSubresourceFootprints[uiSubresource].Offset);
         for (xiiUInt32 uiDepthSlice = 0U; uiDepthSlice < mipLevelData.m_uiDepth; ++uiDepthSlice)
         {
-          const BYTE* pSourceDepthSlice = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), uiDepthSlice * uiSourceDepthStride);
+          const BYTE* pSourceDepthSlice      = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData.GetPtr(), uiDepthSlice * uiSourceDepthStride);
           BYTE*       pDestinationDepthSlice = xiiMemoryUtils::AddByteOffset(pDestinationSubresourceData, static_cast<xiiUInt64>(placedSubresourceFootprints[uiSubresource].Footprint.RowPitch) * uiRowCount * uiDepthSlice);
 
           for (xiiUInt32 uiRow = 0U; uiRow < uiRowCount; ++uiRow)
@@ -324,8 +324,8 @@ namespace
 
   xiiResult InitializeExternalMemoryDescription(const xiiSharedPtr<xiiGALDeviceD3D12>& pDeviceD3D12, ID3D12Resource* pResource, xiiGALExternalMemoryDescription& out_externalMemoryDescription)
   {
-    HANDLE hSharedHandle = nullptr;
-    HRESULT hResult      = pDeviceD3D12->GetD3D12Device()->CreateSharedHandle(pResource, nullptr, GENERIC_ALL, nullptr, &hSharedHandle);
+    HANDLE  hSharedHandle = nullptr;
+    HRESULT hResult       = pDeviceD3D12->GetD3D12Device()->CreateSharedHandle(pResource, nullptr, GENERIC_ALL, nullptr, &hSharedHandle);
     if (FAILED(hResult))
     {
       xiiLog::Error("Failed to create a shared handle for D3D12 texture external memory export: {}.", xiiHRESULTtoString(hResult));

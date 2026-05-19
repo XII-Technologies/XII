@@ -43,7 +43,7 @@ xiiResult xiiGALCommandListD3D12::InitPlatform()
 
 void xiiGALCommandListD3D12::BeginPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12          = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiGALCommandListPoolD3D12*     pCommandListPoolD3D12 = pDeviceD3D12->GetCommandListPool(m_Description.m_QueueFlags);
   if (pCommandListPoolD3D12 == nullptr)
   {
@@ -52,7 +52,7 @@ void xiiGALCommandListD3D12::BeginPlatform()
   }
 
   m_CommandListData                            = {};
-  m_CommandListData.m_pDynamicBufferPoolD3D12 = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALDynamicBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing);
+  m_CommandListData.m_pDynamicBufferPoolD3D12  = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALDynamicBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing);
   m_CommandListData.m_pUploadStagingBufferPool = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALStagingBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::ShaderResource);
   m_CommandListData.m_pDescriptorSetPoolD3D12  = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALDescriptorSetPoolD3D12, pDeviceD3D12.Borrow(), 1024U);
 
@@ -79,8 +79,8 @@ void xiiGALCommandListD3D12::BeginPlatform()
   if (FAILED(m_pD3D12CommandAllocator->Reset()))
   {
     xiiLog::Error("Failed to reset D3D12 command allocator for command list '{}'.", GetDebugName());
-    m_CommandListAllocation = {};
-    m_CommandListData       = {};
+    m_CommandListAllocation  = {};
+    m_CommandListData        = {};
     m_pD3D12CommandAllocator = nullptr;
     m_pD3D12CommandList      = nullptr;
     return;
@@ -89,8 +89,8 @@ void xiiGALCommandListD3D12::BeginPlatform()
   if (FAILED(m_pD3D12CommandList->Reset(m_pD3D12CommandAllocator, nullptr)))
   {
     xiiLog::Error("Failed to reset D3D12 command list '{}'.", GetDebugName());
-    m_CommandListAllocation = {};
-    m_CommandListData       = {};
+    m_CommandListAllocation  = {};
+    m_CommandListData        = {};
     m_pD3D12CommandAllocator = nullptr;
     m_pD3D12CommandList      = nullptr;
     return;
@@ -122,7 +122,7 @@ void xiiGALCommandListD3D12::ResetPlatform()
     m_pD3D12CommandList->Close();
   }
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12          = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiGALCommandListPoolD3D12*     pCommandListPoolD3D12 = pDeviceD3D12->GetCommandListPool(m_Description.m_QueueFlags);
 
   if (m_CommandListAllocation.GetCommandList() != nullptr)

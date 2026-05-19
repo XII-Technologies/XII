@@ -239,8 +239,8 @@ xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resour
   allocationDescription.CustomPool               = nullptr; // Not supported for now.
   allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
 
-  D3D12_CLEAR_VALUE          optimizedClearValue      = {};
-  const D3D12_CLEAR_VALUE*   pD3D12OptimizedClearValue = nullptr;
+  D3D12_CLEAR_VALUE        optimizedClearValue       = {};
+  const D3D12_CLEAR_VALUE* pD3D12OptimizedClearValue = nullptr;
 
   if (pOptimizedClearValue != nullptr && pOptimizedClearValue->m_ResourceFormat != xiiGALResourceFormat::Unknown)
   {

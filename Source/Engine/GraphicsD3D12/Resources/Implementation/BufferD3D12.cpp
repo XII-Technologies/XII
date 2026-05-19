@@ -26,12 +26,12 @@ namespace
     D3D12_RESOURCE_DESC uploadResourceDescription = destinationResourceDescription;
     uploadResourceDescription.Flags               = D3D12_RESOURCE_FLAG_NONE;
 
-    ID3D12Resource*       pUploadBuffer      = nullptr;
-    xiiD3D12Allocation    uploadAllocation   = nullptr;
-    ID3D12Fence*          pUploadFence       = nullptr;
-    HANDLE                hUploadFenceSignal = nullptr;
-    ID3D12CommandAllocator* pCommandAllocator = nullptr;
-    ID3D12GraphicsCommandList* pCommandList   = nullptr;
+    ID3D12Resource*            pUploadBuffer      = nullptr;
+    xiiD3D12Allocation         uploadAllocation   = nullptr;
+    ID3D12Fence*               pUploadFence       = nullptr;
+    HANDLE                     hUploadFenceSignal = nullptr;
+    ID3D12CommandAllocator*    pCommandAllocator  = nullptr;
+    ID3D12GraphicsCommandList* pCommandList       = nullptr;
 
     XII_SCOPE_EXIT(
       {
@@ -157,10 +157,10 @@ xiiGALBufferD3D12::~xiiGALBufferD3D12()
 
 xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, xiiBitflags<xiiGALExternalMemoryKind> externalMemoryKind)
 {
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  xiiD3D12MemoryAllocator*        pD3D12Allocator   = pDeviceD3D12->GetD3D12Allocator();
-  const bool                      bHasInitialData   = (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0U);
-  xiiBitflags<xiiGALResourceStateFlags> desiredState = xiiD3D12TypeConversions::GetResourceStateFromBindFlags(m_Description.m_BindFlags);
+  xiiSharedPtr<xiiGALDeviceD3D12>       pDeviceD3D12    = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiD3D12MemoryAllocator*              pD3D12Allocator = pDeviceD3D12->GetD3D12Allocator();
+  const bool                            bHasInitialData = (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0U);
+  xiiBitflags<xiiGALResourceStateFlags> desiredState    = xiiD3D12TypeConversions::GetResourceStateFromBindFlags(m_Description.m_BindFlags);
 
   if (desiredState == xiiGALResourceStateFlags::Undefined)
   {
@@ -198,8 +198,8 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
   }
 
   xiiD3D12MemoryAllocationCreateInfo    allocationCreateInfo = {};
-  xiiBitflags<xiiGALResourceStateFlags> creationState       = desiredState;
-  xiiBitflags<xiiGALResourceStateFlags> finalState          = desiredState;
+  xiiBitflags<xiiGALResourceStateFlags> creationState        = desiredState;
+  xiiBitflags<xiiGALResourceStateFlags> finalState           = desiredState;
 
   switch (m_Description.m_Usage)
   {
@@ -354,9 +354,9 @@ xiiGALSparseBufferProperties xiiGALBufferD3D12::GetSparseProperties() const
   if (m_pD3D12Buffer == nullptr)
     return sparseBufferProperties;
 
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12        = m_pDevice.Downcast<xiiGALDeviceD3D12>();
-  const D3D12_RESOURCE_DESC       resourceDescription = m_pD3D12Buffer->GetDesc();
-  const D3D12_RESOURCE_ALLOCATION_INFO allocationInfo = pDeviceD3D12->GetD3D12Device()->GetResourceAllocationInfo(0U, 1U, &resourceDescription);
+  xiiSharedPtr<xiiGALDeviceD3D12>      pDeviceD3D12        = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  const D3D12_RESOURCE_DESC            resourceDescription = m_pD3D12Buffer->GetDesc();
+  const D3D12_RESOURCE_ALLOCATION_INFO allocationInfo      = pDeviceD3D12->GetD3D12Device()->GetResourceAllocationInfo(0U, 1U, &resourceDescription);
 
   sparseBufferProperties.m_uiAddressSpaceSize = resourceDescription.Width;
   sparseBufferProperties.m_uiBlockSize        = static_cast<xiiUInt32>(allocationInfo.Alignment);

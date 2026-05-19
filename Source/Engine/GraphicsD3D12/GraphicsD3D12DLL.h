@@ -95,19 +95,19 @@ struct XII_GRAPHICSD3D12_DLL xiiGALDynamicBufferAllocationD3D12
 {
   XII_DECLARE_POD_TYPE();
 
-  ID3D12Resource*      m_pD3D12Buffer      = nullptr;
-  xiiD3D12Allocation   m_Allocation        = nullptr;
-  xiiUInt64            m_uiOffset          = 0U;
-  xiiUInt64            m_uiGPUVirtualAddress = 0U;
-  void*                m_pMappedAddress    = nullptr;
+  ID3D12Resource*    m_pD3D12Buffer        = nullptr;
+  xiiD3D12Allocation m_Allocation          = nullptr;
+  xiiUInt64          m_uiOffset            = 0U;
+  xiiUInt64          m_uiGPUVirtualAddress = 0U;
+  void*              m_pMappedAddress      = nullptr;
 };
 
 struct XII_GRAPHICSD3D12_DLL xiiGALStagingBufferAllocationD3D12
 {
   XII_DECLARE_POD_TYPE();
 
-  ID3D12Resource*      m_pD3D12Buffer      = nullptr;
-  xiiD3D12Allocation   m_Allocation        = nullptr;
-  xiiUInt64            m_uiOffset          = 0U;
-  void*                m_pMappedAddress    = nullptr;
+  ID3D12Resource*    m_pD3D12Buffer   = nullptr;
+  xiiD3D12Allocation m_Allocation     = nullptr;
+  xiiUInt64          m_uiOffset       = 0U;
+  void*              m_pMappedAddress = nullptr;
 };

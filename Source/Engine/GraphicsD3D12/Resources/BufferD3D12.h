@@ -15,7 +15,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALBufferD3D12 final : public xiiGALBuffer
 public:
   [[nodiscard]] XII_ALWAYS_INLINE ID3D12Resource*    GetD3D12Buffer() const { return m_pD3D12Buffer; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12Allocation GetAllocationDescription() const { return m_BufferAllocation; }
-  [[nodiscard]] xiiUInt64                              GetD3D12BufferGPUVirtualAddress() const;
+  [[nodiscard]] xiiUInt64                            GetD3D12BufferGPUVirtualAddress() const;
 
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 
@@ -38,8 +38,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 protected:
-  ID3D12Resource*    m_pD3D12Buffer        = nullptr;
-  xiiD3D12Allocation m_BufferAllocation    = nullptr;
-  bool               m_bHostVisibleBuffer  = false;
-  bool               m_bReadbackBuffer     = false;
+  ID3D12Resource*    m_pD3D12Buffer       = nullptr;
+  xiiD3D12Allocation m_BufferAllocation   = nullptr;
+  bool               m_bHostVisibleBuffer = false;
+  bool               m_bReadbackBuffer    = false;
 };

@@ -59,7 +59,7 @@ xiiResult xiiGALBufferViewD3D12::InitPlatform()
 
     case xiiGALBufferMode::Structured:
     {
-      const xiiUInt64 uiStride = bufferDescription.m_uiElementByteStride;
+      const xiiUInt64 uiStride               = bufferDescription.m_uiElementByteStride;
       m_ViewMetadata.m_uiStructureByteStride = static_cast<xiiUInt32>(uiStride);
       m_ViewMetadata.m_uiFirstElement        = static_cast<xiiUInt32>(m_Description.m_uiByteOffset / uiStride);
       m_ViewMetadata.m_uiElementCount        = static_cast<xiiUInt32>(m_Description.m_uiByteWidth / uiStride);

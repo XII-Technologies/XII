@@ -33,7 +33,7 @@ public:
 public:
   virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
 
-   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandListPoolD3D12* GetCommandListPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandListPoolD3D12* GetCommandListPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolD3D12* GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
 

@@ -55,8 +55,8 @@ public:
     void Push(CommandListEntry&& commandListEntry);
     void PushInFlight(CommandListEntry&& commandListEntry, xiiGALCommandListDataD3D12&& commandListData, xiiUInt64 uiFenceValue);
 
-    xiiDynamicArray<CommandListEntry>   m_PrimaryFreeCommandLists;
-    xiiDynamicArray<CommandListEntry>   m_SecondaryFreeCommandLists;
+    xiiDynamicArray<CommandListEntry>    m_PrimaryFreeCommandLists;
+    xiiDynamicArray<CommandListEntry>    m_SecondaryFreeCommandLists;
     xiiDynamicArray<InFlightCommandList> m_InFlightCommandLists;
     xiiMutex                             m_Mutex;
   };
@@ -75,7 +75,7 @@ public:
     XII_ALWAYS_INLINE AutoCommandList(AutoCommandList&& rhs) noexcept :
       m_pOwner(rhs.m_pOwner), m_CommandListEntry(rhs.m_CommandListEntry)
     {
-      rhs.m_pOwner = nullptr;
+      rhs.m_pOwner           = nullptr;
       rhs.m_CommandListEntry = {};
     }
 
@@ -89,8 +89,8 @@ public:
         m_pOwner->Push(std::move(m_CommandListEntry));
       }
 
-      m_pOwner            = rhs.m_pOwner;
-      m_CommandListEntry  = rhs.m_CommandListEntry;
+      m_pOwner           = rhs.m_pOwner;
+      m_CommandListEntry = rhs.m_CommandListEntry;
 
       rhs.m_pOwner           = nullptr;
       rhs.m_CommandListEntry = {};
@@ -106,15 +106,15 @@ public:
       }
     }
 
-    XII_ALWAYS_INLINE ID3D12CommandAllocator* GetCommandAllocator() const { return m_CommandListEntry.m_pCommandAllocator; }
+    XII_ALWAYS_INLINE ID3D12CommandAllocator*    GetCommandAllocator() const { return m_CommandListEntry.m_pCommandAllocator; }
     XII_ALWAYS_INLINE ID3D12GraphicsCommandList* GetCommandList() const { return m_CommandListEntry.m_pCommandList; }
-    XII_ALWAYS_INLINE bool IsSecondary() const { return m_CommandListEntry.m_bIsSecondary; }
+    XII_ALWAYS_INLINE bool                       IsSecondary() const { return m_CommandListEntry.m_bIsSecondary; }
 
   private:
     friend class xiiGALCommandListPoolD3D12;
 
-    ThreadPool*       m_pOwner          = nullptr;
-    CommandListEntry  m_CommandListEntry = {};
+    ThreadPool*      m_pOwner           = nullptr;
+    CommandListEntry m_CommandListEntry = {};
   };
 
   AutoCommandList AllocatePrimaryCommandList();
@@ -133,17 +133,17 @@ private:
   xiiGALCommandListPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, D3D12_COMMAND_LIST_TYPE commandListType, xiiUInt32 uiInitialCountPerThread = 0U);
   ~xiiGALCommandListPoolD3D12();
 
-  ThreadPool&        GetOrCreateThreadPool();
-  CommandListEntry   CreateCommandListEntry(bool bIsSecondary);
+  ThreadPool&      GetOrCreateThreadPool();
+  CommandListEntry CreateCommandListEntry(bool bIsSecondary);
 
-  static void        ReleaseCommandListEntry(xiiGALDeviceD3D12* pDeviceD3D12, CommandListEntry& commandListEntry);
+  static void ReleaseCommandListEntry(xiiGALDeviceD3D12* pDeviceD3D12, CommandListEntry& commandListEntry);
 
 private:
-  xiiGALDeviceD3D12*       m_pDeviceD3D12       = nullptr;
-  xiiGALCommandQueueD3D12* m_pCommandQueueD3D12 = nullptr;
-  D3D12_COMMAND_LIST_TYPE  m_CommandListType    = D3D12_COMMAND_LIST_TYPE_DIRECT;
+  xiiGALDeviceD3D12*       m_pDeviceD3D12          = nullptr;
+  xiiGALCommandQueueD3D12* m_pCommandQueueD3D12    = nullptr;
+  D3D12_COMMAND_LIST_TYPE  m_CommandListType       = D3D12_COMMAND_LIST_TYPE_DIRECT;
   xiiUInt32                m_uiInitialReserveCount = 0U;
 
-  xiiMutex                                   m_PoolMutex;
-  xiiMap<xiiThreadID, ThreadPool>            m_CommandListPoolsPerThread;
+  xiiMutex                        m_PoolMutex;
+  xiiMap<xiiThreadID, ThreadPool> m_CommandListPoolsPerThread;
 };

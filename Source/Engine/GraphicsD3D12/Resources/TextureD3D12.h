@@ -15,7 +15,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALTextureD3D12 final : public xiiGALTexture
 public:
   [[nodiscard]] XII_ALWAYS_INLINE ID3D12Resource*    GetD3D12Texture() const { return m_pD3D12Texture; }
   [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12Allocation GetAllocationDescription() const { return m_TextureAllocation; }
-  [[nodiscard]] XII_ALWAYS_INLINE bool                IsStagingTexture() const { return m_Description.m_Usage == xiiGALResourceUsage::Staging; }
+  [[nodiscard]] XII_ALWAYS_INLINE bool               IsStagingTexture() const { return m_Description.m_Usage == xiiGALResourceUsage::Staging; }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool IsNativeObjectWrapper() const { return m_Description.m_pExistingNativeObject != nullptr; }
 
