@@ -12,7 +12,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALQueryPoolD3D12
 
 public:
   [[nodiscard]] xiiUInt32 AllocateQuery(xiiGALQueryType::Enum queryType);
-  void                    DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex);
+  void                    DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex, xiiUInt64 uiFenceValue);
   xiiUInt32               ResetStaleQueries();
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandQueueD3D12*           GetCommandQueue() const { return m_pCommandQueueD3D12; }
@@ -34,6 +34,14 @@ private:
   {
     XII_DISALLOW_COPY_AND_ASSIGN(QueryPoolInformation);
 
+    struct StaleQuery
+    {
+      XII_DECLARE_POD_TYPE();
+
+      xiiUInt32 m_uiIndex      = xiiInvalidIndex;
+      xiiUInt64 m_uiFenceValue = xiiInvalidIndex;
+    };
+
   public:
     QueryPoolInformation(xiiGALDeviceD3D12* pDeviceD3D12);
     ~QueryPoolInformation();
@@ -42,8 +50,8 @@ private:
     void DeInitialize();
 
     [[nodiscard]] xiiUInt32 Allocate();
-    void                    Discard(xiiUInt32 uiIndex);
-    [[nodiscard]] xiiUInt32 ResetStaleQueries();
+    void                    Discard(xiiUInt32 uiIndex, xiiUInt64 uiFenceValue);
+    [[nodiscard]] xiiUInt32 ResetStaleQueries(xiiUInt64 uiCompletedFenceValue);
 
     [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryType::Enum GetQueryType() const { return m_QueryType; }
     [[nodiscard]] XII_ALWAYS_INLINE ID3D12QueryHeap*      GetQueryHeap() const { return m_pD3D12QueryHeap; }
@@ -68,9 +76,9 @@ private:
     xiiUInt32                m_uiQueryResultStride   = 0U;
     xiiUInt32                m_uiMaxAllocatedQueries = 0U;
 
-    xiiMutex                   m_QueriesMutex;
-    xiiDynamicArray<xiiUInt32> m_AvailableQueries;
-    xiiDynamicArray<xiiUInt32> m_StaleQueries;
+    xiiMutex                    m_QueriesMutex;
+    xiiDynamicArray<xiiUInt32>  m_AvailableQueries;
+    xiiDynamicArray<StaleQuery> m_StaleQueries;
   };
 
   xiiGALQueryPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, const xiiGALQueueInformationD3D12& queueInformation);

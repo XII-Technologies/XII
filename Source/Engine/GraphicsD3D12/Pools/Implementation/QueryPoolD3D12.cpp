@@ -156,24 +156,25 @@ xiiUInt32 xiiGALQueryPoolD3D12::AllocateQuery(xiiGALQueryType::Enum queryType)
   return pQueryPoolInformation != nullptr ? pQueryPoolInformation->Allocate() : xiiInvalidIndex;
 }
 
-void xiiGALQueryPoolD3D12::DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex)
+void xiiGALQueryPoolD3D12::DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex, xiiUInt64 uiFenceValue)
 {
   QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
   if (pQueryPoolInformation != nullptr)
   {
-    pQueryPoolInformation->Discard(uiIndex);
+    pQueryPoolInformation->Discard(uiIndex, uiFenceValue);
   }
 }
 
 xiiUInt32 xiiGALQueryPoolD3D12::ResetStaleQueries()
 {
   xiiUInt32 uiResetQueryCount = 0U;
+  const xiiUInt64 uiCompletedFenceValue = m_pCommandQueueD3D12 != nullptr ? m_pCommandQueueD3D12->GetCompletedFenceValue() : xiiInvalidIndex;
 
   for (auto& pQueryPoolInformation : m_QueryPools)
   {
     if (pQueryPoolInformation != nullptr)
     {
-      uiResetQueryCount += pQueryPoolInformation->ResetStaleQueries();
+      uiResetQueryCount += pQueryPoolInformation->ResetStaleQueries(uiCompletedFenceValue);
     }
   }
 
@@ -321,7 +322,7 @@ xiiUInt32 xiiGALQueryPoolD3D12::QueryPoolInformation::Allocate()
   return uiIndex;
 }
 
-void xiiGALQueryPoolD3D12::QueryPoolInformation::Discard(xiiUInt32 uiIndex)
+void xiiGALQueryPoolD3D12::QueryPoolInformation::Discard(xiiUInt32 uiIndex, xiiUInt64 uiFenceValue)
 {
   XII_LOCK(m_QueriesMutex);
 
@@ -331,25 +332,49 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::Discard(xiiUInt32 uiIndex)
     return;
   }
 
-  if (m_AvailableQueries.Contains(uiIndex) || m_StaleQueries.Contains(uiIndex))
+  if (m_AvailableQueries.Contains(uiIndex))
   {
     xiiLog::Warning("D3D12 query index ({}) for query type '{}' has already been queued for reuse.", uiIndex, xiiArgEnum(m_QueryType));
     return;
   }
 
-  m_StaleQueries.PushBack(uiIndex);
+  for (const StaleQuery& staleQuery : m_StaleQueries)
+  {
+    if (staleQuery.m_uiIndex == uiIndex)
+    {
+      xiiLog::Warning("D3D12 query index ({}) for query type '{}' has already been queued for reuse.", uiIndex, xiiArgEnum(m_QueryType));
+      return;
+    }
+  }
+
+  StaleQuery& staleQuery      = m_StaleQueries.ExpandAndGetRef();
+  staleQuery.m_uiIndex        = uiIndex;
+  staleQuery.m_uiFenceValue   = uiFenceValue;
 }
 
-xiiUInt32 xiiGALQueryPoolD3D12::QueryPoolInformation::ResetStaleQueries()
+xiiUInt32 xiiGALQueryPoolD3D12::QueryPoolInformation::ResetStaleQueries(xiiUInt64 uiCompletedFenceValue)
 {
   XII_LOCK(m_QueriesMutex);
 
   if (m_StaleQueries.IsEmpty())
     return 0U;
 
-  const xiiUInt32 uiResetCount = m_StaleQueries.GetCount();
-  m_AvailableQueries.PushBackRange(m_StaleQueries);
-  m_StaleQueries.Clear();
+  xiiUInt32 uiResetCount = 0U;
+  xiiUInt32 uiStaleIndex = 0U;
+
+  while (uiStaleIndex < m_StaleQueries.GetCount())
+  {
+    const StaleQuery& staleQuery = m_StaleQueries[uiStaleIndex];
+    if (staleQuery.m_uiFenceValue != xiiInvalidIndex && uiCompletedFenceValue < staleQuery.m_uiFenceValue)
+    {
+      ++uiStaleIndex;
+      continue;
+    }
+
+    m_AvailableQueries.PushBack(staleQuery.m_uiIndex);
+    m_StaleQueries.RemoveAtAndSwap(uiStaleIndex);
+    ++uiResetCount;
+  }
 
   return uiResetCount;
 }
