@@ -70,15 +70,44 @@ class xiiGALComputePipelineStateD3D12;
 class xiiGALRayTracingPipelineStateD3D12;
 class xiiGALTilePipelineStateD3D12;
 class xiiGALPipelineResourceSignatureD3D12;
+class xiiGALFencePoolD3D12;
+class xiiGALQueryPoolD3D12;
+class xiiGALDescriptorSetPoolD3D12;
+class xiiGALStagingBufferPoolD3D12;
+class xiiGALDynamicBufferPoolD3D12;
+class xiiGALCommandListPoolD3D12;
 
 struct xiiGALDisplayModeDescriptionD3D12;
 struct xiiGALFullScreenModeDescriptionD3D12;
 
 using xiiD3D12Allocation = struct IUnknown*;
 
+struct ID3D12Resource;
+
 struct XII_GRAPHICSD3D12_DLL xiiGALQueueInformationD3D12
 {
   XII_DECLARE_POD_TYPE();
 
   ID3D12CommandQueue* m_pCommandQueue = nullptr;
+};
+
+struct XII_GRAPHICSD3D12_DLL xiiGALDynamicBufferAllocationD3D12
+{
+  XII_DECLARE_POD_TYPE();
+
+  ID3D12Resource*    m_pD3D12Buffer        = nullptr;
+  xiiD3D12Allocation m_Allocation          = nullptr;
+  xiiUInt64          m_uiOffset            = 0U;
+  xiiUInt64          m_uiGPUVirtualAddress = 0U;
+  void*              m_pMappedAddress      = nullptr;
+};
+
+struct XII_GRAPHICSD3D12_DLL xiiGALStagingBufferAllocationD3D12
+{
+  XII_DECLARE_POD_TYPE();
+
+  ID3D12Resource*    m_pD3D12Buffer   = nullptr;
+  xiiD3D12Allocation m_Allocation     = nullptr;
+  xiiUInt64          m_uiOffset       = 0U;
+  void*              m_pMappedAddress = nullptr;
 };

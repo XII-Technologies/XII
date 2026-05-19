@@ -56,6 +56,18 @@ public:
   static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount);
 
   static D3D12_RESOURCE_STATES GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
+
+  static xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
+
+  static xiiBitflags<xiiGALResourceStateFlags> GetDynamicBufferState();
+
+  static D3D12_RESOURCE_FLAGS GetBufferResourceFlagsFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
+
+  static D3D12_RESOURCE_FLAGS GetTextureResourceFlagsFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags);
+
+  static D3D12_RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> dimension);
+
+  static UINT GetShaderComponentMapping(const xiiGALTextureComponentMapping& componentMapping);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>

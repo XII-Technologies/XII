@@ -67,13 +67,21 @@ xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandLis
     return m_uiLastSyncPointValue;
   }
 
-  if (xiiGALCommandListD3D12* pCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pCommandList))
+  xiiGALCommandListD3D12* pCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pCommandList);
+  if (pCommandListD3D12 == nullptr)
   {
-    if (ID3D12CommandList* pD3D12CommandList = pCommandListD3D12->GetD3D12CommandList())
-    {
-      m_QueueInformation.m_pCommandQueue->ExecuteCommandLists(1U, &pD3D12CommandList);
-    }
+    xiiLog::Error("D3D12 command queue submission failed: command list has an incompatible backend type.");
+    return m_uiLastSyncPointValue;
   }
+
+  ID3D12CommandList* pD3D12CommandList = pCommandListD3D12->GetD3D12CommandList();
+  if (pD3D12CommandList == nullptr)
+  {
+    xiiLog::Error("D3D12 command queue submission failed: command list '{}' has no native command list.", pCommandListD3D12->GetDebugName());
+    return m_uiLastSyncPointValue;
+  }
+
+  m_QueueInformation.m_pCommandQueue->ExecuteCommandLists(1U, &pD3D12CommandList);
 
   const xiiUInt64 uiFenceValue = m_uiNextFenceValue.PostIncrement();
   const HRESULT   hResult      = m_QueueInformation.m_pCommandQueue->Signal(m_pD3D12QueueFence, uiFenceValue);
@@ -85,6 +93,7 @@ xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandLis
   }
 
   m_uiLastSyncPointValue = uiFenceValue;
+  pCommandListD3D12->m_uiSubmittedFenceValue = uiFenceValue;
 
   return uiFenceValue;
 }

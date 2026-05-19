@@ -11,6 +11,19 @@ class XII_GRAPHICSD3D12_DLL xiiGALBufferViewD3D12 final : public xiiGALBufferVie
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferViewD3D12, xiiGALBufferView);
 
 public:
+  struct ViewMetadata
+  {
+    xiiUInt64                     m_uiByteOffset          = 0U;
+    xiiUInt64                     m_uiByteWidth           = 0U;
+    xiiUInt32                     m_uiFirstElement        = 0U;
+    xiiUInt32                     m_uiElementCount        = 0U;
+    xiiUInt32                     m_uiStructureByteStride = 0U;
+    xiiEnum<xiiGALResourceFormat> m_Format                = xiiGALResourceFormat::Unknown;
+    bool                          m_bRawView              = false;
+  };
+
+  [[nodiscard]] XII_ALWAYS_INLINE const ViewMetadata& GetViewMetadata() const { return m_ViewMetadata; }
+
 protected:
   friend class xiiMemoryUtils;
   friend class xiiGALDeviceD3D12;
@@ -25,4 +38,5 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  ViewMetadata m_ViewMetadata;
 };

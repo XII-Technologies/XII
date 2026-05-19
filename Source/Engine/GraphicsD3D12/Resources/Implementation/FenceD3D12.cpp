@@ -12,7 +12,21 @@ xiiGALFenceD3D12::xiiGALFenceD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12,
 
 xiiGALFenceD3D12::~xiiGALFenceD3D12()
 {
-  XII_GAL_D3D12_RELEASE(m_pD3D12Fence);
+  if (m_pD3D12Fence != nullptr)
+  {
+    xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+    if (pDeviceD3D12 != nullptr)
+    {
+      IUnknown* pObject = m_pD3D12Fence;
+      pDeviceD3D12->SafeReleaseDeviceObject(pObject);
+    }
+    else
+    {
+      XII_GAL_D3D12_RELEASE(m_pD3D12Fence);
+    }
+
+    m_pD3D12Fence = nullptr;
+  }
 
   if (m_pFenceCompleteEvent != NULL && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
   {
@@ -66,7 +80,7 @@ void xiiGALFenceD3D12::Wait(xiiUInt64 uiValue)
   {
     while (GetCompletedValue() < uiValue)
     {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMicroseconds(1U));
+      xiiThreadUtils::YieldTimeSlice();
     }
   }
 }

@@ -4,6 +4,7 @@
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <D3D12MemoryAllocator/include/D3D12MemAlloc.h>
 
@@ -238,10 +239,34 @@ xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resour
   allocationDescription.CustomPool               = nullptr; // Not supported for now.
   allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
 
-  D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
-  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  D3D12_CLEAR_VALUE        optimizedClearValue       = {};
+  const D3D12_CLEAR_VALUE* pD3D12OptimizedClearValue = nullptr;
+
+  if (pOptimizedClearValue != nullptr && pOptimizedClearValue->m_ResourceFormat != xiiGALResourceFormat::Unknown)
   {
-    xiiLog::Error("Failed to create buffer resource with D3D12 Memory Allocator.");
+    optimizedClearValue.Format = xiiD3D12TypeConversions::GetFormat(pOptimizedClearValue->m_ResourceFormat);
+
+    const xiiGALResourceFormatDescription& formatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(pOptimizedClearValue->m_ResourceFormat);
+    if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+    {
+      optimizedClearValue.DepthStencil.Depth   = pOptimizedClearValue->m_DepthStencil.m_fDepth;
+      optimizedClearValue.DepthStencil.Stencil = pOptimizedClearValue->m_DepthStencil.m_uiStencil;
+    }
+    else
+    {
+      optimizedClearValue.Color[0] = pOptimizedClearValue->m_ClearColour.r;
+      optimizedClearValue.Color[1] = pOptimizedClearValue->m_ClearColour.g;
+      optimizedClearValue.Color[2] = pOptimizedClearValue->m_ClearColour.b;
+      optimizedClearValue.Color[3] = pOptimizedClearValue->m_ClearColour.a;
+    }
+
+    pD3D12OptimizedClearValue = &optimizedClearValue;
+  }
+
+  D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
+  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), pD3D12OptimizedClearValue, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  {
+    xiiLog::Error("Failed to create image resource with D3D12 Memory Allocator.");
 
     return XII_FAILURE;
   }

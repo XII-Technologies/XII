@@ -11,6 +11,9 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
+#include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
+#include <GraphicsD3D12/Pools/FencePoolD3D12.h>
+#include <GraphicsD3D12/Pools/QueryPoolD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
@@ -85,12 +88,195 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-#define XII_VERIFY_D3D12(expression, ...)      \
-  do                                           \
-  {                                            \
-    XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return XII_FAILURE; } \
-  } while (false)
+///////////////////////////////////////////////////////////////////////////
+
+class xiiGALDeviceD3D12::DeferredDeletionQueue
+{
+public:
+  explicit DeferredDeletionQueue(xiiGALDeviceD3D12* pDeviceD3D12) :
+    m_pDeviceD3D12(pDeviceD3D12)
+  {
+  }
+
+  ~DeferredDeletionQueue()
+  {
+    ReleaseResources(true);
+  }
+
+  void EnqueueObject(IUnknown* pObject)
+  {
+    XII_ASSERT_DEV(pObject != nullptr, "D3D12 object must be valid.");
+
+    XII_LOCK(m_DeletionQueueMutex);
+
+    DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+    entry.m_Type         = DeletionEntry::Type::Object;
+    entry.m_pObject      = pObject;
+    entry.m_FenceValues  = CaptureSubmittedFenceValues();
+  }
+
+  void EnqueueResource(ID3D12Resource* pResource, xiiD3D12Allocation allocation, bool bIsBuffer)
+  {
+    XII_ASSERT_DEV(pResource != nullptr, "D3D12 resource must be valid.");
+
+    XII_LOCK(m_DeletionQueueMutex);
+
+    DeletionEntry& entry = m_DeletionQueue.ExpandAndGetRef();
+    entry.m_Type         = bIsBuffer ? DeletionEntry::Type::Buffer : DeletionEntry::Type::Image;
+    entry.m_pObject      = pResource;
+    entry.m_Allocation   = allocation;
+    entry.m_FenceValues  = CaptureSubmittedFenceValues();
+  }
+
+  void ReleaseResources(bool bForceReleaseAll = false)
+  {
+    while (true)
+    {
+      FenceValues completedFenceValues = {};
+      if (!bForceReleaseAll)
+      {
+        completedFenceValues = CaptureCompletedFenceValues();
+      }
+
+      DeletionEntry entryToDestroy;
+      bool          bHasEntryToDestroy = false;
+
+      {
+        XII_LOCK(m_DeletionQueueMutex);
+
+        if (m_DeletionQueue.IsEmpty())
+          break;
+
+        if (!bForceReleaseAll && !IsReadyForDeletion(m_DeletionQueue.PeekFront(), completedFenceValues))
+          break;
+
+        entryToDestroy = m_DeletionQueue.PeekFront();
+        m_DeletionQueue.PopFront();
+        bHasEntryToDestroy = true;
+      }
+
+      if (bHasEntryToDestroy)
+      {
+        DestroyEntry(entryToDestroy);
+      }
+    }
+  }
+
+private:
+  struct FenceValues
+  {
+    xiiUInt64 m_uiGraphics = 0ULL;
+    xiiUInt64 m_uiCompute  = 0ULL;
+    xiiUInt64 m_uiTransfer = 0ULL;
+  };
+
+  struct DeletionEntry
+  {
+    enum class Type : xiiUInt8
+    {
+      Object,
+      Buffer,
+      Image
+    };
+
+    Type               m_Type        = Type::Object;
+    IUnknown*          m_pObject     = nullptr;
+    xiiD3D12Allocation m_Allocation  = nullptr;
+    FenceValues        m_FenceValues = {};
+  };
+
+  [[nodiscard]] static xiiUInt64 GetRequiredFenceValue(const xiiGALCommandQueueD3D12* pCommandQueue)
+  {
+    if (pCommandQueue == nullptr)
+      return 0ULL;
+
+    return pCommandQueue->GetNextFenceValue();
+  }
+
+  [[nodiscard]] static xiiUInt64 GetCompletedFenceValue(xiiGALCommandQueueD3D12* pCommandQueue)
+  {
+    return pCommandQueue != nullptr ? pCommandQueue->GetCompletedFenceValue() : 0ULL;
+  }
+
+  [[nodiscard]] FenceValues CaptureSubmittedFenceValues() const
+  {
+    FenceValues fenceValues = {};
+
+    fenceValues.m_uiGraphics = GetRequiredFenceValue(m_pDeviceD3D12->m_pGraphicsCommandQueue.Borrow());
+    fenceValues.m_uiCompute  = GetRequiredFenceValue(m_pDeviceD3D12->m_pComputeCommandQueue.Borrow());
+    fenceValues.m_uiTransfer = GetRequiredFenceValue(m_pDeviceD3D12->m_pTransferCommandQueue.Borrow());
+
+    return fenceValues;
+  }
+
+  [[nodiscard]] FenceValues CaptureCompletedFenceValues() const
+  {
+    FenceValues fenceValues = {};
+
+    fenceValues.m_uiGraphics = GetCompletedFenceValue(m_pDeviceD3D12->m_pGraphicsCommandQueue.Borrow());
+    fenceValues.m_uiCompute  = GetCompletedFenceValue(m_pDeviceD3D12->m_pComputeCommandQueue.Borrow());
+    fenceValues.m_uiTransfer = GetCompletedFenceValue(m_pDeviceD3D12->m_pTransferCommandQueue.Borrow());
+
+    return fenceValues;
+  }
+
+  [[nodiscard]] static bool IsReadyForDeletion(const DeletionEntry& entry, const FenceValues& completedFenceValues)
+  {
+    return completedFenceValues.m_uiGraphics >= entry.m_FenceValues.m_uiGraphics && completedFenceValues.m_uiCompute >= entry.m_FenceValues.m_uiCompute && completedFenceValues.m_uiTransfer >= entry.m_FenceValues.m_uiTransfer;
+  }
+
+  void DestroyEntry(DeletionEntry& entry)
+  {
+    if (entry.m_pObject == nullptr)
+      return;
+
+    xiiD3D12MemoryAllocator* pAllocatorD3D12 = m_pDeviceD3D12->GetD3D12Allocator();
+
+    switch (entry.m_Type)
+    {
+      case DeletionEntry::Type::Object:
+      {
+        XII_GAL_D3D12_RELEASE(entry.m_pObject);
+      }
+      break;
+      case DeletionEntry::Type::Buffer:
+      case DeletionEntry::Type::Image:
+      {
+        ID3D12Resource*    pResource  = static_cast<ID3D12Resource*>(entry.m_pObject);
+        xiiD3D12Allocation allocation = entry.m_Allocation;
+
+        if (allocation != nullptr && pAllocatorD3D12 != nullptr)
+        {
+          if (entry.m_Type == DeletionEntry::Type::Buffer)
+          {
+            pAllocatorD3D12->DestroyBuffer(pResource, allocation);
+          }
+          else
+          {
+            pAllocatorD3D12->DestroyImage(pResource, allocation);
+          }
+        }
+        else
+        {
+          XII_GAL_D3D12_RELEASE(pResource);
+          XII_GAL_D3D12_RELEASE(allocation);
+        }
+
+        entry.m_pObject    = pResource;
+        entry.m_Allocation = allocation;
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
+  xiiGALDeviceD3D12*      m_pDeviceD3D12 = nullptr;
+  xiiDeque<DeletionEntry> m_DeletionQueue;
+  mutable xiiMutex        m_DeletionQueueMutex;
+};
+
+///////////////////////////////////////////////////////////////////////////
 
 xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(pAllocator, description)
@@ -101,17 +287,112 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
 {
   WaitIdlePlatform();
 
+  m_pTransferCommandListPool.Clear();
+  m_pTransferCommandQueueQueryPool.Clear();
   m_pTransferCommandQueue.Clear();
 
+  m_pComputeCommandListPool.Clear();
+  m_pComputeCommandQueueQueryPool.Clear();
   m_pComputeCommandQueue.Clear();
 
+  m_pGraphicsCommandListPool.Clear();
+  m_pGraphicsCommandQueueQueryPool.Clear();
   m_pGraphicsCommandQueue.Clear();
+
+  m_pFencePool.Clear();
+  m_pDeferredDeletionQueue.Clear();
 
   XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D12_RELEASE(m_pDXGIFactory);
 
   ReportLiveGPUObjects();
+}
+
+void xiiGALDeviceD3D12::SafeReleaseDeviceObject(IUnknown*& pObject)
+{
+  if (pObject == nullptr)
+    return;
+
+  if (m_pDeferredDeletionQueue != nullptr)
+  {
+    m_pDeferredDeletionQueue->EnqueueObject(pObject);
+    pObject = nullptr;
+    return;
+  }
+
+  XII_GAL_D3D12_RELEASE(pObject);
+}
+
+void xiiGALDeviceD3D12::SafeReleaseBuffer(ID3D12Resource*& pResource, xiiD3D12Allocation& allocation)
+{
+  if (pResource == nullptr)
+    return;
+
+  if (allocation == nullptr)
+  {
+    IUnknown* pObject = pResource;
+    SafeReleaseDeviceObject(pObject);
+    pResource = nullptr;
+    return;
+  }
+
+  if (m_pDeferredDeletionQueue != nullptr)
+  {
+    m_pDeferredDeletionQueue->EnqueueResource(pResource, allocation, true);
+    pResource  = nullptr;
+    allocation = nullptr;
+    return;
+  }
+
+  if (m_pAllocatorD3D12 != nullptr)
+  {
+    m_pAllocatorD3D12->DestroyBuffer(pResource, allocation);
+  }
+  else
+  {
+    XII_GAL_D3D12_RELEASE(pResource);
+    XII_GAL_D3D12_RELEASE(allocation);
+  }
+}
+
+void xiiGALDeviceD3D12::SafeReleaseTexture(ID3D12Resource*& pResource, xiiD3D12Allocation& allocation, bool bIsStagingTexture)
+{
+  if (pResource == nullptr)
+    return;
+
+  if (allocation == nullptr)
+  {
+    IUnknown* pObject = pResource;
+    SafeReleaseDeviceObject(pObject);
+    pResource = nullptr;
+    return;
+  }
+
+  if (m_pDeferredDeletionQueue != nullptr)
+  {
+    m_pDeferredDeletionQueue->EnqueueResource(pResource, allocation, bIsStagingTexture);
+    pResource  = nullptr;
+    allocation = nullptr;
+    return;
+  }
+
+  if (m_pAllocatorD3D12 != nullptr)
+  {
+    if (bIsStagingTexture)
+    {
+      m_pAllocatorD3D12->DestroyBuffer(pResource, allocation);
+    }
+    else
+    {
+      m_pAllocatorD3D12->DestroyImage(pResource, allocation);
+    }
+  }
+  else
+  {
+    XII_GAL_D3D12_RELEASE(pResource);
+    XII_GAL_D3D12_RELEASE(allocation);
+  }
 }
 
 xiiResult xiiGALDeviceD3D12::InitializePlatform()
@@ -142,7 +423,15 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   }
 #endif
 
-  XII_VERIFY_D3D12(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+  // Create the DXGI factory to select a compatible adapter to create the D3D12 device with.
+  {
+    HRESULT hResult = CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)));
+
+    if (FAILED(hResult))
+    {
+      xiiLog::Error("Failed to create DXGI factory. Error: '{}'.", xiiHRESULTtoString(hResult));
+    }
+  }
 
   {
     // Direct3D12 does not allow feature levels below 11.0.
@@ -265,6 +554,7 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 
   // Create pools.
   {
+    m_pFencePool = XII_NEW(&m_Allocator, xiiGALFencePoolD3D12, this, 16U);
   }
 
   // Create command queues.
@@ -286,6 +576,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
+      m_pGraphicsCommandListPool                             = XII_NEW(&m_Allocator, xiiGALCommandListPoolD3D12, this, m_pGraphicsCommandQueue.Borrow(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+      m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolD3D12, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
 
@@ -303,6 +595,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       {
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
         m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
+        m_pComputeCommandListPool                              = XII_NEW(&m_Allocator, xiiGALCommandListPoolD3D12, this, m_pComputeCommandQueue.Borrow(), D3D12_COMMAND_LIST_TYPE_COMPUTE);
+        m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolD3D12, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
         m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
 
@@ -321,6 +615,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       {
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
         m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
+        m_pTransferCommandListPool                             = XII_NEW(&m_Allocator, xiiGALCommandListPoolD3D12, this, m_pTransferCommandQueue.Borrow(), D3D12_COMMAND_LIST_TYPE_COPY);
+        m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolD3D12, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
         m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
 
@@ -328,6 +624,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       }
     }
   }
+
+  m_pDeferredDeletionQueue = XII_NEW(&m_Allocator, DeferredDeletionQueue, this);
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
@@ -360,6 +658,36 @@ void xiiGALDeviceD3D12::BeginFramePlatform()
 
 void xiiGALDeviceD3D12::EndFramePlatform()
 {
+  if (m_pTransferCommandListPool != nullptr)
+  {
+    m_pTransferCommandListPool->ReclaimCompleted();
+  }
+  if (m_pComputeCommandListPool != nullptr)
+  {
+    m_pComputeCommandListPool->ReclaimCompleted();
+  }
+  if (m_pGraphicsCommandListPool != nullptr)
+  {
+    m_pGraphicsCommandListPool->ReclaimCompleted();
+  }
+
+  if (m_pTransferCommandQueueQueryPool != nullptr)
+  {
+    m_pTransferCommandQueueQueryPool->ResetStaleQueries();
+  }
+  if (m_pComputeCommandQueueQueryPool != nullptr)
+  {
+    m_pComputeCommandQueueQueryPool->ResetStaleQueries();
+  }
+  if (m_pGraphicsCommandQueueQueryPool != nullptr)
+  {
+    m_pGraphicsCommandQueueQueryPool->ResetStaleQueries();
+  }
+
+  if (m_pDeferredDeletionQueue != nullptr)
+  {
+    m_pDeferredDeletionQueue->ReleaseResources();
+  }
 }
 
 xiiGALCommandQueue* xiiGALDeviceD3D12::GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const
@@ -644,6 +972,27 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
     m_pComputeCommandQueue->WaitForIdle();
   if (m_pTransferCommandQueue != nullptr)
     m_pTransferCommandQueue->WaitForIdle();
+
+  if (m_pTransferCommandListPool != nullptr)
+  {
+    m_pTransferCommandListPool->ReclaimCompleted();
+    m_pTransferCommandListPool->ResetPools();
+  }
+  if (m_pComputeCommandListPool != nullptr)
+  {
+    m_pComputeCommandListPool->ReclaimCompleted();
+    m_pComputeCommandListPool->ResetPools();
+  }
+  if (m_pGraphicsCommandListPool != nullptr)
+  {
+    m_pGraphicsCommandListPool->ReclaimCompleted();
+    m_pGraphicsCommandListPool->ResetPools();
+  }
+
+  if (m_pDeferredDeletionQueue != nullptr)
+  {
+    m_pDeferredDeletionQueue->ReleaseResources(true);
+  }
 }
 
 xiiResult xiiGALDeviceD3D12::FillCapabilitiesPlatform()
