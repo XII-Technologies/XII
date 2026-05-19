@@ -80,7 +80,7 @@ void xiiGALFenceD3D12::Wait(xiiUInt64 uiValue)
   {
     while (GetCompletedValue() < uiValue)
     {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMicroseconds(1U));
+      xiiThreadUtils::YieldTimeSlice();
     }
   }
 }
