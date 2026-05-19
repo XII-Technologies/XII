@@ -13,70 +13,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
-  [[nodiscard]] xiiBitflags<xiiGALResourceStateFlags> GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
-  {
-    xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;
-
-    for (xiiUInt32 uiBit : bindFlags)
-    {
-      switch (uiBit)
-      {
-        case xiiGALBindFlags::VertexBuffer:
-          resourceStates |= xiiGALResourceStateFlags::VertexBuffer;
-          break;
-        case xiiGALBindFlags::IndexBuffer:
-          resourceStates |= xiiGALResourceStateFlags::IndexBuffer;
-          break;
-        case xiiGALBindFlags::UniformBuffer:
-          resourceStates |= xiiGALResourceStateFlags::ConstantBuffer;
-          break;
-        case xiiGALBindFlags::ShaderResource:
-          resourceStates |= xiiGALResourceStateFlags::ShaderResource;
-          break;
-        case xiiGALBindFlags::UnorderedAccess:
-          resourceStates |= xiiGALResourceStateFlags::UnorderedAccess;
-          break;
-        case xiiGALBindFlags::IndirectDrawArguments:
-          resourceStates |= xiiGALResourceStateFlags::IndirectArgument;
-          break;
-        case xiiGALBindFlags::StreamOutput:
-          resourceStates |= xiiGALResourceStateFlags::StreamOut;
-          break;
-        case xiiGALBindFlags::RayTracing:
-          resourceStates |= xiiGALResourceStateFlags::RayTracing;
-          break;
-        case xiiGALBindFlags::None:
-          break;
-        default:
-          XII_REPORT_FAILURE("Unexpected bind flag while initializing D3D12 buffer.");
-          break;
-      }
-    }
-
-    return resourceStates;
-  }
-
-  [[nodiscard]] xiiBitflags<xiiGALResourceStateFlags> GetDynamicBufferState()
-  {
-    return xiiGALResourceStateFlags::VertexBuffer | xiiGALResourceStateFlags::IndexBuffer | xiiGALResourceStateFlags::ConstantBuffer | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::IndirectArgument;
-  }
-
-  [[nodiscard]] D3D12_RESOURCE_FLAGS GetResourceFlagsFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
-  {
-    D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-
-    if (bindFlags.IsAnySet(xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::RayTracing))
-    {
-      resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    }
-    if (!bindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-    {
-      resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-    }
-
-    return resourceFlags;
-  }
-
   xiiResult UploadInitialDataWithImmediateCommandList(const xiiSharedPtr<xiiGALDeviceD3D12>& pDeviceD3D12, ID3D12Resource* pDestinationBuffer, const D3D12_RESOURCE_DESC& destinationResourceDescription, const void* pData, xiiUInt64 uiDataSize, xiiBitflags<xiiGALResourceStateFlags> finalState)
   {
     XII_ASSERT_DEV(pDeviceD3D12 != nullptr, "Invalid D3D12 device.");
@@ -217,7 +153,7 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
   xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12      = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiD3D12MemoryAllocator*        pD3D12Allocator   = pDeviceD3D12->GetD3D12Allocator();
   const bool                      bHasInitialData   = (pInitialData != nullptr && pInitialData->m_pData != nullptr && pInitialData->m_uiDataSize > 0U);
-  xiiBitflags<xiiGALResourceStateFlags> desiredState = GetResourceStateFromBindFlags(m_Description.m_BindFlags);
+  xiiBitflags<xiiGALResourceStateFlags> desiredState = xiiD3D12TypeConversions::GetResourceStateFromBindFlags(m_Description.m_BindFlags);
 
   if (desiredState == xiiGALResourceStateFlags::Undefined)
   {
@@ -235,7 +171,7 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
   resourceDescription.SampleDesc.Count    = 1U;
   resourceDescription.SampleDesc.Quality  = 0U;
   resourceDescription.Layout              = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-  resourceDescription.Flags               = GetResourceFlagsFromBindFlags(m_Description.m_BindFlags);
+  resourceDescription.Flags               = xiiD3D12TypeConversions::GetBufferResourceFlagsFromBindFlags(m_Description.m_BindFlags);
 
   m_ExternalMemoryKind = xiiGALExternalMemoryKind::None;
 
@@ -271,7 +207,7 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
 
     case xiiGALResourceUsage::Dynamic:
       allocationCreateInfo.m_HeapType = xiiD3D12MemoryHeapType::Upload;
-      creationState                   = GetDynamicBufferState();
+      creationState                   = xiiD3D12TypeConversions::GetDynamicBufferState();
       finalState                      = creationState;
       m_bHostVisibleBuffer            = true;
       m_MemoryPropertyFlags           = xiiGALMemoryPropertyFlags::HostCoherent;
