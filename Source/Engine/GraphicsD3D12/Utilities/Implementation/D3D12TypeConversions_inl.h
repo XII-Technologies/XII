@@ -1382,6 +1382,61 @@ XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceStat
   return resourceStates;
 }
 
+XII_ALWAYS_INLINE D3D12_SHADING_RATE xiiD3D12TypeConversions::GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e)
+{
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateFlags::_1X1:
+      return D3D12_SHADING_RATE_1X1;
+    case xiiGALShadingRateFlags::_1X2:
+      return D3D12_SHADING_RATE_1X2;
+    case xiiGALShadingRateFlags::_2X1:
+      return D3D12_SHADING_RATE_2X1;
+    case xiiGALShadingRateFlags::_2X2:
+      return D3D12_SHADING_RATE_2X2;
+    case xiiGALShadingRateFlags::_2X4:
+      return D3D12_SHADING_RATE_2X4;
+    case xiiGALShadingRateFlags::_4X2:
+      return D3D12_SHADING_RATE_4X2;
+    case xiiGALShadingRateFlags::_4X4:
+      return D3D12_SHADING_RATE_4X4;
+
+    case xiiGALShadingRateFlags::_1X4:
+    case xiiGALShadingRateFlags::_4X1:
+      xiiLog::Error("Shading rate '{}' is unsupported by Direct3D12.", xiiArgEnum(e));
+      return D3D12_SHADING_RATE_1X1;
+
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate value.");
+      return D3D12_SHADING_RATE_1X1;
+  }
+}
+
+XII_ALWAYS_INLINE D3D12_SHADING_RATE_COMBINER xiiD3D12TypeConversions::GetShadingRateCombiner(xiiBitflags<xiiGALShadingRateCombinerFlags> e)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(e.GetValue()), "Expected a single combiner flag.");
+
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateCombinerFlags::PassThrough:
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+    case xiiGALShadingRateCombinerFlags::CombinerOverride:
+      return D3D12_SHADING_RATE_COMBINER_OVERRIDE;
+    case xiiGALShadingRateCombinerFlags::CombinerMin:
+      return D3D12_SHADING_RATE_COMBINER_MIN;
+    case xiiGALShadingRateCombinerFlags::CombinerMax:
+      return D3D12_SHADING_RATE_COMBINER_MAX;
+    case xiiGALShadingRateCombinerFlags::CombinerSum:
+      return D3D12_SHADING_RATE_COMBINER_SUM;
+    case xiiGALShadingRateCombinerFlags::CombinerMul:
+      xiiLog::Error("Shading rate combiner '{}' is unsupported by Direct3D12.", xiiArgEnum(e));
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate combiner.");
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+  }
+}
+
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiD3D12TypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
 {
   xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;

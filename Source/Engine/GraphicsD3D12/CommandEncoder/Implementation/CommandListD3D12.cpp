@@ -102,6 +102,70 @@ namespace
   {
     return descriptorAllocation.m_pDescriptorHeap != nullptr && descriptorAllocation.m_CPUHandle.ptr != 0U && descriptorAllocation.m_GPUHandle.ptr != 0U && descriptorAllocation.m_uiDescriptorSize != 0U;
   }
+
+  [[nodiscard]] bool HasStencilComponent(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::D24UNormalizedS8UInt:
+      case xiiGALResourceFormat::D32FloatS8X24UInt:
+      case xiiGALResourceFormat::X24TypelessG8UInt:
+      case xiiGALResourceFormat::X32TypelessG8X24UInt:
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  [[nodiscard]] bool SubpassUsesAttachment(const xiiGALSubPassDescription& subpass, xiiUInt32 uiAttachmentIndex)
+  {
+    for (const xiiGALAttachmentReferenceDescription& attachmentReference : subpass.m_InputAttachments)
+    {
+      if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
+        return true;
+    }
+
+    for (const xiiGALAttachmentReferenceDescription& attachmentReference : subpass.m_RenderTargetAttachments)
+    {
+      if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
+        return true;
+    }
+
+    for (const xiiGALAttachmentReferenceDescription& attachmentReference : subpass.m_ResolveAttachments)
+    {
+      if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
+        return true;
+    }
+
+    if (!subpass.m_DepthStencilAttachment.IsEmpty() && subpass.m_DepthStencilAttachment[0].m_uiAttachmentIndex == uiAttachmentIndex)
+      return true;
+
+    if (!subpass.m_DepthResolveAttachment.IsEmpty() && subpass.m_DepthResolveAttachment[0].m_Attachment.m_uiAttachmentIndex == uiAttachmentIndex)
+      return true;
+
+    if (!subpass.m_ShadingRateAttachment.IsEmpty() && subpass.m_ShadingRateAttachment[0].m_AttachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
+      return true;
+
+    for (xiiUInt32 uiPreserveAttachmentIndex : subpass.m_PreserveAttachments)
+    {
+      if (uiPreserveAttachmentIndex == uiAttachmentIndex)
+        return true;
+    }
+
+    return false;
+  }
+
+  [[nodiscard]] bool WasAttachmentUsedInPreviousSubpass(const xiiGALRenderPassCreationDescription& renderPassDescription, xiiUInt32 uiAttachmentIndex, xiiUInt32 uiCurrentSubpassIndex)
+  {
+    for (xiiUInt32 uiSubpassIndex = 0U; uiSubpassIndex < uiCurrentSubpassIndex; ++uiSubpassIndex)
+    {
+      if (SubpassUsesAttachment(renderPassDescription.m_SubPasses[uiSubpassIndex], uiAttachmentIndex))
+        return true;
+    }
+
+    return false;
+  }
 } // namespace
 
 xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
@@ -129,6 +193,8 @@ void xiiGALCommandListD3D12::BeginPlatform()
     return;
   }
 
+  m_CommandListFlags                           = {};
+  m_CommandListState                           = {};
   m_CommandListData                            = {};
   m_CommandListData.m_pDynamicBufferPoolD3D12  = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALDynamicBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing);
   m_CommandListData.m_pUploadStagingBufferPool = XII_NEW(pDeviceD3D12->GetAllocator(), xiiGALStagingBufferPoolD3D12, pDeviceD3D12.Borrow(), 16U, xiiGALBindFlags::ShaderResource);
@@ -150,6 +216,8 @@ void xiiGALCommandListD3D12::BeginPlatform()
   {
     xiiLog::Error("Failed to begin D3D12 command list '{}': command allocator/list allocation failed.", GetDebugName());
     m_CommandListAllocation = {};
+    m_CommandListFlags      = {};
+    m_CommandListState      = {};
     m_CommandListData       = {};
     return;
   }
@@ -158,6 +226,8 @@ void xiiGALCommandListD3D12::BeginPlatform()
   {
     xiiLog::Error("Failed to reset D3D12 command allocator for command list '{}'.", GetDebugName());
     m_CommandListAllocation  = {};
+    m_CommandListFlags       = {};
+    m_CommandListState       = {};
     m_CommandListData        = {};
     m_pD3D12CommandAllocator = nullptr;
     m_pD3D12CommandList      = nullptr;
@@ -168,6 +238,8 @@ void xiiGALCommandListD3D12::BeginPlatform()
   {
     xiiLog::Error("Failed to reset D3D12 command list '{}'.", GetDebugName());
     m_CommandListAllocation  = {};
+    m_CommandListFlags       = {};
+    m_CommandListState       = {};
     m_CommandListData        = {};
     m_pD3D12CommandAllocator = nullptr;
     m_pD3D12CommandList      = nullptr;
@@ -211,6 +283,8 @@ void xiiGALCommandListD3D12::ResetPlatform()
     }
     else
     {
+      m_CommandListFlags      = {};
+      m_CommandListState      = {};
       m_CommandListData       = {};
       m_CommandListAllocation = {};
     }
@@ -219,6 +293,8 @@ void xiiGALCommandListD3D12::ResetPlatform()
   m_CommandListAllocation  = {};
   m_pD3D12CommandAllocator = nullptr;
   m_pD3D12CommandList      = nullptr;
+  m_CommandListFlags       = {};
+  m_CommandListState       = {};
   m_CommandListData        = {};
   m_uiSubmittedFenceValue  = 0ULL;
   m_RecordingState = RecordingState::Reset;
@@ -1006,22 +1082,214 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
 
 void xiiGALCommandListD3D12::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
 {
+  if (m_pD3D12CommandList == nullptr || pRenderTargetView == nullptr)
+    return;
+
+  xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = xiiDynamicCast<xiiGALTextureViewD3D12*>(pRenderTargetView);
+  if (pRenderTargetViewD3D12 == nullptr || pRenderTargetViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+  {
+    xiiLog::Error("Failed to clear render target on D3D12 command list '{}': incompatible render-target view backend type or descriptor handle.", GetDebugName());
+    return;
+  }
+
+  xiiSharedPtr<xiiGALTextureD3D12> pTextureD3D12 = pRenderTargetViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+  if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+  {
+    xiiLog::Error("Failed to clear render target on D3D12 command list '{}': backing texture is invalid.", GetDebugName());
+    return;
+  }
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12.Borrow(), pTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::RenderTarget, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::RenderTarget), "render-target clear", GetDebugName()))
+    return;
+
+  const float clearColorRGBA[4] = {clearColor.r, clearColor.g, clearColor.b, clearColor.a};
+  m_pD3D12CommandList->ClearRenderTargetView(pRenderTargetViewD3D12->GetCPUDescriptorHandle(), clearColorRGBA, 0U, nullptr);
 }
 
 void xiiGALCommandListD3D12::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+  if (m_pD3D12CommandList == nullptr || pDepthStencilView == nullptr || (!bClearDepth && !bClearStencil))
+    return;
+
+  xiiGALTextureViewD3D12* pDepthStencilViewD3D12 = xiiDynamicCast<xiiGALTextureViewD3D12*>(pDepthStencilView);
+  if (pDepthStencilViewD3D12 == nullptr || pDepthStencilViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+  {
+    xiiLog::Error("Failed to clear depth-stencil view on D3D12 command list '{}': incompatible depth-stencil view backend type or descriptor handle.", GetDebugName());
+    return;
+  }
+
+  xiiSharedPtr<xiiGALTextureD3D12> pTextureD3D12 = pDepthStencilViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+  if (pTextureD3D12 == nullptr || pTextureD3D12->GetD3D12Texture() == nullptr)
+  {
+    xiiLog::Error("Failed to clear depth-stencil on D3D12 command list '{}': backing texture is invalid.", GetDebugName());
+    return;
+  }
+
+  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12.Borrow(), pTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::DepthWrite, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::DepthWrite), "depth-stencil clear", GetDebugName()))
+    return;
+
+  D3D12_CLEAR_FLAGS d3d12ClearFlags = static_cast<D3D12_CLEAR_FLAGS>(0U);
+  if (bClearDepth)
+    d3d12ClearFlags |= D3D12_CLEAR_FLAG_DEPTH;
+  if (bClearStencil)
+    d3d12ClearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+
+  m_pD3D12CommandList->ClearDepthStencilView(pDepthStencilViewD3D12->GetCPUDescriptorHandle(), d3d12ClearFlags, fDepthClear, uiStencilClear, 0U, nullptr);
 }
 
 void xiiGALCommandListD3D12::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
 {
+  if (m_pD3D12CommandList == nullptr || pRenderPass == nullptr || pFramebuffer == nullptr)
+    return;
+
+  xiiGALRenderPassD3D12*  pRenderPassD3D12  = xiiDynamicCast<xiiGALRenderPassD3D12*>(pRenderPass);
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = xiiDynamicCast<xiiGALFramebufferD3D12*>(pFramebuffer);
+  if (pRenderPassD3D12 == nullptr || pFramebufferD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to begin render pass on D3D12 command list '{}': incompatible render pass/framebuffer backend types.", GetDebugName());
+    return;
+  }
+
+  const xiiGALRenderPassCreationDescription&  renderPassDescription  = pRenderPassD3D12->GetDescription();
+  const xiiGALFramebufferCreationDescription& framebufferDescription = pFramebufferD3D12->GetDescription();
+  if (renderPassDescription.m_SubPasses.IsEmpty())
+  {
+    xiiLog::Error("Failed to begin render pass on D3D12 command list '{}': render pass contains no subpasses.", GetDebugName());
+    return;
+  }
+
+  m_CommandListState.m_uiFramebufferWidth       = framebufferDescription.m_FramebufferSize.width;
+  m_CommandListState.m_uiFramebufferHeight      = framebufferDescription.m_FramebufferSize.height;
+  m_CommandListState.m_uiFramebufferArraySlices = framebufferDescription.m_uiArraySliceCount;
+  m_CommandListState.m_bIsShadingRateSet        = false;
+  m_CommandListFlags.Remove(CommandListFlags::ShadingRateSet);
+
+  m_CommandListData.m_uiSubpassIndex = 0U;
+  m_CommandListData.m_AttachmentClearValues.Clear();
+  m_CommandListData.m_AttachmentClearValues.SetCount(renderPassDescription.m_Attachments.GetCount());
+
+  for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
+  {
+    D3D12_CLEAR_VALUE& clearValue = m_CommandListData.m_AttachmentClearValues[uiAttachmentIndex];
+    clearValue                    = {};
+    clearValue.Format             = xiiD3D12TypeConversions::GetFormat(renderPassDescription.m_Attachments[uiAttachmentIndex].m_Format);
+
+    if (uiAttachmentIndex < pOptimizedClearValues.GetCount())
+    {
+      const xiiGALOptimizedClearValue& optimizedClear = pOptimizedClearValues[uiAttachmentIndex];
+      clearValue.Color[0]                             = optimizedClear.m_ClearColour.r;
+      clearValue.Color[1]                             = optimizedClear.m_ClearColour.g;
+      clearValue.Color[2]                             = optimizedClear.m_ClearColour.b;
+      clearValue.Color[3]                             = optimizedClear.m_ClearColour.a;
+      clearValue.DepthStencil.Depth                   = optimizedClear.m_DepthStencil.m_fDepth;
+      clearValue.DepthStencil.Stencil                 = optimizedClear.m_DepthStencil.m_uiStencil;
+    }
+    else
+    {
+      clearValue.DepthStencil.Depth   = 1.0f;
+      clearValue.DepthStencil.Stencil = 0U;
+    }
+  }
+
+  for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount() && uiAttachmentIndex < framebufferDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
+  {
+    const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
+    if (attachmentDescription.m_InitialStateFlags == xiiGALResourceStateFlags::Unknown || attachmentDescription.m_InitialStateFlags == xiiGALResourceStateFlags::Undefined)
+      continue;
+
+    xiiSharedPtr<xiiGALTextureViewD3D12> pAttachmentViewD3D12 = framebufferDescription.m_Attachments[uiAttachmentIndex].Downcast<xiiGALTextureViewD3D12>();
+    xiiSharedPtr<xiiGALTextureD3D12>     pAttachmentTextureD3D12;
+    if (pAttachmentViewD3D12 != nullptr)
+    {
+      pAttachmentTextureD3D12 = pAttachmentViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+    }
+
+    if (pAttachmentTextureD3D12 == nullptr || pAttachmentTextureD3D12->GetD3D12Texture() == nullptr)
+    {
+      xiiLog::Error("Failed to begin render pass on D3D12 command list '{}': attachment {} does not reference a valid D3D12 texture.", GetDebugName(), uiAttachmentIndex);
+      return;
+    }
+
+    if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pAttachmentTextureD3D12.Borrow(), pAttachmentTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, attachmentDescription.m_InitialStateFlags, xiiD3D12TypeConversions::GetResourceState(attachmentDescription.m_InitialStateFlags), "render-pass attachment initial state", GetDebugName()))
+      return;
+  }
+
+  BindSubpassAttachments(pRenderPassD3D12, pFramebufferD3D12, 0U, pOptimizedClearValues);
 }
 
 void xiiGALCommandListD3D12::NextSubpassPlatform()
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALRenderPassD3D12*  pRenderPassD3D12  = xiiDynamicCast<xiiGALRenderPassD3D12*>(m_pRenderPass);
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = xiiDynamicCast<xiiGALFramebufferD3D12*>(m_pFramebuffer);
+  if (pRenderPassD3D12 == nullptr || pFramebufferD3D12 == nullptr)
+  {
+    xiiLog::Error("Failed to advance subpass on D3D12 command list '{}': render pass/framebuffer are not active or incompatible.", GetDebugName());
+    return;
+  }
+
+  const xiiGALRenderPassCreationDescription& renderPassDescription = pRenderPassD3D12->GetDescription();
+  const xiiUInt32                            uiNextSubpassIndex    = m_CommandListData.m_uiSubpassIndex + 1U;
+  if (uiNextSubpassIndex >= renderPassDescription.m_SubPasses.GetCount())
+  {
+    xiiLog::Error("Failed to advance subpass on D3D12 command list '{}': subpass index {} is out of range (subpass count {}).", GetDebugName(), uiNextSubpassIndex, renderPassDescription.m_SubPasses.GetCount());
+    return;
+  }
+
+  m_CommandListData.m_uiSubpassIndex = uiNextSubpassIndex;
+  BindSubpassAttachments(pRenderPassD3D12, pFramebufferD3D12, uiNextSubpassIndex, xiiArrayPtr<const xiiGALOptimizedClearValue>());
 }
 
 void xiiGALCommandListD3D12::EndRenderPassPlatform()
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiGALRenderPassD3D12*  pRenderPassD3D12  = xiiDynamicCast<xiiGALRenderPassD3D12*>(m_pRenderPass);
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = xiiDynamicCast<xiiGALFramebufferD3D12*>(m_pFramebuffer);
+  if (pRenderPassD3D12 != nullptr && pFramebufferD3D12 != nullptr)
+  {
+    const xiiGALRenderPassCreationDescription&  renderPassDescription  = pRenderPassD3D12->GetDescription();
+    const xiiGALFramebufferCreationDescription& framebufferDescription = pFramebufferD3D12->GetDescription();
+
+    for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount() && uiAttachmentIndex < framebufferDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
+    {
+      const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
+      if (attachmentDescription.m_FinalStateFlags == xiiGALResourceStateFlags::Unknown || attachmentDescription.m_FinalStateFlags == xiiGALResourceStateFlags::Undefined)
+        continue;
+
+      xiiSharedPtr<xiiGALTextureViewD3D12> pAttachmentViewD3D12 = framebufferDescription.m_Attachments[uiAttachmentIndex].Downcast<xiiGALTextureViewD3D12>();
+      xiiSharedPtr<xiiGALTextureD3D12>     pAttachmentTextureD3D12;
+      if (pAttachmentViewD3D12 != nullptr)
+      {
+        pAttachmentTextureD3D12 = pAttachmentViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+      }
+
+      if (pAttachmentTextureD3D12 == nullptr || pAttachmentTextureD3D12->GetD3D12Texture() == nullptr)
+      {
+        xiiLog::Error("Failed to end render pass on D3D12 command list '{}': attachment {} does not reference a valid D3D12 texture.", GetDebugName(), uiAttachmentIndex);
+        continue;
+      }
+
+      if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pAttachmentTextureD3D12.Borrow(), pAttachmentTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, attachmentDescription.m_FinalStateFlags, xiiD3D12TypeConversions::GetResourceState(attachmentDescription.m_FinalStateFlags), "render-pass attachment final state", GetDebugName()))
+      {
+        xiiLog::Error("Failed to transition attachment {} to final state at render-pass end on command list '{}'.", uiAttachmentIndex, GetDebugName());
+      }
+    }
+  }
+
+  m_CommandListData.m_pBoundRenderTargets.Clear();
+  m_CommandListData.m_pBoundDepthStencilTarget = nullptr;
+  m_CommandListData.m_uiBoundRenderTargetCount = 0U;
+  m_CommandListData.m_uiSubpassIndex           = 0U;
+  m_CommandListData.m_AttachmentClearValues.Clear();
+
+  m_CommandListState.m_uiFramebufferWidth       = 0U;
+  m_CommandListState.m_uiFramebufferHeight      = 0U;
+  m_CommandListState.m_uiFramebufferArraySlices = 0U;
+  m_CommandListState.m_bIsShadingRateSet        = false;
 }
 
 void xiiGALCommandListD3D12::DrawPlatform(const xiiGALDrawDescription& description)
@@ -1724,6 +1992,67 @@ void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGAL
 
 void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
 {
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  ID3D12GraphicsCommandList5* pD3D12CommandList5 = nullptr;
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList5));
+  if (FAILED(hResult) || pD3D12CommandList5 == nullptr)
+  {
+    xiiLog::Error("Failed to set shading rate on D3D12 command list '{}': ID3D12GraphicsCommandList5 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
+    return;
+  }
+
+  XII_SCOPE_EXIT(
+    {
+      XII_GAL_D3D12_RELEASE(pD3D12CommandList5);
+    });
+
+  D3D12_SHADING_RATE_COMBINER d3d12Combiners[D3D12_RS_SET_SHADING_RATE_COMBINER_COUNT] = {};
+  d3d12Combiners[0] = xiiD3D12TypeConversions::GetShadingRateCombiner(primitiveCombinerFlags);
+  d3d12Combiners[1] = xiiD3D12TypeConversions::GetShadingRateCombiner(textureCombinerFlags);
+
+  pD3D12CommandList5->RSSetShadingRate(xiiD3D12TypeConversions::GetShadingRate(baseRateFlags), d3d12Combiners);
+
+  ID3D12Resource* pD3D12ShadingRateImage = nullptr;
+
+  xiiGALRenderPassD3D12*  pRenderPassD3D12  = xiiDynamicCast<xiiGALRenderPassD3D12*>(m_pRenderPass);
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = xiiDynamicCast<xiiGALFramebufferD3D12*>(m_pFramebuffer);
+  if (pRenderPassD3D12 != nullptr && pFramebufferD3D12 != nullptr)
+  {
+    const xiiGALRenderPassCreationDescription&  renderPassDescription  = pRenderPassD3D12->GetDescription();
+    const xiiGALFramebufferCreationDescription& framebufferDescription = pFramebufferD3D12->GetDescription();
+    const xiiUInt32                             uiSubpassIndex         = m_CommandListData.m_uiSubpassIndex;
+
+    if (uiSubpassIndex < renderPassDescription.m_SubPasses.GetCount())
+    {
+      const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[uiSubpassIndex];
+      if (!subpass.m_ShadingRateAttachment.IsEmpty())
+      {
+        const xiiGALAttachmentReferenceDescription& shadingAttachmentReference = subpass.m_ShadingRateAttachment[0].m_AttachmentReference;
+        if (shadingAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && shadingAttachmentReference.m_uiAttachmentIndex < framebufferDescription.m_Attachments.GetCount())
+        {
+          xiiSharedPtr<xiiGALTextureViewD3D12> pShadingRateViewD3D12 = framebufferDescription.m_Attachments[shadingAttachmentReference.m_uiAttachmentIndex].Downcast<xiiGALTextureViewD3D12>();
+          if (pShadingRateViewD3D12 != nullptr)
+          {
+            xiiSharedPtr<xiiGALTextureD3D12> pShadingRateTextureD3D12 = pShadingRateViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+            if (pShadingRateTextureD3D12 != nullptr && pShadingRateTextureD3D12->GetD3D12Texture() != nullptr)
+            {
+              if (TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pShadingRateTextureD3D12.Borrow(), pShadingRateTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::ShadingRate, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ShadingRate), "subpass shading-rate attachment", GetDebugName()))
+              {
+                pD3D12ShadingRateImage = pShadingRateTextureD3D12->GetD3D12Texture();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  pD3D12CommandList5->RSSetShadingRateImage(pD3D12ShadingRateImage);
+
+  m_CommandListState.m_bIsShadingRateSet = true;
+  m_CommandListFlags.Add(CommandListFlags::ShadingRateSet);
 }
 
 void xiiGALCommandListD3D12::EnqueueSignalPlatform(xiiGALFence* pFence, xiiUInt64 uiValue)
@@ -1736,18 +2065,42 @@ void xiiGALCommandListD3D12::DeviceWaitForFencePlatform(xiiGALFence* pFence, xii
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(color);
+
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiStringBuilder sTemp;
+  const char*      szName       = sName.GetData(sTemp);
+  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount()) + 1U;
+  m_pD3D12CommandList->BeginEvent(0U, szName, uiNameLength);
 }
 
 void xiiGALCommandListD3D12::EndDebugGroupPlatform()
 {
+  if (m_pD3D12CommandList != nullptr)
+  {
+    m_pD3D12CommandList->EndEvent();
+  }
 }
 
 void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(color);
+
+  if (m_pD3D12CommandList == nullptr)
+    return;
+
+  xiiStringBuilder sTemp;
+  const char*      szName       = sName.GetData(sTemp);
+  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount()) + 1U;
+  m_pD3D12CommandList->SetMarker(0U, szName, uiNameLength);
 }
 
 void xiiGALCommandListD3D12::InvalidateStatePlatform()
 {
+  m_CommandListFlags = {};
+  m_CommandListState = {};
   m_CommandListData.Invalidate();
 }
 
@@ -1770,6 +2123,254 @@ void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const
     if (FAILED(m_pD3D12CommandList->SetPrivateData(WKPDID_D3DDebugObjectName, uiNameLength, szName)))
     {
       xiiLog::Error("Failed to set the D3D12 command list debug name.");
+    }
+  }
+}
+
+void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12, xiiUInt32 uiSubpassIndex, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
+{
+  XII_IGNORE_UNUSED(pOptimizedClearValues);
+
+  if (m_pD3D12CommandList == nullptr || pRenderPassD3D12 == nullptr || pFramebufferD3D12 == nullptr)
+    return;
+
+  const xiiGALRenderPassCreationDescription&  renderPassDescription  = pRenderPassD3D12->GetDescription();
+  const xiiGALFramebufferCreationDescription& framebufferDescription = pFramebufferD3D12->GetDescription();
+  if (uiSubpassIndex >= renderPassDescription.m_SubPasses.GetCount())
+  {
+    xiiLog::Error("Failed to bind D3D12 subpass attachments on command list '{}': subpass index {} exceeds subpass count {}.", GetDebugName(), uiSubpassIndex, renderPassDescription.m_SubPasses.GetCount());
+    return;
+  }
+
+  const xiiGALSubPassDescription& subpass = renderPassDescription.m_SubPasses[uiSubpassIndex];
+
+  if (!subpass.m_ResolveAttachments.IsEmpty())
+  {
+    xiiLog::Warning("D3D12 subpass {} on command list '{}' uses color resolve attachments, but automatic subpass resolves are not implemented yet.", uiSubpassIndex, GetDebugName());
+  }
+  if (!subpass.m_DepthResolveAttachment.IsEmpty())
+  {
+    xiiLog::Warning("D3D12 subpass {} on command list '{}' uses depth resolve attachments, but automatic subpass depth resolves are not implemented yet.", uiSubpassIndex, GetDebugName());
+  }
+
+  m_CommandListData.m_pBoundRenderTargets.Clear();
+  m_CommandListData.m_pBoundDepthStencilTarget = nullptr;
+  m_CommandListData.m_uiBoundRenderTargetCount = 0U;
+
+  std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> d3d12RenderTargetHandles;
+  d3d12RenderTargetHandles.reserve(subpass.m_RenderTargetAttachments.GetCount());
+  bool bHasRenderTargetAttachmentGap = false;
+
+  for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
+  {
+    const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+    if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+    {
+      if (!d3d12RenderTargetHandles.empty())
+      {
+        bHasRenderTargetAttachmentGap = true;
+      }
+      continue;
+    }
+
+    if (attachmentReference.m_uiAttachmentIndex >= framebufferDescription.m_Attachments.GetCount())
+    {
+      xiiLog::Error("Failed to bind D3D12 render target attachment {} on command list '{}': attachment index {} is out of framebuffer attachment bounds ({}).", uiColorAttachmentIndex, GetDebugName(), attachmentReference.m_uiAttachmentIndex, framebufferDescription.m_Attachments.GetCount());
+      continue;
+    }
+
+    xiiSharedPtr<xiiGALTextureViewD3D12> pRenderTargetViewD3D12 = framebufferDescription.m_Attachments[attachmentReference.m_uiAttachmentIndex].Downcast<xiiGALTextureViewD3D12>();
+    if (pRenderTargetViewD3D12 == nullptr || pRenderTargetViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+    {
+      xiiLog::Error("Failed to bind D3D12 render target attachment {} on command list '{}': attachment {} is not a valid D3D12 render-target view.", uiColorAttachmentIndex, GetDebugName(), attachmentReference.m_uiAttachmentIndex);
+      continue;
+    }
+
+    xiiSharedPtr<xiiGALTextureD3D12> pRenderTargetTextureD3D12 = pRenderTargetViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+    if (pRenderTargetTextureD3D12 == nullptr || pRenderTargetTextureD3D12->GetD3D12Texture() == nullptr)
+    {
+      xiiLog::Error("Failed to bind D3D12 render target attachment {} on command list '{}': backing texture is invalid.", uiColorAttachmentIndex, GetDebugName());
+      continue;
+    }
+
+    xiiBitflags<xiiGALResourceStateFlags> renderTargetState = attachmentReference.m_ResourceStateFlags;
+    if (renderTargetState == xiiGALResourceStateFlags::Unknown || renderTargetState == xiiGALResourceStateFlags::Undefined)
+    {
+      renderTargetState = xiiGALResourceStateFlags::RenderTarget;
+    }
+
+    if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pRenderTargetTextureD3D12.Borrow(), pRenderTargetTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, renderTargetState, xiiD3D12TypeConversions::GetResourceState(renderTargetState), "subpass render-target attachment", GetDebugName()))
+      continue;
+
+    d3d12RenderTargetHandles.push_back(pRenderTargetViewD3D12->GetCPUDescriptorHandle());
+    m_CommandListData.m_pBoundRenderTargets.PushBack(pRenderTargetViewD3D12);
+
+    const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+    if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear && !WasAttachmentUsedInPreviousSubpass(renderPassDescription, attachmentReference.m_uiAttachmentIndex, uiSubpassIndex))
+    {
+      xiiColor clearColor = xiiColor::Black;
+      if (attachmentReference.m_uiAttachmentIndex < m_CommandListData.m_AttachmentClearValues.GetCount())
+      {
+        const D3D12_CLEAR_VALUE& clearValue = m_CommandListData.m_AttachmentClearValues[attachmentReference.m_uiAttachmentIndex];
+        clearColor                          = xiiColor(clearValue.Color[0], clearValue.Color[1], clearValue.Color[2], clearValue.Color[3]);
+      }
+
+      const float clearColorRGBA[4] = {clearColor.r, clearColor.g, clearColor.b, clearColor.a};
+      m_pD3D12CommandList->ClearRenderTargetView(pRenderTargetViewD3D12->GetCPUDescriptorHandle(), clearColorRGBA, 0U, nullptr);
+    }
+  }
+
+  if (bHasRenderTargetAttachmentGap)
+  {
+    xiiLog::Warning("D3D12 subpass {} on command list '{}' uses non-contiguous render-target attachment slots. Slots are compacted for OM binding.", uiSubpassIndex, GetDebugName());
+  }
+
+  D3D12_CPU_DESCRIPTOR_HANDLE                d3d12DepthStencilHandle = {};
+  xiiSharedPtr<xiiGALTextureViewD3D12>       pDepthStencilViewD3D12;
+  xiiSharedPtr<xiiGALTextureD3D12>           pDepthStencilTextureD3D12;
+  xiiBitflags<xiiGALResourceStateFlags>      depthStencilState = xiiGALResourceStateFlags::DepthWrite;
+  const xiiGALAttachmentReferenceDescription* pDepthAttachmentReference = nullptr;
+
+  if (!subpass.m_DepthStencilAttachment.IsEmpty())
+  {
+    const xiiGALAttachmentReferenceDescription& depthAttachmentReference = subpass.m_DepthStencilAttachment[0];
+    if (depthAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+    {
+      pDepthAttachmentReference = &depthAttachmentReference;
+
+      if (depthAttachmentReference.m_uiAttachmentIndex >= framebufferDescription.m_Attachments.GetCount())
+      {
+        xiiLog::Error("Failed to bind D3D12 depth-stencil attachment on command list '{}': attachment index {} is out of framebuffer attachment bounds ({}).", GetDebugName(), depthAttachmentReference.m_uiAttachmentIndex, framebufferDescription.m_Attachments.GetCount());
+      }
+      else
+      {
+        pDepthStencilViewD3D12 = framebufferDescription.m_Attachments[depthAttachmentReference.m_uiAttachmentIndex].Downcast<xiiGALTextureViewD3D12>();
+        if (pDepthStencilViewD3D12 == nullptr || pDepthStencilViewD3D12->GetCPUDescriptorHandle().ptr == 0U)
+        {
+          xiiLog::Error("Failed to bind D3D12 depth-stencil attachment on command list '{}': attachment {} is not a valid D3D12 depth-stencil view.", GetDebugName(), depthAttachmentReference.m_uiAttachmentIndex);
+        }
+        else
+        {
+          pDepthStencilTextureD3D12 = pDepthStencilViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+          if (pDepthStencilTextureD3D12 == nullptr || pDepthStencilTextureD3D12->GetD3D12Texture() == nullptr)
+          {
+            xiiLog::Error("Failed to bind D3D12 depth-stencil attachment on command list '{}': backing texture is invalid.", GetDebugName());
+          }
+          else
+          {
+            depthStencilState = depthAttachmentReference.m_ResourceStateFlags;
+            if (depthStencilState == xiiGALResourceStateFlags::Unknown || depthStencilState == xiiGALResourceStateFlags::Undefined)
+            {
+              depthStencilState = xiiGALResourceStateFlags::DepthWrite;
+            }
+
+            if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDepthStencilTextureD3D12.Borrow(), pDepthStencilTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, depthStencilState, xiiD3D12TypeConversions::GetResourceState(depthStencilState), "subpass depth-stencil attachment", GetDebugName()))
+            {
+              pDepthStencilTextureD3D12 = nullptr;
+            }
+            else
+            {
+              d3d12DepthStencilHandle = pDepthStencilViewD3D12->GetCPUDescriptorHandle();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  m_CommandListData.m_uiBoundRenderTargetCount = static_cast<xiiUInt32>(d3d12RenderTargetHandles.size());
+  m_CommandListData.m_pBoundDepthStencilTarget = pDepthStencilViewD3D12;
+
+  m_pD3D12CommandList->OMSetRenderTargets(m_CommandListData.m_uiBoundRenderTargetCount, m_CommandListData.m_uiBoundRenderTargetCount > 0U ? d3d12RenderTargetHandles.data() : nullptr, FALSE, pDepthStencilViewD3D12 != nullptr ? &d3d12DepthStencilHandle : nullptr);
+
+  if (pDepthAttachmentReference != nullptr && pDepthStencilViewD3D12 != nullptr && pDepthStencilTextureD3D12 != nullptr)
+  {
+    const xiiUInt32 uiDepthAttachmentIndex = pDepthAttachmentReference->m_uiAttachmentIndex;
+    if (uiDepthAttachmentIndex < renderPassDescription.m_Attachments.GetCount())
+    {
+      const xiiGALRenderPassAttachmentDescription& depthAttachmentDescription = renderPassDescription.m_Attachments[uiDepthAttachmentIndex];
+      const bool bFirstDepthUse = !WasAttachmentUsedInPreviousSubpass(renderPassDescription, uiDepthAttachmentIndex, uiSubpassIndex);
+
+      if (bFirstDepthUse)
+      {
+        const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(depthAttachmentDescription.m_Format);
+
+        D3D12_CLEAR_FLAGS d3d12ClearFlags = static_cast<D3D12_CLEAR_FLAGS>(0U);
+        if (depthAttachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
+          d3d12ClearFlags |= D3D12_CLEAR_FLAG_DEPTH;
+
+        if (HasStencilComponent(depthAttachmentDescription.m_Format) && depthAttachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear && formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+          d3d12ClearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+
+        if (d3d12ClearFlags != static_cast<D3D12_CLEAR_FLAGS>(0U))
+        {
+          bool bReadyForClear = true;
+          if (depthStencilState != xiiGALResourceStateFlags::DepthWrite)
+          {
+            if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDepthStencilTextureD3D12.Borrow(), pDepthStencilTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::DepthWrite, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::DepthWrite), "subpass depth-stencil clear", GetDebugName()))
+            {
+              bReadyForClear = false;
+            }
+          }
+
+          if (bReadyForClear)
+          {
+            float   fDepthClearValue     = 1.0f;
+            xiiUInt8 uiStencilClearValue = 0U;
+            if (uiDepthAttachmentIndex < m_CommandListData.m_AttachmentClearValues.GetCount())
+            {
+              const D3D12_CLEAR_VALUE& clearValue = m_CommandListData.m_AttachmentClearValues[uiDepthAttachmentIndex];
+              fDepthClearValue                    = clearValue.DepthStencil.Depth;
+              uiStencilClearValue                 = static_cast<xiiUInt8>(clearValue.DepthStencil.Stencil);
+            }
+
+            m_pD3D12CommandList->ClearDepthStencilView(d3d12DepthStencilHandle, d3d12ClearFlags, fDepthClearValue, uiStencilClearValue, 0U, nullptr);
+
+            if (depthStencilState != xiiGALResourceStateFlags::DepthWrite)
+            {
+              if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pDepthStencilTextureD3D12.Borrow(), pDepthStencilTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, depthStencilState, xiiD3D12TypeConversions::GetResourceState(depthStencilState), "subpass depth-stencil restore", GetDebugName()))
+              {
+                xiiLog::Warning("Failed to restore depth-stencil state after clear in subpass {} on command list '{}'.", uiSubpassIndex, GetDebugName());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (m_CommandListState.m_bIsShadingRateSet)
+  {
+    ID3D12GraphicsCommandList5* pD3D12CommandList5 = nullptr;
+    if (SUCCEEDED(m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList5))) && pD3D12CommandList5 != nullptr)
+    {
+      XII_SCOPE_EXIT(
+        {
+          XII_GAL_D3D12_RELEASE(pD3D12CommandList5);
+        });
+
+      ID3D12Resource* pShadingRateResource = nullptr;
+      if (!subpass.m_ShadingRateAttachment.IsEmpty())
+      {
+        const xiiGALAttachmentReferenceDescription& shadingAttachmentReference = subpass.m_ShadingRateAttachment[0].m_AttachmentReference;
+        if (shadingAttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && shadingAttachmentReference.m_uiAttachmentIndex < framebufferDescription.m_Attachments.GetCount())
+        {
+          xiiSharedPtr<xiiGALTextureViewD3D12> pShadingRateViewD3D12 = framebufferDescription.m_Attachments[shadingAttachmentReference.m_uiAttachmentIndex].Downcast<xiiGALTextureViewD3D12>();
+          if (pShadingRateViewD3D12 != nullptr)
+          {
+            xiiSharedPtr<xiiGALTextureD3D12> pShadingRateTextureD3D12 = pShadingRateViewD3D12->GetTexture().Downcast<xiiGALTextureD3D12>();
+            if (pShadingRateTextureD3D12 != nullptr && pShadingRateTextureD3D12->GetD3D12Texture() != nullptr)
+            {
+              if (TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pShadingRateTextureD3D12.Borrow(), pShadingRateTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::ShadingRate, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::ShadingRate), "subpass shading-rate attachment", GetDebugName()))
+              {
+                pShadingRateResource = pShadingRateTextureD3D12->GetD3D12Texture();
+              }
+            }
+          }
+        }
+      }
+
+      pD3D12CommandList5->RSSetShadingRateImage(pShadingRateResource);
     }
   }
 }

@@ -15,6 +15,9 @@ struct ID3D12CommandAllocator;
 struct ID3D12CommandList;
 struct ID3D12GraphicsCommandList;
 
+class xiiGALFramebufferD3D12;
+class xiiGALRenderPassD3D12;
+
 class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandList
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D12, xiiGALCommandList);
@@ -172,6 +175,8 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  void BindSubpassAttachments(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12, xiiUInt32 uiSubpassIndex, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues);
+
   void PrepareForDraw();
   void PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType);
   void PrepareForDispatchCompute();
@@ -181,6 +186,8 @@ private:
   xiiGALCommandListPoolD3D12::AutoCommandList m_CommandListAllocation;
   ID3D12CommandAllocator*                     m_pD3D12CommandAllocator = nullptr;
   ID3D12GraphicsCommandList*                  m_pD3D12CommandList      = nullptr;
+  xiiBitflags<CommandListFlags>               m_CommandListFlags;
+  CommandListState                            m_CommandListState;
   xiiGALCommandListDataD3D12                  m_CommandListData;
   xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
 };
