@@ -33,6 +33,12 @@ public:
 public:
   virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
 
+   [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandListPoolD3D12* GetCommandListPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolD3D12* GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolD3D12* GetD3D12FencePool() const { return m_pFencePool.Borrow(); }
+
   // Internal objects retrieval.
 
   [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*            GetAllocator() const { return m_Allocator.GetParent(); }
@@ -100,12 +106,22 @@ private:
 
   xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12> m_DisplayModes;
 
-  xiiGALQueueInformationD3D12           m_GraphicsQueueInformation;
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pGraphicsCommandQueue;
+  xiiGALQueueInformationD3D12              m_GraphicsQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueD3D12>    m_pGraphicsCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolD3D12>       m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pGraphicsCommandListPool;
 
-  xiiGALQueueInformationD3D12           m_ComputeQueueInformation;
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pComputeCommandQueue;
+  xiiGALQueueInformationD3D12              m_ComputeQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueD3D12>    m_pComputeCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolD3D12>       m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pComputeCommandListPool;
 
-  xiiGALQueueInformationD3D12           m_TransferQueueInformation;
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pTransferCommandQueue;
+  xiiGALQueueInformationD3D12              m_TransferQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueD3D12>    m_pTransferCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolD3D12>       m_pTransferCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pTransferCommandListPool;
+
+  xiiUniquePtr<xiiGALFencePoolD3D12> m_pFencePool;
 };
+
+#include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>

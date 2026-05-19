@@ -11,6 +11,9 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
+#include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
+#include <GraphicsD3D12/Pools/FencePoolD3D12.h>
+#include <GraphicsD3D12/Pools/QueryPoolD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
@@ -284,13 +287,20 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12()
 {
   WaitIdlePlatform();
 
-  m_pDeferredDeletionQueue.Clear();
-
+  m_pTransferCommandListPool.Clear();
+  m_pTransferCommandQueueQueryPool.Clear();
   m_pTransferCommandQueue.Clear();
 
+  m_pComputeCommandListPool.Clear();
+  m_pComputeCommandQueueQueryPool.Clear();
   m_pComputeCommandQueue.Clear();
 
+  m_pGraphicsCommandListPool.Clear();
+  m_pGraphicsCommandQueueQueryPool.Clear();
   m_pGraphicsCommandQueue.Clear();
+
+  m_pFencePool.Clear();
+  m_pDeferredDeletionQueue.Clear();
 
   XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
@@ -544,6 +554,7 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 
   // Create pools.
   {
+    m_pFencePool = XII_NEW(&m_Allocator, xiiGALFencePoolD3D12, this, 16U);
   }
 
   // Create command queues.
@@ -565,6 +576,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 
       xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Graphics};
       m_pGraphicsCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_GraphicsQueueInformation);
+      m_pGraphicsCommandListPool                             = XII_NEW(&m_Allocator, xiiGALCommandListPoolD3D12, this, m_pGraphicsCommandQueue.Borrow(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+      m_pGraphicsCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolD3D12, this, m_pGraphicsCommandQueue.Borrow(), m_GraphicsQueueInformation);
 
       m_pGraphicsCommandQueue->SetDebugName("Command Queue (Default Graphics)");
 
@@ -582,6 +595,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       {
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Compute};
         m_pComputeCommandQueue                                 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_ComputeQueueInformation);
+        m_pComputeCommandListPool                              = XII_NEW(&m_Allocator, xiiGALCommandListPoolD3D12, this, m_pComputeCommandQueue.Borrow(), D3D12_COMMAND_LIST_TYPE_COMPUTE);
+        m_pComputeCommandQueueQueryPool                        = XII_NEW(&m_Allocator, xiiGALQueryPoolD3D12, this, m_pComputeCommandQueue.Borrow(), m_ComputeQueueInformation);
 
         m_pComputeCommandQueue->SetDebugName("Command Queue (Default Compute)");
 
@@ -600,6 +615,8 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
       {
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueFlags = xiiGALCommandQueueFlags::Transfer};
         m_pTransferCommandQueue                                = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, queueDescription, m_TransferQueueInformation);
+        m_pTransferCommandListPool                             = XII_NEW(&m_Allocator, xiiGALCommandListPoolD3D12, this, m_pTransferCommandQueue.Borrow(), D3D12_COMMAND_LIST_TYPE_COPY);
+        m_pTransferCommandQueueQueryPool                       = XII_NEW(&m_Allocator, xiiGALQueryPoolD3D12, this, m_pTransferCommandQueue.Borrow(), m_TransferQueueInformation);
 
         m_pTransferCommandQueue->SetDebugName("Command Queue (Default Transfer)");
 
@@ -641,6 +658,32 @@ void xiiGALDeviceD3D12::BeginFramePlatform()
 
 void xiiGALDeviceD3D12::EndFramePlatform()
 {
+  if (m_pTransferCommandListPool != nullptr)
+  {
+    m_pTransferCommandListPool->ReclaimCompleted();
+  }
+  if (m_pComputeCommandListPool != nullptr)
+  {
+    m_pComputeCommandListPool->ReclaimCompleted();
+  }
+  if (m_pGraphicsCommandListPool != nullptr)
+  {
+    m_pGraphicsCommandListPool->ReclaimCompleted();
+  }
+
+  if (m_pTransferCommandQueueQueryPool != nullptr)
+  {
+    m_pTransferCommandQueueQueryPool->ResetStaleQueries();
+  }
+  if (m_pComputeCommandQueueQueryPool != nullptr)
+  {
+    m_pComputeCommandQueueQueryPool->ResetStaleQueries();
+  }
+  if (m_pGraphicsCommandQueueQueryPool != nullptr)
+  {
+    m_pGraphicsCommandQueueQueryPool->ResetStaleQueries();
+  }
+
   if (m_pDeferredDeletionQueue != nullptr)
   {
     m_pDeferredDeletionQueue->ReleaseResources();
@@ -929,6 +972,22 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
     m_pComputeCommandQueue->WaitForIdle();
   if (m_pTransferCommandQueue != nullptr)
     m_pTransferCommandQueue->WaitForIdle();
+
+  if (m_pTransferCommandListPool != nullptr)
+  {
+    m_pTransferCommandListPool->ReclaimCompleted();
+    m_pTransferCommandListPool->ResetPools();
+  }
+  if (m_pComputeCommandListPool != nullptr)
+  {
+    m_pComputeCommandListPool->ReclaimCompleted();
+    m_pComputeCommandListPool->ResetPools();
+  }
+  if (m_pGraphicsCommandListPool != nullptr)
+  {
+    m_pGraphicsCommandListPool->ReclaimCompleted();
+    m_pGraphicsCommandListPool->ResetPools();
+  }
 
   if (m_pDeferredDeletionQueue != nullptr)
   {
