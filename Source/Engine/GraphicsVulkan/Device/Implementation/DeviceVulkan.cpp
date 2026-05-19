@@ -305,8 +305,7 @@ private:
     if (pCommandQueueVulkan == nullptr)
       return 0ULL;
 
-    const xiiUInt64 uiNextFenceValue = pCommandQueueVulkan->GetNextFenceValue();
-    return uiNextFenceValue > 0ULL ? (uiNextFenceValue - 1ULL) : 0ULL;
+    return pCommandQueueVulkan->GetNextFenceValue();
   }
 
   [[nodiscard]] static xiiUInt64 GetCompletedFenceValue(xiiGALCommandQueueVulkan* pCommandQueueVulkan)
