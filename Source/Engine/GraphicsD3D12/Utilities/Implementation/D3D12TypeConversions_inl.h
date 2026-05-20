@@ -1506,7 +1506,7 @@ XII_ALWAYS_INLINE D3D12_RESOURCE_FLAGS xiiD3D12TypeConversions::GetBufferResourc
     resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
   }
 
-  if (!bindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  if (!bindFlags.IsSet(xiiGALBindFlags::ShaderResource) && !bindFlags.IsSet(xiiGALBindFlags::RayTracing))
   {
     resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
   }
