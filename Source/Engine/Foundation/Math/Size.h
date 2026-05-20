@@ -27,7 +27,7 @@ public:
   xiiSizeTemplate(Type width, Type height);
 
   /// \brief Static function that returns a zero-size.
-  [[nodiscard]] static constexpr xiiSizeTemplate<Type> MakeZero() { return xiiSizeTemplate(0); }
+  [[nodiscard]] static constexpr xiiSizeTemplate<Type> MakeZero() { return xiiSizeTemplate<Type>(0, 0); }
 
   /// \brief Returns a size initialized to x,y.
   [[nodiscard]] static constexpr xiiSizeTemplate<Type> Make(Type x, Type y) { return xiiSizeTemplate<Type>(x, y); }
