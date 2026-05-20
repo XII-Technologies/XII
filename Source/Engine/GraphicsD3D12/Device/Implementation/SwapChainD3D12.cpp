@@ -169,8 +169,7 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     RECT rect;
     if (m_FullScreenMode.m_bIsFullScreen)
     {
-      const HWND hDesktop = GetDesktopWindow();
-      GetWindowRect(hDesktop, &rect);
+      GetWindowRect(hNativeWindow, &rect);
     }
     else
     {
