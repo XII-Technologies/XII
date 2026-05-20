@@ -119,5 +119,5 @@ protected:
 
   HANDLE m_FrameLatencyWaitableObject = NULL;
 
-  xiiUInt32 m_uiMaximumFrameLatency = 0U;
+  xiiUInt32 m_uiMaximumFrameLatency = 1U;
 };

@@ -489,6 +489,8 @@ void xiiGALSwapChainD3D12::SetWindowedMode()
 
 void xiiGALSwapChainD3D12::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
 {
+  uiMaxLatency = xiiMath::Max(uiMaxLatency, 1U);
+
   if (m_uiMaximumFrameLatency == uiMaxLatency)
     return;
 
