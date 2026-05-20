@@ -194,7 +194,7 @@ void xiiD3D12MemoryAllocator::DeInitialize()
   XII_GAL_D3D12_RELEASE(m_pImplementation->m_pD3D12MAAllocator);
 }
 
-xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
+xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
 {
   XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
   XII_ASSERT_DEV(out_ppResource != nullptr, "Output resource pointer is null.");
@@ -207,7 +207,7 @@ xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resou
   allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
 
   D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
-  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, D3D12_RESOURCE_STATE_COMMON, nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
   {
     xiiLog::Error("Failed to create buffer resource with D3D12 Memory Allocator.");
 

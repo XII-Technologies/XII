@@ -18,7 +18,7 @@ xiiGALSamplerD3D12::~xiiGALSamplerD3D12() = default;
 
 xiiResult xiiGALSamplerD3D12::InitPlatform()
 {
-  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12         = m_pDevice.Downcast<xiiGALDeviceD3D12>();
   xiiGALDescriptorSetPoolD3D12*   pDescriptorPoolD3D12 = pDeviceD3D12->GetResourceDescriptorPool();
   if (pDescriptorPoolD3D12 == nullptr)
   {

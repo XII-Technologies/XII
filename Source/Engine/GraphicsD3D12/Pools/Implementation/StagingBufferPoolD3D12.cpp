@@ -65,7 +65,7 @@ void xiiGALStagingBufferPoolD3D12::CreateStagingBufferPage()
   xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
   allocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Upload;
 
-  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, xiiGALResourceStateFlags::CopySource, &stagingBufferPage.m_pBuffer, &stagingBufferPage.m_Allocation).Failed())
+  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &stagingBufferPage.m_pBuffer, &stagingBufferPage.m_Allocation).Failed())
   {
     xiiLog::Error("Failed to create D3D12 staging-buffer pool page.");
     return;
@@ -107,7 +107,7 @@ void xiiGALStagingBufferPoolD3D12::CreateLargeBuffer(xiiUInt64 uiSize)
   xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
   allocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Upload;
 
-  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, xiiGALResourceStateFlags::CopySource, &stagingBufferPage.m_pBuffer, &stagingBufferPage.m_Allocation).Failed())
+  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &stagingBufferPage.m_pBuffer, &stagingBufferPage.m_Allocation).Failed())
   {
     xiiLog::Error("Failed to create D3D12 large staging-buffer allocation (size={}).", uiSize);
     return;

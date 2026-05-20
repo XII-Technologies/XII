@@ -283,7 +283,7 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::Initialize(xiiGALQueryType::Enu
   xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
   allocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Readback;
 
-  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, xiiGALResourceStateFlags::CopyDestination, &m_pReadbackBuffer, &m_ReadbackAllocation).Failed())
+  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &m_pReadbackBuffer, &m_ReadbackAllocation).Failed())
   {
     xiiLog::Error("Failed to create D3D12 query readback buffer for query type '{}'.", GetQueryTypeLogValue(queryType));
     DeInitialize();

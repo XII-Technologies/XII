@@ -230,7 +230,7 @@ namespace
     xiiD3D12MemoryAllocationCreateInfo uploadAllocationCreateInfo = {};
     uploadAllocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Upload;
 
-    XII_SUCCEED_OR_RETURN(pD3D12Allocator->CreateBuffer(uploadBufferDescription, uploadAllocationCreateInfo, xiiGALResourceStateFlags::CopySource, &pUploadBuffer, &uploadAllocation));
+    XII_SUCCEED_OR_RETURN(pD3D12Allocator->CreateBuffer(uploadBufferDescription, uploadAllocationCreateInfo, &pUploadBuffer, &uploadAllocation));
 
     const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
@@ -526,7 +526,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
         m_bHostVisibleUpload            = true;
       }
 
-      XII_SUCCEED_OR_RETURN(pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, creationState, &m_pD3D12Texture, &m_TextureAllocation));
+      XII_SUCCEED_OR_RETURN(pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &m_pD3D12Texture, &m_TextureAllocation));
 
       if (bHasInitialData)
       {
