@@ -186,7 +186,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData,
         return XII_SUCCESS;
       };
 
-      if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
+      if (auto pCommandListVulkan = xiiDynamicCast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
       {
         XII_SUCCEED_OR_RETURN(UploadStagingData(pCommandListVulkan));
       }
