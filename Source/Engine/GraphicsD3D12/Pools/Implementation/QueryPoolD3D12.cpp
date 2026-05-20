@@ -167,7 +167,7 @@ void xiiGALQueryPoolD3D12::DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt
 
 xiiUInt32 xiiGALQueryPoolD3D12::ResetStaleQueries()
 {
-  xiiUInt32 uiResetQueryCount = 0U;
+  xiiUInt32       uiResetQueryCount     = 0U;
   const xiiUInt64 uiCompletedFenceValue = m_pCommandQueueD3D12 != nullptr ? m_pCommandQueueD3D12->GetCompletedFenceValue() : xiiInvalidIndex;
 
   for (auto& pQueryPoolInformation : m_QueryPools)
@@ -207,8 +207,20 @@ xiiUInt64 xiiGALQueryPoolD3D12::GetQueryReadbackOffset(xiiGALQueryType::Enum que
 
 xiiUInt32 xiiGALQueryPoolD3D12::GetQueryResultStride(xiiGALQueryType::Enum queryType) const
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  return pQueryPoolInformation != nullptr ? pQueryPoolInformation->GetQueryResultStride() : 0U;
+  switch (queryType)
+  {
+    case xiiGALQueryType::Occlusion:
+    case xiiGALQueryType::BinaryOcclusion:
+    case xiiGALQueryType::Timestamp:
+    case xiiGALQueryType::Duration:
+      return sizeof(xiiUInt64);
+
+    case xiiGALQueryType::PipelineStatistics:
+      return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return 0;
 }
 
 ///////////////////////////////////////////////////////////
@@ -227,6 +239,7 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::Initialize(xiiGALQueryType::Enu
 {
   XII_ASSERT_DEV(queryType != xiiGALQueryType::Undefined, "Invalid D3D12 query type.");
   XII_ASSERT_DEV(uiQueryCount > 0U, "D3D12 query pool size must be greater than zero.");
+  XII_ASSERT_DEV(uiQueryResultStride > 0U, "D3D12 query pool stride must be greater than zero.");
 
   m_QueryType           = queryType;
   m_D3D12QueryType      = d3d12QueryType;
