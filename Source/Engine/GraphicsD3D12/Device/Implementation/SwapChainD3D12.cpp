@@ -244,33 +244,11 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   // mode (or monitor resolution) will be changed to match the dimensions of the application window.
   swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-  // Query IDXGIFactory2.
-  IDXGIFactory2* pDXGIFactory2 = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pDXGIFactory2));
-
-  if (FAILED(pDeviceD3D12->GetDXGIFactory()->GetParent(__uuidof(pDXGIFactory2), reinterpret_cast<void**>(static_cast<IDXGIFactory2**>(&pDXGIFactory2)))))
-  {
-    xiiLog::Error("Failed to query IDXGIFactory2 factor to create swap chain.");
-    return XII_FAILURE;
-  }
-
   // DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT enables querying a waitable object that can be
   // used to synchronize presentation with CPU timeline.
   if (!m_FullScreenMode.m_bIsFullScreen)
   {
-    // We do not need pDXGIFactory3 itself, however DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT flag
-    // is only supported starting with Windows 8.1, and so is IDXGIFactory3 interface. We query this
-    // interface to check Windows 8.1.
-    // Note that we can't use IsWindows8Point1OrGreater because unlike IsWindows8OrGreater, it returns
-    // false if an application is not manifested for Windows 8.1 or Windows 10, even if the current
-    // operating system version is Windows 8.1 or Windows 10.
-    IDXGIFactory3* pDXGIFactory3 = nullptr;
-    XII_GAL_D3D12_RELEASE(pDXGIFactory3);
-
-    if (SUCCEEDED(pDXGIFactory2->QueryInterface(__uuidof(pDXGIFactory3), reinterpret_cast<void**>(static_cast<IDXGIFactory3**>(&pDXGIFactory3)))))
-    {
-      swapChainDescription.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-    }
+    swapChainDescription.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
   }
 
   xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
@@ -285,7 +263,7 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   fullScreenDescription.Scaling                 = GetScalingMode(m_FullScreenMode.m_ScalingMode);
   fullScreenDescription.ScanlineOrdering        = GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
-  HRESULT hResult = pDXGIFactory2->CreateSwapChainForHwnd(pCommandQueueD3D12->GetD3D12CommandQueue(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
+  HRESULT hResult = pDeviceD3D12->GetDXGIFactory()->CreateSwapChainForHwnd(pCommandQueueD3D12->GetD3D12CommandQueue(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
