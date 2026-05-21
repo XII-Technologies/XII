@@ -1439,7 +1439,7 @@ XII_ALWAYS_INLINE D3D12_SHADING_RATE_COMBINER xiiD3D12TypeConversions::GetShadin
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiD3D12TypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
 {
-  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;
+  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Unknown;
 
   for (xiiUInt32 uiBit : bindFlags)
   {
