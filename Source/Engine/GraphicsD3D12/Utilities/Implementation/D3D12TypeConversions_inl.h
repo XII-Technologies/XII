@@ -1330,6 +1330,11 @@ XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(x
   return uiMipSlice + (uiArraySlice * uiMipLevelCount);
 }
 
+XII_ALWAYS_INLINE xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize)
+{
+  return uiMipSlice + (uiArraySlice * uiMipLevelCount) + (uiPlaneSlice * uiMipLevelCount * uiArraySize);
+}
+
 XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e)
 {
   D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATE_COMMON;
@@ -1439,7 +1444,7 @@ XII_ALWAYS_INLINE D3D12_SHADING_RATE_COMBINER xiiD3D12TypeConversions::GetShadin
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiD3D12TypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
 {
-  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;
+  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Unknown;
 
   for (xiiUInt32 uiBit : bindFlags)
   {
@@ -1506,7 +1511,7 @@ XII_ALWAYS_INLINE D3D12_RESOURCE_FLAGS xiiD3D12TypeConversions::GetBufferResourc
     resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
   }
 
-  if (!bindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  if (!bindFlags.IsSet(xiiGALBindFlags::ShaderResource) && !bindFlags.IsSet(xiiGALBindFlags::RayTracing))
   {
     resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
   }
@@ -1596,4 +1601,25 @@ XII_ALWAYS_INLINE UINT xiiD3D12TypeConversions::GetShaderComponentMapping(const 
   const UINT uiAlpha = ConvertSwizzle(componentMapping.m_A, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3);
 
   return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(uiRed, uiGreen, uiBlue, uiAlpha);
+}
+
+XII_ALWAYS_INLINE D3D12_CLEAR_VALUE xiiD3D12TypeConversions::GetClearValue(const xiiGALOptimizedClearValue& clearValue)
+{
+  D3D12_CLEAR_VALUE                      optimizedClearValue = {};
+  const xiiGALResourceFormatDescription& formatDescription   = xiiGALTextureUtilities::GetResourceFormatProperties(clearValue.m_ResourceFormat);
+
+  if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    optimizedClearValue.DepthStencil.Depth   = clearValue.m_DepthStencil.m_fDepth;
+    optimizedClearValue.DepthStencil.Stencil = clearValue.m_DepthStencil.m_uiStencil;
+  }
+  else
+  {
+    optimizedClearValue.Color[0] = clearValue.m_ClearColour.r;
+    optimizedClearValue.Color[1] = clearValue.m_ClearColour.g;
+    optimizedClearValue.Color[2] = clearValue.m_ClearColour.b;
+    optimizedClearValue.Color[3] = clearValue.m_ClearColour.a;
+  }
+
+  return optimizedClearValue;
 }

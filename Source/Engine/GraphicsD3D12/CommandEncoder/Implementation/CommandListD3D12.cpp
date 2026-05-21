@@ -272,7 +272,7 @@ void xiiGALCommandListD3D12::BeginPlatform()
   }
 
   m_uiSubmittedFenceValue = 0ULL;
-  m_RecordingState = RecordingState::Recording;
+  m_RecordingState        = RecordingState::Recording;
 }
 
 void xiiGALCommandListD3D12::EndPlatform()
@@ -317,7 +317,7 @@ void xiiGALCommandListD3D12::ResetPlatform()
   m_CommandListState       = {};
   m_CommandListData        = {};
   m_uiSubmittedFenceValue  = 0ULL;
-  m_RecordingState = RecordingState::Reset;
+  m_RecordingState         = RecordingState::Reset;
 }
 
 void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommandList)
@@ -2730,13 +2730,59 @@ void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
 
 void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
 {
-  for (xiiGALStateTransitionDescription& barrier : pResourceBarriers)
-  {
-    if (barrier.m_pResource == nullptr || !barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
-      continue;
+  xiiTemporaryArray<D3D12_RESOURCE_BARRIER> barriers;
+  barriers.SetCountUninitialized(pResourceBarriers.GetCount());
 
-    barrier.m_pResource->SetResourceState(barrier.m_NewState);
+  for (xiiUInt32 i = 0; i < pResourceBarriers.GetCount(); ++i)
+  {
+    const xiiGALStateTransitionDescription& barrier      = pResourceBarriers[i];
+    D3D12_RESOURCE_BARRIER&                 d3d12Barrier = barriers[i];
+
+    d3d12Barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    d3d12Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    d3d12Barrier.Transition.StateBefore = xiiD3D12TypeConversions::GetResourceState(barrier.m_OldState);
+    d3d12Barrier.Transition.StateAfter  = xiiD3D12TypeConversions::GetResourceState(barrier.m_NewState);
+
+    if (barrier.m_TransitionType == xiiGALStateTransitionType::Immediate)
+    {
+      d3d12Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    }
+    else if (barrier.m_TransitionType == xiiGALStateTransitionType::Begin)
+    {
+      d3d12Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY;
+    }
+    else if (barrier.m_TransitionType == xiiGALStateTransitionType::End)
+    {
+      d3d12Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
+    }
+    else
+    {
+      xiiLog::Error("Failed to transition resource state on command list '{}': invalid transition type for resource '{}'.", GetDebugName(), barrier.m_pResource != nullptr ? barrier.m_pResource->GetDebugName() : "<null>");
+      continue;
+    }
+
+    if (auto pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(barrier.m_pResource))
+    {
+      d3d12Barrier.Transition.pResource = pTextureD3D12->GetD3D12Texture();
+    }
+    else if (auto pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(barrier.m_pResource))
+    {
+      d3d12Barrier.Transition.pResource = pBufferD3D12->GetD3D12Buffer();
+    }
+    else
+    {
+      xiiLog::Error("Failed to transition resource state on command list '{}': incompatible resource type for resource '{}'.", GetDebugName(), barrier.m_pResource != nullptr ? barrier.m_pResource->GetDebugName() : "<null>");
+
+      continue;
+    }
+
+    if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+    {
+      barrier.m_pResource->SetResourceState(barrier.m_NewState);
+    }
   }
+
+  m_pD3D12CommandList->ResourceBarrier(barriers.GetCount(), barriers.GetData());
 }
 
 void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)
@@ -2814,36 +2860,18 @@ void xiiGALCommandListD3D12::DeviceWaitForFencePlatform(xiiGALFence* pFence, xii
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(sName);
   XII_IGNORE_UNUSED(color);
-
-  if (m_pD3D12CommandList == nullptr)
-    return;
-
-  xiiStringBuilder sTemp;
-  const char*      szName       = sName.GetData(sTemp);
-  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount()) + 1U;
-  m_pD3D12CommandList->BeginEvent(0U, szName, uiNameLength);
 }
 
 void xiiGALCommandListD3D12::EndDebugGroupPlatform()
 {
-  if (m_pD3D12CommandList != nullptr)
-  {
-    m_pD3D12CommandList->EndEvent();
-  }
 }
 
 void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(sName);
   XII_IGNORE_UNUSED(color);
-
-  if (m_pD3D12CommandList == nullptr)
-    return;
-
-  xiiStringBuilder sTemp;
-  const char*      szName       = sName.GetData(sTemp);
-  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount()) + 1U;
-  m_pD3D12CommandList->SetMarker(0U, szName, uiNameLength);
 }
 
 void xiiGALCommandListD3D12::InvalidateStatePlatform()

@@ -26,16 +26,10 @@ public:
   XII_ALWAYS_INLINE ID3D12CommandList*         GetD3D12CommandList() const { return reinterpret_cast<ID3D12CommandList*>(m_pD3D12CommandList); }
   XII_ALWAYS_INLINE ID3D12GraphicsCommandList* GetD3D12GraphicsCommandList() const { return m_pD3D12CommandList; }
 
+  XII_ALWAYS_INLINE xiiGALStagingBufferPoolD3D12* GetD3D12UploadStagingBufferPool() const { return m_CommandListData.m_pUploadStagingBufferPool.Borrow(); }
+
   struct CommandListState
   {
-    // vk::RenderPass  m_vkRenderPass             = VK_NULL_HANDLE;
-    // vk::Framebuffer m_vkFramebuffer            = VK_NULL_HANDLE;
-    // vk::Pipeline    m_vkGraphicsPipeline       = VK_NULL_HANDLE;
-    // vk::Pipeline    m_vkComputePipeline        = VK_NULL_HANDLE;
-    // vk::Pipeline    m_vkRayTracingPipeline     = VK_NULL_HANDLE;
-    // vk::Buffer      m_vkIndexBuffer            = VK_NULL_HANDLE;
-    // vk::DeviceSize  m_vkIndexBufferOffset      = 0;
-    // vk::IndexType   m_vkIndexType              = vk::IndexType::eNoneKHR;
     xiiUInt32 m_uiFramebufferWidth       = 0;
     xiiUInt32 m_uiFramebufferHeight      = 0;
     xiiUInt32 m_uiFramebufferArraySlices = 0;

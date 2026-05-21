@@ -142,10 +142,9 @@ public:
   ///
   ///  \param resourceDescription  - D3D12 resource description defining the buffer properties (size, usage, etc.).
   ///  \param allocationCreateInfo - Parameters that control how memory should be allocated for the buffer, including heap type, flags, and optional user data.
-  ///  \param initialStates        - Initial resource state flags for the buffer (e.g., vertex buffer, constant buffer, etc.).
   ///  \param out_ppResource       - Output pointer to the created buffer resource.
   ///  \param out_pAllocation      - Output pointer to the memory allocation info.
-  xiiResult CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation);
+  xiiResult CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation);
 
   /// \brief Destroys a D3D12 buffer resource and frees its associated memory allocation.
   ///
@@ -157,11 +156,10 @@ public:
   ///
   /// \param resourceDescription  - D3D12 resource description defining the image properties (dimensions, format, usage, etc.).
   /// \param allocationCreateInfo - Parameters that control how memory should be allocated for the image including heap type, flags, and optional user data.
-  /// \param initialStates        - Initial resource state flags for the image (e.g., render target, depth stencil, shader resource, etc.).
   /// \param pOptimizedClearValue - Optional pointer to an optimized clear value for render target or depth stencil images, which can improve clear performance.
   /// \param out_ppResource       - Output pointer to the created image resource.
   /// \param out_pAllocation      - Output pointer to the memory allocation info.
-  xiiResult CreateImage(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, const xiiGALOptimizedClearValue* pOptimizedClearValue, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation);
+  xiiResult CreateImage(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, const xiiGALOptimizedClearValue* pOptimizedClearValue, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation);
 
   /// \brief Destroys a D3D12 image resource and frees its associated memory allocation.
   ///

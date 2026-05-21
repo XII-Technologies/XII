@@ -194,7 +194,7 @@ void xiiD3D12MemoryAllocator::DeInitialize()
   XII_GAL_D3D12_RELEASE(m_pImplementation->m_pD3D12MAAllocator);
 }
 
-xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
+xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
 {
   XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
   XII_ASSERT_DEV(out_ppResource != nullptr, "Output resource pointer is null.");
@@ -207,7 +207,7 @@ xiiResult xiiD3D12MemoryAllocator::CreateBuffer(const D3D12_RESOURCE_DESC& resou
   allocationDescription.pPrivateData             = allocationCreateInfo.m_pUserData;
 
   D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
-  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, D3D12_RESOURCE_STATE_COMMON, nullptr, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
   {
     xiiLog::Error("Failed to create buffer resource with D3D12 Memory Allocator.");
 
@@ -227,7 +227,7 @@ void xiiD3D12MemoryAllocator::DestroyBuffer(ID3D12Resource*& pResource, xiiD3D12
   XII_GAL_D3D12_RELEASE(pAllocation);
 }
 
-xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, xiiBitflags<xiiGALResourceStateFlags> initialStates, const xiiGALOptimizedClearValue* pOptimizedClearValue, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
+xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resourceDescription, const xiiD3D12MemoryAllocationCreateInfo& allocationCreateInfo, const xiiGALOptimizedClearValue* pOptimizedClearValue, ID3D12Resource** out_ppResource, xiiD3D12Allocation* out_pAllocation)
 {
   XII_ASSERT_DEV(m_pImplementation->m_pD3D12MAAllocator != nullptr, "D3D12 Memory Allocator is not initialized.");
   XII_ASSERT_DEV(out_ppResource != nullptr, "Output resource pointer is null.");
@@ -244,27 +244,12 @@ xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resour
 
   if (pOptimizedClearValue != nullptr && pOptimizedClearValue->m_ResourceFormat != xiiGALResourceFormat::Unknown)
   {
-    optimizedClearValue.Format = xiiD3D12TypeConversions::GetFormat(pOptimizedClearValue->m_ResourceFormat);
-
-    const xiiGALResourceFormatDescription& formatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(pOptimizedClearValue->m_ResourceFormat);
-    if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
-    {
-      optimizedClearValue.DepthStencil.Depth   = pOptimizedClearValue->m_DepthStencil.m_fDepth;
-      optimizedClearValue.DepthStencil.Stencil = pOptimizedClearValue->m_DepthStencil.m_uiStencil;
-    }
-    else
-    {
-      optimizedClearValue.Color[0] = pOptimizedClearValue->m_ClearColour.r;
-      optimizedClearValue.Color[1] = pOptimizedClearValue->m_ClearColour.g;
-      optimizedClearValue.Color[2] = pOptimizedClearValue->m_ClearColour.b;
-      optimizedClearValue.Color[3] = pOptimizedClearValue->m_ClearColour.a;
-    }
-
+    optimizedClearValue       = xiiD3D12TypeConversions::GetClearValue(*pOptimizedClearValue);
     pD3D12OptimizedClearValue = &optimizedClearValue;
   }
 
   D3D12MA::Allocation* pD3D12MAAllocation = nullptr;
-  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, xiiD3D12TypeConversions::GetResourceState(initialStates), pD3D12OptimizedClearValue, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
+  if (FAILED(m_pImplementation->m_pD3D12MAAllocator->CreateResource(&allocationDescription, &resourceDescription, D3D12_RESOURCE_STATE_COMMON, pD3D12OptimizedClearValue, &pD3D12MAAllocation, __uuidof(*out_ppResource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(out_ppResource)))))
   {
     xiiLog::Error("Failed to create image resource with D3D12 Memory Allocator.");
 

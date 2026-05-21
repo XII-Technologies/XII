@@ -11,6 +11,7 @@
 #include <dxguids/dxguids.h>
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
@@ -23,3 +24,5 @@ XII_DEFINE_AS_POD_TYPE(D3D12_STATE_SUBOBJECT);
 XII_DEFINE_AS_POD_TYPE(D3D12_EXPORT_DESC);
 XII_DEFINE_AS_POD_TYPE(D3D12_DXIL_LIBRARY_DESC);
 XII_DEFINE_AS_POD_TYPE(D3D12_HIT_GROUP_DESC);
+XII_DEFINE_AS_POD_TYPE(D3D12_PLACED_SUBRESOURCE_FOOTPRINT);
+XII_DEFINE_AS_POD_TYPE(D3D12_RESOURCE_BARRIER);

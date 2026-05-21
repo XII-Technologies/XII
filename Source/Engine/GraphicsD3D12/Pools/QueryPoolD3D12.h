@@ -46,14 +46,14 @@ private:
     QueryPoolInformation(xiiGALDeviceD3D12* pDeviceD3D12);
     ~QueryPoolInformation();
 
-    void Initialize(xiiGALQueryType::Enum queryType, D3D12_QUERY_HEAP_TYPE queryHeapType, D3D12_QUERY_TYPE d3d12QueryType, xiiUInt32 uiQueryCount, xiiUInt32 uiQueryResultStride);
+    void Initialize(xiiEnum<xiiGALQueryType> queryType, D3D12_QUERY_HEAP_TYPE queryHeapType, D3D12_QUERY_TYPE d3d12QueryType, xiiUInt32 uiQueryCount, xiiUInt32 uiQueryResultStride);
     void DeInitialize();
 
     [[nodiscard]] xiiUInt32 Allocate();
     void                    Discard(xiiUInt32 uiIndex, xiiUInt64 uiFenceValue);
     [[nodiscard]] xiiUInt32 ResetStaleQueries(xiiUInt64 uiCompletedFenceValue);
 
-    [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryType::Enum GetQueryType() const { return m_QueryType; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALQueryType> GetQueryType() const { return m_QueryType; }
     [[nodiscard]] XII_ALWAYS_INLINE ID3D12QueryHeap*      GetQueryHeap() const { return m_pD3D12QueryHeap; }
     [[nodiscard]] XII_ALWAYS_INLINE ID3D12Resource*       GetReadbackBuffer() const { return m_pReadbackBuffer; }
     [[nodiscard]] XII_ALWAYS_INLINE D3D12_QUERY_TYPE      GetD3D12QueryType() const { return m_D3D12QueryType; }

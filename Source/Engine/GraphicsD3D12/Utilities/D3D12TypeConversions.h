@@ -68,6 +68,7 @@ public:
   static D3D12_INPUT_CLASSIFICATION GetElementFrequency(xiiGALInputElementFrequency::Enum e);
 
   static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount);
+  static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize);
 
   static D3D12_RESOURCE_STATES GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
   static D3D12_SHADING_RATE          GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e);
@@ -84,6 +85,8 @@ public:
   static D3D12_RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> dimension);
 
   static UINT GetShaderComponentMapping(const xiiGALTextureComponentMapping& componentMapping);
+
+  static D3D12_CLEAR_VALUE GetClearValue(const xiiGALOptimizedClearValue& clearValue);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>

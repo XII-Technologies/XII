@@ -66,7 +66,7 @@ void xiiGALDynamicBufferPoolD3D12::CreateDynamicBufferPage()
   xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
   allocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Upload;
 
-  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, xiiD3D12TypeConversions::GetDynamicBufferState(), &dynamicBufferPage.m_pBuffer, &dynamicBufferPage.m_Allocation).Failed())
+  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &dynamicBufferPage.m_pBuffer, &dynamicBufferPage.m_Allocation).Failed())
   {
     xiiLog::Error("Failed to create D3D12 dynamic-buffer pool page.");
     return;
@@ -109,7 +109,7 @@ void xiiGALDynamicBufferPoolD3D12::CreateLargeBuffer(xiiUInt64 uiSize)
   xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
   allocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Upload;
 
-  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, xiiD3D12TypeConversions::GetDynamicBufferState(), &dynamicBufferPage.m_pBuffer, &dynamicBufferPage.m_Allocation).Failed())
+  if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &dynamicBufferPage.m_pBuffer, &dynamicBufferPage.m_Allocation).Failed())
   {
     xiiLog::Error("Failed to create D3D12 large dynamic-buffer allocation (size={}).", uiSize);
     return;

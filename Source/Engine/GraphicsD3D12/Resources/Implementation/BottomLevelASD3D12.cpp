@@ -172,7 +172,7 @@ xiiResult xiiGALBottomLevelASD3D12::InitPlatform()
   xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
   allocationCreateInfo.m_HeapType                         = xiiD3D12MemoryHeapType::Default;
 
-  XII_SUCCEED_OR_RETURN(pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, xiiGALResourceStateFlags::Undefined, &m_pD3D12Resource, &m_ResourceAllocation));
+  XII_SUCCEED_OR_RETURN(pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &m_pD3D12Resource, &m_ResourceAllocation));
 
   m_uiAccelerationStructureSize = uiAccelerationStructureSize;
   SetResourceState(xiiGALResourceStateFlags::Undefined);

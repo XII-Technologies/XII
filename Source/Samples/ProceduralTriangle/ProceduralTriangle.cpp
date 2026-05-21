@@ -12,6 +12,7 @@
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Time/Clock.h>
+#include <Foundation/Utilities/CommandLineOptions.h>
 
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -38,6 +39,8 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 #include <Shaders/ProceduralTriangleConstants.h>
+
+xiiCommandLineOptionInt opt_MonitorId("ProceduralTriangle", "-monitor", "The monitor to launch the application winodw.", 0U);
 
 static bool g_bWindowResized = false;
 
@@ -299,7 +302,10 @@ public:
       WindowCreationDescription.m_bShowMouseCursor  = true;
       WindowCreationDescription.m_bClipMouseCursor  = false;
       WindowCreationDescription.m_WindowMode        = xiiWindowMode::WindowResizable;
-      m_pWindow                                     = XII_DEFAULT_NEW(xiiWindow);
+      WindowCreationDescription.m_iMonitor          = opt_MonitorId.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+      WindowCreationDescription.AdjustWindowSizeAndPosition().IgnoreResult();
+
+      m_pWindow = XII_DEFAULT_NEW(xiiWindow);
       m_pWindow->Initialize(WindowCreationDescription).AssertSuccess();
 
       m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& e) -> void {
@@ -419,7 +425,6 @@ private:
   struct OffscreenPassData
   {
     xiiRGTextureHandle m_hOffScreenTexture;
-    xiiRGTextureHandle m_hDepthTexture;
     float              m_fGlobalTime = 0.0f;
   };
 
@@ -435,11 +440,6 @@ private:
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
     data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::CopyDestination);
 
-    textureDescription.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
-    textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
-
-    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::CopyDestination);
-
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }
 
@@ -449,7 +449,6 @@ private:
 
     cmd.BeginDebugGroup("Offscreen Clear");
     {
-      cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
     }
     cmd.EndDebugGroup();
@@ -571,7 +570,6 @@ private:
   {
     xiiRGTextureHandle m_hBackBufferTexture;
     xiiRGTextureHandle m_hOffScreenTexture;
-    xiiRGTextureHandle m_hDepthTexture;
   };
 
   void SetupBlitPass(BlitPassData& data, xiiRGBuilder& builder)
@@ -579,7 +577,6 @@ private:
     // Declare that we will read from the offscreen texture created in the previous pass.
     // This registers a read dependency on that pass, so it will be scheduled after it and the texture will be transitioned to the correct state before we read from it.
     data.m_hOffScreenTexture = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::CopySource);
-    data.m_hDepthTexture     = builder.ReadTexture("DepthStencil", xiiGALResourceStateFlags::DepthRead);
 
     // We also need to get the back buffer texture from the swap chain as a render target.
     data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::CopyDestination);
