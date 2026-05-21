@@ -2852,10 +2852,18 @@ void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRat
 
 void xiiGALCommandListD3D12::EnqueueSignalPlatform(xiiGALFence* pFence, xiiUInt64 uiValue)
 {
+  xiiGALFenceD3D12* pFenceD3D12 = xiiDynamicCast<xiiGALFenceD3D12*>(pFence);
+  FenceInfo         fenceInfo   = {.m_pFenceD3D12 = pFenceD3D12, .m_uiWaitValue = uiValue};
+
+  m_SignalFences.PushBack(fenceInfo);
 }
 
 void xiiGALCommandListD3D12::DeviceWaitForFencePlatform(xiiGALFence* pFence, xiiUInt64 uiValue)
 {
+  xiiGALFenceD3D12* pFenceD3D12 = xiiDynamicCast<xiiGALFenceD3D12*>(pFence);
+  FenceInfo         fenceInfo   = {.m_pFenceD3D12 = pFenceD3D12, .m_uiWaitValue = uiValue};
+
+  m_WaitFences.PushBack(fenceInfo);
 }
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
@@ -2879,6 +2887,9 @@ void xiiGALCommandListD3D12::InvalidateStatePlatform()
   m_CommandListFlags = {};
   m_CommandListState = {};
   m_CommandListData.Invalidate();
+
+  m_SignalFences.Clear();
+  m_WaitFences.Clear();
 }
 
 void xiiGALCommandListD3D12::SetDebugNamePlatform(xiiStringView sName) const
