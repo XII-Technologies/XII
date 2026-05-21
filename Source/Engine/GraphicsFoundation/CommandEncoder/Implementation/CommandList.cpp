@@ -1601,8 +1601,8 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
         const xiiGALTextureCreationDescription& textureDescription = pTexture->GetDescription();
 
         XII_ASSERT_DEV(previousState != xiiGALResourceStateFlags::Unknown, "pResourceBarriers[{}].OldState for texture '{}' is unknown to the engine and is not explicitly specified in the barrier.", uiBarrierIndex, pTexture->GetDebugName());
-        XII_ASSERT_DEV(VerifyResourceStates(previousState, true), "pResourceBarriers[{}].OldState is invalid for texture '{}'.", uiBarrierIndex, pTexture->GetDebugName());
-        XII_ASSERT_DEV(VerifyResourceStates(barrier.m_NewState, true), "pResourceBarriers[{}].NewState is invalid for texture '{}'.", uiBarrierIndex, pTexture->GetDebugName());
+        XII_ASSERT_DEV(VerifyResourceStates(previousState, true), "pResourceBarriers[{}].OldState ({}) is invalid for texture '{}'.", uiBarrierIndex, xiiArgEnum(previousState), pTexture->GetDebugName());
+        XII_ASSERT_DEV(VerifyResourceStates(barrier.m_NewState, true), "pResourceBarriers[{}].NewState ({}) is invalid for texture '{}'.", uiBarrierIndex, xiiArgEnum(barrier.m_NewState), pTexture->GetDebugName());
 
         XII_ASSERT_DEV(barrier.m_uiFirstMipLevel < textureDescription.m_uiMipLevels, "pResourceBarriers[{}].FirstMipLevel ({}) is out of range. Texture '{}' has only {} mip level (s).", uiBarrierIndex, barrier.m_uiFirstMipLevel, pTexture->GetDebugName(), textureDescription.m_uiMipLevels);
         XII_ASSERT_DEV(barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS || (barrier.m_uiFirstMipLevel + barrier.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "pResourceBarriers[{}] mip level range [{}, {}] is out of range. Texture '{}' has only {} mip level (s).", uiBarrierIndex, barrier.m_uiFirstMipLevel, barrier.m_uiMipLevelCount - 1, pTexture->GetDebugName(), textureDescription.m_uiMipLevels);
