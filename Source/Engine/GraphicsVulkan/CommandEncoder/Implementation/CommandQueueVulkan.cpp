@@ -26,7 +26,9 @@ xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
-  xiiGALDeviceVulkan*      pDeviceVulkan      = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
+  XII_ASSERT_DEV(m_pQueueFence != nullptr, "The command queue fence must be valid.");
+
+  xiiGALDeviceVulkan*      pDeviceVulkan      = xiiDynamicCast<xiiGALDeviceVulkan*>(m_pDevice);
   xiiGALCommandListVulkan* pCommandListVulkan = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
 
   bool bTimelineSemaphoreInUse = false;

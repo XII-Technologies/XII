@@ -169,6 +169,12 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  struct FenceInfo
+  {
+    xiiGALFenceD3D12* m_pFenceD3D12 = nullptr;
+    xiiUInt64         m_uiWaitValue = 0U;
+  };
+
   void BindSubpassAttachments(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12, xiiUInt32 uiSubpassIndex, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues);
 
   void PrepareForDraw();
@@ -183,5 +189,7 @@ private:
   xiiBitflags<CommandListFlags>               m_CommandListFlags;
   CommandListState                            m_CommandListState;
   xiiGALCommandListDataD3D12                  m_CommandListData;
+  xiiDynamicArray<FenceInfo>                  m_SignalFences;
+  xiiDynamicArray<FenceInfo>                  m_WaitFences;
   xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
 };
