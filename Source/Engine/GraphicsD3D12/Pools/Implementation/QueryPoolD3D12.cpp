@@ -9,11 +9,6 @@
 
 namespace
 {
-  [[nodiscard]] XII_ALWAYS_INLINE xiiArgEnum GetQueryTypeLogValue(xiiGALQueryType::Enum queryType)
-  {
-    return xiiArgEnum(xiiEnum<xiiGALQueryType>(queryType));
-  }
-
   constexpr xiiUInt32 s_uiQueryPoolSizes[xiiGALQueryType::ENUM_COUNT] = {
     0U,   // Undefined
     128U, // Occlusion
@@ -23,7 +18,7 @@ namespace
     256U  // Duration
   };
 
-  static D3D12_QUERY_TYPE GetD3D12QueryType(xiiGALQueryType::Enum queryType)
+  static D3D12_QUERY_TYPE GetD3D12QueryType(xiiEnum<xiiGALQueryType> queryType)
   {
     switch (queryType)
     {
@@ -41,12 +36,12 @@ namespace
         return D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
 
       default:
-        XII_REPORT_FAILURE("Unsupported D3D12 query type '{}'.", GetQueryTypeLogValue(queryType));
+        XII_REPORT_FAILURE("Unsupported D3D12 query type '{}'.", xiiArgEnum(queryType));
         return D3D12_QUERY_TYPE_TIMESTAMP;
     }
   }
 
-  static xiiUInt32 GetQueryResultStride(xiiGALQueryType::Enum queryType)
+  static xiiUInt32 GetQueryResultStride(xiiEnum<xiiGALQueryType> queryType)
   {
     switch (queryType)
     {
@@ -60,22 +55,9 @@ namespace
         return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
 
       default:
-        XII_REPORT_FAILURE("Unsupported D3D12 query type '{}'.", GetQueryTypeLogValue(queryType));
+        XII_REPORT_FAILURE("Unsupported D3D12 query type '{}'.", xiiArgEnum(queryType));
         return sizeof(xiiUInt64);
     }
-  }
-
-  static bool IsGraphicsQueue(const xiiGALCommandQueueCreationDescription& queueDescription)
-  {
-    return queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics);
-  }
-
-  static bool IsTransferOnlyQueue(const xiiGALCommandQueueCreationDescription& queueDescription)
-  {
-    const bool bTransfer = queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer);
-    const bool bGraphics = queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics);
-    const bool bCompute  = queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Compute);
-    return bTransfer && !bGraphics && !bCompute;
   }
 } // namespace
 
@@ -95,8 +77,8 @@ xiiGALQueryPoolD3D12::xiiGALQueryPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiG
   m_QueryPools.SetCount(xiiGALQueryType::ENUM_COUNT);
 
   const xiiGALCommandQueueCreationDescription& queueDescription            = m_pCommandQueueD3D12->GetDescription();
-  const bool                                   bGraphicsQueue              = IsGraphicsQueue(queueDescription);
-  const bool                                   bTransferOnlyQueue          = IsTransferOnlyQueue(queueDescription);
+  const bool                                   bGraphicsQueue              = queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics);
+  const bool                                   bTransferOnlyQueue          = queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Transfer) && !queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Graphics) && !queueDescription.m_QueueFlags.IsSet(xiiGALCommandQueueFlags::Compute);
   const bool                                   bTransferTimestampSupported = m_pDeviceD3D12->GetDescription().m_DeviceFeatures.m_TransferQueueTimestampQueries != xiiGALDeviceFeatureState::Disabled;
 
   for (xiiUInt32 uiQueryType = xiiGALQueryType::Undefined + 1U; uiQueryType < xiiGALQueryType::ENUM_COUNT; ++uiQueryType)
@@ -152,17 +134,16 @@ xiiGALQueryPoolD3D12::~xiiGALQueryPoolD3D12()
 
 xiiUInt32 xiiGALQueryPoolD3D12::AllocateQuery(xiiGALQueryType::Enum queryType)
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  return pQueryPoolInformation != nullptr ? pQueryPoolInformation->Allocate() : xiiInvalidIndex;
+  XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
+
+  return m_QueryPools[queryType]->Allocate();
 }
 
 void xiiGALQueryPoolD3D12::DiscardQuery(xiiGALQueryType::Enum queryType, xiiUInt32 uiIndex, xiiUInt64 uiFenceValue)
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  if (pQueryPoolInformation != nullptr)
-  {
-    pQueryPoolInformation->Discard(uiIndex, uiFenceValue);
-  }
+  XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
+
+  m_QueryPools[queryType]->Discard(uiIndex, uiFenceValue);
 }
 
 xiiUInt32 xiiGALQueryPoolD3D12::ResetStaleQueries()
@@ -183,26 +164,30 @@ xiiUInt32 xiiGALQueryPoolD3D12::ResetStaleQueries()
 
 ID3D12QueryHeap* xiiGALQueryPoolD3D12::GetQueryHeap(xiiGALQueryType::Enum queryType) const
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  return pQueryPoolInformation != nullptr ? pQueryPoolInformation->GetQueryHeap() : nullptr;
+  XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
+
+  return m_QueryPools[queryType]->GetQueryHeap();
 }
 
 ID3D12Resource* xiiGALQueryPoolD3D12::GetReadbackBuffer(xiiGALQueryType::Enum queryType) const
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  return pQueryPoolInformation != nullptr ? pQueryPoolInformation->GetReadbackBuffer() : nullptr;
+  XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
+
+  return m_QueryPools[queryType]->GetReadbackBuffer();
 }
 
 D3D12_QUERY_TYPE xiiGALQueryPoolD3D12::GetD3D12QueryType(xiiGALQueryType::Enum queryType) const
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  return pQueryPoolInformation != nullptr ? pQueryPoolInformation->GetD3D12QueryType() : D3D12_QUERY_TYPE_TIMESTAMP;
+  XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
+  
+  return m_QueryPools[queryType]->GetD3D12QueryType();
 }
 
 xiiUInt64 xiiGALQueryPoolD3D12::GetQueryReadbackOffset(xiiGALQueryType::Enum queryType, xiiUInt32 uiQueryIndex) const
 {
-  QueryPoolInformation* pQueryPoolInformation = m_QueryPools[queryType].Borrow();
-  return pQueryPoolInformation != nullptr ? pQueryPoolInformation->GetQueryReadbackOffset(uiQueryIndex) : 0ULL;
+  XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
+
+  return m_QueryPools[queryType]->GetQueryReadbackOffset(uiQueryIndex);
 }
 
 xiiUInt32 xiiGALQueryPoolD3D12::GetQueryResultStride(xiiGALQueryType::Enum queryType) const
@@ -235,7 +220,7 @@ xiiGALQueryPoolD3D12::QueryPoolInformation::~QueryPoolInformation()
   DeInitialize();
 }
 
-void xiiGALQueryPoolD3D12::QueryPoolInformation::Initialize(xiiGALQueryType::Enum queryType, D3D12_QUERY_HEAP_TYPE queryHeapType, D3D12_QUERY_TYPE d3d12QueryType, xiiUInt32 uiQueryCount, xiiUInt32 uiQueryResultStride)
+void xiiGALQueryPoolD3D12::QueryPoolInformation::Initialize(xiiEnum<xiiGALQueryType> queryType, D3D12_QUERY_HEAP_TYPE queryHeapType, D3D12_QUERY_TYPE d3d12QueryType, xiiUInt32 uiQueryCount, xiiUInt32 uiQueryResultStride)
 {
   XII_ASSERT_DEV(queryType != xiiGALQueryType::Undefined, "Invalid D3D12 query type.");
   XII_ASSERT_DEV(uiQueryCount > 0U, "D3D12 query pool size must be greater than zero.");
@@ -254,7 +239,7 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::Initialize(xiiGALQueryType::Enu
   HRESULT hResult = m_pDeviceD3D12->GetD3D12Device()->CreateQueryHeap(&queryHeapDescription, IID_PPV_ARGS(&m_pD3D12QueryHeap));
   if (FAILED(hResult))
   {
-    xiiLog::Error("Failed to create D3D12 query heap for query type '{}': {}.", GetQueryTypeLogValue(queryType), xiiHRESULTtoString(hResult));
+    xiiLog::Error("Failed to create D3D12 query heap for query type '{}': {}.", xiiArgEnum(queryType), xiiHRESULTtoString(hResult));
     DeInitialize();
     return;
   }
@@ -285,12 +270,15 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::Initialize(xiiGALQueryType::Enu
 
   if (pD3D12Allocator->CreateBuffer(resourceDescription, allocationCreateInfo, &m_pReadbackBuffer, &m_ReadbackAllocation).Failed())
   {
-    xiiLog::Error("Failed to create D3D12 query readback buffer for query type '{}'.", GetQueryTypeLogValue(queryType));
+    xiiLog::Error("Failed to create D3D12 query readback buffer for query type '{}'.", xiiArgEnum(queryType));
+
     DeInitialize();
+
     return;
   }
 
   m_AvailableQueries.SetCountUninitialized(uiQueryCount);
+
   for (xiiUInt32 i = 0U; i < uiQueryCount; ++i)
   {
     m_AvailableQueries[i] = i;
@@ -308,13 +296,17 @@ void xiiGALQueryPoolD3D12::QueryPoolInformation::DeInitialize()
   if (m_pD3D12QueryHeap != nullptr)
   {
     IUnknown* pObject = m_pD3D12QueryHeap;
+
     m_pDeviceD3D12->SafeReleaseDeviceObject(pObject);
+
     m_pD3D12QueryHeap = nullptr;
   }
 
   m_ReadbackAllocation = nullptr;
+
   m_AvailableQueries.Clear();
   m_StaleQueries.Clear();
+
   m_uiQueryCount          = 0U;
   m_uiQueryResultStride   = 0U;
   m_uiMaxAllocatedQueries = 0U;
@@ -378,6 +370,7 @@ xiiUInt32 xiiGALQueryPoolD3D12::QueryPoolInformation::ResetStaleQueries(xiiUInt6
   while (uiStaleIndex < m_StaleQueries.GetCount())
   {
     const StaleQuery& staleQuery = m_StaleQueries[uiStaleIndex];
+
     if (staleQuery.m_uiFenceValue != xiiInvalidIndex && uiCompletedFenceValue < staleQuery.m_uiFenceValue)
     {
       ++uiStaleIndex;
