@@ -179,7 +179,7 @@ ID3D12Resource* xiiGALQueryPoolD3D12::GetReadbackBuffer(xiiGALQueryType::Enum qu
 D3D12_QUERY_TYPE xiiGALQueryPoolD3D12::GetD3D12QueryType(xiiGALQueryType::Enum queryType) const
 {
   XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
-  
+
   return m_QueryPools[queryType]->GetD3D12QueryType();
 }
 
