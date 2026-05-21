@@ -1597,3 +1597,24 @@ XII_ALWAYS_INLINE UINT xiiD3D12TypeConversions::GetShaderComponentMapping(const 
 
   return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(uiRed, uiGreen, uiBlue, uiAlpha);
 }
+
+XII_ALWAYS_INLINE D3D12_CLEAR_VALUE xiiD3D12TypeConversions::GetClearValue(const xiiGALOptimizedClearValue& clearValue)
+{
+  D3D12_CLEAR_VALUE                      optimizedClearValue = {};
+  const xiiGALResourceFormatDescription& formatDescription   = xiiGALTextureUtilities::GetResourceFormatProperties(clearValue.m_ResourceFormat);
+
+  if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    optimizedClearValue.DepthStencil.Depth   = clearValue.m_DepthStencil.m_fDepth;
+    optimizedClearValue.DepthStencil.Stencil = clearValue.m_DepthStencil.m_uiStencil;
+  }
+  else
+  {
+    optimizedClearValue.Color[0] = clearValue.m_ClearColour.r;
+    optimizedClearValue.Color[1] = clearValue.m_ClearColour.g;
+    optimizedClearValue.Color[2] = clearValue.m_ClearColour.b;
+    optimizedClearValue.Color[3] = clearValue.m_ClearColour.a;
+  }
+
+  return optimizedClearValue;
+}

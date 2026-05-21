@@ -244,22 +244,7 @@ xiiResult xiiD3D12MemoryAllocator::CreateImage(const D3D12_RESOURCE_DESC& resour
 
   if (pOptimizedClearValue != nullptr && pOptimizedClearValue->m_ResourceFormat != xiiGALResourceFormat::Unknown)
   {
-    optimizedClearValue.Format = xiiD3D12TypeConversions::GetFormat(pOptimizedClearValue->m_ResourceFormat);
-
-    const xiiGALResourceFormatDescription& formatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(pOptimizedClearValue->m_ResourceFormat);
-    if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
-    {
-      optimizedClearValue.DepthStencil.Depth   = pOptimizedClearValue->m_DepthStencil.m_fDepth;
-      optimizedClearValue.DepthStencil.Stencil = pOptimizedClearValue->m_DepthStencil.m_uiStencil;
-    }
-    else
-    {
-      optimizedClearValue.Color[0] = pOptimizedClearValue->m_ClearColour.r;
-      optimizedClearValue.Color[1] = pOptimizedClearValue->m_ClearColour.g;
-      optimizedClearValue.Color[2] = pOptimizedClearValue->m_ClearColour.b;
-      optimizedClearValue.Color[3] = pOptimizedClearValue->m_ClearColour.a;
-    }
-
+    optimizedClearValue       = xiiD3D12TypeConversions::GetClearValue(*pOptimizedClearValue);
     pD3D12OptimizedClearValue = &optimizedClearValue;
   }
 

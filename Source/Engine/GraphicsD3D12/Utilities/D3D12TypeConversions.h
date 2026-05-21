@@ -84,6 +84,8 @@ public:
   static D3D12_RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> dimension);
 
   static UINT GetShaderComponentMapping(const xiiGALTextureComponentMapping& componentMapping);
+
+  static D3D12_CLEAR_VALUE GetClearValue(const xiiGALOptimizedClearValue& clearValue);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>

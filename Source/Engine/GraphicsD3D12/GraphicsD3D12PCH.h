@@ -11,6 +11,7 @@
 #include <dxguids/dxguids.h>
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
