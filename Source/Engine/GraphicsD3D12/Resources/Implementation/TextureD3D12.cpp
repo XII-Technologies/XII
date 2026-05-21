@@ -11,8 +11,6 @@
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
-#include <vector>
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
