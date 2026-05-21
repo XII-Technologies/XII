@@ -1330,6 +1330,11 @@ XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(x
   return uiMipSlice + (uiArraySlice * uiMipLevelCount);
 }
 
+XII_ALWAYS_INLINE xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize)
+{
+  return uiMipSlice + (uiArraySlice * uiMipLevelCount) + (uiPlaneSlice * uiMipLevelCount * uiArraySize);
+}
+
 XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e)
 {
   D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATE_COMMON;

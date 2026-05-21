@@ -68,6 +68,7 @@ public:
   static D3D12_INPUT_CLASSIFICATION GetElementFrequency(xiiGALInputElementFrequency::Enum e);
 
   static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount);
+  static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize);
 
   static D3D12_RESOURCE_STATES GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
   static D3D12_SHADING_RATE          GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e);
