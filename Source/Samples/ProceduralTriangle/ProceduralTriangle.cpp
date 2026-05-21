@@ -12,6 +12,7 @@
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Time/Clock.h>
+#include <Foundation/Utilities/CommandLineOptions.h>
 
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -38,6 +39,8 @@
 #include <GraphicsCore/Shader/ShaderPermutationUtilities.h>
 
 #include <Shaders/ProceduralTriangleConstants.h>
+
+xiiCommandLineOptionInt opt_MonitorId("ProceduralTriangle", "-monitor", "The monitor to launch the application winodw.", 0U);
 
 static bool g_bWindowResized = false;
 
@@ -299,7 +302,10 @@ public:
       WindowCreationDescription.m_bShowMouseCursor  = true;
       WindowCreationDescription.m_bClipMouseCursor  = false;
       WindowCreationDescription.m_WindowMode        = xiiWindowMode::WindowResizable;
-      m_pWindow                                     = XII_DEFAULT_NEW(xiiWindow);
+      WindowCreationDescription.m_iMonitor          = opt_MonitorId.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+      WindowCreationDescription.AdjustWindowSizeAndPosition().IgnoreResult();
+
+      m_pWindow = XII_DEFAULT_NEW(xiiWindow);
       m_pWindow->Initialize(WindowCreationDescription).AssertSuccess();
 
       m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& e) -> void {
