@@ -2814,36 +2814,18 @@ void xiiGALCommandListD3D12::DeviceWaitForFencePlatform(xiiGALFence* pFence, xii
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(sName);
   XII_IGNORE_UNUSED(color);
-
-  if (m_pD3D12CommandList == nullptr)
-    return;
-
-  xiiStringBuilder sTemp;
-  const char*      szName       = sName.GetData(sTemp);
-  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount()) + 1U;
-  m_pD3D12CommandList->BeginEvent(0U, szName, uiNameLength);
 }
 
 void xiiGALCommandListD3D12::EndDebugGroupPlatform()
 {
-  if (m_pD3D12CommandList != nullptr)
-  {
-    m_pD3D12CommandList->EndEvent();
-  }
 }
 
 void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+  XII_IGNORE_UNUSED(sName);
   XII_IGNORE_UNUSED(color);
-
-  if (m_pD3D12CommandList == nullptr)
-    return;
-
-  xiiStringBuilder sTemp;
-  const char*      szName       = sName.GetData(sTemp);
-  const xiiUInt32  uiNameLength = static_cast<xiiUInt32>(sName.GetElementCount()) + 1U;
-  m_pD3D12CommandList->SetMarker(0U, szName, uiNameLength);
 }
 
 void xiiGALCommandListD3D12::InvalidateStatePlatform()
