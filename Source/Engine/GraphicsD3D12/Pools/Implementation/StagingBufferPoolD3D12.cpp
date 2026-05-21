@@ -33,7 +33,7 @@ void xiiGALStagingBufferPoolD3D12::ReleasePage(StagingBufferPage& stagingBufferP
 
   if (stagingBufferPage.m_pMappedAddress != nullptr)
   {
-    D3D12_RANGE writtenRange = {};
+    D3D12_RANGE writtenRange = {0U, stagingBufferPage.m_uiSize};
     stagingBufferPage.m_pBuffer->Unmap(0U, &writtenRange);
     stagingBufferPage.m_pMappedAddress = nullptr;
   }
@@ -73,7 +73,7 @@ void xiiGALStagingBufferPoolD3D12::CreateStagingBufferPage()
 
   stagingBufferPage.m_uiSize = s_uiStagingBufferDefaultPageSize;
 
-  D3D12_RANGE readRange = {0U, 0U};
+  D3D12_RANGE readRange = {0U, stagingBufferPage.m_uiSize};
   if (FAILED(stagingBufferPage.m_pBuffer->Map(0U, &readRange, &stagingBufferPage.m_pMappedAddress)))
   {
     xiiLog::Error("Failed to map D3D12 staging-buffer pool page.");
@@ -115,7 +115,7 @@ void xiiGALStagingBufferPoolD3D12::CreateLargeBuffer(xiiUInt64 uiSize)
 
   stagingBufferPage.m_uiSize = uiSize;
 
-  D3D12_RANGE readRange = {0U, 0U};
+  D3D12_RANGE readRange = {0U, stagingBufferPage.m_uiSize};
   if (FAILED(stagingBufferPage.m_pBuffer->Map(0U, &readRange, &stagingBufferPage.m_pMappedAddress)))
   {
     xiiLog::Error("Failed to map D3D12 large staging-buffer allocation.");

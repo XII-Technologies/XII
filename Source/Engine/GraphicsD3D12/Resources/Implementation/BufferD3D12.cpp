@@ -181,6 +181,8 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
             return XII_FAILURE;
           }
 
+          pMappedMemory = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
+
           xiiMemoryUtils::RawByteCopy(pMappedMemory, pInitialData->m_pData, pInitialData->m_uiDataSize);
 
           stagingBufferAllocation.m_pD3D12Buffer->Unmap(0, &writeRange);
