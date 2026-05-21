@@ -171,6 +171,8 @@ protected:
 private:
   struct FenceInfo
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiGALFenceD3D12* m_pFenceD3D12 = nullptr;
     xiiUInt64         m_uiWaitValue = 0U;
   };

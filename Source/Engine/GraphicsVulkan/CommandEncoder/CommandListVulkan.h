@@ -236,6 +236,8 @@ private:
 
   struct MappedTextureKey
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiGALTextureVulkan* m_pTextureVulkan;
     xiiUInt32 const      m_uiMipLevel;
     xiiUInt32 const      m_uiArraySlice;
@@ -308,6 +310,8 @@ private:
 
   struct FenceInfo
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiGALFenceVulkan* m_pFenceVulkan;
     xiiUInt64          m_uiWaitValue = 0U;
   };
