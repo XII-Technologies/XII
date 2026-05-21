@@ -74,6 +74,13 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
   {
     xiiD3D12MemoryAllocationCreateInfo allocationCreateInfo = {};
 
+    if (bHasInitialData)
+    {
+      // If the buffer is initialized with data, we can set the CreateNotZeroed flag to potentially improve allocation performance, as we will be overwriting the entire buffer contents anyway.
+
+      allocationCreateInfo.m_HeapFlags = xiiD3D12MemoryHeapFlags::CreateNotZeroed;
+    }
+
     switch (m_Description.m_Usage)
     {
       case xiiGALResourceUsage::Immutable:
@@ -130,6 +137,7 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
       if (externalMemoryKind.IsSet(xiiGALExternalMemoryKind::Imported))
       {
         xiiLog::Error("Importing external memory into D3D12 buffers is currently not supported.");
+
         return XII_FAILURE;
       }
     }
