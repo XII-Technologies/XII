@@ -912,7 +912,7 @@ void xiiGALTextureVulkan::InitializeImageContent(const vk::ImageCreateInfo& vkIm
     XII_ASSERT_DEV(uiSubResourceIndex == pInitialData->m_pSubResources.GetCount(), "");
   };
 
-  if (auto pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
+  if (auto pCommandListVulkan = xiiDynamicCast<xiiGALCommandListVulkan*>(pInitialData->m_pCommandList))
   {
     UploadStagingData(pCommandListVulkan);
   }
