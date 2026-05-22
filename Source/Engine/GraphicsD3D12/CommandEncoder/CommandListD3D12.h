@@ -67,6 +67,8 @@ public:
     };
   };
 
+  void FlushBarriers();
+
 protected:
   friend class xiiGALCommandQueueD3D12;
   friend class xiiGALDeviceD3D12;
