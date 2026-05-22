@@ -330,7 +330,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
             destinationLocation.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
             destinationLocation.SubresourceIndex            = uiSubresource;
 
-            pCommandListD3D12->GetD3D12GraphicsCommandList()->CopyTextureRegion(&destinationLocation, 0U, 0U, 0U, &sourceLocation, nullptr);
+            pCommandListD3D12->GetD3D12CommandList()->CopyTextureRegion(&destinationLocation, 0U, 0U, 0U, &sourceLocation, nullptr);
           }
         }
 

@@ -326,7 +326,7 @@ void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommand
     return;
 
   xiiGALCommandListD3D12* pSecondaryCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pSecondaryCommandList);
-  if (pSecondaryCommandListD3D12 == nullptr || pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList() == nullptr)
+  if (pSecondaryCommandListD3D12 == nullptr || pSecondaryCommandListD3D12->GetD3D12CommandList() == nullptr)
     return;
 
   if (!pSecondaryCommandListD3D12->GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
@@ -335,7 +335,7 @@ void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommand
     return;
   }
 
-  m_pD3D12CommandList->ExecuteBundle(pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList());
+  m_pD3D12CommandList->ExecuteBundle(pSecondaryCommandListD3D12->GetD3D12CommandList());
 }
 
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
