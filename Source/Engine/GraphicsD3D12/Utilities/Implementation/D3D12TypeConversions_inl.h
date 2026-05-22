@@ -1330,7 +1330,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(x
   return uiMipSlice + (uiArraySlice * uiMipLevelCount);
 }
 
-XII_ALWAYS_INLINE xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize)
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize)
 {
   return uiMipSlice + (uiArraySlice * uiMipLevelCount) + (uiPlaneSlice * uiMipLevelCount * uiArraySize);
 }
@@ -1622,4 +1622,38 @@ XII_ALWAYS_INLINE D3D12_CLEAR_VALUE xiiD3D12TypeConversions::GetClearValue(const
   }
 
   return optimizedClearValue;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetSupportedD3D12ResourceStatesForCommandList(xiiBitflags<xiiGALCommandQueueFlags> queueFlags)
+{
+  constexpr D3D12_RESOURCE_STATES transferResourceStates = D3D12_RESOURCE_STATE_COMMON | D3D12_RESOURCE_STATE_COPY_DEST | D3D12_RESOURCE_STATE_COPY_SOURCE;
+  constexpr D3D12_RESOURCE_STATES computeResourceStates  = transferResourceStates | D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_UNORDERED_ACCESS | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT | D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  constexpr D3D12_RESOURCE_STATES graphicsResourceStates = computeResourceStates | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_RENDER_TARGET | D3D12_RESOURCE_STATE_DEPTH_WRITE | D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_STREAM_OUT | D3D12_RESOURCE_STATE_RESOLVE_DEST | D3D12_RESOURCE_STATE_RESOLVE_SOURCE | D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+
+  if (queueFlags == xiiGALCommandQueueFlags::Graphics)
+    return graphicsResourceStates;
+  else if (queueFlags == xiiGALCommandQueueFlags::Compute)
+    return computeResourceStates;
+  else if (queueFlags == xiiGALCommandQueueFlags::Transfer)
+    return transferResourceStates;
+
+  XII_REPORT_FAILURE("Unexpected command queue type.");
+
+  return D3D12_RESOURCE_STATE_COMMON;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_BARRIER_FLAGS xiiD3D12TypeConversions::GetResourceBarrierFlags(xiiEnum<xiiGALStateTransitionType> type)
+{
+  switch (type)
+  {
+    case xiiGALStateTransitionType::Immediate:
+      return D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    case xiiGALStateTransitionType::Begin:
+      return D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY;
+    case xiiGALStateTransitionType::End:
+      return D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
+    default:
+      XII_REPORT_FAILURE("Unexpected state transition type.");
+      return D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  }
 }

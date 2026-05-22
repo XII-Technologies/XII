@@ -12,6 +12,7 @@
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 class XII_GRAPHICSD3D12_DLL xiiD3D12TypeConversions
 {
@@ -87,6 +88,10 @@ public:
   static UINT GetShaderComponentMapping(const xiiGALTextureComponentMapping& componentMapping);
 
   static D3D12_CLEAR_VALUE GetClearValue(const xiiGALOptimizedClearValue& clearValue);
+
+  static D3D12_RESOURCE_STATES GetSupportedD3D12ResourceStatesForCommandList(xiiBitflags<xiiGALCommandQueueFlags> queueFlags);
+
+  static D3D12_RESOURCE_BARRIER_FLAGS GetResourceBarrierFlags(xiiEnum<xiiGALStateTransitionType> type);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>
