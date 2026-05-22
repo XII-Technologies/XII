@@ -330,7 +330,15 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "Vulkan";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "D3D12";
+#else
+      constexpr const char* szDefaultGraphicsAPI = "";
+#endif
+
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
       xiiStringView sShaderModel     = {};
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
