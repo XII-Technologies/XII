@@ -165,7 +165,6 @@ public:
           xiiRGCompileSettings settings;
           settings.m_bEnablePassCulling   = true;
           settings.m_bEnableCompileCache  = true;
-          settings.m_bEnableSplitBarriers = false;
           settings.m_bEnableAsyncQueues   = true;
           settings.m_bEnableGPUProfiling  = true;
 
