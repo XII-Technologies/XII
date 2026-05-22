@@ -194,4 +194,6 @@ private:
   xiiDynamicArray<FenceInfo>                  m_SignalFences;
   xiiDynamicArray<FenceInfo>                  m_WaitFences;
   xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
+
+  xiiDynamicArray<D3D12_RESOURCE_BARRIER> m_PendingResourceBarriers;
 };

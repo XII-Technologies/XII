@@ -515,6 +515,12 @@ private:
 
 void xiiGALCommandListD3D12::FlushBarriers()
 {
+  if (!m_PendingResourceBarriers.IsEmpty())
+  {
+    m_pD3D12CommandList->ResourceBarrier(m_PendingResourceBarriers.GetCount(), m_PendingResourceBarriers.GetData());
+
+    m_PendingResourceBarriers.Clear();
+  }
 }
 
 xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
