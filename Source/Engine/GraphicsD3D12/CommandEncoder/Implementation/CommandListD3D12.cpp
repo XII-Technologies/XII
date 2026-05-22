@@ -358,7 +358,7 @@ public:
         // Emit single ALL_SUBRESOURCES barrier.
         m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1, &d3dBarrier);
 
-        // Possibly discard after transition/
+        // Possibly discard after transition.
         DiscardIfAppropriate(description, d3dBarrier.Transition.StateAfter, /*uiEndMip*/ XII_GAL_REMAINING_MIP_LEVELS, /*uiEndSlice*/ XII_GAL_REMAINING_ARRAY_SLICES);
       }
       else
