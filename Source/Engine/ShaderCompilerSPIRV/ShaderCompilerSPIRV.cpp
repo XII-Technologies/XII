@@ -120,7 +120,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerSPIRV, 1, xiiRTTIDefaultAllocator<xiiShaderCompilerSPIRV>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format off
+// clang-format on
 
 xiiEnum<xiiGALResourceFormat> GetXIIFormatVulkan(SpvReflectFormat format)
 {
@@ -170,134 +170,68 @@ void xiiShaderCompilerSPIRV::GetSupportedPlatforms(xiiHybridArray<xiiString, 4>&
   out_platforms.PushBack("VK_SM69"); // Vulkan Shader Model 6.9, includes next‑generation ray tracing, shader object pipelines, and workgraph-style GPU execution.
 }
 
-xiiStringView xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage)
+xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage)
 {
   sPlatform.TrimWordStart("VK_");
+
+  // Expect SMXY (X = major, Y = minor).
+  if (!sPlatform.StartsWith("SM") || sPlatform.GetElementCount() < 4)
+  {
+    XII_REPORT_FAILURE("Invalid Shader Model '{}'. Expected SMXY.", sPlatform);
+    return {};
+  }
+
+  const char szMajor = sPlatform.GetStartPointer()[2];
+  const char szMinor = sPlatform.GetStartPointer()[3];
+
+  xiiStringBuilder sb;
 
   switch (stage)
   {
     case xiiGALShaderType::Vertex:
     {
-      if (sPlatform == "SM60")
-        return "vs_6_0";
-      if (sPlatform == "SM61")
-        return "vs_6_1";
-      if (sPlatform == "SM62")
-        return "vs_6_2";
-      if (sPlatform == "SM63")
-        return "vs_6_3";
-      if (sPlatform == "SM64")
-        return "vs_6_4";
-      if (sPlatform == "SM65")
-        return "vs_6_5";
-      if (sPlatform == "SM66")
-        return "vs_6_6";
+      sb.SetFormat("{}_{}_{}", "vs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Pixel:
     {
-      if (sPlatform == "SM60")
-        return "ps_6_0";
-      if (sPlatform == "SM61")
-        return "ps_6_1";
-      if (sPlatform == "SM62")
-        return "ps_6_2";
-      if (sPlatform == "SM63")
-        return "ps_6_3";
-      if (sPlatform == "SM64")
-        return "ps_6_4";
-      if (sPlatform == "SM65")
-        return "ps_6_5";
-      if (sPlatform == "SM66")
-        return "ps_6_6";
+      sb.SetFormat("{}_{}_{}", "ps", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Geometry:
     {
-      if (sPlatform == "SM60")
-        return "gs_6_0";
-      if (sPlatform == "SM61")
-        return "gs_6_1";
-      if (sPlatform == "SM62")
-        return "gs_6_2";
-      if (sPlatform == "SM63")
-        return "gs_6_3";
-      if (sPlatform == "SM64")
-        return "gs_6_4";
-      if (sPlatform == "SM65")
-        return "gs_6_5";
-      if (sPlatform == "SM66")
-        return "gs_6_6";
+      sb.SetFormat("{}_{}_{}", "gs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Hull:
     {
-      if (sPlatform == "SM60")
-        return "hs_6_0";
-      if (sPlatform == "SM61")
-        return "hs_6_1";
-      if (sPlatform == "SM62")
-        return "hs_6_2";
-      if (sPlatform == "SM63")
-        return "hs_6_3";
-      if (sPlatform == "SM64")
-        return "hs_6_4";
-      if (sPlatform == "SM65")
-        return "hs_6_5";
-      if (sPlatform == "SM66")
-        return "hs_6_6";
+      sb.SetFormat("{}_{}_{}", "hs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Domain:
     {
-      if (sPlatform == "SM60")
-        return "ds_6_0";
-      if (sPlatform == "SM61")
-        return "ds_6_1";
-      if (sPlatform == "SM62")
-        return "ds_6_2";
-      if (sPlatform == "SM63")
-        return "ds_6_3";
-      if (sPlatform == "SM64")
-        return "ds_6_4";
-      if (sPlatform == "SM65")
-        return "ds_6_5";
-      if (sPlatform == "SM66")
-        return "ds_6_6";
+      sb.SetFormat("{}_{}_{}", "ds", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Compute:
     {
-      if (sPlatform == "SM60")
-        return "cs_6_0";
-      if (sPlatform == "SM61")
-        return "cs_6_1";
-      if (sPlatform == "SM62")
-        return "cs_6_2";
-      if (sPlatform == "SM63")
-        return "cs_6_3";
-      if (sPlatform == "SM64")
-        return "cs_6_4";
-      if (sPlatform == "SM65")
-        return "cs_6_5";
-      if (sPlatform == "SM66")
-        return "cs_6_6";
+      sb.SetFormat("{}_{}_{}", "cs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Amplification:
     {
-      if (sPlatform == "SM65")
-        return "as_6_5";
-      if (sPlatform == "SM66")
-        return "as_6_6";
+      if (szMajor >= '6' && szMinor >= '5')
+      {
+        sb.SetFormat("{}_{}_{}", "as", szMajor, szMinor);
+      }
     }
     break;
     case xiiGALShaderType::Mesh:
     {
-      if (sPlatform == "SM65")
-        return "ms_6_5";
-      if (sPlatform == "SM66")
-        return "ms_6_6";
+      if (szMajor >= '6' && szMinor >= '5')
+      {
+        sb.SetFormat("{}_{}_{}", "ms", szMajor, szMinor);
+      }
     }
     break;
     case xiiGALShaderType::RayGeneration:
@@ -307,31 +241,26 @@ xiiStringView xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xi
     case xiiGALShaderType::RayIntersection:
     case xiiGALShaderType::Callable:
     {
-      if (sPlatform == "SM63")
-        return "lib_6_3";
-      if (sPlatform == "SM64")
-        return "lib_6_4";
-      if (sPlatform == "SM65")
-        return "lib_6_5";
-      if (sPlatform == "SM66")
-        return "lib_6_6";
+      if (szMajor >= '6' && szMinor >= '3')
+      {
+        sb.SetFormat("{}_{}_{}", "lib", szMajor, szMinor);
+      }
     }
     break;
-    default:
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}.", sPlatform, stage.GetValue());
-  return {};
+  return sb;
 }
 
 xiiResult xiiShaderCompilerSPIRV::Initialize()
 {
   if (m_InputLayoutMapping.IsEmpty())
   {
-    m_InputLayoutMapping["in.var.POSITION"]  = xiiGALInputLayoutSemantic::Position;
+    m_InputLayoutMapping["in.var.POSITION"] = xiiGALInputLayoutSemantic::Position;
     m_InputLayoutMapping["in.var.TANGENT"]  = xiiGALInputLayoutSemantic::Tangent;
-    m_InputLayoutMapping["in.var.NORMAL"]  = xiiGALInputLayoutSemantic::Normal;
+    m_InputLayoutMapping["in.var.NORMAL"]   = xiiGALInputLayoutSemantic::Normal;
 
     m_InputLayoutMapping["in.var.COLOR0"] = xiiGALInputLayoutSemantic::Color0;
     m_InputLayoutMapping["in.var.COLOR1"] = xiiGALInputLayoutSemantic::Color1;
@@ -353,7 +282,7 @@ xiiResult xiiShaderCompilerSPIRV::Initialize()
     m_InputLayoutMapping["in.var.TEXCOORD8"] = xiiGALInputLayoutSemantic::TexCoord8;
     m_InputLayoutMapping["in.var.TEXCOORD9"] = xiiGALInputLayoutSemantic::TexCoord9;
 
-    m_InputLayoutMapping["in.var.BITANGENT"]  = xiiGALInputLayoutSemantic::BiTangent;
+    m_InputLayoutMapping["in.var.BITANGENT"] = xiiGALInputLayoutSemantic::BiTangent;
 
     m_InputLayoutMapping["in.var.BONEINDICES0"] = xiiGALInputLayoutSemantic::BoneIndices0;
     m_InputLayoutMapping["in.var.BONEINDICES1"] = xiiGALInputLayoutSemantic::BoneIndices1;
@@ -411,7 +340,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
 
   xiiStringView    sCompileSource = sSource;
   xiiStringBuilder sDebugSource;
-  const bool        bMeshShaderProfile = sProfile.StartsWith("as_") || sProfile.StartsWith("ms_");
+  const bool       bMeshShaderProfile = sProfile.StartsWith("as_") || sProfile.StartsWith("ms_");
 
   xiiDynamicArray<xiiStringWChar> args;
   args.PushBack(xiiStringWChar(sFile));

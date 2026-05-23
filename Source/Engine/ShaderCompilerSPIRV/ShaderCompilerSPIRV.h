@@ -32,9 +32,9 @@ private:
 
   void CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration);
 
-  xiiResult     Initialize();
-  xiiStringView GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage);
-  xiiResult     CompileSPIRVShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
+  xiiResult Initialize();
+  xiiString GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage);
+  xiiResult CompileSPIRVShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
 
   xiiResult ReflectShaderStage(xiiGALShaderProgramData& inout_Data, xiiEnum<xiiGALShaderType> stage);
   xiiResult ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
