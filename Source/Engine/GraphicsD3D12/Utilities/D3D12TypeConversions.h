@@ -4,6 +4,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -12,7 +13,6 @@
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
 class XII_GRAPHICSD3D12_DLL xiiD3D12TypeConversions
 {

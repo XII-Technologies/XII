@@ -346,9 +346,9 @@ public:
     // If texture: expand subresource ranges if needed.
     if (auto pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(m_Description.m_pResource))
     {
-      const xiiGALTextureCreationDescription& description = pTextureD3D12->GetDescription();
-      const xiiUInt32                         uiMipCount    = ResolveMipCount(pTextureD3D12, m_Description.m_uiMipLevelCount);
-      const xiiUInt32                         uiSliceCount  = ResolveArrayCount(pTextureD3D12, m_Description.m_uiArraySliceCount);
+      const xiiGALTextureCreationDescription& description  = pTextureD3D12->GetDescription();
+      const xiiUInt32                         uiMipCount   = ResolveMipCount(pTextureD3D12, m_Description.m_uiMipLevelCount);
+      const xiiUInt32                         uiSliceCount = ResolveArrayCount(pTextureD3D12, m_Description.m_uiArraySliceCount);
 
       if (IsWholeResource(pTextureD3D12, m_Description.m_uiFirstMipLevel, m_Description.m_uiMipLevelCount, m_Description.m_uiFirstArraySlice, m_Description.m_uiArraySliceCount))
       {
@@ -3075,7 +3075,7 @@ void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGAL
     // Aliasing transitions are handled as aliasing barriers.
     if (description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::Aliasing))
     {
-      D3D12_RESOURCE_BARRIER& batch = aliasingBatch.ExpandAndGetRef();
+      D3D12_RESOURCE_BARRIER& batch  = aliasingBatch.ExpandAndGetRef();
       batch.Type                     = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
       batch.Flags                    = D3D12_RESOURCE_BARRIER_FLAG_NONE;
       batch.Aliasing.pResourceBefore = xiiLocalStateTransitionHelper::GetD3D12Resource(description.m_pPreviousResource);
@@ -3099,7 +3099,7 @@ void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGAL
   if (!aliasingBatch.IsEmpty())
   {
     m_pD3D12CommandList->ResourceBarrier(aliasingBatch.GetCount(), aliasingBatch.GetData());
-    
+
     aliasingBatch.Clear();
   }
 }
