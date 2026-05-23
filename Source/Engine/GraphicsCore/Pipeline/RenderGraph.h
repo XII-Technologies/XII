@@ -481,8 +481,7 @@ private:
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
-  [[nodiscard]] static xiiBitflags<xiiGALResourceStateFlags> InferStateFromUsage(const ResourceUsage& usage);
-  [[nodiscard]] static xiiUInt64                             ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
+  [[nodiscard]] static xiiUInt64 ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
 private:
   xiiDynamicArray<PassEntry>               m_Passes;            ///< Setup-phase pass list, cleared each BeginSetup().

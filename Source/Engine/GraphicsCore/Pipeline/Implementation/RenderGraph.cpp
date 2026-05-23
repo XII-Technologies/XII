@@ -398,7 +398,7 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> adjacency;
   adjacency.SetCount(uiPassCount);
 
-  // Build producer map: (resource index, version) -> pass index
+  // Build producer map: (resource index, version) -> pass index.
   xiiHashTable<xiiUInt64, xiiUInt32> producerMap; // Key = resource index | (version << 32).
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < uiPassCount; ++uiPassIndex)
   {
@@ -476,11 +476,11 @@ void xiiRenderGraph::PhaseB_TopologicalSortAndCull(const xiiRGCompileSettings& s
   }
 
   // Backward reachability from side-effect passes.
-  xiiDynamicArray<bool> isLive;
+  xiiTemporaryArray<bool> isLive;
   isLive.SetCount(uiPassCount, false);
 
   // Build reverse adjacency.
-  xiiDynamicArray<xiiHybridArray<xiiUInt32, 4>> reverseAdjacency;
+  xiiTemporaryArray<xiiTemporaryHybridArray<xiiUInt32, 4>> reverseAdjacency;
   reverseAdjacency.SetCount(uiPassCount);
 
   for (xiiUInt32 uiPassIndex = 0U; uiPassIndex < uiPassCount; ++uiPassIndex)
@@ -575,20 +575,13 @@ void xiiRenderGraph::PhaseC_LifetimeAnalysis(const xiiDynamicArray<xiiUInt32>& s
   for (xiiUInt32 uiResourceIndex = 0U; uiResourceIndex < m_Resources.GetCount(); ++uiResourceIndex)
   {
     const ResourceEntry& resourceEntry = m_Resources[uiResourceIndex];
+
     if (!resourceEntry.m_bIsTransient || resourceEntry.m_uiFirstUsePassIdx == xiiInvalidIndex)
       continue;
 
     m_CompiledPasses[resourceEntry.m_uiFirstUsePassIdx].m_AcquireResourceIndices.PushBack(uiResourceIndex);
     m_CompiledPasses[resourceEntry.m_uiLastUsePassIdx].m_ReleaseResourceIndices.PushBack(uiResourceIndex);
   }
-}
-
-// static
-xiiBitflags<xiiGALResourceStateFlags> xiiRenderGraph::InferStateFromUsage(const ResourceUsage& usage)
-{
-  // We currently explicitly states via the builder, so use them directly.
-  // This helper exists for future heuristics.
-  return usage.m_RequiredState;
 }
 
 void xiiRenderGraph::EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip, xiiUInt32 uiMipCount, xiiUInt32 uiFirstSlice, xiiUInt32 uiSliceCount)
