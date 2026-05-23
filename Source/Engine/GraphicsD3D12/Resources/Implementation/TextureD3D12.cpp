@@ -136,26 +136,21 @@ xiiGALTextureD3D12::~xiiGALTextureD3D12()
   if (m_ExternalMemoryDescription.m_uiNativeHandle != 0U)
   {
     CloseHandle(reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle));
+
     m_ExternalMemoryDescription.m_uiNativeHandle = 0U;
   }
 
-  if (m_pD3D12Texture != nullptr)
+  if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
   {
-    if (pDeviceD3D12 == nullptr)
-    {
-      XII_GAL_D3D12_RELEASE(m_pD3D12Texture);
-      XII_GAL_D3D12_RELEASE(m_TextureAllocation);
-    }
-    else if (IsNativeObjectWrapper() || m_TextureAllocation == nullptr || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
-    {
-      IUnknown* pObject = m_pD3D12Texture;
-      pDeviceD3D12->SafeReleaseDeviceObject(pObject);
-      m_pD3D12Texture = nullptr;
-    }
-    else
-    {
-      pDeviceD3D12->SafeReleaseTexture(m_pD3D12Texture, m_TextureAllocation, m_Description.m_Usage == xiiGALResourceUsage::Staging);
-    }
+    IUnknown* pObject = m_pD3D12Texture;
+
+    pDeviceD3D12->SafeReleaseDeviceObject(pObject);
+
+    m_pD3D12Texture = nullptr;
+  }
+  else
+  {
+    pDeviceD3D12->SafeReleaseTexture(m_pD3D12Texture, m_TextureAllocation, m_Description.m_Usage == xiiGALResourceUsage::Staging);
   }
 
   m_pD3D12Texture     = nullptr;
@@ -184,6 +179,21 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
 
   if (m_Description.m_pExistingNativeObject != nullptr)
   {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    {
+      ID3D12Resource* pTextureObject        = static_cast<ID3D12Resource*>(m_Description.m_pExistingNativeObject);
+      ID3D12Resource* pD3D12TextureResource = nullptr;
+
+      if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D12Resource), (void**)&pD3D12TextureResource)))
+      {
+        xiiLog::Error("The interface interface of the corresponding object is not a texture object.");
+        return XII_FAILURE;
+      }
+
+      XII_GAL_D3D12_RELEASE(pD3D12TextureResource);
+    }
+#endif
+
     m_pD3D12Texture = static_cast<ID3D12Resource*>(m_Description.m_pExistingNativeObject);
 
     SetResourceState(xiiGALResourceStateFlags::Undefined);

@@ -76,7 +76,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
   ON_CORESYSTEMS_STARTUP
   {
-    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXC" };
+    const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompilerDXIL" };
 
     xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
   }
@@ -556,7 +556,7 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 
   // Create pools.
   {
-    m_pFencePool = XII_NEW(&m_Allocator, xiiGALFencePoolD3D12, this, 16U);
+    m_pFencePool              = XII_NEW(&m_Allocator, xiiGALFencePoolD3D12, this, 16U);
     m_pResourceDescriptorPool = XII_NEW(&m_Allocator, xiiGALDescriptorSetPoolD3D12, this, 2048U, false);
   }
 
@@ -639,18 +639,26 @@ xiiResult xiiGALDeviceD3D12::PostInitializePlatform()
 void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  IDXGIDebug1* pDXGIDebug = nullptr;
-  HRESULT      hResult    = DXGIGetDebugInterface1(0U, __uuidof(IDXGIDebug1), reinterpret_cast<void**>(static_cast<IDXGIDebug1**>(&pDXGIDebug)));
-  if (SUCCEEDED(hResult))
+  IDXGIDebug1* pDXGIDebug;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pDXGIDebug));
+  if (SUCCEEDED(DXGIGetDebugInterface1(0U, __uuidof(IDXGIDebug1), reinterpret_cast<void**>(static_cast<IDXGIDebug1**>(&pDXGIDebug)))))
   {
     OutputDebugStringW(L" +++++ Live D3D12 Objects: +++++\n");
 
-    // Prints to OutputDebugString
-    pDXGIDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+    pDXGIDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
 
     OutputDebugStringW(L" ----- Live D3D12 Objects: -----\n");
+  }
 
-    pDXGIDebug->Release();
+  ID3D12DebugDevice* pD3D12DebugDevice;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12DebugDevice));
+  if (SUCCEEDED(m_pD3D12Device->QueryInterface(IID_PPV_ARGS(&pD3D12DebugDevice))))
+  {
+    OutputDebugStringW(L" +++++ Live D3D12 Objects (DETAIL): +++++\n");
+
+    pD3D12DebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
+
+    OutputDebugStringW(L" ----- Live D3D12 Objects: -----\n");
   }
 #endif
 }

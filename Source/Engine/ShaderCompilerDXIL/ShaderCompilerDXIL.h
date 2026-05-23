@@ -2,17 +2,20 @@
 
 #pragma once
 
-#include <ShaderCompilerSPIRV/ShaderCompilerSPIRVDLL.h>
+#include <ShaderCompilerDXIL/ShaderCompilerDXILDLL.h>
 
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderCompiler.h>
 
-struct SpvReflectDescriptorBinding;
-struct SpvReflectBlockVariable;
+struct _D3D12_SHADER_INPUT_BIND_DESC;
+typedef struct _D3D12_SHADER_INPUT_BIND_DESC D3D12_SHADER_INPUT_BIND_DESC;
 
-class XII_SHADERCOMPILERSPIRV_DLL xiiShaderCompilerSPIRV : xiiGALShaderProgramCompiler
+struct ID3D12ShaderReflection;
+struct ID3D12ShaderReflectionConstantBuffer;
+
+class XII_SHADERCOMPILERDXIL_DLL xiiShaderCompilerDXIL : xiiGALShaderProgramCompiler
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiShaderCompilerSPIRV, xiiGALShaderProgramCompiler);
+  XII_ADD_DYNAMIC_REFLECTION(xiiShaderCompilerDXIL, xiiGALShaderProgramCompiler);
 
 public:
   virtual void      GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms) override;
@@ -32,15 +35,15 @@ private:
 
   void CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration);
 
-  xiiResult     Initialize();
-  xiiStringView GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage);
-  xiiResult     CompileSPIRVShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
+  xiiResult Initialize();
+  xiiString GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage);
+  xiiResult CompileDXILShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
 
   xiiResult ReflectShaderStage(xiiGALShaderProgramData& inout_Data, xiiEnum<xiiGALShaderType> stage);
-  xiiResult ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
-  xiiResult FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
-  xiiResult FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
-  xiiResult FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info);
+  xiiResult FillResourceBinding(xiiGALShaderResourceDescription& binding, ID3D12ShaderReflection* pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info);
+  xiiResult ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection);
+  xiiResult FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
+  xiiResult FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
 
 private:
   xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>> m_InputLayoutMapping;

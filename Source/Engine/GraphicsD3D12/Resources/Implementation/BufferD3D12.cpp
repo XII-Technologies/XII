@@ -64,11 +64,14 @@ xiiResult xiiGALBufferD3D12::InitPlatform(const xiiGALBufferData* pInitialData, 
 
     return XII_SUCCESS;
   }
-  else if (m_Description.m_Usage == xiiGALResourceUsage::Dynamic)
+  else if (m_Description.m_Usage == xiiGALResourceUsage::Dynamic && !m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) && (m_Description.m_Mode == xiiGALBufferMode::Undefined || m_Description.m_Mode == xiiGALBufferMode::Structured))
   {
     // We do not create a D3D12 backing resource for dynamic buffers, as they are meant to be persistently mapped and updated by the CPU.
     // Instead, we will create a committed resource with the upload heap type when the buffer is first mapped for writing.
     // This allows us to avoid unnecessary memory allocation and resource creation for dynamic buffers that are never actually used.
+    // Dynamic upload heap buffer is always in D3D12_RESOURCE_STATE_GENERIC_READ state.
+
+    SetResourceState(xiiGALResourceStateFlags::GenericRead);
   }
   else
   {
