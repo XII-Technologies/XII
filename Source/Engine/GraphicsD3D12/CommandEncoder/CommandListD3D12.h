@@ -12,7 +12,6 @@
 #include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
 
 struct ID3D12CommandAllocator;
-struct ID3D12CommandList;
 struct ID3D12GraphicsCommandList;
 
 class xiiGALFramebufferD3D12;
@@ -23,8 +22,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D12, xiiGALCommandList);
 
 public:
-  XII_ALWAYS_INLINE ID3D12CommandList*         GetD3D12CommandList() const { return reinterpret_cast<ID3D12CommandList*>(m_pD3D12CommandList); }
-  XII_ALWAYS_INLINE ID3D12GraphicsCommandList* GetD3D12GraphicsCommandList() const { return m_pD3D12CommandList; }
+  XII_ALWAYS_INLINE ID3D12GraphicsCommandList* GetD3D12CommandList() const { return m_pD3D12CommandList; }
 
   XII_ALWAYS_INLINE xiiGALStagingBufferPoolD3D12* GetD3D12UploadStagingBufferPool() const { return m_CommandListData.m_pUploadStagingBufferPool.Borrow(); }
 
@@ -68,6 +66,8 @@ public:
       return (xiiBitflags<CommandListFlags>(lhs) & xiiBitflags<CommandListFlags>(rhs));
     };
   };
+
+  void FlushBarriers();
 
 protected:
   friend class xiiGALCommandQueueD3D12;
@@ -194,4 +194,6 @@ private:
   xiiDynamicArray<FenceInfo>                  m_SignalFences;
   xiiDynamicArray<FenceInfo>                  m_WaitFences;
   xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
+
+  xiiDynamicArray<D3D12_RESOURCE_BARRIER> m_PendingResourceBarriers;
 };

@@ -4,6 +4,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -87,6 +88,10 @@ public:
   static UINT GetShaderComponentMapping(const xiiGALTextureComponentMapping& componentMapping);
 
   static D3D12_CLEAR_VALUE GetClearValue(const xiiGALOptimizedClearValue& clearValue);
+
+  static D3D12_RESOURCE_STATES GetSupportedD3D12ResourceStatesForCommandList(xiiBitflags<xiiGALCommandQueueFlags> queueFlags);
+
+  static D3D12_RESOURCE_BARRIER_FLAGS GetResourceBarrierFlags(xiiEnum<xiiGALStateTransitionType> type);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>

@@ -188,6 +188,341 @@ namespace
   }
 } // namespace
 
+///////////////////////////////////////////////////////////////////////////
+
+class xiiLocalStateTransitionHelper
+{
+public:
+  xiiLocalStateTransitionHelper(const xiiGALStateTransitionDescription& description, xiiGALCommandListD3D12* pCommandListD3D12) :
+    m_Description(description), m_pCommandListD3D12(pCommandListD3D12), m_ResourceStateMask(xiiD3D12TypeConversions::GetSupportedD3D12ResourceStatesForCommandList(pCommandListD3D12->GetDescription().m_QueueFlags))
+  {
+  }
+
+  XII_ALWAYS_INLINE static ID3D12Resource* GetD3D12Resource(const xiiGALResource* pResource)
+  {
+    if (auto pTextureD3D12 = xiiDynamicCast<const xiiGALTextureD3D12*>(pResource))
+      return pTextureD3D12->GetD3D12Texture();
+
+    if (auto pBuffer = xiiDynamicCast<const xiiGALBufferD3D12*>(pResource))
+      return pBuffer->GetD3D12Buffer();
+
+    if (auto pTopLevelAS = xiiDynamicCast<const xiiGALTopLevelASD3D12*>(pResource))
+      return pTopLevelAS->GetD3D12Resource();
+
+    if (auto pBottomLevelAS = xiiDynamicCast<const xiiGALBottomLevelASD3D12*>(pResource))
+      return pBottomLevelAS->GetD3D12Resource();
+
+    return nullptr;
+  }
+
+  XII_ALWAYS_INLINE static xiiUInt32 ResolveMipCount(xiiGALTextureD3D12* pTextureD3D12, xiiUInt32 uiMipCount) noexcept
+  {
+    if (pTextureD3D12)
+    {
+      const xiiGALTextureCreationDescription& description = pTextureD3D12->GetDescription();
+
+      if (uiMipCount == XII_GAL_REMAINING_MIP_LEVELS)
+        return description.m_uiMipLevels;
+
+      return (uiMipCount > description.m_uiMipLevels) ? description.m_uiMipLevels : uiMipCount;
+    }
+    return 0;
+  }
+
+  XII_ALWAYS_INLINE static xiiUInt32 ResolveArrayCount(xiiGALTextureD3D12* pTextureD3D12, xiiUInt32 uiArrayCount) noexcept
+  {
+    if (pTextureD3D12)
+    {
+      const xiiGALTextureCreationDescription& description = pTextureD3D12->GetDescription();
+      const xiiUInt32                         uiArraySize = description.GetArraySize();
+
+      if (uiArrayCount == XII_GAL_REMAINING_ARRAY_SLICES)
+        return uiArraySize;
+
+      return (uiArrayCount > uiArraySize) ? uiArraySize : uiArrayCount;
+    }
+    return 0;
+  }
+
+  XII_ALWAYS_INLINE static bool IsWholeResource(xiiGALTextureD3D12* pTextureD3D12, xiiUInt32 uiFirstMip, xiiUInt32 uiMipCount, xiiUInt32 uiFirstSlice, xiiUInt32 uiSliceCount) noexcept
+  {
+    if (pTextureD3D12)
+    {
+      const xiiGALTextureCreationDescription& description          = pTextureD3D12->GetDescription();
+      const xiiUInt32                         uiResolvedMipCount   = ResolveMipCount(pTextureD3D12, uiMipCount);
+      const xiiUInt32                         uiResolvedSliceCount = ResolveArrayCount(pTextureD3D12, uiSliceCount);
+
+      return uiFirstMip == 0 && uiResolvedMipCount == description.m_uiMipLevels && uiFirstSlice == 0 && uiResolvedSliceCount == description.GetArraySize();
+    }
+    return false;
+  }
+
+  void Process()
+  {
+    // Resolve old state: if Unknown, use resource tracked state.
+    xiiBitflags<xiiGALResourceStateFlags> oldState = m_Description.m_OldState;
+
+    if (oldState == xiiGALResourceStateFlags::Unknown)
+    {
+      oldState = m_Description.m_pResource->GetResourceState();
+
+      XII_ASSERT_DEV(oldState != xiiGALResourceStateFlags::Unknown, "Resource '{}' has unknown tracked state, and OldState was also Unknown.", m_Description.m_pResource->GetDebugName());
+    }
+    else
+    {
+      xiiBitflags<xiiGALResourceStateFlags> tracked = m_Description.m_pResource->GetResourceState();
+
+      XII_ASSERT_DEV(tracked == xiiGALResourceStateFlags::Unknown || tracked == oldState, "Transition: resource '{}' tracked state ({}) differs from provided OldState ({}).", m_Description.m_pResource->GetDebugName(), xiiArgEnum(tracked), xiiArgEnum(oldState));
+    }
+
+    // Determine if UAV barrier is required (both old and new are UAV-like)
+    // RESOURCE_STATE_UNORDERED_ACCESS and RESOURCE_STATE_BUILD_AS_WRITE are converted to D3D12_RESOURCE_STATE_UNORDERED_ACCESS.
+    // UAV barrier must be inserted between D3D12_RESOURCE_STATE_UNORDERED_ACCESS resource usages.
+    const bool bOldStateIsUAV      = oldState.IsAnySet(xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::BuildASWrite);
+    const bool bNewStateIsUAV      = m_Description.m_NewState.IsAnySet(xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::BuildASWrite);
+    const bool bRequiresUAVBarrier = bOldStateIsUAV && bNewStateIsUAV;
+
+    // If the new state is already covered by old state, nothing to do except maybe update tracked state.
+    if ((oldState & m_Description.m_NewState) == m_Description.m_NewState)
+    {
+      if (m_Description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+      {
+        // Update tracked state only if allowed by transition type.
+        if (m_Description.m_TransitionType == xiiGALStateTransitionType::Begin)
+        {
+          xiiLog::Error("UpdateState cannot be used with Begin split barrier for resource '{}'.", m_Description.m_pResource->GetDebugName());
+        }
+        else
+        {
+          m_Description.m_pResource->SetResourceState(m_Description.m_NewState);
+        }
+      }
+
+      // Still may need UAV barrier if both are UAV and not covered (rare).
+      if (bRequiresUAVBarrier)
+      {
+        EmitUAVBarrier();
+      }
+      return;
+    }
+
+    // Combine read-only generic read states if both are read-only.
+    xiiBitflags<xiiGALResourceStateFlags> newState = m_Description.m_NewState;
+    if ((oldState & xiiGALResourceStateFlags::GenericRead) == oldState && (newState & xiiGALResourceStateFlags::GenericRead) == newState)
+    {
+      newState |= oldState;
+    }
+
+    D3D12_RESOURCE_BARRIER d3dBarrier = {};
+    d3dBarrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    d3dBarrier.Flags                  = xiiD3D12TypeConversions::GetResourceBarrierFlags(m_Description.m_TransitionType);
+    d3dBarrier.Transition.pResource   = GetD3D12Resource(m_Description.m_pResource);
+    d3dBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    d3dBarrier.Transition.StateBefore = xiiD3D12TypeConversions::GetResourceState(oldState) & m_ResourceStateMask;
+    d3dBarrier.Transition.StateAfter  = xiiD3D12TypeConversions::GetResourceState(newState) & m_ResourceStateMask;
+
+    // If states are equal after mapping, skip.
+    if (d3dBarrier.Transition.StateBefore == d3dBarrier.Transition.StateAfter)
+    {
+      if (m_Description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+      {
+        if (m_Description.m_TransitionType == xiiGALStateTransitionType::Begin)
+        {
+          xiiLog::Error("UpdateState cannot be used with Begin split barrier for resource '{}'.", m_Description.m_pResource->GetDebugName());
+        }
+        else
+        {
+          m_Description.m_pResource->SetResourceState(newState);
+        }
+      }
+
+      if (bRequiresUAVBarrier)
+      {
+        EmitUAVBarrier();
+      }
+      return;
+    }
+
+    // If texture: expand subresource ranges if needed.
+    if (auto pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(m_Description.m_pResource))
+    {
+      const xiiGALTextureCreationDescription& description  = pTextureD3D12->GetDescription();
+      const xiiUInt32                         uiMipCount   = ResolveMipCount(pTextureD3D12, m_Description.m_uiMipLevelCount);
+      const xiiUInt32                         uiSliceCount = ResolveArrayCount(pTextureD3D12, m_Description.m_uiArraySliceCount);
+
+      if (IsWholeResource(pTextureD3D12, m_Description.m_uiFirstMipLevel, m_Description.m_uiMipLevelCount, m_Description.m_uiFirstArraySlice, m_Description.m_uiArraySliceCount))
+      {
+        // Possibly discard before transition.
+        DiscardIfAppropriate(description, d3dBarrier.Transition.StateBefore, /*uiEndMip*/ XII_GAL_REMAINING_MIP_LEVELS, /*uiEndSlice*/ XII_GAL_REMAINING_ARRAY_SLICES);
+
+        // Emit single ALL_SUBRESOURCES barrier.
+        m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1, &d3dBarrier);
+
+        // Possibly discard after transition.
+        DiscardIfAppropriate(description, d3dBarrier.Transition.StateAfter, /*uiEndMip*/ XII_GAL_REMAINING_MIP_LEVELS, /*uiEndSlice*/ XII_GAL_REMAINING_ARRAY_SLICES);
+      }
+      else
+      {
+        // Partial range: expand per-subresource.
+        const xiiUInt32 uiEndMip   = (m_Description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) ? description.m_uiMipLevels : (m_Description.m_uiFirstMipLevel + uiMipCount);
+        const xiiUInt32 uiEndSlice = (m_Description.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES) ? description.GetArraySize() : (m_Description.m_uiFirstArraySlice + uiSliceCount);
+
+        DiscardIfAppropriate(description, d3dBarrier.Transition.StateBefore, uiEndMip, uiEndSlice);
+
+        for (xiiUInt32 uiMip = m_Description.m_uiFirstMipLevel; uiMip < uiEndMip; ++uiMip)
+        {
+          for (xiiUInt32 uiSlice = m_Description.m_uiFirstArraySlice; uiSlice < uiEndSlice; ++uiSlice)
+          {
+            d3dBarrier.Transition.Subresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(uiMip, uiSlice, 0, description.m_uiMipLevels, description.GetArraySize());
+
+            m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1U, &d3dBarrier);
+          }
+        }
+
+        DiscardIfAppropriate(description, d3dBarrier.Transition.StateAfter, uiEndMip, uiEndSlice);
+      }
+    }
+    else if (auto pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(m_Description.m_pResource))
+    {
+      // Buffers: single subresource
+      m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1U, &d3dBarrier);
+    }
+    else if (xiiDynamicCast<xiiGALTopLevelASD3D12*>(m_Description.m_pResource) || xiiDynamicCast<xiiGALBottomLevelASD3D12*>(m_Description.m_pResource))
+    {
+      // Acceleration structures: treat as requiring UAV barrier if write involved.
+      if (m_Description.m_OldState == xiiGALResourceStateFlags::BuildASWrite || m_Description.m_NewState == xiiGALResourceStateFlags::BuildASWrite)
+      {
+        // Emit UAV barrier instead of transition
+        D3D12_RESOURCE_BARRIER uavBarrier = {};
+        uavBarrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+        uavBarrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+        uavBarrier.UAV.pResource          = GetD3D12Resource(m_Description.m_pResource);
+
+        m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1U, &uavBarrier);
+      }
+      else
+      {
+        // AS read-only -> no transition needed, but keep compatibility.
+        m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1U, &d3dBarrier);
+      }
+    }
+    else
+    {
+      xiiLog::Error("Transition: unsupported resource type for '{}'.", m_Description.m_pResource->GetDebugName());
+      return;
+    }
+
+    // Update tracked state if requested (and permitted).
+    if (m_Description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
+    {
+      if (m_Description.m_TransitionType == xiiGALStateTransitionType::Begin)
+      {
+        xiiLog::Error("UpdateState cannot be used with Begin split barrier for resource '{}'.", m_Description.m_pResource->GetDebugName());
+      }
+      else
+      {
+        m_Description.m_pResource->SetResourceState(newState);
+      }
+    }
+
+    if (bRequiresUAVBarrier)
+    {
+      EmitUAVBarrier();
+    }
+  }
+
+private:
+  void EmitUAVBarrier()
+  {
+    // UAV barrier must be immediate (not split).
+    if (m_Description.m_TransitionType != xiiGALStateTransitionType::Immediate)
+    {
+      xiiLog::Error("UAV barriers must be Immediate for resource '{}'.", m_Description.m_pResource->GetDebugName());
+      return;
+    }
+
+    D3D12_RESOURCE_BARRIER uavBarrier = {};
+    uavBarrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    uavBarrier.Flags                  = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    uavBarrier.UAV.pResource          = GetD3D12Resource(m_Description.m_pResource); // nullptr is permitted for global UAV barrier.
+
+    m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1U, &uavBarrier);
+  }
+
+  void DiscardIfAppropriate(const xiiGALTextureCreationDescription& textureDescription, D3D12_RESOURCE_STATES d3dState, xiiUInt32 uiEndMip = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiEndSlice = XII_GAL_REMAINING_ARRAY_SLICES)
+  {
+    if (!m_Description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::DiscardContent))
+      return;
+
+    const xiiGALCommandListCreationDescription& commandListDescription = m_pCommandListD3D12->GetDescription();
+    bool                                        bIsPermitted           = false;
+
+    if (commandListDescription.m_QueueFlags == xiiGALCommandQueueFlags::Graphics)
+    {
+      if ((d3dState & D3D12_RESOURCE_STATE_RENDER_TARGET) != 0)
+      {
+        XII_ASSERT_DEV(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget), "");
+
+        bIsPermitted = true;
+      }
+      if ((d3dState & D3D12_RESOURCE_STATE_DEPTH_WRITE) != 0)
+      {
+        XII_ASSERT_DEV(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil), "");
+
+        bIsPermitted = true;
+      }
+    }
+    else if (commandListDescription.m_QueueFlags == xiiGALCommandQueueFlags::Compute)
+    {
+      if ((d3dState & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0)
+      {
+        XII_ASSERT_DEV(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess), "");
+
+        bIsPermitted = true;
+      }
+    }
+
+    if (!bIsPermitted)
+      return;
+
+    m_pCommandListD3D12->FlushBarriers();
+
+    if (m_Description.m_uiFirstMipLevel == 0 && uiEndMip == XII_GAL_REMAINING_MIP_LEVELS && m_Description.m_uiFirstArraySlice == 0 && uiEndSlice == XII_GAL_REMAINING_ARRAY_SLICES)
+    {
+      m_pCommandListD3D12->GetD3D12CommandList()->DiscardResource(GetD3D12Resource(m_Description.m_pResource), nullptr);
+    }
+    else
+    {
+      D3D12_DISCARD_REGION region = {};
+      region.NumSubresources      = uiEndMip - m_Description.m_uiFirstMipLevel;
+
+      for (xiiUInt32 uiSlice = m_Description.m_uiFirstArraySlice; uiSlice < uiEndSlice; ++uiSlice)
+      {
+        region.FirstSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(m_Description.m_uiFirstMipLevel, uiSlice, 0, textureDescription.m_uiMipLevels, textureDescription.GetArraySize());
+
+        m_pCommandListD3D12->GetD3D12CommandList()->DiscardResource(GetD3D12Resource(m_Description.m_pResource), &region);
+      }
+    }
+  }
+
+private:
+  const xiiGALStateTransitionDescription& m_Description;
+  xiiGALCommandListD3D12*                 m_pCommandListD3D12;
+  const D3D12_RESOURCE_STATES             m_ResourceStateMask;
+};
+
+///////////////////////////////////////////////////////////////////////////
+
+void xiiGALCommandListD3D12::FlushBarriers()
+{
+  if (!m_PendingResourceBarriers.IsEmpty())
+  {
+    m_pD3D12CommandList->ResourceBarrier(m_PendingResourceBarriers.GetCount(), m_PendingResourceBarriers.GetData());
+
+    m_PendingResourceBarriers.Clear();
+  }
+}
+
 xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(std::move(pDeviceD3D12), creationDescription)
 {
@@ -326,7 +661,7 @@ void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommand
     return;
 
   xiiGALCommandListD3D12* pSecondaryCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pSecondaryCommandList);
-  if (pSecondaryCommandListD3D12 == nullptr || pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList() == nullptr)
+  if (pSecondaryCommandListD3D12 == nullptr || pSecondaryCommandListD3D12->GetD3D12CommandList() == nullptr)
     return;
 
   if (!pSecondaryCommandListD3D12->GetDescription().m_Flags.IsSet(xiiGALCommandListFlags::Secondary))
@@ -335,7 +670,7 @@ void xiiGALCommandListD3D12::SubmitPlatform(xiiGALCommandList* pSecondaryCommand
     return;
   }
 
-  m_pD3D12CommandList->ExecuteBundle(pSecondaryCommandListD3D12->GetD3D12GraphicsCommandList());
+  m_pD3D12CommandList->ExecuteBundle(pSecondaryCommandListD3D12->GetD3D12CommandList());
 }
 
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -1119,8 +1454,8 @@ void xiiGALCommandListD3D12::ClearRenderTargetViewPlatform(xiiGALTextureView* pR
     return;
   }
 
-  if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12.Borrow(), pTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::RenderTarget, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::RenderTarget), "render-target clear", GetDebugName()))
-    return;
+  // if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pTextureD3D12.Borrow(), pTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::RenderTarget, xiiD3D12TypeConversions::GetResourceState(xiiGALResourceStateFlags::RenderTarget), "render-target clear", GetDebugName()))
+  //   return;
 
   const float clearColorRGBA[4] = {clearColor.r, clearColor.g, clearColor.b, clearColor.a};
   m_pD3D12CommandList->ClearRenderTargetView(pRenderTargetViewD3D12->GetCPUDescriptorHandle(), clearColorRGBA, 0U, nullptr);
@@ -2730,59 +3065,43 @@ void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
 
 void xiiGALCommandListD3D12::TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers)
 {
-  xiiTemporaryArray<D3D12_RESOURCE_BARRIER> barriers;
-  barriers.SetCountUninitialized(pResourceBarriers.GetCount());
+  // Batch aliasing barriers and flush in groups.
+  xiiTemporaryHybridArray<D3D12_RESOURCE_BARRIER, 16U> aliasingBatch;
 
   for (xiiUInt32 i = 0; i < pResourceBarriers.GetCount(); ++i)
   {
-    const xiiGALStateTransitionDescription& barrier      = pResourceBarriers[i];
-    D3D12_RESOURCE_BARRIER&                 d3d12Barrier = barriers[i];
+    const xiiGALStateTransitionDescription& description = pResourceBarriers[i];
 
-    d3d12Barrier.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    d3d12Barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    d3d12Barrier.Transition.StateBefore = xiiD3D12TypeConversions::GetResourceState(barrier.m_OldState);
-    d3d12Barrier.Transition.StateAfter  = xiiD3D12TypeConversions::GetResourceState(barrier.m_NewState);
+    // Aliasing transitions are handled as aliasing barriers.
+    if (description.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::Aliasing))
+    {
+      D3D12_RESOURCE_BARRIER& batch  = aliasingBatch.ExpandAndGetRef();
+      batch.Type                     = D3D12_RESOURCE_BARRIER_TYPE_ALIASING;
+      batch.Flags                    = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+      batch.Aliasing.pResourceBefore = xiiLocalStateTransitionHelper::GetD3D12Resource(description.m_pPreviousResource);
+      batch.Aliasing.pResourceAfter  = xiiLocalStateTransitionHelper::GetD3D12Resource(description.m_pResource);
 
-    if (barrier.m_TransitionType == xiiGALStateTransitionType::Immediate)
-    {
-      d3d12Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-    }
-    else if (barrier.m_TransitionType == xiiGALStateTransitionType::Begin)
-    {
-      d3d12Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY;
-    }
-    else if (barrier.m_TransitionType == xiiGALStateTransitionType::End)
-    {
-      d3d12Barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
-    }
-    else
-    {
-      xiiLog::Error("Failed to transition resource state on command list '{}': invalid transition type for resource '{}'.", GetDebugName(), barrier.m_pResource != nullptr ? barrier.m_pResource->GetDebugName() : "<null>");
+      // Flush in batches to avoid many small calls.
+      if (aliasingBatch.GetCount() >= 16)
+      {
+        m_pD3D12CommandList->ResourceBarrier(aliasingBatch.GetCount(), aliasingBatch.GetData());
+
+        aliasingBatch.Clear();
+      }
       continue;
     }
 
-    if (auto pTextureD3D12 = xiiDynamicCast<xiiGALTextureD3D12*>(barrier.m_pResource))
-    {
-      d3d12Barrier.Transition.pResource = pTextureD3D12->GetD3D12Texture();
-    }
-    else if (auto pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(barrier.m_pResource))
-    {
-      d3d12Barrier.Transition.pResource = pBufferD3D12->GetD3D12Buffer();
-    }
-    else
-    {
-      xiiLog::Error("Failed to transition resource state on command list '{}': incompatible resource type for resource '{}'.", GetDebugName(), barrier.m_pResource != nullptr ? barrier.m_pResource->GetDebugName() : "<null>");
-
-      continue;
-    }
-
-    if (barrier.m_TransitionFlags.IsSet(xiiGALStateTransitionFlags::UpdateState))
-    {
-      barrier.m_pResource->SetResourceState(barrier.m_NewState);
-    }
+    xiiLocalStateTransitionHelper helper(description, this);
+    helper.Process();
   }
 
-  m_pD3D12CommandList->ResourceBarrier(barriers.GetCount(), barriers.GetData());
+  // Flush remaining aliasing barriers.
+  if (!aliasingBatch.IsEmpty())
+  {
+    m_pD3D12CommandList->ResourceBarrier(aliasingBatch.GetCount(), aliasingBatch.GetData());
+
+    aliasingBatch.Clear();
+  }
 }
 
 void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags)

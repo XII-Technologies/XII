@@ -165,7 +165,6 @@ public:
           xiiRGCompileSettings settings;
           settings.m_bEnablePassCulling   = true;
           settings.m_bEnableCompileCache  = true;
-          settings.m_bEnableSplitBarriers = false;
           settings.m_bEnableAsyncQueues   = true;
           settings.m_bEnableGPUProfiling  = true;
 
@@ -330,7 +329,15 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "Vulkan";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "D3D12";
+#else
+      constexpr const char* szDefaultGraphicsAPI = "";
+#endif
+
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
       xiiStringView sShaderModel     = {};
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
@@ -438,7 +445,7 @@ private:
 
     // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
-    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::CopyDestination);
+    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::RenderTarget);
 
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }

@@ -424,6 +424,28 @@ void xiiGALSwapChainD3D12::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+
+  if (auto pCommandListD3D12 = pDeviceD3D12->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListD3D12>())
+  {
+    pCommandListD3D12->Begin();
+    {
+      xiiGALStateTransitionDescription transitionToPresent;
+      transitionToPresent.m_OldState        = xiiGALResourceStateFlags::Unknown;
+      transitionToPresent.m_NewState        = xiiGALResourceStateFlags::Present;
+      transitionToPresent.m_pResource       = m_pBackBufferTexture;
+      transitionToPresent.m_TransitionType  = xiiGALStateTransitionType::Immediate;
+      transitionToPresent.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+
+      pCommandListD3D12->TransitionResourceStates(xiiMakeArrayPtr(&transitionToPresent, 1U));
+    }
+    pCommandListD3D12->End();
+
+    auto pCommandQueue = pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+
+    pCommandQueue->Submit(pCommandListD3D12);
+  }
+
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
   {
