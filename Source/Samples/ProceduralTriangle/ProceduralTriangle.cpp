@@ -489,9 +489,9 @@ private:
       colorAttachmentDescription.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
       colorAttachmentDescription.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
 
-      xiiGALSubPassDescription& subpassDesc = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+      xiiGALSubPassDescription& subpassDescription = renderPassDescription.m_SubPasses.ExpandAndGetRef();
       {
-        xiiGALAttachmentReferenceDescription& colorAttachmentReferenceDescription = subpassDesc.m_RenderTargetAttachments.ExpandAndGetRef();
+        xiiGALAttachmentReferenceDescription& colorAttachmentReferenceDescription = subpassDescription.m_RenderTargetAttachments.ExpandAndGetRef();
         colorAttachmentReferenceDescription.m_ResourceStateFlags                  = xiiGALResourceStateFlags::RenderTarget;
         colorAttachmentReferenceDescription.m_uiAttachmentIndex                   = 0U;
       }

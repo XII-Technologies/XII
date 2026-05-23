@@ -190,39 +190,39 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
   {
     case xiiGALShaderType::Vertex:
     {
-      sb.SetFormat("{}_{}_{}", "vs", szMajor, szMinor);
+      sb.SetFormat("{}_{}_{}", "vs", xiiArgC(szMajor), xiiArgC(szMinor));
     }
     break;
     case xiiGALShaderType::Pixel:
     {
-      sb.SetFormat("{}_{}_{}", "ps", szMajor, szMinor);
+      sb.SetFormat("{}_{}_{}", "ps", xiiArgC(szMajor), xiiArgC(szMinor));
     }
     break;
     case xiiGALShaderType::Geometry:
     {
-      sb.SetFormat("{}_{}_{}", "gs", szMajor, szMinor);
+      sb.SetFormat("{}_{}_{}", "gs", xiiArgC(szMajor), xiiArgC(szMinor));
     }
     break;
     case xiiGALShaderType::Hull:
     {
-      sb.SetFormat("{}_{}_{}", "hs", szMajor, szMinor);
+      sb.SetFormat("{}_{}_{}", "hs", xiiArgC(szMajor), xiiArgC(szMinor));
     }
     break;
     case xiiGALShaderType::Domain:
     {
-      sb.SetFormat("{}_{}_{}", "ds", szMajor, szMinor);
+      sb.SetFormat("{}_{}_{}", "ds", xiiArgC(szMajor), xiiArgC(szMinor));
     }
     break;
     case xiiGALShaderType::Compute:
     {
-      sb.SetFormat("{}_{}_{}", "cs", szMajor, szMinor);
+      sb.SetFormat("{}_{}_{}", "cs", xiiArgC(szMajor), xiiArgC(szMinor));
     }
     break;
     case xiiGALShaderType::Amplification:
     {
       if (szMajor >= '6' && szMinor >= '5')
       {
-        sb.SetFormat("{}_{}_{}", "as", szMajor, szMinor);
+        sb.SetFormat("{}_{}_{}", "as", xiiArgC(szMajor), xiiArgC(szMinor));
       }
     }
     break;
@@ -230,7 +230,7 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
     {
       if (szMajor >= '6' && szMinor >= '5')
       {
-        sb.SetFormat("{}_{}_{}", "ms", szMajor, szMinor);
+        sb.SetFormat("{}_{}_{}", "ms", xiiArgC(szMajor), xiiArgC(szMinor));
       }
     }
     break;
@@ -243,7 +243,7 @@ xiiString xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnu
     {
       if (szMajor >= '6' && szMinor >= '3')
       {
-        sb.SetFormat("{}_{}_{}", "lib", szMajor, szMinor);
+        sb.SetFormat("{}_{}_{}", "lib", xiiArgC(szMajor), xiiArgC(szMinor));
       }
     }
     break;
