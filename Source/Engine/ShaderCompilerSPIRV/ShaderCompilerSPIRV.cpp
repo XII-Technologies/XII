@@ -165,6 +165,9 @@ void xiiShaderCompilerSPIRV::GetSupportedPlatforms(xiiHybridArray<xiiString, 4>&
   out_platforms.PushBack("VK_SM64"); // Vulkan Shader Model 6.4, includes shader integer dot product and SV_ShadingRate.
   out_platforms.PushBack("VK_SM65"); // Vulkan Shader Model 6.5, includes DXR1.1 (KHR ray tracing), mesh and amplification shaders, additional wave intrinsics (partial support available).
   out_platforms.PushBack("VK_SM66"); // Vulkan Shader Model 6.6, includes VK_NV_compute_shader_derivatives and VK_KHR_shader_atomic_int64 (partial support available).
+  out_platforms.PushBack("VK_SM67"); // Vulkan Shader Model 6.7, includes advanced subgroup control flow and SPIR-V 1.6 feature expansions.
+  out_platforms.PushBack("VK_SM68"); // Vulkan Shader Model 6.8, includes cooperative matrix operations and next‑gen mesh/task shader capabilities.
+  out_platforms.PushBack("VK_SM69"); // Vulkan Shader Model 6.9, includes next‑generation ray tracing, shader object pipelines, and workgraph-style GPU execution.
 }
 
 xiiStringView xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage)
