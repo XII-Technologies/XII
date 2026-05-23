@@ -136,26 +136,21 @@ xiiGALTextureD3D12::~xiiGALTextureD3D12()
   if (m_ExternalMemoryDescription.m_uiNativeHandle != 0U)
   {
     CloseHandle(reinterpret_cast<HANDLE>(m_ExternalMemoryDescription.m_uiNativeHandle));
+
     m_ExternalMemoryDescription.m_uiNativeHandle = 0U;
   }
 
-  if (m_pD3D12Texture != nullptr)
+  if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
   {
-    if (pDeviceD3D12 == nullptr)
-    {
-      XII_GAL_D3D12_RELEASE(m_pD3D12Texture);
-      XII_GAL_D3D12_RELEASE(m_TextureAllocation);
-    }
-    else if (IsNativeObjectWrapper() || m_TextureAllocation == nullptr || m_Description.m_Usage == xiiGALResourceUsage::Sparse)
-    {
-      IUnknown* pObject = m_pD3D12Texture;
-      pDeviceD3D12->SafeReleaseDeviceObject(pObject);
-      m_pD3D12Texture = nullptr;
-    }
-    else
-    {
-      pDeviceD3D12->SafeReleaseTexture(m_pD3D12Texture, m_TextureAllocation, m_Description.m_Usage == xiiGALResourceUsage::Staging);
-    }
+    IUnknown* pObject = m_pD3D12Texture;
+
+    pDeviceD3D12->SafeReleaseDeviceObject(pObject);
+
+    m_pD3D12Texture = nullptr;
+  }
+  else
+  {
+    pDeviceD3D12->SafeReleaseTexture(m_pD3D12Texture, m_TextureAllocation, m_Description.m_Usage == xiiGALResourceUsage::Staging);
   }
 
   m_pD3D12Texture     = nullptr;
