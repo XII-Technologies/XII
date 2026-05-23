@@ -1,17 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <ShaderCompilerSPIRV/ShaderCompilerSPIRV.h>
+#include <ShaderCompilerDXIL/ShaderCompilerDXIL.h>
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Strings/StringConversion.h>
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
-#include <SPIRV-Reflect/spirv_reflect.h>
-
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <d3dcompiler.h>
-#endif
+#include <d3dcompiler.h>
 #include <dxc/dxcapi.h>
 
 /// \brief Smart COM pointer to automatically manage AddRef/Release.
@@ -98,7 +94,7 @@ xiiComPtr<IDxcUtils>     g_pDxcUtils;
 xiiComPtr<IDxcCompiler3> g_pDxcCompiler;
 
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompilerSPIRV, ShaderCompilerSPIRVPlugin)
+XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompilerDXIL, ShaderCompilerDXILPlugin)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation"
@@ -112,189 +108,148 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompilerSPIRV, ShaderCompilerSPIRVPlugin)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    g_pDxcUtils = {};
+    g_pDxcUtils    = {};
     g_pDxcCompiler = {};
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerSPIRV, 1, xiiRTTIDefaultAllocator<xiiShaderCompilerSPIRV>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerDXIL, 1, xiiRTTIDefaultAllocator<xiiShaderCompilerDXIL>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format off
+// clang-format on
 
-xiiEnum<xiiGALResourceFormat> GetXIIFormatVulkan(SpvReflectFormat format)
+xiiEnum<xiiGALResourceFormat> GetXIIFormatD3D(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 uiComponentCount)
 {
   switch (format)
   {
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_UINT:
-      return xiiGALResourceFormat::R32UInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SINT:
-      return xiiGALResourceFormat::R32SInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SFLOAT:
-      return xiiGALResourceFormat::R32Float;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_UINT:
-      return xiiGALResourceFormat::RG32UInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SINT:
-      return xiiGALResourceFormat::RG32SInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SFLOAT:
-      return xiiGALResourceFormat::RG32Float;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_UINT:
-      return xiiGALResourceFormat::RGB32UInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SINT:
-      return xiiGALResourceFormat::RGB32SInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
-      return xiiGALResourceFormat::RGB32Float;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
-      return xiiGALResourceFormat::RGBA32UInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
-      return xiiGALResourceFormat::RGBA32SInt;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
-      return xiiGALResourceFormat::RGBA32Float;
-    case SpvReflectFormat::SPV_REFLECT_FORMAT_UNDEFINED:
-    default:
-      return xiiGALResourceFormat::Unknown;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_UINT32:
+    {
+      switch (uiComponentCount)
+      {
+        case 0xFU:
+          return xiiGALResourceFormat::RGBA32UInt;
+        case 0x7U:
+          return xiiGALResourceFormat::RGB32UInt;
+        case 0x3U:
+          return xiiGALResourceFormat::RG32UInt;
+        case 0x1U:
+          return xiiGALResourceFormat::R32UInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_SINT32:
+    {
+      switch (uiComponentCount)
+      {
+        case 0xFU:
+          return xiiGALResourceFormat::RGBA32SInt;
+        case 0x7U:
+          return xiiGALResourceFormat::RGB32SInt;
+        case 0x3U:
+          return xiiGALResourceFormat::RG32SInt;
+        case 0x1U:
+          return xiiGALResourceFormat::R32SInt;
+      }
+    }
+    break;
+    case D3D_REGISTER_COMPONENT_TYPE::D3D_REGISTER_COMPONENT_FLOAT32:
+    {
+      switch (uiComponentCount)
+      {
+        case 0xFU:
+          return xiiGALResourceFormat::RGBA32Float;
+        case 0x7U:
+          return xiiGALResourceFormat::RGB32Float;
+        case 0x3U:
+          return xiiGALResourceFormat::RG32Float;
+        case 0x1U:
+          return xiiGALResourceFormat::R32Float;
+      }
+    }
+    break;
+
+    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
+
+  return xiiGALResourceFormat::Unknown;
 }
 
-void xiiShaderCompilerSPIRV::GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms)
+void xiiShaderCompilerDXIL::GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms)
 {
-  out_platforms.PushBack("VK_SM60"); // Vulkan Shader Model 6.0, includes wave intrinsics and 64-bit integers.
-  out_platforms.PushBack("VK_SM61"); // Vulkan Shader Model 6.1, includes SV_ViewID and SV_Barycentrics.
-  out_platforms.PushBack("VK_SM62"); // Vulkan Shader Model 6.2, includes 16-bit types and denorm mode.
-  out_platforms.PushBack("VK_SM63"); // Vulkan Shader Model 6.3, includes hardware accelerated ray tracing.
-  out_platforms.PushBack("VK_SM64"); // Vulkan Shader Model 6.4, includes shader integer dot product and SV_ShadingRate.
-  out_platforms.PushBack("VK_SM65"); // Vulkan Shader Model 6.5, includes DXR1.1 (KHR ray tracing), mesh and amplification shaders, additional wave intrinsics (partial support available).
-  out_platforms.PushBack("VK_SM66"); // Vulkan Shader Model 6.6, includes VK_NV_compute_shader_derivatives and VK_KHR_shader_atomic_int64 (partial support available).
+  out_platforms.PushBack("D3D_SM60"); // Vulkan Shader Model 6.0, includes wave intrinsics and 64-bit integers.
+  out_platforms.PushBack("D3D_SM61"); // Vulkan Shader Model 6.1, includes SV_ViewID and SV_Barycentrics.
+  out_platforms.PushBack("D3D_SM62"); // Vulkan Shader Model 6.2, includes 16-bit types and denorm mode.
+  out_platforms.PushBack("D3D_SM63"); // Vulkan Shader Model 6.3, includes hardware accelerated ray tracing.
+  out_platforms.PushBack("D3D_SM64"); // Vulkan Shader Model 6.4, includes shader integer dot product and SV_ShadingRate.
+  out_platforms.PushBack("D3D_SM65"); // Vulkan Shader Model 6.5, includes DXR1.1 (KHR ray tracing), mesh and amplification shaders, additional wave intrinsics (partial support available).
+  out_platforms.PushBack("D3D_SM66"); // Vulkan Shader Model 6.6, includes VK_NV_compute_shader_derivatives and VK_KHR_shader_atomic_int64 (partial support available).
+  out_platforms.PushBack("D3D_SM67"); // Vulkan Shader Model 6.7, includes advanced subgroup control flow and SPIR-V 1.6 feature expansions.
+  out_platforms.PushBack("D3D_SM68"); // Vulkan Shader Model 6.8, includes cooperative matrix operations and next‑gen mesh/task shader capabilities.
+  out_platforms.PushBack("D3D_SM69"); // Vulkan Shader Model 6.9, includes next‑generation ray tracing, shader object pipelines, and workgraph-style GPU execution.
 }
 
-xiiStringView xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage)
+xiiString xiiShaderCompilerDXIL::GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage)
 {
-  sPlatform.TrimWordStart("VK_");
+  sPlatform.TrimWordStart("D3D_");
+
+  // Expect SMXY (X = major, Y = minor).
+  if (!sPlatform.StartsWith("SM") || sPlatform.GetElementCount() < 4)
+  {
+    XII_REPORT_FAILURE("Invalid Shader Model '{}'. Expected SMXY.", sPlatform);
+    return {};
+  }
+
+  const char szMajor = sPlatform.GetStartPointer()[2];
+  const char szMinor = sPlatform.GetStartPointer()[3];
+
+  xiiStringBuilder sb;
 
   switch (stage)
   {
     case xiiGALShaderType::Vertex:
     {
-      if (sPlatform == "SM60")
-        return "vs_6_0";
-      if (sPlatform == "SM61")
-        return "vs_6_1";
-      if (sPlatform == "SM62")
-        return "vs_6_2";
-      if (sPlatform == "SM63")
-        return "vs_6_3";
-      if (sPlatform == "SM64")
-        return "vs_6_4";
-      if (sPlatform == "SM65")
-        return "vs_6_5";
-      if (sPlatform == "SM66")
-        return "vs_6_6";
+      sb.SetFormat("{}_{}_{}", "vs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Pixel:
     {
-      if (sPlatform == "SM60")
-        return "ps_6_0";
-      if (sPlatform == "SM61")
-        return "ps_6_1";
-      if (sPlatform == "SM62")
-        return "ps_6_2";
-      if (sPlatform == "SM63")
-        return "ps_6_3";
-      if (sPlatform == "SM64")
-        return "ps_6_4";
-      if (sPlatform == "SM65")
-        return "ps_6_5";
-      if (sPlatform == "SM66")
-        return "ps_6_6";
+      sb.SetFormat("{}_{}_{}", "ps", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Geometry:
     {
-      if (sPlatform == "SM60")
-        return "gs_6_0";
-      if (sPlatform == "SM61")
-        return "gs_6_1";
-      if (sPlatform == "SM62")
-        return "gs_6_2";
-      if (sPlatform == "SM63")
-        return "gs_6_3";
-      if (sPlatform == "SM64")
-        return "gs_6_4";
-      if (sPlatform == "SM65")
-        return "gs_6_5";
-      if (sPlatform == "SM66")
-        return "gs_6_6";
+      sb.SetFormat("{}_{}_{}", "gs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Hull:
     {
-      if (sPlatform == "SM60")
-        return "hs_6_0";
-      if (sPlatform == "SM61")
-        return "hs_6_1";
-      if (sPlatform == "SM62")
-        return "hs_6_2";
-      if (sPlatform == "SM63")
-        return "hs_6_3";
-      if (sPlatform == "SM64")
-        return "hs_6_4";
-      if (sPlatform == "SM65")
-        return "hs_6_5";
-      if (sPlatform == "SM66")
-        return "hs_6_6";
+      sb.SetFormat("{}_{}_{}", "hs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Domain:
     {
-      if (sPlatform == "SM60")
-        return "ds_6_0";
-      if (sPlatform == "SM61")
-        return "ds_6_1";
-      if (sPlatform == "SM62")
-        return "ds_6_2";
-      if (sPlatform == "SM63")
-        return "ds_6_3";
-      if (sPlatform == "SM64")
-        return "ds_6_4";
-      if (sPlatform == "SM65")
-        return "ds_6_5";
-      if (sPlatform == "SM66")
-        return "ds_6_6";
+      sb.SetFormat("{}_{}_{}", "ds", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Compute:
     {
-      if (sPlatform == "SM60")
-        return "cs_6_0";
-      if (sPlatform == "SM61")
-        return "cs_6_1";
-      if (sPlatform == "SM62")
-        return "cs_6_2";
-      if (sPlatform == "SM63")
-        return "cs_6_3";
-      if (sPlatform == "SM64")
-        return "cs_6_4";
-      if (sPlatform == "SM65")
-        return "cs_6_5";
-      if (sPlatform == "SM66")
-        return "cs_6_6";
+      sb.SetFormat("{}_{}_{}", "cs", szMajor, szMinor);
     }
     break;
     case xiiGALShaderType::Amplification:
     {
-      if (sPlatform == "SM65")
-        return "as_6_5";
-      if (sPlatform == "SM66")
-        return "as_6_6";
+      if (szMajor >= '6' && szMinor >= '5')
+      {
+        sb.SetFormat("{}_{}_{}", "as", szMajor, szMinor);
+      }
     }
     break;
     case xiiGALShaderType::Mesh:
     {
-      if (sPlatform == "SM65")
-        return "ms_6_5";
-      if (sPlatform == "SM66")
-        return "ms_6_6";
+      if (szMajor >= '6' && szMinor >= '5')
+      {
+        sb.SetFormat("{}_{}_{}", "ms", szMajor, szMinor);
+      }
     }
     break;
     case xiiGALShaderType::RayGeneration:
@@ -304,61 +259,56 @@ xiiStringView xiiShaderCompilerSPIRV::GetProfileName(xiiStringView sPlatform, xi
     case xiiGALShaderType::RayIntersection:
     case xiiGALShaderType::Callable:
     {
-      if (sPlatform == "SM63")
-        return "lib_6_3";
-      if (sPlatform == "SM64")
-        return "lib_6_4";
-      if (sPlatform == "SM65")
-        return "lib_6_5";
-      if (sPlatform == "SM66")
-        return "lib_6_6";
+      if (szMajor >= '6' && szMinor >= '3')
+      {
+        sb.SetFormat("{}_{}_{}", "lib", szMajor, szMinor);
+      }
     }
     break;
-    default:
-      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}.", sPlatform, stage.GetValue());
-  return {};
+  return sb;
 }
 
-xiiResult xiiShaderCompilerSPIRV::Initialize()
+xiiResult xiiShaderCompilerDXIL::Initialize()
 {
   if (m_InputLayoutMapping.IsEmpty())
   {
-    m_InputLayoutMapping["in.var.POSITION"]  = xiiGALInputLayoutSemantic::Position;
-    m_InputLayoutMapping["in.var.TANGENT"]  = xiiGALInputLayoutSemantic::Tangent;
-    m_InputLayoutMapping["in.var.NORMAL"]  = xiiGALInputLayoutSemantic::Normal;
+    m_InputLayoutMapping["POSITION"]  = xiiGALInputLayoutSemantic::Position;
+    m_InputLayoutMapping["TANGENT"]  = xiiGALInputLayoutSemantic::Tangent;
+    m_InputLayoutMapping["NORMAL"]  = xiiGALInputLayoutSemantic::Normal;
 
-    m_InputLayoutMapping["in.var.COLOR0"] = xiiGALInputLayoutSemantic::Color0;
-    m_InputLayoutMapping["in.var.COLOR1"] = xiiGALInputLayoutSemantic::Color1;
-    m_InputLayoutMapping["in.var.COLOR2"] = xiiGALInputLayoutSemantic::Color2;
-    m_InputLayoutMapping["in.var.COLOR3"] = xiiGALInputLayoutSemantic::Color3;
-    m_InputLayoutMapping["in.var.COLOR4"] = xiiGALInputLayoutSemantic::Color4;
-    m_InputLayoutMapping["in.var.COLOR5"] = xiiGALInputLayoutSemantic::Color5;
-    m_InputLayoutMapping["in.var.COLOR6"] = xiiGALInputLayoutSemantic::Color6;
-    m_InputLayoutMapping["in.var.COLOR7"] = xiiGALInputLayoutSemantic::Color7;
+    m_InputLayoutMapping["COLOR0"] = xiiGALInputLayoutSemantic::Color0;
+    m_InputLayoutMapping["COLOR1"] = xiiGALInputLayoutSemantic::Color1;
+    m_InputLayoutMapping["COLOR2"] = xiiGALInputLayoutSemantic::Color2;
+    m_InputLayoutMapping["COLOR3"] = xiiGALInputLayoutSemantic::Color3;
+    m_InputLayoutMapping["COLOR4"] = xiiGALInputLayoutSemantic::Color4;
+    m_InputLayoutMapping["COLOR5"] = xiiGALInputLayoutSemantic::Color5;
+    m_InputLayoutMapping["COLOR6"] = xiiGALInputLayoutSemantic::Color6;
+    m_InputLayoutMapping["COLOR7"] = xiiGALInputLayoutSemantic::Color7;
 
-    m_InputLayoutMapping["in.var.TEXCOORD0"] = xiiGALInputLayoutSemantic::TexCoord0;
-    m_InputLayoutMapping["in.var.TEXCOORD1"] = xiiGALInputLayoutSemantic::TexCoord1;
-    m_InputLayoutMapping["in.var.TEXCOORD2"] = xiiGALInputLayoutSemantic::TexCoord2;
-    m_InputLayoutMapping["in.var.TEXCOORD3"] = xiiGALInputLayoutSemantic::TexCoord3;
-    m_InputLayoutMapping["in.var.TEXCOORD4"] = xiiGALInputLayoutSemantic::TexCoord4;
-    m_InputLayoutMapping["in.var.TEXCOORD5"] = xiiGALInputLayoutSemantic::TexCoord5;
-    m_InputLayoutMapping["in.var.TEXCOORD6"] = xiiGALInputLayoutSemantic::TexCoord6;
-    m_InputLayoutMapping["in.var.TEXCOORD7"] = xiiGALInputLayoutSemantic::TexCoord7;
-    m_InputLayoutMapping["in.var.TEXCOORD8"] = xiiGALInputLayoutSemantic::TexCoord8;
-    m_InputLayoutMapping["in.var.TEXCOORD9"] = xiiGALInputLayoutSemantic::TexCoord9;
+    m_InputLayoutMapping["TEXCOORD0"] = xiiGALInputLayoutSemantic::TexCoord0;
+    m_InputLayoutMapping["TEXCOORD1"] = xiiGALInputLayoutSemantic::TexCoord1;
+    m_InputLayoutMapping["TEXCOORD2"] = xiiGALInputLayoutSemantic::TexCoord2;
+    m_InputLayoutMapping["TEXCOORD3"] = xiiGALInputLayoutSemantic::TexCoord3;
+    m_InputLayoutMapping["TEXCOORD4"] = xiiGALInputLayoutSemantic::TexCoord4;
+    m_InputLayoutMapping["TEXCOORD5"] = xiiGALInputLayoutSemantic::TexCoord5;
+    m_InputLayoutMapping["TEXCOORD6"] = xiiGALInputLayoutSemantic::TexCoord6;
+    m_InputLayoutMapping["TEXCOORD7"] = xiiGALInputLayoutSemantic::TexCoord7;
+    m_InputLayoutMapping["TEXCOORD8"] = xiiGALInputLayoutSemantic::TexCoord8;
+    m_InputLayoutMapping["TEXCOORD9"] = xiiGALInputLayoutSemantic::TexCoord9;
 
-    m_InputLayoutMapping["in.var.BITANGENT"]  = xiiGALInputLayoutSemantic::BiTangent;
+    m_InputLayoutMapping["BITANGENT"]  = xiiGALInputLayoutSemantic::BiTangent;
 
-    m_InputLayoutMapping["in.var.BONEINDICES0"] = xiiGALInputLayoutSemantic::BoneIndices0;
-    m_InputLayoutMapping["in.var.BONEINDICES1"] = xiiGALInputLayoutSemantic::BoneIndices1;
+    m_InputLayoutMapping["BONEINDICES0"] = xiiGALInputLayoutSemantic::BoneIndices0;
+    m_InputLayoutMapping["BONEINDICES1"] = xiiGALInputLayoutSemantic::BoneIndices1;
 
-    m_InputLayoutMapping["in.var.BONEWEIGHTS0"] = xiiGALInputLayoutSemantic::BoneWeights0;
-    m_InputLayoutMapping["in.var.BONEWEIGHTS1"] = xiiGALInputLayoutSemantic::BoneWeights1;
+    m_InputLayoutMapping["BONEWEIGHTS0"] = xiiGALInputLayoutSemantic::BoneWeights0;
+    m_InputLayoutMapping["BONEWEIGHTS1"] = xiiGALInputLayoutSemantic::BoneWeights1;
 
-    m_InputLayoutMapping["in.var.DATAOFFSETS"] = xiiGALInputLayoutSemantic::DataOffsets;
+    m_InputLayoutMapping["DATAOFFSETS"] = xiiGALInputLayoutSemantic::DataOffsets;
   }
 
   XII_ASSERT_DEV(g_pDxcUtils != nullptr && g_pDxcCompiler != nullptr, "ShaderCompiler SubSystem init should have initialized library pointers.");
@@ -366,7 +316,7 @@ xiiResult xiiShaderCompilerSPIRV::Initialize()
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
+xiiResult xiiShaderCompilerDXIL::Compile(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
 {
   XII_SUCCEED_OR_RETURN(Initialize());
 
@@ -389,7 +339,7 @@ xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, x
     {
       const xiiStringBuilder sSourceFile = inout_data.m_sSourceFile;
 
-      if (CompileSPIRVShader(sSourceFile, sShaderSource, inout_data.m_Flags.IsSet(xiiGALShaderCompilerFlags::Debug), GetProfileName(inout_data.m_sPlatform, it.Key()), "main", stageData.m_pByteCode->m_ByteCode).Succeeded())
+      if (CompileDXILShader(sSourceFile, sShaderSource, inout_data.m_Flags.IsSet(xiiGALShaderCompilerFlags::Debug), GetProfileName(inout_data.m_sPlatform, it.Key()), "main", stageData.m_pByteCode->m_ByteCode).Succeeded())
       {
         XII_SUCCEED_OR_RETURN(ReflectShaderStage(inout_data, it.Key()));
       }
@@ -402,7 +352,7 @@ xiiResult xiiShaderCompilerSPIRV::Compile(xiiGALShaderProgramData& inout_data, x
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
+xiiResult xiiShaderCompilerDXIL::CompileDXILShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
   out_ByteCode.Clear();
 
@@ -491,7 +441,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
 
   if (pShader == nullptr)
   {
-    xiiLog::Error("No SPIRV bytecode was generated.");
+    xiiLog::Error("No DXIL bytecode was generated.");
     return XII_FAILURE;
   }
 
@@ -502,7 +452,7 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
+xiiResult xiiShaderCompilerDXIL::ModifyShaderSource(xiiGALShaderProgramData& inout_data, xiiLogInterface* pLog)
 {
   for (auto it : inout_data.m_StageData)
   {
@@ -523,7 +473,7 @@ xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& in
     if (value.m_sShaderSource.IsEmpty())
       continue;
 
-    xiiGALShaderParser::ApplyShaderResourceBindings(inout_data.m_sPlatform, value.m_sShaderSource, value.m_Resources, bindings, xiiMakeDelegate(&xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration, this), sNewShaderCode);
+    xiiGALShaderParser::ApplyShaderResourceBindings(inout_data.m_sPlatform, value.m_sShaderSource, value.m_Resources, bindings, xiiMakeDelegate(&xiiShaderCompilerDXIL::CreateNewShaderResourceDeclaration, this), sNewShaderCode);
 
     value.m_sShaderSource = sNewShaderCode;
     value.m_Resources.Clear();
@@ -532,7 +482,7 @@ xiiResult xiiShaderCompilerSPIRV::ModifyShaderSource(xiiGALShaderProgramData& in
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
+xiiResult xiiShaderCompilerDXIL::DefineShaderResourceBindings(const xiiGALShaderProgramData& data, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& inout_resourceBinding, xiiLogInterface* pLog)
 {
   // Determine which indices are hard-coded in the shader already.
   xiiTemporaryHybridArray<xiiHybridBitfield<64>, 4> slotInUseInSet;
@@ -642,7 +592,7 @@ xiiResult xiiShaderCompilerSPIRV::DefineShaderResourceBindings(const xiiGALShade
   return XII_SUCCESS;
 }
 
-void xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration)
+void xiiShaderCompilerDXIL::CreateNewShaderResourceDeclaration(xiiStringView sPlatform, xiiStringView sDeclaration, const xiiGALShaderResourceDescription& binding, xiiStringBuilder& out_sDeclaration)
 {
   xiiEnum<xiiGALShaderResourceType> type = binding.m_Type;
   xiiStringView                     sResourcePrefix;
@@ -684,7 +634,7 @@ void xiiShaderCompilerSPIRV::CreateNewShaderResourceDeclaration(xiiStringView sP
   }
 }
 
-xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& inout_Data, xiiEnum<xiiGALShaderType> stage)
+xiiResult xiiShaderCompilerDXIL::ReflectShaderStage(xiiGALShaderProgramData& inout_Data, xiiEnum<xiiGALShaderType> stage)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
@@ -794,7 +744,7 @@ xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& in
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerSPIRV::ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerDXIL::ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   XII_LOG_BLOCK("Constant Buffer Layout", info.name);
 
@@ -1018,7 +968,7 @@ xiiResult xiiShaderCompilerSPIRV::ReflectConstantBufferLayout(xiiGALShaderResour
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerSPIRV::FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerDXIL::FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
   {
@@ -1063,7 +1013,7 @@ xiiResult xiiShaderCompilerSPIRV::FillResourceBinding(xiiGALShaderResourceDescri
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerSPIRV::FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerDXIL::FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
   {
@@ -1217,7 +1167,7 @@ xiiResult xiiShaderCompilerSPIRV::FillSRVResourceBinding(xiiGALShaderResourceDes
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerSPIRV::FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerDXIL::FillUAVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
   {
