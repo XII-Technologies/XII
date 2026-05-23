@@ -309,6 +309,8 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     m_FrameLatencyWaitableObject = NULL;
   }
 
+  m_uiCurrentBackBufferIndex = m_pDXGISwapChain3->GetCurrentBackBufferIndex();
+
   return XII_SUCCESS;
 }
 
@@ -467,7 +469,7 @@ void xiiGALSwapChainD3D12::Present()
     xiiLog::Error("Failed to present to swap chain: {}", xiiHRESULTtoString(hResult));
   }
 
-  m_uiCurrentBackBufferIndex = (m_uiCurrentBackBufferIndex + 1) % m_SwapChainTextures.GetCount();
+  m_uiCurrentBackBufferIndex = m_pDXGISwapChain3->GetCurrentBackBufferIndex();
   m_pBackBufferTexture       = m_SwapChainTextures[m_uiCurrentBackBufferIndex];
 }
 
