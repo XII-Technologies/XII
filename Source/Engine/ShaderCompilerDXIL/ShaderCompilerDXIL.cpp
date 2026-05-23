@@ -168,7 +168,7 @@ xiiEnum<xiiGALResourceFormat> GetXIIFormatD3D(D3D_REGISTER_COMPONENT_TYPE format
     }
     break;
 
-    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return xiiGALResourceFormat::Unknown;
@@ -176,16 +176,16 @@ xiiEnum<xiiGALResourceFormat> GetXIIFormatD3D(D3D_REGISTER_COMPONENT_TYPE format
 
 void xiiShaderCompilerDXIL::GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& out_platforms)
 {
-  out_platforms.PushBack("D3D_SM60"); // Vulkan Shader Model 6.0, includes wave intrinsics and 64-bit integers.
-  out_platforms.PushBack("D3D_SM61"); // Vulkan Shader Model 6.1, includes SV_ViewID and SV_Barycentrics.
-  out_platforms.PushBack("D3D_SM62"); // Vulkan Shader Model 6.2, includes 16-bit types and denorm mode.
-  out_platforms.PushBack("D3D_SM63"); // Vulkan Shader Model 6.3, includes hardware accelerated ray tracing.
-  out_platforms.PushBack("D3D_SM64"); // Vulkan Shader Model 6.4, includes shader integer dot product and SV_ShadingRate.
-  out_platforms.PushBack("D3D_SM65"); // Vulkan Shader Model 6.5, includes DXR1.1 (KHR ray tracing), mesh and amplification shaders, additional wave intrinsics (partial support available).
-  out_platforms.PushBack("D3D_SM66"); // Vulkan Shader Model 6.6, includes VK_NV_compute_shader_derivatives and VK_KHR_shader_atomic_int64 (partial support available).
-  out_platforms.PushBack("D3D_SM67"); // Vulkan Shader Model 6.7, includes advanced subgroup control flow and SPIR-V 1.6 feature expansions.
-  out_platforms.PushBack("D3D_SM68"); // Vulkan Shader Model 6.8, includes cooperative matrix operations and next‑gen mesh/task shader capabilities.
-  out_platforms.PushBack("D3D_SM69"); // Vulkan Shader Model 6.9, includes next‑generation ray tracing, shader object pipelines, and workgraph-style GPU execution.
+  out_platforms.PushBack("D3D_SM60"); // D3D Shader Model 6.0, includes wave intrinsics and 64-bit integers.
+  out_platforms.PushBack("D3D_SM61"); // D3D Shader Model 6.1, includes SV_ViewID and SV_Barycentrics.
+  out_platforms.PushBack("D3D_SM62"); // D3D Shader Model 6.2, includes 16-bit types and denorm mode.
+  out_platforms.PushBack("D3D_SM63"); // D3D Shader Model 6.3, includes hardware accelerated ray tracing.
+  out_platforms.PushBack("D3D_SM64"); // D3D Shader Model 6.4, includes shader integer dot product and SV_ShadingRate.
+  out_platforms.PushBack("D3D_SM65"); // D3D Shader Model 6.5, includes DXR1.1 (KHR ray tracing), mesh and amplification shaders, additional wave intrinsics (partial support available).
+  out_platforms.PushBack("D3D_SM66"); // D3D Shader Model 6.6, includes VK_NV_compute_shader_derivatives and VK_KHR_shader_atomic_int64 (partial support available).
+  out_platforms.PushBack("D3D_SM67"); // D3D Shader Model 6.7, includes advanced subgroup control flow and SPIR-V 1.6 feature expansions.
+  out_platforms.PushBack("D3D_SM68"); // D3D Shader Model 6.8, includes cooperative matrix operations and next‑gen mesh/task shader capabilities.
+  out_platforms.PushBack("D3D_SM69"); // D3D Shader Model 6.9, includes next‑generation ray tracing, shader object pipelines, and workgraph-style GPU execution.
 }
 
 xiiString xiiShaderCompilerDXIL::GetProfileName(xiiStringView sPlatform, xiiEnum<xiiGALShaderType> stage)
@@ -276,9 +276,9 @@ xiiResult xiiShaderCompilerDXIL::Initialize()
 {
   if (m_InputLayoutMapping.IsEmpty())
   {
-    m_InputLayoutMapping["POSITION"]  = xiiGALInputLayoutSemantic::Position;
+    m_InputLayoutMapping["POSITION"] = xiiGALInputLayoutSemantic::Position;
     m_InputLayoutMapping["TANGENT"]  = xiiGALInputLayoutSemantic::Tangent;
-    m_InputLayoutMapping["NORMAL"]  = xiiGALInputLayoutSemantic::Normal;
+    m_InputLayoutMapping["NORMAL"]   = xiiGALInputLayoutSemantic::Normal;
 
     m_InputLayoutMapping["COLOR0"] = xiiGALInputLayoutSemantic::Color0;
     m_InputLayoutMapping["COLOR1"] = xiiGALInputLayoutSemantic::Color1;
@@ -300,7 +300,7 @@ xiiResult xiiShaderCompilerDXIL::Initialize()
     m_InputLayoutMapping["TEXCOORD8"] = xiiGALInputLayoutSemantic::TexCoord8;
     m_InputLayoutMapping["TEXCOORD9"] = xiiGALInputLayoutSemantic::TexCoord9;
 
-    m_InputLayoutMapping["BITANGENT"]  = xiiGALInputLayoutSemantic::BiTangent;
+    m_InputLayoutMapping["BITANGENT"] = xiiGALInputLayoutSemantic::BiTangent;
 
     m_InputLayoutMapping["BONEINDICES0"] = xiiGALInputLayoutSemantic::BoneIndices0;
     m_InputLayoutMapping["BONEINDICES1"] = xiiGALInputLayoutSemantic::BoneIndices1;
@@ -358,7 +358,6 @@ xiiResult xiiShaderCompilerDXIL::CompileDXILShader(xiiStringView sFile, xiiStrin
 
   xiiStringView    sCompileSource = sSource;
   xiiStringBuilder sDebugSource;
-  const bool        bMeshShaderProfile = sProfile.StartsWith("as_") || sProfile.StartsWith("ms_");
 
   xiiDynamicArray<xiiStringWChar> args;
   args.PushBack(xiiStringWChar(sFile));
@@ -366,15 +365,7 @@ xiiResult xiiShaderCompilerDXIL::CompileDXILShader(xiiStringView sFile, xiiStrin
   args.PushBack(xiiStringWChar(sEntryPoint));
   args.PushBack(L"-T");
   args.PushBack(xiiStringWChar(sProfile));
-  args.PushBack(L"-spirv");
-  args.PushBack(L"-Zpc"); // Matrices in column-major order
-  args.PushBack(L"-fvk-use-dx-position-w");
-  args.PushBack(bMeshShaderProfile ? L"-fspv-target-env=vulkan1.3" : L"-fspv-target-env=vulkan1.1");
-
-  if (bMeshShaderProfile)
-  {
-    args.PushBack(L"-fspv-extension=SPV_EXT_mesh_shader");
-  }
+  args.PushBack(L"-Zpc"); // Matrices in column-major order.
 
   if (bDebug)
   {
@@ -384,11 +375,11 @@ xiiResult xiiShaderCompilerDXIL::CompileDXILShader(xiiStringView sFile, xiiStrin
     sCompileSource = sDebugSource;
 
     args.PushBack(L"-Zi"); // Enable debug information.
-    args.PushBack(L"-Od"); // Disable optimization
+    args.PushBack(L"-Od"); // Disable optimization.
   }
   else
   {
-    args.PushBack(L"-O3"); // Optimization Level 3
+    args.PushBack(L"-O3"); // Optimization Level 3.
   }
 
   xiiTemporaryHybridArray<LPCWSTR, 16> pszArgs;
@@ -626,7 +617,9 @@ void xiiShaderCompilerDXIL::CreateNewShaderResourceDeclaration(xiiStringView sPl
 
   if (binding.m_Type == xiiGALShaderResourceType::TextureAndSampler)
   {
-    out_sDeclaration.SetFormat("[[vk::combinedImageSampler]] {} : register({}{}, space{})", sDeclaration, sResourcePrefix, binding.m_uiBindIndex, binding.m_uiDescriptorSet);
+    out_sDeclaration.SetFormat("{} : register(t{}, space{})\n"
+                               "{}_AutoSampler : register(s{}, space{})",
+                               sDeclaration, binding.m_uiBindIndex, binding.m_uiDescriptorSet, sDeclaration, binding.m_uiBindIndex, binding.m_uiDescriptorSet);
   }
   else
   {
