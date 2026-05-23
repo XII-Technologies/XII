@@ -10,6 +10,8 @@
 #include <d3dcompiler.h>
 #include <dxc/dxcapi.h>
 
+XII_DEFINE_AS_POD_TYPE(D3D12_SHADER_INPUT_BIND_DESC);
+
 /// \brief Smart COM pointer to automatically manage AddRef/Release.
 template <typename T>
 struct xiiComPtr
