@@ -366,11 +366,11 @@ xiiResult xiiShaderCompilerSPIRV::CompileSPIRVShader(xiiStringView sFile, xiiStr
     sCompileSource = sDebugSource;
 
     args.PushBack(L"-Zi"); // Enable debug information.
-    args.PushBack(L"-Od"); // Disable optimization
+    args.PushBack(L"-Od"); // Disable optimization.
   }
   else
   {
-    args.PushBack(L"-O3"); // Optimization Level 3
+    args.PushBack(L"-O3"); // Optimization Level 3.
   }
 
   xiiTemporaryHybridArray<LPCWSTR, 16> pszArgs;
@@ -668,9 +668,13 @@ xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& in
         XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_sSourceFile);
 
         if (pVAS != nullptr)
+        {
           attribute.m_Semantic = *pVAS;
+        }
         else
+        {
           xiiLog::Dev("Unknown vertex input semantic found: {}", pInputVariable->semantic);
+        }
 
         attribute.m_Format = GetXIIFormatVulkan(pInputVariable->format);
         XII_ASSERT_DEV(attribute.m_Format != xiiGALResourceFormat::Unknown, "Unknown vertex input format found: {}", pInputVariable->format);
@@ -726,19 +730,64 @@ xiiResult xiiShaderCompilerSPIRV::ReflectShaderStage(xiiGALShaderProgramData& in
   return XII_SUCCESS;
 }
 
+xiiResult xiiShaderCompilerSPIRV::FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+{
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
+  {
+    binding.m_Type = xiiGALShaderResourceType::AccelerationStructure;
+
+    return XII_SUCCESS;
+  }
+
+  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+  {
+    binding.m_Type = xiiGALShaderResourceType::InputAttachment;
+
+    return XII_SUCCESS;
+  }
+
+  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
+  {
+    return FillSRVResourceBinding(binding, info);
+  }
+
+  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV)
+  {
+    return FillUAVResourceBinding(binding, info);
+  }
+
+  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV)
+  {
+    binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
+
+    return ReflectConstantBufferLayout(binding, info);
+  }
+
+  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
+  {
+    binding.m_Type = xiiGALShaderResourceType::Sampler;
+
+    return XII_SUCCESS;
+  }
+
+  xiiLog::Error("Resource '{}': Unsupported resource type.", info.name);
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiShaderCompilerSPIRV::ReflectConstantBufferLayout(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   XII_LOG_BLOCK("Constant Buffer Layout", info.name);
 
-  const auto& block = info.block;
+  const SpvReflectBlockVariable& block = info.block;
 
-  xiiLog::Debug("Constant Buffer has {} variables, Size is {}.", block.member_count, block.padded_size);
+  xiiLog::Debug("Constant Buffer has {} variables, Size is {} {}.", block.member_count, block.padded_size, (block.padded_size > 1 ? "bytes" : "byte"));
 
   binding.m_uiTotalSize = block.padded_size;
 
   for (xiiUInt32 uiMember = 0; uiMember < block.member_count; ++uiMember)
   {
-    const auto&                     memberBlock       = block.members[uiMember];
+    const SpvReflectBlockVariable&  memberBlock       = block.members[uiMember];
     xiiGALShaderVariableDescription memberDescription = {};
 
     memberDescription.m_sName.Assign(memberBlock.name);
@@ -780,33 +829,49 @@ xiiResult xiiShaderCompilerSPIRV::ReflectConstantBufferLayout(xiiGALShaderResour
         case 64U:
         {
           if (bIsUnsigned)
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt64;
+          }
           else
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int64;
+          }
         }
         break;
         case 32U:
         {
           if (bIsUnsigned)
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt32;
+          }
           else
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int32;
+          }
         }
         break;
         case 16U:
         {
           if (bIsUnsigned)
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt16;
+          }
           else
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int16;
+          }
         }
         break;
         case 8U:
         {
           if (bIsUnsigned)
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt8;
+          }
           else
+          {
             memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int8;
+          }
         }
         break;
         default:
@@ -948,51 +1013,6 @@ xiiResult xiiShaderCompilerSPIRV::ReflectConstantBufferLayout(xiiGALShaderResour
   }
 
   return XII_SUCCESS;
-}
-
-xiiResult xiiShaderCompilerSPIRV::FillResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
-{
-  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
-  {
-    binding.m_Type = xiiGALShaderResourceType::AccelerationStructure;
-
-    return XII_SUCCESS;
-  }
-
-  if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-  {
-    binding.m_Type = xiiGALShaderResourceType::InputAttachment;
-
-    return XII_SUCCESS;
-  }
-
-  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
-  {
-    return FillSRVResourceBinding(binding, info);
-  }
-
-  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_UAV)
-  {
-    return FillUAVResourceBinding(binding, info);
-  }
-
-  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV)
-  {
-    binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
-
-    return ReflectConstantBufferLayout(binding, info);
-  }
-
-  if (info.resource_type & SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
-  {
-    binding.m_Type = xiiGALShaderResourceType::Sampler;
-
-    return XII_SUCCESS;
-  }
-
-  xiiLog::Error("Resource '{}': Unsupported resource type.", info.name);
-
-  return XII_FAILURE;
 }
 
 xiiResult xiiShaderCompilerSPIRV::FillSRVResourceBinding(xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
