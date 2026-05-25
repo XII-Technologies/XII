@@ -95,57 +95,11 @@ public:
     {
       m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
-
-      float       fInputValue = 0.0f;
-      const float fMouseSpeed = 0.01f;
-
-      xiiVec3 mouseMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x += fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookNegX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x -= fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookPosY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y -= fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y += fInputValue * fMouseSpeed;
     }
     else
     {
       m_pWindow->GetInputDevice()->SetShowMouseCursor(true);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
-    }
-
-    // Turn camera with arrow keys
-    {
-      float       fInputValue = 0.0f;
-      const float fTurnSpeed  = 1.0f;
-
-      xiiVec3 mouseMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x += fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnNegX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x -= fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnPosY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y += fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y -= fInputValue * fTurnSpeed;
-    }
-
-    // Apply translation
-    {
-      float   fInputValue = 0.0f;
-      xiiVec3 cameraMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.x += fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MoveNegX", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.x -= fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MovePosY", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.y += fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.y -= fInputValue;
     }
 
     // Perform rendering.
@@ -236,70 +190,10 @@ public:
       cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyEscape;
       xiiInputManager::SetInputActionConfig("Main", "CloseApp", cfg, true);
 
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookPosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosX;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookPosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegX;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookPosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosY;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookPosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegY;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookNegY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnPosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyRight;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnPosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyLeft;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnPosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyDown;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnPosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyUp;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnNegY", cfg, true);
-
       cfg                        = xiiInputManager::GetInputActionConfig("Main", "Look");
       cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseButton0;
       cfg.m_bApplyTimeScaling    = false;
       xiiInputManager::SetInputActionConfig("Main", "Look", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MovePosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyD;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MovePosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MoveNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyA;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MoveNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MovePosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyW;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MovePosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MoveNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyS;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MoveNegY", cfg, true);
     }
 
     // Create a window for rendering
