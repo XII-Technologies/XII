@@ -56,6 +56,16 @@ public:
 
   virtual Execution Run() override
   {
+    {
+      xiiStringBuilder sCmdHelp;
+      if (xiiCommandLineOption::LogAvailableOptionsToBuffer(sCmdHelp, xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "ProceduralTriangle"))
+      {
+        xiiLog::Print(sCmdHelp);
+
+        return xiiApplication::Execution::Quit;
+      }
+    }
+
     m_pWindow->ProcessWindowMessages();
 
     if (!m_pWindow->IsVisible())
