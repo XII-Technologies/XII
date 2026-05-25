@@ -2,18 +2,16 @@
 
 #pragma once
 
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
+#include <DearImguiPlugin/DearImguiPluginDLL.h>
 
-#  include <GameEngine/GameEngineDLL.h>
+#include <Core/ResourceManager/ResourceHandle.h>
+#include <Foundation/Configuration/Singleton.h>
+#include <Foundation/Math/Size.h>
+#include <Foundation/Memory/CommonAllocators.h>
+#include <Foundation/Types/UniquePtr.h>
+#include <GraphicsCore/Pipeline/Declarations.h>
 
-#  include <Core/ResourceManager/ResourceHandle.h>
-#  include <Foundation/Configuration/Singleton.h>
-#  include <Foundation/Math/Size.h>
-#  include <Foundation/Memory/CommonAllocators.h>
-#  include <Foundation/Types/UniquePtr.h>
-#  include <GraphicsCore/Pipeline/Declarations.h>
-
-#  include <Imgui/imgui.h>
+#include <Imgui/imgui.h>
 
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
@@ -24,22 +22,16 @@ using xiiImguiConfigStyleCallback = xiiDelegate<void(ImGuiStyle&)>;
 
 /// \brief Singleton class through which one can control the third-party library 'Dear Imgui'
 ///
-/// Instance has to be manually created and destroyed. Do this for example in xiiGameState::OnActivation()
-/// and xiiGameState::OnDeactivation().
-/// You need to call SetCurrentContextForView before you can use the Imgui functions directly.
-/// E.g. 'ImGui::Text("Hello, world!");'
+/// Instance has to be manually created and destroyed. Do this for example in xiiGameState::OnActivation() and xiiGameState::OnDeactivation().
+/// You need to call SetCurrentContextForView before you can use the Imgui functions directly. E.g., 'ImGui::Text("Hello, world!");'.
 /// To prevent Imgui from using mouse and keyboard input (but still do rendering) use SetPassInputToImgui().
 /// To prevent your app from using mouse and keyboard input when Imgui has focus, query WantsInput().
-///
-/// \note Don't forget that to see the GUI on screen, your render pipeline must contain a xiiImguiExtractor
-/// and you need to have a xiiImguiRenderer set (typically on a xiiSimpleRenderPass).
-class XII_GAMEENGINE_DLL xiiImgui
+class XII_DEARIMGUIPLUGIN_DLL xiiImgui
 {
   XII_DECLARE_SINGLETON(xiiImgui);
 
 public:
-  xiiImgui(xiiImguiConfigFontCallback  configFontCallback  = xiiImguiConfigFontCallback(),
-           xiiImguiConfigStyleCallback configStyleCallback = xiiImguiConfigStyleCallback());
+  xiiImgui(xiiImguiConfigFontCallback configFontCallback = xiiImguiConfigFontCallback(), xiiImguiConfigStyleCallback configStyleCallback = xiiImguiConfigStyleCallback());
   ~xiiImgui();
 
   /// \brief Sets the ImGui context for the given view
@@ -92,5 +84,3 @@ private:
   xiiMutex                             m_ViewToContextTableMutex;
   xiiHashTable<xiiViewHandle, Context> m_ViewToContextTable;
 };
-
-#endif

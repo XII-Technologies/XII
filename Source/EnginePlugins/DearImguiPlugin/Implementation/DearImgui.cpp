@@ -1,16 +1,13 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GameEngine/GameEnginePCH.h>
-
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
+#include <DearImguiPlugin/DearImguiPluginPCH.h>
 
 #  include <Core/Input/InputManager.h>
 #  include <Foundation/Configuration/Startup.h>
 #  include <Foundation/Time/Clock.h>
-#  include <GameEngine/DearImgui/DearImgui.h>
+#  include <DearImguiPlugin/DearImgui.h>
 #  include <GameEngine/GameApplication/GameApplication.h>
 #  include <GraphicsCore/Pipeline/View.h>
-#  include <GraphicsCore/RenderWorld/RenderWorld.h>
 #  include <GraphicsCore/Textures/Texture2DResource.h>
 
 #  include <Imgui/imgui_internal.h>
@@ -89,11 +86,8 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
 
   unsigned char* pPixels;
   xiiInt32       iWidth, iHeight;
-  m_pSharedFontAtlas->GetTexDataAsRGBA32(&pPixels, &iWidth, &iHeight); // Load as RGBA 32-bits (75% of the memory is wasted, but default font
-                                                                       // is so small) because it is more likely to be compatible with user's
-                                                                       // existing shaders. If your ImTextureId represent a higher-level
-                                                                       // concept than just a GL texture id, consider calling
-                                                                       // GetTexDataAsAlpha8() instead to save on GPU memory.
+  m_pSharedFontAtlas->GetTexDataAsRGBA32(&pPixels, &iWidth, &iHeight); // Load as RGBA 32-bits (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders.
+                                                                       // If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
 
   xiiTexture2DResourceHandle hFont = xiiResourceManager::GetExistingResource<xiiTexture2DResource>("ImguiFont");
 
@@ -263,6 +257,4 @@ void xiiImgui::GameApplicationEventHandler(const xiiGameApplicationExecutionEven
   }
 }
 
-#endif
-
-XII_STATICLINK_FILE(GameEngine, GameEngine_DearImgui_Implementation_DearImgui);
+XII_STATICLINK_FILE(DearImguiPlugin, DearImguiPlugin_Implementation_DearImgui);
