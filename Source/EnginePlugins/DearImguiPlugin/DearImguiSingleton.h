@@ -17,22 +17,14 @@ using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DReso
 
 struct xiiGameApplicationExecutionEvent;
 
-using xiiImguiConfigFontCallback  = xiiDelegate<void(ImFontAtlas&)>;
-using xiiImguiConfigStyleCallback = xiiDelegate<void(ImGuiStyle&)>;
-
-/// \brief Singleton class through which one can control the third-party library 'Dear Imgui'
-///
-/// Instance has to be manually created and destroyed. Do this for example in xiiGameState::OnActivation() and xiiGameState::OnDeactivation().
-/// You need to call SetCurrentContextForView before you can use the Imgui functions directly. E.g., 'ImGui::Text("Hello, world!");'.
-/// To prevent Imgui from using mouse and keyboard input (but still do rendering) use SetPassInputToImgui().
-/// To prevent your app from using mouse and keyboard input when Imgui has focus, query WantsInput().
-class XII_DEARIMGUIPLUGIN_DLL xiiImgui
+/// \brief Singleton class through which one can control the third-party library 'Dear Imgui'.
+class XII_DEARIMGUIPLUGIN_DLL xiiImguiSingleton
 {
-  XII_DECLARE_SINGLETON(xiiImgui);
+  XII_DECLARE_SINGLETON(xiiImguiSingleton);
 
 public:
-  xiiImgui(xiiImguiConfigFontCallback configFontCallback = xiiImguiConfigFontCallback(), xiiImguiConfigStyleCallback configStyleCallback = xiiImguiConfigStyleCallback());
-  ~xiiImgui();
+  xiiImguiSingleton();
+  ~xiiImguiSingleton();
 
   /// \brief Sets the ImGui context for the given view
   void SetCurrentContextForView(const xiiViewHandle& hView);
@@ -56,7 +48,7 @@ private:
   friend class xiiImguiExtractor;
   friend class xiiImguiRenderer;
 
-  void Startup(xiiImguiConfigFontCallback configFontCallback);
+  void Startup();
   void Shutdown();
 
   ImGuiContext* CreateContext();
@@ -70,15 +62,11 @@ private:
   xiiSizeU32                                    m_CurrentWindowResolution;
   xiiHybridArray<xiiTexture2DResourceHandle, 4> m_Textures;
 
-  xiiImguiConfigStyleCallback m_ConfigStyleCallback;
-
   xiiUniquePtr<ImFontAtlas> m_pSharedFontAtlas;
 
   struct Context
   {
-    ImGuiContext* m_pImGuiContext        = nullptr;
-    xiiUInt64     m_uiFrameBeginCounter  = -1;
-    xiiUInt64     m_uiFrameRenderCounter = -1;
+    ImGuiContext* m_pImGuiContext = nullptr;
   };
 
   xiiMutex                             m_ViewToContextTableMutex;
