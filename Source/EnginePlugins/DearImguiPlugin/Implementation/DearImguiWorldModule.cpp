@@ -2,6 +2,7 @@
 
 #include <DearImguiPlugin/DearImguiWorldModule.h>
 #include <DearImguiPlugin/DearImguiSingleton.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDearImguiWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -53,6 +54,11 @@ void xiiDearImguiWorldModule::SetCurrentContextForView(const xiiViewHandle& hVie
   }
 
   ImGui::SetCurrentContext(context.m_pImGuiContext);
+
+  xiiView* pView;
+  XII_VERIFY(GetWorld()->GetModuleReadOnly<xiiRenderWorldModule>()->TryGetView(hView, pView), "Trying to set ImGui context for a view that doesn't exist in the render world module.");
+
+  xiiImguiSingleton::GetSingleton()->BeginFrame(pView);
 }
 
 void xiiDearImguiWorldModule::ExtractImguiUpdate(const xiiWorldModule::UpdateContext& context)

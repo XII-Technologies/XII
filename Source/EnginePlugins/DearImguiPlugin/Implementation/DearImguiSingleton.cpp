@@ -215,16 +215,21 @@ void xiiImguiSingleton::BeginFrame(const xiiView* pView)
     cfg.ClearInputKeys();
   }
 
-  ImGui::NewFrame();
-
   m_bImguiWantsInput = cfg.WantCaptureKeyboard || cfg.WantCaptureMouse;
 }
 
 void xiiImguiSingleton::GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e)
 {
-  if (e.m_Type == xiiGameApplicationExecutionEvent::Type::AfterUpdatePlugins)
+  switch (e.m_Type)
   {
-    ImGui::EndFrame();
+    case xiiGameApplicationExecutionEvent::Type::BeginAppTick:
+      ImGui::NewFrame();
+      break;
+    case xiiGameApplicationExecutionEvent::Type::AfterUpdatePlugins:
+      ImGui::EndFrame();
+      break;
+    default:
+      break;
   }
 }
 
