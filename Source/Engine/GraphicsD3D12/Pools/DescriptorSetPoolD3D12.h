@@ -50,8 +50,8 @@ private:
   xiiUInt32        GetDefaultHeapSize(D3D12_DESCRIPTOR_HEAP_TYPE heapType) const;
 
 private:
-  xiiGALDeviceD3D12* m_pDeviceD3D12   = nullptr;
-  xiiUInt32          m_uiBaseHeapSize = 0U;
+  xiiGALDeviceD3D12* m_pDeviceD3D12                  = nullptr;
+  xiiUInt32          m_uiBaseHeapSize                = 0U;
   bool               m_bShaderVisibleDescriptorHeaps = true;
 
   mutable xiiMutex m_PoolMutex;

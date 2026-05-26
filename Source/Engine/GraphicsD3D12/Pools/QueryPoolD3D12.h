@@ -54,14 +54,14 @@ private:
     [[nodiscard]] xiiUInt32 ResetStaleQueries(xiiUInt64 uiCompletedFenceValue);
 
     [[nodiscard]] XII_ALWAYS_INLINE xiiEnum<xiiGALQueryType> GetQueryType() const { return m_QueryType; }
-    [[nodiscard]] XII_ALWAYS_INLINE ID3D12QueryHeap*      GetQueryHeap() const { return m_pD3D12QueryHeap; }
-    [[nodiscard]] XII_ALWAYS_INLINE ID3D12Resource*       GetReadbackBuffer() const { return m_pReadbackBuffer; }
-    [[nodiscard]] XII_ALWAYS_INLINE D3D12_QUERY_TYPE      GetD3D12QueryType() const { return m_D3D12QueryType; }
-    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32             GetQueryCount() const { return m_uiQueryCount; }
-    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32             GetMaxAllocatedQueries() const { return m_uiMaxAllocatedQueries; }
-    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32             GetQueryResultStride() const { return m_uiQueryResultStride; }
-    [[nodiscard]] XII_ALWAYS_INLINE bool                  IsInvalidated() const { return m_pD3D12QueryHeap == nullptr; }
-    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64             GetQueryReadbackOffset(xiiUInt32 uiIndex) const { return static_cast<xiiUInt64>(uiIndex) * static_cast<xiiUInt64>(m_uiQueryResultStride); }
+    [[nodiscard]] XII_ALWAYS_INLINE ID3D12QueryHeap*         GetQueryHeap() const { return m_pD3D12QueryHeap; }
+    [[nodiscard]] XII_ALWAYS_INLINE ID3D12Resource*          GetReadbackBuffer() const { return m_pReadbackBuffer; }
+    [[nodiscard]] XII_ALWAYS_INLINE D3D12_QUERY_TYPE         GetD3D12QueryType() const { return m_D3D12QueryType; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32                GetQueryCount() const { return m_uiQueryCount; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32                GetMaxAllocatedQueries() const { return m_uiMaxAllocatedQueries; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32                GetQueryResultStride() const { return m_uiQueryResultStride; }
+    [[nodiscard]] XII_ALWAYS_INLINE bool                     IsInvalidated() const { return m_pD3D12QueryHeap == nullptr; }
+    [[nodiscard]] XII_ALWAYS_INLINE xiiUInt64                GetQueryReadbackOffset(xiiUInt32 uiIndex) const { return static_cast<xiiUInt64>(uiIndex) * static_cast<xiiUInt64>(m_uiQueryResultStride); }
 
   private:
     xiiGALDeviceD3D12* m_pDeviceD3D12 = nullptr;

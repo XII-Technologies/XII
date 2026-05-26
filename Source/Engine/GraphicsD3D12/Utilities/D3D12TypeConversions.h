@@ -63,7 +63,7 @@ public:
 
   static DXGI_FORMAT GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized);
 
-  static D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiGALPrimitiveTopology::Enum e);
+  static D3D_PRIMITIVE_TOPOLOGY        GetPrimitiveTopology(xiiGALPrimitiveTopology::Enum e);
   static D3D12_PRIMITIVE_TOPOLOGY_TYPE GetPrimitiveTopologyType(xiiEnum<xiiGALPrimitiveTopology> primitiveTopology);
 
   static D3D12_INPUT_CLASSIFICATION GetElementFrequency(xiiGALInputElementFrequency::Enum e);
@@ -71,7 +71,7 @@ public:
   static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount);
   static xiiUInt32 CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize);
 
-  static D3D12_RESOURCE_STATES GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
+  static D3D12_RESOURCE_STATES       GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
   static D3D12_SHADING_RATE          GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e);
   static D3D12_SHADING_RATE_COMBINER GetShadingRateCombiner(xiiBitflags<xiiGALShadingRateCombinerFlags> e);
 

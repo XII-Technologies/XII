@@ -127,10 +127,10 @@ public:
         {
           xiiStringBuilder     sError;
           xiiRGCompileSettings settings;
-          settings.m_bEnablePassCulling   = true;
-          settings.m_bEnableCompileCache  = true;
-          settings.m_bEnableAsyncQueues   = true;
-          settings.m_bEnableGPUProfiling  = true;
+          settings.m_bEnablePassCulling  = true;
+          settings.m_bEnableCompileCache = true;
+          settings.m_bEnableAsyncQueues  = true;
+          settings.m_bEnableGPUProfiling = true;
 
           if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
           {

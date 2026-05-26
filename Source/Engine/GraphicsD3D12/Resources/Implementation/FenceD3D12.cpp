@@ -32,7 +32,7 @@ xiiGALFenceD3D12::~xiiGALFenceD3D12()
       XII_GAL_D3D12_RELEASE(m_pD3D12Fence);
     }
 
-    m_pD3D12Fence = nullptr;
+    m_pD3D12Fence    = nullptr;
     m_bFromFencePool = false;
   }
 
