@@ -8,4 +8,6 @@ XII_STATICLINK_LIBRARY(DearImguiPlugin)
     return;
 
   XII_STATICLINK_REFERENCE(DearImguiPlugin_Implementation_DearImgui);
+  XII_STATICLINK_REFERENCE(DearImguiPlugin_Implementation_DearImguiWorldModule);
+  XII_STATICLINK_REFERENCE(DearImguiPlugin_Implementation_MsgExtractImguiUpdate);
 }

@@ -8,7 +8,6 @@
 #include <Foundation/Time/Clock.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Textures/Texture2DResource.h>
 
 #include <Imgui/imgui_internal.h>
 
@@ -66,38 +65,6 @@ xiiImguiSingleton::~xiiImguiSingleton()
   Shutdown();
 }
 
-void xiiImguiSingleton::SetCurrentContextForView(const xiiViewHandle& hView)
-{
-  XII_LOCK(m_ViewToContextTableMutex);
-
-  Context& context = m_ViewToContextTable[hView];
-  if (context.m_pImGuiContext == nullptr)
-  {
-    context.m_pImGuiContext = CreateContext();
-  }
-
-  ImGui::SetCurrentContext(context.m_pImGuiContext);
-
-  #if 0
-  xiiUInt64 uiCurrentFrameCounter = xiiRenderWorld::GetFrameCounter();
-  if (context.m_uiFrameBeginCounter != uiCurrentFrameCounter)
-  {
-    // Last frame was not rendered. This can happen if a render pipeline with dear imgui renderer is used.
-    if (context.m_uiFrameRenderCounter != context.m_uiFrameBeginCounter)
-    {
-      ImGuiContext* pContext = ImGui::GetCurrentContext();
-      if (pContext && pContext->Initialized && pContext->WithinFrameScope)
-      {
-        ImGui::EndFrame();
-      }
-    }
-
-    BeginFrame(hView);
-    context.m_uiFrameBeginCounter = uiCurrentFrameCounter;
-  }
-  #endif
-}
-
 void xiiImguiSingleton::Startup()
 {
   ImGui::SetAllocatorFunctions(&xiiImguiAllocate, &xiiImguiDeallocate, &m_Allocator);
@@ -144,14 +111,6 @@ void xiiImguiSingleton::Shutdown()
   m_Textures.Clear();
 
   m_pSharedFontAtlas = nullptr;
-
-  for (auto it = m_ViewToContextTable.GetIterator(); it.IsValid(); ++it)
-  {
-    Context& context = it.Value();
-    ImGui::DestroyContext(context.m_pImGuiContext);
-    context.m_pImGuiContext = nullptr;
-  }
-  m_ViewToContextTable.Clear();
 }
 
 ImGuiContext* xiiImguiSingleton::CreateContext()
@@ -169,9 +128,8 @@ ImGuiContext* xiiImguiSingleton::CreateContext()
   return context;
 }
 
-void xiiImguiSingleton::BeginFrame(const xiiViewHandle& hView)
+void xiiImguiSingleton::BeginFrame(const xiiView* pView)
 {
-  xiiView* pView = nullptr;
   if (!pView)
     return;
 

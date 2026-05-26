@@ -6,14 +6,12 @@
 
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Foundation/Configuration/Singleton.h>
-#include <Foundation/Math/Size.h>
-#include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Types/UniquePtr.h>
-#include <GraphicsCore/Pipeline/Declarations.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
 
 #include <Imgui/imgui.h>
 
-using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
+class xiiView;
 
 struct xiiGameApplicationExecutionEvent;
 
@@ -26,35 +24,33 @@ public:
   xiiImguiSingleton();
   ~xiiImguiSingleton();
 
-  /// \brief Sets the ImGui context for the given view
-  void SetCurrentContextForView(const xiiViewHandle& hView);
-
   /// \brief Returns the value that was passed to BeginFrame(). Useful for positioning UI elements.
-  xiiSizeU32 GetCurrentWindowResolution() const { return m_CurrentWindowResolution; }
+  XII_ALWAYS_INLINE xiiSizeU32 GetCurrentWindowResolution() const { return m_CurrentWindowResolution; }
 
   /// \brief When this is disabled, the GUI will be rendered, but it will not react to any input. Useful if something else shall get
   /// exclusive input.
-  void SetPassInputToImgui(bool bPassInput) { m_bPassInputToImgui = bPassInput; }
+  XII_ALWAYS_INLINE void SetPassInputToImgui(bool bPassInput) { m_bPassInputToImgui = bPassInput; }
 
   /// \brief If this returns true, the GUI wants to use the input, and thus you might want to not use the input for anything else.
   ///
   /// This is the case when the mouse hovers over any window or a text field has keyboard focus.
-  bool WantsInput() const { return m_bImguiWantsInput; }
+  XII_ALWAYS_INLINE bool WantsInput() const { return m_bImguiWantsInput; }
 
   /// \brief Returns the shared font atlas
-  ImFontAtlas& GetFontAtlas() { return *m_pSharedFontAtlas; }
+  XII_ALWAYS_INLINE ImFontAtlas& GetFontAtlas() { return *m_pSharedFontAtlas; }
+
 
 private:
-  friend class xiiImguiExtractor;
-  friend class xiiImguiRenderer;
+  friend class xiiDearImguiWorldModule;
 
   void Startup();
   void Shutdown();
 
   ImGuiContext* CreateContext();
-  void          BeginFrame(const xiiViewHandle& hView);
+  void          BeginFrame(const xiiView* pView);
   void          GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e);
 
+private:
   xiiProxyAllocator m_Allocator;
 
   bool                                          m_bPassInputToImgui = true;
@@ -63,12 +59,4 @@ private:
   xiiHybridArray<xiiTexture2DResourceHandle, 4> m_Textures;
 
   xiiUniquePtr<ImFontAtlas> m_pSharedFontAtlas;
-
-  struct Context
-  {
-    ImGuiContext* m_pImGuiContext = nullptr;
-  };
-
-  xiiMutex                             m_ViewToContextTableMutex;
-  xiiHashTable<xiiViewHandle, Context> m_ViewToContextTable;
 };
