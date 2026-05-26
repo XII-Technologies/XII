@@ -123,10 +123,12 @@ class XII_GRAPHICSCORE_DLL xiiView : public xiiReflectedClass
 
 private:
   /// \brief Use xiiRenderWorldModule::CreateView to create a view.
-  xiiView();
+  xiiView(xiiWorld* pWorld);
   ~xiiView();
 
 public:
+  xiiWorld* GetWorld() const;
+
   xiiViewHandle GetHandle() const;
 
   xiiStringView GetName() const;
@@ -460,6 +462,8 @@ private:
 
 private:
   friend class xiiRenderWorldModule;
+
+  xiiWorld* const m_pWorld;
 
   xiiViewId m_InternalId;
 

@@ -15,9 +15,17 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule)
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiViewEventType, 1)
+  XII_ENUM_CONSTANT(xiiViewEventType::Created),
+  XII_ENUM_CONSTANT(xiiViewEventType::Deleted),
+XII_END_STATIC_REFLECTED_ENUM;
+// clang-format on
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderWorldModule, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_IMPLEMENT_WORLD_MODULE(xiiRenderWorldModule)
 
 namespace
 {
@@ -70,7 +78,19 @@ void xiiRenderWorldModule::Initialize()
 
 void xiiRenderWorldModule::Deinitialize()
 {
-  m_ViewIdTable.Clear();
+  for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
+  {
+    ViewDetail viewDetail;
+
+    if (m_ViewIdTable.Remove(it.Id(), &viewDetail))
+    {
+      xiiViewEvent viewEvent;
+      viewEvent.m_Type  = xiiViewEventType::Deleted;
+      viewEvent.m_pView = viewDetail.m_pView.Borrow();
+
+      m_ViewEvents.Broadcast(viewEvent);
+    }
+  }
 
   m_uiRenderFrameIndex = 0;
 }
@@ -82,12 +102,10 @@ void xiiRenderWorldModule::OnSimulationStarted()
 xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& out_pView)
 {
   ViewDetail viewDetail;
-  viewDetail.m_pView          = XII_DEFAULT_NEW(xiiView);
+  viewDetail.m_pView          = XII_DEFAULT_NEW(xiiView, m_pWorld);
   viewDetail.m_pExtractedData = XII_DEFAULT_NEW(xiiExtractedRenderData);
 
   viewDetail.m_pView->SetName(sName);
-
-  XII_LOCK(m_ViewMutex);
 
   ViewDetail*     pViewDetail;
   const xiiViewId viewId = m_ViewIdTable.Insert(std::move(viewDetail));
@@ -96,7 +114,10 @@ xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& ou
   pViewDetail->m_pView->m_InternalId = viewId;
   pViewDetail->m_pView->SetExtractedRenderData(pViewDetail->m_pExtractedData.Borrow());
 
-  m_ViewCreatedEvent.Broadcast(pViewDetail->m_pView.Borrow());
+  xiiViewEvent viewEvent;
+  viewEvent.m_Type  = xiiViewEventType::Created;
+  viewEvent.m_pView = pViewDetail->m_pView.Borrow();
+  m_ViewEvents.Broadcast(viewEvent);
 
   out_pView = pViewDetail->m_pView.Borrow();
 
@@ -106,19 +127,17 @@ xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& ou
 void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
 {
   ViewDetail viewDetail;
-  {
-    XII_LOCK(m_ViewMutex);
+  if (!m_ViewIdTable.Remove(hView, &viewDetail))
+    return;
 
-    if (!m_ViewIdTable.Remove(hView, &viewDetail))
-      return;
-  }
-  m_ViewDeletedEvent.Broadcast(viewDetail.m_pView.Borrow());
+  xiiViewEvent viewEvent;
+  viewEvent.m_Type  = xiiViewEventType::Deleted;
+  viewEvent.m_pView = viewDetail.m_pView.Borrow();
+  m_ViewEvents.Broadcast(viewEvent);
 }
 
 bool xiiRenderWorldModule::TryGetView(const xiiViewHandle& hView, xiiView*& out_pView) const
 {
-  XII_LOCK(m_ViewMutex);
-
   ViewDetail* pViewDetail;
   if (!m_ViewIdTable.TryGetValue(hView, pViewDetail))
     return false;
@@ -129,8 +148,6 @@ bool xiiRenderWorldModule::TryGetView(const xiiViewHandle& hView, xiiView*& out_
 
 xiiView* xiiRenderWorldModule::GetViewByUsageHint(xiiEnum<xiiCameraUsageHint> usageHint, xiiEnum<xiiCameraUsageHint> alternativeUsageHint) const
 {
-  XII_LOCK(m_ViewMutex);
-
   xiiView* pAlternativeView = nullptr;
 
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
@@ -380,8 +397,6 @@ void xiiRenderWorldModule::DeleteCachedRenderData(xiiGameObjectHandle hOwnerObje
   if (hOwnerObject.IsInvalidated())
     return;
 
-  XII_LOCK(m_ViewMutex);
-
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     auto& value = it.Value();
@@ -402,8 +417,6 @@ void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGam
   if (pObject == nullptr)
     return;
 
-  XII_LOCK(m_ViewMutex);
-
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     RemoveCachedRenderDataForObjectRecursive(it.Value().m_ExtractionCache, pObject);
@@ -412,8 +425,6 @@ void xiiRenderWorldModule::DeleteCachedRenderDataForObjectRecursive(const xiiGam
 
 void xiiRenderWorldModule::DeleteAllCachedRenderData()
 {
-  XII_LOCK(m_ViewMutex);
-
   for (auto it = m_ViewIdTable.GetIterator(); it.IsValid(); ++it)
   {
     auto& value = it.Value();
@@ -537,10 +548,10 @@ void xiiRenderWorldModule::ExecuteRenderGraphs(const xiiWorldModule::UpdateConte
     pGraph->EndSetup();
 
     xiiRGCompileSettings compileSettings;
-    compileSettings.m_bEnableGPUProfiling  = true;
-    compileSettings.m_bEnablePassCulling   = true;
-    compileSettings.m_bEnableAsyncQueues   = true;
-    compileSettings.m_bEnableCompileCache  = true;
+    compileSettings.m_bEnableGPUProfiling = true;
+    compileSettings.m_bEnablePassCulling  = true;
+    compileSettings.m_bEnableAsyncQueues  = true;
+    compileSettings.m_bEnableCompileCache = true;
 
     if (pGraph->Compile(compileSettings).Succeeded())
     {

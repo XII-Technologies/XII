@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+XII_ALWAYS_INLINE xiiWorld* xiiView::GetWorld() const
+{
+  return m_pWorld;
+}
+
 XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
 {
   return xiiViewHandle(m_InternalId);
