@@ -42,6 +42,19 @@ struct XII_GRAPHICSCORE_DLL xiiViewEvent : public xiiHashableStruct<xiiViewEvent
   xiiView*                  m_pView = nullptr;
 };
 
+struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
+{
+  enum class Type
+  {
+    BeforeViewExtraction = 0U, ///< Fired before extracting data for a specific view.
+    AfterViewExtraction,       ///< Fired after extracting data for a specific view.
+  };
+
+  Type      m_Type;
+  xiiView*  m_pView          = nullptr;
+  xiiUInt64 m_uiFrameCounter = 0;
+};
+
 /// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
 ///
 /// ## Render graph construction
@@ -114,6 +127,9 @@ public:
   /// \brief Events that external code can subscribe to. The events are triggered when a view is created or deleted.
   XII_ALWAYS_INLINE xiiEvent<xiiViewEvent, xiiMutex>& GetViewEvents();
 
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is processed for render data extraction, before and after the extraction process.
+  XII_ALWAYS_INLINE static const xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex>& GetRenderEvents();
+
 private:
   struct CachedStaticObjectData
   {
@@ -171,6 +187,8 @@ private:
 
   xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
   xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
+
+  static xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex> s_RenderEvent;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderWorldModule_inl.h>

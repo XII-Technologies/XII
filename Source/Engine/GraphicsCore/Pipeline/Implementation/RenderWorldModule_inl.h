@@ -22,3 +22,8 @@ XII_ALWAYS_INLINE xiiEvent<xiiViewEvent, xiiMutex>& xiiRenderWorldModule::GetVie
 {
   return m_ViewEvents;
 }
+
+XII_ALWAYS_INLINE const xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex>& xiiRenderWorldModule::GetRenderEvents()
+{
+  return s_RenderEvent;
+}

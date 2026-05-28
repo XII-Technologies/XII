@@ -50,6 +50,8 @@ namespace
   }
 } // namespace
 
+xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex> xiiRenderWorldModule::s_RenderEvent;
+
 xiiRenderWorldModule::xiiRenderWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
 {
@@ -451,6 +453,11 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
     viewDetail.m_pExtractedData->Clear();
 
+    xiiRenderWorldModuleExtractionEvent extractionEvent;
+    extractionEvent.m_Type  = xiiRenderWorldModuleExtractionEvent::Type::BeforeViewExtraction;
+    extractionEvent.m_pView = viewDetail.m_pView.Borrow();
+    s_RenderEvent.Broadcast(extractionEvent);
+
     xiiMsgExtractRenderData msg;
     msg.m_pView                    = viewDetail.m_pView.Borrow();
     msg.m_pExtractedRenderData     = viewDetail.m_pExtractedData.Borrow();
@@ -503,6 +510,9 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
 
     // Finalize and sort extracted data for this view.
     viewDetail.m_pExtractedData->SortAndBatches();
+
+    extractionEvent.m_Type  = xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction;
+    s_RenderEvent.Broadcast(extractionEvent);
   }
 }
 
