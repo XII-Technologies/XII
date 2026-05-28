@@ -4,9 +4,11 @@
 
 #include <Core/Input/InputManager.h>
 #include <DearImguiPlugin/DearImguiSingleton.h>
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Time/Clock.h>
 #include <GameEngine/GameApplication/GameApplication.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 
 #include <Imgui/imgui_internal.h>
@@ -36,6 +38,42 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 namespace
 {
+  struct xiiImguiContextKey
+  {
+    xiiImguiContextKey(const xiiView* pView) :
+      m_pWorld(pView ? pView->GetWorld() : nullptr), m_hView(pView ? pView->GetHandle() : xiiViewHandle())
+    {
+    }
+
+    const xiiWorld* m_pWorld = nullptr;
+    xiiViewHandle   m_hView;
+
+    XII_ALWAYS_INLINE bool operator==(const xiiImguiContextKey& other) const { return m_pWorld == other.m_pWorld && m_hView == other.m_hView; }
+  };
+
+  template <>
+  struct xiiHashHelper<xiiImguiContextKey>
+  {
+    XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiImguiContextKey value)
+    {
+      xiiHashStreamWriter32 writer;
+
+      writer << value.m_pWorld;
+      writer << value.m_hView.GetInternalID().m_Data;
+
+      return writer.GetHashValue();
+    }
+
+    XII_ALWAYS_INLINE static bool Equal(xiiImguiContextKey a, xiiImguiContextKey b) { return a == b; }
+  };
+
+  struct xiiImguiContext
+  {
+    ImGuiContext* m_pImGuiContext = nullptr;
+  };
+
+  static xiiHashTable<xiiImguiContextKey, xiiImguiContext> s_ViewToContextTable;
+
   void* xiiImguiAllocate(size_t uiSize, void* pUserData)
   {
     xiiAllocator* pAllocator = static_cast<xiiAllocator*>(pUserData);
@@ -51,6 +89,8 @@ namespace
     }
   }
 } // namespace
+
+xiiEvent<const xiiView*, xiiMutex> xiiImguiSingleton::s_UpdateEvent;
 
 XII_IMPLEMENT_SINGLETON(xiiImguiSingleton);
 
@@ -113,6 +153,40 @@ void xiiImguiSingleton::Shutdown()
   m_pSharedFontAtlas = nullptr;
 }
 
+void xiiImguiSingleton::OnViewModified(const xiiRenderWorldModuleExtractionEvent& viewEvent)
+{
+  switch (viewEvent.m_Type)
+  {
+    case xiiRenderWorldModuleExtractionEvent::Type::BeforeViewExtraction:
+    {
+      if (s_ViewToContextTable.Contains(viewEvent.m_pView))
+        return;
+
+      xiiImguiContext context;
+      context.m_pImGuiContext = CreateContext();
+
+      s_ViewToContextTable.Insert(viewEvent.m_pView, std::move(context));
+    }
+    break;
+    case xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction:
+    {
+      xiiImguiContext* pContext;
+      XII_VERIFY(s_ViewToContextTable.TryGetValue(viewEvent.m_pView, pContext), "Received AfterViewExtraction for a view that doesn't exist in the context table. This should never happen.");
+
+      ImGui::SetCurrentContext(pContext->m_pImGuiContext);
+
+      SetupContext(viewEvent.m_pView);
+
+      s_UpdateEvent.Broadcast(viewEvent.m_pView);
+
+      ImGui::SetCurrentContext(nullptr);
+    }
+    break;
+    default:
+      break;
+  }
+}
+
 ImGuiContext* xiiImguiSingleton::CreateContext()
 {
   // ImGui reads the global context pointer WHILE creating a new context so if we don't reset it to null here, it will try to access it, and crash if imgui was active on the same thread before.
@@ -128,7 +202,7 @@ ImGuiContext* xiiImguiSingleton::CreateContext()
   return context;
 }
 
-void xiiImguiSingleton::BeginFrame(const xiiView* pView)
+void xiiImguiSingleton::SetupContext(const xiiView* pView)
 {
   if (!pView)
     return;

@@ -12,8 +12,10 @@
 #include <Imgui/imgui.h>
 
 class xiiView;
+class xiiWorld;
 
 struct xiiGameApplicationExecutionEvent;
+struct xiiRenderWorldModuleExtractionEvent;
 
 /// \brief Singleton class through which one can control the third-party library 'Dear Imgui'.
 class XII_DEARIMGUIPLUGIN_DLL xiiImguiSingleton
@@ -39,19 +41,22 @@ public:
   /// \brief Returns the shared font atlas
   XII_ALWAYS_INLINE ImFontAtlas& GetFontAtlas() { return *m_pSharedFontAtlas; }
 
+  XII_ALWAYS_INLINE xiiEvent<const xiiView*, xiiMutex>& GetUpdateEvent() { return s_UpdateEvent; }
 
 private:
-  friend class xiiDearImguiWorldModule;
-
   void Startup();
   void Shutdown();
 
+  void OnViewModified(const xiiRenderWorldModuleExtractionEvent& viewEvent);
+
   ImGuiContext* CreateContext();
-  void          BeginFrame(const xiiView* pView);
+  void          SetupContext(const xiiView* pView);
   void          GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e);
 
 private:
   xiiProxyAllocator m_Allocator;
+
+  xiiEventSubscriptionID m_ViewModifiedEventSubscriptionID;
 
   bool                                          m_bPassInputToImgui = true;
   bool                                          m_bImguiWantsInput  = false;
@@ -59,4 +64,6 @@ private:
   xiiHybridArray<xiiTexture2DResourceHandle, 4> m_Textures;
 
   xiiUniquePtr<ImFontAtlas> m_pSharedFontAtlas;
+
+  static xiiEvent<const xiiView*, xiiMutex> s_UpdateEvent;
 };
