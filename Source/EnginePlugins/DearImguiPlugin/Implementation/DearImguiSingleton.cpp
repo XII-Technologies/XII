@@ -54,7 +54,7 @@ namespace
   template <>
   struct xiiHashHelper<xiiImguiContextKey>
   {
-    XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiImguiContextKey value)
+    XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiImguiContextKey& value)
     {
       xiiHashStreamWriter32 writer;
 
@@ -64,7 +64,7 @@ namespace
       return writer.GetHashValue();
     }
 
-    XII_ALWAYS_INLINE static bool Equal(xiiImguiContextKey a, xiiImguiContextKey b) { return a == b; }
+    XII_ALWAYS_INLINE static bool Equal(const xiiImguiContextKey& a, const xiiImguiContextKey& b) { return a == b; }
   };
 
   struct xiiImguiContext
