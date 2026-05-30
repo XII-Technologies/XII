@@ -511,7 +511,7 @@ void xiiRenderWorldModule::ExtractRenderData(const xiiWorldModule::UpdateContext
     // Finalize and sort extracted data for this view.
     viewDetail.m_pExtractedData->SortAndBatches();
 
-    extractionEvent.m_Type  = xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction;
+    extractionEvent.m_Type = xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction;
     s_RenderEvent.Broadcast(extractionEvent);
   }
 }
