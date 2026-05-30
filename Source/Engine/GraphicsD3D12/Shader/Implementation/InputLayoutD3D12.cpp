@@ -28,7 +28,7 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform(xiiGALShader* pShader)
   xiiGALShaderD3D12*              pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pShader);
 
   xiiTemporaryHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D12->GetVertexInputLayout());
-  auto                                        FindLocation = [&](xiiGALInputLayoutSemantic::Enum sematic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
+  auto                                                 FindLocation = [&](xiiGALInputLayoutSemantic::Enum sematic, xiiGALResourceFormat::Enum format) -> xiiUInt32 {
     for (xiiUInt32 i = 0; i < vertexInputLayouts.GetCount(); ++i)
     {
       if (vertexInputLayouts[i].m_Semantic == sematic)

@@ -14,6 +14,7 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptClassResource, 1, xiiRTTIDefaultAllocator<xiiVisualScriptClassResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiVisualScriptClassResource);
 
 XII_BEGIN_SUBSYSTEM_DECLARATION(VisualScript, VisualScriptResource)

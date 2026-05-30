@@ -28,14 +28,14 @@ void xiiCameraComponentManager::Initialize()
 
   auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
 
-  pRenderWorldModule->GetViewCreatedEvent().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  pRenderWorldModule->GetViewEvents().AddEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
 }
 
 void xiiCameraComponentManager::Deinitialize()
 {
   auto pRenderWorldModule = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>();
 
-  pRenderWorldModule->GetViewCreatedEvent().RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
+  pRenderWorldModule->GetViewEvents().RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponentManager::OnViewCreated, this));
 
   SUPER::Deinitialize();
 }
@@ -130,7 +130,7 @@ void xiiCameraComponentManager::RemoveRenderTargetCamera(xiiCameraComponent* pCo
   m_RenderTargetCameras.RemoveAndSwap(pComponent->GetHandle());
 }
 
-void xiiCameraComponentManager::OnViewCreated(xiiView* pView)
+void xiiCameraComponentManager::OnViewCreated(const xiiViewEvent& viewEvent)
 {
   // Mark all cameras as modified so the new view gets the proper settings
   for (auto it = GetComponents(); it.IsValid(); ++it)

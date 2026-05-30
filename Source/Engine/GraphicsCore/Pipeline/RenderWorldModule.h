@@ -13,8 +13,47 @@ class xiiRenderGraph;
 class xiiRenderGraphBlackboard;
 class xiiExtractedRenderData;
 struct xiiMsgExtractRenderData;
+
 class xiiView;
 class xiiGameObject;
+
+struct XII_GRAPHICSCORE_DLL xiiViewEventType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Created = 0U, ///< A view was created.
+    Deleted,      ///< A view was deleted.
+
+    ENUM_COUNT,
+
+    Default = Created
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewEventType);
+
+struct XII_GRAPHICSCORE_DLL xiiViewEvent : public xiiHashableStruct<xiiViewEvent>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiViewEventType> m_Type  = xiiViewEventType::Created;
+  xiiView*                  m_pView = nullptr;
+};
+
+struct XII_GRAPHICSCORE_DLL xiiRenderWorldModuleExtractionEvent
+{
+  enum class Type
+  {
+    BeforeViewExtraction = 0U, ///< Fired before extracting data for a specific view.
+    AfterViewExtraction,       ///< Fired after extracting data for a specific view.
+  };
+
+  Type      m_Type;
+  xiiView*  m_pView          = nullptr;
+  xiiUInt64 m_uiFrameCounter = 0;
+};
 
 /// \brief Central world module that owns all render views and drives the per-frame render graph compilation and execution.
 ///
@@ -85,11 +124,11 @@ public:
   void DeleteAllCachedRenderData();
 
 public:
-  /// \brief Events that external code can subscribe to. The events are triggered when a view is created.
-  XII_ALWAYS_INLINE xiiEvent<xiiView*, xiiMutex>& GetViewCreatedEvent() { return m_ViewCreatedEvent; }
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is created or deleted.
+  XII_ALWAYS_INLINE xiiEvent<xiiViewEvent, xiiMutex>& GetViewEvents();
 
-  /// \brief Events that external code can subscribe to. The events are triggered when a view is deleted.
-  XII_ALWAYS_INLINE xiiEvent<xiiView*, xiiMutex>& GetViewDeletedEvent() { return m_ViewDeletedEvent; }
+  /// \brief Events that external code can subscribe to. The events are triggered when a view is processed for render data extraction, before and after the extraction process.
+  XII_ALWAYS_INLINE static const xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex>& GetRenderEvents();
 
 private:
   struct CachedStaticObjectData
@@ -144,12 +183,12 @@ private:
     ViewExtractionCache                  m_ExtractionCache;
   };
 
-  mutable xiiMutex                  m_ViewMutex;
-  xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
-  xiiUInt64                         m_uiRenderFrameIndex = 0;
+  xiiUInt64 m_uiRenderFrameIndex = 0;
 
-  xiiEvent<xiiView*, xiiMutex> m_ViewCreatedEvent;
-  xiiEvent<xiiView*, xiiMutex> m_ViewDeletedEvent;
+  xiiIdTable<xiiViewId, ViewDetail> m_ViewIdTable;
+  xiiEvent<xiiViewEvent, xiiMutex>  m_ViewEvents;
+
+  static xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex> s_RenderEvent;
 };
 
 #include <GraphicsCore/Pipeline/Implementation/RenderWorldModule_inl.h>

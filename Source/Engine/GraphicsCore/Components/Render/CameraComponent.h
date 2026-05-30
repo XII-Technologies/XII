@@ -11,6 +11,7 @@
 
 class xiiView;
 struct xiiResourceEvent;
+struct xiiViewEvent;
 
 class XII_GRAPHICSCORE_DLL xiiCameraComponentManager : public xiiComponentManager<class xiiCameraComponent, xiiBlockStorageType::Compact>
 {
@@ -34,13 +35,12 @@ private:
   void AddRenderTargetCamera(xiiCameraComponent* pComponent);
   void RemoveRenderTargetCamera(xiiCameraComponent* pComponent);
 
-  void OnViewCreated(xiiView* pView);
+  void OnViewCreated(const xiiViewEvent& viewEvent);
   void OnCameraConfigsChanged(void* dummy);
 
   xiiDynamicArray<xiiComponentHandle> m_ModifiedCameras;
   xiiDynamicArray<xiiComponentHandle> m_RenderTargetCameras;
 };
-
 
 class XII_GRAPHICSCORE_DLL xiiCameraComponent : public xiiComponent
 {
