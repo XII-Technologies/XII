@@ -38,20 +38,18 @@ const char* xiiCommentComponent::GetComment() const
 
 //////////////////////////////////////////////////////////////////////////
 
-// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSceneExportModifier_RemoveCommentComponents, 1, xiiRTTIDefaultAllocator<xiiSceneExportModifier_RemoveCommentComponents>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 void xiiSceneExportModifier_RemoveCommentComponents::ModifyWorld(xiiWorld& ref_world, xiiStringView sDocumentType, const xiiUuid& documentGuid, bool bForExport)
 {
   XII_LOCK(ref_world.GetWriteMarker());
 
-  if (xiiCommentComponentManager* pMan = ref_world.GetComponentManager<xiiCommentComponentManager>())
+  if (xiiCommentComponentManager* pComponentManager = ref_world.GetComponentManager<xiiCommentComponentManager>())
   {
-    for (auto it = pMan->GetComponents(); it.IsValid(); it.Next())
+    for (auto it = pComponentManager->GetComponents(); it.IsValid(); it.Next())
     {
-      pMan->DeleteComponent(it);
+      pComponentManager->DeleteComponent(it);
     }
   }
 }
