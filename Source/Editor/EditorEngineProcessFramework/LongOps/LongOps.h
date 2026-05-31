@@ -3,6 +3,7 @@
 #pragma once
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 
 class xiiStringBuilder;

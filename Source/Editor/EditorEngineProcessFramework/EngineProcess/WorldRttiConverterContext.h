@@ -7,10 +7,9 @@
 #include <EditorEngineProcessFramework/EngineProcess/GuidHandleMap.h>
 #include <EditorEngineProcessFramework/IPC/IPCObjectMirrorEngine.h>
 
-/// \brief The world rtti converter context tracks created objects and is capable of also handling
-///  components / game objects. Used by the xiiIPCObjectMirror to create / destroy objects.
+/// \brief The world rtti converter context tracks created objects and is capable of also handling components / game objects. Used by the xiiIPCObjectMirror to create / destroy objects.
 ///
-/// Atm it does not remove owner ptr when a parent is deleted, so it will accumulate zombie entries.
+/// As of now, it does not remove owner ptr when a parent is deleted, so it will accumulate zombie entries.
 /// As requests to dead objects shouldn't generally happen this is for the time being not a problem.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiWorldRttiConverterContext : public xiiRttiConverterContext
 {
