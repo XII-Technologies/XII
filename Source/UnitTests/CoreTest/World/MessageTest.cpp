@@ -98,8 +98,8 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(World, Messaging)
 {
-  xiiWorldDesc worldDesc("Test");
-  xiiWorld     world(worldDesc);
+  xiiWorldDescription worldDesc("Test");
+  xiiWorld            world(worldDesc);
   XII_LOCK(world.GetWriteMarker());
 
   TestComponentMsgManager* pManager = world.GetOrCreateComponentManager<TestComponentMsgManager>();

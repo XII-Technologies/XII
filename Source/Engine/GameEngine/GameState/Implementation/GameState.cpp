@@ -437,7 +437,7 @@ void xiiGameState::SwitchToLoadingScreen(xiiStringView sTargetSceneFile)
 
 xiiUniquePtr<xiiWorld> xiiGameState::CreateLoadingScreenWorld(xiiStringView sTargetSceneFile)
 {
-  xiiWorldDesc desc("LoadingScreen");
+  xiiWorldDescription desc("LoadingScreen");
   return XII_DEFAULT_NEW(xiiWorld, desc);
 }
 

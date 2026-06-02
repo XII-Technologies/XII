@@ -47,8 +47,8 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(World, DerivedComponents)
 {
-  xiiWorldDesc worldDesc("Test");
-  xiiWorld     world(worldDesc);
+  xiiWorldDescription worldDesc("Test");
+  xiiWorld            world(worldDesc);
   XII_LOCK(world.GetWriteMarker());
 
   TestComponentBaseManager*     pManagerBase     = world.GetOrCreateComponentManager<TestComponentBaseManager>();

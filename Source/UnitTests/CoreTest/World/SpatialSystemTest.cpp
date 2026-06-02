@@ -84,7 +84,7 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 {
-  xiiWorldDesc worldDesc("Test");
+  xiiWorldDescription worldDesc("Test");
   worldDesc.m_uiRandomNumberGeneratorSeed = 5;
 
   xiiWorld world(worldDesc);

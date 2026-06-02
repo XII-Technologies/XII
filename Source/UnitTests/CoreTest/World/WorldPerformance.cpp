@@ -92,8 +92,8 @@ namespace
 
   void MeasureCreationTime(bool bDynamic, xiiUInt32 uiNumObjects, xiiUInt32 uiTreeLevelNumNodeDiv, xiiUInt32 uiTreeDepth, xiiInt32 iAttachCompsDepth, xiiWorld* pWorld = nullptr)
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
 
     if (pWorld == nullptr)
     {
@@ -147,8 +147,8 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Deletion)
 {
   XII_TEST_BLOCK(EnableInRelease, "Delete many objects")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     MeasureCreationTime(true, 10, 1, 5, 2, &world);
 
     xiiStopwatch sw;
@@ -168,8 +168,8 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Update)
 {
   XII_TEST_BLOCK(EnableInRelease, "Update 1,000,000 static objects")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     MeasureCreationTime(false, 100, 1, 3, 0, &world);
 
     xiiStopwatch sw;
@@ -188,8 +188,8 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Update)
 
   XII_TEST_BLOCK(EnableInRelease, "Update 100,000 dynamic objects")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     MeasureCreationTime(true, 10, 1, 5, 0, &world);
 
     xiiStopwatch sw;
@@ -208,8 +208,8 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Update)
 
   XII_TEST_BLOCK(EnableInRelease, "Update 100,000 dynamic objects with components")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     MeasureCreationTime(true, 10, 1, 5, 2, &world);
 
     xiiStopwatch sw;
@@ -228,8 +228,8 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Update)
 
   XII_TEST_BLOCK(EnableInRelease, "Update 250,000 dynamic objects")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     MeasureCreationTime(true, 200, 5, 6, 0, &world);
 
     xiiStopwatch sw;
@@ -248,7 +248,7 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Update)
 
   XII_TEST_BLOCK(EnableInRelease, "MT Update 250,000 dynamic objects")
   {
-    xiiWorldDesc worldDesc("Test");
+    xiiWorldDescription worldDesc("Test");
     worldDesc.m_bAutoCreateSpatialSystem = false; // allows multi-threaded update
     xiiWorld world(worldDesc);
     MeasureCreationTime(true, 200, 5, 6, 0, &world);
@@ -269,7 +269,7 @@ XII_CREATE_SIMPLE_TEST(World, Profile_Update)
 
   XII_TEST_BLOCK(EnableInRelease, "MT Update 1,000,000 dynamic objects")
   {
-    xiiWorldDesc worldDesc("Test");
+    xiiWorldDescription worldDesc("Test");
     worldDesc.m_bAutoCreateSpatialSystem = false; // allows multi-threaded update
     xiiWorld world(worldDesc);
     MeasureCreationTime(true, 100, 1, 3, 1, &world);

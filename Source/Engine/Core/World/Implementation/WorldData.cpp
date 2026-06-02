@@ -42,7 +42,7 @@ namespace xiiInternal
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  WorldData::WorldData(xiiWorldDesc& desc) :
+  WorldData::WorldData(xiiWorldDescription& desc) :
     m_sName(desc.m_sName), m_Allocator(desc.m_sName, xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator), m_BlockAllocator(desc.m_sName, &m_Allocator), m_LinearAllocator(desc.m_sName, xiiFoundation::GetAlignedAllocator()), m_ObjectStorage(&m_BlockAllocator, &m_Allocator), m_MaxInitializationTimePerFrame(desc.m_MaxComponentInitializationTimePerFrame), m_Clock(desc.m_sName), m_WriteThreadID((xiiThreadID)0), m_bReportErrorWhenStaticObjectMoves(desc.m_bReportErrorWhenStaticObjectMoves), m_ReadMarker(*this), m_WriteMarker(*this)
   {
     m_AllocatorWrapper.Reset();
