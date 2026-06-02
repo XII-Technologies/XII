@@ -8,6 +8,7 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
+#include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
@@ -984,6 +985,7 @@ void xiiEngineProcessDocumentContext::UpdateSyncObjects()
       if (pSyncObject->SetupForEngine(m_pWorld, GetContext().m_uiNextComponentPickingID))
       {
         GetContext().m_OtherPickingMap.RegisterObject(pSyncObject->GetGuid(), GetContext().m_uiNextComponentPickingID);
+
         ++GetContext().m_uiNextComponentPickingID;
       }
 

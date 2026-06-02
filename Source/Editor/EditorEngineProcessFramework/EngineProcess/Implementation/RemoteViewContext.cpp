@@ -26,21 +26,6 @@ xiiRemoteEngineProcessViewContext::~xiiRemoteEngineProcessViewContext()
   {
     s_pActiveRemoteViewContext = nullptr;
   }
-
-  if (xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext())
-  {
-    if (xiiWorld* pWorld = pDocumentContext->GetWorld())
-    {
-      XII_LOCK(pWorld->GetReadMarker());
-
-      if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
-      {
-        pRenderWorldModule->DestroyView(m_hView);
-
-        m_hView.Invalidate();
-      }
-    }
-  }
 }
 
 void xiiRemoteEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)

@@ -67,8 +67,6 @@ public:
 
   xiiViewHandle GetViewHandle() const { return m_hView; }
 
-  void DrawSimpleGrid() const;
-
 protected:
   void SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
   void HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
