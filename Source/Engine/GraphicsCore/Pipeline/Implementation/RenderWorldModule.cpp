@@ -128,6 +128,9 @@ xiiViewHandle xiiRenderWorldModule::CreateView(xiiStringView sName, xiiView*& ou
 
 void xiiRenderWorldModule::DestroyView(const xiiViewHandle& hView)
 {
+  if (hView.IsInvalidated())
+    return;
+
   ViewDetail viewDetail;
   if (!m_ViewIdTable.Remove(hView, &viewDetail))
     return;

@@ -58,7 +58,8 @@ public:
   struct StartupFlags
   {
     using StorageType = xiiUInt8;
-    enum Enum
+
+    enum Enum : StorageType
     {
       Headless   = XII_BIT(0), ///< The app does not do any rendering.
       SafeMode   = XII_BIT(1), ///< '-safe' : Prevent automatic loading of projects, scenes, etc. to minimize risk of crashing.

@@ -2,25 +2,21 @@
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkPCH.h>
 
-#include <Core/ActorSystem/Actor.h>
-#include <Core/ActorSystem/ActorManager.h>
-#include <Core/ActorSystem/ActorPluginWindow.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessApp.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
-#include <GraphicsCore/Components/CameraComponent.h>
+#include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <Texture/Image/Image.h>
 
 xiiEngineProcessViewContext::xiiEngineProcessViewContext(xiiEngineProcessDocumentContext* pContext) :
-  m_pDocumentContext(pContext)
+  m_pDocumentContext(pContext), m_uiViewID(0xFFFFFFFFU)
 {
-  m_uiViewID = 0xFFFFFFFF;
 }
 
 xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
@@ -312,16 +308,6 @@ void xiiEngineProcessViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg
     pView->SetRenderPassProperty("EditorSelectionPass", "Active", false);
     pView->SetExtractorProperty("EditorShapeIconsExtractor", "Active", false);
   }
-}
-
-xiiRenderPipelineResourceHandle xiiEngineProcessViewContext::CreateDefaultRenderPipeline()
-{
-  return xiiEditorEngineProcessApp::GetSingleton()->CreateDefaultMainRenderPipeline();
-}
-
-xiiRenderPipelineResourceHandle xiiEngineProcessViewContext::CreateDebugRenderPipeline()
-{
-  return xiiEditorEngineProcessApp::GetSingleton()->CreateDefaultDebugRenderPipeline();
 }
 
 void xiiEngineProcessViewContext::DrawSimpleGrid() const

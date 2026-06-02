@@ -33,6 +33,8 @@ public:
 
   void LogWriter(const xiiLoggingEventData& e);
 
+  virtual bool ShouldApplicaitonQuit() const override;
+
 protected:
   virtual void                                    BaseInit_ConfigureLogging() override;
   virtual void                                    Deinit_ShutdownLogging() override;

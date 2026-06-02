@@ -30,12 +30,12 @@ XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTa
   m_pRenderTargetView = pRenderTargetView;
 }
 
-XII_ALWAYS_INLINE xiiGALSwapChain* xiiView::GetSwapChain() const
+XII_ALWAYS_INLINE const xiiGALSwapChain* xiiView::GetSwapChain() const
 {
   return m_pSwapChain;
 }
 
-XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
+XII_ALWAYS_INLINE void xiiView::SetSwapChain(const xiiGALSwapChain* pSwapChain)
 {
   m_pSwapChain = pSwapChain;
 }

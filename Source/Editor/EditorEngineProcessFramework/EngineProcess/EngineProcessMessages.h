@@ -302,7 +302,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEntityMsgToEngine : public xiiEdit
   XII_ADD_DYNAMIC_REFLECTION(xiiEntityMsgToEngine, xiiEditorEngineDocumentMsg);
 
 public:
-  xiiObjectChange m_change;
+  xiiObjectChange m_Change;
 };
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiExportDocumentMsgToEngine : public xiiEditorEngineDocumentMsg

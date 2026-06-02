@@ -13,7 +13,6 @@ class xiiEditorEngineDocumentMsg;
 class xiiEditorRenderPass;
 class xiiSelectedObjectsExtractorBase;
 class xiiSceneContext;
-using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 class xiiViewMarqueePickingMsgToEngine;
 
 struct ObjectData
