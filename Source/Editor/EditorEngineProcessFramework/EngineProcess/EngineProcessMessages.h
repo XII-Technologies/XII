@@ -268,11 +268,11 @@ public:
   bool      m_bEnablePickTransparent;
   bool      m_bUseCameraTransformOnDevice = true;
 
-  xiiInt8  m_iCameraMode; ///< xiiCameraMode::Enum
-  float    m_fNearPlane;
-  float    m_fFarPlane;
-  float    m_fFovOrDim;
-  xiiUInt8 m_uiRenderMode; ///< xiiViewRenderMode::Enum
+  float                      m_fNearPlane;
+  float                      m_fFarPlane;
+  float                      m_fFovOrDim;
+  xiiEnum<xiiCameraMode>     m_CameraMode;
+  xiiEnum<xiiViewRenderMode> m_RenderMode;
 
   xiiVec3 m_vPosition;
   xiiVec3 m_vDirForwards;
