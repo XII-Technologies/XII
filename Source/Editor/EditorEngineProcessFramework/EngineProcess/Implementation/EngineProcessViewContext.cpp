@@ -41,7 +41,7 @@ xiiEngineProcessViewContext::~xiiEngineProcessViewContext()
 
 void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
 {
-  XII_ASSERT_DEBUG(m_uiViewID == 0xFFFFFFFF, "View ID may only be set once");
+  XII_ASSERT_DEBUG(m_uiViewID == 0xFFFFFFFF, "View ID may only be set once.");
 
   m_uiViewID = uiId;
 }
@@ -49,33 +49,31 @@ void xiiEngineProcessViewContext::SetViewID(xiiUInt32 uiId)
 void xiiEngineProcessViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewRedrawMsgToEngine>())
+  if (const xiiViewRedrawMsgToEngine* pViewRedrawMsg = xiiDynamicCast<const xiiViewRedrawMsgToEngine*>(pMsg))
   {
-    const xiiViewRedrawMsgToEngine* pMsg2 = static_cast<const xiiViewRedrawMsgToEngine*>(pMsg);
+    SetCamera(pViewRedrawMsg);
 
-    SetCamera(pMsg2);
-
-    if (pMsg2->m_uiWindowWidth > 0 && pMsg2->m_uiWindowHeight > 0)
+    if (pViewRedrawMsg->m_uiWindowWidth > 0 && pViewRedrawMsg->m_uiWindowHeight > 0)
     {
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-      HandleWindowUpdate(reinterpret_cast<xiiWindowHandle>(pMsg2->m_uiHWND), pMsg2->m_uiWindowWidth, pMsg2->m_uiWindowHeight);
+      HandleWindowUpdate(reinterpret_cast<xiiWindowHandle>(pViewRedrawMsg->m_uiHWND), pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight);
 #  else
       xiiWindowHandle windowHandle;
       windowHandle.type                    = xiiWindowHandle::Type::XCB;
-      windowHandle.xcbWindow.m_Window      = static_cast<xiiUInt32>(pMsg2->m_uiHWND);
+      windowHandle.xcbWindow.m_Window      = static_cast<xiiUInt32>(pViewRedrawMsg->m_uiHWND);
       windowHandle.xcbWindow.m_pConnection = nullptr;
-      HandleWindowUpdate(windowHandle, pMsg2->m_uiWindowWidth, pMsg2->m_uiWindowHeight);
+      HandleWindowUpdate(windowHandle, pViewRedrawMsg->m_uiWindowWidth, pViewRedrawMsg->m_uiWindowHeight);
 #  endif
       Redraw(true);
     }
   }
-  else if (const xiiViewScreenshotMsgToEngine* msg = xiiDynamicCast<const xiiViewScreenshotMsgToEngine*>(pMsg))
+  else if (const xiiViewScreenshotMsgToEngine* pViewScreenshotMsg = xiiDynamicCast<const xiiViewScreenshotMsgToEngine*>(pMsg))
   {
-    xiiImage              img;
-    xiiActorPluginWindow* pWindow = m_pEditorWndActor->GetPlugin<xiiActorPluginWindow>();
-    pWindow->GetOutputTarget()->CaptureImage(img).IgnoreResult();
-
-    img.SaveTo(msg->m_sOutputFile).IgnoreResult();
+    xiiImage img;
+    if (xiiWindowManager::GetSingleton()->GetWindow(m_hEditorWindow)->GetOutputTarget()->CaptureImage(img).Succeeded())
+    {
+      img.SaveTo(pViewScreenshotMsg->m_sOutputFile).IgnoreResult();
+    }
   }
 #else
 #  error "Unsupported platform."
@@ -175,11 +173,21 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
 
 void xiiEngineProcessViewContext::OnSwapChainChanged(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 size)
 {
-  xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_hView, pView))
+  if (xiiEngineProcessDocumentContext* pDocumentContext = GetDocumentContext())
   {
-    pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)size.width, (float)size.height));
-    pView->ForceUpdate();
+    if (xiiWorld* pWorld = pDocumentContext->GetWorld())
+    {
+      XII_LOCK(pWorld->GetReadMarker());
+
+      if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
+      {
+        xiiView* pView = nullptr;
+        if (!pRenderWorldModule->TryGetView(m_hView, pView))
+          return;
+
+        pView->SetViewport(xiiRectFloat(0.0f, 0.0f, (float)size.width, (float)size.height));
+      }
+    }
   }
 }
 
