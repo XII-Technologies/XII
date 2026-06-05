@@ -25,9 +25,9 @@ CubemapImport.SkyboxHDR;HDR Skybox
 
 # Enums
 
-xiiTexConvUsage::Hdr;HDR
-xiiTexConvUsage::NormalMap; Normal Map (DX)
-xiiTexConvUsage::NormalMap_Inverted; Normal Map (GL)
+xiiTextureConverterUsage::Hdr;HDR
+xiiTextureConverterUsage::NormalMap; Normal Map (DX)
+xiiTextureConverterUsage::NormalMap_Inverted; Normal Map (GL)
 
 xiiRenderTargetFormat::RGBA8;RGBA8 (linear)
 xiiRenderTargetFormat::RGBA8sRgb;RGBA8 (sRGB)

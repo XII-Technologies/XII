@@ -5,7 +5,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/ImageConversion.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/TexConv/TexComparer.h>
+#include <Texture/Converter/TextureComparer.h>
 
 xiiTextureComparer::xiiTextureComparer() = default;
 

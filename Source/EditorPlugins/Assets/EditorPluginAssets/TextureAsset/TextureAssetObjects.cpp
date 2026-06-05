@@ -27,7 +27,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 5, xiiRTTIDefaultAll
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("IsRenderTarget", m_bIsRenderTarget)->AddAttributes(new xiiHiddenAttribute),
-    XII_ENUM_MEMBER_PROPERTY("Usage", xiiTexConvUsage, m_TextureUsage),
+    XII_ENUM_MEMBER_PROPERTY("Usage", xiiTextureConverterUsage, m_TextureUsage),
 
     XII_ENUM_MEMBER_PROPERTY("Format", xiiRenderTargetFormat, m_RtFormat),
     XII_ENUM_MEMBER_PROPERTY("Resolution", xiiTexture2DResolution, m_Resolution),
@@ -99,7 +99,7 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
     else
     {
       const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTexConvMipmapMode::None;
-      const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTexConvUsage::Hdr;
+      const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTextureConverterUsage::Hdr;
 
       props["CVarResScale"].m_Visibility          = xiiPropertyUiState::Invisible;
       props["Usage"].m_Visibility                 = xiiPropertyUiState::Default;
@@ -310,28 +310,28 @@ public:
     {
       if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Unknown")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Auto);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Auto);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_sRGB" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Diffuse" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveColor")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Color);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Color);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Height" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Mask" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::LookupTable" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_Linear" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveMask")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Linear);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Linear);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::NormalMap")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::NormalMap);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::NormalMap);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::HDR")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Hdr);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Hdr);
       }
     }
   }

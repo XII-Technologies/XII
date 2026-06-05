@@ -4,12 +4,12 @@
 
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
 xiiResult xiiTexConvProcessor::ForceSRGBFormats()
 {
   // if the output is going to be sRGB, assume the incoming RGB data is also already in sRGB
-  if (m_Descriptor.m_Usage == xiiTexConvUsage::Color)
+  if (m_Descriptor.m_Usage == xiiTextureConverterUsage::Color)
   {
     for (const auto& mapping : m_Descriptor.m_ChannelMappings)
     {
@@ -60,7 +60,7 @@ xiiResult xiiTexConvProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32 uiNumMip
   opt.m_preserveCoverage = m_Descriptor.m_bPreserveMipmapCoverage;
   opt.m_alphaThreshold   = m_Descriptor.m_fMipmapAlphaThreshold;
 
-  opt.m_renormalizeNormals = m_Descriptor.m_Usage == xiiTexConvUsage::NormalMap || m_Descriptor.m_Usage == xiiTexConvUsage::NormalMap_Inverted || m_Descriptor.m_Usage == xiiTexConvUsage::BumpMap;
+  opt.m_renormalizeNormals = m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap || m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap_Inverted || m_Descriptor.m_Usage == xiiTextureConverterUsage::BumpMap;
 
   // Copy red to alpha channel if we only have a single channel input texture
   if (opt.m_preserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
@@ -428,7 +428,7 @@ xiiResult xiiTexConvProcessor::DilateColor2D(xiiImage& img) const
 
 xiiResult xiiTexConvProcessor::InvertNormalMap(xiiImage& image)
 {
-  if (m_Descriptor.m_Usage != xiiTexConvUsage::NormalMap_Inverted)
+  if (m_Descriptor.m_Usage != xiiTextureConverterUsage::NormalMap_Inverted)
     return XII_SUCCESS;
 
   // we'll assume that at this point in the processing pipeline, the format is

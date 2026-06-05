@@ -39,7 +39,7 @@ struct xiiTexConvCompressionMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTexConvCompressionMode);
 
-struct xiiTexConvUsage
+struct xiiTextureConverterUsage
 {
   enum Enum
   {
@@ -62,7 +62,7 @@ struct xiiTexConvUsage
   using StorageType = xiiUInt8;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTexConvUsage);
+XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTextureConverterUsage);
 
 struct xiiTexConvMipmapMode
 {

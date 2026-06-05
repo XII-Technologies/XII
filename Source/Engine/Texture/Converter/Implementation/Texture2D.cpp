@@ -3,7 +3,7 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Profiling/Profiling.h>
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
 xiiResult xiiTexConvProcessor::Assemble2DTexture(const xiiImageHeader& refImg, xiiImage& dst) const
 {

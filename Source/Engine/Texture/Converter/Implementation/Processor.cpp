@@ -5,7 +5,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexConvCompressionMode, 1)
@@ -16,10 +16,10 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexConvMipmapMode, 1)
   XII_ENUM_CONSTANTS(xiiTexConvMipmapMode::None, xiiTexConvMipmapMode::Linear, xiiTexConvMipmapMode::Kaiser)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexConvUsage, 1)
-  XII_ENUM_CONSTANT(xiiTexConvUsage::Auto), XII_ENUM_CONSTANT(xiiTexConvUsage::Color), XII_ENUM_CONSTANT(xiiTexConvUsage::Linear),
-  XII_ENUM_CONSTANT(xiiTexConvUsage::Hdr), XII_ENUM_CONSTANT(xiiTexConvUsage::NormalMap), XII_ENUM_CONSTANT(xiiTexConvUsage::NormalMap_Inverted),
-  XII_ENUM_CONSTANT(xiiTexConvUsage::BumpMap),
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureConverterUsage, 1)
+  XII_ENUM_CONSTANT(xiiTextureConverterUsage::Auto), XII_ENUM_CONSTANT(xiiTextureConverterUsage::Color), XII_ENUM_CONSTANT(xiiTextureConverterUsage::Linear),
+  XII_ENUM_CONSTANT(xiiTextureConverterUsage::Hdr), XII_ENUM_CONSTANT(xiiTextureConverterUsage::NormalMap), XII_ENUM_CONSTANT(xiiTextureConverterUsage::NormalMap_Inverted),
+  XII_ENUM_CONSTANT(xiiTextureConverterUsage::BumpMap),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
@@ -41,7 +41,7 @@ xiiResult xiiTexConvProcessor::Process()
     XII_SUCCEED_OR_RETURN(AdjustUsage(m_Descriptor.m_InputFiles[0], m_Descriptor.m_InputImages[0], m_Descriptor.m_Usage));
 
     xiiStringBuilder sUsage;
-    xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiTexConvUsage>(), m_Descriptor.m_Usage.GetValue(), sUsage, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
+    xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiTextureConverterUsage>(), m_Descriptor.m_Usage.GetValue(), sUsage, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
     xiiLog::Info("-usage is '{}'", sUsage);
 
     XII_SUCCEED_OR_RETURN(ForceSRGBFormats());
@@ -66,10 +66,10 @@ xiiResult xiiTexConvProcessor::Process()
 
     XII_SUCCEED_OR_RETURN(ClampInputValues(m_Descriptor.m_InputImages, m_Descriptor.m_fMaxValue));
 
-    if (m_Descriptor.m_Usage == xiiTexConvUsage::BumpMap)
+    if (m_Descriptor.m_Usage == xiiTextureConverterUsage::BumpMap)
     {
       XII_SUCCEED_OR_RETURN(ConvertToNormalMap(m_Descriptor.m_InputImages));
-      m_Descriptor.m_Usage = xiiTexConvUsage::NormalMap;
+      m_Descriptor.m_Usage = xiiTextureConverterUsage::NormalMap;
     }
 
     xiiImage assembledImg;

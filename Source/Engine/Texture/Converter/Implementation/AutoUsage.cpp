@@ -2,7 +2,7 @@
 
 #include <Texture/TexturePCH.h>
 
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/Image.h>
@@ -11,48 +11,48 @@
 struct FileSuffixToUsage
 {
   const char*                 m_szSuffix = nullptr;
-  const xiiTexConvUsage::Enum m_Usage    = xiiTexConvUsage::Auto;
+  const xiiTextureConverterUsage::Enum m_Usage    = xiiTextureConverterUsage::Auto;
 };
 
 static FileSuffixToUsage suffixToUsageMap[] = {
   //
-  {"_d", xiiTexConvUsage::Color},       //
-  {"diff", xiiTexConvUsage::Color},     //
-  {"diffuse", xiiTexConvUsage::Color},  //
-  {"albedo", xiiTexConvUsage::Color},   //
-  {"col", xiiTexConvUsage::Color},      //
-  {"color", xiiTexConvUsage::Color},    //
-  {"emissive", xiiTexConvUsage::Color}, //
-  {"emit", xiiTexConvUsage::Color},     //
+  {"_d", xiiTextureConverterUsage::Color},       //
+  {"diff", xiiTextureConverterUsage::Color},     //
+  {"diffuse", xiiTextureConverterUsage::Color},  //
+  {"albedo", xiiTextureConverterUsage::Color},   //
+  {"col", xiiTextureConverterUsage::Color},      //
+  {"color", xiiTextureConverterUsage::Color},    //
+  {"emissive", xiiTextureConverterUsage::Color}, //
+  {"emit", xiiTextureConverterUsage::Color},     //
 
-  {"_n", xiiTexConvUsage::NormalMap},      //
-  {"nrm", xiiTexConvUsage::NormalMap},     //
-  {"norm", xiiTexConvUsage::NormalMap},    //
-  {"normal", xiiTexConvUsage::NormalMap},  //
-  {"normals", xiiTexConvUsage::NormalMap}, //
+  {"_n", xiiTextureConverterUsage::NormalMap},      //
+  {"nrm", xiiTextureConverterUsage::NormalMap},     //
+  {"norm", xiiTextureConverterUsage::NormalMap},    //
+  {"normal", xiiTextureConverterUsage::NormalMap},  //
+  {"normals", xiiTextureConverterUsage::NormalMap}, //
 
-  {"_r", xiiTexConvUsage::Linear},        //
-  {"_rgh", xiiTexConvUsage::Linear},      //
-  {"_rough", xiiTexConvUsage::Linear},    //
-  {"roughness", xiiTexConvUsage::Linear}, //
+  {"_r", xiiTextureConverterUsage::Linear},        //
+  {"_rgh", xiiTextureConverterUsage::Linear},      //
+  {"_rough", xiiTextureConverterUsage::Linear},    //
+  {"roughness", xiiTextureConverterUsage::Linear}, //
 
-  {"_m", xiiTexConvUsage::Linear},       //
-  {"_met", xiiTexConvUsage::Linear},     //
-  {"_metal", xiiTexConvUsage::Linear},   //
-  {"metallic", xiiTexConvUsage::Linear}, //
+  {"_m", xiiTextureConverterUsage::Linear},       //
+  {"_met", xiiTextureConverterUsage::Linear},     //
+  {"_metal", xiiTextureConverterUsage::Linear},   //
+  {"metallic", xiiTextureConverterUsage::Linear}, //
 
-  {"_h", xiiTexConvUsage::Linear},     //
-  {"height", xiiTexConvUsage::Linear}, //
-  {"_disp", xiiTexConvUsage::Linear},  //
+  {"_h", xiiTextureConverterUsage::Linear},     //
+  {"height", xiiTextureConverterUsage::Linear}, //
+  {"_disp", xiiTextureConverterUsage::Linear},  //
 
-  {"_ao", xiiTexConvUsage::Linear},       //
-  {"occlusion", xiiTexConvUsage::Linear}, //
+  {"_ao", xiiTextureConverterUsage::Linear},       //
+  {"occlusion", xiiTextureConverterUsage::Linear}, //
 
-  {"_alpha", xiiTexConvUsage::Linear}, //
+  {"_alpha", xiiTextureConverterUsage::Linear}, //
 };
 
 
-static xiiTexConvUsage::Enum DetectUsageFromFilename(xiiStringView sFile)
+static xiiTextureConverterUsage::Enum DetectUsageFromFilename(xiiStringView sFile)
 {
   xiiStringBuilder name = xiiPathUtils::GetFileName(sFile);
   name.ToLower();
@@ -65,10 +65,10 @@ static xiiTexConvUsage::Enum DetectUsageFromFilename(xiiStringView sFile)
     }
   }
 
-  return xiiTexConvUsage::Auto;
+  return xiiTextureConverterUsage::Auto;
 }
 
-static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
+static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image)
 {
   const xiiImageHeader&      header = image.GetHeader();
   const xiiImageFormat::Enum format = header.GetImageFormat();
@@ -76,29 +76,29 @@ static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
   if (header.GetDepth() > 1)
   {
     // unsupported
-    return xiiTexConvUsage::Auto;
+    return xiiTextureConverterUsage::Auto;
   }
 
   if (xiiImageFormat::IsSrgb(format))
   {
     // already sRGB so must be color
-    return xiiTexConvUsage::Color;
+    return xiiTextureConverterUsage::Color;
   }
 
   if (format == xiiImageFormat::BC5_UNORM)
   {
-    return xiiTexConvUsage::NormalMap;
+    return xiiTextureConverterUsage::NormalMap;
   }
 
   if (xiiImageFormat::GetBitsPerChannel(format, xiiImageFormatChannel::R) > 8 || format == xiiImageFormat::BC6H_SF16 ||
       format == xiiImageFormat::BC6H_UF16)
   {
-    return xiiTexConvUsage::Hdr;
+    return xiiTextureConverterUsage::Hdr;
   }
 
   if (xiiImageFormat::GetNumChannels(format) <= 2)
   {
-    return xiiTexConvUsage::Linear;
+    return xiiTextureConverterUsage::Linear;
   }
 
   const xiiImage* pImgRGBA = &image;
@@ -110,7 +110,7 @@ static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
     if (xiiImageConversion::Convert(image, convertedRGBA, xiiImageFormat::R8G8B8A8_UNORM).Failed())
     {
       // cannot convert to RGBA -> maybe some weird lookup table format
-      return xiiTexConvUsage::Auto;
+      return xiiTextureConverterUsage::Auto;
     }
   }
 
@@ -151,35 +151,35 @@ static xiiTexConvUsage::Enum DetectUsageFromImage(const xiiImage& image)
     if (sb < 230 || sr < 128 - 60 || sr > 128 + 60 || sg < 128 - 60 || sg > 128 + 60)
     {
       // if the average color is not a proper hue of blue, it cannot be a normal map
-      return xiiTexConvUsage::Color;
+      return xiiTextureConverterUsage::Color;
     }
 
     if (uiExtremeNormals > uiNumPixels / 100)
     {
       // more than 1 percent of normals pointing backwards ? => probably not a normalmap
-      return xiiTexConvUsage::Color;
+      return xiiTextureConverterUsage::Color;
     }
 
     // it might just be a normal map, it does have the proper hue of blue
-    return xiiTexConvUsage::NormalMap;
+    return xiiTextureConverterUsage::NormalMap;
   }
 }
 
-xiiResult xiiTexConvProcessor::AdjustUsage(xiiStringView sFilename, const xiiImage& srcImg, xiiEnum<xiiTexConvUsage>& inout_Usage)
+xiiResult xiiTexConvProcessor::AdjustUsage(xiiStringView sFilename, const xiiImage& srcImg, xiiEnum<xiiTextureConverterUsage>& inout_Usage)
 {
   XII_PROFILE_SCOPE("AdjustUsage");
 
-  if (inout_Usage == xiiTexConvUsage::Auto)
+  if (inout_Usage == xiiTextureConverterUsage::Auto)
   {
     inout_Usage = DetectUsageFromFilename(sFilename);
   }
 
-  if (inout_Usage == xiiTexConvUsage::Auto)
+  if (inout_Usage == xiiTextureConverterUsage::Auto)
   {
     inout_Usage = DetectUsageFromImage(srcImg);
   }
 
-  if (inout_Usage == xiiTexConvUsage::Auto)
+  if (inout_Usage == xiiTextureConverterUsage::Auto)
   {
     xiiLog::Error("Failed to deduce target format.");
     return XII_FAILURE;

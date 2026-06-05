@@ -372,7 +372,7 @@ xiiResult xiiTexConv::ParseUsage()
 
   const xiiInt32 value = opt_Usage.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_Usage = static_cast<xiiTexConvUsage::Enum>(value);
+  m_Processor.m_Descriptor.m_Usage = static_cast<xiiTextureConverterUsage::Enum>(value);
   return XII_SUCCESS;
 }
 
@@ -488,7 +488,7 @@ xiiResult xiiTexConv::ParseMiscOptions()
     }
   }
 
-  if (m_Processor.m_Descriptor.m_Usage == xiiTexConvUsage::Hdr)
+  if (m_Processor.m_Descriptor.m_Usage == xiiTextureConverterUsage::Hdr)
   {
     m_Processor.m_Descriptor.m_fHdrExposureBias = opt_HdrExposure.GetOptionValue(xiiCommandLineOption::LogMode::Always);
   }

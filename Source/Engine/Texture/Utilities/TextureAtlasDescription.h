@@ -12,7 +12,7 @@ struct XII_TEXTURE_DLL xiiTextureAtlasCreationDesc
 {
   struct Layer
   {
-    xiiEnum<xiiTexConvUsage> m_Usage;
+    xiiEnum<xiiTextureConverterUsage> m_Usage;
     xiiUInt8                 m_uiNumChannels = 4;
   };
 

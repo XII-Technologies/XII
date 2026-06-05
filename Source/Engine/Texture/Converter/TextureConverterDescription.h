@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include <Texture/TexConv/TexConvEnums.h>
+#include <Texture/Converter/TextureConverterEnums.h>
 
-#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/UniquePtr.h>
@@ -52,7 +51,7 @@ public:
   xiiUInt32 m_uiThumbnailOutputResolution = 0;
 
   // Format / Compression
-  xiiEnum<xiiTexConvUsage>           m_Usage;
+  xiiEnum<xiiTextureConverterUsage>           m_Usage;
   xiiEnum<xiiTexConvCompressionMode> m_CompressionMode;
 
   // resolution clamp and downscale

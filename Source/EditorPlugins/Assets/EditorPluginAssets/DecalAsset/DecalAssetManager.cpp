@@ -124,9 +124,9 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
   // find all decal assets, extract their file information to pass it along to TexConv
   {
     atlasDesc.m_Layers.SetCount(3);
-    atlasDesc.m_Layers[0].m_Usage         = xiiTexConvUsage::Color;
-    atlasDesc.m_Layers[1].m_Usage         = xiiTexConvUsage::NormalMap;
-    atlasDesc.m_Layers[2].m_Usage         = xiiTexConvUsage::Linear;
+    atlasDesc.m_Layers[0].m_Usage         = xiiTextureConverterUsage::Color;
+    atlasDesc.m_Layers[1].m_Usage         = xiiTextureConverterUsage::NormalMap;
+    atlasDesc.m_Layers[2].m_Usage         = xiiTextureConverterUsage::Linear;
     atlasDesc.m_Layers[2].m_uiNumChannels = 3;
 
     atlasDesc.m_Items.Reserve(64);

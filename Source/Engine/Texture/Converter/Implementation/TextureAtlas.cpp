@@ -5,15 +5,14 @@
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/TexConv/TexConvProcessor.h>
-#include <Texture/Utils/TextureAtlasDesc.h>
-#include <Texture/Utils/TexturePacker.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
+#include <Texture/Utilities/TextureAtlasDescription.h>
+#include <Texture/Utilities/TexturePacker.h>
 
 xiiResult xiiTexConvProcessor::GenerateTextureAtlas(xiiMemoryStreamWriter& stream)
 {
   if (m_Descriptor.m_OutputType != xiiTexConvOutputType::Atlas)
     return XII_SUCCESS;
-
 
   if (m_Descriptor.m_sTextureAtlasDescFile.IsEmpty())
   {
@@ -89,7 +88,7 @@ xiiResult xiiTexConvProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc
           return XII_FAILURE;
         }
 
-        if (atlasDesc.m_Layers[layer].m_Usage == xiiTexConvUsage::Color)
+        if (atlasDesc.m_Layers[layer].m_Usage == xiiTextureConverterUsage::Color)
         {
           // enforce sRGB format for all color textures
           item.m_InputImage[layer].ReinterpretAs(xiiImageFormat::AsSrgb(item.m_InputImage[layer].GetImageFormat()));
@@ -116,11 +115,10 @@ xiiResult xiiTexConvProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc
       xiiUInt32 uiResX = 0, uiResY = 0;
       XII_SUCCEED_OR_RETURN(DetermineTargetResolution(alphaImg, xiiImageFormat::UNKNOWN, uiResX, uiResY));
 
-      XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sAlphaInput, alphaImg, uiResX, uiResY, xiiTexConvUsage::Linear));
-
+      XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sAlphaInput, alphaImg, uiResX, uiResY, xiiTextureConverterUsage::Linear));
 
       // layer 0 must have the exact same size as the alpha texture
-      XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sLayerInput[0], item.m_InputImage[0], uiResX, uiResY, xiiTexConvUsage::Linear));
+      XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sLayerInput[0], item.m_InputImage[0], uiResX, uiResY, xiiTextureConverterUsage::Linear));
 
       // copy alpha channel into layer 0
       XII_SUCCEED_OR_RETURN(xiiImageUtils::CopyChannel(item.m_InputImage[0], 3, alphaImg, 0));
@@ -131,7 +129,7 @@ xiiResult xiiTexConvProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc
         if (item.m_InputImage[layer].GetWidth() <= uiResX && item.m_InputImage[layer].GetHeight() <= uiResY)
           continue;
 
-        XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sLayerInput[layer], item.m_InputImage[layer], uiResX, uiResY, xiiTexConvUsage::Linear));
+        XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sLayerInput[layer], item.m_InputImage[layer], uiResX, uiResY, xiiTextureConverterUsage::Linear));
       }
     }
   }

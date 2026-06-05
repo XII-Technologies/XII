@@ -4,7 +4,7 @@
 
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
 xiiResult xiiTexConvProcessor::Assemble3DTexture(xiiImage& dst) const
 {

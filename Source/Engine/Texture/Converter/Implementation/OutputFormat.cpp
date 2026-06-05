@@ -3,11 +3,11 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Profiling/Profiling.h>
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
-static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum targetFormat, xiiTexConvCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
+static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTexConvCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
 {
-  if (targetFormat == xiiTexConvUsage::NormalMap || targetFormat == xiiTexConvUsage::NormalMap_Inverted || targetFormat == xiiTexConvUsage::BumpMap)
+  if (targetFormat == xiiTextureConverterUsage::NormalMap || targetFormat == xiiTextureConverterUsage::NormalMap_Inverted || targetFormat == xiiTextureConverterUsage::BumpMap)
   {
     if (compressionMode >= xiiTexConvCompressionMode::High)
       return xiiImageFormat::BC5_UNORM;
@@ -21,7 +21,7 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum target
     return xiiImageFormat::R8G8_UNORM;
   }
 
-  if (targetFormat == xiiTexConvUsage::Color)
+  if (targetFormat == xiiTextureConverterUsage::Color)
   {
     if (compressionMode >= xiiTexConvCompressionMode::High && uiNumChannels < 4)
       return xiiImageFormat::BC1_UNORM_SRGB;
@@ -32,7 +32,7 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum target
     return xiiImageFormat::R8G8B8A8_UNORM_SRGB;
   }
 
-  if (targetFormat == xiiTexConvUsage::Linear)
+  if (targetFormat == xiiTextureConverterUsage::Linear)
   {
     switch (uiNumChannels)
     {
@@ -68,7 +68,7 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum target
     }
   }
 
-  if (targetFormat == xiiTexConvUsage::Hdr)
+  if (targetFormat == xiiTextureConverterUsage::Hdr)
   {
     switch (uiNumChannels)
     {
@@ -98,7 +98,7 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum target
   return xiiImageFormat::UNKNOWN;
 }
 
-xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTexConvUsage> usage, xiiUInt32 uiNumChannels) const
+xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const
 {
   XII_PROFILE_SCOPE("ChooseOutputFormat");
 

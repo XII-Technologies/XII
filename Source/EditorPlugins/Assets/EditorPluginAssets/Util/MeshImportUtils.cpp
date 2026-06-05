@@ -88,44 +88,44 @@ namespace xiiMeshImportUtils
       xiiEnum<xiiTexture2DChannelMappingEnum> channelMapping;
 
       // Try to map usage.
-      xiiEnum<xiiTexConvUsage> usage;
+      xiiEnum<xiiTextureConverterUsage> usage;
       switch (hint)
       {
         case xiiModelImporter::TextureSemantic::DiffuseMap:
-          usage = xiiTexConvUsage::Color;
+          usage = xiiTextureConverterUsage::Color;
           break;
 
         case xiiModelImporter::TextureSemantic::DiffuseAlphaMap:
-          usage          = xiiTexConvUsage::Color;
+          usage          = xiiTextureConverterUsage::Color;
           channelMapping = xiiTexture2DChannelMappingEnum::RGBA1;
           break;
         case xiiModelImporter::TextureSemantic::OcclusionMap: // Making wild guesses here.
         case xiiModelImporter::TextureSemantic::EmissiveMap:
-          usage = xiiTexConvUsage::Color;
+          usage = xiiTextureConverterUsage::Color;
           break;
 
         case xiiModelImporter::TextureSemantic::RoughnessMap:
         case xiiModelImporter::TextureSemantic::MetallicMap:
           channelMapping = xiiTexture2DChannelMappingEnum::R1;
-          usage          = xiiTexConvUsage::Linear;
+          usage          = xiiTextureConverterUsage::Linear;
           break;
 
         case xiiModelImporter::TextureSemantic::OrmMap:
           channelMapping = xiiTexture2DChannelMappingEnum::RGB1;
-          usage          = xiiTexConvUsage::Linear;
+          usage          = xiiTextureConverterUsage::Linear;
           break;
 
         case xiiModelImporter::TextureSemantic::NormalMap:
-          usage = xiiTexConvUsage::NormalMap;
+          usage = xiiTextureConverterUsage::NormalMap;
           break;
 
         case xiiModelImporter::TextureSemantic::DisplacementMap:
-          usage          = xiiTexConvUsage::Linear;
+          usage          = xiiTextureConverterUsage::Linear;
           channelMapping = xiiTexture2DChannelMappingEnum::R1;
           break;
 
         default:
-          usage = xiiTexConvUsage::Auto;
+          usage = xiiTextureConverterUsage::Auto;
       }
 
       pAccessor->SetValueByName(pTextureAsset, "Usage", usage.GetValue()).LogFailure();

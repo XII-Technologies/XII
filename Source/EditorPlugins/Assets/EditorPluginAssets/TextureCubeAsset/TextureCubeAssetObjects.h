@@ -56,7 +56,7 @@ public:
   xiiEnum<xiiTexConvMipmapMode>      m_MipmapMode;
 
   xiiEnum<xiiTextureFilterSetting>          m_TextureFilter;
-  xiiEnum<xiiTexConvUsage>                  m_TextureUsage;
+  xiiEnum<xiiTextureConverterUsage>                  m_TextureUsage;
   xiiEnum<xiiTextureCubeChannelMappingEnum> m_ChannelMapping;
 
   float m_fHdrExposureBias = 0;

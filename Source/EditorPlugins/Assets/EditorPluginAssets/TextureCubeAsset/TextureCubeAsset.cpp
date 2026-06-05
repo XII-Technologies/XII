@@ -19,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 const char* ToFilterMode(xiiTextureFilterSetting::Enum mode);
-const char* ToUsageMode(xiiTexConvUsage::Enum mode);
+const char* ToUsageMode(xiiTextureConverterUsage::Enum mode);
 const char* ToCompressionMode(xiiTexConvCompressionMode::Enum mode);
 const char* ToMipmapMode(xiiTexConvMipmapMode::Enum mode);
 
@@ -74,7 +74,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(xiiStringView sTargetFile, con
     arguments << QString::fromUtf8(sThumbnail.GetData());
   }
 
-  if (pProp->m_TextureUsage == xiiTexConvUsage::Hdr)
+  if (pProp->m_TextureUsage == xiiTextureConverterUsage::Hdr)
   {
     arguments << "-hdrExposure";
     temp.SetFormat("{0}", xiiArgF(pProp->m_fHdrExposureBias, 2));
@@ -292,11 +292,11 @@ xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sInputFil
 
   if (sMode == "CubemapImport.SkyboxHDR")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Hdr);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Hdr);
   }
   else if (sMode == "CubemapImport.Skybox")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Color);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Color);
   }
 
   return XII_SUCCESS;

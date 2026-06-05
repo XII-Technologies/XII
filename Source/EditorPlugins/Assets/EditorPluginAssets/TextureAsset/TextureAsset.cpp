@@ -88,23 +88,23 @@ const char* ToFilterMode(xiiTextureFilterSetting::Enum mode)
   return "";
 }
 
-const char* ToUsageMode(xiiTexConvUsage::Enum mode)
+const char* ToUsageMode(xiiTextureConverterUsage::Enum mode)
 {
   switch (mode)
   {
-    case xiiTexConvUsage::Auto:
+    case xiiTextureConverterUsage::Auto:
       return "Auto";
-    case xiiTexConvUsage::Color:
+    case xiiTextureConverterUsage::Color:
       return "Color";
-    case xiiTexConvUsage::Linear:
+    case xiiTextureConverterUsage::Linear:
       return "Linear";
-    case xiiTexConvUsage::Hdr:
+    case xiiTextureConverterUsage::Hdr:
       return "Hdr";
-    case xiiTexConvUsage::NormalMap:
+    case xiiTextureConverterUsage::NormalMap:
       return "NormalMap";
-    case xiiTexConvUsage::NormalMap_Inverted:
+    case xiiTextureConverterUsage::NormalMap_Inverted:
       return "NormalMap_Inverted";
-    case xiiTexConvUsage::BumpMap:
+    case xiiTextureConverterUsage::BumpMap:
       return "BumpMap";
   }
 
@@ -233,7 +233,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(xiiStringView sTargetFile, const x
     arguments << temp.GetData();
   }
 
-  if (pProp->m_TextureUsage == xiiTexConvUsage::Hdr)
+  if (pProp->m_TextureUsage == xiiTextureConverterUsage::Hdr)
   {
     arguments << "-hdrExposure";
     temp.SetFormat("{0}", xiiArgF(pProp->m_fHdrExposureBias, 2));
@@ -831,19 +831,19 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("Input1", sInputFileRel.GetView());
   accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::RGB1);
-  accessor.SetValue("Usage", (int)xiiTexConvUsage::Linear);
+  accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Linear);
 
   if (sMode == "TextureImport.Diffuse")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Color);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Color);
   }
   else if (sMode == "TextureImport.Normal")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::NormalMap);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::NormalMap);
   }
   else if (sMode == "TextureImport.HDR")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Hdr);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Hdr);
   }
   else if (sMode == "TextureImport.Linear")
   {

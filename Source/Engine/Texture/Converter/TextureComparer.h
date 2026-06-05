@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <Texture/TextureDLL.h>
+#include <Texture/Image/Image.h>
 
 /// \brief Input options for xiiTextureComparer
 class XII_TEXTURE_DLL xiiTextureComparerDescription

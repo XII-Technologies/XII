@@ -4,7 +4,7 @@
 
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/TexConv/TexConvProcessor.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 
 xiiResult xiiTexConvProcessor::LoadInputImages()
 {
@@ -63,7 +63,7 @@ xiiResult xiiTexConvProcessor::LoadInputImages()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTexConvUsage> usage)
+xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
 {
   const bool bSingleChannel = xiiImageFormat::GetNumChannels(inout_Image.GetImageFormat()) == 1;
 
@@ -83,7 +83,7 @@ xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xi
 
   inout_Image.ResetAndMove(std::move(scratch));
 
-  if (usage == xiiTexConvUsage::Color && bSingleChannel)
+  if (usage == xiiTextureConverterUsage::Color && bSingleChannel)
   {
     // replicate single channel ("red" textures) into the other channels
     XII_SUCCEED_OR_RETURN(xiiImageUtils::CopyChannel(inout_Image, 1, inout_Image, 0));
@@ -93,7 +93,7 @@ xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xi
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertAndScaleInputImages(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTexConvUsage> usage)
+xiiResult xiiTexConvProcessor::ConvertAndScaleInputImages(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
 {
   XII_PROFILE_SCOPE("ConvertAndScaleInputImages");
 
