@@ -2,7 +2,7 @@
 
 #include <Texture/TexturePCH.h>
 
-#include <Texture/Utils/TexturePacker.h>
+#include <Texture/Utilities/TexturePacker.h>
 
 #include <stb/stb_rect_pack.h>
 

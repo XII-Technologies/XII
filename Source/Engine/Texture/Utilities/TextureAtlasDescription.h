@@ -6,7 +6,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Strings/String.h>
-#include <Texture/TexConv/TexConvEnums.h>
+#include <Texture/Converter/TextureConverterEnums.h>
 
 struct XII_TEXTURE_DLL xiiTextureAtlasCreationDesc
 {

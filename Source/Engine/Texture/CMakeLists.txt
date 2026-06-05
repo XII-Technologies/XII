@@ -15,13 +15,10 @@ target_link_libraries(${PROJECT_NAME}
 
   PRIVATE
   stb
-  DirectX-Tex
+  DirectXTex
 )
 
 if(XII_CMAKE_PLATFORM_LINUX)
-  set(THIRDPARTY_DIR "${XII_ROOT}/Source/ThirdParty")
-  target_include_directories(${PROJECT_NAME} PRIVATE "${THIRDPARTY_DIR}/DirectXMath/include" "${THIRDPARTY_DIR}/sal")
-
   if(XII_3RDPARTY_BC7ENC_RDO_SUPPORT)
     target_link_libraries(${PROJECT_NAME} PRIVATE bc7enc_rdo)
   endif()

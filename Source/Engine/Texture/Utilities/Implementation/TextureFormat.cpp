@@ -3,7 +3,7 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/IO/Stream.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 void xiiTexFormat::WriteTextureHeader(xiiStreamWriter& inout_stream) const
 {

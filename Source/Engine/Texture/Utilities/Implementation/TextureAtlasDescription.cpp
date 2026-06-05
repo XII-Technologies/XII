@@ -4,7 +4,7 @@
 
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
-#include <Texture/Utils/TextureAtlasDesc.h>
+#include <Texture/Utilities/TextureAtlasDescription.h>
 
 xiiResult xiiTextureAtlasCreationDesc::Serialize(xiiStreamWriter& inout_stream) const
 {

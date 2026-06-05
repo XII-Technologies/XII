@@ -25,7 +25,7 @@ xiiCVarBool cvar_TexturePenalizeDXConversions("Texture.PenalizeDXConversions", f
 #    undef DeleteFile
 #  endif
 
-#  include <Texture/DirectXTex/DirectXTex.h>
+#  include <DirectXTex/DirectXTex.h>
 #  include <d3d11.h>
 #  include <dxgi.h>
 #  include <dxgiformat.h>
