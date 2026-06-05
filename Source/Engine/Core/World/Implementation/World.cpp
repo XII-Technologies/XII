@@ -56,7 +56,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiWorld, xiiNoBase, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiWorld::xiiWorld(xiiWorldDesc& ref_desc) :
+xiiWorld::xiiWorld(xiiWorldDescription& ref_desc) :
   m_Data(ref_desc)
 {
   m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "WorldUpdate", xiiTaskNesting::Never, xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
@@ -151,7 +151,7 @@ inline static xiiUInt32 NextStableRandomSeed(xiiUInt32& ref_uiSeed)
   return ((ref_uiSeed >> 16) & 0x7FFFF);
 }
 
-xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDesc& desc, xiiGameObject*& out_pObject)
+xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDescription& desc, xiiGameObject*& out_pObject)
 {
   CheckForWriteAccess();
 

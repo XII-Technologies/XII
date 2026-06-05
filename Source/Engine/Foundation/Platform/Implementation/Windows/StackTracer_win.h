@@ -290,8 +290,7 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pCo
 
     for (xiiInt32 i = 0; i < (xiiInt32)ref_trace.GetCount(); i++)
     {
-      if (s_pImplementation->stackWalk(machine_type, GetCurrentProcess(), GetCurrentThread(), &frame, &context, NULL,
-                                       s_pImplementation->getFunctionTableAccess, s_pImplementation->getModuleBase, NULL))
+      if (s_pImplementation->stackWalk(machine_type, GetCurrentProcess(), GetCurrentThread(), &frame, &context, NULL, s_pImplementation->getFunctionTableAccess, s_pImplementation->getModuleBase, NULL))
       {
         ref_trace[i] = reinterpret_cast<void*>(frame.AddrPC.Offset);
       }

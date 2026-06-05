@@ -152,7 +152,7 @@ void xiiSceneLoadUtility::TickSceneLoading()
   {
     XII_LOG_BLOCK("LoadObjectGraph", m_sRedirectedFile);
 
-    xiiWorldDesc desc(m_sRedirectedFile);
+    xiiWorldDescription desc(m_sRedirectedFile);
     m_pWorld = XII_DEFAULT_NEW(xiiWorld, desc);
     m_pWorld->SetWorldSimulationEnabled(false);
 

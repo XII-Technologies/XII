@@ -21,8 +21,7 @@ public:
 
   bool SendMessage(xiiProcessMessage* pMessage);
 
-  /// /brief Callback for 'wait for...' functions. If true is returned, the message is accepted to match the wait criteria and
-  ///        the waiting ends. If false is returned the wait for the message continues.
+  /// \brief Callback for 'wait for...' functions. If true is returned, the message is accepted to match the wait criteria and the waiting ends. If false is returned the wait for the message continues.
   using WaitForMessageCallback = xiiDelegate<bool(xiiProcessMessage*)>;
   xiiResult WaitForMessage(const xiiRTTI* pMessageType, xiiTime timeout, WaitForMessageCallback* pMessageCallack = nullptr);
   xiiResult WaitForConnection(xiiTime timeout);

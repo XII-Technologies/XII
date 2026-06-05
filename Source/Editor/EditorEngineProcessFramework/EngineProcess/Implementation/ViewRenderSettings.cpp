@@ -229,7 +229,7 @@ namespace
       xiiGameObject* pObj = nullptr;
       if (inout_hHandle.IsInvalidated() || !pWorld->TryGetObject(inout_hHandle, pObj))
       {
-        xiiGameObjectDesc obj;
+        xiiGameObjectDescription obj;
         obj.m_sName.Assign("ViewLightSettings");
         inout_hHandle = pWorld->CreateObject(obj, pObj);
         pObj->MakeDynamic();
@@ -293,6 +293,7 @@ void xiiEngineViewLightSettings::UpdateForEngine(xiiWorld* pWorld)
 void xiiEngineViewLightSettings::SetModifiedInternal(xiiEngineViewLightSettingsEvent::Type type)
 {
   SetModified();
+
   xiiEngineViewLightSettingsEvent e;
   e.m_Type = type;
   m_EngineViewLightSettingsEvents.Broadcast(e);

@@ -4048,7 +4048,7 @@ void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder)
 {
   data.m_hLDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_LDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
-  if (xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
+  if (const xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
   {
     xiiSharedPtr<xiiGALTexture> pBackbufferTexture = pSwapChain->GetBackBufferTexture();
     if (pBackbufferTexture)

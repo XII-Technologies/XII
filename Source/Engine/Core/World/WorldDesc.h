@@ -12,11 +12,11 @@
 class xiiTimeStepSmoothing;
 
 /// \brief Describes the initial state of a world.
-struct xiiWorldDesc
+struct xiiWorldDescription
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiWorldDesc(xiiStringView sWorldName) { m_sName.Assign(sWorldName); }
+  xiiWorldDescription(xiiStringView sWorldName) { m_sName.Assign(sWorldName); }
 
   xiiHashedString m_sName;
   xiiUInt64       m_uiRandomNumberGeneratorSeed = 0;

@@ -30,7 +30,7 @@ namespace
     xiiQuat q;
     q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_bDynamic      = bDynamic;
     desc.m_LocalPosition = xiiVec3(100.0f, 0.0f, 0.0f);
     desc.m_LocalRotation = q;
@@ -206,7 +206,7 @@ namespace
 
   xiiGameObject* CreateObj(xiiWorld* pWorld, xiiStringView sName, xiiGameObject* pParent = nullptr, xiiStringView sGlobalkey = {})
   {
-    xiiGameObjectDesc gd;
+    xiiGameObjectDescription gd;
     gd.m_sName.Assign(sName);
     gd.m_hParent = pParent ? pParent->GetHandle() : xiiGameObjectHandle();
 
@@ -244,8 +244,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transforms dynamic")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     TestWorldObjects o = CreateTestWorld(world, true);
@@ -261,7 +261,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transforms static")
   {
-    xiiWorldDesc worldDesc("Test");
+    xiiWorldDescription worldDesc("Test");
     worldDesc.m_bReportErrorWhenStaticObjectMoves = false;
 
     xiiWorld world(worldDesc);
@@ -281,15 +281,15 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GameObject parenting")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     const float eps = xiiMath::DefaultEpsilon<float>();
     xiiQuat     q;
     q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_LocalPosition = xiiVec3(100.0f, 0.0f, 0.0f);
     desc.m_LocalRotation = q;
     desc.m_LocalScaling  = xiiVec3(1.5f, 1.5f, 1.5f);
@@ -412,8 +412,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Re-parenting 1")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     TestWorldObjects o = CreateTestWorld(world, true);
@@ -447,8 +447,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Re-parenting 2")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     TestWorldObjects o = CreateTestWorld(world, true);
@@ -477,8 +477,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Re-parenting 3")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     TestWorldObjects o = CreateTestWorld(world, true);
@@ -501,8 +501,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Traversal")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     TestWorldObjects o = CreateTestWorld(world, false);
@@ -535,7 +535,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     }
 
     {
-      world.CreateObject(xiiGameObjectDesc());
+      world.CreateObject(xiiGameObjectDescription());
 
       struct DepthFirstTest
       {
@@ -598,15 +598,15 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Multiple Worlds")
   {
-    xiiWorldDesc worldDesc1("Test1");
-    xiiWorld     world1(worldDesc1);
+    xiiWorldDescription worldDesc1("Test1");
+    xiiWorld            world1(worldDesc1);
     XII_LOCK(world1.GetWriteMarker());
 
-    xiiWorldDesc worldDesc2("Test2");
-    xiiWorld     world2(worldDesc2);
+    xiiWorldDescription worldDesc2("Test2");
+    xiiWorld            world2(worldDesc2);
     XII_LOCK(world2.GetWriteMarker());
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_sName.Assign("Obj1");
 
     xiiGameObjectHandle  hObj1     = world1.CreateObject(desc);
@@ -652,8 +652,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Custom coordinate system")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
 
     xiiSharedPtr<CustomCoordinateSystemProvider> pProvider       = XII_DEFAULT_NEW(CustomCoordinateSystemProvider, &world);
     CustomCoordinateSystemProvider*              pProviderBackup = pProvider.Borrow();
@@ -672,14 +672,14 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Active Flag / Active State")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
-    xiiGameObjectHandle hParent;
-    xiiGameObjectDesc   desc;
-    xiiGameObjectHandle hObjects[10];
-    xiiGameObject*      pObjects[10];
+    xiiGameObjectHandle      hParent;
+    xiiGameObjectDescription desc;
+    xiiGameObjectHandle      hObjects[10];
+    xiiGameObject*           pObjects[10];
 
     for (xiiUInt32 i = 0; i < 10; ++i)
     {
@@ -741,13 +741,13 @@ XII_CREATE_SIMPLE_TEST(World, World)
   {
     constexpr xiiUInt32 numObjects = 10;
 
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     auto pModule = world.GetOrCreateModule<VelocityTestModule>();
 
-    xiiGameObjectDesc objectDesc;
+    xiiGameObjectDescription objectDesc;
     objectDesc.m_bDynamic = true;
 
     xiiGameObjectHandle hObjects[numObjects];
@@ -800,8 +800,8 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SearchForObject")
   {
-    xiiWorldDesc worldDesc("Test");
-    xiiWorld     world(worldDesc);
+    xiiWorldDescription worldDesc("Test");
+    xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
     auto pKey1 = CreateObj(&world, "Key1", nullptr, "Key1");

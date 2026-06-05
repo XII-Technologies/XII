@@ -33,7 +33,7 @@ namespace xiiInternal
 } // namespace xiiInternal
 
 class xiiGameObject;
-struct xiiGameObjectDesc;
+struct xiiGameObjectDescription;
 
 class xiiComponentManagerBase;
 class xiiComponent;

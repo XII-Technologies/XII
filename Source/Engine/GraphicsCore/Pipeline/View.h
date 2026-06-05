@@ -138,8 +138,8 @@ public:
   void               SetRenderTargetView(xiiGALTextureView* pRenderTargetView);
 
   /// \brief Sets the swapchain that this view will be rendering into.
-  xiiGALSwapChain* GetSwapChain() const;
-  void             SetSwapChain(xiiGALSwapChain* pSwapChain);
+  const xiiGALSwapChain* GetSwapChain() const;
+  void                   SetSwapChain(const xiiGALSwapChain* pSwapChain);
 
   void             SetCamera(xiiCamera* pCamera);
   xiiCamera*       GetCamera();
@@ -488,8 +488,8 @@ private:
 
   /// Non-owning pointer to the swapchain this view renders into.
   /// Set via SetSwapChain(); may be nullptr for off-screen views.
-  xiiGALSwapChain*   m_pSwapChain        = nullptr;
-  xiiGALTextureView* m_pRenderTargetView = nullptr;
+  const xiiGALSwapChain* m_pSwapChain        = nullptr;
+  xiiGALTextureView*     m_pRenderTargetView = nullptr;
 
   xiiRenderGraphBlackboard    m_Blackboard;
   xiiRenderGraphResourceCache m_ResourceCache;

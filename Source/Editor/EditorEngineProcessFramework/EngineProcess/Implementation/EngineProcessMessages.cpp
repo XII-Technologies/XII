@@ -267,7 +267,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("EnablePickSelected", m_bEnablePickingSelected),
     XII_MEMBER_PROPERTY("EnablePickTransparent", m_bEnablePickTransparent),
     XII_MEMBER_PROPERTY("UseCamOnDevice", m_bUseCameraTransformOnDevice),
-    XII_MEMBER_PROPERTY("CameraMode", m_iCameraMode),
     XII_MEMBER_PROPERTY("NearPlane", m_fNearPlane),
     XII_MEMBER_PROPERTY("FarPlane", m_fFarPlane),
     XII_MEMBER_PROPERTY("FovOrDim", m_fFovOrDim),
@@ -277,7 +276,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiViewRedrawMsgToEngine, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("Right", m_vDirRight),
     XII_MEMBER_PROPERTY("ViewMat", m_ViewMatrix),
     XII_MEMBER_PROPERTY("ProjMat", m_ProjMatrix),
-    XII_MEMBER_PROPERTY("RenderMode", m_uiRenderMode),
+    XII_ENUM_MEMBER_PROPERTY("CameraMode", xiiEnum<xiiCameraMode>, m_CameraMode),
+    XII_ENUM_MEMBER_PROPERTY("RenderMode", xiiEnum<xiiViewRenderMode>, m_RenderMode),
   }
   XII_END_PROPERTIES;
 }
@@ -300,7 +300,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEntityMsgToEngine, 1, xiiRTTIDefaultAllocato
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("Change", m_change),
+    XII_MEMBER_PROPERTY("Change", m_Change),
   }
   XII_END_PROPERTIES;
 }

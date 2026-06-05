@@ -3,9 +3,9 @@
 #pragma once
 
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
 #include <EditorEngineProcessFramework/EngineProcess/WorldRttiConverterContext.h>
 #include <Foundation/Types/Uuid.h>
-#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 class xiiEditorEngineSyncObjectMsg;
@@ -18,13 +18,13 @@ class xiiExportDocumentMsgToEngine;
 class xiiCreateThumbnailMsgToEngine;
 struct xiiResourceEvent;
 
-struct xiiEngineProcessDocumentContextFlags
+struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessDocumentContextFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
-    None        = 0,
+    None        = 0U,
     CreateWorld = XII_BIT(0),
     Default     = None
   };
@@ -34,7 +34,10 @@ struct xiiEngineProcessDocumentContextFlags
     StorageType CreateWorld : 1;
   };
 };
+
 XII_DECLARE_FLAGS_OPERATORS(xiiEngineProcessDocumentContextFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_EDITORENGINEPROCESSFRAMEWORK_DLL, xiiEngineProcessDocumentContextFlags);
 
 /// \brief A document context is the counter part to an editor document on the engine side.
 ///

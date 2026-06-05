@@ -162,7 +162,7 @@ void xiiGameEngineTestApplication::AfterCoreSystemsStartup()
 
   xiiStartup::StartupHighLevelSystems();
 
-  xiiWorldDesc desc("GameEngineTestWorld");
+  xiiWorldDescription desc("GameEngineTestWorld");
   desc.m_uiRandomNumberGeneratorSeed = 42;
 
   m_pWorld = XII_DEFAULT_NEW(xiiWorld, desc);
