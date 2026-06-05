@@ -10,6 +10,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
   DirectX-Headers
+  DirectXMath
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE USING_DIRECTX_HEADERS)
