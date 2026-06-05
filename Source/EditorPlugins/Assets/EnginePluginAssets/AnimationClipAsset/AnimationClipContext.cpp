@@ -116,7 +116,7 @@ void xiiAnimationClipContext::OnInitialize()
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
 
-  xiiGameObjectDesc obj;
+  xiiGameObjectDescription obj;
 
   // Preview
   {

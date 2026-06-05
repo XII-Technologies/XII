@@ -35,4 +35,5 @@ protected:
   ID3D12Fence* m_pD3D12Fence = nullptr;
 
   const HANDLE m_pFenceCompleteEvent;
+  bool         m_bFromFencePool = false;
 };

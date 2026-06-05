@@ -5,22 +5,42 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/MemoryAllocator/MemoryAllocatorVulkan.h>
 
-XII_WARNING_PUSH()
-XII_WARNING_DISABLE_MSVC(4100) // Warning C4100 : unreferenced formal parameter.
-XII_WARNING_DISABLE_MSVC(4189) // Warning C4189 : local variable is initialized but not referenced.
-XII_WARNING_DISABLE_MSVC(4505) // Warning C4505 : unreferenced function with internal linkage has been removed.
-XII_WARNING_DISABLE_CLANG("-Wnullability-completeness")
-XII_WARNING_DISABLE_CLANG("-Wunused-variable")
-XII_WARNING_DISABLE_CLANG("-Wunused-private-field")
-
-#define VMA_IMPLEMENTATION
-#define VMA_STATIC_VULKAN_FUNCTIONS  0
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
-#define VMA_STATS_STRING_ENABLED     1
-
 #include <VulkanMemoryAllocator/include/vk_mem_alloc.h>
 
-XII_WARNING_POP()
+// clang-format off
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVulkanMemoryUsage, 1)
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::Auto),
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::AutoPreferDevice),
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::AutoPreferHost),
+  XII_ENUM_CONSTANT(xiiVulkanMemoryUsage::GpuLazilyAllocated),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiVulkanAllocationCreateFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::Dedicated),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::NeverAllocate),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::Mapped),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::UserDataCopy),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::UpperAddress),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyMinMemory),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyMinTime),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyFirstFit),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyCanAlias),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyWithinBudget),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyHostSequential),
+  XII_BITFLAGS_CONSTANT(xiiVulkanAllocationCreateFlags::StrategyHostRandom),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiVulkanMemoryPropertyFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::DeviceLocal),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::HostVisible),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::HostCoherent),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::HostCached),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::LazilyAllocated),
+  XII_BITFLAGS_CONSTANT(xiiVulkanMemoryPropertyFlags::Protected),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+
+// clang-format on
 
 //////////////////////////////////////////////////////////////////////////
 // Helpers: map our flags/usage -> VMA
@@ -238,7 +258,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateBuffer(const vk::BufferCreateInfo& vk
         newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
         newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
 #else
-        XII_ASSERT_NOT_IMPLEMENTED;
+        xiiLog::Error("Exportable shared Vulkan buffer allocations are unsupported on this platform.");
+        return vk::Result::eErrorFeatureNotPresent;
 #endif
       }
 
@@ -316,7 +337,8 @@ vk::Result xiiVulkanMemoryAllocator::CreateImage(const vk::ImageCreateInfo& vkIm
         newExportedSharedPool.m_pExportMemoryAllocateInfo->handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eOpaqueWin32;
         newExportedSharedPool.m_pExportMemoryAllocateInfo->pNext       = newExportedSharedPool.m_pExportMemoryWin32HandleInfoKHR.Borrow();
 #else
-        XII_ASSERT_NOT_IMPLEMENTED;
+        xiiLog::Error("Exportable shared Vulkan image allocations are unsupported on this platform.");
+        return vk::Result::eErrorFeatureNotPresent;
 #endif
       }
 
@@ -406,14 +428,12 @@ xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
 {
   xiiVulkanMemoryStatistics vkMemoryStatistics;
 
-  const xiiUInt32 uiHeapCount = m_pImplementation->m_VmaAllocator->GetMemoryHeapCount();
-
   xiiTemporaryHybridArray<VmaBudget, 4U> vmaBudgets;
-  vmaBudgets.SetCount(uiHeapCount);
+  vmaBudgets.SetCount(m_pImplementation->m_vkMemoryProperties.memoryHeapCount);
 
   vmaGetHeapBudgets(m_pImplementation->m_VmaAllocator, vmaBudgets.GetData());
 
-  for (xiiUInt32 i = 0; i < uiHeapCount; ++i)
+  for (xiiUInt32 i = 0; i < m_pImplementation->m_vkMemoryProperties.memoryHeapCount; ++i)
   {
     const VmaBudget& budget = vmaBudgets[i];
 
@@ -426,4 +446,4 @@ xiiVulkanMemoryStatistics xiiVulkanMemoryAllocator::GetStatistics() const
   return vkMemoryStatistics;
 }
 
-XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocator);
+XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_MemoryAllocator_Implementation_MemoryAllocatorVulkan);

@@ -56,5 +56,5 @@ protected:
 
   xiiEnum<xiiGALSurfaceTransform> m_DesiredSurfaceTransform = xiiGALSurfaceTransform::Optimal;
 
-  xiiSizeU32 m_CurrentSize = {};
+  xiiSizeU32 m_CurrentSize = xiiSizeU32::MakeZero();
 };

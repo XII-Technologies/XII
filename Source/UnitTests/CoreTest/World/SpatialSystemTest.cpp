@@ -68,7 +68,7 @@ namespace
     float y = (float)rng.DoubleMinMax(-range, range);
     float z = (float)rng.DoubleMinMax(-range, range);
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_bDynamic      = bDynamic;
     desc.m_LocalPosition = xiiVec3(x, y, z);
 
@@ -84,7 +84,7 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 {
-  xiiWorldDesc worldDesc("Test");
+  xiiWorldDescription worldDesc("Test");
   worldDesc.m_uiRandomNumberGeneratorSeed = 5;
 
   xiiWorld world(worldDesc);

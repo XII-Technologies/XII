@@ -47,16 +47,16 @@ namespace
 
 XII_CREATE_SIMPLE_TEST(World, DerivedComponents)
 {
-  xiiWorldDesc worldDesc("Test");
-  xiiWorld     world(worldDesc);
+  xiiWorldDescription worldDesc("Test");
+  xiiWorld            world(worldDesc);
   XII_LOCK(world.GetWriteMarker());
 
   TestComponentBaseManager*     pManagerBase     = world.GetOrCreateComponentManager<TestComponentBaseManager>();
   TestComponentDerived1Manager* pManagerDerived1 = world.GetOrCreateComponentManager<TestComponentDerived1Manager>();
 
-  xiiGameObjectDesc   desc;
-  xiiGameObject*      pObject;
-  xiiGameObjectHandle hObject = world.CreateObject(desc, pObject);
+  xiiGameObjectDescription desc;
+  xiiGameObject*           pObject;
+  xiiGameObjectHandle      hObject = world.CreateObject(desc, pObject);
   XII_TEST_BOOL(!hObject.IsInvalidated());
 
   xiiGameObject* pObject2;

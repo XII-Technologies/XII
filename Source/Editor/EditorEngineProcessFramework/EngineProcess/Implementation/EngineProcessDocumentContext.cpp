@@ -8,16 +8,22 @@
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
-#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
-#include <GraphicsCore/Pipeline/RenderDataManager.h>
+#include <EditorEngineProcessFramework/IPC/SyncObject.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/ImageUtils.h>
+
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiEngineProcessDocumentContextFlags)
+  XII_BITFLAGS_CONSTANT(xiiEngineProcessDocumentContextFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiEngineProcessDocumentContextFlags::CreateWorld),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+// clang-format on
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEngineProcessDocumentContext, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -78,19 +84,23 @@ xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* p
     XII_ASSERT_DEV(!pWorld->GetWorldSimulationEnabled(), "World simulation must be disabled to get bounds!");
 
     const xiiWorld* pConstWorld = pWorld;
+
     for (auto it = pConstWorld->GetObjects(); it.IsValid(); ++it)
     {
-      const xiiGameObject* pObj = it;
-
-      const auto& b = pObj->GetGlobalBounds();
+      const xiiGameObject*        pObject = it;
+      const xiiBoundingBoxSphere& b       = pObject->GetGlobalBounds();
 
       if (b.IsValid())
+      {
         bounds.ExpandToInclude(b);
+      }
     }
   }
 
   if (!bounds.IsValid())
+  {
     bounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(1, 1, 1), 2);
+  }
 
   return bounds;
 }
@@ -121,11 +131,11 @@ void xiiEngineProcessDocumentContext::Initialize(const xiiUuid& documentGuid, co
 
   if (m_Flags.IsSet(xiiEngineProcessDocumentContextFlags::CreateWorld))
   {
-    xiiStringBuilder tmp;
-    xiiWorldDesc     desc(xiiConversionUtils::ToString(m_DocumentGuid, tmp));
-    desc.m_bReportErrorWhenStaticObjectMoves = false;
+    xiiStringBuilder    tmp;
+    xiiWorldDescription description(xiiConversionUtils::ToString(m_DocumentGuid, tmp));
+    description.m_bReportErrorWhenStaticObjectMoves = false;
 
-    m_pWorld = XII_DEFAULT_NEW(xiiWorld, desc);
+    m_pWorld = XII_DEFAULT_NEW(xiiWorld, description);
     m_pWorld->SetGameObjectReferenceResolver(xiiMakeDelegate(&xiiEngineProcessDocumentContext::ResolveStringToGameObjectHandle, this));
 
     GetContext().m_pWorld = m_pWorld;
@@ -162,12 +172,11 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
 
   const bool bIsRemoteProcess = xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode();
 
-  if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiEntityMsgToEngine>())
+  if (const xiiEntityMsgToEngine* pEntityMsg = xiiDynamicCast<const xiiEntityMsgToEngine*>(pMsg))
   {
-    const xiiEntityMsgToEngine* pMsg2 = static_cast<const xiiEntityMsgToEngine*>(pMsg);
-    m_Mirror.ApplyOp(const_cast<xiiObjectChange&>(pMsg2->m_change));
+    m_Mirror.ApplyOp(const_cast<xiiObjectChange&>(pEntityMsg->m_Change));
 
-    xiiRttiConverterObject target = GetContext().GetObjectByGUID(pMsg2->m_change.m_Root);
+    xiiRttiConverterObject target = GetContext().GetObjectByGUID(pEntityMsg->m_Change.m_Root);
 
     if (target.m_pType == nullptr || target.m_pObject == nullptr)
       return;
@@ -175,54 +184,65 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
     if (target.m_pType == xiiGetStaticRTTI<xiiGameObject>())
     {
       xiiGameObject* pObject = static_cast<xiiGameObject*>(target.m_pObject);
+
       if (pObject != nullptr && pObject->IsStatic())
       {
-        pObject->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderDataForObjectRecursive(pObject);
+        xiiWorld* pWorld = pObject->GetWorld();
+
+        XII_LOCK(pWorld->GetReadMarker());
+
+        if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
+        {
+          pRenderWorldModule->DeleteCachedRenderDataForObjectRecursive(pObject);
+        }
       }
     }
     else if (target.m_pType->IsDerivedFrom<xiiComponent>())
     {
       xiiComponent* pComponent = static_cast<xiiComponent*>(target.m_pObject);
+
       if (pComponent != nullptr && pComponent->GetOwner()->IsStatic())
       {
-        pComponent->GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->DeleteCachedRenderData(pComponent->GetOwner()->GetHandle(), pComponent->GetHandle());
+        xiiWorld* pWorld = pComponent->GetWorld();
+
+        XII_LOCK(pWorld->GetReadMarker());
+
+        if (xiiRenderWorldModule* pRenderWorldModule = pWorld->GetModule<xiiRenderWorldModule>())
+        {
+          pRenderWorldModule->DeleteCachedRenderData(pComponent->GetOwner()->GetHandle(), pComponent->GetHandle());
+        }
       }
     }
   }
-  else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiEditorEngineSyncObjectMsg>())
+  else if (const xiiEditorEngineSyncObjectMsg* pSyncMsg = xiiDynamicCast<const xiiEditorEngineSyncObjectMsg*>(pMsg))
   {
-    const xiiEditorEngineSyncObjectMsg* pMsg2 = static_cast<const xiiEditorEngineSyncObjectMsg*>(pMsg);
-
-    ProcessEditorEngineSyncObjectMsg(*pMsg2);
+    ProcessEditorEngineSyncObjectMsg(*pSyncMsg);
   }
-  else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiObjectTagMsgToEngine>())
+  else if (const xiiObjectTagMsgToEngine* pTagMsg = xiiDynamicCast<const xiiObjectTagMsgToEngine*>(pMsg))
   {
-    const xiiObjectTagMsgToEngine* pMsg2 = static_cast<const xiiObjectTagMsgToEngine*>(pMsg);
-
-    SetTagOnObject(pMsg2->m_ObjectGuid, pMsg2->m_sTag, pMsg2->m_bSetTag, pMsg2->m_bApplyOnAllChildren);
+    SetTagOnObject(pTagMsg->m_ObjectGuid, pTagMsg->m_sTag, pTagMsg->m_bSetTag, pTagMsg->m_bApplyOnAllChildren);
   }
-  else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiExportDocumentMsgToEngine>())
+  else if (const xiiExportDocumentMsgToEngine* pExportMsg = xiiDynamicCast<const xiiExportDocumentMsgToEngine*>(pMsg))
   {
     // ignore when this is a remote process
     if (bIsRemoteProcess)
       return;
 
-    const xiiExportDocumentMsgToEngine* pMsg2 = static_cast<const xiiExportDocumentMsgToEngine*>(pMsg);
-    xiiExportDocumentMsgToEditor        ret;
+    xiiExportDocumentMsgToEditor ret;
     ret.m_DocumentGuid = pMsg->m_DocumentGuid;
 
-    xiiStatus res        = ExportDocument(pMsg2);
+    xiiStatus res        = ExportDocument(pExportMsg);
     ret.m_bOutputSuccess = res.Succeeded();
     ret.m_sFailureMsg    = res.GetMessageString();
 
     if (!ret.m_bOutputSuccess)
     {
-      xiiLog::Error("Could not export to file '{0}'.", pMsg2->m_sOutputFile);
+      xiiLog::Error("Could not export to file '{0}'.", pExportMsg->m_sOutputFile);
     }
 
     SendProcessMessage(&ret);
   }
-  else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiCreateThumbnailMsgToEngine>())
+  else if (const xiiCreateThumbnailMsgToEngine* pCreateThumbnailMsg = xiiDynamicCast<const xiiCreateThumbnailMsgToEngine*>(pMsg))
   {
     // ignore when this is a remote process
     if (bIsRemoteProcess)
@@ -230,26 +250,25 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
 
     xiiFileSystem::ReloadAllExternalDataDirectoryConfigs();
     xiiResourceManager::ReloadAllResources(false);
+
     UpdateSyncObjects();
-    const xiiCreateThumbnailMsgToEngine* pMsg2 = static_cast<const xiiCreateThumbnailMsgToEngine*>(pMsg);
-    // As long as the thumbnail context is alive, we will trigger UpdateThumbnailViewContext
-    // inside the UpdateDocumentContext function until the thumbnail rendering has converged and
-    // the data is send back as a response.
-    CreateThumbnailViewContext(pMsg2);
+
+    // As long as the thumbnail context is alive, we will trigger UpdateThumbnailViewContext inside the UpdateDocumentContext function until the thumbnail rendering
+    // has converged and the data is send back as a response.
+    CreateThumbnailViewContext(pCreateThumbnailMsg);
   }
-  else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiEditorEngineViewMsg>())
+  else if (const xiiEditorEngineViewMsg* pViewMsg = xiiDynamicCast<const xiiEditorEngineViewMsg*>(pMsg))
   {
-    if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewRedrawMsgToEngine>())
+    if (pViewMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewRedrawMsgToEngine>())
     {
       UpdateSyncObjects();
     }
 
-    const xiiEditorEngineViewMsg* pViewMsg = static_cast<const xiiEditorEngineViewMsg*>(pMsg);
-    XII_ASSERT_DEV(pViewMsg->m_uiViewID < 0xFFFFFFFF, "Invalid view ID in '{0}'", pMsg->GetDynamicRTTI()->GetTypeName());
+    XII_ASSERT_DEV(pViewMsg->m_uiViewID < 0xFFFFFFFF, "Invalid view ID in '{0}'", pViewMsg->GetDynamicRTTI()->GetTypeName());
 
     m_ViewContexts.EnsureCount(pViewMsg->m_uiViewID + 1);
 
-    if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewDestroyedMsgToEngine>())
+    if (pViewMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewDestroyedMsgToEngine>())
     {
       if (m_ViewContexts[pViewMsg->m_uiViewID] != nullptr)
       {
@@ -284,18 +303,18 @@ void xiiEngineProcessDocumentContext::HandleMessage(const xiiEditorEngineDocumen
 
     return;
   }
-  else if (pMsg->GetDynamicRTTI()->IsDerivedFrom<xiiViewHighlightMsgToEngine>())
+  else if (const xiiViewHighlightMsgToEngine* pHighlightMsg = xiiDynamicCast<const xiiViewHighlightMsgToEngine*>(pMsg))
   {
     // ignore when this is a remote process
     if (bIsRemoteProcess)
       return;
 
-    const xiiViewHighlightMsgToEngine* pMsg2 = static_cast<const xiiViewHighlightMsgToEngine*>(pMsg);
-
-    GetContext().m_uiHighlightID = GetContext().m_ComponentPickingMap.GetHandle(pMsg2->m_HighlightObject);
+    GetContext().m_uiHighlightID = GetContext().m_ComponentPickingMap.GetHandle(pHighlightMsg->m_HighlightObject);
 
     if (GetContext().m_uiHighlightID == 0)
-      GetContext().m_uiHighlightID = GetContext().m_OtherPickingMap.GetHandle(pMsg2->m_HighlightObject);
+    {
+      GetContext().m_uiHighlightID = GetContext().m_OtherPickingMap.GetHandle(pHighlightMsg->m_HighlightObject);
+    }
   }
 }
 
@@ -600,22 +619,6 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   OnThumbnailViewContextRequested();
   UpdateThumbnailViewContext(m_pThumbnailViewContext);
 
-  // disable editor specific render passes in the thumbnail view
-  xiiView* pView = nullptr;
-  if (xiiRenderWorld::TryGetView(m_pThumbnailViewContext->GetViewHandle(), pView))
-  {
-    pView->SetViewRenderMode(xiiViewRenderMode::Default);
-    pView->SetRenderPassProperty("EditorSelectionPass", "Active", false);
-    pView->SetExtractorProperty("EditorShapeIconsExtractor", "Active", false);
-    pView->SetExtractorProperty("EditorGridExtractor", "Active", false);
-    pView->SetRenderPassProperty("EditorPickingPass", "Active", false);
-
-    for (const xiiString& sTag : pMsg->m_ViewExcludeTags)
-    {
-      pView->m_ExcludeTags.SetByName(sTag);
-    }
-  }
-
   m_pThumbnailViewContext->Redraw(false);
 
   OnThumbnailViewContextCreated();
@@ -658,16 +661,24 @@ void xiiEngineProcessDocumentContext::SetTagOnObject(const xiiUuid& object, cons
     if (recursive)
     {
       if (bSet)
+      {
         SetTagRecursive(pObject, tag);
+      }
       else
+      {
         ClearTagRecursive(pObject, tag);
+      }
     }
     else
     {
       if (bSet)
+      {
         pObject->SetTag(tag);
+      }
       else
+      {
         pObject->RemoveTag(tag);
+      }
     }
   }
 }
@@ -874,8 +885,6 @@ xiiGameObjectHandle xiiEngineProcessDocumentContext::ResolveStringToGameObjectHa
   // if already mapped to something, remove reference from m_GoRef_ReferencedBy
   // then add new reference to m_GoRef_ReferencedBy
 
-
-
   // update which object this component+property map to
   {
     auto& referencesTo = m_GoRef_ReferencesTo[srcComponentGuid];
@@ -976,6 +985,7 @@ void xiiEngineProcessDocumentContext::UpdateSyncObjects()
       if (pSyncObject->SetupForEngine(m_pWorld, GetContext().m_uiNextComponentPickingID))
       {
         GetContext().m_OtherPickingMap.RegisterObject(pSyncObject->GetGuid(), GetContext().m_uiNextComponentPickingID);
+
         ++GetContext().m_uiNextComponentPickingID;
       }
 

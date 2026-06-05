@@ -10,7 +10,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiWorld::GetIndex() const
   return m_uiIndex;
 }
 
-XII_FORCE_INLINE xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDesc& desc)
+XII_FORCE_INLINE xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDescription& desc)
 {
   xiiGameObject* pNewObject;
   return CreateObject(desc, pNewObject);

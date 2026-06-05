@@ -12,6 +12,74 @@
 #include <VersionHelpers.h>
 #include <dxgi1_4.h>
 
+namespace
+{
+  XII_ALWAYS_INLINE DXGI_MODE_SCALING GetScalingMode(xiiGALScalingModeD3D12::Enum e)
+  {
+    switch (e)
+    {
+      case xiiGALScalingModeD3D12::Unspecified:
+        return DXGI_MODE_SCALING_UNSPECIFIED;
+      case xiiGALScalingModeD3D12::Centered:
+        return DXGI_MODE_SCALING_CENTERED;
+      case xiiGALScalingModeD3D12::Stretched:
+        return DXGI_MODE_SCALING_STRETCHED;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+    return DXGI_MODE_SCALING_UNSPECIFIED;
+  }
+
+  XII_ALWAYS_INLINE xiiGALScalingModeD3D12::Enum GetGALScalingMode(DXGI_MODE_SCALING e)
+  {
+    switch (e)
+    {
+      case DXGI_MODE_SCALING_UNSPECIFIED:
+        return xiiGALScalingModeD3D12::Unspecified;
+      case DXGI_MODE_SCALING_CENTERED:
+        return xiiGALScalingModeD3D12::Centered;
+      case DXGI_MODE_SCALING_STRETCHED:
+        return xiiGALScalingModeD3D12::Stretched;
+    }
+    return xiiGALScalingModeD3D12::Unspecified;
+  }
+
+  XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER GetScanLineOrder(xiiGALScanLineOrderD3D12::Enum e)
+  {
+    switch (e)
+    {
+      case xiiGALScanLineOrderD3D12::Unspecified:
+        return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+      case xiiGALScanLineOrderD3D12::Progressive:
+        return DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
+      case xiiGALScanLineOrderD3D12::UpperFieldFirst:
+        return DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST;
+      case xiiGALScanLineOrderD3D12::LowerFieldFirst:
+        return DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+    return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+  }
+
+  XII_ALWAYS_INLINE xiiGALScanLineOrderD3D12::Enum GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
+  {
+    switch (e)
+    {
+      case DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED:
+        return xiiGALScanLineOrderD3D12::Unspecified;
+      case DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE:
+        return xiiGALScanLineOrderD3D12::Progressive;
+      case DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST:
+        return xiiGALScanLineOrderD3D12::UpperFieldFirst;
+      case DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST:
+        return xiiGALScanLineOrderD3D12::LowerFieldFirst;
+    }
+    return xiiGALScanLineOrderD3D12::Unspecified;
+  }
+
+} // namespace
+
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALScalingModeD3D12, 1)
   XII_ENUM_CONSTANT(xiiGALScalingModeD3D12::Unspecified),
@@ -37,7 +105,7 @@ xiiGALSwapChainD3D12::xiiGALSwapChainD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDevi
 
 xiiGALSwapChainD3D12::~xiiGALSwapChainD3D12()
 {
-  m_BackBufferTextures.Clear();
+  m_SwapChainTextures.Clear();
   m_pBackBufferTexture.Clear();
 
   if (m_pDXGISwapChain3)
@@ -101,8 +169,7 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     RECT rect;
     if (m_FullScreenMode.m_bIsFullScreen)
     {
-      const HWND hDesktop = GetDesktopWindow();
-      GetWindowRect(hDesktop, &rect);
+      GetWindowRect(hNativeWindow, &rect);
     }
     else
     {
@@ -157,9 +224,11 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   swapChainDescription.Scaling     = DXGI_SCALING_NONE;
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-  // DXGI_SCALING_NONE is supported starting with Windows 8
+  // DXGI_SCALING_NONE is supported starting with Windows 8.
   if (!IsWindows8OrGreater())
+  {
     swapChainDescription.Scaling = DXGI_SCALING_STRETCH;
+  }
 #endif
 
   // DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL is the flip presentation model, where the contents of the back
@@ -175,33 +244,11 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   // mode (or monitor resolution) will be changed to match the dimensions of the application window.
   swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-  // Query IDXGIFactory2.
-  IDXGIFactory2* pDXGIFactory2 = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pDXGIFactory2));
-
-  if (FAILED(pDeviceD3D12->GetDXGIFactory()->GetParent(__uuidof(pDXGIFactory2), reinterpret_cast<void**>(static_cast<IDXGIFactory2**>(&pDXGIFactory2)))))
-  {
-    xiiLog::Error("Failed to query IDXGIFactory2 factor to create swap chain.");
-    return XII_FAILURE;
-  }
-
   // DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT enables querying a waitable object that can be
   // used to synchronize presentation with CPU timeline.
   if (!m_FullScreenMode.m_bIsFullScreen)
   {
-    // We do not need pDXGIFactory3 itself, however DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT flag
-    // is only supported starting with Windows 8.1, and so is IDXGIFactory3 interface. We query this
-    // interface to check Windows 8.1.
-    // Note that we can't use IsWindows8Point1OrGreater because unlike IsWindows8OrGreater, it returns
-    // false if an application is not manifested for Windows 8.1 or Windows 10, even if the current
-    // operating system version is Windows 8.1 or Windows 10.
-    IDXGIFactory3* pDXGIFactory3 = nullptr;
-    XII_GAL_D3D12_RELEASE(pDXGIFactory3);
-
-    if (SUCCEEDED(pDXGIFactory2->QueryInterface(__uuidof(pDXGIFactory3), reinterpret_cast<void**>(static_cast<IDXGIFactory3**>(&pDXGIFactory3)))))
-    {
-      swapChainDescription.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-    }
+    swapChainDescription.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
   }
 
   xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
@@ -213,10 +260,10 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   fullScreenDescription.Windowed                = D3D12_BOOL(!m_FullScreenMode.m_bIsFullScreen);
   fullScreenDescription.RefreshRate.Numerator   = m_FullScreenMode.m_uiRefreshRateNumerator;
   fullScreenDescription.RefreshRate.Denominator = m_FullScreenMode.m_uiRefreshRateDenominator;
-  fullScreenDescription.Scaling                 = xiiD3D12TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
-  fullScreenDescription.ScanlineOrdering        = xiiD3D12TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
+  fullScreenDescription.Scaling                 = GetScalingMode(m_FullScreenMode.m_ScalingMode);
+  fullScreenDescription.ScanlineOrdering        = GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
-  HRESULT hResult = pDXGIFactory2->CreateSwapChainForHwnd(pCommandQueueD3D12->GetD3D12CommandQueue(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
+  HRESULT hResult = pDeviceD3D12->GetDXGIFactory()->CreateSwapChainForHwnd(pCommandQueueD3D12->GetD3D12CommandQueue(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
@@ -262,6 +309,8 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     m_FrameLatencyWaitableObject = NULL;
   }
 
+  m_uiCurrentBackBufferIndex = m_pDXGISwapChain3->GetCurrentBackBufferIndex();
+
   return XII_SUCCESS;
 }
 
@@ -274,10 +323,10 @@ xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
   if (!m_pDXGISwapChain3)
     return XII_SUCCESS;
 
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = xiiDynamicCast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
 
   {
-    m_BackBufferTextures.Clear();
+    m_SwapChainTextures.Clear();
     m_pBackBufferTexture.Clear();
 
     // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
@@ -308,6 +357,46 @@ xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
 
 xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal()
 {
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+
+  m_SwapChainTextures.SetCount(m_Description.m_uiBufferCount);
+
+  xiiStringBuilder sb;
+  for (xiiUInt32 i = 0; i < m_Description.m_uiBufferCount; ++i)
+  {
+    ID3D12Resource* pBackBufferResource = nullptr;
+    HRESULT         hResult             = m_pDXGISwapChain3->GetBuffer(i, __uuidof(ID3D12Resource), reinterpret_cast<void**>(&pBackBufferResource));
+    if (FAILED(hResult))
+    {
+      xiiLog::Error("Failed to retrieve the back buffer resource from the swap chain: {}", xiiHRESULTtoString(hResult));
+
+      return XII_FAILURE;
+    }
+
+    xiiGALTextureCreationDescription textureCreationDescription;
+    textureCreationDescription.m_Type                  = xiiGALResourceDimension::Texture2D;
+    textureCreationDescription.m_Size.width            = m_CurrentSize.width;
+    textureCreationDescription.m_Size.height           = m_CurrentSize.height;
+    textureCreationDescription.m_Format                = m_Description.m_ColorBufferFormat;
+    textureCreationDescription.m_uiArraySizeOrDepth    = 1U;
+    textureCreationDescription.m_uiMipLevels           = 1U;
+    textureCreationDescription.m_uiSampleCount         = 1U;
+    textureCreationDescription.m_BindFlags             = xiiGALGraphicsUtilities::SwapChainUsageFlagsToBindFlags(m_Description.m_UsageFlags);
+    textureCreationDescription.m_Usage                 = xiiGALResourceUsage::Mutable;
+    textureCreationDescription.m_CPUAccessFlags        = xiiGALCPUAccessFlag::None;
+    textureCreationDescription.m_MiscFlags             = xiiGALMiscTextureFlags::None;
+    textureCreationDescription.m_pExistingNativeObject = pBackBufferResource;
+
+    m_SwapChainTextures[i] = pDeviceD3D12->CreateTexture(textureCreationDescription);
+    XII_ASSERT_RELEASE(m_SwapChainTextures[i] != nullptr, "Failed to create native backbuffer texture object!");
+
+    sb.SetFormat("Main Back Buffer ({})", m_SwapChainTextures.GetCount());
+
+    m_SwapChainTextures[i]->SetDebugName(sb);
+  }
+
+  m_pBackBufferTexture = m_SwapChainTextures[m_uiCurrentBackBufferIndex];
+
   return XII_SUCCESS;
 }
 
@@ -337,6 +426,28 @@ void xiiGALSwapChainD3D12::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
+  xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12 = m_pDevice.Downcast<xiiGALDeviceD3D12>();
+
+  if (auto pCommandListD3D12 = pDeviceD3D12->CreateCommandList(xiiGALCommandListCreationDescription{.m_QueueFlags = xiiGALCommandQueueFlags::Graphics}).Downcast<xiiGALCommandListD3D12>())
+  {
+    pCommandListD3D12->Begin();
+    {
+      xiiGALStateTransitionDescription transitionToPresent;
+      transitionToPresent.m_OldState        = xiiGALResourceStateFlags::Unknown;
+      transitionToPresent.m_NewState        = xiiGALResourceStateFlags::Present;
+      transitionToPresent.m_pResource       = m_pBackBufferTexture;
+      transitionToPresent.m_TransitionType  = xiiGALStateTransitionType::Immediate;
+      transitionToPresent.m_TransitionFlags = xiiGALStateTransitionFlags::UpdateState;
+
+      pCommandListD3D12->TransitionResourceStates(xiiMakeArrayPtr(&transitionToPresent, 1U));
+    }
+    pCommandListD3D12->End();
+
+    auto pCommandQueue = pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics);
+
+    pCommandQueue->Submit(pCommandListD3D12);
+  }
+
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
   {
@@ -357,6 +468,9 @@ void xiiGALSwapChainD3D12::Present()
   {
     xiiLog::Error("Failed to present to swap chain: {}", xiiHRESULTtoString(hResult));
   }
+
+  m_uiCurrentBackBufferIndex = m_pDXGISwapChain3->GetCurrentBackBufferIndex();
+  m_pBackBufferTexture       = m_SwapChainTextures[m_uiCurrentBackBufferIndex];
 }
 
 xiiResult xiiGALSwapChainD3D12::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
@@ -419,6 +533,8 @@ void xiiGALSwapChainD3D12::SetWindowedMode()
 
 void xiiGALSwapChainD3D12::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
 {
+  uiMaxLatency = xiiMath::Max(uiMaxLatency, 1U);
+
   if (m_uiMaximumFrameLatency == uiMaxLatency)
     return;
 

@@ -157,11 +157,10 @@ public:
         {
           xiiStringBuilder     sError;
           xiiRGCompileSettings settings;
-          settings.m_bEnablePassCulling   = true;
-          settings.m_bEnableCompileCache  = true;
-          settings.m_bEnableSplitBarriers = false;
-          settings.m_bEnableAsyncQueues   = true;
-          settings.m_bEnableGPUProfiling  = true;
+          settings.m_bEnablePassCulling  = true;
+          settings.m_bEnableCompileCache = true;
+          settings.m_bEnableAsyncQueues  = true;
+          settings.m_bEnableGPUProfiling = true;
 
           if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
           {
@@ -459,12 +458,12 @@ private:
 
     // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
-    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::CopyDestination);
+    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::RenderTarget);
 
     textureDescription.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
     textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
 
-    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::CopyDestination);
+    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::DepthWrite);
 
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }

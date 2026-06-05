@@ -17,3 +17,13 @@ T* xiiRenderWorldModule::CreateRenderDataForThisFrame(const xiiComponent* pCompo
 
   return pRenderData;
 }
+
+XII_ALWAYS_INLINE xiiEvent<xiiViewEvent, xiiMutex>& xiiRenderWorldModule::GetViewEvents()
+{
+  return m_ViewEvents;
+}
+
+XII_ALWAYS_INLINE const xiiEvent<const xiiRenderWorldModuleExtractionEvent&, xiiMutex>& xiiRenderWorldModule::GetRenderEvents()
+{
+  return s_RenderEvent;
+}

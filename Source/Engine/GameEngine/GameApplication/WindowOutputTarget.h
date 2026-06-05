@@ -15,6 +15,10 @@
 class XII_GAMEENGINE_DLL xiiWindowOutputTargetGAL : public xiiWindowOutputTargetBase
 {
 public:
+  /// \brief Returns the current swapchain. This can be used by the application to access the back buffer texture for rendering, e.g. by using it as a render target.
+  [[nodiscard]] XII_ALWAYS_INLINE const xiiGALSwapChain* GetSwapChain() const { return m_pSwapChain; }
+
+public:
   using OnSwapChainChanged = xiiDelegate<void(xiiSharedPtr<xiiGALSwapChain> pSwapChain, xiiSizeU32 vSize)>;
 
   xiiWindowOutputTargetGAL(const xiiGALSwapChainCreationDescription& description, OnSwapChainChanged onSwapChainChanged = {});

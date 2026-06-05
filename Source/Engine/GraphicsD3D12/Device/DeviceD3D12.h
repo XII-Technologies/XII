@@ -13,17 +13,19 @@ struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D12Device1;
 struct ID3D12Debug;
+struct ID3D12Resource;
+struct IUnknown;
 
-XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
+class xiiD3D12MemoryAllocator;
 
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDeviceD3D12, xiiGALDevice);
 
 private:
-  friend xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
-  xiiGALDeviceD3D12(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  xiiGALDeviceD3D12(xiiAllocator* pAllocator, const xiiGALDeviceCreationDescription& description);
 
 public:
   ~xiiGALDeviceD3D12();
@@ -31,15 +33,25 @@ public:
 public:
   virtual xiiGALCommandQueue* GetCommandQueue(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const override final;
 
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALCommandListPoolD3D12* GetCommandListPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALQueryPoolD3D12* GetCommandQueueQueryPool(xiiBitflags<xiiGALCommandQueueFlags> queueFlags) const;
+
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALFencePoolD3D12*         GetD3D12FencePool() const { return m_pFencePool.Borrow(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiGALDescriptorSetPoolD3D12* GetResourceDescriptorPool() const { return m_pResourceDescriptorPool.Borrow(); }
+
   // Internal objects retrieval.
 
-  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocatorBase* GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiAllocator*            GetAllocator() const { return m_Allocator.GetParent(); }
+  [[nodiscard]] XII_ALWAYS_INLINE xiiD3D12MemoryAllocator* GetD3D12Allocator() const { return m_pAllocatorD3D12.Borrow(); }
 
-  XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }
-  XII_ALWAYS_INLINE IDXGIAdapter1* GetDXGIAdapter() const { return m_pDXGIAdapter; }
-  XII_ALWAYS_INLINE IDXGIFactory4* GetDXGIFactory() const { return m_pDXGIFactory; }
+  [[nodiscard]] XII_ALWAYS_INLINE ID3D12Device1* GetD3D12Device() const { return m_pD3D12Device; }
+  [[nodiscard]] XII_ALWAYS_INLINE IDXGIAdapter1* GetDXGIAdapter() const { return m_pDXGIAdapter; }
+  [[nodiscard]] XII_ALWAYS_INLINE IDXGIFactory4* GetDXGIFactory() const { return m_pDXGIFactory; }
 
-  XII_ALWAYS_INLINE xiiMemoryAllocatorD3D12* GetD3D12Allocator() const { return m_pAllocatorD3D12.Borrow(); }
+  void SafeReleaseDeviceObject(IUnknown*& pObject);
+  void SafeReleaseBuffer(ID3D12Resource*& pResource, xiiD3D12Allocation& allocation);
+  void SafeReleaseTexture(ID3D12Resource*& pResource, xiiD3D12Allocation& allocation, bool bIsStagingTexture);
 
   void ReportLiveGPUObjects();
 
@@ -77,22 +89,41 @@ protected:
   virtual xiiResult FillCapabilitiesPlatform() override final;
 
 private:
-  void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
-  xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
+  class DeferredDeletionQueue;
 
-  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALResourceFormat> format, xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12>& displayModes);
+  xiiResult      EnumerateAdapters(xiiDynamicArray<IDXGIAdapter1*>& out_adapters);
+  bool           IsAdapterCompatible(IDXGIAdapter1* pAdapter, D3D_FEATURE_LEVEL minFeatureLevel, bool bPermitSoftwareAdapters);
+  xiiResult      GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel, xiiDynamicArray<IDXGIAdapter1*>& out_CompatibleAdapters, bool bPermitSoftwareAdapters);
+  IDXGIAdapter1* SelectBestAdapter(xiiArrayPtr<IDXGIAdapter1*> pCompatibleAdapters);
+  xiiResult      SelectAdapterByIndex(xiiUInt32 uiAdapterIndex, D3D_FEATURE_LEVEL minFeatureLevel, IDXGIAdapter1** out_ppAdapter, bool bPermitSoftwareAdapter = false, bool bPreferBestIfIndexInvalid = true);
 
 private:
   IDXGIFactory4* m_pDXGIFactory = nullptr;
   IDXGIAdapter1* m_pDXGIAdapter = nullptr;
   ID3D12Device1* m_pD3D12Device = nullptr;
-  ID3D12Debug1*  m_pD3D12Debug  = nullptr;
 
-  xiiUniquePtr<xiiMemoryAllocatorD3D12> m_pAllocatorD3D12;
+  xiiUniquePtr<xiiD3D12MemoryAllocator> m_pAllocatorD3D12;
+  xiiUniquePtr<DeferredDeletionQueue>   m_pDeferredDeletionQueue;
 
   xiiDynamicArray<xiiGALDisplayModeDescriptionD3D12> m_DisplayModes;
 
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pGraphicsCommandQueue;
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pComputeCommandQueue;
-  xiiUniquePtr<xiiGALCommandQueueD3D12> m_pTransferCommandQueue;
+  xiiGALQueueInformationD3D12              m_GraphicsQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueD3D12>    m_pGraphicsCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolD3D12>       m_pGraphicsCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pGraphicsCommandListPool;
+
+  xiiGALQueueInformationD3D12              m_ComputeQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueD3D12>    m_pComputeCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolD3D12>       m_pComputeCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pComputeCommandListPool;
+
+  xiiGALQueueInformationD3D12              m_TransferQueueInformation;
+  xiiUniquePtr<xiiGALCommandQueueD3D12>    m_pTransferCommandQueue;
+  xiiUniquePtr<xiiGALQueryPoolD3D12>       m_pTransferCommandQueueQueryPool;
+  xiiUniquePtr<xiiGALCommandListPoolD3D12> m_pTransferCommandListPool;
+
+  xiiUniquePtr<xiiGALFencePoolD3D12>         m_pFencePool;
+  xiiUniquePtr<xiiGALDescriptorSetPoolD3D12> m_pResourceDescriptorPool;
 };
+
+#include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>

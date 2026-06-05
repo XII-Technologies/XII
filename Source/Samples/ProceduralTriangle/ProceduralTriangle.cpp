@@ -12,6 +12,7 @@
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/System/Screen.h>
 #include <Foundation/Time/Clock.h>
+#include <Foundation/Utilities/CommandLineOptions.h>
 
 #include <Core/Input/InputManager.h>
 #include <Core/ResourceManager/ResourceManager.h>
@@ -39,6 +40,8 @@
 
 #include <Shaders/ProceduralTriangleConstants.h>
 
+xiiCommandLineOptionInt opt_MonitorId("ProceduralTriangle", "-monitor", "The monitor to launch the application winodw.", 0U);
+
 static bool g_bWindowResized = false;
 
 class xiiProceduralTriangleApp : public xiiApplication
@@ -53,6 +56,16 @@ public:
 
   virtual Execution Run() override
   {
+    {
+      xiiStringBuilder sCmdHelp;
+      if (xiiCommandLineOption::LogAvailableOptionsToBuffer(sCmdHelp, xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "ProceduralTriangle"))
+      {
+        xiiLog::Print(sCmdHelp);
+
+        return xiiApplication::Execution::Quit;
+      }
+    }
+
     m_pWindow->ProcessWindowMessages();
 
     if (!m_pWindow->IsVisible())
@@ -82,57 +95,11 @@ public:
     {
       m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
-
-      float       fInputValue = 0.0f;
-      const float fMouseSpeed = 0.01f;
-
-      xiiVec3 mouseMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x += fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookNegX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x -= fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookPosY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y -= fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y += fInputValue * fMouseSpeed;
     }
     else
     {
       m_pWindow->GetInputDevice()->SetShowMouseCursor(true);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
-    }
-
-    // Turn camera with arrow keys
-    {
-      float       fInputValue = 0.0f;
-      const float fTurnSpeed  = 1.0f;
-
-      xiiVec3 mouseMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x += fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnNegX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x -= fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnPosY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y += fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y -= fInputValue * fTurnSpeed;
-    }
-
-    // Apply translation
-    {
-      float   fInputValue = 0.0f;
-      xiiVec3 cameraMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.x += fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MoveNegX", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.x -= fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MovePosY", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.y += fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.y -= fInputValue;
     }
 
     // Perform rendering.
@@ -160,11 +127,10 @@ public:
         {
           xiiStringBuilder     sError;
           xiiRGCompileSettings settings;
-          settings.m_bEnablePassCulling   = true;
-          settings.m_bEnableCompileCache  = true;
-          settings.m_bEnableSplitBarriers = false;
-          settings.m_bEnableAsyncQueues   = true;
-          settings.m_bEnableGPUProfiling  = true;
+          settings.m_bEnablePassCulling  = true;
+          settings.m_bEnableCompileCache = true;
+          settings.m_bEnableAsyncQueues  = true;
+          settings.m_bEnableGPUProfiling = true;
 
           if (m_pRenderGraph->Compile(settings, &sError).Succeeded())
           {
@@ -224,70 +190,10 @@ public:
       cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyEscape;
       xiiInputManager::SetInputActionConfig("Main", "CloseApp", cfg, true);
 
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookPosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosX;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookPosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegX;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookPosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosY;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookPosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegY;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookNegY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnPosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyRight;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnPosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyLeft;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnPosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyDown;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnPosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyUp;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnNegY", cfg, true);
-
       cfg                        = xiiInputManager::GetInputActionConfig("Main", "Look");
       cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseButton0;
       cfg.m_bApplyTimeScaling    = false;
       xiiInputManager::SetInputActionConfig("Main", "Look", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MovePosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyD;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MovePosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MoveNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyA;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MoveNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MovePosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyW;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MovePosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MoveNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyS;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "MoveNegY", cfg, true);
     }
 
     // Create a window for rendering
@@ -299,7 +205,10 @@ public:
       WindowCreationDescription.m_bShowMouseCursor  = true;
       WindowCreationDescription.m_bClipMouseCursor  = false;
       WindowCreationDescription.m_WindowMode        = xiiWindowMode::WindowResizable;
-      m_pWindow                                     = XII_DEFAULT_NEW(xiiWindow);
+      WindowCreationDescription.m_iMonitor          = opt_MonitorId.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+      WindowCreationDescription.AdjustWindowSizeAndPosition().IgnoreResult();
+
+      m_pWindow = XII_DEFAULT_NEW(xiiWindow);
       m_pWindow->Initialize(WindowCreationDescription).AssertSuccess();
 
       m_pWindow->GetWindowEvents().AddEventHandler([this](const xiiWindowEvent& e) -> void {
@@ -324,7 +233,15 @@ public:
       deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
-      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, "Vulkan");
+#if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "Vulkan";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+      constexpr const char* szDefaultGraphicsAPI = "D3D12";
+#else
+      constexpr const char* szDefaultGraphicsAPI = "";
+#endif
+
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
       xiiStringView sShaderModel     = {};
       xiiStringView sShaderCompiler  = {};
       xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
@@ -419,7 +336,6 @@ private:
   struct OffscreenPassData
   {
     xiiRGTextureHandle m_hOffScreenTexture;
-    xiiRGTextureHandle m_hDepthTexture;
     float              m_fGlobalTime = 0.0f;
   };
 
@@ -433,12 +349,7 @@ private:
 
     // This declares a new texture resource for the render graph and registers that we will write to it in this pass.
     // The returned handle references the texture at its new version, so store and use this handle for all future reads/writes.
-    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::CopyDestination);
-
-    textureDescription.m_Format    = xiiGALResourceFormat::D24UNormalizedS8UInt;
-    textureDescription.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil;
-
-    data.m_hDepthTexture = builder.WriteTexture("DepthStencil", textureDescription, xiiGALResourceStateFlags::CopyDestination);
+    data.m_hOffScreenTexture = builder.WriteTexture("OffScreenTexture", textureDescription, xiiGALResourceStateFlags::RenderTarget);
 
     data.m_fGlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 360.0);
   }
@@ -449,7 +360,6 @@ private:
 
     cmd.BeginDebugGroup("Offscreen Clear");
     {
-      cmd.ClearDepthStencilView(context.GetTexture(data.m_hDepthTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, true, 1.0f, 0U);
       cmd.ClearRenderTargetView(context.GetTexture(data.m_hOffScreenTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget), xiiColor::Black);
     }
     cmd.EndDebugGroup();
@@ -483,9 +393,9 @@ private:
       colorAttachmentDescription.m_LoadOperation                        = xiiGALAttachmentLoadOperation::Load;
       colorAttachmentDescription.m_StoreOperation                       = xiiGALAttachmentStoreOperation::Store;
 
-      xiiGALSubPassDescription& subpassDesc = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+      xiiGALSubPassDescription& subpassDescription = renderPassDescription.m_SubPasses.ExpandAndGetRef();
       {
-        xiiGALAttachmentReferenceDescription& colorAttachmentReferenceDescription = subpassDesc.m_RenderTargetAttachments.ExpandAndGetRef();
+        xiiGALAttachmentReferenceDescription& colorAttachmentReferenceDescription = subpassDescription.m_RenderTargetAttachments.ExpandAndGetRef();
         colorAttachmentReferenceDescription.m_ResourceStateFlags                  = xiiGALResourceStateFlags::RenderTarget;
         colorAttachmentReferenceDescription.m_uiAttachmentIndex                   = 0U;
       }
@@ -571,7 +481,6 @@ private:
   {
     xiiRGTextureHandle m_hBackBufferTexture;
     xiiRGTextureHandle m_hOffScreenTexture;
-    xiiRGTextureHandle m_hDepthTexture;
   };
 
   void SetupBlitPass(BlitPassData& data, xiiRGBuilder& builder)
@@ -579,7 +488,6 @@ private:
     // Declare that we will read from the offscreen texture created in the previous pass.
     // This registers a read dependency on that pass, so it will be scheduled after it and the texture will be transitioned to the correct state before we read from it.
     data.m_hOffScreenTexture = builder.ReadTexture("OffScreenTexture", xiiGALResourceStateFlags::CopySource);
-    data.m_hDepthTexture     = builder.ReadTexture("DepthStencil", xiiGALResourceStateFlags::DepthRead);
 
     // We also need to get the back buffer texture from the swap chain as a render target.
     data.m_hBackBufferTexture = builder.ImportTexture("BackBuffer", m_pSwapChain->GetBackBufferTexture(), xiiGALResourceStateFlags::CopyDestination);

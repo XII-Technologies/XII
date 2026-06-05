@@ -7,6 +7,7 @@
               "Source/Engine/GraphicsD3D12/**",
               "Source/Engine/GraphicsCore/**",
               "Source/Engine/ShaderCompilerSPIRV/**",
+              "Source/Engine/ShaderCompilerDXIL/**",
               "Data/Base/Shaders/**"
             ]
 

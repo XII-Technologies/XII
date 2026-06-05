@@ -17,12 +17,7 @@ xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVu
   m_pQueueFence = XII_NEW(pDeviceVulkan->GetAllocator(), xiiGALCpuWaitOnlyFenceVulkan, pDeviceVulkan);
 }
 
-xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
-{
-  m_pQueueFence.Clear();
-
-  m_CommandBufferPool.Clear();
-}
+xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
 
 xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 {
@@ -31,19 +26,12 @@ xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 
 xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
-  xiiGALDeviceVulkan*      pDeviceVulkan          = static_cast<xiiGALDeviceVulkan*>(m_pDevice);
-  xiiGALCommandListVulkan* pCommandListVulkan     = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
-  auto                     pDeferredDeletionQueue = pDeviceVulkan->GetDeferredDeletionQueue();
+  XII_ASSERT_DEV(m_pQueueFence != nullptr, "The command queue fence must be valid.");
+
+  xiiGALDeviceVulkan*      pDeviceVulkan      = xiiDynamicCast<xiiGALDeviceVulkan*>(m_pDevice);
+  xiiGALCommandListVulkan* pCommandListVulkan = xiiDynamicCast<xiiGALCommandListVulkan*>(pCommandList);
 
   bool bTimelineSemaphoreInUse = false;
-  if (pDeferredDeletionQueue->HasTimelineSemaphore())
-  {
-    xiiUInt64 uiSignalValue = pDeferredDeletionQueue->ReserveSubmitValue();
-
-    pCommandListVulkan->AddSignalSemaphore(pDeferredDeletionQueue->GetVulkanTimelineSemaphore(), uiSignalValue);
-
-    bTimelineSemaphoreInUse = true;
-  }
 
   for (const auto& fenceInfo : pCommandListVulkan->m_SignalFences)
   {

@@ -4,43 +4,108 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <Foundation/Algorithm/HashStream.h>
+
+#include <GraphicsD3D12/CommandEncoder/CommandListDataD3D12.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
+
+#include <GraphicsD3D12/Pools/CommandListPoolD3D12.h>
+
+struct ID3D12CommandAllocator;
+struct ID3D12GraphicsCommandList;
+
+class xiiGALFramebufferD3D12;
+class xiiGALRenderPassD3D12;
 
 class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandList
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D12, xiiGALCommandList);
+
 public:
+  XII_ALWAYS_INLINE ID3D12GraphicsCommandList* GetD3D12CommandList() const { return m_pD3D12CommandList; }
+
+  XII_ALWAYS_INLINE xiiGALStagingBufferPoolD3D12* GetD3D12UploadStagingBufferPool() const { return m_CommandListData.m_pUploadStagingBufferPool.Borrow(); }
+
+  struct CommandListState
+  {
+    xiiUInt32 m_uiFramebufferWidth       = 0;
+    xiiUInt32 m_uiFramebufferHeight      = 0;
+    xiiUInt32 m_uiFramebufferArraySlices = 0;
+    xiiUInt32 m_uiInsidePassQueries      = 0;
+    xiiUInt32 m_uiOutsidePassQueries     = 0;
+    bool      m_bIsShadingRateSet        = false;
+  };
+
+  struct CommandListFlags
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      None                           = 0,
+      CommittedVertexBuffersModified = XII_BIT(0),
+      CommittedIndexBufferModified   = XII_BIT(1),
+      ShadingRateSet                 = XII_BIT(2),
+
+      Default = None
+    };
+
+    struct Bits
+    {
+      StorageType CommittedVertexBuffersModified : 1;
+      StorageType CommittedIndexBufferModified : 1;
+      StorageType ShadingRateSet : 1;
+    };
+
+    friend inline xiiBitflags<CommandListFlags> operator|(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) | xiiBitflags<CommandListFlags>(rhs));
+    }
+    friend inline xiiBitflags<CommandListFlags> operator&(CommandListFlags::Enum lhs, CommandListFlags::Enum rhs)
+    {
+      return (xiiBitflags<CommandListFlags>(lhs) & xiiBitflags<CommandListFlags>(rhs));
+    };
+  };
+
+  void FlushBarriers();
+
 protected:
   friend class xiiGALCommandQueueD3D12;
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALCommandQueueD3D12* pCommandQueueD3D12, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListD3D12(xiiSharedPtr<xiiGALDeviceD3D12> pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D12();
+
+  virtual xiiResult InitPlatform() override final;
 
 protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
 
-  virtual xiiUInt64 SubmitPlatform() override final;
+  virtual void SubmitPlatform(xiiGALCommandList* pSecondaryCommandList) override final;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
+  virtual void PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayPtr<const xiiUInt8> pData) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) override final;
 
-  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) override final;
-  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) override final;
+  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) override final;
+  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects) override final;
 
-  virtual void      SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override final;
-  virtual void      SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) override final;
+  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
+  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<VertexStreamDescription> pVertexStreams, xiiBitflags<xiiGALSetVertexBufferFlags> flags, xiiEnum<xiiGALStateTransitionMode> transitionMode) override final;
+
   virtual void      SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
   virtual void      SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
   virtual void      SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
   virtual void      SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
   virtual void      SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
   virtual void      SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
+  virtual void      SetAccelerationStructurePlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTopLevelAS* pTopLevelAS) override final;
   virtual xiiResult CommitShaderResourcesPlatform(xiiEnum<xiiGALStateTransitionMode> mode) override final;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor) override final;
@@ -50,16 +115,26 @@ protected:
   virtual void NextSubpassPlatform() override final;
   virtual void EndRenderPassPlatform() override final;
 
-  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex) override final;
-  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex) override final;
-  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance) override final;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
-  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
+  virtual void DrawPlatform(const xiiGALDrawDescription& description) override final;
+  virtual void DrawIndexedPlatform(const xiiGALDrawIndexedDescription& description) override final;
+  virtual void DrawIndirectPlatform(const xiiGALDrawIndirectDescription& description) override final;
+  virtual void DrawIndexedIndirectPlatform(const xiiGALDrawIndexedIndirectDescription& description) override final;
+  virtual void DrawMeshPlatform(const xiiGALDrawMeshDescription& description) override final;
+  virtual void DrawMeshIndirectPlatform(const xiiGALDrawMeshIndirectDescription& description) override final;
+  virtual void MultiDrawPlatform(const xiiGALMultiDrawDescription& description) override final;
+  virtual void MultiDrawIndexedPlatform(const xiiGALMultiDrawIndexedDescription& description) override final;
 
-  virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override final;
-  virtual xiiResult DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override final;
+  virtual void DispatchComputePlatform(const xiiGALDispatchComputeDescription& description) override final;
+  virtual void DispatchComputeIndirectPlatform(const xiiGALDispatchComputeIndirectDescription& description) override final;
+  virtual void TraceRaysPlatform(const xiiGALTraceRaysDescription& description) override final;
+  virtual void TraceRaysIndirectPlatform(const xiiGALTraceRaysIndirectDescription& description) override final;
+  virtual void UpdateSBTPlatform(const xiiGALUpdateSBTDescription& description) override final;
+  virtual void BuildBLASPlatform(const xiiGALBuildBLASDescription& description) override final;
+  virtual void BuildTLASPlatform(const xiiGALBuildTLASDescription& description) override final;
+  virtual void CopyBLASPlatform(const xiiGALCopyBLASDescription& description) override final;
+  virtual void CopyTLASPlatform(const xiiGALCopyTLASDescription& description) override final;
+  virtual void WriteBLASCompactedSizePlatform(const xiiGALWriteBLASCompactedSizeDescription& description) override final;
+  virtual void WriteTLASCompactedSizePlatform(const xiiGALWriteTLASCompactedSizeDescription& description) override final;
 
   virtual void BeginQueryPlatform(xiiGALQuery* pQuery) override final;
   virtual void EndQueryPlatform(xiiGALQuery* pQuery) override final;
@@ -73,10 +148,17 @@ protected:
   virtual void      UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData) override final;
   virtual void      CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture) override final;
   virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) override final;
-  virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData) override final;
+  virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture, const xiiGALResolveTextureSubresourceDescription& description) override final;
   virtual void      GenerateMipsPlatform(xiiGALTextureView* pTextureView) override final;
   virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData) override final;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
+
+  virtual void SetShadingRatePlatform(xiiBitflags<xiiGALShadingRateFlags> baseRateFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> primitiveCombinerFlags, xiiBitflags<xiiGALShadingRateCombinerFlags> textureCombinerFlags) override final;
+
+  virtual void TransitionResourceStatesPlatform(xiiArrayPtr<xiiGALStateTransitionDescription> pResourceBarriers) override final;
+
+  virtual void EnqueueSignalPlatform(xiiGALFence* pFence, xiiUInt64 uiValue) override final;
+  virtual void DeviceWaitForFencePlatform(xiiGALFence* pFence, xiiUInt64 uiValue) override final;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
   virtual void EndDebugGroupPlatform() override final;
@@ -84,30 +166,34 @@ protected:
 
   virtual void InvalidateStatePlatform() override final;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+  virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
-  static constexpr xiiUInt32 s_uiCommandAllocatorDesiredCount = 2U;
-
-  struct FenceData
+  struct FenceInfo
   {
-    ID3D12Fence* m_pD3D12Fence         = nullptr;
-    xiiUInt64    m_uiCurrentFenceValue = 0U;
-    xiiUInt64    m_uiNextFenceValue    = 1U;
+    XII_DECLARE_POD_TYPE();
+
+    xiiGALFenceD3D12* m_pFenceD3D12 = nullptr;
+    xiiUInt64         m_uiWaitValue = 0U;
   };
 
-  struct StateCache
-  {
-    ID3D12RootSignature* m_pD3D12GraphicsRootSignature = nullptr;
-    ID3D12RootSignature* m_pD3D12ComputeRootSignature  = nullptr;
-    ID3D12PipelineState* m_pD3D12PipelineState         = nullptr;
-  };
+  void BindSubpassAttachments(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12, xiiUInt32 uiSubpassIndex, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues);
 
-  ID3D12CommandQueue*                                                       m_pD3D12CommandQueue;
-  ID3D12GraphicsCommandList*                                                m_pD3D12CommandList;
-  xiiUInt32                                                                 m_uiCurrentAllocatorIndex;
-  xiiHybridArray<ID3D12CommandAllocator*, s_uiCommandAllocatorDesiredCount> m_D3D12CommandAllocators;
-  xiiHybridArray<FenceData, s_uiCommandAllocatorDesiredCount>               m_D3D12CommandAllocatorFenceData;
+  void PrepareForDraw();
+  void PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType);
+  void PrepareForDispatchCompute();
+  void PrepareForRayTracing();
 
-  StateCache m_StateCache;
+private:
+  xiiGALCommandListPoolD3D12::AutoCommandList m_CommandListAllocation;
+  ID3D12CommandAllocator*                     m_pD3D12CommandAllocator = nullptr;
+  ID3D12GraphicsCommandList*                  m_pD3D12CommandList      = nullptr;
+  xiiBitflags<CommandListFlags>               m_CommandListFlags;
+  CommandListState                            m_CommandListState;
+  xiiGALCommandListDataD3D12                  m_CommandListData;
+  xiiDynamicArray<FenceInfo>                  m_SignalFences;
+  xiiDynamicArray<FenceInfo>                  m_WaitFences;
+  xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
+
+  xiiDynamicArray<D3D12_RESOURCE_BARRIER> m_PendingResourceBarriers;
 };

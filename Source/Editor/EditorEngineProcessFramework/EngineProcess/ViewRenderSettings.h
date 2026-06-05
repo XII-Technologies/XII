@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/EditorEngineProcessFrameworkDLL.h>
+
+#include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <Foundation/Reflection/Reflection.h>
-#include <GraphicsCore/Pipeline/ViewRenderMode.h>
 
 struct XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiSceneViewPerspective
 {

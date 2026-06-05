@@ -1,5 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+XII_ALWAYS_INLINE xiiWorld* xiiView::GetWorld() const
+{
+  return m_pWorld;
+}
+
 XII_ALWAYS_INLINE xiiViewHandle xiiView::GetHandle() const
 {
   return xiiViewHandle(m_InternalId);
@@ -25,12 +30,12 @@ XII_ALWAYS_INLINE void xiiView::SetRenderTargetView(xiiGALTextureView* pRenderTa
   m_pRenderTargetView = pRenderTargetView;
 }
 
-XII_ALWAYS_INLINE xiiGALSwapChain* xiiView::GetSwapChain() const
+XII_ALWAYS_INLINE const xiiGALSwapChain* xiiView::GetSwapChain() const
 {
   return m_pSwapChain;
 }
 
-XII_ALWAYS_INLINE void xiiView::SetSwapChain(xiiGALSwapChain* pSwapChain)
+XII_ALWAYS_INLINE void xiiView::SetSwapChain(const xiiGALSwapChain* pSwapChain)
 {
   m_pSwapChain = pSwapChain;
 }

@@ -113,11 +113,12 @@ protected:
 protected:
   IDXGISwapChain3* m_pDXGISwapChain3 = nullptr;
 
-  xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 2U> m_BackBufferTextures;
+  xiiUInt32                                       m_uiCurrentBackBufferIndex = 0U;
+  xiiHybridArray<xiiSharedPtr<xiiGALTexture>, 2U> m_SwapChainTextures;
 
   xiiGALFullScreenModeDescriptionD3D12 m_FullScreenMode;
 
   HANDLE m_FrameLatencyWaitableObject = NULL;
 
-  xiiUInt32 m_uiMaximumFrameLatency = 0U;
+  xiiUInt32 m_uiMaximumFrameLatency = 1U;
 };

@@ -12,8 +12,6 @@ class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
 class xiiViewRedrawMsgToEngine;
 class xiiEditorEngineViewMsg;
-class xiiActor;
-struct xiiRenderTargets;
 
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
 
@@ -23,7 +21,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEditorProcessViewWindow : public x
 public:
   xiiEditorProcessViewWindow()
   {
-    m_hWnd     = INVALID_WINDOW_HANDLE_VALUE;
+    m_hWindow  = INVALID_WINDOW_HANDLE_VALUE;
     m_uiWidth  = 0;
     m_uiHeight = 0;
   }
@@ -34,7 +32,7 @@ public:
 
   // Inherited via xiiWindowBase
   virtual xiiSizeU32      GetClientAreaSize() const override { return xiiSizeU32(m_uiWidth, m_uiHeight); }
-  virtual xiiWindowHandle GetNativeWindowHandle() const override { return m_hWnd; }
+  virtual xiiWindowHandle GetNativeWindowHandle() const override { return m_hWindow; }
   virtual void            ProcessWindowMessages() override {}
   virtual bool            IsFullscreenWindow(bool bOnlyProperFullscreenMode = false) const override { return false; }
   virtual bool            IsVisible() const override { return true; }
@@ -45,11 +43,11 @@ public:
   xiiUInt16 m_uiHeight;
 
 private:
-  xiiWindowHandle    m_hWnd;
+  xiiWindowHandle    m_hWindow;
   xiiAtomicInteger32 m_iReferenceCount = 0;
 };
 
-/// \brief Represents the view/window on the engine process side, holds all data necessary for rendering
+/// \brief Represents a view context in the engine process that is used to render a view for an editor document. It is responsible for creating a view, setting up the render target and handling view messages from the editor process.
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiEngineProcessViewContext
 {
 public:
@@ -69,8 +67,6 @@ public:
 
   xiiViewHandle GetViewHandle() const { return m_hView; }
 
-  void DrawSimpleGrid() const;
-
 protected:
   void SendViewMessage(xiiEditorEngineViewMsg* pViewMsg);
   void HandleWindowUpdate(xiiWindowHandle hWnd, xiiUInt16 uiWidth, xiiUInt16 uiHeight);
@@ -78,21 +74,15 @@ protected:
 
   virtual void SetCamera(const xiiViewRedrawMsgToEngine* pMsg);
 
-  /// \brief Returns the handle to the default render pipeline.
-  virtual xiiRenderPipelineResourceHandle CreateDefaultRenderPipeline();
-
-  /// \brief Returns the handle to the debug render pipeline.
-  virtual xiiRenderPipelineResourceHandle CreateDebugRenderPipeline();
-
   /// \brief Create the actual view.
   virtual xiiViewHandle CreateView() = 0;
-
-private:
-  xiiEngineProcessDocumentContext* m_pDocumentContext;
-  xiiActor*                        m_pEditorWndActor = nullptr;
 
 protected:
   xiiCamera     m_Camera;
   xiiViewHandle m_hView;
   xiiUInt32     m_uiViewID;
+
+private:
+  xiiRegisteredWindowHandle        m_hEditorWindow;
+  xiiEngineProcessDocumentContext* m_pDocumentContext;
 };

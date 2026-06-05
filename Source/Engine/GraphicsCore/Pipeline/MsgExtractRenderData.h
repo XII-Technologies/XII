@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Communication/Message.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
+
+#include <Foundation/Communication/Message.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 

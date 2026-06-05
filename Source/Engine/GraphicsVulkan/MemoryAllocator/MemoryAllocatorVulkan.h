@@ -24,6 +24,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryUsage
   };
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanMemoryUsage);
+
 /// \brief Flags used to configure Vulkan memory allocation behavior.
 ///
 /// These flags guide the Vulkan Memory Allocator (VMA) or custom allocation logic in selecting memory types, strategies, and mapping behavior.
@@ -68,6 +70,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanAllocationCreateFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiVulkanAllocationCreateFlags);
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanAllocationCreateFlags);
+
 /// \brief Abstract representation of Vulkan memory property flags.
 ///
 /// Helps describe physical device memory types in a readable and type-safe way.
@@ -99,6 +103,8 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryPropertyFlags
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiVulkanMemoryPropertyFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSVULKAN_DLL, xiiVulkanMemoryPropertyFlags);
 
 /// \brief Describes the parameters used to create a Vulkan memory allocation.
 ///
@@ -141,7 +147,7 @@ struct XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryStatistics
 /// \brief Vulkan memory allocator wrapper.
 ///
 /// Provides high-level allocation and resource management for Vulkan buffers and images.
-/// Internally wraps Vulkan Memory Allocator (VMA) or custom logic to simplify memory handling.
+/// Internally wraps Vulkan Memory Allocator (VMA) and custom logic to simplify memory handling.
 class XII_GRAPHICSVULKAN_DLL xiiVulkanMemoryAllocator
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiVulkanMemoryAllocator);

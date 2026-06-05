@@ -6,9 +6,9 @@
         "git": {
           "Name": "imgui",
           "repositoryUrl": "https://github.com/ocornut/imgui",
-          "commitHash": "c6e0284ac58b3f205c95365478888f7b53b077e2"
+          "commitHash": "8936b58fe26e8c3da834b8f60b06511d537b4c63"
         },
-		"version": "1.89.9"
+        "version": "1.92.8"
       }
     }
   ],

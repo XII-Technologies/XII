@@ -9,7 +9,7 @@ xiiEditorProcessViewWindow::~xiiEditorProcessViewWindow()
 
 xiiResult xiiEditorProcessViewWindow::UpdateWindow(xiiWindowHandle hParentWindow, xiiUInt16 uiWidth, xiiUInt16 uiHeight)
 {
-  m_hWnd     = hParentWindow;
+  m_hWindow  = hParentWindow;
   m_uiWidth  = uiWidth;
   m_uiHeight = uiHeight;
 

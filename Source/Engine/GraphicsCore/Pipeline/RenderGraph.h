@@ -137,7 +137,7 @@ struct XII_GRAPHICSCORE_DLL xiiRGCompileSettings : public xiiHashableStruct<xiiR
 
   bool      m_bEnablePassCulling   = true;  ///< Remove passes not reachable from any side-effect pass.
   bool      m_bEnableCompileCache  = true;  ///< Skip recompilation when the graph signature is unchanged.
-  bool      m_bEnableSplitBarriers = true;  ///< Use Begin/End split barriers to overlap transitions.
+  bool      m_bEnableSplitBarriers = false; ///< Use Begin/End split barriers to overlap transitions.
   bool      m_bEnableAsyncQueues   = true;  ///< Schedule async-compute/transfer passes on separate queues.
   bool      m_bEnableGPUProfiling  = false; ///< Emit Duration queries around each pass via the profiler.
   xiiUInt32 m_uiCacheSalt          = 0U;    ///< Invalidate the compile cache without changing the graph.
@@ -448,9 +448,10 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiUInt32                             m_uiResourceIndex;
-    bool                                  m_bIsTexture;
-    xiiUInt16                             m_uiVersion; ///< Version being read or written.
+    xiiUInt32 m_uiResourceIndex;
+    bool      m_bIsTexture;
+    xiiUInt16 m_uiVersion; ///< Version being read or written.
+
     xiiBitflags<xiiGALResourceStateFlags> m_RequiredState;
     bool                                  m_bIsWrite;
   };
@@ -480,8 +481,7 @@ private:
 
   void EmitBarrier(xiiUInt32 uiConsumerPassIdx, xiiUInt32 uiResourceIdx, bool bIsTexture, xiiBitflags<xiiGALResourceStateFlags> afterState, bool bSplitBarrier, xiiUInt32 uiFirstMip = 0U, xiiUInt32 uiMipCount = XII_GAL_REMAINING_MIP_LEVELS, xiiUInt32 uiFirstSlice = 0U, xiiUInt32 uiSliceCount = XII_GAL_REMAINING_ARRAY_SLICES);
 
-  [[nodiscard]] static xiiBitflags<xiiGALResourceStateFlags> InferStateFromUsage(const ResourceUsage& usage);
-  [[nodiscard]] static xiiUInt64                             ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
+  [[nodiscard]] static xiiUInt64 ComputeSignature(const xiiDynamicArray<PassEntry>& passes);
 
 private:
   xiiDynamicArray<PassEntry>               m_Passes;            ///< Setup-phase pass list, cleared each BeginSetup().

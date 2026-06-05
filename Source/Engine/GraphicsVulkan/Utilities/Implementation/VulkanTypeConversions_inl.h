@@ -1264,9 +1264,48 @@ XII_ALWAYS_INLINE vk::AccessFlags xiiVulkanTypeConversions::GetAccessFlags(xiiBi
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceState(vk::AccessFlags e)
 {
-  XII_IGNORE_UNUSED(e);
-  XII_ASSERT_NOT_IMPLEMENTED;
-  return xiiBitflags<xiiGALResourceStateFlags>();
+  xiiBitflags<xiiGALResourceStateFlags> resourceStateFlags = xiiGALResourceStateFlags::Unknown;
+
+  if (e == vk::AccessFlags{})
+  {
+    resourceStateFlags |= xiiGALResourceStateFlags::Common;
+  }
+
+  if ((e & vk::AccessFlagBits::eVertexAttributeRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::VertexBuffer;
+  if ((e & vk::AccessFlagBits::eUniformRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::ConstantBuffer;
+  if ((e & vk::AccessFlagBits::eIndexRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::IndexBuffer;
+  if ((e & (vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite)) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::RenderTarget;
+  if ((e & (vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite)) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::DepthWrite;
+  if ((e & vk::AccessFlagBits::eInputAttachmentRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::InputAttachment;
+  if ((e & vk::AccessFlagBits::eIndirectCommandRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::IndirectArgument;
+  if ((e & vk::AccessFlagBits::eTransferRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::ResolveSource;
+  if ((e & vk::AccessFlagBits::eTransferWrite) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::ResolveDestination;
+  if ((e & vk::AccessFlagBits::eShaderRead) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::ShaderResource;
+  if ((e & vk::AccessFlagBits::eShaderWrite) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::UnorderedAccess;
+  if ((e & (vk::AccessFlagBits::eAccelerationStructureReadKHR | vk::AccessFlagBits::eAccelerationStructureReadNV)) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::BuildASRead;
+  if ((e & (vk::AccessFlagBits::eAccelerationStructureWriteKHR | vk::AccessFlagBits::eAccelerationStructureWriteNV)) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::BuildASWrite;
+  if ((e & (vk::AccessFlagBits::eFragmentDensityMapReadEXT | vk::AccessFlagBits::eFragmentShadingRateAttachmentReadKHR)) != vk::AccessFlags{})
+    resourceStateFlags |= xiiGALResourceStateFlags::ShadingRate;
+
+  if (resourceStateFlags == xiiGALResourceStateFlags::Unknown)
+  {
+    resourceStateFlags |= xiiGALResourceStateFlags::Common;
+  }
+
+  return resourceStateFlags;
 }
 
 XII_ALWAYS_INLINE void xiiVulkanTypeConversions::GetPermittedStagesAndAccessFlags(xiiBitflags<xiiGALBindFlags> e, vk::PipelineStageFlags& vkStageFlags, vk::AccessFlags& vkAccessFlags)
@@ -1584,7 +1623,7 @@ XII_ALWAYS_INLINE vk::ResolveModeFlagBits xiiVulkanTypeConversions::GetDepthReso
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiVulkanTypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
 {
-  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Undefined;
+  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Unknown;
 
   for (auto v : bindFlags)
   {

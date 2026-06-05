@@ -9,15 +9,16 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME})
 
-xii_enable_strict_warnings(${PROJECT_NAME})
-
-xii_link_target_d3d12(${PROJECT_NAME})
+# xii_enable_strict_warnings(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
   GraphicsFoundation
   DirectX-Headers
   D3D12MemoryAllocator
+  d3d12.lib
+  dxgi.lib
+  dxguid.lib
 )
 
 if("${XII_CMAKE_WINDOWS_SDK_VERSION}" VERSION_GREATER_EQUAL "10.0.19041.0")

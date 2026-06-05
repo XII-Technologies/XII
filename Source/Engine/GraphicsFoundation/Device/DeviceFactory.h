@@ -14,7 +14,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceImplementationDescription
   xiiEnum<xiiGALGraphicsDeviceType> m_APIType = xiiGALGraphicsDeviceType::Null; ///< The graphics API type of the implementation.
   xiiString                         m_sName;                                    ///< The name of the implementation, e.g. "Vulkan", "Direct3D 12", etc.
   xiiString                         m_sShaderModel;                             ///< The shader model supported by the implementation, e.g. "VK_SM67", etc.
-  xiiString                         m_sShaderCompiler;                          ///< The shader compiler to use for this implementation, e.g. "xiiShaderCompilerSPIRV", "xiiShaderCompilerDXC".
+  xiiString                         m_sShaderCompiler;                          ///< The shader compiler to use for this implementation, e.g. "xiiShaderCompilerSPIRV", "xiiShaderCompilerDXIL".
 };
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFactory

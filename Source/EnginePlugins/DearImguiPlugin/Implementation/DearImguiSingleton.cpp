@@ -1,22 +1,79 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <GameEngine/GameEnginePCH.h>
+#include <DearImguiPlugin/DearImguiPluginPCH.h>
 
-#ifdef BUILDSYSTEM_ENABLE_IMGUI_SUPPORT
+#include <Core/Input/InputManager.h>
+#include <DearImguiPlugin/DearImguiSingleton.h>
+#include <Foundation/Algorithm/HashStream.h>
+#include <Foundation/Configuration/Startup.h>
+#include <Foundation/Time/Clock.h>
+#include <GameEngine/GameApplication/GameApplication.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
+#include <GraphicsCore/Pipeline/View.h>
 
-#  include <Core/Input/InputManager.h>
-#  include <Foundation/Configuration/Startup.h>
-#  include <Foundation/Time/Clock.h>
-#  include <GameEngine/DearImgui/DearImgui.h>
-#  include <GameEngine/GameApplication/GameApplication.h>
-#  include <GraphicsCore/Pipeline/View.h>
-#  include <GraphicsCore/RenderWorld/RenderWorld.h>
-#  include <GraphicsCore/Textures/Texture2DResource.h>
+#include <Imgui/imgui_internal.h>
 
-#  include <Imgui/imgui_internal.h>
+// clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(DearImguiPlugin, DearImgui)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    XII_DEFAULT_NEW(xiiImguiSingleton);
+  }
+
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    xiiImguiSingleton* pSingleton = xiiImguiSingleton::GetSingleton();
+
+    XII_DEFAULT_DELETE(pSingleton);
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+// clang-format on
 
 namespace
 {
+  struct xiiImguiContextKey
+  {
+    xiiImguiContextKey(const xiiView* pView) :
+      m_pWorld(pView ? pView->GetWorld() : nullptr), m_hView(pView ? pView->GetHandle() : xiiViewHandle())
+    {
+    }
+
+    const xiiWorld* m_pWorld = nullptr;
+    xiiViewHandle   m_hView;
+
+    XII_ALWAYS_INLINE bool operator==(const xiiImguiContextKey& other) const { return m_pWorld == other.m_pWorld && m_hView == other.m_hView; }
+  };
+
+  template <>
+  struct xiiHashHelper<xiiImguiContextKey>
+  {
+    XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiImguiContextKey& value)
+    {
+      xiiHashStreamWriter32 writer;
+
+      writer << value.m_pWorld;
+      writer << value.m_hView.GetInternalID().m_Data;
+
+      return writer.GetHashValue();
+    }
+
+    XII_ALWAYS_INLINE static bool Equal(const xiiImguiContextKey& a, const xiiImguiContextKey& b) { return a == b; }
+  };
+
+  struct xiiImguiContext
+  {
+    ImGuiContext* m_pImGuiContext = nullptr;
+  };
+
+  static xiiHashTable<xiiImguiContextKey, xiiImguiContext> s_ViewToContextTable;
+
   void* xiiImguiAllocate(size_t uiSize, void* pUserData)
   {
     xiiAllocator* pAllocator = static_cast<xiiAllocator*>(pUserData);
@@ -33,67 +90,31 @@ namespace
   }
 } // namespace
 
-XII_IMPLEMENT_SINGLETON(xiiImgui);
+xiiEvent<const xiiView*, xiiMutex> xiiImguiSingleton::s_UpdateEvent;
 
-xiiImgui::xiiImgui(xiiImguiConfigFontCallback configFontCallback, xiiImguiConfigStyleCallback configStyleCallback) :
-  m_SingletonRegistrar(this), m_Allocator("ImGui", xiiFoundation::GetDefaultAllocator()), m_ConfigStyleCallback(configStyleCallback)
+XII_IMPLEMENT_SINGLETON(xiiImguiSingleton);
+
+xiiImguiSingleton::xiiImguiSingleton() :
+  m_SingletonRegistrar(this), m_Allocator("ImGui", xiiFoundation::GetDefaultAllocator())
 {
-  Startup(configFontCallback);
+  Startup();
 }
 
-xiiImgui::~xiiImgui()
+xiiImguiSingleton::~xiiImguiSingleton()
 {
   Shutdown();
 }
 
-void xiiImgui::SetCurrentContextForView(const xiiViewHandle& hView)
-{
-  XII_LOCK(m_ViewToContextTableMutex);
-
-  Context& context = m_ViewToContextTable[hView];
-  if (context.m_pImGuiContext == nullptr)
-  {
-    context.m_pImGuiContext = CreateContext();
-  }
-
-  ImGui::SetCurrentContext(context.m_pImGuiContext);
-
-  xiiUInt64 uiCurrentFrameCounter = xiiRenderWorld::GetFrameCounter();
-  if (context.m_uiFrameBeginCounter != uiCurrentFrameCounter)
-  {
-    // Last frame was not rendered. This can happen if a render pipeline with dear imgui renderer is used.
-    if (context.m_uiFrameRenderCounter != context.m_uiFrameBeginCounter)
-    {
-      ImGuiContext* pContext = ImGui::GetCurrentContext();
-      if (pContext && pContext->Initialized && pContext->WithinFrameScope)
-      {
-        ImGui::EndFrame();
-      }
-    }
-
-    BeginFrame(hView);
-    context.m_uiFrameBeginCounter = uiCurrentFrameCounter;
-  }
-}
-
-void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
+void xiiImguiSingleton::Startup()
 {
   ImGui::SetAllocatorFunctions(&xiiImguiAllocate, &xiiImguiDeallocate, &m_Allocator);
 
   m_pSharedFontAtlas = XII_DEFAULT_NEW(ImFontAtlas);
 
-  if (configFontCallback.IsValid())
-  {
-    configFontCallback(*m_pSharedFontAtlas);
-  }
-
   unsigned char* pPixels;
   xiiInt32       iWidth, iHeight;
-  m_pSharedFontAtlas->GetTexDataAsRGBA32(&pPixels, &iWidth, &iHeight); // Load as RGBA 32-bits (75% of the memory is wasted, but default font
-                                                                       // is so small) because it is more likely to be compatible with user's
-                                                                       // existing shaders. If your ImTextureId represent a higher-level
-                                                                       // concept than just a GL texture id, consider calling
-                                                                       // GetTexDataAsAlpha8() instead to save on GPU memory.
+  m_pSharedFontAtlas->GetTexDataAsRGBA32(&pPixels, &iWidth, &iHeight); // Load as RGBA 32-bits (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders.
+                                                                       // If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
 
   xiiTexture2DResourceHandle hFont = xiiResourceManager::GetExistingResource<xiiTexture2DResource>("ImguiFont");
 
@@ -120,52 +141,70 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
   const size_t id           = (size_t)m_Textures.GetCount() - 1;
   m_pSharedFontAtlas->TexID = reinterpret_cast<void*>(id);
 
-  xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.AddEventHandler(xiiMakeDelegate(&xiiImgui::GameApplicationEventHandler, this));
+  xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.AddEventHandler(xiiMakeDelegate(&xiiImguiSingleton ::GameApplicationEventHandler, this));
 }
 
-void xiiImgui::Shutdown()
+void xiiImguiSingleton::Shutdown()
 {
-  xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.RemoveEventHandler(xiiMakeDelegate(&xiiImgui::GameApplicationEventHandler, this));
+  xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.RemoveEventHandler(xiiMakeDelegate(&xiiImguiSingleton ::GameApplicationEventHandler, this));
 
   m_Textures.Clear();
 
   m_pSharedFontAtlas = nullptr;
-
-  for (auto it = m_ViewToContextTable.GetIterator(); it.IsValid(); ++it)
-  {
-    Context& context = it.Value();
-    ImGui::DestroyContext(context.m_pImGuiContext);
-    context.m_pImGuiContext = nullptr;
-  }
-  m_ViewToContextTable.Clear();
 }
 
-ImGuiContext* xiiImgui::CreateContext()
+void xiiImguiSingleton::OnViewModified(const xiiRenderWorldModuleExtractionEvent& viewEvent)
 {
-  // imgui reads the global context pointer WHILE creating a new context
-  // so if we don't reset it to null here, it will try to access it, and crash
-  // if imgui was active on the same thread before
+  switch (viewEvent.m_Type)
+  {
+    case xiiRenderWorldModuleExtractionEvent::Type::BeforeViewExtraction:
+    {
+      if (s_ViewToContextTable.Contains(viewEvent.m_pView))
+        return;
+
+      xiiImguiContext context;
+      context.m_pImGuiContext = CreateContext();
+
+      s_ViewToContextTable.Insert(viewEvent.m_pView, std::move(context));
+    }
+    break;
+    case xiiRenderWorldModuleExtractionEvent::Type::AfterViewExtraction:
+    {
+      xiiImguiContext* pContext;
+      XII_VERIFY(s_ViewToContextTable.TryGetValue(viewEvent.m_pView, pContext), "Received AfterViewExtraction for a view that doesn't exist in the context table. This should never happen.");
+
+      ImGui::SetCurrentContext(pContext->m_pImGuiContext);
+
+      SetupContext(viewEvent.m_pView);
+
+      s_UpdateEvent.Broadcast(viewEvent.m_pView);
+
+      ImGui::SetCurrentContext(nullptr);
+    }
+    break;
+    default:
+      break;
+  }
+}
+
+ImGuiContext* xiiImguiSingleton::CreateContext()
+{
+  // ImGui reads the global context pointer WHILE creating a new context so if we don't reset it to null here, it will try to access it, and crash if imgui was active on the same thread before.
   ImGui::SetCurrentContext(nullptr);
   ImGuiContext* context = ImGui::CreateContext(m_pSharedFontAtlas.Borrow());
   ImGui::SetCurrentContext(context);
 
   ImGuiIO& cfg = ImGui::GetIO();
 
-  cfg.DisplaySize.x = 1650;
-  cfg.DisplaySize.y = 1080;
-
-  if (m_ConfigStyleCallback.IsValid())
-  {
-    m_ConfigStyleCallback(ImGui::GetStyle());
-  }
+  cfg.DisplaySize.x = 960;
+  cfg.DisplaySize.y = 540;
 
   return context;
 }
 
-void xiiImgui::BeginFrame(const xiiViewHandle& hView)
+void xiiImguiSingleton::SetupContext(const xiiView* pView)
 {
-  xiiView* pView = nullptr;
-  if (!xiiRenderWorld::TryGetView(hView, pView))
+  if (!pView)
     return;
 
   auto viewport             = pView->GetViewport();
@@ -250,19 +289,22 @@ void xiiImgui::BeginFrame(const xiiViewHandle& hView)
     cfg.ClearInputKeys();
   }
 
-  ImGui::NewFrame();
-
   m_bImguiWantsInput = cfg.WantCaptureKeyboard || cfg.WantCaptureMouse;
 }
 
-void xiiImgui::GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e)
+void xiiImguiSingleton::GameApplicationEventHandler(const xiiGameApplicationExecutionEvent& e)
 {
-  if (e.m_Type == xiiGameApplicationExecutionEvent::Type::AfterUpdatePlugins)
+  switch (e.m_Type)
   {
-    ImGui::EndFrame();
+    case xiiGameApplicationExecutionEvent::Type::BeginAppTick:
+      ImGui::NewFrame();
+      break;
+    case xiiGameApplicationExecutionEvent::Type::AfterUpdatePlugins:
+      ImGui::EndFrame();
+      break;
+    default:
+      break;
   }
 }
 
-#endif
-
-XII_STATICLINK_FILE(GameEngine, GameEngine_DearImgui_Implementation_DearImgui);
+XII_STATICLINK_FILE(DearImguiPlugin, DearImguiPlugin_Implementation_DearImgui);

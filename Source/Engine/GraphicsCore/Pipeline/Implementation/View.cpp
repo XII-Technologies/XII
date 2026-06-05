@@ -87,7 +87,8 @@ namespace
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiView::xiiView()
+xiiView::xiiView(xiiWorld* pWorld) :
+  m_pWorld(pWorld)
 {
   m_pRenderGraph = XII_DEFAULT_NEW(xiiRenderGraph);
 
@@ -103,8 +104,11 @@ xiiView::xiiView()
 
 xiiView::~xiiView()
 {
+  m_InternalId.Invalidate();
+
   m_ViewPassResources.m_LightingSystem.Shutdown();
   m_ViewPassResources.m_Profiler.Shutdown();
+
   m_ResourceCache.Shutdown();
 }
 
@@ -4044,7 +4048,7 @@ void xiiView::SetupFinalBlit(xiiFinalBlitData& data, xiiRGBuilder& builder)
 {
   data.m_hLDRIn = builder.ReadTexture(xiiRGBlackboardKeys::k_LDRSceneColor, xiiGALResourceStateFlags::ShaderResource);
 
-  if (xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
+  if (const xiiGALSwapChain* pSwapChain = GetSwapChain(); pSwapChain != nullptr)
   {
     xiiSharedPtr<xiiGALTexture> pBackbufferTexture = pSwapChain->GetBackBufferTexture();
     if (pBackbufferTexture)

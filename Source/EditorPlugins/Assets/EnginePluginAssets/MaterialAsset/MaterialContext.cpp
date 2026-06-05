@@ -214,8 +214,8 @@ void xiiMaterialContext::OnInitialize()
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
 
-  xiiGameObjectDesc obj;
-  xiiGameObject*    pObj;
+  xiiGameObjectDescription obj;
+  xiiGameObject*           pObj;
 
   // Preview Mesh
   {

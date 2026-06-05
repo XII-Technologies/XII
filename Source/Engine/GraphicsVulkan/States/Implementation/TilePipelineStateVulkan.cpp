@@ -24,7 +24,15 @@ xiiGALTilePipelineStateVulkan::~xiiGALTilePipelineStateVulkan()
 
 xiiResult xiiGALTilePipelineStateVulkan::InitPlatform()
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+
+  if (pDeviceVulkan->GetGraphicsDeviceAdapterProperties().m_Features.m_TileShaders != xiiGALDeviceFeatureState::Enabled)
+  {
+    xiiLog::Error("Tile pipeline creation failed: Tile Shaders are disabled on the current Vulkan device.");
+    return XII_FAILURE;
+  }
+
+  xiiLog::Error("Tile pipeline creation is not supported by the current GraphicsVulkan implementation.");
 
   return XII_FAILURE;
 }

@@ -66,7 +66,7 @@ xiiInternal::NewInstance<void> xiiWorldRttiConverterContext::CreateObject(const 
   {
     xiiStringBuilder tmp;
 
-    xiiGameObjectDesc d;
+    xiiGameObjectDescription d;
     d.m_sName.Assign(xiiConversionUtils::ToString(guid, tmp).GetData());
     d.m_uiStableRandomSeed = xiiHashingUtils::xxHash32(tmp.GetData(), tmp.GetElementCount());
 

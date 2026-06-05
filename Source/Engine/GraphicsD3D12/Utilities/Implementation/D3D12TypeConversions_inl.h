@@ -127,7 +127,7 @@ XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetFillMode(xiiGALFil
     case xiiGALFillMode::Wireframe:
       return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
     case xiiGALFillMode::Solid:
-      return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
+      return D3D12_FILL_MODE::D3D12_FILL_MODE_SOLID;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -590,70 +590,6 @@ XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiD3D12TypeConversions::GetGALForm
   return xiiGALResourceFormat::Unknown;
 }
 
-XII_ALWAYS_INLINE DXGI_MODE_SCALING xiiD3D12TypeConversions::GetScalingMode(xiiGALScalingMode::Enum e)
-{
-  switch (e)
-  {
-    case xiiGALScalingMode::Unspecified:
-      return DXGI_MODE_SCALING_UNSPECIFIED;
-    case xiiGALScalingMode::Centered:
-      return DXGI_MODE_SCALING_CENTERED;
-    case xiiGALScalingMode::Stretched:
-      return DXGI_MODE_SCALING_STRETCHED;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-  return DXGI_MODE_SCALING_UNSPECIFIED;
-}
-
-XII_ALWAYS_INLINE xiiGALScalingMode::Enum xiiD3D12TypeConversions::GetGALScalingMode(DXGI_MODE_SCALING e)
-{
-  switch (e)
-  {
-    case DXGI_MODE_SCALING_UNSPECIFIED:
-      return xiiGALScalingMode::Unspecified;
-    case DXGI_MODE_SCALING_CENTERED:
-      return xiiGALScalingMode::Centered;
-    case DXGI_MODE_SCALING_STRETCHED:
-      return xiiGALScalingMode::Stretched;
-  }
-  return xiiGALScalingMode::Enum();
-}
-
-XII_ALWAYS_INLINE DXGI_MODE_SCANLINE_ORDER xiiD3D12TypeConversions::GetScanLineOrder(xiiGALScanLineOrder::Enum e)
-{
-  switch (e)
-  {
-    case xiiGALScanLineOrder::Unspecified:
-      return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-    case xiiGALScanLineOrder::Progressive:
-      return DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
-    case xiiGALScanLineOrder::UpperFieldFirst:
-      return DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST;
-    case xiiGALScanLineOrder::LowerFieldFirst:
-      return DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-  return DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-}
-
-XII_ALWAYS_INLINE xiiGALScanLineOrder::Enum xiiD3D12TypeConversions::GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e)
-{
-  switch (e)
-  {
-    case DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED:
-      return xiiGALScanLineOrder::Unspecified;
-    case DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE:
-      return xiiGALScanLineOrder::Progressive;
-    case DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST:
-      return xiiGALScanLineOrder::UpperFieldFirst;
-    case DXGI_MODE_SCANLINE_ORDER_LOWER_FIELD_FIRST:
-      return xiiGALScanLineOrder::LowerFieldFirst;
-  }
-  return xiiGALScanLineOrder::Enum();
-}
-
 XII_ALWAYS_INLINE D3D12_FILTER xiiD3D12TypeConversions::GetFilter(xiiGALFilterType::Enum minFilter, xiiGALFilterType::Enum magFilter, xiiGALFilterType::Enum mipFilter)
 {
   switch (minFilter)
@@ -877,6 +813,65 @@ XII_ALWAYS_INLINE D3D12_TEXTURE_ADDRESS_MODE xiiD3D12TypeConversions::GetTexture
   return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
+XII_ALWAYS_INLINE D3D12_SHADER_VISIBILITY xiiD3D12TypeConversions::GetShaderVisibility(xiiBitflags<xiiGALShaderType> shaderStages)
+{
+  if (shaderStages == xiiGALShaderType::Vertex)
+    return D3D12_SHADER_VISIBILITY_VERTEX;
+  if (shaderStages == xiiGALShaderType::Hull)
+    return D3D12_SHADER_VISIBILITY_HULL;
+  if (shaderStages == xiiGALShaderType::Domain)
+    return D3D12_SHADER_VISIBILITY_DOMAIN;
+  if (shaderStages == xiiGALShaderType::Geometry)
+    return D3D12_SHADER_VISIBILITY_GEOMETRY;
+  if (shaderStages == xiiGALShaderType::Pixel)
+    return D3D12_SHADER_VISIBILITY_PIXEL;
+
+  return D3D12_SHADER_VISIBILITY_ALL;
+}
+
+XII_ALWAYS_INLINE bool xiiD3D12TypeConversions::TryGetDescriptorRangeType(xiiEnum<xiiGALShaderResourceType> resourceType, D3D12_DESCRIPTOR_RANGE_TYPE& out_rangeType)
+{
+  switch (resourceType)
+  {
+    case xiiGALShaderResourceType::ConstantBuffer:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+      return true;
+
+    case xiiGALShaderResourceType::TextureSRV:
+    case xiiGALShaderResourceType::BufferSRV:
+    case xiiGALShaderResourceType::InputAttachment:
+    case xiiGALShaderResourceType::AccelerationStructure:
+    case xiiGALShaderResourceType::TextureAndSampler:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+      return true;
+
+    case xiiGALShaderResourceType::TextureUAV:
+    case xiiGALShaderResourceType::BufferUAV:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+      return true;
+
+    case xiiGALShaderResourceType::Sampler:
+      out_rangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+      return true;
+
+    default:
+      break;
+  }
+
+  return false;
+}
+
+XII_ALWAYS_INLINE D3D12_STATIC_BORDER_COLOR xiiD3D12TypeConversions::GetStaticBorderColor(const xiiColor& color)
+{
+  if (color.a <= 0.0f)
+    return D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+
+  if (color.r <= 0.0f && color.g <= 0.0f && color.b <= 0.0f)
+    return D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+
+  return D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+}
+
 XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiGALQueryType::Enum e)
 {
   switch (e)
@@ -893,6 +888,87 @@ XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xi
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+}
+
+XII_ALWAYS_INLINE D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS xiiD3D12TypeConversions::GetAccelerationStructureBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)
+{
+  D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS d3d12Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
+  if (flags.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
+    d3d12Flags |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
+
+  return d3d12Flags;
+}
+
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetBLASTriangleVertexFormat(const xiiGALBLASTriangleDescription& triangle)
+{
+  if (triangle.m_VertexValueType == xiiGALValueType::Float32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? DXGI_FORMAT_R32G32_FLOAT : DXGI_FORMAT_R32G32B32_FLOAT;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Float16)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? DXGI_FORMAT_R16G16_FLOAT : DXGI_FORMAT_R16G16B16A16_FLOAT;
+  }
+  if (triangle.m_VertexValueType == xiiGALValueType::Int32)
+  {
+    return triangle.m_uiVertexComponentCount == 2U ? DXGI_FORMAT_R32G32_SINT : DXGI_FORMAT_R32G32B32_SINT;
+  }
+
+  XII_REPORT_FAILURE("Unsupported BLAS triangle vertex value type: {}.", xiiArgEnum(triangle.m_VertexValueType));
+  return DXGI_FORMAT_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetBLASIndexFormat(xiiEnum<xiiGALValueType> indexType)
+{
+  switch (indexType)
+  {
+    case xiiGALValueType::UInt16:
+      return DXGI_FORMAT_R16_UINT;
+    case xiiGALValueType::UInt32:
+      return DXGI_FORMAT_R32_UINT;
+    case xiiGALValueType::Undefined:
+      return DXGI_FORMAT_UNKNOWN;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return DXGI_FORMAT_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::GetBLASTriangleVertexStride(const xiiGALBLASTriangleDescription& triangle)
+{
+  if (triangle.m_VertexValueType == xiiGALValueType::Float16 && triangle.m_uiVertexComponentCount == 3U)
+  {
+    // D3D12 does not expose a packed 3x16-bit float triangle format for DXR geometry descriptors.
+    // Use 4-component alignment for descriptor validation and expect padded vertex data.
+    return sizeof(xiiUInt16) * 4U;
+  }
+
+  xiiUInt32 uiComponentSize = 0U;
+  switch (triangle.m_VertexValueType)
+  {
+    case xiiGALValueType::Float16:
+      uiComponentSize = sizeof(xiiUInt16);
+      break;
+    case xiiGALValueType::Float32:
+    case xiiGALValueType::Int32:
+      uiComponentSize = sizeof(xiiUInt32);
+      break;
+    default:
+      XII_REPORT_FAILURE("Unsupported BLAS triangle vertex value type for stride: {}.", xiiArgEnum(triangle.m_VertexValueType));
+      return 0U;
+  }
+
+  return triangle.m_uiVertexComponentCount * uiComponentSize;
 }
 
 XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xiiGALValueType::Enum e, xiiUInt32 uiComponentCount, bool bIsNormalized)
@@ -1103,7 +1179,8 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetDXGIFormatFromType(xii
     break;
     case xiiGALValueType::Float64:
     {
-      XII_ASSERT_NOT_IMPLEMENTED;
+      xiiLog::Error("Float64 vertex formats are unsupported in D3D12.");
+      return DXGI_FORMAT_UNKNOWN;
     }
     break;
 
@@ -1205,6 +1282,35 @@ XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D12TypeConversions::GetPrimitiveTo
   return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
 
+XII_ALWAYS_INLINE D3D12_PRIMITIVE_TOPOLOGY_TYPE xiiD3D12TypeConversions::GetPrimitiveTopologyType(xiiEnum<xiiGALPrimitiveTopology> primitiveTopology)
+{
+  if (primitiveTopology >= xiiGALPrimitiveTopology::ControlPointPatchList1 && primitiveTopology <= xiiGALPrimitiveTopology::ControlPointPatchList32)
+    return D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
+
+  switch (primitiveTopology)
+  {
+    case xiiGALPrimitiveTopology::PointList:
+      return D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+
+    case xiiGALPrimitiveTopology::LineList:
+    case xiiGALPrimitiveTopology::LineStrip:
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+
+    case xiiGALPrimitiveTopology::TriangleList:
+    case xiiGALPrimitiveTopology::TriangleStrip:
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+      return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+    default:
+      break;
+  }
+
+  return D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+}
+
 XII_ALWAYS_INLINE D3D12_INPUT_CLASSIFICATION xiiD3D12TypeConversions::GetElementFrequency(xiiGALInputElementFrequency::Enum e)
 {
   switch (e)
@@ -1222,4 +1328,332 @@ XII_ALWAYS_INLINE D3D12_INPUT_CLASSIFICATION xiiD3D12TypeConversions::GetElement
 XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevelCount)
 {
   return uiMipSlice + (uiArraySlice * uiMipLevelCount);
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D12TypeConversions::CalculateSubResourceIndex(xiiUInt32 uiMipSlice, xiiUInt32 uiArraySlice, xiiUInt32 uiPlaneSlice, xiiUInt32 uiMipLevelCount, xiiUInt32 uiArraySize)
+{
+  return uiMipSlice + (uiArraySlice * uiMipLevelCount) + (uiPlaneSlice * uiMipLevelCount * uiArraySize);
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e)
+{
+  D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATE_COMMON;
+
+  if (e.IsSet(xiiGALResourceStateFlags::Undefined))
+    resourceStates |= static_cast<D3D12_RESOURCE_STATES>(0);
+  if (e.IsSet(xiiGALResourceStateFlags::VertexBuffer))
+    resourceStates |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::ConstantBuffer))
+    resourceStates |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::IndexBuffer))
+    resourceStates |= D3D12_RESOURCE_STATE_INDEX_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::RenderTarget))
+    resourceStates |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+  if (e.IsSet(xiiGALResourceStateFlags::UnorderedAccess))
+    resourceStates |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthWrite))
+    resourceStates |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthRead))
+    resourceStates |= D3D12_RESOURCE_STATE_DEPTH_READ;
+  if (e.IsSet(xiiGALResourceStateFlags::ShaderResource))
+    resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
+    resourceStates |= D3D12_RESOURCE_STATE_STREAM_OUT;
+  if (e.IsSet(xiiGALResourceStateFlags::IndirectArgument))
+    resourceStates |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+  if (e.IsSet(xiiGALResourceStateFlags::CopyDestination))
+    resourceStates |= D3D12_RESOURCE_STATE_COPY_DEST;
+  if (e.IsSet(xiiGALResourceStateFlags::CopySource))
+    resourceStates |= D3D12_RESOURCE_STATE_COPY_SOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveDestination))
+    resourceStates |= D3D12_RESOURCE_STATE_RESOLVE_DEST;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveSource))
+    resourceStates |= D3D12_RESOURCE_STATE_RESOLVE_SOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::InputAttachment))
+    resourceStates |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::Present))
+    resourceStates |= D3D12_RESOURCE_STATE_PRESENT;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASRead))
+    resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildASWrite))
+    resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
+    resourceStates |= D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  if (e.IsSet(xiiGALResourceStateFlags::Common))
+    resourceStates |= D3D12_RESOURCE_STATE_COMMON;
+  if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
+    resourceStates |= D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+
+  return resourceStates;
+}
+
+XII_ALWAYS_INLINE D3D12_SHADING_RATE xiiD3D12TypeConversions::GetShadingRate(xiiBitflags<xiiGALShadingRateFlags> e)
+{
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateFlags::_1X1:
+      return D3D12_SHADING_RATE_1X1;
+    case xiiGALShadingRateFlags::_1X2:
+      return D3D12_SHADING_RATE_1X2;
+    case xiiGALShadingRateFlags::_2X1:
+      return D3D12_SHADING_RATE_2X1;
+    case xiiGALShadingRateFlags::_2X2:
+      return D3D12_SHADING_RATE_2X2;
+    case xiiGALShadingRateFlags::_2X4:
+      return D3D12_SHADING_RATE_2X4;
+    case xiiGALShadingRateFlags::_4X2:
+      return D3D12_SHADING_RATE_4X2;
+    case xiiGALShadingRateFlags::_4X4:
+      return D3D12_SHADING_RATE_4X4;
+
+    case xiiGALShadingRateFlags::_1X4:
+    case xiiGALShadingRateFlags::_4X1:
+      xiiLog::Error("Shading rate '{}' is unsupported by Direct3D12.", xiiArgEnum(e));
+      return D3D12_SHADING_RATE_1X1;
+
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate value.");
+      return D3D12_SHADING_RATE_1X1;
+  }
+}
+
+XII_ALWAYS_INLINE D3D12_SHADING_RATE_COMBINER xiiD3D12TypeConversions::GetShadingRateCombiner(xiiBitflags<xiiGALShadingRateCombinerFlags> e)
+{
+  XII_ASSERT_DEV(xiiMath::IsPowerOf2(e.GetValue()), "Expected a single combiner flag.");
+
+  switch (e.GetValue())
+  {
+    case xiiGALShadingRateCombinerFlags::PassThrough:
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+    case xiiGALShadingRateCombinerFlags::CombinerOverride:
+      return D3D12_SHADING_RATE_COMBINER_OVERRIDE;
+    case xiiGALShadingRateCombinerFlags::CombinerMin:
+      return D3D12_SHADING_RATE_COMBINER_MIN;
+    case xiiGALShadingRateCombinerFlags::CombinerMax:
+      return D3D12_SHADING_RATE_COMBINER_MAX;
+    case xiiGALShadingRateCombinerFlags::CombinerSum:
+      return D3D12_SHADING_RATE_COMBINER_SUM;
+    case xiiGALShadingRateCombinerFlags::CombinerMul:
+      xiiLog::Error("Shading rate combiner '{}' is unsupported by Direct3D12.", xiiArgEnum(e));
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+    default:
+      XII_REPORT_FAILURE("Unknown shading rate combiner.");
+      return D3D12_SHADING_RATE_COMBINER_PASSTHROUGH;
+  }
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiD3D12TypeConversions::GetResourceStateFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
+{
+  xiiBitflags<xiiGALResourceStateFlags> resourceStates = xiiGALResourceStateFlags::Unknown;
+
+  for (xiiUInt32 uiBit : bindFlags)
+  {
+    switch (uiBit)
+    {
+      case xiiGALBindFlags::VertexBuffer:
+        resourceStates |= xiiGALResourceStateFlags::VertexBuffer;
+        break;
+      case xiiGALBindFlags::IndexBuffer:
+        resourceStates |= xiiGALResourceStateFlags::IndexBuffer;
+        break;
+      case xiiGALBindFlags::UniformBuffer:
+        resourceStates |= xiiGALResourceStateFlags::ConstantBuffer;
+        break;
+      case xiiGALBindFlags::ShaderResource:
+        resourceStates |= xiiGALResourceStateFlags::ShaderResource;
+        break;
+      case xiiGALBindFlags::StreamOutput:
+        resourceStates |= xiiGALResourceStateFlags::StreamOut;
+        break;
+      case xiiGALBindFlags::RenderTarget:
+        resourceStates |= xiiGALResourceStateFlags::RenderTarget;
+        break;
+      case xiiGALBindFlags::DepthStencil:
+        resourceStates |= xiiGALResourceStateFlags::DepthWrite;
+        break;
+      case xiiGALBindFlags::UnorderedAccess:
+        resourceStates |= xiiGALResourceStateFlags::UnorderedAccess;
+        break;
+      case xiiGALBindFlags::IndirectDrawArguments:
+        resourceStates |= xiiGALResourceStateFlags::IndirectArgument;
+        break;
+      case xiiGALBindFlags::InputAttachment:
+        resourceStates |= xiiGALResourceStateFlags::InputAttachment;
+        break;
+      case xiiGALBindFlags::RayTracing:
+        resourceStates |= xiiGALResourceStateFlags::RayTracing;
+        break;
+      case xiiGALBindFlags::ShadingRate:
+        resourceStates |= xiiGALResourceStateFlags::ShadingRate;
+        break;
+      case xiiGALBindFlags::None:
+        break;
+      default:
+        XII_REPORT_FAILURE("Unexpected bind flag while mapping to D3D12 resource state.");
+        break;
+    }
+  }
+
+  return resourceStates;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiD3D12TypeConversions::GetDynamicBufferState()
+{
+  return xiiGALResourceStateFlags::VertexBuffer | xiiGALResourceStateFlags::IndexBuffer | xiiGALResourceStateFlags::ConstantBuffer | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::IndirectArgument;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_FLAGS xiiD3D12TypeConversions::GetBufferResourceFlagsFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
+{
+  D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+
+  if (bindFlags.IsAnySet(xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::RayTracing))
+  {
+    resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+  }
+
+  if (!bindFlags.IsSet(xiiGALBindFlags::ShaderResource) && !bindFlags.IsSet(xiiGALBindFlags::RayTracing))
+  {
+    resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+  }
+
+  return resourceFlags;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_FLAGS xiiD3D12TypeConversions::GetTextureResourceFlagsFromBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags)
+{
+  D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+
+  if (bindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+  {
+    resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+  }
+
+  if (bindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+  {
+    resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+  }
+
+  if (bindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
+  {
+    resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+  }
+
+  if (!bindFlags.IsAnySet(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::InputAttachment | xiiGALBindFlags::ShadingRate))
+  {
+    resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+  }
+
+  return resourceFlags;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_DIMENSION xiiD3D12TypeConversions::GetResourceDimension(xiiEnum<xiiGALResourceDimension> dimension)
+{
+  switch (dimension)
+  {
+    case xiiGALResourceDimension::Texture1D:
+    case xiiGALResourceDimension::Texture1DArray:
+      return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+
+    case xiiGALResourceDimension::Texture2D:
+    case xiiGALResourceDimension::Texture2DArray:
+    case xiiGALResourceDimension::TextureCube:
+    case xiiGALResourceDimension::TextureCubeArray:
+      return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+    case xiiGALResourceDimension::Texture3D:
+      return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE UINT xiiD3D12TypeConversions::GetShaderComponentMapping(const xiiGALTextureComponentMapping& componentMapping)
+{
+  auto ConvertSwizzle = [](xiiGALTextureComponentSwizzle::Enum swizzle, UINT uiIdentity) -> UINT {
+    switch (swizzle)
+    {
+      case xiiGALTextureComponentSwizzle::Identity:
+        return uiIdentity;
+      case xiiGALTextureComponentSwizzle::R:
+        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0;
+      case xiiGALTextureComponentSwizzle::G:
+        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1;
+      case xiiGALTextureComponentSwizzle::B:
+        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2;
+      case xiiGALTextureComponentSwizzle::A:
+        return D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3;
+      case xiiGALTextureComponentSwizzle::Zero:
+        return D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0;
+      case xiiGALTextureComponentSwizzle::One:
+        return D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1;
+
+      default:
+        XII_REPORT_FAILURE("Unexpected texture component swizzle value.");
+        return uiIdentity;
+    }
+  };
+
+  const UINT uiRed   = ConvertSwizzle(componentMapping.m_R, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
+  const UINT uiGreen = ConvertSwizzle(componentMapping.m_G, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1);
+  const UINT uiBlue  = ConvertSwizzle(componentMapping.m_B, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2);
+  const UINT uiAlpha = ConvertSwizzle(componentMapping.m_A, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3);
+
+  return D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(uiRed, uiGreen, uiBlue, uiAlpha);
+}
+
+XII_ALWAYS_INLINE D3D12_CLEAR_VALUE xiiD3D12TypeConversions::GetClearValue(const xiiGALOptimizedClearValue& clearValue)
+{
+  D3D12_CLEAR_VALUE                      optimizedClearValue = {};
+  const xiiGALResourceFormatDescription& formatDescription   = xiiGALTextureUtilities::GetResourceFormatProperties(clearValue.m_ResourceFormat);
+
+  if (formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::Depth || formatDescription.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+  {
+    optimizedClearValue.DepthStencil.Depth   = clearValue.m_DepthStencil.m_fDepth;
+    optimizedClearValue.DepthStencil.Stencil = clearValue.m_DepthStencil.m_uiStencil;
+  }
+  else
+  {
+    optimizedClearValue.Color[0] = clearValue.m_ClearColour.r;
+    optimizedClearValue.Color[1] = clearValue.m_ClearColour.g;
+    optimizedClearValue.Color[2] = clearValue.m_ClearColour.b;
+    optimizedClearValue.Color[3] = clearValue.m_ClearColour.a;
+  }
+
+  return optimizedClearValue;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_STATES xiiD3D12TypeConversions::GetSupportedD3D12ResourceStatesForCommandList(xiiBitflags<xiiGALCommandQueueFlags> queueFlags)
+{
+  constexpr D3D12_RESOURCE_STATES transferResourceStates = D3D12_RESOURCE_STATE_COMMON | D3D12_RESOURCE_STATE_COPY_DEST | D3D12_RESOURCE_STATE_COPY_SOURCE;
+  constexpr D3D12_RESOURCE_STATES computeResourceStates  = transferResourceStates | D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_UNORDERED_ACCESS | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT | D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+  constexpr D3D12_RESOURCE_STATES graphicsResourceStates = computeResourceStates | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_RENDER_TARGET | D3D12_RESOURCE_STATE_DEPTH_WRITE | D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_STREAM_OUT | D3D12_RESOURCE_STATE_RESOLVE_DEST | D3D12_RESOURCE_STATE_RESOLVE_SOURCE | D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE;
+
+  if (queueFlags == xiiGALCommandQueueFlags::Graphics)
+    return graphicsResourceStates;
+  else if (queueFlags == xiiGALCommandQueueFlags::Compute)
+    return computeResourceStates;
+  else if (queueFlags == xiiGALCommandQueueFlags::Transfer)
+    return transferResourceStates;
+
+  XII_REPORT_FAILURE("Unexpected command queue type.");
+
+  return D3D12_RESOURCE_STATE_COMMON;
+}
+
+XII_ALWAYS_INLINE D3D12_RESOURCE_BARRIER_FLAGS xiiD3D12TypeConversions::GetResourceBarrierFlags(xiiEnum<xiiGALStateTransitionType> type)
+{
+  switch (type)
+  {
+    case xiiGALStateTransitionType::Immediate:
+      return D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    case xiiGALStateTransitionType::Begin:
+      return D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY;
+    case xiiGALStateTransitionType::End:
+      return D3D12_RESOURCE_BARRIER_FLAG_END_ONLY;
+    default:
+      XII_REPORT_FAILURE("Unexpected state transition type.");
+      return D3D12_RESOURCE_BARRIER_FLAG_NONE;
+  }
 }

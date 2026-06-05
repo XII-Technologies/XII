@@ -195,8 +195,8 @@ xiiTime xiiWorldReader::GetMaxStepTime(InstantiationContextBase* pContext)
 
 void xiiWorldReader::ReadGameObjectDesc(GameObjectToCreate& godesc)
 {
-  xiiGameObjectDesc& desc = godesc.m_Desc;
-  xiiStringBuilder   sName, sGlobalKey;
+  xiiGameObjectDescription& desc = godesc.m_Desc;
+  xiiStringBuilder          sName, sGlobalKey;
 
   *m_pReadStream >> godesc.m_uiParentHandleIdx;
   *m_pReadStream >> sName;
@@ -540,8 +540,8 @@ bool xiiWorldReader::InstantiationContext::CreateGameObjects(const xiiDynamicArr
   {
     auto& godesc = objects[m_uiCurrentIndex];
 
-    xiiGameObjectDesc desc = godesc.m_Desc; // make a copy
-    desc.m_hParent         = hParent.IsInvalidated() ? m_IndexToGameObjectHandle[godesc.m_uiParentHandleIdx] : hParent;
+    xiiGameObjectDescription desc = godesc.m_Desc; // make a copy
+    desc.m_hParent                = hParent.IsInvalidated() ? m_IndexToGameObjectHandle[godesc.m_uiParentHandleIdx] : hParent;
     desc.m_bDynamic |= m_Options.m_bForceDynamic;
 
     switch (m_Options.m_RandomSeedMode)

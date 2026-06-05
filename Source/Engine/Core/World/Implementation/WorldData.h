@@ -22,7 +22,7 @@ namespace xiiInternal
     friend class ::xiiWorld;
     friend class ::xiiComponentManagerBase;
 
-    WorldData(xiiWorldDesc& desc);
+    WorldData(xiiWorldDescription& desc);
     ~WorldData();
 
     void Clear();

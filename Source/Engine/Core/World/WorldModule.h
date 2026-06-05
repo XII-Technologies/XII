@@ -105,7 +105,7 @@ protected:
   /// \brief Called by xiiWorld::Clear(). Can be used to clear cached data when a world is completely cleared of objects (but not deleted).
   virtual void WorldClear() {}
 
-  xiiWorld* m_pWorld;
+  xiiWorld* const m_pWorld;
 };
 
 //////////////////////////////////////////////////////////////////////////
