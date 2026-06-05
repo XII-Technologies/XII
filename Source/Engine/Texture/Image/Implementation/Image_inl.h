@@ -1,7 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#pragma once
-
 template <typename T>
 struct xiiImageSizeofHelper
 {
@@ -58,15 +56,14 @@ template <typename T>
 const T* xiiImageView::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 x /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
   ValidateDataTypeAccessor<T>(uiPlaneIndex);
-  XII_ASSERT_DEV(x < GetNumBlocksX(uiMipLevel, uiPlaneIndex), "Invalid x coordinate");
-  XII_ASSERT_DEV(y < GetNumBlocksY(uiMipLevel, uiPlaneIndex), "Invalid y coordinate");
-  XII_ASSERT_DEV(z < GetNumBlocksZ(uiMipLevel, uiPlaneIndex), "Invalid z coordinate");
 
-  xiiUInt64 offset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex) +
-    z * GetDepthPitch(uiMipLevel, uiPlaneIndex) +
-    y * GetRowPitch(uiMipLevel, uiPlaneIndex) +
-    x * xiiImageFormat::GetBitsPerBlock(m_Format, uiPlaneIndex) / 8;
-  return reinterpret_cast<const T*>(&m_DataPtr[offset]);
+  XII_ASSERT_DEV(x < GetNumBlocksX(uiMipLevel, uiPlaneIndex), "Invalid x coordinate.");
+  XII_ASSERT_DEV(y < GetNumBlocksY(uiMipLevel, uiPlaneIndex), "Invalid y coordinate.");
+  XII_ASSERT_DEV(z < GetNumBlocksZ(uiMipLevel, uiPlaneIndex), "Invalid z coordinate.");
+
+  xiiUInt64 uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex) + z * GetDepthPitch(uiMipLevel, uiPlaneIndex) + y * GetRowPitch(uiMipLevel, uiPlaneIndex) + x * xiiImageFormat::GetBitsPerBlock(m_Format, uiPlaneIndex) / 8;
+
+  return reinterpret_cast<const T*>(&m_DataPtr[uiOffset]);
 }
 
 template <typename T>
@@ -77,9 +74,7 @@ T* xiiImage::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 
 
 
 template <typename T>
-void xiiImageView::ValidateDataTypeAccessor(xiiUInt32 uiPlaneIndex) const
+void xiiImageView::ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIndex) const
 {
-  xiiUInt32 bytesPerBlock = xiiImageFormat::GetBitsPerBlock(GetImageFormat(), uiPlaneIndex) / 8;
-  XII_IGNORE_UNUSED(bytesPerBlock);
-  XII_ASSERT_DEV(bytesPerBlock % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
+  XII_ASSERT_DEV((xiiImageFormat::GetBitsPerBlock(GetImageFormat(), uiPlaneIndex) / 8) % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
 }

@@ -2,13 +2,15 @@
 
 #pragma once
 
-/// \brief Input options for xiiTexComparer
-class XII_TEXTURE_DLL xiiTexCompareDesc
+#include <Texture/TextureDLL.h>
+
+/// \brief Input options for xiiTextureComparer
+class XII_TEXTURE_DLL xiiTextureComparerDescription
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiTexCompareDesc);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureComparerDescription);
 
 public:
-  xiiTexCompareDesc() = default;
+  xiiTextureComparerDescription() = default;
 
   /// Path to a file to load as a reference image. Optional, if m_ExpectedImage is already filled out.
   xiiString m_sExpectedFile;
@@ -31,15 +33,15 @@ public:
 };
 
 /// \brief Compares two images and generates various outputs.
-class XII_TEXTURE_DLL xiiTexComparer
+class XII_TEXTURE_DLL xiiTextureComparer
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiTexComparer);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureComparer);
 
 public:
-  xiiTexComparer();
+  xiiTextureComparer();
 
   /// The input data to compare.
-  xiiTexCompareDesc m_Descriptor;
+  xiiTextureComparerDescription m_Descriptor;
 
   /// Executes the comparison and fill out the public variables to describe the result.
   xiiResult Compare();

@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <Texture/TextureDLL.h>
+#include <Foundation/Basics.h>
+#include <Foundation/Logging/Log.h>
 
 // auto_delete_file from scoped.h uses FILE_DISPOSITION_INFO which has a member called DeleteFile
 // due to the great preprocessor overloads for win32 functions, this apparently is always defined (usually as DeleteFileA)

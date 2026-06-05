@@ -8,7 +8,6 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Texture/Image/Formats/BmpFileFormat.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
-#include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 #include <Texture/Image/ImageUtils.h>

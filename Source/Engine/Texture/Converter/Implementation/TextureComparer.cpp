@@ -7,9 +7,9 @@
 #include <Texture/Image/ImageUtils.h>
 #include <Texture/TexConv/TexComparer.h>
 
-xiiTexComparer::xiiTexComparer() = default;
+xiiTextureComparer::xiiTextureComparer() = default;
 
-xiiResult xiiTexComparer::Compare()
+xiiResult xiiTextureComparer::Compare()
 {
   XII_PROFILE_SCOPE("Compare");
 
@@ -33,7 +33,7 @@ xiiResult xiiTexComparer::Compare()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexComparer::LoadInputImages()
+xiiResult xiiTextureComparer::LoadInputImages()
 {
   XII_PROFILE_SCOPE("Load Images");
 
@@ -94,7 +94,7 @@ xiiResult xiiTexComparer::LoadInputImages()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexComparer::ComputeMSE()
+xiiResult xiiTextureComparer::ComputeMSE()
 {
   XII_PROFILE_SCOPE("ComputeMSE");
 
@@ -108,7 +108,7 @@ xiiResult xiiTexComparer::ComputeMSE()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexComparer::ExtractImages()
+xiiResult xiiTextureComparer::ExtractImages()
 {
   XII_PROFILE_SCOPE("ExtractImages");
 

@@ -93,6 +93,6 @@ private:
 
   // Comparer specific
 
-  xiiTexComparer m_Comparer;
+  xiiTextureComparer m_Comparer;
   xiiString      m_sHtmlTitle;
 };

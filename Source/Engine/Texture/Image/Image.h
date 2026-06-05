@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include <Texture/TextureDLL.h>
+
 #include <Foundation/Containers/Blob.h>
-#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HybridArray.h>
-#include <Foundation/Logging/Log.h>
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/ImageHeader.h>
@@ -83,8 +83,9 @@ protected:
   xiiUInt64 ComputeLayout();
 
   void ValidateSubImageIndices(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const;
+
   template <typename T>
-  void ValidateDataTypeAccessor(xiiUInt32 uiPlaneIndex) const;
+  void ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIndex) const;
 
   const xiiUInt64& GetSubImageOffset(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const;
 

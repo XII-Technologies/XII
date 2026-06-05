@@ -9,6 +9,7 @@
 #include <Foundation/IO/StreamUtils.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/ImageConversion.h>
+
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 
