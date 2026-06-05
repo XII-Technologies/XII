@@ -37,10 +37,10 @@ public:
   ///@{
 
   /// \brief Create a new game object from the given description and returns a handle to it.
-  xiiGameObjectHandle CreateObject(const xiiGameObjectDesc& desc); // [tested]
+  xiiGameObjectHandle CreateObject(const xiiGameObjectDescription& desc); // [tested]
 
   /// \brief Create a new game object from the given description, writes a pointer to it to out_pObject and returns a handle to it.
-  xiiGameObjectHandle CreateObject(const xiiGameObjectDesc& desc, xiiGameObject*& out_pObject); // [tested]
+  xiiGameObjectHandle CreateObject(const xiiGameObjectDescription& desc, xiiGameObject*& out_pObject); // [tested]
 
   /// \brief Deletes the given object, its children and all components.
   /// \note This function deletes the object immediately! It is unsafe to use this during a game update loop, as other objects

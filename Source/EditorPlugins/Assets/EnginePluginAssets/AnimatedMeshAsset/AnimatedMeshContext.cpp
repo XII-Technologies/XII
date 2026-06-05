@@ -78,7 +78,7 @@ void xiiAnimatedMeshContext::OnInitialize()
 
   // Preview AnimatedMesh
   {
-    xiiGameObjectDesc obj;
+    xiiGameObjectDescription obj;
     obj.m_bDynamic = true;
     obj.m_sName.Assign("AnimatedMeshPreview");
     pWorld->CreateObject(obj, m_pAnimatedMeshObject);

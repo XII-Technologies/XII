@@ -30,7 +30,7 @@ namespace
     xiiQuat q;
     q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_bDynamic      = bDynamic;
     desc.m_LocalPosition = xiiVec3(100.0f, 0.0f, 0.0f);
     desc.m_LocalRotation = q;
@@ -206,7 +206,7 @@ namespace
 
   xiiGameObject* CreateObj(xiiWorld* pWorld, xiiStringView sName, xiiGameObject* pParent = nullptr, xiiStringView sGlobalkey = {})
   {
-    xiiGameObjectDesc gd;
+    xiiGameObjectDescription gd;
     gd.m_sName.Assign(sName);
     gd.m_hParent = pParent ? pParent->GetHandle() : xiiGameObjectHandle();
 
@@ -289,7 +289,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     xiiQuat     q;
     q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_LocalPosition = xiiVec3(100.0f, 0.0f, 0.0f);
     desc.m_LocalRotation = q;
     desc.m_LocalScaling  = xiiVec3(1.5f, 1.5f, 1.5f);
@@ -535,7 +535,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     }
 
     {
-      world.CreateObject(xiiGameObjectDesc());
+      world.CreateObject(xiiGameObjectDescription());
 
       struct DepthFirstTest
       {
@@ -606,7 +606,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     xiiWorld            world2(worldDesc2);
     XII_LOCK(world2.GetWriteMarker());
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_sName.Assign("Obj1");
 
     xiiGameObjectHandle  hObj1     = world1.CreateObject(desc);
@@ -676,10 +676,10 @@ XII_CREATE_SIMPLE_TEST(World, World)
     xiiWorld            world(worldDesc);
     XII_LOCK(world.GetWriteMarker());
 
-    xiiGameObjectHandle hParent;
-    xiiGameObjectDesc   desc;
-    xiiGameObjectHandle hObjects[10];
-    xiiGameObject*      pObjects[10];
+    xiiGameObjectHandle      hParent;
+    xiiGameObjectDescription desc;
+    xiiGameObjectHandle      hObjects[10];
+    xiiGameObject*           pObjects[10];
 
     for (xiiUInt32 i = 0; i < 10; ++i)
     {
@@ -747,7 +747,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
     auto pModule = world.GetOrCreateModule<VelocityTestModule>();
 
-    xiiGameObjectDesc objectDesc;
+    xiiGameObjectDescription objectDesc;
     objectDesc.m_bDynamic = true;
 
     xiiGameObjectHandle hObjects[numObjects];

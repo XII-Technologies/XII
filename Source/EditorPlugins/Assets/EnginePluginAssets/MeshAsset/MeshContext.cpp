@@ -74,8 +74,8 @@ void xiiMeshContext::OnInitialize()
   auto pWorld = m_pWorld;
   XII_LOCK(pWorld->GetWriteMarker());
 
-  xiiGameObjectDesc obj;
-  xiiMeshComponent* pMesh;
+  xiiGameObjectDescription obj;
+  xiiMeshComponent*        pMesh;
 
   // Preview Mesh
   {

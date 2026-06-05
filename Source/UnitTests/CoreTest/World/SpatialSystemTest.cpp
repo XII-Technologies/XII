@@ -68,7 +68,7 @@ namespace
     float y = (float)rng.DoubleMinMax(-range, range);
     float z = (float)rng.DoubleMinMax(-range, range);
 
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
     desc.m_bDynamic      = bDynamic;
     desc.m_LocalPosition = xiiVec3(x, y, z);
 

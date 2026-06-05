@@ -141,7 +141,7 @@ namespace
   {
     if (s_bSpawnOther)
     {
-      xiiGameObjectDesc desc;
+      xiiGameObjectDescription desc;
       desc.m_hParent = GetOwner()->GetHandle();
 
       xiiGameObject* pChild = nullptr;
@@ -166,8 +166,8 @@ XII_CREATE_SIMPLE_TEST(World, Components)
   xiiGameObject* pTestObject2;
 
   {
-    xiiGameObjectDesc   desc;
-    xiiGameObjectHandle hObject = world.CreateObject(desc, pTestObject1);
+    xiiGameObjectDescription desc;
+    xiiGameObjectHandle      hObject = world.CreateObject(desc, pTestObject1);
     XII_TEST_BOOL(!hObject.IsInvalidated());
     world.CreateObject(desc, pTestObject2);
   }
@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(World, Components)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Delete Objects with Component")
   {
-    xiiGameObjectDesc desc;
+    xiiGameObjectDescription desc;
 
     xiiGameObject* pObjectA = nullptr;
     xiiGameObject* pObjectB = nullptr;
@@ -349,8 +349,8 @@ XII_CREATE_SIMPLE_TEST(World, Components)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Component Callbacks")
   {
-    xiiGameObjectDesc desc;
-    xiiGameObject*    pObject = nullptr;
+    xiiGameObjectDescription desc;
+    xiiGameObject*           pObject = nullptr;
     world.CreateObject(desc, pObject);
 
     // Simulation stopped, component active
@@ -504,8 +504,8 @@ XII_CREATE_SIMPLE_TEST(World, Components)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Component dependent initialization")
   {
-    xiiGameObjectDesc desc;
-    xiiGameObject*    pObject = nullptr;
+    xiiGameObjectDescription desc;
+    xiiGameObject*           pObject = nullptr;
     world.CreateObject(desc, pObject);
 
     world.SetWorldSimulationEnabled(true);

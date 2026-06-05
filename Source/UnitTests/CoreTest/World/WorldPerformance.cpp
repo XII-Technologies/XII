@@ -63,7 +63,7 @@ namespace
     if (uiTreeDepth == 0)
       return;
 
-    xiiGameObjectDesc gd;
+    xiiGameObjectDescription gd;
     gd.m_bDynamic = bDynamic;
     gd.m_hParent  = hParent;
 

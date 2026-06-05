@@ -128,8 +128,8 @@ void xiiTextureContext::OnInitialize()
   {
     XII_LOCK(m_pWorld->GetWriteMarker());
 
-    xiiGameObjectDesc obj;
-    xiiGameObject*    pObj;
+    xiiGameObjectDescription obj;
+    xiiGameObject*           pObj;
 
     obj.m_sName.Assign("TexturePreview");
     obj.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));

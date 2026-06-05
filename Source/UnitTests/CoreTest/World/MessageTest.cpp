@@ -104,7 +104,7 @@ XII_CREATE_SIMPLE_TEST(World, Messaging)
 
   TestComponentMsgManager* pManager = world.GetOrCreateComponentManager<TestComponentMsgManager>();
 
-  xiiGameObjectDesc desc;
+  xiiGameObjectDescription desc;
   desc.m_sName.Assign("Root");
   xiiGameObject* pRoot = nullptr;
   world.CreateObject(desc, pRoot);

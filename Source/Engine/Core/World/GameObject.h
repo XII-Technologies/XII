@@ -492,7 +492,7 @@ public:
   /// \brief Checks whether this object has the given tag.
   bool HasTag(const xiiTempHashedString& sTagName) const;
 
-  /// \brief Returns the 'team ID' that was given during creation (/see xiiGameObjectDesc)
+  /// \brief Returns the 'team ID' that was given during creation (/see xiiGameObjectDescription)
   ///
   /// It is automatically passed on to objects created by this object.
   /// This makes it possible to identify which player or team an object belongs to.

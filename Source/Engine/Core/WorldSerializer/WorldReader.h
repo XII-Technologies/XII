@@ -163,9 +163,9 @@ public:
 private:
   struct GameObjectToCreate
   {
-    xiiGameObjectDesc m_Desc;
-    xiiString         m_sGlobalKey;
-    xiiUInt32         m_uiParentHandleIdx;
+    xiiGameObjectDescription m_Desc;
+    xiiString                m_sGlobalKey;
+    xiiUInt32                m_uiParentHandleIdx;
   };
 
   void ReadGameObjectDesc(GameObjectToCreate& godesc);
