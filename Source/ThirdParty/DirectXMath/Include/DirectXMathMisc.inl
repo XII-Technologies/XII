@@ -4,7 +4,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
-// http://go.microsoft.com/fwlink/?LinkID=615560
+// https://go.microsoft.com/fwlink/?LinkID=615560
 //-------------------------------------------------------------------------------------
 
 #pragma once
@@ -15,11 +15,11 @@
  *
  ****************************************************************************/
 
- //------------------------------------------------------------------------------
- // Comparison operations
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Comparison operations
+//------------------------------------------------------------------------------
 
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 inline bool XM_CALLCONV XMQuaternionEqual
 (
@@ -966,11 +966,11 @@ inline void XM_CALLCONV XMQuaternionToAxisAngle
  *
  ****************************************************************************/
 
- //------------------------------------------------------------------------------
- // Comparison operations
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Comparison operations
+//------------------------------------------------------------------------------
 
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 inline bool XM_CALLCONV XMPlaneEqual
 (
@@ -1298,11 +1298,11 @@ inline XMVECTOR XM_CALLCONV XMPlaneFromPoints
  *
  ****************************************************************************/
 
- //------------------------------------------------------------------------------
- // Comparison operations
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Comparison operations
+//------------------------------------------------------------------------------
 
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 inline bool XM_CALLCONV XMColorEqual
 (
@@ -1561,7 +1561,7 @@ inline XMVECTOR XM_CALLCONV XMColorRGBToHSL(FXMVECTOR rgb) noexcept
 
 //------------------------------------------------------------------------------
 
-namespace Internal
+namespace MathInternal
 {
 
     inline XMVECTOR XM_CALLCONV XMColorHue2Clr(FXMVECTOR p, FXMVECTOR q, FXMVECTOR h) noexcept
@@ -1599,7 +1599,7 @@ namespace Internal
         return p;
     }
 
-} // namespace Internal
+} // namespace MathInternal
 
 inline XMVECTOR XM_CALLCONV XMColorHSLToRGB(FXMVECTOR hsl) noexcept
 {
@@ -1629,9 +1629,9 @@ inline XMVECTOR XM_CALLCONV XMColorHSLToRGB(FXMVECTOR hsl) noexcept
 
         XMVECTOR p = XMVectorSubtract(XMVectorMultiply(g_XMTwo, l), q);
 
-        XMVECTOR r = DirectX::Internal::XMColorHue2Clr(p, q, XMVectorAdd(h, oneThird));
-        XMVECTOR g = DirectX::Internal::XMColorHue2Clr(p, q, h);
-        XMVECTOR b = DirectX::Internal::XMColorHue2Clr(p, q, XMVectorSubtract(h, oneThird));
+        XMVECTOR r = DirectX::MathInternal::XMColorHue2Clr(p, q, XMVectorAdd(h, oneThird));
+        XMVECTOR g = DirectX::MathInternal::XMColorHue2Clr(p, q, h);
+        XMVECTOR b = DirectX::MathInternal::XMColorHue2Clr(p, q, XMVectorSubtract(h, oneThird));
 
         XMVECTOR rg = XMVectorSelect(g, r, g_XMSelect1000);
         XMVECTOR ba = XMVectorSelect(hsl, b, g_XMSelect1110);
@@ -1724,41 +1724,41 @@ inline XMVECTOR XM_CALLCONV XMColorHSVToRGB(FXMVECTOR hsv) noexcept
     switch (ii)
     {
     case 0: // rgb = vtp
-    {
-        XMVECTOR vt = XMVectorSelect(t, v, g_XMSelect1000);
-        _rgb = XMVectorSelect(p, vt, g_XMSelect1100);
-    }
-    break;
+        {
+            XMVECTOR vt = XMVectorSelect(t, v, g_XMSelect1000);
+            _rgb = XMVectorSelect(p, vt, g_XMSelect1100);
+        }
+        break;
     case 1: // rgb = qvp
-    {
-        XMVECTOR qv = XMVectorSelect(v, q, g_XMSelect1000);
-        _rgb = XMVectorSelect(p, qv, g_XMSelect1100);
-    }
-    break;
+        {
+            XMVECTOR qv = XMVectorSelect(v, q, g_XMSelect1000);
+            _rgb = XMVectorSelect(p, qv, g_XMSelect1100);
+        }
+        break;
     case 2: // rgb = pvt
-    {
-        XMVECTOR pv = XMVectorSelect(v, p, g_XMSelect1000);
-        _rgb = XMVectorSelect(t, pv, g_XMSelect1100);
-    }
-    break;
+        {
+            XMVECTOR pv = XMVectorSelect(v, p, g_XMSelect1000);
+            _rgb = XMVectorSelect(t, pv, g_XMSelect1100);
+        }
+        break;
     case 3: // rgb = pqv
-    {
-        XMVECTOR pq = XMVectorSelect(q, p, g_XMSelect1000);
-        _rgb = XMVectorSelect(v, pq, g_XMSelect1100);
-    }
-    break;
+        {
+            XMVECTOR pq = XMVectorSelect(q, p, g_XMSelect1000);
+            _rgb = XMVectorSelect(v, pq, g_XMSelect1100);
+        }
+        break;
     case 4: // rgb = tpv
-    {
-        XMVECTOR tp = XMVectorSelect(p, t, g_XMSelect1000);
-        _rgb = XMVectorSelect(v, tp, g_XMSelect1100);
-    }
-    break;
+        {
+            XMVECTOR tp = XMVectorSelect(p, t, g_XMSelect1000);
+            _rgb = XMVectorSelect(v, tp, g_XMSelect1100);
+        }
+        break;
     default: // rgb = vpq
-    {
-        XMVECTOR vp = XMVectorSelect(p, v, g_XMSelect1000);
-        _rgb = XMVectorSelect(q, vp, g_XMSelect1100);
-    }
-    break;
+        {
+            XMVECTOR vp = XMVectorSelect(p, v, g_XMSelect1000);
+            _rgb = XMVectorSelect(q, vp, g_XMSelect1100);
+        }
+        break;
     }
 
     return XMVectorSelect(hsv, _rgb, g_XMSelect1110);
@@ -1967,13 +1967,13 @@ inline XMVECTOR XM_CALLCONV XMColorSRGBToRGB(FXMVECTOR srgb) noexcept
  *
  ****************************************************************************/
 
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 inline bool XMVerifyCPUSupport() noexcept
 {
-#if defined(_XM_SSE_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_)
+#if defined(_XM_SSE_INTRINSICS_) && !defined(__powerpc64__) && !defined(_XM_NO_INTRINSICS_)
     int CPUInfo[4] = { -1 };
-#if defined(__clang__) || defined(__GNUC__)
+#if (defined(__clang__) || defined(__GNUC__)) && !defined(_MSC_VER) && !defined(__MINGW32__)
     __cpuid(0, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
 #else
     __cpuid(CPUInfo, 0);
@@ -1987,7 +1987,7 @@ inline bool XMVerifyCPUSupport() noexcept
         return false;
 #endif
 
-#if defined(__clang__) || defined(__GNUC__)
+#if (defined(__clang__) || defined(__GNUC__)) && !defined(_MSC_VER) && !defined(__MINGW32__)
     __cpuid(1, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
 #else
     __cpuid(CPUInfo, 1);
@@ -2022,7 +2022,7 @@ inline bool XMVerifyCPUSupport() noexcept
         return false; // No SSE2/SSE support
 
 #if defined(__AVX2__) || defined(_XM_AVX2_INTRINSICS_)
-#if defined(__clang__) || defined(__GNUC__)
+#if (defined(__clang__) || defined(__GNUC__)) && !defined(_MSC_VER) && !defined(__MINGW32__)
     __cpuid_count(7, 0, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
 #else
     __cpuidex(CPUInfo, 7, 0);
