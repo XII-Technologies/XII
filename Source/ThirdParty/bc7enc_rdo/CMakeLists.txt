@@ -13,7 +13,8 @@ if(XII_CMAKE_PLATFORM_LINUX)
   if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX)
   endif()
-  target_compile_definitions(${PROJECT_NAME} PUBLIC XII_USE_BC7ENC)
+
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_BC7ENC_SUPPORT)
 endif()
 
 return()

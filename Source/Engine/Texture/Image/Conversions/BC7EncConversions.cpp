@@ -2,7 +2,7 @@
 
 #include <Texture/TexturePCH.h>
 
-#if XII_USE_BC7ENC
+#if BUILDSYSTEM_ENABLE_BC7ENC_SUPPORT
 
 #  include <bc7enc_rdo/rdo_bc_encoder.h>
 
