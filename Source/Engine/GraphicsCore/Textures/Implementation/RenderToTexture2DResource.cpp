@@ -9,7 +9,7 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderToTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiRenderToTexture2DResource>)
