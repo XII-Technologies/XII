@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiTexture2DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Foundation/Application/Application.h>
-#include <Texture/TexConv/TexComparer.h>
+#include <Texture/Converter/TextureComparer.h>
 
 class xiiStreamWriter;
 

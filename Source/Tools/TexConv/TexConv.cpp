@@ -8,7 +8,7 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 xiiTexConv::xiiTexConv() :
   xiiApplication("TexConv")

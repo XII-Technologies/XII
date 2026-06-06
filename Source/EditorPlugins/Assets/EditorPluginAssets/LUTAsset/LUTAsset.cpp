@@ -8,7 +8,7 @@
 #include <EditorPluginAssets/LUTAsset/LUTAsset.h>
 
 #include <Texture/Image/Formats/DdsFileFormat.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiLUTAssetDocument, 1, xiiRTTINoAllocator)

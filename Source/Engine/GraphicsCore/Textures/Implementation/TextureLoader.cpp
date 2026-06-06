@@ -15,7 +15,7 @@
 #include <GraphicsCore/Textures/TextureUtils.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 static xiiTextureResourceLoader s_TextureResourceLoader;
 

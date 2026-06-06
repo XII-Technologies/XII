@@ -4,7 +4,7 @@
 
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeResource, 1, xiiRTTIDefaultAllocator<xiiTextureCubeResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
