@@ -51,7 +51,7 @@ public:
   xiiUInt32 m_uiThumbnailOutputResolution = 0;
 
   // Format / Compression
-  xiiEnum<xiiTextureConverterUsage>           m_Usage;
+  xiiEnum<xiiTextureConverterUsage>  m_Usage;
   xiiEnum<xiiTexConvCompressionMode> m_CompressionMode;
 
   // resolution clamp and downscale

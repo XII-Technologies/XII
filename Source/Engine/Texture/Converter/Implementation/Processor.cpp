@@ -4,8 +4,8 @@
 
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
-#include <Texture/Image/ImageUtils.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
+#include <Texture/Image/ImageUtils.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexConvCompressionMode, 1)

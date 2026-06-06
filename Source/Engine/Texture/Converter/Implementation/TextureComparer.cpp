@@ -3,9 +3,9 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Profiling/Profiling.h>
+#include <Texture/Converter/TextureComparer.h>
 #include <Texture/Image/ImageConversion.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/Converter/TextureComparer.h>
 
 xiiTextureComparer::xiiTextureComparer() = default;
 

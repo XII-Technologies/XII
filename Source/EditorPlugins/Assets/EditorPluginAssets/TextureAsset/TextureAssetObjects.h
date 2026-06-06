@@ -109,7 +109,7 @@ public:
   xiiEnum<xiiImageAddressMode>     m_AddressModeV;
   xiiEnum<xiiImageAddressMode>     m_AddressModeW;
   xiiEnum<xiiTexture2DResolution>  m_Resolution;
-  xiiEnum<xiiTextureConverterUsage>         m_TextureUsage;
+  xiiEnum<xiiTextureConverterUsage> m_TextureUsage;
   xiiEnum<xiiRenderTargetFormat>   m_RtFormat;
 
   xiiEnum<xiiTexConvCompressionMode> m_CompressionMode;

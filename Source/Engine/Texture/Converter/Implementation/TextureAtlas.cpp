@@ -3,9 +3,9 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
+#include <Texture/Converter/TextureConverterProcessor.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/Converter/TextureConverterProcessor.h>
 #include <Texture/Utilities/TextureAtlasDescription.h>
 #include <Texture/Utilities/TexturePacker.h>
 

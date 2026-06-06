@@ -4,8 +4,8 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Types/Enum.h>
-#include <Texture/Image/ImageEnums.h>
 #include <Texture/Converter/TextureConverterEnums.h>
+#include <Texture/Image/ImageEnums.h>
 
 class xiiStreamWriter;
 class xiiStreamReader;

@@ -3,8 +3,8 @@
 #include <Texture/TexturePCH.h>
 
 #include <Foundation/Profiling/Profiling.h>
-#include <Texture/Image/ImageUtils.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
+#include <Texture/Image/ImageUtils.h>
 
 xiiResult xiiTexConvProcessor::Assemble3DTexture(xiiImage& dst) const
 {
