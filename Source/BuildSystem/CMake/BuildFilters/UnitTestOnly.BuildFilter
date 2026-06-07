@@ -5,14 +5,18 @@ set_property(GLOBAL PROPERTY XII_BUILD_FILTER_UnitTestOnly
   zlib
   Foundation
 
-  tinyexr
-  stb
   Lua
   mikktspace
-  Texture
   Core
 
   GraphicsFoundation
+
+  Texture
+  stb
+  tinyexr
+  DirectXTex
+  DirectX-Headers
+  DirectXMath
 
   ArchiveTool
   FoundationTest_Plugin1
