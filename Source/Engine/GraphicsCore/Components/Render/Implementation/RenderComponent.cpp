@@ -3,6 +3,7 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Components/Render/RenderComponent.h>
+#include <GraphicsCore/Pipeline/RenderWorldModule.h>
 
 // clang-format off
 XII_BEGIN_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, 1)
