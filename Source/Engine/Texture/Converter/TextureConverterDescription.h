@@ -51,7 +51,7 @@ public:
   xiiUInt32 m_uiThumbnailOutputResolution = 0;
 
   // Format / Compression
-  xiiEnum<xiiTextureConverterUsage>  m_Usage;
+  xiiEnum<xiiTextureConverterUsage>           m_Usage;
   xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
 
   // resolution clamp and downscale
@@ -60,7 +60,7 @@ public:
   xiiUInt32 m_uiDownscaleSteps = 0;
 
   // Mipmaps / filtering
-  xiiEnum<xiiTextureConverterMipmapMode>    m_MipmapMode;
+  xiiEnum<xiiTextureConverterMipmapMode> m_MipmapMode;
   xiiEnum<xiiTextureFilterSetting> m_FilterMode; // only used when writing to XII specific formats
   xiiEnum<xiiImageAddressMode>     m_AddressModeU;
   xiiEnum<xiiImageAddressMode>     m_AddressModeV;

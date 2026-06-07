@@ -4,11 +4,11 @@
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <TextureConverter/TextureConverter.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/Image/ImageUtils.h>
 #include <Texture/Utilities/TextureFormat.h>
+#include <TextureConverter/TextureConverter.h>
 
 xiiTextureConverter::xiiTextureConverter() :
   xiiApplication("TextureConverter")
