@@ -6,7 +6,7 @@
 #include <Texture/Converter/TextureConverterProcessor.h>
 #include <Texture/Image/ImageUtils.h>
 
-xiiResult xiiTexConvProcessor::AssembleCubemap(xiiImage& dst) const
+xiiResult xiiTextureConverterProcessor::AssembleCubemap(xiiImage& dst) const
 {
   XII_PROFILE_SCOPE("AssembleCubemap");
 

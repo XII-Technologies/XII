@@ -6,7 +6,7 @@
 #include <Texture/Converter/TextureConverterProcessor.h>
 #include <Texture/Image/ImageUtils.h>
 
-xiiResult xiiTexConvProcessor::LoadInputImages()
+xiiResult xiiTextureConverterProcessor::LoadInputImages()
 {
   XII_PROFILE_SCOPE("Load Images");
 
@@ -63,7 +63,7 @@ xiiResult xiiTexConvProcessor::LoadInputImages()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
+xiiResult xiiTextureConverterProcessor::ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
 {
   const bool bSingleChannel = xiiImageFormat::GetNumChannels(inout_Image.GetImageFormat()) == 1;
 
@@ -93,7 +93,7 @@ xiiResult xiiTexConvProcessor::ConvertAndScaleImage(xiiStringView sImageName, xi
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertAndScaleInputImages(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
+xiiResult xiiTextureConverterProcessor::ConvertAndScaleInputImages(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
 {
   XII_PROFILE_SCOPE("ConvertAndScaleInputImages");
 

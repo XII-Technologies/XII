@@ -1,24 +1,24 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <TexConv/TexConvPCH.h>
+#include <TextureConverter/TextureConverterPCH.h>
 
-#include <TexConv/TexConv.h>
+#include <TextureConverter/TextureConverter.h>
 
-static xiiStringView ToString(xiiTexConvChannelValue::Enum e)
+static xiiStringView ToString(xiiTextureConverterChannelValue::Enum e)
 {
   switch (e)
   {
-    case xiiTexConvChannelValue::Red:
+    case xiiTextureConverterChannelValue::Red:
       return "Red";
-    case xiiTexConvChannelValue::Green:
+    case xiiTextureConverterChannelValue::Green:
       return "Green";
-    case xiiTexConvChannelValue::Blue:
+    case xiiTextureConverterChannelValue::Blue:
       return "Blue";
-    case xiiTexConvChannelValue::Alpha:
+    case xiiTextureConverterChannelValue::Alpha:
       return "Alpha";
-    case xiiTexConvChannelValue::Black:
+    case xiiTextureConverterChannelValue::Black:
       return "Black";
-    case xiiTexConvChannelValue::White:
+    case xiiTextureConverterChannelValue::White:
       return "White";
 
     default:
@@ -28,9 +28,9 @@ static xiiStringView ToString(xiiTexConvChannelValue::Enum e)
   return "";
 }
 
-xiiResult xiiTexConv::ParseChannelMappings()
+xiiResult xiiTextureConverter::ParseChannelMappings()
 {
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
     return XII_SUCCESS;
 
   auto& mappings = m_Processor.m_Descriptor.m_ChannelMappings;
@@ -65,7 +65,7 @@ xiiResult xiiTexConv::ParseChannelMappings()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseChannelSliceMapping(xiiInt32 iSlice)
+xiiResult xiiTextureConverter::ParseChannelSliceMapping(xiiInt32 iSlice)
 {
   const auto       pCmd     = xiiCommandLineUtils::GetGlobalInstance();
   auto&            mappings = m_Processor.m_Descriptor.m_ChannelMappings;
@@ -161,24 +161,24 @@ xiiResult xiiTexConv::ParseChannelSliceMapping(xiiInt32 iSlice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_mapping, xiiStringView sCfg, xiiInt32 iChannelIndex, bool bSingleChannel)
+xiiResult xiiTextureConverter::ParseChannelMappingConfig(xiiTextureConverterChannelMapping& out_mapping, xiiStringView sCfg, xiiInt32 iChannelIndex, bool bSingleChannel)
 {
   out_mapping.m_iInputImageIndex = -1;
-  out_mapping.m_ChannelValue     = xiiTexConvChannelValue::White;
+  out_mapping.m_ChannelValue     = xiiTextureConverterChannelValue::White;
 
   xiiStringBuilder tmp = sCfg;
 
   // '-r black' for setting it to zero
   if (tmp.IsEqual_NoCase("black"))
   {
-    out_mapping.m_ChannelValue = xiiTexConvChannelValue::Black;
+    out_mapping.m_ChannelValue = xiiTextureConverterChannelValue::Black;
     return XII_SUCCESS;
   }
 
   // '-r white' for setting it to 255
   if (tmp.IsEqual_NoCase("white"))
   {
-    out_mapping.m_ChannelValue = xiiTexConvChannelValue::White;
+    out_mapping.m_ChannelValue = xiiTextureConverterChannelValue::White;
     return XII_SUCCESS;
   }
 
@@ -224,7 +224,7 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_ma
   // no additional info, e.g. '-g in2' is identical to '-g in2.g' (same channel)
   if (tmp.IsEmpty())
   {
-    out_mapping.m_ChannelValue = (xiiTexConvChannelValue::Enum)((xiiInt32)xiiTexConvChannelValue::Red + iChannelIndex);
+    out_mapping.m_ChannelValue = (xiiTextureConverterChannelValue::Enum)((xiiInt32)xiiTextureConverterChannelValue::Red + iChannelIndex);
     return XII_SUCCESS;
   }
 
@@ -256,19 +256,19 @@ xiiResult xiiTexConv::ParseChannelMappingConfig(xiiTexConvChannelMapping& out_ma
 
     if (uiChar == 'r')
     {
-      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Red;
+      out_mapping.m_ChannelValue = xiiTextureConverterChannelValue::Red;
     }
     else if (uiChar == 'g')
     {
-      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Green;
+      out_mapping.m_ChannelValue = xiiTextureConverterChannelValue::Green;
     }
     else if (uiChar == 'b')
     {
-      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Blue;
+      out_mapping.m_ChannelValue = xiiTextureConverterChannelValue::Blue;
     }
     else if (uiChar == 'a')
     {
-      out_mapping.m_ChannelValue = xiiTexConvChannelValue::Alpha;
+      out_mapping.m_ChannelValue = xiiTextureConverterChannelValue::Alpha;
     }
     else
     {

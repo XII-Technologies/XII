@@ -1,21 +1,21 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <TexConv/TexConvPCH.h>
+#include <TextureConverter/TextureConverterPCH.h>
 
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <TexConv/TexConv.h>
+#include <TextureConverter/TextureConverter.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/Image/ImageUtils.h>
 #include <Texture/Utilities/TextureFormat.h>
 
-xiiTexConv::xiiTexConv() :
-  xiiApplication("TexConv")
+xiiTextureConverter::xiiTextureConverter() :
+  xiiApplication("TextureConverter")
 {
 }
 
-xiiResult xiiTexConv::BeforeCoreSystemsStartup()
+xiiResult xiiTextureConverter::BeforeCoreSystemsStartup()
 {
   xiiStartup::AddApplicationTag("tool");
   xiiStartup::AddApplicationTag("texconv");
@@ -23,7 +23,7 @@ xiiResult xiiTexConv::BeforeCoreSystemsStartup()
   return SUPER::BeforeCoreSystemsStartup();
 }
 
-void xiiTexConv::AfterCoreSystemsStartup()
+void xiiTextureConverter::AfterCoreSystemsStartup()
 {
   xiiFileSystem::AddDataDirectory("", "App", ":", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
@@ -31,7 +31,7 @@ void xiiTexConv::AfterCoreSystemsStartup()
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 }
 
-void xiiTexConv::BeforeCoreSystemsShutdown()
+void xiiTextureConverter::BeforeCoreSystemsShutdown()
 {
   xiiGlobalLog::RemoveLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::RemoveLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
@@ -39,11 +39,11 @@ void xiiTexConv::BeforeCoreSystemsShutdown()
   SUPER::BeforeCoreSystemsShutdown();
 }
 
-xiiResult xiiTexConv::DetectOutputFormat()
+xiiResult xiiTextureConverter::DetectOutputFormat()
 {
   if (m_sOutputFile.IsEmpty())
   {
-    m_Processor.m_Descriptor.m_OutputType = xiiTexConvOutputType::None;
+    m_Processor.m_Descriptor.m_OutputType = xiiTextureConverterOutputType::None;
     return XII_SUCCESS;
   }
 
@@ -132,14 +132,14 @@ xiiResult xiiTexConv::DetectOutputFormat()
   return XII_FAILURE;
 }
 
-bool xiiTexConv::IsTexFormat() const
+bool xiiTextureConverter::IsTexFormat() const
 {
   const xiiStringView ext = xiiPathUtils::GetFileExtension(m_sOutputFile);
 
   return ext.StartsWith_NoCase("xii");
 }
 
-xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& inout_stream, const xiiImage& image)
+xiiResult xiiTextureConverter::WriteTexFile(xiiStreamWriter& inout_stream, const xiiImage& image)
 {
   xiiAssetFileHeader asset;
   asset.SetFileHashAndVersion(m_Processor.m_Descriptor.m_uiAssetHash, m_Processor.m_Descriptor.m_uiAssetVersion);
@@ -165,7 +165,7 @@ xiiResult xiiTexConv::WriteTexFile(xiiStreamWriter& inout_stream, const xiiImage
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::WriteOutputFile(xiiStringView sFile, const xiiImage& image)
+xiiResult xiiTextureConverter::WriteOutputFile(xiiStringView sFile, const xiiImage& image)
 {
   if (sFile.HasExtension("xiiBinImageData"))
   {
@@ -211,14 +211,14 @@ xiiResult xiiTexConv::WriteOutputFile(xiiStringView sFile, const xiiImage& image
   }
 }
 
-xiiApplication::Execution xiiTexConv::Run()
+xiiApplication::Execution xiiTextureConverter::Run()
 {
   SetReturnCode(-1);
 
   if (ParseCommandLine().Failed())
     return xiiApplication::Execution::Quit;
 
-  if (m_Mode == xiiTexConvMode::Compare)
+  if (m_Mode == xiiTextureConverterMode::Compare)
   {
     if (m_Comparer.Compare().Failed())
       return xiiApplication::Execution::Quit;
@@ -261,7 +261,7 @@ xiiApplication::Execution xiiTexConv::Run()
     if (m_Processor.Process().Failed())
       return xiiApplication::Execution::Quit;
 
-    if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+    if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
     {
       xiiDeferredFileWriter file;
       file.SetOutput(m_sOutputFile);
@@ -333,4 +333,4 @@ xiiApplication::Execution xiiTexConv::Run()
   return xiiApplication::Execution::Quit;
 }
 
-XII_CONSOLEAPP_ENTRY_POINT(xiiTexConv);
+XII_CONSOLEAPP_ENTRY_POINT(xiiTextureConverter);

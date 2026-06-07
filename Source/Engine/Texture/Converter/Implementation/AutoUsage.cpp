@@ -165,7 +165,7 @@ static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image
   }
 }
 
-xiiResult xiiTexConvProcessor::AdjustUsage(xiiStringView sFilename, const xiiImage& srcImg, xiiEnum<xiiTextureConverterUsage>& inout_Usage)
+xiiResult xiiTextureConverterProcessor::AdjustUsage(xiiStringView sFilename, const xiiImage& srcImg, xiiEnum<xiiTextureConverterUsage>& inout_Usage)
 {
   XII_PROFILE_SCOPE("AdjustUsage");
 

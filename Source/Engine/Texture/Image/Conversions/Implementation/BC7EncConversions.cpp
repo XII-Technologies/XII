@@ -10,7 +10,7 @@
 #  include <Texture/Image/ImageConversion.h>
 
 xiiImageConversionEntry g_BC7EncConversions[] = {
-  // Even at the lowest quality level of BC7Enc, BC1 encoding times are more than a magnitude worse than DXTexConv.
+  // Even at the lowest quality level of BC7Enc, BC1 encoding times are more than a magnitude worse than DXTextureConverter.
   // xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC1_UNORM, xiiImageConversionFlags::Default),
   // xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC1_UNORM_SRGB, xiiImageConversionFlags::Default),
   xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC7_UNORM, xiiImageConversionFlags::Default),

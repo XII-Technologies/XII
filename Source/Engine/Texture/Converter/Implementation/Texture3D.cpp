@@ -6,7 +6,7 @@
 #include <Texture/Converter/TextureConverterProcessor.h>
 #include <Texture/Image/ImageUtils.h>
 
-xiiResult xiiTexConvProcessor::Assemble3DTexture(xiiImage& dst) const
+xiiResult xiiTextureConverterProcessor::Assemble3DTexture(xiiImage& dst) const
 {
   XII_PROFILE_SCOPE("Assemble3DTexture");
 

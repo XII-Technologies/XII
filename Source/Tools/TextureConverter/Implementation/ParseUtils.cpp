@@ -1,10 +1,10 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <TexConv/TexConvPCH.h>
+#include <TextureConverter/TextureConverterPCH.h>
 
-#include <TexConv/TexConv.h>
+#include <TextureConverter/TextureConverter.h>
 
-xiiResult xiiTexConv::ParseUIntOption(xiiStringView sOption, xiiInt32 iMinValue, xiiInt32 iMaxValue, xiiUInt32& ref_uiResult) const
+xiiResult xiiTextureConverter::ParseUIntOption(xiiStringView sOption, xiiInt32 iMinValue, xiiInt32 iMaxValue, xiiUInt32& ref_uiResult) const
 {
   const auto      pCmd      = xiiCommandLineUtils::GetGlobalInstance();
   const xiiUInt32 uiDefault = ref_uiResult;
@@ -30,7 +30,7 @@ xiiResult xiiTexConv::ParseUIntOption(xiiStringView sOption, xiiInt32 iMinValue,
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseStringOption(xiiStringView sOption, const xiiDynamicArray<KeyEnumValuePair>& allowed, xiiInt32& ref_iResult) const
+xiiResult xiiTextureConverter::ParseStringOption(xiiStringView sOption, const xiiDynamicArray<KeyEnumValuePair>& allowed, xiiInt32& ref_iResult) const
 {
   const auto             pCmd   = xiiCommandLineUtils::GetGlobalInstance();
   const xiiStringBuilder sValue = pCmd->GetStringOption(sOption, 0);
@@ -61,7 +61,7 @@ xiiResult xiiTexConv::ParseStringOption(xiiStringView sOption, const xiiDynamicA
   return XII_FAILURE;
 }
 
-void xiiTexConv::PrintOptionValues(xiiStringView sOption, const xiiDynamicArray<KeyEnumValuePair>& allowed) const
+void xiiTextureConverter::PrintOptionValues(xiiStringView sOption, const xiiDynamicArray<KeyEnumValuePair>& allowed) const
 {
   xiiLog::Info("Valid values for option '{}' are:", sOption);
 
@@ -71,7 +71,7 @@ void xiiTexConv::PrintOptionValues(xiiStringView sOption, const xiiDynamicArray<
   }
 }
 
-void xiiTexConv::PrintOptionValuesHelp(xiiStringView sOption, const xiiDynamicArray<KeyEnumValuePair>& allowed) const
+void xiiTextureConverter::PrintOptionValuesHelp(xiiStringView sOption, const xiiDynamicArray<KeyEnumValuePair>& allowed) const
 {
   xiiStringBuilder out(sOption, " ");
 
@@ -86,7 +86,7 @@ void xiiTexConv::PrintOptionValuesHelp(xiiStringView sOption, const xiiDynamicAr
   xiiLog::Info(out);
 }
 
-bool xiiTexConv::ParseFile(xiiStringView sOption, xiiString& ref_sResult) const
+bool xiiTextureConverter::ParseFile(xiiStringView sOption, xiiString& ref_sResult) const
 {
   const auto pCmd = xiiCommandLineUtils::GetGlobalInstance();
   ref_sResult     = pCmd->GetAbsolutePathOption(sOption);

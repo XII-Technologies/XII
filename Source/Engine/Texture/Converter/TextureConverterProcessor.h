@@ -8,14 +8,14 @@
 
 struct xiiTextureAtlasCreationDesc;
 
-class XII_TEXTURE_DLL xiiTexConvProcessor
+class XII_TEXTURE_DLL xiiTextureConverterProcessor
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiTexConvProcessor);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureConverterProcessor);
 
 public:
-  xiiTexConvProcessor();
+  xiiTextureConverterProcessor();
 
-  xiiTexConvDesc m_Descriptor;
+  xiiTextureConverterDesc m_Descriptor;
 
   xiiResult Process();
 
@@ -35,7 +35,7 @@ private:
   xiiResult ConvertToNormalMap(xiiArrayPtr<xiiImage> bumpMap) const;
   xiiResult ClampInputValues(xiiArrayPtr<xiiImage> images, float maxValue) const;
   xiiResult ClampInputValues(xiiImage& image, float maxValue) const;
-  xiiResult DetectNumChannels(xiiArrayPtr<const xiiTexConvSliceChannelMapping> channelMapping, xiiUInt32& uiNumChannels);
+  xiiResult DetectNumChannels(xiiArrayPtr<const xiiTextureConverterSliceChannelMapping> channelMapping, xiiUInt32& uiNumChannels);
   xiiResult InvertNormalMap(xiiImage& img);
 
   //////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ private:
   xiiResult AdjustHdrExposure(xiiImage& img) const;
   xiiResult PremultiplyAlpha(xiiImage& image) const;
   xiiResult DilateColor2D(xiiImage& img) const;
-  xiiResult Assemble2DSlice(const xiiTexConvSliceChannelMapping& mapping, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiColor* pPixelOut) const;
+  xiiResult Assemble2DSlice(const xiiTextureConverterSliceChannelMapping& mapping, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiColor* pPixelOut) const;
   xiiResult GenerateMipmaps(xiiImage& img, xiiUInt32 uiNumMips /* =0 */, MipmapChannelMode channelMode = MipmapChannelMode::AllChannels) const;
 
   //////////////////////////////////////////////////////////////////////////

@@ -33,10 +33,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 5, xiiRTTIDefaultAll
     XII_ENUM_MEMBER_PROPERTY("Resolution", xiiTexture2DResolution, m_Resolution),
     XII_MEMBER_PROPERTY("CVarResScale", m_fCVarResolutionScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 10.0f)),
 
-    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTexConvMipmapMode, m_MipmapMode),
+    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTextureConverterMipmapMode, m_MipmapMode),
     XII_MEMBER_PROPERTY("PreserveAlphaCoverage", m_bPreserveAlphaCoverage),
     XII_MEMBER_PROPERTY("AlphaThreshold", m_fAlphaThreshold)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTexConvCompressionMode, m_CompressionMode),
+    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTextureConverterCompressionMode, m_CompressionMode),
     XII_MEMBER_PROPERTY("PremultipliedAlpha", m_bPremultipliedAlpha),
     XII_MEMBER_PROPERTY("DilateColor", m_bDilateColor)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("FlipHorizontal", m_bFlipHorizontal),
@@ -98,7 +98,7 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
     }
     else
     {
-      const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTexConvMipmapMode::None;
+      const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTextureConverterMipmapMode::None;
       const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTextureConverterUsage::Hdr;
 
       props["CVarResScale"].m_Visibility          = xiiPropertyUiState::Invisible;
@@ -237,18 +237,18 @@ public:
     if (pMipmaps && pMipmaps->m_Value.IsA<bool>())
     {
       if (pMipmaps->m_Value.Get<bool>())
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::Kaiser);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::Kaiser);
       else
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::None);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::None);
     }
 
     auto* pCompression = pNode->FindProperty("Compression");
     if (pCompression && pCompression->m_Value.IsA<bool>())
     {
       if (pCompression->m_Value.Get<bool>())
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::High);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::High);
       else
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::None);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::None);
     }
   }
 };

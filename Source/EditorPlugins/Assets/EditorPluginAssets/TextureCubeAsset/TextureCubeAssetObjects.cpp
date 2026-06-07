@@ -16,8 +16,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetProperties, 3, xiiRTTIDefaul
   {
     XII_ENUM_MEMBER_PROPERTY("Usage", xiiTextureConverterUsage, m_TextureUsage),
 
-    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTexConvMipmapMode, m_MipmapMode),
-    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTexConvCompressionMode, m_CompressionMode),
+    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTextureConverterMipmapMode, m_MipmapMode),
+    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTextureConverterCompressionMode, m_CompressionMode),
 
     XII_MEMBER_PROPERTY("HdrExposureBias", m_fHdrExposureBias)->AddAttributes(new xiiClampValueAttribute(-20.0f, 20.0f)),
 
@@ -165,18 +165,18 @@ public:
     if (pMipmaps && pMipmaps->m_Value.IsA<bool>())
     {
       if (pMipmaps->m_Value.Get<bool>())
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::Kaiser);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::Kaiser);
       else
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::None);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::None);
     }
 
     auto* pCompression = pNode->FindProperty("Compression");
     if (pCompression && pCompression->m_Value.IsA<bool>())
     {
       if (pCompression->m_Value.Get<bool>())
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::Medium);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::Medium);
       else
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::None);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::None);
     }
   }
 };

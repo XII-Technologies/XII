@@ -6,7 +6,7 @@
 
 #include <Foundation/Reflection/Reflection.h>
 
-struct xiiTexConvOutputType
+struct xiiTextureConverterOutputType
 {
   enum Enum
   {
@@ -22,7 +22,7 @@ struct xiiTexConvOutputType
   using StorageType = xiiUInt8;
 };
 
-struct xiiTexConvCompressionMode
+struct xiiTextureConverterCompressionMode
 {
   enum Enum
   {
@@ -37,7 +37,7 @@ struct xiiTexConvCompressionMode
   using StorageType = xiiUInt8;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTexConvCompressionMode);
+XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTextureConverterCompressionMode);
 
 struct xiiTextureConverterUsage
 {
@@ -45,7 +45,7 @@ struct xiiTextureConverterUsage
   {
     Auto, ///< Target format will be detected from heuristics (filename, content)
 
-    // Exact format will be decided together with xiiTexConvCompressionMode
+    // Exact format will be decided together with xiiTextureConverterCompressionMode
 
     Color,
     Linear,
@@ -64,7 +64,7 @@ struct xiiTextureConverterUsage
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTextureConverterUsage);
 
-struct xiiTexConvMipmapMode
+struct xiiTextureConverterMipmapMode
 {
   enum Enum
   {
@@ -78,9 +78,9 @@ struct xiiTexConvMipmapMode
   using StorageType = xiiUInt8;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTexConvMipmapMode);
+XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiTextureConverterMipmapMode);
 
-struct xiiTexConvTargetPlatform
+struct xiiTextureConverterTargetPlatform
 {
   enum Enum
   {
@@ -93,7 +93,7 @@ struct xiiTexConvTargetPlatform
 };
 
 /// \brief Defines which channel of another texture to read to get a value
-struct xiiTexConvChannelValue
+struct xiiTextureConverterChannelValue
 {
   enum Enum
   {
@@ -108,7 +108,7 @@ struct xiiTexConvChannelValue
 };
 
 /// \brief Defines which filter kernel is used to approximate the x/y bump map gradients
-struct xiiTexConvBumpMapFilter
+struct xiiTextureConverterBumpMapFilter
 {
   enum Enum
   {

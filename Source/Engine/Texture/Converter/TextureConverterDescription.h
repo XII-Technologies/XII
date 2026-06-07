@@ -10,39 +10,39 @@
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageEnums.h>
 
-struct xiiTexConvChannelMapping
+struct xiiTextureConverterChannelMapping
 {
   xiiInt8                      m_iInputImageIndex = -1;
-  xiiTexConvChannelValue::Enum m_ChannelValue;
+  xiiTextureConverterChannelValue::Enum m_ChannelValue;
 };
 
 /// Describes from which input file to read which channel and then write it to the R, G, B, or A channel of the
 /// output file. The four elements of the array represent the four channels of the output image.
-struct xiiTexConvSliceChannelMapping
+struct xiiTextureConverterSliceChannelMapping
 {
-  xiiTexConvChannelMapping m_Channel[4] = {
-    xiiTexConvChannelMapping{-1, xiiTexConvChannelValue::Red},
-    xiiTexConvChannelMapping{-1, xiiTexConvChannelValue::Green},
-    xiiTexConvChannelMapping{-1, xiiTexConvChannelValue::Blue},
-    xiiTexConvChannelMapping{-1, xiiTexConvChannelValue::Alpha},
+  xiiTextureConverterChannelMapping m_Channel[4] = {
+    xiiTextureConverterChannelMapping{-1, xiiTextureConverterChannelValue::Red},
+    xiiTextureConverterChannelMapping{-1, xiiTextureConverterChannelValue::Green},
+    xiiTextureConverterChannelMapping{-1, xiiTextureConverterChannelValue::Blue},
+    xiiTextureConverterChannelMapping{-1, xiiTextureConverterChannelValue::Alpha},
   };
 };
 
-class XII_TEXTURE_DLL xiiTexConvDesc
+class XII_TEXTURE_DLL xiiTextureConverterDesc
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiTexConvDesc);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureConverterDesc);
 
 public:
-  xiiTexConvDesc() = default;
+  xiiTextureConverterDesc() = default;
 
   xiiHybridArray<xiiString, 4> m_InputFiles;
   xiiDynamicArray<xiiImage>    m_InputImages;
 
-  xiiHybridArray<xiiTexConvSliceChannelMapping, 6> m_ChannelMappings;
+  xiiHybridArray<xiiTextureConverterSliceChannelMapping, 6> m_ChannelMappings;
 
   // output type / platform
-  xiiEnum<xiiTexConvOutputType>     m_OutputType;
-  xiiEnum<xiiTexConvTargetPlatform> m_TargetPlatform;
+  xiiEnum<xiiTextureConverterOutputType>     m_OutputType;
+  xiiEnum<xiiTextureConverterTargetPlatform> m_TargetPlatform;
 
   // low resolution output
   xiiUInt32 m_uiLowResMipmaps = 0;
@@ -52,7 +52,7 @@ public:
 
   // Format / Compression
   xiiEnum<xiiTextureConverterUsage>  m_Usage;
-  xiiEnum<xiiTexConvCompressionMode> m_CompressionMode;
+  xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
 
   // resolution clamp and downscale
   xiiUInt32 m_uiMinResolution  = 16;
@@ -60,7 +60,7 @@ public:
   xiiUInt32 m_uiDownscaleSteps = 0;
 
   // Mipmaps / filtering
-  xiiEnum<xiiTexConvMipmapMode>    m_MipmapMode;
+  xiiEnum<xiiTextureConverterMipmapMode>    m_MipmapMode;
   xiiEnum<xiiTextureFilterSetting> m_FilterMode; // only used when writing to XII specific formats
   xiiEnum<xiiImageAddressMode>     m_AddressModeU;
   xiiEnum<xiiImageAddressMode>     m_AddressModeV;
@@ -83,5 +83,5 @@ public:
   xiiString m_sTextureAtlasDescFile;
 
   // Bump map filter
-  xiiEnum<xiiTexConvBumpMapFilter> m_BumpMapFilter;
+  xiiEnum<xiiTextureConverterBumpMapFilter> m_BumpMapFilter;
 };

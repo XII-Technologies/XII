@@ -5,7 +5,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
 
-xiiResult xiiTexConvProcessor::Assemble2DTexture(const xiiImageHeader& refImg, xiiImage& dst) const
+xiiResult xiiTextureConverterProcessor::Assemble2DTexture(const xiiImageHeader& refImg, xiiImage& dst) const
 {
   XII_PROFILE_SCOPE("Assemble2DTexture");
 
@@ -16,7 +16,7 @@ xiiResult xiiTexConvProcessor::Assemble2DTexture(const xiiImageHeader& refImg, x
   return Assemble2DSlice(m_Descriptor.m_ChannelMappings[0], refImg.GetWidth(), refImg.GetHeight(), pPixelOut);
 }
 
-xiiResult xiiTexConvProcessor::Assemble2DSlice(const xiiTexConvSliceChannelMapping& mapping, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiColor* pPixelOut) const
+xiiResult xiiTextureConverterProcessor::Assemble2DSlice(const xiiTextureConverterSliceChannelMapping& mapping, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiColor* pPixelOut) const
 {
   xiiHybridArray<const xiiColor*, 16> pSource;
   for (xiiUInt32 i = 0; i < m_Descriptor.m_InputImages.GetCount(); ++i)
@@ -41,16 +41,16 @@ xiiResult xiiTexConvProcessor::Assemble2DSlice(const xiiTexConvSliceChannelMappi
 
       switch (cm.m_ChannelValue)
       {
-        case xiiTexConvChannelValue::Red:
+        case xiiTextureConverterChannelValue::Red:
           pSourceValues[channel] = &pSourcePixel->r;
           break;
-        case xiiTexConvChannelValue::Green:
+        case xiiTextureConverterChannelValue::Green:
           pSourceValues[channel] = &pSourcePixel->g;
           break;
-        case xiiTexConvChannelValue::Blue:
+        case xiiTextureConverterChannelValue::Blue:
           pSourceValues[channel] = &pSourcePixel->b;
           break;
-        case xiiTexConvChannelValue::Alpha:
+        case xiiTextureConverterChannelValue::Alpha:
           pSourceValues[channel] = &pSourcePixel->a;
           break;
 
@@ -63,11 +63,11 @@ xiiResult xiiTexConvProcessor::Assemble2DSlice(const xiiTexConvSliceChannelMappi
 
       switch (cm.m_ChannelValue)
       {
-        case xiiTexConvChannelValue::Black:
+        case xiiTextureConverterChannelValue::Black:
           pSourceValues[channel] = &fZero;
           break;
 
-        case xiiTexConvChannelValue::White:
+        case xiiTextureConverterChannelValue::White:
           pSourceValues[channel] = &fOne;
           break;
 
@@ -114,7 +114,7 @@ xiiResult xiiTexConvProcessor::Assemble2DSlice(const xiiTexConvSliceChannelMappi
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiImageFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const
+xiiResult xiiTextureConverterProcessor::DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiImageFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const
 {
   XII_PROFILE_SCOPE("DetermineResolution");
 
@@ -142,7 +142,7 @@ xiiResult xiiTexConvProcessor::DetermineTargetResolution(const xiiImage& image, 
     out_uiTargetResolutionX = (out_uiTargetResolutionY * uiOrgResX) / uiOrgResY;
   }
 
-  if (m_Descriptor.m_OutputType == xiiTexConvOutputType::Volume)
+  if (m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
     xiiUInt32 uiScaleFactor = uiOrgResY / out_uiTargetResolutionY;
     out_uiTargetResolutionX = uiOrgResX / uiScaleFactor;

@@ -7,7 +7,7 @@
 
 class xiiStreamWriter;
 
-struct xiiTexConvMode
+struct xiiTextureConverterMode
 {
   using StorageType = xiiUInt8;
 
@@ -20,7 +20,7 @@ struct xiiTexConvMode
   };
 };
 
-class xiiTexConv : public xiiApplication
+class xiiTextureConverter : public xiiApplication
 {
 public:
   using SUPER = xiiApplication;
@@ -36,7 +36,7 @@ public:
     xiiInt32      m_iEnumValue = -1;
   };
 
-  xiiTexConv();
+  xiiTextureConverter();
 
 public:
   virtual xiiApplication::Execution Run() override;
@@ -53,7 +53,7 @@ public:
   xiiResult ParseOutputFiles();
   xiiResult ParseChannelMappings();
   xiiResult ParseChannelSliceMapping(xiiInt32 iSlice);
-  xiiResult ParseChannelMappingConfig(xiiTexConvChannelMapping& out_mapping, xiiStringView sCfg, xiiInt32 iChannelIndex, bool bSingleChannel);
+  xiiResult ParseChannelMappingConfig(xiiTextureConverterChannelMapping& out_mapping, xiiStringView sCfg, xiiInt32 iChannelIndex, bool bSingleChannel);
   xiiResult ParseUsage();
   xiiResult ParseMipmapMode();
   xiiResult ParseTargetPlatform();
@@ -88,8 +88,8 @@ private:
   bool m_bOutputSupportsFiltering   = false;
   bool m_bOutputSupportsCompression = false;
 
-  xiiEnum<xiiTexConvMode> m_Mode;
-  xiiTexConvProcessor     m_Processor;
+  xiiEnum<xiiTextureConverterMode> m_Mode;
+  xiiTextureConverterProcessor     m_Processor;
 
   // Comparer specific
 

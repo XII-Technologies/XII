@@ -9,9 +9,9 @@
 #include <Texture/Utilities/TextureAtlasDescription.h>
 #include <Texture/Utilities/TexturePacker.h>
 
-xiiResult xiiTexConvProcessor::GenerateTextureAtlas(xiiMemoryStreamWriter& stream)
+xiiResult xiiTextureConverterProcessor::GenerateTextureAtlas(xiiMemoryStreamWriter& stream)
 {
-  if (m_Descriptor.m_OutputType != xiiTexConvOutputType::Atlas)
+  if (m_Descriptor.m_OutputType != xiiTextureConverterOutputType::Atlas)
     return XII_SUCCESS;
 
   if (m_Descriptor.m_sTextureAtlasDescFile.IsEmpty())
@@ -68,7 +68,7 @@ xiiResult xiiTexConvProcessor::GenerateTextureAtlas(xiiMemoryStreamWriter& strea
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const
+xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const
 {
   items.Clear();
 
@@ -137,7 +137,7 @@ xiiResult xiiTexConvProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::WriteTextureAtlasInfo(const xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiUInt32 uiNumLayers, xiiStreamWriter& stream)
+xiiResult xiiTextureConverterProcessor::WriteTextureAtlasInfo(const xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiUInt32 uiNumLayers, xiiStreamWriter& stream)
 {
   xiiTextureAtlasRuntimeDesc runtimeAtlas;
   runtimeAtlas.m_uiNumLayers = uiNumLayers;
@@ -160,7 +160,7 @@ xiiResult xiiTexConvProcessor::WriteTextureAtlasInfo(const xiiDynamicArray<Textu
 
 constexpr xiiUInt32 uiAtlasCellSize = 32;
 
-xiiResult xiiTexConvProcessor::TrySortItemsIntoAtlas(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiInt32 layer)
+xiiResult xiiTextureConverterProcessor::TrySortItemsIntoAtlas(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiInt32 layer)
 {
   xiiTexturePacker packer;
 
@@ -196,7 +196,7 @@ xiiResult xiiTexConvProcessor::TrySortItemsIntoAtlas(xiiDynamicArray<TextureAtla
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::SortItemsIntoAtlas(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32& out_ResX, xiiUInt32& out_ResY, xiiInt32 layer)
+xiiResult xiiTextureConverterProcessor::SortItemsIntoAtlas(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32& out_ResX, xiiUInt32& out_ResY, xiiInt32 layer)
 {
   for (xiiUInt32 power = 8; power < 14; ++power)
   {
@@ -231,7 +231,7 @@ xiiResult xiiTexConvProcessor::SortItemsIntoAtlas(xiiDynamicArray<TextureAtlasIt
   return XII_FAILURE;
 }
 
-xiiResult xiiTexConvProcessor::CreateAtlasTexture(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiResX, xiiUInt32 uiResY, xiiImage& atlas, xiiInt32 layer)
+xiiResult xiiTextureConverterProcessor::CreateAtlasTexture(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiResX, xiiUInt32 uiResY, xiiImage& atlas, xiiInt32 layer)
 {
   xiiImageHeader imgHeader;
   imgHeader.SetWidth(uiResX);
@@ -264,7 +264,7 @@ xiiResult xiiTexConvProcessor::CreateAtlasTexture(xiiDynamicArray<TextureAtlasIt
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::FillAtlasBorders(xiiDynamicArray<TextureAtlasItem>& items, xiiImage& atlas, xiiInt32 layer)
+xiiResult xiiTextureConverterProcessor::FillAtlasBorders(xiiDynamicArray<TextureAtlasItem>& items, xiiImage& atlas, xiiInt32 layer)
 {
   const xiiUInt32 uiBorderPixels = 2;
 
@@ -318,7 +318,7 @@ xiiResult xiiTexConvProcessor::FillAtlasBorders(xiiDynamicArray<TextureAtlasItem
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::CreateAtlasLayerTexture(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg)
+xiiResult xiiTextureConverterProcessor::CreateAtlasLayerTexture(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg)
 {
   xiiUInt32 uiTexWidth, uiTexHeight;
   XII_SUCCEED_OR_RETURN(SortItemsIntoAtlas(atlasItems, uiTexWidth, uiTexHeight, layer));

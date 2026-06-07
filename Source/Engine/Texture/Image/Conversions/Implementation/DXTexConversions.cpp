@@ -297,7 +297,7 @@ namespace
 } // namespace
 
 // clang-format off
-XII_BEGIN_SUBSYSTEM_DECLARATION(TexConv, DXTexConversions)
+XII_BEGIN_SUBSYSTEM_DECLARATION(TextureConverter, DXTextureConverterersions)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "Foundation"
@@ -393,4 +393,4 @@ XII_STATICLINK_FORCE static xiiImageConversion_CompressDxTex s_conversion_compre
 
 
 
-XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_DXTexConversions);
+XII_STATICLINK_FILE(Texture, Texture_Image_Conversions_DXTextureConverterersions);

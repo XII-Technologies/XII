@@ -5,14 +5,14 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
 
-static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTexConvCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
+static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTextureConverterCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
 {
   if (targetFormat == xiiTextureConverterUsage::NormalMap || targetFormat == xiiTextureConverterUsage::NormalMap_Inverted || targetFormat == xiiTextureConverterUsage::BumpMap)
   {
-    if (compressionMode >= xiiTexConvCompressionMode::High)
+    if (compressionMode >= xiiTextureConverterCompressionMode::High)
       return xiiImageFormat::BC5_UNORM;
 
-    if (compressionMode >= xiiTexConvCompressionMode::Medium)
+    if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
       return xiiImageFormat::R8G8_UNORM;
 
     // TODO: in the rare case that the input texture has higher precision, we could use R16G16_UNORM or R16G16_FLOAT here
@@ -23,10 +23,10 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
 
   if (targetFormat == xiiTextureConverterUsage::Color)
   {
-    if (compressionMode >= xiiTexConvCompressionMode::High && uiNumChannels < 4)
+    if (compressionMode >= xiiTextureConverterCompressionMode::High && uiNumChannels < 4)
       return xiiImageFormat::BC1_UNORM_SRGB;
 
-    if (compressionMode >= xiiTexConvCompressionMode::Medium)
+    if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
       return xiiImageFormat::BC7_UNORM_SRGB;
 
     return xiiImageFormat::R8G8B8A8_UNORM_SRGB;
@@ -37,28 +37,28 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
     switch (uiNumChannels)
     {
       case 1:
-        if (compressionMode >= xiiTexConvCompressionMode::Medium)
+        if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
           return xiiImageFormat::BC4_UNORM;
 
         return xiiImageFormat::R8_UNORM;
 
       case 2:
-        if (compressionMode >= xiiTexConvCompressionMode::Medium)
+        if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
           return xiiImageFormat::BC5_UNORM;
 
         return xiiImageFormat::R8G8_UNORM;
 
       case 3:
-        if (compressionMode >= xiiTexConvCompressionMode::High)
+        if (compressionMode >= xiiTextureConverterCompressionMode::High)
           return xiiImageFormat::BC1_UNORM;
 
-        if (compressionMode >= xiiTexConvCompressionMode::Medium)
+        if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
           return xiiImageFormat::BC7_UNORM;
 
         return xiiImageFormat::R8G8B8A8_UNORM;
 
       case 4:
-        if (compressionMode >= xiiTexConvCompressionMode::Medium)
+        if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
           return xiiImageFormat::BC7_UNORM;
 
         return xiiImageFormat::R8G8B8A8_UNORM;
@@ -73,7 +73,7 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
     switch (uiNumChannels)
     {
       case 1:
-        if (compressionMode >= xiiTexConvCompressionMode::High)
+        if (compressionMode >= xiiTextureConverterCompressionMode::High)
           return xiiImageFormat::BC6H_UF16;
 
         return xiiImageFormat::R16_FLOAT;
@@ -82,10 +82,10 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
         return xiiImageFormat::R16G16_FLOAT;
 
       case 3:
-        if (compressionMode >= xiiTexConvCompressionMode::High)
+        if (compressionMode >= xiiTextureConverterCompressionMode::High)
           return xiiImageFormat::BC6H_UF16;
 
-        if (compressionMode >= xiiTexConvCompressionMode::Medium)
+        if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
           return xiiImageFormat::R11G11B10_FLOAT;
 
         return xiiImageFormat::R16G16B16A16_FLOAT;
@@ -98,7 +98,7 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
   return xiiImageFormat::UNKNOWN;
 }
 
-xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const
+xiiResult xiiTextureConverterProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const
 {
   XII_PROFILE_SCOPE("ChooseOutputFormat");
 
@@ -106,7 +106,7 @@ xiiResult xiiTexConvProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_F
 
   switch (m_Descriptor.m_TargetPlatform)
   {
-    case xiiTexConvTargetPlatform::PC:
+    case xiiTextureConverterTargetPlatform::PC:
       out_Format = DetermineOutputFormatPC(usage, m_Descriptor.m_CompressionMode, uiNumChannels);
       break;
 

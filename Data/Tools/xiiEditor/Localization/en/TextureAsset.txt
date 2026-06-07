@@ -51,13 +51,13 @@ xiiTexture2DResolution::Fixed2048x2048;2048 * 2048
 xiiTexture2DResolution::CVarRtResolution1;CVar RT Resolution 1
 xiiTexture2DResolution::CVarRtResolution2;CVar RT Resolution 2
 
-xiiTexConvMipmapMode::None;No Mipmaps
-xiiTexConvMipmapMode::Linear;Generate: Linear
-xiiTexConvMipmapMode::Kaiser;Generate: Kaiser
+xiiTextureConverterMipmapMode::None;No Mipmaps
+xiiTextureConverterMipmapMode::Linear;Generate: Linear
+xiiTextureConverterMipmapMode::Kaiser;Generate: Kaiser
 
-xiiTexConvCompressionMode::None;Uncompressed
-xiiTexConvCompressionMode::Medium;Medium Compression
-xiiTexConvCompressionMode::High;Strong Compression
+xiiTextureConverterCompressionMode::None;Uncompressed
+xiiTextureConverterCompressionMode::Medium;Medium Compression
+xiiTextureConverterCompressionMode::High;Strong Compression
 
 xiiImageAddressMode::ClampBorder;Clamp to Black
 

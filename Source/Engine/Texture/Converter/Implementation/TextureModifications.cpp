@@ -6,7 +6,7 @@
 #include <Texture/Converter/TextureConverterProcessor.h>
 #include <Texture/Image/ImageUtils.h>
 
-xiiResult xiiTexConvProcessor::ForceSRGBFormats()
+xiiResult xiiTextureConverterProcessor::ForceSRGBFormats()
 {
   // if the output is going to be sRGB, assume the incoming RGB data is also already in sRGB
   if (m_Descriptor.m_Usage == xiiTextureConverterUsage::Color)
@@ -29,7 +29,7 @@ xiiResult xiiTexConvProcessor::ForceSRGBFormats()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32 uiNumMips, MipmapChannelMode channelMode /*= MipmapChannelMode::AllChannels*/) const
+xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32 uiNumMips, MipmapChannelMode channelMode /*= MipmapChannelMode::AllChannels*/) const
 {
   XII_PROFILE_SCOPE("GenerateMipmaps");
 
@@ -41,14 +41,14 @@ xiiResult xiiTexConvProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32 uiNumMip
 
   switch (m_Descriptor.m_MipmapMode)
   {
-    case xiiTexConvMipmapMode::None:
+    case xiiTextureConverterMipmapMode::None:
       return XII_SUCCESS;
 
-    case xiiTexConvMipmapMode::Linear:
+    case xiiTextureConverterMipmapMode::Linear:
       opt.m_filter = &filterLinear;
       break;
 
-    case xiiTexConvMipmapMode::Kaiser:
+    case xiiTextureConverterMipmapMode::Kaiser:
       opt.m_filter = &filterKaiser;
       break;
   }
@@ -99,7 +99,7 @@ xiiResult xiiTexConvProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32 uiNumMip
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::PremultiplyAlpha(xiiImage& image) const
+xiiResult xiiTextureConverterProcessor::PremultiplyAlpha(xiiImage& image) const
 {
   XII_PROFILE_SCOPE("PremultiplyAlpha");
 
@@ -116,7 +116,7 @@ xiiResult xiiTexConvProcessor::PremultiplyAlpha(xiiImage& image) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::AdjustHdrExposure(xiiImage& img) const
+xiiResult xiiTextureConverterProcessor::AdjustHdrExposure(xiiImage& img) const
 {
   XII_PROFILE_SCOPE("AdjustHdrExposure");
 
@@ -124,7 +124,7 @@ xiiResult xiiTexConvProcessor::AdjustHdrExposure(xiiImage& img) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiArrayPtr<xiiImage> imgs) const
+xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiArrayPtr<xiiImage> imgs) const
 {
   XII_PROFILE_SCOPE("ConvertToNormalMap");
 
@@ -136,7 +136,7 @@ xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiArrayPtr<xiiImage> imgs) co
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
+xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
 {
   xiiImageHeader newImageHeader = bumpMap.GetHeader();
   newImageHeader.SetNumMipLevels(1);
@@ -168,7 +168,7 @@ xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
 
   switch (m_Descriptor.m_BumpMapFilter)
   {
-    case xiiTexConvBumpMapFilter::Finite:
+    case xiiTextureConverterBumpMapFilter::Finite:
       filterKernel = [&](xiiUInt32 x, xiiUInt32 y) {
         constexpr float linearKernel[3] = {-1, 0, 1};
 
@@ -188,7 +188,7 @@ xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
         return accum;
       };
       break;
-    case xiiTexConvBumpMapFilter::Sobel:
+    case xiiTextureConverterBumpMapFilter::Sobel:
       filterKernel = [&](xiiUInt32 x, xiiUInt32 y) {
         constexpr float kernel[3][3] = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}};
         constexpr float weight       = 1.f / 4.f;
@@ -214,7 +214,7 @@ xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
         return accum;
       };
       break;
-    case xiiTexConvBumpMapFilter::Scharr:
+    case xiiTextureConverterBumpMapFilter::Scharr:
       filterKernel = [&](xiiUInt32 x, xiiUInt32 y) {
         constexpr float kernel[3][3] = {{-3, 0, 3}, {-10, 0, 10}, {-3, 0, 3}};
         constexpr float weight       = 1.f / 16.f;
@@ -264,7 +264,7 @@ xiiResult xiiTexConvProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ClampInputValues(xiiArrayPtr<xiiImage> images, float maxValue) const
+xiiResult xiiTextureConverterProcessor::ClampInputValues(xiiArrayPtr<xiiImage> images, float maxValue) const
 {
   for (xiiImage& image : images)
   {
@@ -274,7 +274,7 @@ xiiResult xiiTexConvProcessor::ClampInputValues(xiiArrayPtr<xiiImage> images, fl
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::ClampInputValues(xiiImage& image, float maxValue) const
+xiiResult xiiTextureConverterProcessor::ClampInputValues(xiiImage& image, float maxValue) const
 {
   // we'll assume that at this point in the processing pipeline, the format is
   // RGBA32F which should result in tightly packed mipmaps.
@@ -399,7 +399,7 @@ static void DilateColors(xiiColor* pPixels, xiiInt32 iWidth, xiiInt32 iHeight, f
   }
 }
 
-xiiResult xiiTexConvProcessor::DilateColor2D(xiiImage& img) const
+xiiResult xiiTextureConverterProcessor::DilateColor2D(xiiImage& img) const
 {
   if (m_Descriptor.m_uiDilateColor == 0)
     return XII_SUCCESS;
@@ -426,7 +426,7 @@ xiiResult xiiTexConvProcessor::DilateColor2D(xiiImage& img) const
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::InvertNormalMap(xiiImage& image)
+xiiResult xiiTextureConverterProcessor::InvertNormalMap(xiiImage& image)
 {
   if (m_Descriptor.m_Usage != xiiTextureConverterUsage::NormalMap_Inverted)
     return XII_SUCCESS;

@@ -8,12 +8,12 @@
 #include <Texture/Image/ImageUtils.h>
 
 // clang-format off
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexConvCompressionMode, 1)
-  XII_ENUM_CONSTANTS(xiiTexConvCompressionMode::None, xiiTexConvCompressionMode::Medium, xiiTexConvCompressionMode::High)
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureConverterCompressionMode, 1)
+  XII_ENUM_CONSTANTS(xiiTextureConverterCompressionMode::None, xiiTextureConverterCompressionMode::Medium, xiiTextureConverterCompressionMode::High)
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTexConvMipmapMode, 1)
-  XII_ENUM_CONSTANTS(xiiTexConvMipmapMode::None, xiiTexConvMipmapMode::Linear, xiiTexConvMipmapMode::Kaiser)
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureConverterMipmapMode, 1)
+  XII_ENUM_CONSTANTS(xiiTextureConverterMipmapMode::None, xiiTextureConverterMipmapMode::Linear, xiiTextureConverterMipmapMode::Kaiser)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureConverterUsage, 1)
@@ -23,13 +23,13 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiTextureConverterUsage, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
-xiiTexConvProcessor::xiiTexConvProcessor() = default;
+xiiTextureConverterProcessor::xiiTextureConverterProcessor() = default;
 
-xiiResult xiiTexConvProcessor::Process()
+xiiResult xiiTextureConverterProcessor::Process()
 {
-  XII_PROFILE_SCOPE("xiiTexConvProcessor::Process");
+  XII_PROFILE_SCOPE("xiiTextureConverterProcessor::Process");
 
-  if (m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+  if (m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
   {
     xiiMemoryStreamWriter stream(&m_TextureAtlas);
     XII_SUCCEED_OR_RETURN(GenerateTextureAtlas(stream));
@@ -73,7 +73,7 @@ xiiResult xiiTexConvProcessor::Process()
     }
 
     xiiImage assembledImg;
-    if (m_Descriptor.m_OutputType == xiiTexConvOutputType::Texture2D || m_Descriptor.m_OutputType == xiiTexConvOutputType::None)
+    if (m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Texture2D || m_Descriptor.m_OutputType == xiiTextureConverterOutputType::None)
     {
       XII_SUCCEED_OR_RETURN(Assemble2DTexture(m_Descriptor.m_InputImages[0].GetHeader(), assembledImg));
 
@@ -81,11 +81,11 @@ xiiResult xiiTexConvProcessor::Process()
 
       XII_SUCCEED_OR_RETURN(DilateColor2D(assembledImg));
     }
-    else if (m_Descriptor.m_OutputType == xiiTexConvOutputType::Cubemap)
+    else if (m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Cubemap)
     {
       XII_SUCCEED_OR_RETURN(AssembleCubemap(assembledImg));
     }
-    else if (m_Descriptor.m_OutputType == xiiTexConvOutputType::Volume)
+    else if (m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
     {
       XII_SUCCEED_OR_RETURN(Assemble3DTexture(assembledImg));
     }
@@ -106,7 +106,7 @@ xiiResult xiiTexConvProcessor::Process()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::DetectNumChannels(xiiArrayPtr<const xiiTexConvSliceChannelMapping> channelMapping, xiiUInt32& uiNumChannels)
+xiiResult xiiTextureConverterProcessor::DetectNumChannels(xiiArrayPtr<const xiiTextureConverterSliceChannelMapping> channelMapping, xiiUInt32& uiNumChannels)
 {
   XII_PROFILE_SCOPE("DetectNumChannels");
 
@@ -116,7 +116,7 @@ xiiResult xiiTexConvProcessor::DetectNumChannels(xiiArrayPtr<const xiiTexConvSli
   {
     for (xiiUInt32 i = 0; i < 4; ++i)
     {
-      if (mapping.m_Channel[i].m_iInputImageIndex != -1 || mapping.m_Channel[i].m_ChannelValue == xiiTexConvChannelValue::Black)
+      if (mapping.m_Channel[i].m_iInputImageIndex != -1 || mapping.m_Channel[i].m_ChannelValue == xiiTextureConverterChannelValue::Black)
       {
         uiNumChannels = xiiMath::Max(uiNumChannels, i + 1);
       }
@@ -137,7 +137,7 @@ xiiResult xiiTexConvProcessor::DetectNumChannels(xiiArrayPtr<const xiiTexConvSli
 
     for (const auto& mapping : channelMapping)
     {
-      if (mapping.m_Channel[3].m_ChannelValue == xiiTexConvChannelValue::Black)
+      if (mapping.m_Channel[3].m_ChannelValue == xiiTextureConverterChannelValue::Black)
       {
         // sampling a texture without an alpha channel always returns 1, so to use all 0, we do need the channel
         uiNumChannels = 4;
@@ -189,7 +189,7 @@ xiiResult xiiTexConvProcessor::DetectNumChannels(xiiArrayPtr<const xiiTexConvSli
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiImageFormat> format)
+xiiResult xiiTextureConverterProcessor::GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiImageFormat> format)
 {
   XII_PROFILE_SCOPE("GenerateOutput");
 
@@ -204,7 +204,7 @@ xiiResult xiiTexConvProcessor::GenerateOutput(xiiImage&& src, xiiImage& dst, xii
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::GenerateThumbnailOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiTargetRes)
+xiiResult xiiTextureConverterProcessor::GenerateThumbnailOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiTargetRes)
 {
   if (uiTargetRes == 0)
     return XII_SUCCESS;
@@ -308,7 +308,7 @@ xiiResult xiiTexConvProcessor::GenerateThumbnailOutput(const xiiImage& srcImg, x
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConvProcessor::GenerateLowResOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiLowResMip)
+xiiResult xiiTextureConverterProcessor::GenerateLowResOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiLowResMip)
 {
   if (uiLowResMip == 0)
     return XII_SUCCESS;
@@ -332,4 +332,4 @@ xiiResult xiiTexConvProcessor::GenerateLowResOutput(const xiiImage& srcImg, xiiI
   return XII_SUCCESS;
 }
 
-XII_STATICLINK_FILE(Texture, Texture_TexConv_Implementation_Processor);
+XII_STATICLINK_FILE(Texture, Texture_TextureConverter_Implementation_Processor);

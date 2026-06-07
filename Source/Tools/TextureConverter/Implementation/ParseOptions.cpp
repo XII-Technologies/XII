@@ -1,29 +1,29 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#include <TexConv/TexConvPCH.h>
+#include <TextureConverter/TextureConverterPCH.h>
 
-#include <TexConv/TexConv.h>
+#include <TextureConverter/TextureConverter.h>
 
 #include <Foundation/Utilities/CommandLineOptions.h>
 
-xiiCommandLineOptionEnum opt_Mode("_TexConv", "-mode", "Mode determines which arguments need to be set.\n\
+xiiCommandLineOptionEnum opt_Mode("_TextureConverter", "-mode", "Mode determines which arguments need to be set.\n\
   In compare mode the mean-square error (MSE) is returned. 0 if it is below the threshold.\
 ",
                                   "Convert | Compare", 0);
 
-xiiCommandLineOptionPath opt_Out("_TexConv", "-out",
+xiiCommandLineOptionPath opt_Out("_TextureConverter", "-out",
                                  "Absolute path to main output file.\n\
    ext = tga, dds, xiiBinTexture2D, xiiBinTexture3D, xiiBinTextureCube or xiiBinTextureAtlas.",
                                  "");
 
 
-xiiCommandLineOptionDoc opt_In("_TexConv", "-inX", "\"File\"",
+xiiCommandLineOptionDoc opt_In("_TextureConverter", "-inX", "\"File\"",
                                "Specifies input image X.\n\
    X = 0 .. 63, e.g. -in0, -in1, etc.\n\
    If X is not given, X equals 0.",
                                "");
 
-xiiCommandLineOptionDoc opt_Channels("_TexConv", "-r;-rg;-rgb;-rgba", "inX.rgba",
+xiiCommandLineOptionDoc opt_Channels("_TextureConverter", "-r;-rg;-rgb;-rgba", "inX.rgba",
                                      "\
   Specifies how many output channels are used (1 - 4) and from which input image to take the data.\n\
   Examples:\n\
@@ -36,95 +36,95 @@ xiiCommandLineOptionDoc opt_Channels("_TexConv", "-r;-rg;-rgb;-rgba", "inX.rgba"
 ",
                                      "");
 
-xiiCommandLineOptionBool opt_MipsPreserveCoverage("_TexConv", "-mipsPreserveCoverage", "Whether to preserve alpha-coverage in mipmaps for alpha-tested geometry.", false);
+xiiCommandLineOptionBool opt_MipsPreserveCoverage("_TextureConverter", "-mipsPreserveCoverage", "Whether to preserve alpha-coverage in mipmaps for alpha-tested geometry.", false);
 
-xiiCommandLineOptionBool opt_FlipHorz("_TexConv", "-flip_horz", "Whether to flip the output horizontally.", false);
+xiiCommandLineOptionBool opt_FlipHorz("_TextureConverter", "-flip_horz", "Whether to flip the output horizontally.", false);
 
-xiiCommandLineOptionBool opt_Dilate("_TexConv", "-dilate", "Dilate/smear color from opaque areas into transparent areas.", false);
+xiiCommandLineOptionBool opt_Dilate("_TextureConverter", "-dilate", "Dilate/smear color from opaque areas into transparent areas.", false);
 
-xiiCommandLineOptionInt opt_DilateStrength("_TexConv", "-dilateStrength", "How many pixels to smear the image, if -dilate is enabled.", 8, 1, 255);
+xiiCommandLineOptionInt opt_DilateStrength("_TextureConverter", "-dilateStrength", "How many pixels to smear the image, if -dilate is enabled.", 8, 1, 255);
 
-xiiCommandLineOptionBool opt_Premulalpha("_TexConv", "-premulalpha", "Whether to multiply the alpha channel into the RGB channels.", false);
+xiiCommandLineOptionBool opt_Premulalpha("_TextureConverter", "-premulalpha", "Whether to multiply the alpha channel into the RGB channels.", false);
 
-xiiCommandLineOptionInt opt_ThumbnailRes("_TexConv", "-thumbnailRes", "Thumbnail resolution. Should be a power-of-two.", 0, 32, 1024);
+xiiCommandLineOptionInt opt_ThumbnailRes("_TextureConverter", "-thumbnailRes", "Thumbnail resolution. Should be a power-of-two.", 0, 32, 1024);
 
-xiiCommandLineOptionPath opt_ThumbnailOut("_TexConv", "-thumbnailOut",
+xiiCommandLineOptionPath opt_ThumbnailOut("_TextureConverter", "-thumbnailOut",
                                           "\
   Path to 2D thumbnail file.\n\
   ext = tga, jpg, png\n\
 ",
                                           "");
 
-xiiCommandLineOptionPath opt_LowOut("_TexConv", "-lowOut",
+xiiCommandLineOptionPath opt_LowOut("_TextureConverter", "-lowOut",
                                     "\
   Path to low-resolution output file.\n\
   ext = Same as main output\n\
 ",
                                     "");
 
-xiiCommandLineOptionInt opt_LowMips("_TexConv", "-lowMips", "Number of mipmaps to use from main result as low-res data.", 0, 0, 8);
+xiiCommandLineOptionInt opt_LowMips("_TextureConverter", "-lowMips", "Number of mipmaps to use from main result as low-res data.", 0, 0, 8);
 
-xiiCommandLineOptionInt opt_MinRes("_TexConv", "-minRes", "The minimum resolution allowed for the output.", 16, 4, 8 * 1024);
+xiiCommandLineOptionInt opt_MinRes("_TextureConverter", "-minRes", "The minimum resolution allowed for the output.", 16, 4, 8 * 1024);
 
-xiiCommandLineOptionInt opt_MaxRes("_TexConv", "-maxRes", "The maximum resolution allowed for the output.", 1024 * 8, 4, 16 * 1024);
+xiiCommandLineOptionInt opt_MaxRes("_TextureConverter", "-maxRes", "The maximum resolution allowed for the output.", 1024 * 8, 4, 16 * 1024);
 
-xiiCommandLineOptionInt opt_Downscale("_TexConv", "-downscale", "How often to half the input texture resolution.", 0, 0, 10);
+xiiCommandLineOptionInt opt_Downscale("_TextureConverter", "-downscale", "How often to half the input texture resolution.", 0, 0, 10);
 
-xiiCommandLineOptionFloat opt_MipsAlphaThreshold("_TexConv", "-mipsAlphaThreshold", "Alpha threshold used by renderer for alpha-testing, when alpha-coverage should be preserved.", 0.5f, 0.01f, 0.99f);
+xiiCommandLineOptionFloat opt_MipsAlphaThreshold("_TextureConverter", "-mipsAlphaThreshold", "Alpha threshold used by renderer for alpha-testing, when alpha-coverage should be preserved.", 0.5f, 0.01f, 0.99f);
 
-xiiCommandLineOptionFloat opt_HdrExposure("_TexConv", "-hdrExposure", "For scaling HDR image brightness up or down.", 0.0f, -20.0f, +20.0f);
+xiiCommandLineOptionFloat opt_HdrExposure("_TextureConverter", "-hdrExposure", "For scaling HDR image brightness up or down.", 0.0f, -20.0f, +20.0f);
 
-xiiCommandLineOptionFloat opt_Clamp("_TexConv", "-clamp", "Input values will be clamped to [-value ; +value].", 64000.0f, -64000.0f, 64000.0f);
+xiiCommandLineOptionFloat opt_Clamp("_TextureConverter", "-clamp", "Input values will be clamped to [-value ; +value].", 64000.0f, -64000.0f, 64000.0f);
 
-xiiCommandLineOptionInt opt_AssetVersion("_TexConv", "-assetVersion", "Asset version number to embed in XII specific output formats", 0, 1, 0xFFFF);
+xiiCommandLineOptionInt opt_AssetVersion("_TextureConverter", "-assetVersion", "Asset version number to embed in XII specific output formats", 0, 1, 0xFFFF);
 
-xiiCommandLineOptionString opt_AssetHashLow("_TexConv", "-assetHashLow", "Low part of a 64 bit asset hash value.\n\
+xiiCommandLineOptionString opt_AssetHashLow("_TextureConverter", "-assetHashLow", "Low part of a 64 bit asset hash value.\n\
 Has to be specified as a HEX value.\n\
 Required to be non-zero when using XII specific output formats.\n\
 Example: -assetHashLow 0xABCDABCD",
                                             "");
 
-xiiCommandLineOptionString opt_AssetHashHigh("_TexConv", "-assetHashHigh", "High part of a 64 bit asset hash value.\n\
+xiiCommandLineOptionString opt_AssetHashHigh("_TextureConverter", "-assetHashHigh", "High part of a 64 bit asset hash value.\n\
 Has to be specified as a HEX value.\n\
 Required to be non-zero when using XII specific output formats.\n\
 Example: -assetHashHigh 0xABCDABCD",
                                              "");
 
-xiiCommandLineOptionEnum opt_Type("_TexConv", "-type", "The type of output to generate.", "2D = 1 | Volume = 2 | Cubemap = 3 | Atlas = 4", 1);
+xiiCommandLineOptionEnum opt_Type("_TextureConverter", "-type", "The type of output to generate.", "2D = 1 | Volume = 2 | Cubemap = 3 | Atlas = 4", 1);
 
-xiiCommandLineOptionEnum opt_Compression("_TexConv", "-compression", "Compression strength for output format.", "Medium = 1 | High = 2 | None = 0", 1);
+xiiCommandLineOptionEnum opt_Compression("_TextureConverter", "-compression", "Compression strength for output format.", "Medium = 1 | High = 2 | None = 0", 1);
 
-xiiCommandLineOptionEnum opt_Usage("_TexConv", "-usage", "What type of data the image contains. Affects which final output format is used and how mipmaps are generated.", "Auto = 0 | Color = 1 | Linear = 2 | HDR = 3 | NormalMap = 4 | NormalMap_Inverted = 5 | BumpMap = 6", 0);
+xiiCommandLineOptionEnum opt_Usage("_TextureConverter", "-usage", "What type of data the image contains. Affects which final output format is used and how mipmaps are generated.", "Auto = 0 | Color = 1 | Linear = 2 | HDR = 3 | NormalMap = 4 | NormalMap_Inverted = 5 | BumpMap = 6", 0);
 
-xiiCommandLineOptionEnum opt_Mipmaps("_TexConv", "-mipmaps", "Whether to generate mipmaps and with which algorithm.", "None = 0 |Linear = 1 | Kaiser = 2", 1);
+xiiCommandLineOptionEnum opt_Mipmaps("_TextureConverter", "-mipmaps", "Whether to generate mipmaps and with which algorithm.", "None = 0 |Linear = 1 | Kaiser = 2", 1);
 
-xiiCommandLineOptionEnum opt_AddressU("_TexConv", "-addressU", "Which texture address mode to use along U. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
-xiiCommandLineOptionEnum opt_AddressV("_TexConv", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
-xiiCommandLineOptionEnum opt_AddressW("_TexConv", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
+xiiCommandLineOptionEnum opt_AddressU("_TextureConverter", "-addressU", "Which texture address mode to use along U. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
+xiiCommandLineOptionEnum opt_AddressV("_TextureConverter", "-addressV", "Which texture address mode to use along V. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
+xiiCommandLineOptionEnum opt_AddressW("_TextureConverter", "-addressW", "Which texture address mode to use along W. Only supported by XII specific output formats.", "Repeat = 0 | Clamp = 1 | ClampBorder = 2 | Mirror = 3", 0);
 
-xiiCommandLineOptionEnum opt_Filter("_TexConv", "-filter", "Which texture filter mode to use at runtime. Only supported by XII specific output formats.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
+xiiCommandLineOptionEnum opt_Filter("_TextureConverter", "-filter", "Which texture filter mode to use at runtime. Only supported by XII specific output formats.", "Default = 9 | Lowest = 7 | Low = 8 | High = 10 | Highest = 11 | Nearest = 0 | Linear = 1 | Trilinear = 2 | Aniso2x = 3 | Aniso4x = 4 | Aniso8x = 5 | Aniso16x = 6", 9);
 
-xiiCommandLineOptionEnum opt_BumpMapFilter("_TexConv", "-bumpMapFilter", "Filter used to approximate the x/y bump map gradients.", "Finite = 0 | Sobel = 1 | Scharr = 2", 0);
+xiiCommandLineOptionEnum opt_BumpMapFilter("_TextureConverter", "-bumpMapFilter", "Filter used to approximate the x/y bump map gradients.", "Finite = 0 | Sobel = 1 | Scharr = 2", 0);
 
-xiiCommandLineOptionEnum opt_Platform("_TexConv", "-platform", "What platform to generate the textures for.", "PC", 0);
+xiiCommandLineOptionEnum opt_Platform("_TextureConverter", "-platform", "What platform to generate the textures for.", "PC", 0);
 
-xiiCommandLineOptionString opt_CompareHtmlTitle("_TexConv", "-cmpHtml", "Title for the compare result HTML. If empty no HTML file is written.", "");
-xiiCommandLineOptionPath   opt_CompareActual("_TexConv", "-cmpImg", "Path to an image to compare with another.", "");
-xiiCommandLineOptionPath   opt_CompareExpected("_TexConv", "-cmpRef", "Path to a reference image to compare against.", "");
-xiiCommandLineOptionInt    opt_CompareThreshold("_TexConv", "-cmpMSE", "The error threshold for the comparison to be considered as failed.\n\
+xiiCommandLineOptionString opt_CompareHtmlTitle("_TextureConverter", "-cmpHtml", "Title for the compare result HTML. If empty no HTML file is written.", "");
+xiiCommandLineOptionPath   opt_CompareActual("_TextureConverter", "-cmpImg", "Path to an image to compare with another.", "");
+xiiCommandLineOptionPath   opt_CompareExpected("_TextureConverter", "-cmpRef", "Path to a reference image to compare against.", "");
+xiiCommandLineOptionInt    opt_CompareThreshold("_TextureConverter", "-cmpMSE", "The error threshold for the comparison to be considered as failed.\n\
   No output files are written, if the image difference is below this value.",
                                                 100, 0);
-xiiCommandLineOptionBool   opt_CompareRelaxed("_TexConv", "-cmpRelaxed", "Use a more lenient comparison method.\nUseful for images with single-pixel wide rasterized lines.", false);
+xiiCommandLineOptionBool   opt_CompareRelaxed("_TextureConverter", "-cmpRelaxed", "Use a more lenient comparison method.\nUseful for images with single-pixel wide rasterized lines.", false);
 
 
-xiiResult xiiTexConv::ParseCommandLine()
+xiiResult xiiTextureConverter::ParseCommandLine()
 {
-  if (xiiCommandLineOption::LogAvailableOptions(xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "_TexConv"))
+  if (xiiCommandLineOption::LogAvailableOptions(xiiCommandLineOption::LogAvailableModes::IfHelpRequested, "_TextureConverter"))
     return XII_FAILURE;
 
   XII_SUCCEED_OR_RETURN(ParseMode());
 
-  if (m_Mode == xiiTexConvMode::Compare)
+  if (m_Mode == xiiTextureConverterMode::Compare)
   {
     XII_SUCCEED_OR_RETURN(ParseCompareMode());
   }
@@ -151,16 +151,16 @@ xiiResult xiiTexConv::ParseCommandLine()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseMode()
+xiiResult xiiTextureConverter::ParseMode()
 {
   switch (opt_Mode.GetOptionValue(xiiCommandLineOption::LogMode::FirstTime))
   {
     case 0:
-      m_Mode = xiiTexConvMode::Convert;
+      m_Mode = xiiTextureConverterMode::Convert;
       return XII_SUCCESS;
 
     case 1:
-      m_Mode = xiiTexConvMode::Compare;
+      m_Mode = xiiTextureConverterMode::Compare;
       return XII_SUCCESS;
   }
 
@@ -168,7 +168,7 @@ xiiResult xiiTexConv::ParseMode()
   return XII_FAILURE;
 }
 
-xiiResult xiiTexConv::ParseCompareMode()
+xiiResult xiiTextureConverter::ParseCompareMode()
 {
   m_sOutputFile = opt_Out.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
@@ -202,19 +202,19 @@ xiiResult xiiTexConv::ParseCompareMode()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseOutputType()
+xiiResult xiiTextureConverter::ParseOutputType()
 {
   if (m_sOutputFile.IsEmpty())
   {
-    m_Processor.m_Descriptor.m_OutputType = xiiTexConvOutputType::None;
+    m_Processor.m_Descriptor.m_OutputType = xiiTextureConverterOutputType::None;
     return XII_SUCCESS;
   }
 
   xiiInt32 value = opt_Type.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_OutputType = static_cast<xiiTexConvOutputType::Enum>(value);
+  m_Processor.m_Descriptor.m_OutputType = static_cast<xiiTextureConverterOutputType::Enum>(value);
 
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Texture2D)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Texture2D)
   {
     if (!m_bOutputSupports2D)
     {
@@ -222,7 +222,7 @@ xiiResult xiiTexConv::ParseOutputType()
       return XII_FAILURE;
     }
   }
-  else if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Cubemap)
+  else if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Cubemap)
   {
     if (!m_bOutputSupportsCube)
     {
@@ -230,7 +230,7 @@ xiiResult xiiTexConv::ParseOutputType()
       return XII_FAILURE;
     }
   }
-  else if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+  else if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
   {
     if (!m_bOutputSupportsAtlas)
     {
@@ -241,7 +241,7 @@ xiiResult xiiTexConv::ParseOutputType()
     if (!ParseFile("-atlasDesc", m_Processor.m_Descriptor.m_sTextureAtlasDescFile))
       return XII_FAILURE;
   }
-  else if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Volume)
+  else if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
     if (!m_bOutputSupports3D)
     {
@@ -258,9 +258,9 @@ xiiResult xiiTexConv::ParseOutputType()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseInputFiles()
+xiiResult xiiTextureConverter::ParseInputFiles()
 {
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
     return XII_SUCCESS;
 
   xiiStringBuilder tmp, res;
@@ -294,7 +294,7 @@ xiiResult xiiTexConv::ParseInputFiles()
     }
   }
 
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Cubemap)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Cubemap)
   {
     // 0 = +X = Right
     // 1 = -X = Left
@@ -344,7 +344,7 @@ xiiResult xiiTexConv::ParseInputFiles()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseOutputFiles()
+xiiResult xiiTextureConverter::ParseOutputFiles()
 {
   m_sOutputFile = opt_Out.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
@@ -365,9 +365,9 @@ xiiResult xiiTexConv::ParseOutputFiles()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseUsage()
+xiiResult xiiTextureConverter::ParseUsage()
 {
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
     return XII_SUCCESS;
 
   const xiiInt32 value = opt_Usage.GetOptionValue(xiiCommandLineOption::LogMode::Always);
@@ -376,19 +376,19 @@ xiiResult xiiTexConv::ParseUsage()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseMipmapMode()
+xiiResult xiiTextureConverter::ParseMipmapMode()
 {
   if (!m_bOutputSupportsMipmaps)
   {
     xiiLog::Info("Selected output format does not support -mipmap options.");
 
-    m_Processor.m_Descriptor.m_MipmapMode = xiiTexConvMipmapMode::None;
+    m_Processor.m_Descriptor.m_MipmapMode = xiiTextureConverterMipmapMode::None;
     return XII_SUCCESS;
   }
 
   const xiiInt32 value = opt_Mipmaps.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_MipmapMode = static_cast<xiiTexConvMipmapMode::Enum>(value);
+  m_Processor.m_Descriptor.m_MipmapMode = static_cast<xiiTextureConverterMipmapMode::Enum>(value);
 
   m_Processor.m_Descriptor.m_bPreserveMipmapCoverage = opt_MipsPreserveCoverage.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
@@ -400,34 +400,34 @@ xiiResult xiiTexConv::ParseMipmapMode()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseTargetPlatform()
+xiiResult xiiTextureConverter::ParseTargetPlatform()
 {
   xiiInt32 value = opt_Platform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
 
-  m_Processor.m_Descriptor.m_TargetPlatform = static_cast<xiiTexConvTargetPlatform::Enum>(value);
+  m_Processor.m_Descriptor.m_TargetPlatform = static_cast<xiiTextureConverterTargetPlatform::Enum>(value);
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseCompressionMode()
+xiiResult xiiTextureConverter::ParseCompressionMode()
 {
   if (!m_bOutputSupportsCompression)
   {
     xiiLog::Info("Selected output format does not support -compression options.");
 
-    m_Processor.m_Descriptor.m_CompressionMode = xiiTexConvCompressionMode::None;
+    m_Processor.m_Descriptor.m_CompressionMode = xiiTextureConverterCompressionMode::None;
     return XII_SUCCESS;
   }
 
   const xiiInt32 value = opt_Compression.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_CompressionMode = static_cast<xiiTexConvCompressionMode::Enum>(value);
+  m_Processor.m_Descriptor.m_CompressionMode = static_cast<xiiTextureConverterCompressionMode::Enum>(value);
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseWrapModes()
+xiiResult xiiTextureConverter::ParseWrapModes()
 {
   // cubemaps do not require any wrap mode settings
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Cubemap || m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Atlas || m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::None)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Cubemap || m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas || m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::None)
     return XII_SUCCESS;
 
   {
@@ -439,7 +439,7 @@ xiiResult xiiTexConv::ParseWrapModes()
     m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiImageAddressMode::Enum>(value);
   }
 
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Volume)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
     xiiInt32 value                          = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
     m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiImageAddressMode::Enum>(value);
@@ -448,7 +448,7 @@ xiiResult xiiTexConv::ParseWrapModes()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseFilterModes()
+xiiResult xiiTextureConverter::ParseFilterModes()
 {
   if (!m_bOutputSupportsFiltering)
   {
@@ -462,9 +462,9 @@ xiiResult xiiTexConv::ParseFilterModes()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseResolutionModifiers()
+xiiResult xiiTextureConverter::ParseResolutionModifiers()
 {
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::None)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::None)
     return XII_SUCCESS;
 
   m_Processor.m_Descriptor.m_uiMinResolution  = opt_MinRes.GetOptionValue(xiiCommandLineOption::LogMode::Always);
@@ -474,9 +474,9 @@ xiiResult xiiTexConv::ParseResolutionModifiers()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseMiscOptions()
+xiiResult xiiTextureConverter::ParseMiscOptions()
 {
-  if (m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::Texture2D || m_Processor.m_Descriptor.m_OutputType == xiiTexConvOutputType::None)
+  if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Texture2D || m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::None)
   {
     m_Processor.m_Descriptor.m_bFlipHorizontal = opt_FlipHorz.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
@@ -498,7 +498,7 @@ xiiResult xiiTexConv::ParseMiscOptions()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseAssetHeader()
+xiiResult xiiTextureConverter::ParseAssetHeader()
 {
   const xiiStringView ext = xiiPathUtils::GetFileExtension(m_sOutputFile);
 
@@ -527,10 +527,10 @@ xiiResult xiiTexConv::ParseAssetHeader()
   return XII_SUCCESS;
 }
 
-xiiResult xiiTexConv::ParseBumpMapFilter()
+xiiResult xiiTextureConverter::ParseBumpMapFilter()
 {
   const xiiInt32 value = opt_BumpMapFilter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_BumpMapFilter = static_cast<xiiTexConvBumpMapFilter::Enum>(value);
+  m_Processor.m_Descriptor.m_BumpMapFilter = static_cast<xiiTextureConverterBumpMapFilter::Enum>(value);
   return XII_SUCCESS;
 }

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <Texture/TexConv/TexConvEnums.h>
+#include <Texture/TextureConverter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
 struct xiiPropertyMetaStateEvent;
@@ -52,8 +52,8 @@ public:
   xiiString GetAbsoluteInputFilePath(xiiInt32 iInput) const;
   xiiInt32  GetNumInputFiles() const;
 
-  xiiEnum<xiiTexConvCompressionMode> m_CompressionMode;
-  xiiEnum<xiiTexConvMipmapMode>      m_MipmapMode;
+  xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
+  xiiEnum<xiiTextureConverterMipmapMode>      m_MipmapMode;
 
   xiiEnum<xiiTextureFilterSetting>          m_TextureFilter;
   xiiEnum<xiiTextureConverterUsage>         m_TextureUsage;

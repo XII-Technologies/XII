@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------------------------
-// DirectXTexConvert.cpp
+// DirectXTextureConverterert.cpp
 //
 // DirectX Texture Library - Image pixel format conversion
 //

@@ -11,8 +11,8 @@
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightData.h>
 
-const char* ToCompressionMode(xiiTexConvCompressionMode::Enum mode);
-const char* ToMipmapMode(xiiTexConvMipmapMode::Enum mode);
+const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode);
+const char* ToMipmapMode(xiiTextureConverterMipmapMode::Enum mode);
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDecalAssetDocumentManager, 1, xiiRTTIDefaultAllocator<xiiDecalAssetDocumentManager>)
@@ -121,7 +121,7 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
 
   xiiTextureAtlasCreationDesc atlasDesc;
 
-  // find all decal assets, extract their file information to pass it along to TexConv
+  // find all decal assets, extract their file information to pass it along to TextureConverter
   {
     atlasDesc.m_Layers.SetCount(3);
     atlasDesc.m_Layers[0].m_Usage         = xiiTextureConverterUsage::Color;
@@ -242,7 +242,7 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
 
   xiiStatus result(XII_SUCCESS);
 
-  // Send information to TexConv to do all the work
+  // Send information to TextureConverter to do all the work
   {
     xiiStringBuilder texGroupFile = xiiToolsProject::GetSingleton()->GetProjectDirectory();
     texGroupFile.AppendPath("AssetCache", GetDecalTexturePath(pAssetProfile));
@@ -251,14 +251,14 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
     if (atlasDesc.Save(texGroupFile).Failed())
       return xiiStatus(xiiFmt("Failed to save texture atlas descriptor file '{0}'", texGroupFile));
 
-    result = RunTexConv(sDecalFile, texGroupFile, header);
+    result = RunTextureConverter(sDecalFile, texGroupFile, header);
   }
 
   xiiFileStats stat;
   if (xiiOSFile::GetFileStats(sDecalFile, stat).Succeeded() && stat.m_uiFileSize == 0)
   {
     // if the file was touched, but nothing written to it, delete the file
-    // might happen if TexConv crashed or had an error
+    // might happen if TextureConverter crashed or had an error
     xiiOSFile::DeleteFile(sDecalFile).IgnoreResult();
 
     result = xiiStatus(xiiFmt("File does not exist: '{}'.", sDecalFile));
@@ -292,7 +292,7 @@ xiiString xiiDecalAssetDocumentManager::GetDecalTexturePath(const xiiPlatformPro
   return result;
 }
 
-xiiStatus xiiDecalAssetDocumentManager::RunTexConv(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader)
+xiiStatus xiiDecalAssetDocumentManager::RunTextureConverter(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader)
 {
   QStringList      arguments;
   xiiStringBuilder temp;
@@ -326,15 +326,15 @@ xiiStatus xiiDecalAssetDocumentManager::RunTexConv(const char* szTargetFile, con
   arguments << "Atlas";
 
   arguments << "-compression";
-  arguments << ToCompressionMode(xiiTexConvCompressionMode::High);
+  arguments << ToCompressionMode(xiiTextureConverterCompressionMode::High);
 
   arguments << "-mipmaps";
-  arguments << ToMipmapMode(xiiTexConvMipmapMode::Linear);
+  arguments << ToMipmapMode(xiiTextureConverterMipmapMode::Linear);
 
   arguments << "-atlasDesc";
   arguments << QString(szInputFile);
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTextureConverter", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   return XII_SUCCESS;
 }

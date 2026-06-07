@@ -24,5 +24,5 @@ add_dependencies(${PROJECT_NAME}
   EditorEngineProcess
   EditorPluginScene
   EditorPluginAssets
-  TexConv
+  TextureConverter
 )
