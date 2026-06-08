@@ -7,7 +7,7 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
-#include <Texture/xiiTexFormat/xiiTexFormat.h>
+#include <Texture/Utilities/TextureFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImageDataResource, 1, xiiRTTIDefaultAllocator<xiiImageDataResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

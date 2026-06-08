@@ -34,7 +34,6 @@ struct TgaHeader
 
 static_assert(sizeof(TgaHeader) == 18);
 
-
 static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt32 x, xiiUInt32 y, const xiiUInt32 uiHeight)
 {
   xiiColorLinearUB c(255, 255, 255, 255);
@@ -65,7 +64,6 @@ static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt3
 
   return c;
 }
-
 
 xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {

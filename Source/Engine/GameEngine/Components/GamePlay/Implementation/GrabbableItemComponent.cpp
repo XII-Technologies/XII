@@ -7,6 +7,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GameEngine/Components/Gameplay/GrabbableItemComponent.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/MsgExtractRenderData.h>
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/View.h>
 
@@ -128,8 +129,7 @@ void xiiGrabbableItemComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg
   if (!GetDebugShowPoints() || m_GrabPoints.IsEmpty())
     return;
 
-  if (msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::MainView &&
-      msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
+  if (msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::MainView && msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return;
 
   const xiiTransform globalTransform = GetOwner()->GetGlobalTransform();

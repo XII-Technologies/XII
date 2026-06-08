@@ -27,16 +27,16 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureAssetProperties, 5, xiiRTTIDefaultAll
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("IsRenderTarget", m_bIsRenderTarget)->AddAttributes(new xiiHiddenAttribute),
-    XII_ENUM_MEMBER_PROPERTY("Usage", xiiTexConvUsage, m_TextureUsage),
+    XII_ENUM_MEMBER_PROPERTY("Usage", xiiTextureConverterUsage, m_TextureUsage),
 
     XII_ENUM_MEMBER_PROPERTY("Format", xiiRenderTargetFormat, m_RtFormat),
     XII_ENUM_MEMBER_PROPERTY("Resolution", xiiTexture2DResolution, m_Resolution),
     XII_MEMBER_PROPERTY("CVarResScale", m_fCVarResolutionScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, 10.0f)),
 
-    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTexConvMipmapMode, m_MipmapMode),
+    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTextureConverterMipmapMode, m_MipmapMode),
     XII_MEMBER_PROPERTY("PreserveAlphaCoverage", m_bPreserveAlphaCoverage),
     XII_MEMBER_PROPERTY("AlphaThreshold", m_fAlphaThreshold)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
-    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTexConvCompressionMode, m_CompressionMode),
+    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTextureConverterCompressionMode, m_CompressionMode),
     XII_MEMBER_PROPERTY("PremultipliedAlpha", m_bPremultipliedAlpha),
     XII_MEMBER_PROPERTY("DilateColor", m_bDilateColor)->AddAttributes(new xiiDefaultValueAttribute(false)),
     XII_MEMBER_PROPERTY("FlipHorizontal", m_bFlipHorizontal),
@@ -98,8 +98,8 @@ void xiiTextureAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMetaSta
     }
     else
     {
-      const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTexConvMipmapMode::None;
-      const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTexConvUsage::Hdr;
+      const bool hasMips = e.m_pObject->GetTypeAccessor().GetValue("MipmapMode").ConvertTo<xiiInt32>() != xiiTextureConverterMipmapMode::None;
+      const bool isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTextureConverterUsage::Hdr;
 
       props["CVarResScale"].m_Visibility          = xiiPropertyUiState::Invisible;
       props["Usage"].m_Visibility                 = xiiPropertyUiState::Default;
@@ -237,18 +237,18 @@ public:
     if (pMipmaps && pMipmaps->m_Value.IsA<bool>())
     {
       if (pMipmaps->m_Value.Get<bool>())
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::Kaiser);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::Kaiser);
       else
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::None);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::None);
     }
 
     auto* pCompression = pNode->FindProperty("Compression");
     if (pCompression && pCompression->m_Value.IsA<bool>())
     {
       if (pCompression->m_Value.Get<bool>())
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::High);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::High);
       else
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::None);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::None);
     }
   }
 };
@@ -310,28 +310,28 @@ public:
     {
       if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Unknown")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Auto);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Auto);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_sRGB" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Diffuse" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveColor")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Color);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Color);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Height" || pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Mask" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::LookupTable" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::Other_Linear" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::EmissiveMask")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Linear);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Linear);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::NormalMap")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::NormalMap);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::NormalMap);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTexture2DUsageEnum::HDR")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Hdr);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Hdr);
       }
     }
   }

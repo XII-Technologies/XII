@@ -4,6 +4,7 @@
 
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>

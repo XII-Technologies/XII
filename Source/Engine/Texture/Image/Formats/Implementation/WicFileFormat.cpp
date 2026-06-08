@@ -2,19 +2,19 @@
 
 #include <Texture/TexturePCH.h>
 
-#include <Foundation/Basics/Platform/Windows/HResultUtils.h>
-#include <Foundation/Containers/StaticArray.h>
-#include <Foundation/IO/Stream.h>
-#include <Texture/Image/Formats/ImageFormatMappings.h>
-#include <Texture/Image/Formats/WicFileFormat.h>
-#include <Texture/Image/Image.h>
-#include <Texture/Image/ImageConversion.h>
-
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
+#  include <Foundation/Basics/Platform/Windows/HResultUtils.h>
+#  include <Foundation/Containers/StaticArray.h>
+#  include <Foundation/IO/Stream.h>
 #  include <Foundation/IO/StreamUtils.h>
 #  include <Foundation/Profiling/Profiling.h>
-#  include <Texture/DirectXTex/DirectXTex.h>
+#  include <Texture/Image/Formats/ImageFormatMappings.h>
+#  include <Texture/Image/Formats/WicFileFormat.h>
+#  include <Texture/Image/Image.h>
+#  include <Texture/Image/ImageConversion.h>
+
+#  include <DirectXTex/DirectXTex.h>
 
 using namespace DirectX;
 
@@ -313,7 +313,5 @@ bool xiiWicFileFormat::CanWriteFileType(xiiStringView sExtension) const
 }
 
 #endif
-
-
 
 XII_STATICLINK_FILE(Texture, Texture_Image_Formats_WicFileFormat);

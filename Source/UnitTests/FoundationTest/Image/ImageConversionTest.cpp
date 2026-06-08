@@ -10,7 +10,6 @@
 #include <Foundation/Memory/MemoryTracker.h>
 #include <Texture/Image/Formats/BmpFileFormat.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
-#include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 

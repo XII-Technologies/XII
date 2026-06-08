@@ -88,23 +88,23 @@ const char* ToFilterMode(xiiTextureFilterSetting::Enum mode)
   return "";
 }
 
-const char* ToUsageMode(xiiTexConvUsage::Enum mode)
+const char* ToUsageMode(xiiTextureConverterUsage::Enum mode)
 {
   switch (mode)
   {
-    case xiiTexConvUsage::Auto:
+    case xiiTextureConverterUsage::Auto:
       return "Auto";
-    case xiiTexConvUsage::Color:
+    case xiiTextureConverterUsage::Color:
       return "Color";
-    case xiiTexConvUsage::Linear:
+    case xiiTextureConverterUsage::Linear:
       return "Linear";
-    case xiiTexConvUsage::Hdr:
+    case xiiTextureConverterUsage::Hdr:
       return "Hdr";
-    case xiiTexConvUsage::NormalMap:
+    case xiiTextureConverterUsage::NormalMap:
       return "NormalMap";
-    case xiiTexConvUsage::NormalMap_Inverted:
+    case xiiTextureConverterUsage::NormalMap_Inverted:
       return "NormalMap_Inverted";
-    case xiiTexConvUsage::BumpMap:
+    case xiiTextureConverterUsage::BumpMap:
       return "BumpMap";
   }
 
@@ -112,15 +112,15 @@ const char* ToUsageMode(xiiTexConvUsage::Enum mode)
   return "";
 }
 
-const char* ToMipmapMode(xiiTexConvMipmapMode::Enum mode)
+const char* ToMipmapMode(xiiTextureConverterMipmapMode::Enum mode)
 {
   switch (mode)
   {
-    case xiiTexConvMipmapMode::None:
+    case xiiTextureConverterMipmapMode::None:
       return "None";
-    case xiiTexConvMipmapMode::Linear:
+    case xiiTextureConverterMipmapMode::Linear:
       return "Linear";
-    case xiiTexConvMipmapMode::Kaiser:
+    case xiiTextureConverterMipmapMode::Kaiser:
       return "Kaiser";
   }
 
@@ -128,15 +128,15 @@ const char* ToMipmapMode(xiiTexConvMipmapMode::Enum mode)
   return "";
 }
 
-const char* ToCompressionMode(xiiTexConvCompressionMode::Enum mode)
+const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode)
 {
   switch (mode)
   {
-    case xiiTexConvCompressionMode::None:
+    case xiiTextureConverterCompressionMode::None:
       return "None";
-    case xiiTexConvCompressionMode::Medium:
+    case xiiTextureConverterCompressionMode::Medium:
       return "Medium";
-    case xiiTexConvCompressionMode::High:
+    case xiiTextureConverterCompressionMode::High:
       return "High";
   }
 
@@ -144,7 +144,7 @@ const char* ToCompressionMode(xiiTexConvCompressionMode::Enum mode)
   return "";
 }
 
-xiiStatus xiiTextureAssetDocument::RunTexConv(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig)
+xiiStatus xiiTextureAssetDocument::RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail, const xiiTextureAssetProfileConfig* pAssetConfig)
 {
   const xiiTextureAssetProperties* pProp = GetProperties();
 
@@ -233,7 +233,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(xiiStringView sTargetFile, const x
     arguments << temp.GetData();
   }
 
-  if (pProp->m_TextureUsage == xiiTexConvUsage::Hdr)
+  if (pProp->m_TextureUsage == xiiTextureConverterUsage::Hdr)
   {
     arguments << "-hdrExposure";
     temp.SetFormat("{0}", xiiArgF(pProp->m_fHdrExposureBias, 2));
@@ -341,7 +341,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(xiiStringView sTargetFile, const x
     break;
   }
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTextureConverter", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   if (bUpdateThumbnail)
   {
@@ -410,7 +410,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView
 
     XII_SUCCEED_OR_RETURN(AssetHeader.Write(file));
 
-    // TODO: move this into a shared location, reuse in xiiTexConv::WriteTexHeader
+    // TODO: move this into a shared location, reuse in xiiTextureConverter::WriteTexHeader
     const xiiUInt8 uiTexFileFormatVersion = 5;
     file << uiTexFileFormatVersion;
 
@@ -498,17 +498,17 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(xiiStringView
   {
     const bool bUpdateThumbnail = pAssetProfile == xiiAssetCurator::GetSingleton()->GetDevelopmentAssetProfile();
 
-    xiiTransformStatus result = RunTexConv(sTargetFile, AssetHeader, bUpdateThumbnail, pAssetConfig);
+    xiiTransformStatus result = RunTextureConverter(sTargetFile, AssetHeader, bUpdateThumbnail, pAssetConfig);
 
     xiiFileStats stat;
     if (xiiOSFile::GetFileStats(sTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
     {
       // if the file was touched, but nothing written to it, delete the file
-      // might happen if TexConv crashed or had an error
+      // might happen if TextureConverter crashed or had an error
       xiiOSFile::DeleteFile(sTargetFile).IgnoreResult();
 
       if (result.Succeeded())
-        result = xiiTransformStatus("TexConv did not write an output file");
+        result = xiiTransformStatus("TextureConverter did not write an output file");
     }
 
     return result;
@@ -831,19 +831,19 @@ xiiStatus xiiTextureAssetDocumentGenerator::Generate(xiiStringView sInputFileAbs
   auto& accessor = pAssetDoc->GetPropertyObject()->GetTypeAccessor();
   accessor.SetValue("Input1", sInputFileRel.GetView());
   accessor.SetValue("ChannelMapping", (int)xiiTexture2DChannelMappingEnum::RGB1);
-  accessor.SetValue("Usage", (int)xiiTexConvUsage::Linear);
+  accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Linear);
 
   if (sMode == "TextureImport.Diffuse")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Color);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Color);
   }
   else if (sMode == "TextureImport.Normal")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::NormalMap);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::NormalMap);
   }
   else if (sMode == "TextureImport.HDR")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Hdr);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Hdr);
   }
   else if (sMode == "TextureImport.Linear")
   {

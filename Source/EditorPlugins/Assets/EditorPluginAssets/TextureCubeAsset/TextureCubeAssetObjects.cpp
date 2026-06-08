@@ -14,10 +14,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTextureCubeAssetProperties, 3, xiiRTTIDefaul
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ENUM_MEMBER_PROPERTY("Usage", xiiTexConvUsage, m_TextureUsage),
+    XII_ENUM_MEMBER_PROPERTY("Usage", xiiTextureConverterUsage, m_TextureUsage),
 
-    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTexConvMipmapMode, m_MipmapMode),
-    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTexConvCompressionMode, m_CompressionMode),
+    XII_ENUM_MEMBER_PROPERTY("MipmapMode", xiiTextureConverterMipmapMode, m_MipmapMode),
+    XII_ENUM_MEMBER_PROPERTY("CompressionMode", xiiTextureConverterCompressionMode, m_CompressionMode),
 
     XII_MEMBER_PROPERTY("HdrExposureBias", m_fHdrExposureBias)->AddAttributes(new xiiClampValueAttribute(-20.0f, 20.0f)),
 
@@ -43,7 +43,7 @@ void xiiTextureCubeAssetProperties::PropertyMetaStateEventHandler(xiiPropertyMet
   if (e.m_pObject->GetTypeAccessor().GetType() == xiiGetStaticRTTI<xiiTextureCubeAssetProperties>())
   {
     const xiiInt64 mapping = e.m_pObject->GetTypeAccessor().GetValue("ChannelMapping").ConvertTo<xiiInt64>();
-    const bool     isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTexConvUsage::Hdr;
+    const bool     isHDR   = e.m_pObject->GetTypeAccessor().GetValue("Usage").ConvertTo<xiiInt32>() == xiiTextureConverterUsage::Hdr;
 
     auto& props = *e.m_pPropertyStates;
 
@@ -143,21 +143,21 @@ public:
     {
       if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Unknown")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Auto);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Auto);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Other_sRGB" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Skybox")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Color);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Color);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::Other_Linear" ||
                pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::LookupTable")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Linear);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Linear);
       }
       else if (pUsage->m_Value.Get<xiiString>() == "xiiTextureCubeUsageEnum::SkyboxHDR")
       {
-        pNode->ChangeProperty("Usage", (xiiInt32)xiiTexConvUsage::Hdr);
+        pNode->ChangeProperty("Usage", (xiiInt32)xiiTextureConverterUsage::Hdr);
       }
     }
 
@@ -165,18 +165,18 @@ public:
     if (pMipmaps && pMipmaps->m_Value.IsA<bool>())
     {
       if (pMipmaps->m_Value.Get<bool>())
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::Kaiser);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::Kaiser);
       else
-        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTexConvMipmapMode::None);
+        pNode->AddProperty("MipmapMode", (xiiInt32)xiiTextureConverterMipmapMode::None);
     }
 
     auto* pCompression = pNode->FindProperty("Compression");
     if (pCompression && pCompression->m_Value.IsA<bool>())
     {
       if (pCompression->m_Value.Get<bool>())
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::Medium);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::Medium);
       else
-        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTexConvCompressionMode::None);
+        pNode->AddProperty("CompressionMode", (xiiInt32)xiiTextureConverterCompressionMode::None);
     }
   }
 };

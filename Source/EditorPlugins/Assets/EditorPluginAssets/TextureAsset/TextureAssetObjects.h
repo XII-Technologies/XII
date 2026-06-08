@@ -3,7 +3,7 @@
 #pragma once
 
 #include <EditorFramework/Assets/SimpleAssetDocument.h>
-#include <Texture/TexConv/TexConvEnums.h>
+#include <Texture/TextureConverter/TextureConverterEnums.h>
 #include <ToolsFoundation/Object/DocumentObjectBase.h>
 
 struct xiiPropertyMetaStateEvent;
@@ -109,11 +109,11 @@ public:
   xiiEnum<xiiImageAddressMode>     m_AddressModeV;
   xiiEnum<xiiImageAddressMode>     m_AddressModeW;
   xiiEnum<xiiTexture2DResolution>  m_Resolution;
-  xiiEnum<xiiTexConvUsage>         m_TextureUsage;
+  xiiEnum<xiiTextureConverterUsage> m_TextureUsage;
   xiiEnum<xiiRenderTargetFormat>   m_RtFormat;
 
-  xiiEnum<xiiTexConvCompressionMode> m_CompressionMode;
-  xiiEnum<xiiTexConvMipmapMode>      m_MipmapMode;
+  xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
+  xiiEnum<xiiTextureConverterMipmapMode>      m_MipmapMode;
 
 private:
   xiiEnum<xiiTexture2DChannelMappingEnum> m_ChannelMapping;

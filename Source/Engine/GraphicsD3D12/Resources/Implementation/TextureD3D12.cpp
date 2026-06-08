@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <Foundation/System/Process.h>
+#include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>

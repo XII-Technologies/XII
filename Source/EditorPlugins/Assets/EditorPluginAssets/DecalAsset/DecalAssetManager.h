@@ -23,7 +23,7 @@ public:
 private:
   void      OnDocumentManagerEvent(const xiiDocumentManager::Event& e);
   bool      IsDecalTextureUpToDate(const char* szDecalFile, xiiUInt64 uiAssetHash) const;
-  xiiStatus RunTexConv(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader);
+  xiiStatus RunTextureConverter(const char* szTargetFile, const char* szInputFile, const xiiAssetFileHeader& AssetHeader);
 
   virtual void InternalCreateDocument(xiiStringView sDocumentTypeName, xiiStringView sPath, bool bCreateNewDocument, xiiDocument*& out_pDocument, const xiiDocumentObject* pOpenContext) override;
   virtual void InternalGetSupportedDocumentTypes(xiiDynamicArray<const xiiDocumentTypeDescriptor*>& inout_DocumentTypes) const override;

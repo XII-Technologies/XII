@@ -19,13 +19,13 @@ xiiTransformStatus xiiImageDataAssetDocument::InternalTransformAsset(xiiStringVi
 {
   const bool bUpdateThumbnail = pAssetProfile == xiiAssetCurator::GetSingleton()->GetDevelopmentAssetProfile();
 
-  xiiStatus result = RunTexConv(sTargetFile, AssetHeader, bUpdateThumbnail);
+  xiiStatus result = RunTextureConverter(sTargetFile, AssetHeader, bUpdateThumbnail);
 
   xiiFileStats stat;
   if (xiiOSFile::GetFileStats(sTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
   {
     // if the file was touched, but nothing written to it, delete the file
-    // might happen if TexConv crashed or had an error
+    // might happen if TextureConverter crashed or had an error
     xiiOSFile::DeleteFile(sTargetFile).IgnoreResult();
 
     result = xiiStatus(xiiFmt("File does not exist: '{}'.", sTargetFile));
@@ -41,7 +41,7 @@ xiiTransformStatus xiiImageDataAssetDocument::InternalTransformAsset(xiiStringVi
   return result;
 }
 
-xiiStatus xiiImageDataAssetDocument::RunTexConv(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
+xiiStatus xiiImageDataAssetDocument::RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
 {
   const xiiImageDataAssetProperties* pProp = GetProperties();
 
@@ -118,7 +118,7 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(xiiStringView sTargetFile, const
   arguments << "-rgba";
   arguments << "in0.rgba";
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTextureConverter", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   if (bUpdateThumbnail)
   {

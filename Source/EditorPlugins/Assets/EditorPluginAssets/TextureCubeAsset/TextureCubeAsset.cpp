@@ -19,16 +19,16 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 const char* ToFilterMode(xiiTextureFilterSetting::Enum mode);
-const char* ToUsageMode(xiiTexConvUsage::Enum mode);
-const char* ToCompressionMode(xiiTexConvCompressionMode::Enum mode);
-const char* ToMipmapMode(xiiTexConvMipmapMode::Enum mode);
+const char* ToUsageMode(xiiTextureConverterUsage::Enum mode);
+const char* ToCompressionMode(xiiTextureConverterCompressionMode::Enum mode);
+const char* ToMipmapMode(xiiTextureConverterMipmapMode::Enum mode);
 
 xiiTextureCubeAssetDocument::xiiTextureCubeAssetDocument(xiiStringView sDocumentPath) :
   xiiSimpleAssetDocument<xiiTextureCubeAssetProperties>(sDocumentPath, xiiAssetDocEngineConnection::Simple)
 {
 }
 
-xiiStatus xiiTextureCubeAssetDocument::RunTexConv(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
+xiiStatus xiiTextureCubeAssetDocument::RunTextureConverter(xiiStringView sTargetFile, const xiiAssetFileHeader& AssetHeader, bool bUpdateThumbnail)
 {
   const xiiTextureCubeAssetProperties* pProp = GetProperties();
 
@@ -74,7 +74,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(xiiStringView sTargetFile, con
     arguments << QString::fromUtf8(sThumbnail.GetData());
   }
 
-  if (pProp->m_TextureUsage == xiiTexConvUsage::Hdr)
+  if (pProp->m_TextureUsage == xiiTextureConverterUsage::Hdr)
   {
     arguments << "-hdrExposure";
     temp.SetFormat("{0}", xiiArgF(pProp->m_fHdrExposureBias, 2));
@@ -155,7 +155,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(xiiStringView sTargetFile, con
     arguments << QString(pProp->GetAbsoluteInputFilePath(i).GetData());
   }
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTextureConverter", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   if (bUpdateThumbnail)
   {
@@ -202,16 +202,16 @@ xiiTransformStatus xiiTextureCubeAssetDocument::InternalTransformAsset(xiiString
 {
   const bool bUpdateThumbnail = pAssetProfile == xiiAssetCurator::GetSingleton()->GetDevelopmentAssetProfile();
 
-  xiiTransformStatus result = RunTexConv(sTargetFile, AssetHeader, bUpdateThumbnail);
+  xiiTransformStatus result = RunTextureConverter(sTargetFile, AssetHeader, bUpdateThumbnail);
 
   xiiFileStats stat;
   if (xiiOSFile::GetFileStats(sTargetFile, stat).Succeeded() && stat.m_uiFileSize == 0)
   {
     // if the file was touched, but nothing written to it, delete the file
-    // might happen if TexConv crashed or had an error
+    // might happen if TextureConverter crashed or had an error
     xiiOSFile::DeleteFile(sTargetFile).IgnoreResult();
     if (result.Succeeded())
-      result = xiiTransformStatus("TexConv did not write an output file");
+      result = xiiTransformStatus("TextureConverter did not write an output file");
   }
 
   return result;
@@ -292,11 +292,11 @@ xiiStatus xiiTextureCubeAssetDocumentGenerator::Generate(xiiStringView sInputFil
 
   if (sMode == "CubemapImport.SkyboxHDR")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Hdr);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Hdr);
   }
   else if (sMode == "CubemapImport.Skybox")
   {
-    accessor.SetValue("Usage", (int)xiiTexConvUsage::Color);
+    accessor.SetValue("Usage", (int)xiiTextureConverterUsage::Color);
   }
 
   return XII_SUCCESS;
