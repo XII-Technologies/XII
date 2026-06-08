@@ -59,8 +59,7 @@ namespace
 
     static TableEntry chain(const TableEntry& a, const TableEntry& b)
     {
-      if (xiiImageFormat::GetExactBitsPerPixel(a.m_sourceFormat) > xiiImageFormat::GetExactBitsPerPixel(a.m_targetFormat) &&
-          xiiImageFormat::GetExactBitsPerPixel(b.m_sourceFormat) < xiiImageFormat::GetExactBitsPerPixel(b.m_targetFormat))
+      if (xiiImageFormat::GetExactBitsPerPixel(a.m_sourceFormat) > xiiImageFormat::GetExactBitsPerPixel(a.m_targetFormat) && xiiImageFormat::GetExactBitsPerPixel(b.m_sourceFormat) < xiiImageFormat::GetExactBitsPerPixel(b.m_targetFormat))
       {
         // Disallow chaining conversions which first reduce to a smaller intermediate and then go back to a larger one, since
         // we end up throwing away information.
@@ -121,7 +120,7 @@ namespace
 
   xiiUInt32 allocateScratchBufferIndex(xiiHybridArray<IntermediateBuffer, 16>& ref_scratchBuffers, xiiUInt32 uiBitsPerBlock, xiiUInt32 uiExcludedIndex)
   {
-    int foundIndex = -1;
+    xiiInt32 foundIndex = -1;
 
     for (xiiUInt32 bufferIndex = 0; bufferIndex < xiiUInt32(ref_scratchBuffers.GetCount()); ++bufferIndex)
     {
@@ -208,11 +207,11 @@ xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiIm
     out_path.PushBack(step);
   }
 
-  xiiHybridArray<IntermediateBuffer, 16> scratchBuffers;
+  xiiTemporaryHybridArray<IntermediateBuffer, 16> scratchBuffers;
   scratchBuffers.PushBack(IntermediateBuffer(xiiImageFormat::GetBitsPerBlock(targetFormat)));
 
-  const int iLastPathIndex = out_path.GetCount() - 1;
-  for (int i = iLastPathIndex; i >= 0; --i)
+  const xiiInt32 iLastPathIndex = out_path.GetCount() - 1;
+  for (xiiInt32 i = iLastPathIndex; i >= 0; --i)
   {
     if (i == iLastPathIndex)
       out_path[i].m_targetBufferIndex = 0;
@@ -285,9 +284,9 @@ void xiiImageConversion::RebuildConversionTable()
   {
     xiiArrayPtr<const xiiImageConversionEntry> entries = conversion->GetSupportedConversions();
 
-    for (xiiUInt32 subIndex = 0; subIndex < (xiiUInt32)entries.GetCount(); subIndex++)
+    for (xiiUInt32 uiSubIndex = 0; uiSubIndex < (xiiUInt32)entries.GetCount(); ++uiSubIndex)
     {
-      const xiiImageConversionEntry& subConversion = entries[subIndex];
+      const xiiImageConversionEntry& subConversion = entries[uiSubIndex];
 
       if (subConversion.m_flags.IsAnySet(xiiImageConversionFlags::InPlace))
       {
@@ -318,44 +317,44 @@ void xiiImageConversion::RebuildConversionTable()
     }
   }
 
-  for (xiiUInt32 i = 0; i < xiiImageFormat::NUM_FORMATS; i++)
+  for (xiiUInt32 i = 0; i < xiiImageFormat::NUM_FORMATS; ++i)
   {
     const xiiImageFormat::Enum format = static_cast<xiiImageFormat::Enum>(i);
+
     // Add copy-conversion (from and to same format)
-    s_conversionTable.Insert(
-      MakeKey(format, format), TableEntry(nullptr, xiiImageConversionEntry(xiiImageConversionEntry(format, format, xiiImageConversionFlags::InPlace))));
+    s_conversionTable.Insert(MakeKey(format, format), TableEntry(nullptr, xiiImageConversionEntry(xiiImageConversionEntry(format, format, xiiImageConversionFlags::InPlace))));
   }
 
   // Straight from http://en.wikipedia.org/wiki/Floyd-Warshall_algorithm
-  for (xiiUInt32 k = 1; k < xiiImageFormat::NUM_FORMATS; k++)
+  for (xiiUInt32 k = 1; k < xiiImageFormat::NUM_FORMATS; ++k)
   {
-    for (xiiUInt32 i = 1; i < xiiImageFormat::NUM_FORMATS; i++)
+    for (xiiUInt32 i = 1; i < xiiImageFormat::NUM_FORMATS; ++i)
     {
       if (k == i)
       {
         continue;
       }
 
-      xiiUInt32 tableIndexIK = MakeKey(static_cast<xiiImageFormat::Enum>(i), static_cast<xiiImageFormat::Enum>(k));
+      xiiUInt32 uiTableIndexIK = MakeKey(static_cast<xiiImageFormat::Enum>(i), static_cast<xiiImageFormat::Enum>(k));
 
       TableEntry entryIK;
-      if (!s_conversionTable.TryGetValue(tableIndexIK, entryIK))
+      if (!s_conversionTable.TryGetValue(uiTableIndexIK, entryIK))
       {
         continue;
       }
 
-      for (xiiUInt32 j = 1; j < xiiImageFormat::NUM_FORMATS; j++)
+      for (xiiUInt32 j = 1; j < xiiImageFormat::NUM_FORMATS; ++j)
       {
         if (j == i || j == k)
         {
           continue;
         }
 
-        xiiUInt32 tableIndexIJ = MakeKey(static_cast<xiiImageFormat::Enum>(i), static_cast<xiiImageFormat::Enum>(j));
-        xiiUInt32 tableIndexKJ = MakeKey(static_cast<xiiImageFormat::Enum>(k), static_cast<xiiImageFormat::Enum>(j));
+        xiiUInt32 uiTableIndexIJ = MakeKey(static_cast<xiiImageFormat::Enum>(i), static_cast<xiiImageFormat::Enum>(j));
+        xiiUInt32 uiTableIndexKJ = MakeKey(static_cast<xiiImageFormat::Enum>(k), static_cast<xiiImageFormat::Enum>(j));
 
         TableEntry entryKJ;
-        if (!s_conversionTable.TryGetValue(tableIndexKJ, entryKJ))
+        if (!s_conversionTable.TryGetValue(uiTableIndexKJ, entryKJ))
         {
           continue;
         }
@@ -363,10 +362,10 @@ void xiiImageConversion::RebuildConversionTable()
         TableEntry candidate = TableEntry::chain(entryIK, entryKJ);
 
         TableEntry existing;
-        if (candidate.isAdmissible() && candidate < s_conversionTable[tableIndexIJ])
+        if (candidate.isAdmissible() && candidate < s_conversionTable[uiTableIndexIJ])
         {
           // To Convert from format I to format J, first Convert from I to K
-          s_conversionTable[tableIndexIJ] = candidate;
+          s_conversionTable[uiTableIndexIJ] = candidate;
         }
       }
     }
@@ -392,8 +391,8 @@ xiiResult xiiImageConversion::Convert(const xiiImageView& source, xiiImage& ref_
     return XII_SUCCESS;
   }
 
-  xiiHybridArray<ConversionPathNode, 16> path;
-  xiiUInt32                              numScratchBuffers = 0;
+  xiiTemporaryHybridArray<ConversionPathNode, 16> path;
+  xiiUInt32                                       numScratchBuffers = 0;
   if (BuildPath(sourceFormat, targetFormat, &source == &ref_target, path, numScratchBuffers).Failed())
   {
     return XII_FAILURE;
@@ -407,16 +406,16 @@ xiiResult xiiImageConversion::Convert(const xiiImageView& source, xiiImage& ref_
   XII_ASSERT_DEV(path.GetCount() > 0, "Invalid conversion path");
   XII_ASSERT_DEV(path[0].m_sourceFormat == source.GetImageFormat(), "Invalid conversion path");
 
-  xiiHybridArray<xiiImage, 16> intermediates;
+  xiiTemporaryHybridArray<xiiImage, 16> intermediates;
   intermediates.SetCount(uiNumScratchBuffers);
 
   const xiiImageView* pSource = &source;
 
   for (xiiUInt32 i = 0; i < path.GetCount(); ++i)
   {
-    xiiUInt32 targetIndex = path[i].m_targetBufferIndex;
+    xiiUInt32 uiTargetIndex = path[i].m_targetBufferIndex;
 
-    xiiImage* pTarget = targetIndex == 0 ? &ref_target : &intermediates[targetIndex - 1];
+    xiiImage* pTarget = uiTargetIndex == 0 ? &ref_target : &intermediates[uiTargetIndex - 1];
 
     if (ConvertSingleStep(path[i].m_step, *pSource, *pTarget, path[i].m_targetFormat).Failed())
     {
@@ -440,7 +439,9 @@ xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlob
   if (sourceFormat == targetFormat)
   {
     if (target.GetPtr() != source.GetPtr())
+    {
       memcpy(target.GetPtr(), source.GetPtr(), uiNumElements * xiiUInt64(xiiImageFormat::GetBitsPerPixel(sourceFormat)) / 8);
+    }
     return XII_SUCCESS;
   }
 
@@ -449,8 +450,8 @@ xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlob
     return XII_FAILURE;
   }
 
-  xiiHybridArray<ConversionPathNode, 16> path;
-  xiiUInt32                              numScratchBuffers;
+  xiiTemporaryHybridArray<ConversionPathNode, 16> path;
+  xiiUInt32                                       numScratchBuffers;
   if (BuildPath(sourceFormat, targetFormat, source.GetPtr() == target.GetPtr(), path, numScratchBuffers).Failed())
   {
     return XII_FAILURE;
@@ -473,41 +474,41 @@ xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlob
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiBlob, 16> intermediates;
+  xiiTemporaryHybridArray<xiiBlob, 16> intermediates;
   intermediates.SetCount(uiNumScratchBuffers);
 
   for (xiiUInt32 i = 0; i < path.GetCount(); ++i)
   {
-    xiiUInt32 targetIndex = path[i].m_targetBufferIndex;
-    xiiUInt32 targetBpp   = xiiImageFormat::GetBitsPerPixel(path[i].m_targetFormat);
+    xiiUInt32 uiTargetIndex = path[i].m_targetBufferIndex;
+    xiiUInt32 uiTargetBpp   = xiiImageFormat::GetBitsPerPixel(path[i].m_targetFormat);
 
-    xiiByteBlobPtr stepTarget;
-    if (targetIndex == 0)
+    xiiByteBlobPtr pStepTarget;
+    if (uiTargetIndex == 0)
     {
-      stepTarget = target;
+      pStepTarget = target;
     }
     else
     {
-      xiiUInt32 expectedSize = static_cast<xiiUInt32>(targetBpp * uiNumElements / 8);
-      intermediates[targetIndex - 1].SetCountUninitialized(expectedSize);
-      stepTarget = intermediates[targetIndex - 1].GetByteBlobPtr();
+      xiiUInt32 uiExpectedSize = static_cast<xiiUInt32>(uiTargetBpp * uiNumElements / 8);
+      intermediates[uiTargetIndex - 1].SetCountUninitialized(uiExpectedSize);
+      pStepTarget = intermediates[uiTargetIndex - 1].GetByteBlobPtr();
     }
 
     if (path[i].m_step == nullptr)
     {
-      memcpy(stepTarget.GetPtr(), source.GetPtr(), uiNumElements * targetBpp / 8);
+      memcpy(pStepTarget.GetPtr(), source.GetPtr(), uiNumElements * uiTargetBpp / 8);
     }
     else
     {
       if (static_cast<const xiiImageConversionStepLinear*>(path[i].m_step)
-            ->ConvertPixels(source, stepTarget, uiNumElements, path[i].m_sourceFormat, path[i].m_targetFormat)
+            ->ConvertPixels(source, pStepTarget, uiNumElements, path[i].m_sourceFormat, path[i].m_targetFormat)
             .Failed())
       {
         return XII_FAILURE;
       }
     }
 
-    source = stepTarget;
+    source = pStepTarget;
   }
 
   return XII_SUCCESS;
@@ -533,8 +534,7 @@ xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pS
     {
       // we have to do the computation in 64-bit otherwise it might overflow for very large textures (8k x 4k or bigger).
       xiiUInt64 numElements = xiiUInt64(8) * target.GetByteBlobPtr().GetCount() / (xiiUInt64)xiiImageFormat::GetBitsPerPixel(targetFormat);
-      return static_cast<const xiiImageConversionStepLinear*>(pStep)->ConvertPixels(
-        source.GetByteBlobPtr(), target.GetByteBlobPtr(), (xiiUInt32)numElements, sourceFormat, targetFormat);
+      return static_cast<const xiiImageConversionStepLinear*>(pStep)->ConvertPixels(source.GetByteBlobPtr(), target.GetByteBlobPtr(), (xiiUInt32)numElements, sourceFormat, targetFormat);
     }
 
     case MakeTypeKey(xiiImageFormatType::LINEAR, xiiImageFormatType::BLOCK_COMPRESSED):
@@ -577,35 +577,32 @@ xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& so
 
         // Decompress into a temp memory block so we don't have to explicitly handle the case where the image is not a multiple of the block
         // size
-        xiiHybridArray<xiiUInt8, 256> tempBuffer;
+        xiiTemporaryHybridArray<xiiUInt8, 256> tempBuffer;
         tempBuffer.SetCount(numBlocksX * blockSizeX * blockSizeY * targetBytesPerPixel);
 
-        for (xiiUInt32 slice = 0; slice < source.GetDepth(mipLevel); slice++)
+        for (xiiUInt32 uiSlice = 0; uiSlice < source.GetDepth(mipLevel); uiSlice++)
         {
           for (xiiUInt32 blockY = 0; blockY < numBlocksY; blockY++)
           {
-            xiiImageView sourceRowView = source.GetRowView(mipLevel, face, arrayIndex, blockY, slice);
+            xiiImageView sourceRowView = source.GetRowView(mipLevel, face, arrayIndex, blockY, uiSlice);
 
-            if (static_cast<const xiiImageConversionStepDecompressBlocks*>(pStep)
-                  ->DecompressBlocks(sourceRowView.GetByteBlobPtr(), xiiByteBlobPtr(tempBuffer.GetData(), tempBuffer.GetCount()), numBlocksX,
-                                     sourceFormat, targetFormat)
-                  .Failed())
+            if (static_cast<const xiiImageConversionStepDecompressBlocks*>(pStep)->DecompressBlocks(sourceRowView.GetByteBlobPtr(), xiiByteBlobPtr(tempBuffer.GetData(), tempBuffer.GetCount()), numBlocksX, sourceFormat, targetFormat).Failed())
             {
               return XII_FAILURE;
             }
 
             for (xiiUInt32 blockX = 0; blockX < numBlocksX; blockX++)
             {
-              xiiUInt8* targetPointer = target.GetPixelPointer<xiiUInt8>(mipLevel, face, arrayIndex, blockX * blockSizeX, blockY * blockSizeY, slice);
+              xiiUInt8* pTargetPointer = target.GetPixelPointer<xiiUInt8>(mipLevel, face, arrayIndex, blockX * blockSizeX, blockY * blockSizeY, uiSlice);
 
               // Copy into actual target, clamping to image dimensions
-              xiiUInt32 copyWidth  = xiiMath::Min(blockSizeX, width - blockX * blockSizeX);
-              xiiUInt32 copyHeight = xiiMath::Min(blockSizeY, height - blockY * blockSizeY);
-              for (xiiUInt32 row = 0; row < copyHeight; row++)
+              xiiUInt32 uiCopyWidth  = xiiMath::Min(blockSizeX, width - blockX * blockSizeX);
+              xiiUInt32 uiCopyHeight = xiiMath::Min(blockSizeY, height - blockY * blockSizeY);
+              for (xiiUInt32 uiRow = 0; uiRow < uiCopyHeight; ++uiRow)
               {
-                memcpy(targetPointer, &tempBuffer[(blockX * blockSizeX + row) * blockSizeY * targetBytesPerPixel],
-                       xiiMath::SafeMultiply32(copyWidth, targetBytesPerPixel));
-                targetPointer += targetRowPitch;
+                memcpy(pTargetPointer, &tempBuffer[(blockX * blockSizeX + uiRow) * blockSizeY * targetBytesPerPixel], xiiMath::SafeMultiply32(uiCopyWidth, targetBytesPerPixel));
+
+                pTargetPointer += targetRowPitch;
               }
             }
           }
@@ -646,24 +643,21 @@ xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& sour
         xiiImage paddedSlice;
         paddedSlice.ResetAndAlloc(paddedSliceHeader);
 
-        for (xiiUInt32 slice = 0; slice < source.GetDepth(mipLevel); slice++)
+        for (xiiUInt32 uiSlice = 0; uiSlice < source.GetDepth(mipLevel); ++uiSlice)
         {
           for (xiiUInt32 y = 0; y < targetHeight; ++y)
           {
             xiiUInt32 sourceY = xiiMath::Min(y, sourceHeight - 1);
 
-            memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, 0, y), source.GetPixelPointer<void>(mipLevel, face, arrayIndex, 0, sourceY, slice),
-                   static_cast<size_t>(sourceRowPitch));
+            memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, 0, y), source.GetPixelPointer<void>(mipLevel, face, arrayIndex, 0, sourceY, uiSlice), static_cast<size_t>(sourceRowPitch));
 
             for (xiiUInt32 x = sourceWidth; x < targetWidth; ++x)
             {
-              memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, x, y),
-                     source.GetPixelPointer<void>(mipLevel, face, arrayIndex, sourceWidth - 1, sourceY, slice), sourceBytesPerPixel);
+              memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, x, y), source.GetPixelPointer<void>(mipLevel, face, arrayIndex, sourceWidth - 1, sourceY, uiSlice), sourceBytesPerPixel);
             }
           }
 
-          xiiResult result = static_cast<const xiiImageConversionStepCompressBlocks*>(pStep)->CompressBlocks(paddedSlice.GetByteBlobPtr(),
-                                                                                                             target.GetSliceView(mipLevel, face, arrayIndex, slice).GetByteBlobPtr(), numBlocksX, numBlocksY, sourceFormat, targetFormat);
+          xiiResult result = static_cast<const xiiImageConversionStepCompressBlocks*>(pStep)->CompressBlocks(paddedSlice.GetByteBlobPtr(), target.GetSliceView(mipLevel, face, arrayIndex, uiSlice).GetByteBlobPtr(), numBlocksX, numBlocksY, sourceFormat, targetFormat);
 
           if (result.Failed())
           {
@@ -688,7 +682,7 @@ xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& s
         const xiiUInt32 width  = target.GetWidth(mipLevel);
         const xiiUInt32 height = target.GetHeight(mipLevel);
 
-        xiiHybridArray<xiiImageView, 2> sourcePlanes;
+        xiiTemporaryHybridArray<xiiImageView, 2> sourcePlanes;
         for (xiiUInt32 planeIndex = 0; planeIndex < source.GetPlaneCount(); ++planeIndex)
         {
           const xiiUInt32 blockSizeX = xiiImageFormat::GetBlockWidth(sourceFormat, planeIndex);
@@ -703,9 +697,7 @@ xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& s
           sourcePlanes.PushBack(source.GetPlaneView(mipLevel, face, arrayIndex, planeIndex));
         }
 
-        if (static_cast<const xiiImageConversionStepDeplanarize*>(pStep)
-              ->ConvertPixels(sourcePlanes, target.GetSubImageView(mipLevel, face, arrayIndex), width, height, sourceFormat, targetFormat)
-              .Failed())
+        if (static_cast<const xiiImageConversionStepDeplanarize*>(pStep)->ConvertPixels(sourcePlanes, target.GetSubImageView(mipLevel, face, arrayIndex), width, height, sourceFormat, targetFormat).Failed())
         {
           return XII_FAILURE;
         }
@@ -727,7 +719,7 @@ xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& sou
         const xiiUInt32 width  = target.GetWidth(mipLevel);
         const xiiUInt32 height = target.GetHeight(mipLevel);
 
-        xiiHybridArray<xiiImage, 2> targetPlanes;
+        xiiTemporaryHybridArray<xiiImage, 2> targetPlanes;
         for (xiiUInt32 planeIndex = 0; planeIndex < target.GetPlaneCount(); ++planeIndex)
         {
           const xiiUInt32 blockSizeX = xiiImageFormat::GetBlockWidth(targetFormat, planeIndex);
@@ -742,9 +734,7 @@ xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& sou
           targetPlanes.PushBack(target.GetPlaneView(mipLevel, face, arrayIndex, planeIndex));
         }
 
-        if (static_cast<const xiiImageConversionStepPlanarize*>(pStep)
-              ->ConvertPixels(source.GetSubImageView(mipLevel, face, arrayIndex), targetPlanes, width, height, sourceFormat, targetFormat)
-              .Failed())
+        if (static_cast<const xiiImageConversionStepPlanarize*>(pStep)->ConvertPixels(source.GetSubImageView(mipLevel, face, arrayIndex), targetPlanes, width, height, sourceFormat, targetFormat).Failed())
         {
           return XII_FAILURE;
         }
@@ -764,8 +754,8 @@ bool xiiImageConversion::IsConvertible(xiiImageFormat::Enum sourceFormat, xiiIma
     RebuildConversionTable();
   }
 
-  xiiUInt32 tableIndex = MakeKey(sourceFormat, targetFormat);
-  return s_conversionTable.Contains(tableIndex);
+  xiiUInt32 uiTableIndex = MakeKey(sourceFormat, targetFormat);
+  return s_conversionTable.Contains(uiTableIndex);
 }
 
 xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(xiiImageFormat::Enum format, xiiArrayPtr<const xiiImageFormat::Enum> compatibleFormats)
@@ -780,14 +770,14 @@ xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(xiiImageFor
   TableEntry           bestEntry;
   xiiImageFormat::Enum bestFormat = xiiImageFormat::UNKNOWN;
 
-  for (xiiUInt32 targetIndex = 0; targetIndex < xiiUInt32(compatibleFormats.GetCount()); targetIndex++)
+  for (xiiUInt32 uiTargetIndex = 0; uiTargetIndex < xiiUInt32(compatibleFormats.GetCount()); uiTargetIndex++)
   {
-    xiiUInt32  tableIndex = MakeKey(format, compatibleFormats[targetIndex]);
+    xiiUInt32  uiTableIndex = MakeKey(format, compatibleFormats[uiTargetIndex]);
     TableEntry candidate;
-    if (s_conversionTable.TryGetValue(tableIndex, candidate) && candidate < bestEntry)
+    if (s_conversionTable.TryGetValue(uiTableIndex, candidate) && candidate < bestEntry)
     {
       bestEntry  = candidate;
-      bestFormat = compatibleFormats[targetIndex];
+      bestFormat = compatibleFormats[uiTargetIndex];
     }
   }
 

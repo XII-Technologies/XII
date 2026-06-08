@@ -21,9 +21,7 @@ xii_qt_wrap_target_moc_files(${PROJECT_NAME} "${XII_MOC_HEADERS}")
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
   Texture
-)
 
-target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Foundation
 )

@@ -17,7 +17,7 @@ target_link_libraries(${PROJECT_NAME}
 xii_project_build_filter_index(${PROJECT_NAME} BUILD_FILTER_IDX)
 
 if(TARGET TextureConverter)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_TEXCONV_PRESENT)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_TEXTURE_CONVERTER_PRESENT)
   
   add_dependencies(${PROJECT_NAME}
     TextureConverter

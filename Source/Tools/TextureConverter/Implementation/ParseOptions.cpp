@@ -336,8 +336,7 @@ xiiResult xiiTextureConverter::ParseInputFiles()
 
   if (m_Processor.m_Descriptor.m_InputFiles.IsEmpty())
   {
-    xiiLog::Error("No input files were specified. Use \'-in \"path/to/file\"' to specify an input file. Use '-in0', '-in1' etc. to specify "
-                  "multiple input files.");
+    xiiLog::Error("No input files were specified. Use \'-in \"path/to/file\"' to specify an input file. Use '-in0', '-in1' etc. to specify multiple input files.");
     return XII_FAILURE;
   }
 
@@ -346,8 +345,7 @@ xiiResult xiiTextureConverter::ParseInputFiles()
 
 xiiResult xiiTextureConverter::ParseOutputFiles()
 {
-  m_sOutputFile = opt_Out.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-
+  m_sOutputFile          = opt_Out.GetOptionValue(xiiCommandLineOption::LogMode::Always);
   m_sOutputThumbnailFile = opt_ThumbnailOut.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
   if (!m_sOutputThumbnailFile.IsEmpty())
@@ -370,9 +368,8 @@ xiiResult xiiTextureConverter::ParseUsage()
   if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Atlas)
     return XII_SUCCESS;
 
-  const xiiInt32 value = opt_Usage.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-
-  m_Processor.m_Descriptor.m_Usage = static_cast<xiiTextureConverterUsage::Enum>(value);
+  const xiiInt32 iValue            = opt_Usage.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  m_Processor.m_Descriptor.m_Usage = static_cast<xiiTextureConverterUsage::Enum>(iValue);
   return XII_SUCCESS;
 }
 
@@ -386,10 +383,9 @@ xiiResult xiiTextureConverter::ParseMipmapMode()
     return XII_SUCCESS;
   }
 
-  const xiiInt32 value = opt_Mipmaps.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  const xiiInt32 iValue = opt_Mipmaps.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_MipmapMode = static_cast<xiiTextureConverterMipmapMode::Enum>(value);
-
+  m_Processor.m_Descriptor.m_MipmapMode              = static_cast<xiiTextureConverterMipmapMode::Enum>(iValue);
   m_Processor.m_Descriptor.m_bPreserveMipmapCoverage = opt_MipsPreserveCoverage.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
   if (m_Processor.m_Descriptor.m_bPreserveMipmapCoverage)
@@ -402,9 +398,8 @@ xiiResult xiiTextureConverter::ParseMipmapMode()
 
 xiiResult xiiTextureConverter::ParseTargetPlatform()
 {
-  xiiInt32 value = opt_Platform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-
-  m_Processor.m_Descriptor.m_TargetPlatform = static_cast<xiiTextureConverterTargetPlatform::Enum>(value);
+  xiiInt32 iValue                           = opt_Platform.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+  m_Processor.m_Descriptor.m_TargetPlatform = static_cast<xiiTextureConverterTargetPlatform::Enum>(iValue);
   return XII_SUCCESS;
 }
 
@@ -418,9 +413,8 @@ xiiResult xiiTextureConverter::ParseCompressionMode()
     return XII_SUCCESS;
   }
 
-  const xiiInt32 value = opt_Compression.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-
-  m_Processor.m_Descriptor.m_CompressionMode = static_cast<xiiTextureConverterCompressionMode::Enum>(value);
+  const xiiInt32 iValue                      = opt_Compression.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  m_Processor.m_Descriptor.m_CompressionMode = static_cast<xiiTextureConverterCompressionMode::Enum>(iValue);
   return XII_SUCCESS;
 }
 
@@ -431,18 +425,18 @@ xiiResult xiiTextureConverter::ParseWrapModes()
     return XII_SUCCESS;
 
   {
-    xiiInt32 value                          = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeU = static_cast<xiiImageAddressMode::Enum>(value);
+    xiiInt32 iValue                         = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    m_Processor.m_Descriptor.m_AddressModeU = static_cast<xiiImageAddressMode::Enum>(iValue);
   }
   {
-    xiiInt32 value                          = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiImageAddressMode::Enum>(value);
+    xiiInt32 iValue                         = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+    m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiImageAddressMode::Enum>(iValue);
   }
 
   if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
-    xiiInt32 value                          = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiImageAddressMode::Enum>(value);
+    xiiInt32 iValue                         = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
+    m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiImageAddressMode::Enum>(iValue);
   }
 
   return XII_SUCCESS;
@@ -456,9 +450,8 @@ xiiResult xiiTextureConverter::ParseFilterModes()
     return XII_SUCCESS;
   }
 
-  xiiInt32 value = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-
-  m_Processor.m_Descriptor.m_FilterMode = static_cast<xiiTextureFilterSetting::Enum>(value);
+  xiiInt32 iValue                       = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  m_Processor.m_Descriptor.m_FilterMode = static_cast<xiiTextureFilterSetting::Enum>(iValue);
   return XII_SUCCESS;
 }
 
@@ -509,8 +502,7 @@ xiiResult xiiTextureConverter::ParseAssetHeader()
 
   xiiUInt32 uiHashLow  = 0;
   xiiUInt32 uiHashHigh = 0;
-  if (xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashLow.GetOptionValue(xiiCommandLineOption::LogMode::Always), uiHashLow).Failed() ||
-      xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashHigh.GetOptionValue(xiiCommandLineOption::LogMode::Always), uiHashHigh).Failed())
+  if (xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashLow.GetOptionValue(xiiCommandLineOption::LogMode::Always), uiHashLow).Failed() || xiiConversionUtils::ConvertHexStringToUInt32(opt_AssetHashHigh.GetOptionValue(xiiCommandLineOption::LogMode::Always), uiHashHigh).Failed())
   {
     xiiLog::Error("'-assetHashLow 0xHEX32' and '-assetHashHigh 0xHEX32' have not been specified correctly.");
     return XII_FAILURE;
@@ -529,8 +521,8 @@ xiiResult xiiTextureConverter::ParseAssetHeader()
 
 xiiResult xiiTextureConverter::ParseBumpMapFilter()
 {
-  const xiiInt32 value = opt_BumpMapFilter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
+  const xiiInt32 iValue = opt_BumpMapFilter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
 
-  m_Processor.m_Descriptor.m_BumpMapFilter = static_cast<xiiTextureConverterBumpMapFilter::Enum>(value);
+  m_Processor.m_Descriptor.m_BumpMapFilter = static_cast<xiiTextureConverterBumpMapFilter::Enum>(iValue);
   return XII_SUCCESS;
 }

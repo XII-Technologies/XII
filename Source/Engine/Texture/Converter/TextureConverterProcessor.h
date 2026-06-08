@@ -15,7 +15,7 @@ class XII_TEXTURE_DLL xiiTextureConverterProcessor
 public:
   xiiTextureConverterProcessor();
 
-  xiiTextureConverterDesc m_Descriptor;
+  xiiTextureConverterDescription m_Descriptor;
 
   xiiResult Process();
 

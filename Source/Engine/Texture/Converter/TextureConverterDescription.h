@@ -28,12 +28,12 @@ struct xiiTextureConverterSliceChannelMapping
   };
 };
 
-class XII_TEXTURE_DLL xiiTextureConverterDesc
+class XII_TEXTURE_DLL xiiTextureConverterDescription
 {
-  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureConverterDesc);
+  XII_DISALLOW_COPY_AND_ASSIGN(xiiTextureConverterDescription);
 
 public:
-  xiiTextureConverterDesc() = default;
+  xiiTextureConverterDescription() = default;
 
   xiiHybridArray<xiiString, 4> m_InputFiles;
   xiiDynamicArray<xiiImage>    m_InputImages;
