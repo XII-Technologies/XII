@@ -2,9 +2,6 @@
 
 #pragma once
 
-#include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Math/Rect.h>
-#include <Foundation/Math/Vec2.h>
 #include <Texture/TextureDLL.h>
 
 struct stbrp_node;

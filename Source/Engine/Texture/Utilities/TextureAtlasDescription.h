@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include <Texture/TextureDLL.h>
+
 #include <Foundation/Containers/ArrayMap.h>
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Math/Rect.h>
-#include <Foundation/Strings/String.h>
 #include <Texture/Converter/TextureConverterEnums.h>
 
 struct XII_TEXTURE_DLL xiiTextureAtlasCreationDescription
