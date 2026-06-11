@@ -2095,10 +2095,10 @@ xiiResult xiiGALDeviceVulkan::FillCapabilitiesPlatform()
   // Sampler Properties
   {
     m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported = true;
-    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy              = static_cast<xiiUInt8>(m_PhysicalDeviceProperties.limits.maxSamplerAnisotropy);
+    m_AdapterDescription.m_SamplerProperties.m_uiMaxAnisotropy              = static_cast<xiiUInt32>(m_PhysicalDeviceProperties.limits.maxSamplerAnisotropy);
     m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported            = true;
 
-    static_assert(sizeof(m_AdapterDescription.m_SamplerProperties) == 3, "There may be uninitialized sampler properties.");
+    static_assert(sizeof(m_AdapterDescription.m_SamplerProperties) == 12, "There may be uninitialized sampler properties.");
   }
 
   // Ray Tracing Properties

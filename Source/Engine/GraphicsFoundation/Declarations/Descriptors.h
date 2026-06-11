@@ -124,9 +124,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableSt
 {
   XII_DECLARE_POD_TYPE();
 
-  bool     m_bBorderSamplingModeSupported = false; ///< Indicates if device supports border texture addressing mode.
-  xiiUInt8 m_uiMaxAnisotropy              = 1U;    ///< Maximum anisotropy level supported by the device. If anisotropic filtering is not supported by the device, this value is 1.
-  bool     m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
+  bool      m_bBorderSamplingModeSupported = false; ///< Indicates if device supports border texture addressing mode.
+  xiiUInt32 m_uiMaxAnisotropy              = 1U;    ///< Maximum anisotropy level supported by the device. If anisotropic filtering is not supported by the device, this value is 1.
+  bool      m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
 };
 
 /// \brief This describes the sampler properties.
