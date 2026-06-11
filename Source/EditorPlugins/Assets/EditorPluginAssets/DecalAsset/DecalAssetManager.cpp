@@ -119,7 +119,7 @@ xiiStatus xiiDecalAssetDocumentManager::GenerateDecalTexture(const xiiPlatformPr
   if (IsDecalTextureUpToDate(sDecalFile, uiAssetHash))
     return XII_SUCCESS;
 
-  xiiTextureAtlasCreationDesc atlasDesc;
+  xiiTextureAtlasCreationDescription atlasDesc;
 
   // find all decal assets, extract their file information to pass it along to TextureConverter
   {

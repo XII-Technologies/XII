@@ -8,7 +8,7 @@
 #include <Foundation/Strings/String.h>
 #include <Texture/Converter/TextureConverterEnums.h>
 
-struct XII_TEXTURE_DLL xiiTextureAtlasCreationDesc
+struct XII_TEXTURE_DLL xiiTextureAtlasCreationDescription
 {
   struct Layer
   {
@@ -34,7 +34,7 @@ struct XII_TEXTURE_DLL xiiTextureAtlasCreationDesc
   xiiResult Load(xiiStringView sFile);
 };
 
-struct XII_TEXTURE_DLL xiiTextureAtlasRuntimeDesc
+struct XII_TEXTURE_DLL xiiTextureAtlasRuntimeDescription
 {
   struct Item
   {
@@ -42,7 +42,7 @@ struct XII_TEXTURE_DLL xiiTextureAtlasRuntimeDesc
     xiiRectU32 m_LayerRects[4];
   };
 
-  xiiUInt32                    m_uiNumLayers = 0;
+  xiiUInt32                    m_uiLayerCount = 0;
   xiiArrayMap<xiiUInt32, Item> m_Items;
 
   void Clear();

@@ -6,7 +6,7 @@
 #include <Foundation/Math/Rect.h>
 #include <Texture/Converter/TextureConverterDescription.h>
 
-struct xiiTextureAtlasCreationDesc;
+struct xiiTextureAtlasCreationDescription;
 
 class XII_TEXTURE_DLL xiiTextureConverterProcessor
 {
@@ -81,8 +81,8 @@ private:
     xiiRectU32 m_AtlasRect[4];
   };
 
-  xiiResult LoadAtlasInputs(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const;
-  xiiResult CreateAtlasLayerTexture(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg);
+  xiiResult LoadAtlasInputs(const xiiTextureAtlasCreationDescription& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const;
+  xiiResult CreateAtlasLayerTexture(const xiiTextureAtlasCreationDescription& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg);
 
   static xiiResult WriteTextureAtlasInfo(const xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiUInt32 uiNumLayers, xiiStreamWriter& stream);
   static xiiResult TrySortItemsIntoAtlas(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiInt32 layer);
