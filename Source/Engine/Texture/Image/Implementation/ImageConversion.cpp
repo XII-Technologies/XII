@@ -500,9 +500,7 @@ xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlob
     }
     else
     {
-      if (static_cast<const xiiImageConversionStepLinear*>(path[i].m_step)
-            ->ConvertPixels(source, pStepTarget, uiNumElements, path[i].m_sourceFormat, path[i].m_targetFormat)
-            .Failed())
+      if (static_cast<const xiiImageConversionStepLinear*>(path[i].m_step)->ConvertPixels(source, pStepTarget, uiNumElements, path[i].m_sourceFormat, path[i].m_targetFormat).Failed())
       {
         return XII_FAILURE;
       }
@@ -533,8 +531,8 @@ xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pS
     case MakeTypeKey(xiiImageFormatType::LINEAR, xiiImageFormatType::LINEAR):
     {
       // we have to do the computation in 64-bit otherwise it might overflow for very large textures (8k x 4k or bigger).
-      xiiUInt64 numElements = xiiUInt64(8) * target.GetByteBlobPtr().GetCount() / (xiiUInt64)xiiImageFormat::GetBitsPerPixel(targetFormat);
-      return static_cast<const xiiImageConversionStepLinear*>(pStep)->ConvertPixels(source.GetByteBlobPtr(), target.GetByteBlobPtr(), (xiiUInt32)numElements, sourceFormat, targetFormat);
+      xiiUInt64 uiElementCount = xiiUInt64(8) * target.GetByteBlobPtr().GetCount() / (xiiUInt64)xiiImageFormat::GetBitsPerPixel(targetFormat);
+      return static_cast<const xiiImageConversionStepLinear*>(pStep)->ConvertPixels(source.GetByteBlobPtr(), target.GetByteBlobPtr(), (xiiUInt32)uiElementCount, sourceFormat, targetFormat);
     }
 
     case MakeTypeKey(xiiImageFormatType::LINEAR, xiiImageFormatType::BLOCK_COMPRESSED):

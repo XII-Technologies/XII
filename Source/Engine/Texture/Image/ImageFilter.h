@@ -71,7 +71,7 @@ public:
   xiiSimdFloat GetWeight(xiiUInt32 uiDstSampleIndex, xiiUInt32 uiWeightIndex) const;
 
   /// \brief Returns the index of the first source sample that needs to be weighted to evaluate the destination sample
-  inline xiiInt32 GetFirstSourceSampleIndex(xiiUInt32 uiDstSampleIndex) const;
+  xiiInt32 GetFirstSourceSampleIndex(xiiUInt32 uiDstSampleIndex) const;
 
   xiiArrayPtr<const float> ViewWeights() const;
 
