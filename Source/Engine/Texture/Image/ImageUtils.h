@@ -5,7 +5,6 @@
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Math/Size.h>
 #include <Texture/Image/Image.h>
-#include <Texture/Image/ImageEnums.h>
 #include <Texture/Image/ImageFilter.h>
 
 class XII_TEXTURE_DLL xiiImageUtils

@@ -47,7 +47,7 @@ xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
 {
   XII_LOG_BLOCK("Writing Image", sFileName);
 
-  if (m_Format == xiiImageFormat::UNKNOWN)
+  if (m_Format == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Cannot write image '{0}' - image data is invalid or empty", sFileName);
     return XII_FAILURE;
@@ -201,7 +201,7 @@ void xiiImage::Clear()
 
 void xiiImage::ResetAndAlloc(const xiiImageHeader& header)
 {
-  const xiiUInt64 requiredSize = header.ComputeDataSize();
+  const xiiUInt64 uiRequiredSize = header.ComputeDataSize();
 
   // it is debatable whether this function should reuse external storage, at all
   // however, it is especially dangerous to rely on the external storage being big enough, since many functions just take a xiiImage as a
@@ -210,9 +210,10 @@ void xiiImage::ResetAndAlloc(const xiiImageHeader& header)
 
   // therefore, if external storage is insufficient, fall back to internal storage
 
-  if (!UsesExternalStorage() || m_DataPtr.GetCount() < requiredSize)
+  if (!UsesExternalStorage() || m_DataPtr.GetCount() < uiRequiredSize)
   {
-    m_InternalStorage.SetCountUninitialized(requiredSize);
+    m_InternalStorage.SetCountUninitialized(uiRequiredSize);
+
     m_DataPtr = m_InternalStorage.GetBlobPtr<xiiUInt8>();
   }
 
@@ -283,7 +284,7 @@ xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
   return XII_FAILURE;
 }
 
-xiiResult xiiImage::Convert(xiiImageFormat::Enum targetFormat)
+xiiResult xiiImage::Convert(xiiGALResourceFormat::Enum targetFormat)
 {
   return xiiImageConversion::Convert(*this, *this, targetFormat);
 }
@@ -299,10 +300,10 @@ xiiImageView xiiImageView::GetSubImageView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt
   header.SetDepth(GetDepth(uiMipLevel));
   header.SetImageFormat(m_Format);
 
-  const xiiUInt64& offset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, 0);
-  xiiUInt64        size   = *(&offset + GetPlaneCount()) - offset;
+  const xiiUInt64& uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, 0);
+  xiiUInt64        uiSize   = *(&uiOffset + GetPlaneCount()) - uiOffset;
 
-  xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(offset, size);
+  xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(uiOffset, uiSize);
 
   return xiiImageView(header, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
 }
@@ -329,10 +330,10 @@ xiiImageView xiiImageView::GetPlaneView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 
   header.SetDepth(GetDepth(uiMipLevel) * xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
   header.SetImageFormat(subFormat);
 
-  const xiiUInt64& offset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
-  xiiUInt64        size   = *(&offset + 1) - offset;
+  const xiiUInt64& uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
+  xiiUInt64        uiSize   = *(&uiOffset + 1) - uiOffset;
 
-  xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(offset, size);
+  xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(uiOffset, uiSize);
 
   return xiiImageView(header, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
 }
@@ -367,10 +368,10 @@ xiiImageView xiiImageView::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 
   header.SetDepth(xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
   header.SetImageFormat(subFormat);
 
-  xiiUInt64 offset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex) + z * GetDepthPitch(uiMipLevel, uiPlaneIndex);
-  xiiUInt64 size   = GetDepthPitch(uiMipLevel, uiPlaneIndex);
+  const xiiUInt64& uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
+  xiiUInt64        uiSize   = GetDepthPitch(uiMipLevel, uiPlaneIndex);
 
-  xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(offset, size);
+  xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(uiOffset + z * uiSize, uiSize);
 
   return xiiImageView(header, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
 }

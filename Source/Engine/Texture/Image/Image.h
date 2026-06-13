@@ -58,7 +58,7 @@ public:
   const T* GetPixelPointer(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiFace = 0, xiiUInt32 uiArrayIndex = 0, xiiUInt32 x = 0, xiiUInt32 y = 0, xiiUInt32 z = 0, xiiUInt32 uiPlaneIndex = 0) const;
 
   /// \brief Reinterprets the image with a given format; the format must have the same size in bits per pixel as the current one.
-  void ReinterpretAs(xiiImageFormat::Enum format);
+  void ReinterpretAs(xiiGALResourceFormat::Enum format);
 
 public:
   using xiiImageHeader::GetDepth;
@@ -158,7 +158,7 @@ public:
   xiiResult LoadFrom(xiiStringView sFileName);
 
   /// \brief Convenience function to convert the image to the given format.
-  xiiResult Convert(xiiImageFormat::Enum targetFormat);
+  xiiResult Convert(xiiGALResourceFormat::Enum targetFormat);
 
   /// \brief Returns a view to the entire data contained in this image.
   template <typename T>
