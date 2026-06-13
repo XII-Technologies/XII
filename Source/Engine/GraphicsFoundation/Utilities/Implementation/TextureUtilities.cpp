@@ -17,10 +17,10 @@ bool xiiGALTextureUtilities::IsIdentityComponentMapping(const xiiGALTextureCompo
 const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormatProperties(xiiEnum<xiiGALResourceFormat> format)
 {
   static xiiGALResourceFormatDescription formatDescriptions[xiiGALResourceFormat::ENUM_COUNT];
-  static bool                            bIsInitialized = false;
+  static bool                            s_bIsInitialized = false;
 
   // Note that this implementation is thread safe. Even if multiple threads call the function, the data may be initialized multiple times but the result will be the same.
-  if (!bIsInitialized)
+  if (!s_bIsInitialized)
   {
 #define FILL_TEXTURE_FORMAT_INFO(format, componentSize, componentCount, componentType, isTypeless, blockWidth, blockHeight) \
   formatDescriptions[format].m_Format           = format;                                                                   \
@@ -166,7 +166,7 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
     }
 #endif
 
-    bIsInitialized = true;
+    s_bIsInitialized = true;
   }
 
   if (format >= xiiGALResourceFormat::Unknown && format < xiiGALResourceFormat::ENUM_COUNT)
@@ -451,8 +451,8 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
   {
     // Align region update size by the block size.
 
-    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
-    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "Format block width must be a power of 2.");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "Format block height must be a power of 2.");
 
     const auto uiBlockAlignedRegionWidth  = xiiMemoryUtils::AlignSize(uiUpdateRegionWidth, xiiUInt32{formatProperties.m_uiBlockWidth});
     const auto uiBlockAlignedRegionHeight = xiiMemoryUtils::AlignSize(uiUpdateRegionHeight, xiiUInt32{formatProperties.m_uiBlockHeight});
@@ -488,7 +488,7 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
 
 void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride)
 {
-  XII_ASSERT_DEV(pDestinationData != nullptr, "");
+  XII_ASSERT_DEV(pDestinationData != nullptr, "Destination data pointer must not be null.");
   XII_ASSERT_DEV(sourceSubresource.m_uiStride >= uiRowSize, "Source data row stride ({}) is smaller than the row size ({}).", sourceSubresource.m_uiStride, uiRowSize);
   XII_ASSERT_DEV(sourceSubresource.m_uiDepthStride >= uiRowSize, "Destination data row stride ({}) is smaller than the row size ({}).", uiDestinationDepthStride, uiRowSize);
 
