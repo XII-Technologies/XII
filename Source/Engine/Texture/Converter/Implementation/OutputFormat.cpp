@@ -5,7 +5,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
 
-static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTextureConverterCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
+static xiiEnum<xiiGALResourceFormat> DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTextureConverterCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
 {
   if (targetFormat == xiiTextureConverterUsage::NormalMap || targetFormat == xiiTextureConverterUsage::NormalMap_Inverted || targetFormat == xiiTextureConverterUsage::BumpMap)
   {

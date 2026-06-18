@@ -2843,7 +2843,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2877,7 +2877,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2924,7 +2924,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -2964,7 +2964,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -3010,7 +3010,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 elementsPerBlock = 16;
 
@@ -3058,7 +3058,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 targetFormatByteSize = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
     XII_ASSERT_DEV(targetFormatByteSize == sizeof(xiiColorLinear16f), "");
@@ -3094,7 +3094,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 sourceStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     const xiiUInt32 targetStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -3130,7 +3130,7 @@ class xiiImageConversion_CompressBC4 : public xiiImageConversionStepCompressBloc
     return supportedConversions;
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(targetFormat);
 
@@ -3188,7 +3188,7 @@ class xiiImageConversion_CompressBC5 : public xiiImageConversionStepCompressBloc
     return supportedConversions;
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(targetFormat);
 

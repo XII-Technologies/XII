@@ -31,7 +31,7 @@ public:
     return g_DXTexCpuConversions;
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     if (targetFormat == xiiImageFormat::BC7_UNORM || targetFormat == xiiImageFormat::BC7_UNORM_SRGB)
     {

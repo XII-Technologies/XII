@@ -78,7 +78,7 @@ xiiResult xiiWicFileFormat::ReadFileData(xiiStreamReader& stream, xiiDynamicArra
   return XII_SUCCESS;
 }
 
-static void SetHeader(xiiImageHeader& ref_header, xiiImageFormat::Enum imageFormat, const TexMetadata& metadata)
+static void SetHeader(xiiImageHeader& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const TexMetadata& metadata)
 {
   ref_header.SetImageFormat(imageFormat);
 
@@ -91,9 +91,9 @@ static void SetHeader(xiiImageHeader& ref_header, xiiImageFormat::Enum imageForm
   ref_header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
 }
 
-xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
-  XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageDescription");
 
   xiiDynamicArray<xiiUInt8> storage;
   XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
@@ -109,7 +109,7 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiIm
     return XII_FAILURE;
   }
 
-  xiiImageFormat::Enum imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
+  xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
@@ -152,7 +152,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   // Determine image format, re-reading image data if necessary
   metadata = scratchImage.GetMetadata();
 
-  xiiImageFormat::Enum imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
+  xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
 
   if (imageFormat == xiiImageFormat::UNKNOWN)
   {
@@ -225,7 +225,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   using namespace DirectX;
 
   // Convert into suitable output format
-  xiiImageFormat::Enum compatibleFormats[] = {
+  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
     xiiImageFormat::R8G8B8A8_UNORM,
     xiiImageFormat::R8G8B8A8_UNORM_SRGB,
     xiiImageFormat::R8_UNORM,
@@ -236,7 +236,7 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   };
 
   // Find a compatible format closest to the one the image currently has
-  xiiImageFormat::Enum format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
+  xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
   if (format == xiiImageFormat::UNKNOWN)
   {

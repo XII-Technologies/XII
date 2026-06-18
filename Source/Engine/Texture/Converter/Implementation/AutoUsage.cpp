@@ -71,7 +71,7 @@ static xiiTextureConverterUsage::Enum DetectUsageFromFilename(xiiStringView sFil
 static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image)
 {
   const xiiImageHeader&      header = image.GetHeader();
-  const xiiImageFormat::Enum format = header.GetImageFormat();
+  const xiiEnum<xiiGALResourceFormat> format = header.GetImageFormat();
 
   if (header.GetDepth() > 1)
   {

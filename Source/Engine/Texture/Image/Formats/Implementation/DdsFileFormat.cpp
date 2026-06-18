@@ -169,7 +169,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
   xiiDdsHeaderDxt10 headerDxt10;
 
-  xiiImageFormat::Enum format = xiiImageFormat::UNKNOWN;
+  xiiEnum<xiiGALResourceFormat> format = xiiImageFormat::UNKNOWN;
 
   // Data format specified in RGBA masks
   if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 ||
@@ -261,14 +261,14 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageDescription");
 
   xiiDdsHeader ddsHeader;
-  return ReadImageData(inout_stream, ref_header, ddsHeader);
+  return ReadImageData(inout_stream, ref_description, ddsHeader);
 }
 
 xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
@@ -307,7 +307,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  const xiiImageFormat::Enum format = image.GetImageFormat();
+  const xiiEnum<xiiGALResourceFormat> format = image.GetImageFormat();
   const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
 
   const xiiUInt32 uiNumFaces        = image.GetNumFaces();

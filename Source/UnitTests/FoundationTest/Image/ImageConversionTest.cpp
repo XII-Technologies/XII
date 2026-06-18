@@ -13,7 +13,7 @@
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 
-static const xiiImageFormat::Enum defaultFormat = xiiImageFormat::R32G32B32A32_FLOAT;
+static const xiiEnum<xiiGALResourceFormat> defaultFormat = xiiImageFormat::R32G32B32A32_FLOAT;
 
 class xiiImageConversionTest : public xiiTestBaseClass
 {
@@ -32,7 +32,7 @@ private:
   {
     for (xiiUInt32 i = 0; i < xiiImageFormat::NUM_FORMATS; ++i)
     {
-      xiiImageFormat::Enum format = static_cast<xiiImageFormat::Enum>(i);
+      xiiEnum<xiiGALResourceFormat> format = static_cast<xiiEnum<xiiGALResourceFormat>>(i);
 
       const char* name = xiiImageFormat::GetName(format);
       XII_ASSERT_DEV(name != nullptr, "Missing format information for format {}", i);
@@ -51,7 +51,7 @@ private:
 
   virtual xiiTestAppRun RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvocationCount) override
   {
-    xiiImageFormat::Enum format = static_cast<xiiImageFormat::Enum>(iIdentifier);
+    xiiEnum<xiiGALResourceFormat> format = static_cast<xiiEnum<xiiGALResourceFormat>>(iIdentifier);
 
     bool isDecodable = xiiImageConversion::IsConvertible(format, defaultFormat);
 

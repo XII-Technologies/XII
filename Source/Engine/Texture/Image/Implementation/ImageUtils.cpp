@@ -9,7 +9,6 @@
 #include <Foundation/SimdMath/SimdVec4f.h>
 #include <Foundation/Time/Timestamp.h>
 #include <Texture/Image/ImageConversion.h>
-#include <Texture/Image/ImageEnums.h>
 #include <Texture/Image/ImageFilter.h>
 
 template <typename TYPE>
@@ -316,7 +315,7 @@ static void ApplyFunc(ImageType& inout_image, Func func)
 
 static void FindMinMax(const xiiImageView& image, xiiUInt8& out_uiMinRgb, xiiUInt8& out_uiMaxRgb, xiiUInt8& out_uiMinAlpha, xiiUInt8& out_uiMaxAlpha)
 {
-  xiiImageFormat::Enum imageFormat = image.GetImageFormat();
+  xiiEnum<xiiGALResourceFormat> imageFormat = image.GetImageFormat();
   XII_IGNORE_UNUSED(imageFormat);
   XII_ASSERT_DEV(xiiImageFormat::GetBitsPerChannel(imageFormat, xiiImageFormatChannel::R) == 8 && xiiImageFormat::GetDataType(imageFormat) == xiiImageFormatDataType::UNORM, "Only 8bpp unorm formats are supported in FindMinMax");
 
@@ -352,7 +351,7 @@ void xiiImageUtils::Normalize(xiiImage& inout_image, xiiUInt8& out_uiMinRgb, xii
 {
   XII_PROFILE_SCOPE("xiiImageUtils::Normalize");
 
-  xiiImageFormat::Enum imageFormat = inout_image.GetImageFormat();
+  xiiEnum<xiiGALResourceFormat> imageFormat = inout_image.GetImageFormat();
 
   XII_ASSERT_DEV(xiiImageFormat::GetBitsPerChannel(imageFormat, xiiImageFormatChannel::R) == 8 && xiiImageFormat::GetDataType(imageFormat) == xiiImageFormatDataType::UNORM, "Only 8bpp unorm formats are supported in NormalizeImage");
 
@@ -392,7 +391,7 @@ void xiiImageUtils::ExtractAlphaChannel(const xiiImageView& inputImage, xiiImage
 {
   XII_PROFILE_SCOPE("xiiImageUtils::ExtractAlphaChannel");
 
-  switch (xiiImageFormat::Enum imageFormat = inputImage.GetImageFormat())
+  switch (xiiEnum<xiiGALResourceFormat> imageFormat = inputImage.GetImageFormat())
   {
     case xiiImageFormat::R8G8B8A8_UNORM:
     case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
@@ -592,7 +591,7 @@ xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiIma
 
   xiiUInt32 startMipLevel = srcImgHeader.GetNumMipLevels() - uiNumMips;
 
-  xiiImageFormat::Enum format = srcImgHeader.GetImageFormat();
+  xiiEnum<xiiGALResourceFormat> format = srcImgHeader.GetImageFormat();
 
   if (xiiImageFormat::RequiresFirstLevelBlockAlignment(format))
   {
@@ -768,7 +767,7 @@ static void DownScaleFastLine(xiiUInt32 uiPixelStride, const xiiUInt8* pSrc, xii
 
 static void DownScaleFast(const xiiImageView& image, xiiImage& out_result, xiiUInt32 uiWidth, xiiUInt32 uiHeight)
 {
-  xiiImageFormat::Enum format = image.GetImageFormat();
+  xiiEnum<xiiGALResourceFormat> format = image.GetImageFormat();
 
   xiiUInt32 originalWidth    = image.GetWidth();
   xiiUInt32 originalHeight   = image.GetHeight();
@@ -924,7 +923,7 @@ xiiResult xiiImageUtils::Scale3D(const xiiImageView& source, xiiImage& ref_targe
     return XII_SUCCESS;
   }
 
-  const xiiImageFormat::Enum format = source.GetImageFormat();
+  const xiiEnum<xiiGALResourceFormat> format = source.GetImageFormat();
 
   const xiiUInt32 originalWidth    = source.GetWidth();
   const xiiUInt32 originalHeight   = source.GetHeight();

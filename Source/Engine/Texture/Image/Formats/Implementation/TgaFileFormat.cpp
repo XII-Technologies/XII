@@ -68,7 +68,7 @@ static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt3
 xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
-  xiiImageFormat::Enum compatibleFormats[] = {
+  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
     xiiImageFormat::R8G8B8A8_UNORM,
     xiiImageFormat::B8G8R8A8_UNORM,
     xiiImageFormat::B8G8R8X8_UNORM,
@@ -76,7 +76,7 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   };
 
   // Find a compatible format closest to the one the image currently has
-  xiiImageFormat::Enum format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
+  xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
   if (format == xiiImageFormat::UNKNOWN)
   {
@@ -342,14 +342,14 @@ static xiiResult ReadImageHeaderImpl(xiiStreamReader& inout_stream, xiiImageHead
   return XII_SUCCESS;
 }
 
-xiiResult xiiTgaFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiTgaFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImageDescription");
 
   TgaHeader tgaHeader;
-  return ReadImageHeaderImpl(inout_stream, ref_header, tgaHeader);
+  return ReadImageHeaderImpl(inout_stream, ref_description, tgaHeader);
 }
 
 xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
@@ -491,7 +491,9 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
             // Alpha
             if (uiBytesPerPixel == 4)
+            {
               pPixel[3] = uiBuffer[3];
+            }
           }
 
           ++iCurrentPixel;

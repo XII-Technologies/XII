@@ -120,7 +120,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
   {
     const xiiUInt32 uiBlockAlignedMipWidth = (uiMipWidth + (formatProperties.m_uiBlockWidth - 1)) & ~(formatProperties.m_uiBlockWidth - 1);
 
-    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "The block width must be a power of 2.");
     XII_ASSERT_DEV(box.m_vMax.x <= uiBlockAlignedMipWidth, "Region max X coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.x, uiBlockAlignedMipWidth);
     XII_ASSERT_DEV((box.m_vMin.x % formatProperties.m_uiBlockWidth) == 0, "For compressed formats, the region min X coordinate ({}) must be a multiple of the block width ({}).", box.m_vMin.x, formatProperties.m_uiBlockWidth);
     XII_ASSERT_DEV((box.m_vMax.x % formatProperties.m_uiBlockWidth) == 0 || box.m_vMax.x == uiMipWidth, "For compressed formats, the region max X coordinate ({}) must be a multiple of the block width ({}) or equal to the mip level ({}).", box.m_vMax.x, formatProperties.m_uiBlockWidth, uiMipWidth);
@@ -136,7 +136,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
     {
-      XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+      XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "The block height must be a power of 2.");
 
       const xiiUInt32 uiBlockAlignedMipHeight = (uiMipHeight + (formatProperties.m_uiBlockHeight - 1)) & ~(formatProperties.m_uiBlockHeight - 1);
 
@@ -154,7 +154,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
   {
     const xiiUInt32 uiMipDepth = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
 
-    XII_ASSERT_DEV(box.m_vMax.z <= uiMipDepth, "Region max Z coordinate ({}) is out of permitted range [0, {}].", uiMipDepth);
+    XII_ASSERT_DEV(box.m_vMax.z <= uiMipDepth, "Region max Z coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.z, uiMipDepth);
   }
   else
   {

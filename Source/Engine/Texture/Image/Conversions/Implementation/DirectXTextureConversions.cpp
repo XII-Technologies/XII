@@ -163,14 +163,12 @@ namespace
     // #  endif
 
     D3D_FEATURE_LEVEL fl;
-    HRESULT           hr = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels,
-                                                      _countof(featureLevels), D3D11_SDK_VERSION, &ref_device, &fl, nullptr);
+    HRESULT           hr = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels, _countof(featureLevels), D3D11_SDK_VERSION, &ref_device, &fl, nullptr);
 
     if (FAILED(hr) && (createDeviceFlags & D3D11_CREATE_DEVICE_DEBUG))
     {
       createDeviceFlags = createDeviceFlags & ~D3D11_CREATE_DEVICE_DEBUG;
-      hr                = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels,
-                                                     _countof(featureLevels), D3D11_SDK_VERSION, &ref_device, &fl, nullptr);
+      hr                = s_DynamicD3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags, featureLevels, _countof(featureLevels), D3D11_SDK_VERSION, &ref_device, &fl, nullptr);
     }
 
     if (SUCCEEDED(hr))
@@ -322,7 +320,7 @@ public:
     return DeviceAndConversionTable::getDeviceAndConversionTable()->getConvertors();
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiUInt32 targetWidth  = uiNumBlocksX * xiiImageFormat::GetBlockWidth(targetFormat);
     const xiiUInt32 targetHeight = uiNumBlocksY * xiiImageFormat::GetBlockHeight(targetFormat);

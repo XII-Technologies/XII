@@ -7,7 +7,8 @@
 class XII_TEXTURE_DLL xiiDdsFileFormat : public xiiImageFileFormat
 {
 public:
-  virtual xiiResult ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const override;
+  virtual xiiResult ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const override;
+
   virtual xiiResult ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const override;
   virtual xiiResult WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const override;
 

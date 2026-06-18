@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Containers/HybridArray.h>
-#include <Foundation/SimdMath/SimdFloat.h>
 #include <Texture/TextureDLL.h>
+
+#include <Foundation/SimdMath/SimdFloat.h>
 
 /// \brief Represents a function used for filtering an image.
 class XII_TEXTURE_DLL xiiImageFilter
@@ -17,7 +17,7 @@ public:
   xiiSimdFloat GetWidth() const;
 
 protected:
-  xiiImageFilter(float width);
+  xiiImageFilter(float fWidth);
 
 private:
   xiiSimdFloat m_fWidth;

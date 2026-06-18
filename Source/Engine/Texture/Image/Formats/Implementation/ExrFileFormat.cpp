@@ -62,7 +62,7 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
     return XII_FAILURE;
   }
 
-  xiiImageFormat::Enum imageFormat = xiiImageFormat::UNKNOWN;
+  xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormat::UNKNOWN;
 
   switch (ref_exrHeader.num_channels)
   {
@@ -165,11 +165,11 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
   return XII_SUCCESS;
 }
 
-xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiExrFileFormat::ReadImageDescription(xiiStreamReader& ref_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageDescription");
 
   EXRHeader exrHeader;
   InitEXRHeader(&exrHeader);
@@ -180,7 +180,7 @@ xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   XII_SCOPE_EXIT(FreeEXRImage(&exrImage));
 
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  return ReadImageData(ref_stream, fileBuffer, ref_header, exrHeader, exrImage);
+  return ReadImageData(ref_stream, fileBuffer, ref_description, exrHeader, exrImage);
 }
 
 static void CopyChannel(xiiUInt8* pDst, const xiiUInt8* pSrc, xiiUInt32 uiNumElements, xiiUInt32 uiElementSize, xiiUInt32 uiDstStride)

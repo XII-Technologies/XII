@@ -76,7 +76,7 @@ namespace
     }
     ref_fileBuffer.Clear();
 
-    xiiImageFormat::Enum format = xiiImageFormat::UNKNOWN;
+    xiiEnum<xiiGALResourceFormat> format = xiiImageFormat::UNKNOWN;
     switch (numComp)
     {
       case 1:
@@ -108,15 +108,15 @@ namespace
 
 } // namespace
 
-xiiResult xiiStbImageFileFormats::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiStbImageFileFormats::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImageDescription");
 
   bool                      isHDR = false;
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, ref_header, isHDR);
+  void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, ref_description, isHDR);
 
   if (sourceImageData == nullptr)
     return XII_FAILURE;
@@ -163,10 +163,10 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiIm
 
 xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
-  xiiImageFormat::Enum compatibleFormats[] = {xiiImageFormat::R8_UNORM, xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8B8A8_UNORM};
+  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {xiiImageFormat::R8_UNORM, xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8B8A8_UNORM};
 
   // Find a compatible format closest to the one the image currently has
-  xiiImageFormat::Enum format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
+  xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
   if (format == xiiImageFormat::UNKNOWN)
   {

@@ -10,7 +10,8 @@
 class XII_TEXTURE_DLL xiiExrFileFormat : public xiiImageFileFormat
 {
 public:
-  xiiResult ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const override;
+  xiiResult ReadImageDescription(xiiStreamReader& ref_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const override;
+
   xiiResult ReadImage(xiiStreamReader& ref_stream, xiiImage& ref_image, xiiStringView sFileExtension) const override;
   xiiResult WriteImage(xiiStreamWriter& ref_stream, const xiiImageView& image, xiiStringView sFileExtension) const override;
 

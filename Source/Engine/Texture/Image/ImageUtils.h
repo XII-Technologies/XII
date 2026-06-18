@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <Texture/TextureDLL.h>
+
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Math/Size.h>
 #include <Texture/Image/Image.h>

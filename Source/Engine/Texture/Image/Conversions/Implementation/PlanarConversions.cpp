@@ -41,7 +41,7 @@ struct xiiImageConversion_NV12_sRGB : public xiiImageConversionStepDeplanarize
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> source, xiiImage target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> source, xiiImage target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -103,7 +103,7 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);

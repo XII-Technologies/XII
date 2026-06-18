@@ -172,12 +172,12 @@ xiiUInt16 xiiCompressA1B5G5R5(xiiColorBaseUB color)
   return static_cast<xiiUInt16>((r << 11) | (g << 6) | (b << 1) | a);
 }
 
-template <xiiColorBaseUB (*decompressFunc)(xiiUInt16), xiiImageFormat::Enum templateSourceFormat>
+template <xiiColorBaseUB (*decompressFunc)(xiiUInt16), xiiEnum<xiiGALResourceFormat> templateSourceFormat>
 class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
 {
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
-    xiiImageFormat::Enum sourceFormatSrgb = xiiImageFormat::AsSrgb(templateSourceFormat);
+    xiiEnum<xiiGALResourceFormat> sourceFormatSrgb = xiiImageFormat::AsSrgb(templateSourceFormat);
     XII_ASSERT_DEV(sourceFormatSrgb != templateSourceFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateSourceFormat));
 
     static xiiImageConversionEntry supportedConversions[] = {
@@ -188,7 +188,7 @@ class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -212,12 +212,12 @@ class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
   }
 };
 
-template <xiiUInt16 (*compressFunc)(xiiColorBaseUB), xiiImageFormat::Enum templateTargetFormat>
+template <xiiUInt16 (*compressFunc)(xiiColorBaseUB), xiiEnum<xiiGALResourceFormat> templateTargetFormat>
 class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
 {
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
-    xiiImageFormat::Enum targetFormatSrgb = xiiImageFormat::AsSrgb(templateTargetFormat);
+    xiiEnum<xiiGALResourceFormat> targetFormatSrgb = xiiImageFormat::AsSrgb(templateTargetFormat);
     XII_ASSERT_DEV(targetFormatSrgb != templateTargetFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateTargetFormat));
 
     static xiiImageConversionEntry supportedConversions[] = {
@@ -228,7 +228,7 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -276,7 +276,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -365,7 +365,7 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -432,7 +432,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -526,7 +526,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -564,7 +564,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -604,7 +604,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -645,7 +645,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -686,7 +686,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -723,7 +723,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -761,7 +761,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -800,7 +800,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
@@ -840,7 +840,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -879,7 +879,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
@@ -921,7 +921,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -994,7 +994,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1091,7 +1091,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1142,7 +1142,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1278,7 +1278,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1420,7 +1420,7 @@ public:
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
     xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
@@ -1454,7 +1454,7 @@ template <typename T>
 class xiiImageConversion_Int_To_F32 : public xiiImageConversionStepLinear
 {
 public:
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 

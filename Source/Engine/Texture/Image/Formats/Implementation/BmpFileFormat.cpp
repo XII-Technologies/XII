@@ -110,7 +110,7 @@ struct xiiBmpBgrxQuad
 xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
-  xiiImageFormat::Enum compatibleFormats[] = {
+  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
     xiiImageFormat::B8G8R8X8_UNORM,
     xiiImageFormat::B8G8R8A8_UNORM,
     xiiImageFormat::B8G8R8_UNORM,
@@ -119,7 +119,7 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   };
 
   // Find a compatible format closest to the one the image currently has
-  xiiImageFormat::Enum format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
+  xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
   if (format == xiiImageFormat::UNKNOWN)
   {
@@ -354,7 +354,7 @@ namespace
     ref_uiBpp = ref_fileInfoHeader.m_bitCount;
 
     // Find target format to load the image
-    xiiImageFormat::Enum format = xiiImageFormat::UNKNOWN;
+    xiiEnum<xiiGALResourceFormat> format = xiiImageFormat::UNKNOWN;
 
     switch (ref_fileInfoHeader.m_compression)
     {
@@ -497,7 +497,7 @@ namespace
 
 } // namespace
 
-xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiBmpFileFormat::ReadImagedescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
@@ -509,7 +509,7 @@ xiiResult xiiBmpFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiIm
   xiiUInt32            uiBpp      = 0;
   xiiUInt32            uiDataSize = 0;
 
-  return ReadImageInfo(inout_stream, ref_header, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize);
+  return ReadImageInfo(inout_stream, ref_description, fileHeader, fileInfoHeader, bIndexed, bCompressed, uiBpp, uiDataSize);
 }
 
 xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const

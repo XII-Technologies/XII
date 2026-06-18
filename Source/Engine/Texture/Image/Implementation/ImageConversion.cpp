@@ -7,6 +7,12 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Image/ImageConversion.h>
 
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiImageConversionFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiImageConversionFlags::InPlace),
+XII_END_STATIC_REFLECTED_BITFLAGS;
+// clang-format on
+
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiImageConversionStep);
 
 namespace
@@ -51,8 +57,8 @@ namespace
     }
 
     const xiiImageConversionStep*        m_step         = nullptr;
-    xiiImageFormat::Enum                 m_sourceFormat = xiiImageFormat::UNKNOWN;
-    xiiImageFormat::Enum                 m_targetFormat = xiiImageFormat::UNKNOWN;
+    xiiEnum<xiiGALResourceFormat>                 m_sourceFormat = xiiImageFormat::UNKNOWN;
+    xiiEnum<xiiGALResourceFormat>                 m_targetFormat = xiiImageFormat::UNKNOWN;
     xiiBitflags<xiiImageConversionFlags> m_flags;
     float                                m_cost        = xiiMath::MaxValue<float>();
     xiiUInt32                            m_numChannels = 0;
@@ -100,7 +106,7 @@ namespace
   xiiHashTable<xiiUInt32, TableEntry> s_conversionTable;
   bool                                s_conversionTableValid = false;
 
-  constexpr xiiUInt32 MakeKey(xiiImageFormat::Enum a, xiiImageFormat::Enum b)
+  constexpr xiiUInt32 MakeKey(xiiEnum<xiiGALResourceFormat> a, xiiEnum<xiiGALResourceFormat> b)
   {
     return a * xiiImageFormat::NUM_FORMATS + b;
   }
@@ -160,7 +166,7 @@ xiiImageConversionStep::~xiiImageConversionStep()
   s_conversionTableValid = false;
 }
 
-xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, bool bSourceEqualsTarget, xiiHybridArray<xiiImageConversion::ConversionPathNode, 16>& out_path, xiiUInt32& out_uiNumScratchBuffers)
+xiiResult xiiImageConversion::BuildPath(xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, bool bSourceEqualsTarget, xiiHybridArray<xiiImageConversion::ConversionPathNode, 16>& out_path, xiiUInt32& out_uiNumScratchBuffers)
 {
   XII_LOCK(s_conversionTableLock);
 
@@ -185,7 +191,7 @@ xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiIm
     RebuildConversionTable();
   }
 
-  for (xiiImageFormat::Enum current = sourceFormat; current != targetFormat;)
+  for (xiiEnum<xiiGALResourceFormat> current = sourceFormat; current != targetFormat;)
   {
     xiiUInt32 currentTableIndex = MakeKey(current, targetFormat);
 
@@ -319,7 +325,7 @@ void xiiImageConversion::RebuildConversionTable()
 
   for (xiiUInt32 i = 0; i < xiiImageFormat::NUM_FORMATS; ++i)
   {
-    const xiiImageFormat::Enum format = static_cast<xiiImageFormat::Enum>(i);
+    const xiiEnum<xiiGALResourceFormat> format = static_cast<xiiEnum<xiiGALResourceFormat>>(i);
 
     // Add copy-conversion (from and to same format)
     s_conversionTable.Insert(MakeKey(format, format), TableEntry(nullptr, xiiImageConversionEntry(xiiImageConversionEntry(format, format, xiiImageConversionFlags::InPlace))));
@@ -335,7 +341,7 @@ void xiiImageConversion::RebuildConversionTable()
         continue;
       }
 
-      xiiUInt32 uiTableIndexIK = MakeKey(static_cast<xiiImageFormat::Enum>(i), static_cast<xiiImageFormat::Enum>(k));
+      xiiUInt32 uiTableIndexIK = MakeKey(static_cast<xiiEnum<xiiGALResourceFormat>>(i), static_cast<xiiEnum<xiiGALResourceFormat>>(k));
 
       TableEntry entryIK;
       if (!s_conversionTable.TryGetValue(uiTableIndexIK, entryIK))
@@ -350,8 +356,8 @@ void xiiImageConversion::RebuildConversionTable()
           continue;
         }
 
-        xiiUInt32 uiTableIndexIJ = MakeKey(static_cast<xiiImageFormat::Enum>(i), static_cast<xiiImageFormat::Enum>(j));
-        xiiUInt32 uiTableIndexKJ = MakeKey(static_cast<xiiImageFormat::Enum>(k), static_cast<xiiImageFormat::Enum>(j));
+        xiiUInt32 uiTableIndexIJ = MakeKey(static_cast<xiiEnum<xiiGALResourceFormat>>(i), static_cast<xiiEnum<xiiGALResourceFormat>>(j));
+        xiiUInt32 uiTableIndexKJ = MakeKey(static_cast<xiiEnum<xiiGALResourceFormat>>(k), static_cast<xiiEnum<xiiGALResourceFormat>>(j));
 
         TableEntry entryKJ;
         if (!s_conversionTable.TryGetValue(uiTableIndexKJ, entryKJ))
@@ -374,11 +380,11 @@ void xiiImageConversion::RebuildConversionTable()
   s_conversionTableValid = true;
 }
 
-xiiResult xiiImageConversion::Convert(const xiiImageView& source, xiiImage& ref_target, xiiImageFormat::Enum targetFormat)
+xiiResult xiiImageConversion::Convert(const xiiImageView& source, xiiImage& ref_target, xiiEnum<xiiGALResourceFormat> targetFormat)
 {
   XII_PROFILE_SCOPE("xiiImageConversion::Convert");
 
-  xiiImageFormat::Enum sourceFormat = source.GetImageFormat();
+  xiiEnum<xiiGALResourceFormat> sourceFormat = source.GetImageFormat();
 
   // Trivial copy
   if (sourceFormat == targetFormat)
@@ -428,7 +434,7 @@ xiiResult xiiImageConversion::Convert(const xiiImageView& source, xiiImage& ref_
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat)
+xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat)
 {
   if (uiNumElements == 0)
   {
@@ -512,7 +518,7 @@ xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlob
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pStep, const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum targetFormat)
+xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pStep, const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> targetFormat)
 {
   if (!pStep)
   {
@@ -520,7 +526,7 @@ xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pS
     return XII_SUCCESS;
   }
 
-  xiiImageFormat::Enum sourceFormat = source.GetImageFormat();
+  xiiEnum<xiiGALResourceFormat> sourceFormat = source.GetImageFormat();
 
   xiiImageHeader header = source.GetHeader();
   header.SetImageFormat(targetFormat);
@@ -553,7 +559,7 @@ xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pS
   }
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -612,7 +618,7 @@ xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& so
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -669,7 +675,7 @@ xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& sour
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -706,7 +712,7 @@ xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& s
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -743,7 +749,7 @@ xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& sou
   return XII_SUCCESS;
 }
 
-bool xiiImageConversion::IsConvertible(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat)
+bool xiiImageConversion::IsConvertible(xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat)
 {
   XII_LOCK(s_conversionTableLock);
 
@@ -756,7 +762,7 @@ bool xiiImageConversion::IsConvertible(xiiImageFormat::Enum sourceFormat, xiiIma
   return s_conversionTable.Contains(uiTableIndex);
 }
 
-xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(xiiImageFormat::Enum format, xiiArrayPtr<const xiiImageFormat::Enum> compatibleFormats)
+xiiEnum<xiiGALResourceFormat> xiiImageConversion::FindClosestCompatibleFormat(xiiEnum<xiiGALResourceFormat> format, xiiArrayPtr<const xiiEnum<xiiGALResourceFormat>> compatibleFormats)
 {
   XII_LOCK(s_conversionTableLock);
 
@@ -766,7 +772,7 @@ xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(xiiImageFor
   }
 
   TableEntry           bestEntry;
-  xiiImageFormat::Enum bestFormat = xiiImageFormat::UNKNOWN;
+  xiiEnum<xiiGALResourceFormat> bestFormat = xiiImageFormat::UNKNOWN;
 
   for (xiiUInt32 uiTargetIndex = 0; uiTargetIndex < xiiUInt32(compatibleFormats.GetCount()); uiTargetIndex++)
   {

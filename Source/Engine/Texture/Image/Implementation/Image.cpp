@@ -90,7 +90,7 @@ xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 ui
   header.SetNumArrayIndices(1);
 
   // Scale dimensions relative to the block size of the subformat
-  xiiImageFormat::Enum subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
+  xiiEnum<xiiGALResourceFormat> subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
   header.SetWidth(GetWidth(uiMipLevel) * xiiImageFormat::GetBlockWidth(subFormat) / xiiImageFormat::GetBlockWidth(m_Format, uiPlaneIndex));
   header.SetHeight(xiiImageFormat::GetBlockHeight(m_Format, 0) * xiiImageFormat::GetBlockHeight(subFormat) / xiiImageFormat::GetBlockHeight(m_Format, uiPlaneIndex));
   header.SetDepth(xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
@@ -106,7 +106,7 @@ xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 ui
   return xiiImageView(header, xiiConstByteBlobPtr(dataSlice.GetPtr(), dataSlice.GetCount()));
 }
 
-void xiiImageView::ReinterpretAs(xiiImageFormat::Enum format)
+void xiiImageView::ReinterpretAs(xiiEnum<xiiGALResourceFormat> format)
 {
   XII_ASSERT_DEBUG(xiiImageFormat::IsCompressed(format) == xiiImageFormat::IsCompressed(GetImageFormat()), "Cannot reinterpret compressed and non-compressed formats");
   XII_ASSERT_DEBUG(xiiImageFormat::GetBitsPerPixel(GetImageFormat()) == xiiImageFormat::GetBitsPerPixel(format), "Cannot reinterpret between formats of different sizes");
@@ -159,6 +159,7 @@ void xiiImageView::ValidateSubImageIndices(xiiUInt32 uiMipLevel, xiiUInt32 uiFac
 const xiiUInt64& xiiImageView::GetSubImageOffset(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const
 {
   ValidateSubImageIndices(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
+
   return m_SubImageOffsets[uiPlaneIndex + GetPlaneCount() * (uiMipLevel + m_uiNumMipLevels * (uiFace + m_uiNumFaces * uiArrayIndex))];
 }
 
@@ -324,7 +325,7 @@ xiiImageView xiiImageView::GetPlaneView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 
   header.SetNumArrayIndices(1);
 
   // Scale dimensions relative to the block size of the first plane which determines the "nominal" width, height and depth
-  xiiImageFormat::Enum subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
+  xiiEnum<xiiGALResourceFormat> subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
   header.SetWidth(GetWidth(uiMipLevel) * xiiImageFormat::GetBlockWidth(subFormat) / xiiImageFormat::GetBlockWidth(m_Format, uiPlaneIndex));
   header.SetHeight(GetHeight(uiMipLevel) * xiiImageFormat::GetBlockHeight(subFormat) / xiiImageFormat::GetBlockHeight(m_Format, uiPlaneIndex));
   header.SetDepth(GetDepth(uiMipLevel) * xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
@@ -362,7 +363,7 @@ xiiImageView xiiImageView::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 
   header.SetNumArrayIndices(1);
 
   // Scale dimensions relative to the block size of the first plane which determines the "nominal" width, height and depth
-  xiiImageFormat::Enum subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
+  xiiEnum<xiiGALResourceFormat> subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
   header.SetWidth(GetWidth(uiMipLevel) * xiiImageFormat::GetBlockWidth(subFormat) / xiiImageFormat::GetBlockWidth(m_Format, uiPlaneIndex));
   header.SetHeight(GetHeight(uiMipLevel) * xiiImageFormat::GetBlockHeight(subFormat) / xiiImageFormat::GetBlockHeight(m_Format, uiPlaneIndex));
   header.SetDepth(xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
