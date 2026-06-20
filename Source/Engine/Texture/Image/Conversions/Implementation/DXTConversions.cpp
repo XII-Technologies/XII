@@ -2837,28 +2837,30 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC1_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC1_UNORM_SRGB, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC1UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC1UNormalizedSRGB, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 elementsPerBlock = 16;
+    const xiiUInt32                        uiElementsPerBlock      = 16;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 sourceStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      xiiDecompressBlockBC1(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer), false);
+      xiiDecompressBlockBC1(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiColorBaseUB*>(pTargetPointer), false);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -2871,28 +2873,30 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC2_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC2_UNORM_SRGB, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC2UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC2UNormalizedSRGB, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 elementsPerBlock = 16;
+    const xiiUInt32                        uiElementsPerBlock      = 16;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 sourceStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer));
+      decompressBlock(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiColorBaseUB*>(pTargetPointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -2902,7 +2906,7 @@ public:
   {
     xiiDecompressBlockBC1(pSourcePointer + 8, pTargetPointer, true);
 
-    for (xiiUInt32 uiByteIdx = 0; uiByteIdx < 8; uiByteIdx++)
+    for (xiiUInt32 uiByteIdx = 0; uiByteIdx < 8; ++uiByteIdx)
     {
       xiiUInt8 uiIndices = pSourcePointer[uiByteIdx];
 
@@ -2918,28 +2922,30 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC3_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC3_UNORM_SRGB, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC3UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC3UNormalizedSRGB, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 elementsPerBlock = 16;
+    const xiiUInt32                        uiElementsPerBlock      = 16;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 sourceStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer));
+      decompressBlock(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiColorBaseUB*>(pTargetPointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -2958,35 +2964,37 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC4_UNORM, xiiImageFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC4_SNORM, xiiImageFormat::R8_SNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC4UNormalized, xiiGALResourceFormat::R8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC4SNormalized, xiiGALResourceFormat::R8SNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 elementsPerBlock = 16;
+    const xiiUInt32                        uiElementsPerBlock      = 16;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 sourceStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned
-    xiiUInt8 bias = 0;
-    if (xiiImageFormat::GetDataType(sourceFormat) == xiiImageFormatDataType::SNORM)
+    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned.
+    xiiUInt8 uiBias = 0U;
+    if (sourceFormatDescription.m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized)
     {
-      bias = 128;
+      uiBias = 128U;
     }
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiUInt8*>(targetPointer), bias);
+      decompressBlock(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiUInt8*>(pTargetPointer), uiBias);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -3004,35 +3012,37 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC5_UNORM, xiiImageFormat::R8G8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC5_SNORM, xiiImageFormat::R8G8_SNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC5UNormalized, xiiGALResourceFormat::RG8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC5SNormalized, xiiGALResourceFormat::RG8SNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 elementsPerBlock = 16;
+    const xiiUInt32                        uiElementsPerBlock      = 16;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 sourceStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = elementsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned
-    xiiUInt8 bias = 0;
-    if (xiiImageFormat::GetDataType(sourceFormat) == xiiImageFormatDataType::SNORM)
+    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned.
+    xiiUInt8 uiBias = 0U;
+    if (sourceFormatDescription.m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized)
     {
-      bias = 128;
+      uiBias = 128U;
     }
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; blockIndex++)
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      decompressBlock(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiUInt8*>(targetPointer), bias);
+      decompressBlock(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiUInt8*>(pTargetPointer), uiBias);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -3052,31 +3062,32 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC6H_UF16, xiiImageFormat::R16G16B16A16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC6H_SF16, xiiImageFormat::R16G16B16A16_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC6HUF16, xiiGALResourceFormat::RGBA16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC6HSF16, xiiGALResourceFormat::RGBA16Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 targetFormatByteSize = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
-    XII_ASSERT_DEV(targetFormatByteSize == sizeof(xiiColorLinear16f), "");
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const xiiUInt32 sourceStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    const xiiUInt32 targetStride = s_bc67NumPixelsPerBlock * targetFormatByteSize;
+    XII_ASSERT_DEV(targetFormatDescription.m_uiComponentSize == sizeof(xiiColorLinear16f), "Target format component size does not match expected size.");
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const xiiUInt32 uiSourceStride = s_bc67NumPixelsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    const xiiUInt32 uiTargetStride = s_bc67NumPixelsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    const bool isSourceFormatSigned = sourceFormat == xiiImageFormat::BC6H_SF16;
+    const void* pSourcePointer        = pSource.GetPtr();
+    void*       pTargetPointer        = pTarget.GetPtr();
+    const bool  bIsSourceFormatSigned = sourceFormat == xiiGALResourceFormat::BC6HSF16;
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; ++blockIndex)
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      xiiDecompressBlockBC6(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorLinear16f*>(targetPointer), isSourceFormatSigned);
+      xiiDecompressBlockBC6(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiColorLinear16f*>(pTargetPointer), bIsSourceFormatSigned);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -3089,25 +3100,29 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::BC7_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::BC7_UNORM_SRGB, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default)};
+      xiiImageConversionEntry(xiiGALResourceFormat::BC7UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::BC7UNormalizedSRGB, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
+    };
     return supportedConversions;
   }
 
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiBlockCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 sourceStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    const xiiUInt32 targetStride = s_bc67NumPixelsPerBlock * xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    xiiUInt32 uiSourceStride = s_bc67NumPixelsPerBlock * sourceFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiTargetStride = s_bc67NumPixelsPerBlock * targetFormatDescription.m_uiComponentSize;
 
-    for (xiiUInt32 blockIndex = 0; blockIndex < uiNumBlocks; ++blockIndex)
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
+
+    for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < uiBlockCount; ++uiBlockIndex)
     {
-      xiiDecompressBlockBC7(reinterpret_cast<const xiiUInt8*>(sourcePointer), reinterpret_cast<xiiColorBaseUB*>(targetPointer));
+      xiiDecompressBlockBC7(reinterpret_cast<const xiiUInt8*>(pSourcePointer), reinterpret_cast<xiiColorBaseUB*>(pTargetPointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -3120,54 +3135,54 @@ class xiiImageConversion_CompressBC4 : public xiiImageConversionStepCompressBloc
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8_UNORM, xiiImageFormat::BC4_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8_SNORM, xiiImageFormat::BC4_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UNORM, xiiImageFormat::BC4_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_SNORM, xiiImageFormat::BC4_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC4_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SNORM, xiiImageFormat::BC4_SNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8UNormalized, xiiGALResourceFormat::BC4UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8SNormalized, xiiGALResourceFormat::BC4SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UNormalized, xiiGALResourceFormat::BC4UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SNormalized, xiiGALResourceFormat::BC4SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC4UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::BC4SNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 stride   = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt64 rowPitch = xiiImageFormat::GetRowPitch(sourceFormat, 4 * numBlocksX);
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiUInt64                        uiRowPitch              = sourceFormatDescription.GetRowPitch(uiNumBlocksX * 4);
 
-    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned
-    xiiUInt8 bias = 0;
-    if (xiiImageFormat::GetDataType(sourceFormat) == xiiImageFormatDataType::SNORM)
+    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned.
+    xiiUInt8 uiBias = 0U;
+    if (sourceFormatDescription.m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized)
     {
-      bias = 128;
+      uiBias = 128U;
     }
 
-    for (xiiUInt32 blockY = 0; blockY < numBlocksY; ++blockY)
+    for (xiiUInt32 uiBlockY = 0; uiBlockY < uiNumBlocksY; ++uiBlockY)
     {
-      for (xiiUInt32 blockX = 0; blockX < numBlocksX; ++blockX)
+      for (xiiUInt32 uiBlockX = 0; uiBlockX < uiNumBlocksX; ++uiBlockX)
       {
         xiiUInt8 sourceBlock[16];
 
         for (xiiUInt32 y = 0; y < 4; ++y)
         {
-          const xiiUInt8* sourcePointer = static_cast<const xiiUInt8*>(source.GetPtr()) + (4 * blockY + y) * rowPitch;
+          const xiiUInt8* pSourcePointer = static_cast<const xiiUInt8*>(pSource.GetPtr()) + (4 * uiBlockY + y) * uiRowPitch;
 
           for (xiiUInt32 x = 0; x < 4; ++x)
           {
-            sourceBlock[4 * y + x] = sourcePointer[(x + 4 * blockX) * stride] + bias;
+            sourceBlock[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.m_uiComponentSize] + uiBias;
           }
         }
 
         xiiUInt32 a0, a1;
         findBestPaletteBC4(sourceBlock, a0, a1);
 
-        xiiUInt8* targetPointer = static_cast<xiiUInt8*>(target.GetPtr()) + (blockY * numBlocksX + blockX) * 8;
-        packBlockBC4(sourceBlock, a0, a1, targetPointer);
+        xiiUInt8* pTargetPointer = static_cast<xiiUInt8*>(pTarget.GetPtr()) + (uiBlockY * uiNumBlocksX + uiBlockX) * 8;
+        packBlockBC4(sourceBlock, a0, a1, pTargetPointer);
 
-        targetPointer[0] -= bias;
-        targetPointer[1] -= bias;
+        pTargetPointer[0] -= uiBias;
+        pTargetPointer[1] -= uiBias;
       }
     }
 
@@ -3180,66 +3195,66 @@ class xiiImageConversion_CompressBC5 : public xiiImageConversionStepCompressBloc
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UNORM, xiiImageFormat::BC5_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_SNORM, xiiImageFormat::BC5_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC5_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SNORM, xiiImageFormat::BC5_SNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UNormalized, xiiGALResourceFormat::BC5UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SNormalized, xiiGALResourceFormat::BC5SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC5UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::BC5SNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 stride   = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt64 rowPitch = xiiImageFormat::GetRowPitch(sourceFormat, 4 * numBlocksX);
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiUInt64                        uiRowPitch              = sourceFormatDescription.GetRowPitch(uiNumBlocksX * 4);
 
-    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned
-    xiiUInt8 bias = 0;
-    if (xiiImageFormat::GetDataType(sourceFormat) == xiiImageFormatDataType::SNORM)
+    // Bias to shift signed data into unsigned range so we can treat it the same as unsigned.
+    xiiUInt8 uiBias = 0U;
+    if (sourceFormatDescription.m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized)
     {
-      bias = 128;
+      uiBias = 128U;
     }
 
-    for (xiiUInt32 blockY = 0; blockY < numBlocksY; ++blockY)
+    for (xiiUInt32 uiBlockY = 0; uiBlockY < uiNumBlocksY; ++uiBlockY)
     {
-      for (xiiUInt32 blockX = 0; blockX < numBlocksX; ++blockX)
+      for (xiiUInt32 uiBlockX = 0; uiBlockX < uiNumBlocksX; ++uiBlockX)
       {
         xiiUInt8 sourceBlockR[16];
         xiiUInt8 sourceBlockG[16];
 
         for (xiiUInt32 y = 0; y < 4; ++y)
         {
-          const xiiUInt8* sourcePointer = static_cast<const xiiUInt8*>(source.GetPtr()) + (4 * blockY + y) * rowPitch;
+          const xiiUInt8* pSourcePointer = static_cast<const xiiUInt8*>(pSource.GetPtr()) + (4 * uiBlockY + y) * uiRowPitch;
 
           for (xiiUInt32 x = 0; x < 4; ++x)
           {
-            sourceBlockR[4 * y + x] = sourcePointer[(x + 4 * blockX) * stride + 0] + bias;
-            sourceBlockG[4 * y + x] = sourcePointer[(x + 4 * blockX) * stride + 1] + bias;
+            sourceBlockR[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.m_uiComponentSize] + uiBias;
+            sourceBlockG[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.m_uiComponentSize + 1] + uiBias;
           }
         }
 
-        xiiUInt8* targetPointer = static_cast<xiiUInt8*>(target.GetPtr()) + (blockY * numBlocksX + blockX) * 16;
+        xiiUInt8* pTargetPointer = static_cast<xiiUInt8*>(pTarget.GetPtr()) + (uiBlockY * uiNumBlocksX + uiBlockX) * 16;
 
         {
           xiiUInt32 a0, a1;
           findBestPaletteBC4(sourceBlockR, a0, a1);
-          packBlockBC4(sourceBlockR, a0, a1, targetPointer);
+          packBlockBC4(sourceBlockR, a0, a1, pTargetPointer);
 
-          // Undo biasing for signed formats by shifting palette upper and lower bound back into signed range
-          targetPointer[0] -= bias;
-          targetPointer[1] -= bias;
+          // Undo biasing for signed formats by shifting palette upper and lower bound back into signed range.
+          pTargetPointer[0] -= uiBias;
+          pTargetPointer[1] -= uiBias;
         }
 
         {
           xiiUInt32 a0, a1;
           findBestPaletteBC4(sourceBlockG, a0, a1);
-          packBlockBC4(sourceBlockG, a0, a1, targetPointer + 8);
+          packBlockBC4(sourceBlockG, a0, a1, pTargetPointer + 8);
 
-          // Undo biasing for signed formats by shifting palette upper and lower bound back into signed range
-          targetPointer[8] -= bias;
-          targetPointer[9] -= bias;
+          // Undo biasing for signed formats by shifting palette upper and lower bound back into signed range.
+          pTargetPointer[8] -= uiBias;
+          pTargetPointer[9] -= uiBias;
         }
       }
     }

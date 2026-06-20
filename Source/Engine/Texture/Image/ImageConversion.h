@@ -13,7 +13,7 @@ XII_DECLARE_FLAGS(xiiUInt8, xiiImageConversionFlags, InPlace);
 XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiImageConversionFlags);
 
 /// A structure describing the pairs of source/target format that may be converted using the conversion routine.
-struct xiiImageConversionEntry
+struct XII_TEXTURE_DLL xiiImageConversionEntry
 {
   xiiImageConversionEntry(xiiEnum<xiiGALResourceFormat> source, xiiEnum<xiiGALResourceFormat> target, xiiBitflags<xiiImageConversionFlags> flags, float fAdditionalPenalty = 0) :
     m_SourceFormat(source), m_TargetFormat(target), m_Flags(flags), m_fAdditionalPenalty(fAdditionalPenalty)
