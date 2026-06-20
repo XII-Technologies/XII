@@ -46,18 +46,18 @@ namespace xiiModelImporter
     return xiiQuat(value.x, value.y, value.z, value.w);
   }
 
-  float ConvertAssimpType(float value, bool bDummy /*= false*/)
+  float ConvertAssimpType(float fValue, bool bDummy /*= false*/)
   {
     XII_ASSERT_DEBUG(!bDummy, "not implemented");
 
-    return value;
+    return fValue;
   }
 
-  int ConvertAssimpType(int value, bool bDummy /*= false*/)
+  xiiInt32 ConvertAssimpType(xiiInt32 iValue, bool bDummy /*= false*/)
   {
     XII_ASSERT_DEBUG(!bDummy, "not implemented");
 
-    return value;
+    return iValue;
   }
 
 } // namespace xiiModelImporter
