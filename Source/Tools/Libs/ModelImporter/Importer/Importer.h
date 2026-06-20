@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <Foundation/Types/UniquePtr.h>
-#include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <ModelImporter/ModelImporterDLL.h>
+
+#include <Foundation/Types/UniquePtr.h>
 
 class xiiLogInterface;
 class xiiProgress;

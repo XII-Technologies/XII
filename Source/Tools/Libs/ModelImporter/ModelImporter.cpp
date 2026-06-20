@@ -7,9 +7,9 @@
 
 namespace xiiModelImporter
 {
-  xiiUniquePtr<Importer> RequestImporterForFileType(xiiStringView sFile)
+  xiiUniquePtr<Importer> RequestImporterForFileType(xiiStringView sFileName)
   {
-    if (sFile.HasExtension(".fbx") || sFile.HasExtension(".obj") || sFile.HasExtension(".gltf") || sFile.HasExtension(".glb") || sFile.HasExtension(".blend"))
+    if (sFileName.HasExtension(".fbx") || sFileName.HasExtension(".obj") || sFileName.HasExtension(".gltf") || sFileName.HasExtension(".glb") || sFileName.HasExtension(".stl") || sFileName.HasExtension(".ply"))
     {
       return XII_DEFAULT_NEW(ImporterAssimp);
     }

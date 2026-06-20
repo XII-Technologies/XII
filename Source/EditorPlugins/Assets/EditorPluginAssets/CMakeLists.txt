@@ -15,6 +15,7 @@ target_link_libraries(${PROJECT_NAME}
   SharedPluginAssets
   ModelImporter
   GameEngine
+  assimp
 )
 
 add_dependencies(${PROJECT_NAME}
@@ -23,7 +24,6 @@ add_dependencies(${PROJECT_NAME}
 )
 
 xii_link_target_qt(TARGET ${PROJECT_NAME} COMPONENTS Core Gui Widgets Svg)
-xii_link_target_assimp(${PROJECT_NAME})
 
 add_dependencies(${PROJECT_NAME} EnginePluginAssets)
 
