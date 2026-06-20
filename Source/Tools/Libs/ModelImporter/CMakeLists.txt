@@ -18,6 +18,5 @@ target_link_libraries(${PROJECT_NAME}
   mikktspace
   ozz
   meshoptimizer
+  assimp
 )
-
-xii_link_target_assimp(${PROJECT_NAME})

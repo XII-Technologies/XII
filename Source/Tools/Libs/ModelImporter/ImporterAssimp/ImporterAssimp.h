@@ -12,7 +12,7 @@ struct aiMesh;
 
 namespace xiiModelImporter
 {
-  class ImporterAssimp : public Importer
+  class XII_MODELIMPORTER2_DLL ImporterAssimp : public Importer
   {
   public:
     ImporterAssimp();
@@ -58,7 +58,7 @@ namespace xiiModelImporter
   extern xiiMat4  ConvertAssimpType(const aiMatrix4x4& value, bool bDummy = false);
   extern xiiVec3  ConvertAssimpType(const aiVector3D& value, bool bDummy = false);
   extern xiiQuat  ConvertAssimpType(const aiQuaternion& value, bool bDummy = false);
-  extern float    ConvertAssimpType(float value, bool bDummy = false);
-  extern int      ConvertAssimpType(int value, bool bDummy = false);
+  extern float    ConvertAssimpType(float fValue, bool bDummy = false);
+  extern xiiInt32 ConvertAssimpType(xiiInt32 iValue, bool bDummy = false);
 
 } // namespace xiiModelImporter

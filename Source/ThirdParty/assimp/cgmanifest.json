@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "component": {
+        "type": "git",
+        "git": {
+          "repositoryUrl": "https://github.com/assimp/assimp",
+          "commitHash": "f3e5f003b36b11d33b2abff40797fcac73b07892"
+        }
+      }
+    }
+  ],
+  "$schema": "https://json.schemastore.org/component-detection-manifest.json"
+}
