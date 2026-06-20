@@ -29,6 +29,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/code"
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/contrib"
+  "${CMAKE_CURRENT_SOURCE_DIR}/contrib/utf8cpp/source"
   "${CMAKE_CURRENT_SOURCE_DIR}/contrib/draco/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/contrib/zlib"
   "${CMAKE_CURRENT_SOURCE_DIR}/contrib/unzip"
