@@ -212,6 +212,8 @@ xiiUInt32 xiiImageFormatMappings::ToDxgiFormat(xiiGALResourceFormat::Enum format
       return DXGI_FORMAT_BC7_UNORM;
     case xiiGALResourceFormat::BC7UNormalizedSRGB:
       return DXGI_FORMAT_BC7_UNORM_SRGB;
+    case xiiGALResourceFormat::NV12:
+      return DXGI_FORMAT_NV12;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -422,6 +424,8 @@ xiiGALResourceFormat::Enum xiiImageFormatMappings::FromDxgiFormat(xiiUInt32 uiDx
       return xiiGALResourceFormat::BC7UNormalized;
     case DXGI_FORMAT_BC7_UNORM_SRGB:
       return xiiGALResourceFormat::BC7UNormalizedSRGB;
+    case DXGI_FORMAT_NV12:
+      return xiiGALResourceFormat::NV12;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

@@ -585,6 +585,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     BC7Typeless,                  ///< Four-component typeless block-compression format.
     BC7UNormalized,               ///< Four-component block-compression unsigned-normalized-integer format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
     BC7UNormalizedSRGB,           ///< Four-component block-compression unsigned-normalized-integer sRGB format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
+    NV12,                         ///< A multi-planar format that contains a 2D 8-bit luminance plane followed by a 2D 16-bit interleaved UV plane. This format is only supported for video decoding and cannot be used as a render target or shader resource.
 
     ENUM_COUNT,
 

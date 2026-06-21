@@ -419,6 +419,9 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALResourceF
     case xiiGALResourceFormat::BC7UNormalizedSRGB:
       return vk::Format::eBc7SrgbBlock;
 
+    case xiiGALResourceFormat::NV12:
+      return vk::Format::eG8B8R82Plane420Unorm;
+
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return vk::Format::eUndefined;
@@ -586,6 +589,9 @@ XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiVulkanTypeConversions::GetGALRes
       return xiiGALResourceFormat::BC7UNormalized;
     case vk::Format::eBc7SrgbBlock:
       return xiiGALResourceFormat::BC7UNormalizedSRGB;
+
+    case vk::Format::eG8B8R82Plane420Unorm:
+      return xiiGALResourceFormat::NV12;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

@@ -36,7 +36,7 @@ struct xiiImageConversion_NV12_sRGB : public xiiImageConversionStepDeplanarize
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::NV12, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::NV12, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -98,7 +98,7 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::NV12, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::NV12, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
