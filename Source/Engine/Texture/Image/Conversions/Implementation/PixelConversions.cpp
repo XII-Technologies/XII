@@ -938,9 +938,6 @@ public:
     const xiiUInt8* pSourcePointer = static_cast<const xiiUInt8*>(pSource.GetPtr());
     xiiUInt8*       pTargetPointer = static_cast<xiiUInt8*>(pTarget.GetPtr());
 
-    const xiiUInt32 uiSrcChannels = sourceFormatDescription.m_uiComponentCount; // 1 or 2
-    const xiiUInt32 uiDstChannels = targetFormatDescription.m_uiComponentCount; // always 4
-
     while (uiElementCount--)
     {
       // Copy existing channels (R or RG).
@@ -969,37 +966,46 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R32_FLOAT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32_FLOAT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_FLOAT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 uiSourceStride = xiiGALResourceFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 uiTargetStride = xiiGALResourceFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
     const float* pSourcePointer = static_cast<const float*>(static_cast<const void*>(pSource.GetPtr()));
     float*       pTargetPointer = static_cast<float*>(static_cast<void*>(pTarget.GetPtr()));
 
-    const xiiUInt32 numChannels = uiSourceStride / sizeof(float);
+    const xiiUInt32 uiSourceChannels = sourceFormatDescription.m_uiComponentCount; // 1, 2, or 3
+    const xiiUInt32 uiTargetChannels = targetFormatDescription.m_uiComponentCount; // always 4
 
-    while (uiElementCount)
+    while (uiElementCount--)
     {
-      // Copy existing channels
-      memcpy(pTargetPointer, pSourcePointer, numChannels * sizeof(float));
+      // Copy existing float channels.
+      for (xiiUInt32 i = 0; i < uiSourceChannels; ++i)
+      {
+        pTargetPointer[i] = pSourcePointer[i];
+      }
 
-      // Fill others with zero
-      memset(pTargetPointer + numChannels, 0, sizeof(float) * (3 - numChannels));
+      // Zero-fill missing channels (up to RGB).
+      for (xiiUInt32 i = uiSourceChannels; i < uiTargetChannels - 1; ++i)
+      {
+        pTargetPointer[i] = 0.0f;
+      }
 
-      // Set alpha to 1
+      // Set alpha = 1.0f.
       pTargetPointer[3] = 1.0f;
 
       pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
       pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
-      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -1012,76 +1018,69 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiGALResourceFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_UINT, xiiGALResourceFormat::R32G32B32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_UINT, xiiGALResourceFormat::R32G32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_UINT, xiiGALResourceFormat::R32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_SINT, xiiGALResourceFormat::R32G32B32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_SINT, xiiGALResourceFormat::R32G32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_SINT, xiiGALResourceFormat::R32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_FLOAT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_FLOAT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_UINT, xiiGALResourceFormat::R32G32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_UINT, xiiGALResourceFormat::R32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_SINT, xiiGALResourceFormat::R32G32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_SINT, xiiGALResourceFormat::R32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_FLOAT, xiiGALResourceFormat::R16G16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_FLOAT, xiiGALResourceFormat::R16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_UNORM, xiiGALResourceFormat::R16G16B16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_UNORM, xiiGALResourceFormat::R16G16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_UNORM, xiiGALResourceFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_UINT, xiiGALResourceFormat::R16G16_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_UINT, xiiGALResourceFormat::R16_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_SNORM, xiiGALResourceFormat::R16G16_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_SNORM, xiiGALResourceFormat::R16_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_SINT, xiiGALResourceFormat::R16G16_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_SINT, xiiGALResourceFormat::R16_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16_UNORM, xiiGALResourceFormat::R16G16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16_UNORM, xiiGALResourceFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32_FLOAT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32_UINT, xiiGALResourceFormat::R32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32_SINT, xiiGALResourceFormat::R32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::D32_FLOAT_S8X24_UINT, xiiGALResourceFormat::D32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UNORM, xiiGALResourceFormat::R8G8B8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UNORM, xiiGALResourceFormat::R8G8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UNORM, xiiGALResourceFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UNORM_SRGB, xiiGALResourceFormat::R8G8B8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UINT, xiiGALResourceFormat::R8G8_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UINT, xiiGALResourceFormat::R8_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_SNORM, xiiGALResourceFormat::R8G8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_SNORM, xiiGALResourceFormat::R8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_SINT, xiiGALResourceFormat::R8G8_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_SINT, xiiGALResourceFormat::R8_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::B8G8R8A8_UNORM, xiiGALResourceFormat::B8G8R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::B8G8R8A8_UNORM_SRGB, xiiGALResourceFormat::B8G8R8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::B8G8R8X8_UNORM, xiiGALResourceFormat::B8G8R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::B8G8R8X8_UNORM_SRGB, xiiGALResourceFormat::B8G8R8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_FLOAT, xiiGALResourceFormat::R16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_UNORM, xiiGALResourceFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_UINT, xiiGALResourceFormat::R16_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_SNORM, xiiGALResourceFormat::R16_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_SINT, xiiGALResourceFormat::R16_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8_UNORM, xiiGALResourceFormat::R8G8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8_UNORM, xiiGALResourceFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8_UNORM, xiiGALResourceFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8_UINT, xiiGALResourceFormat::R8_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8_SNORM, xiiGALResourceFormat::R8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8_SINT, xiiGALResourceFormat::R8_SINT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::RGB32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::RG32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::R32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::RGB32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::RG32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::R32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32UInt, xiiGALResourceFormat::RG32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32UInt, xiiGALResourceFormat::R32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32SInt, xiiGALResourceFormat::RG32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32SInt, xiiGALResourceFormat::R32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16Float, xiiGALResourceFormat::RG16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16Float, xiiGALResourceFormat::R16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UNormalized, xiiGALResourceFormat::RG16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UNormalized, xiiGALResourceFormat::R16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UInt, xiiGALResourceFormat::RG16UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UInt, xiiGALResourceFormat::R16UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SNormalized, xiiGALResourceFormat::RG16SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SNormalized, xiiGALResourceFormat::R16SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SInt, xiiGALResourceFormat::RG16SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SInt, xiiGALResourceFormat::R16SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32UInt, xiiGALResourceFormat::R32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32SInt, xiiGALResourceFormat::R32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::D32FloatS8X24UInt, xiiGALResourceFormat::D32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::R8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UInt, xiiGALResourceFormat::RG8UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UInt, xiiGALResourceFormat::R8UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::RG8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::R8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SInt, xiiGALResourceFormat::RG8SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SInt, xiiGALResourceFormat::R8SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16Float, xiiGALResourceFormat::R16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UNormalized, xiiGALResourceFormat::R16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UInt, xiiGALResourceFormat::R16UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SNormalized, xiiGALResourceFormat::R16SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SInt, xiiGALResourceFormat::R16SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UInt, xiiGALResourceFormat::R8UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SNormalized, xiiGALResourceFormat::R8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SInt, xiiGALResourceFormat::R8SInt, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 uiSourceStride = xiiGALResourceFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 uiTargetStride = xiiGALResourceFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
 
-    if (xiiGALResourceFormat::GetBitsPerPixel(sourceFormat) == 32 && xiiGALResourceFormat::GetBitsPerPixel(targetFormat) == 24)
+    bool bIsRGBA8 = !sourceFormatDescription.IsCompressed() && sourceFormatDescription.m_uiComponentSize == 1 && sourceFormatDescription.m_uiComponentCount == 4;
+    bool bIsRGB8  = !targetFormatDescription.IsCompressed() && targetFormatDescription.m_uiComponentSize == 1 && targetFormatDescription.m_uiComponentCount == 3;
+
+    if (bIsRGBA8 && bIsRGB8)
     {
       // Fast path for RGBA -> RGB
       while (uiElementCount)
@@ -1118,16 +1117,19 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiGALResourceFormat::R11G11B10_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_FLOAT, xiiGALResourceFormat::R11G11B10_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RG11B10Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::RG11B10Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 uiSourceStride = xiiGALResourceFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 uiTargetStride = xiiGALResourceFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -1253,8 +1255,8 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R11G11B10_FLOAT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R11G11B10_FLOAT, xiiGALResourceFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG11B10Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG11B10Float, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
     };
 
     return supportedConversions;
@@ -1262,8 +1264,11 @@ public:
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 uiSourceStride = xiiGALResourceFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 uiTargetStride = xiiGALResourceFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -1381,10 +1386,11 @@ public:
 
       if (uiTargetStride > sizeof(float) * 3)
       {
-        reinterpret_cast<float*>(pTargetPointer)[3] = 1.0f; // Write alpha channel
+        reinterpret_cast<float*>(pTargetPointer)[3] = 1.0f; // Write alpha channel.
       }
       pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
       pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
       uiElementCount--;
     }
 
@@ -1398,39 +1404,43 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R11G11B10_FLOAT, xiiGALResourceFormat::R16G16B16A16_FLOAT, xiiImageConversionFlags::Default)};
+      xiiImageConversionEntry(xiiGALResourceFormat::RG11B10Float, xiiGALResourceFormat::RGBA16Float, xiiImageConversionFlags::Default),
+    };
     return supportedConversions;
   }
 
   virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 uiSourceStride = xiiGALResourceFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 uiTargetStride = xiiGALResourceFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
 
     while (uiElementCount)
     {
-      xiiUInt16*       result    = reinterpret_cast<xiiUInt16*>(pTargetPointer);
-      const R11G11B10* r11g11b10 = reinterpret_cast<const R11G11B10*>(pSourcePointer);
+      xiiUInt16*       pResult    = reinterpret_cast<xiiUInt16*>(pTargetPointer);
+      const R11G11B10* pR11G11B10 = reinterpret_cast<const R11G11B10*>(pSourcePointer);
 
       // We can do a straight forward conversion here because R11G11B10 uses the same number of bits for the exponent as a half
       // This means that all special values, e.g. denormals, inf, nan map exactly.
-      result[0] = static_cast<xiiUInt16>((r11g11b10->p.xe << 10) | (r11g11b10->p.xm << 4));
-      result[1] = static_cast<xiiUInt16>((r11g11b10->p.ye << 10) | (r11g11b10->p.ym << 4));
-      result[2] = static_cast<xiiUInt16>((r11g11b10->p.ze << 10) | (r11g11b10->p.zm << 5));
-      result[3] = 0x3C00; // hex value of 1.0f as half
+      pResult[0] = static_cast<xiiUInt16>((pR11G11B10->p.xe << 10) | (pR11G11B10->p.xm << 4));
+      pResult[1] = static_cast<xiiUInt16>((pR11G11B10->p.ye << 10) | (pR11G11B10->p.ym << 4));
+      pResult[2] = static_cast<xiiUInt16>((pR11G11B10->p.ze << 10) | (pR11G11B10->p.zm << 5));
+      pResult[3] = 0x3C00; // Hex value of 1.0f as half.
 
       pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
       pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
       uiElementCount--;
     }
 
     return XII_SUCCESS;
   }
 };
-
 
 template <typename T>
 class xiiImageConversion_Int_To_F32 : public xiiImageConversionStepLinear
@@ -1470,9 +1480,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R8_UINT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8_UINT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_UINT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8UInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1484,9 +1494,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R8_SINT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8_SINT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R8G8B8A8_SINT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8SInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1498,9 +1508,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R16_UINT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_UINT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_UINT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16UInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1512,9 +1522,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R16_SINT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16_SINT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R16G16B16A16_SINT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16SInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1526,10 +1536,10 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R32_UINT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32_UINT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_UINT, xiiGALResourceFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_UINT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32UInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32UInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32UInt, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1541,27 +1551,22 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::R32_SINT, xiiGALResourceFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32_SINT, xiiGALResourceFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32_SINT, xiiGALResourceFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::R32G32B32A32_SINT, xiiGALResourceFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32SInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32SInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32SInt, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 };
 
 
-#define ADD_16BPP_CONVERSION(format)                                                                                                             \
-  static xiiImageConversionStep_Decompress16bpp<xiiDecompress##format, xiiGALResourceFormat::format##_UNORM> s_conversion_xiiDecompress##format; \
-  static xiiImageConversionStep_Compress16bpp<xiiCompress##format, xiiGALResourceFormat::format##_UNORM>     s_conversion_xiiCompress##format
+#define ADD_16BPP_CONVERSION(format)                                                                                                                  \
+  static xiiImageConversionStep_Decompress16bpp<xiiDecompress##format, xiiGALResourceFormat::format##UNormalized> s_conversion_xiiDecompress##format; \
+  static xiiImageConversionStep_Compress16bpp<xiiCompress##format, xiiGALResourceFormat::format##UNormalized>     s_conversion_xiiCompress##format
 
-ADD_16BPP_CONVERSION(A4B4G4R4);
-ADD_16BPP_CONVERSION(B4G4R4A4);
 ADD_16BPP_CONVERSION(B5G6R5);
-ADD_16BPP_CONVERSION(B5G5R5X1);
 ADD_16BPP_CONVERSION(B5G5R5A1);
-ADD_16BPP_CONVERSION(X1B5G5R5);
-ADD_16BPP_CONVERSION(A1B5G5R5);
 
 XII_STATICLINK_FORCE
 static xiiImageSwizzleConversion32_2103 s_conversion_swizzle2103;
