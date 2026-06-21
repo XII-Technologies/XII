@@ -281,13 +281,13 @@ namespace
   };
 
   xiiImageConversionEntry DeviceAndConversionTable::s_sourceConversions[s_numConversions] = {
-    xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::BC6H_UF16, xiiImageConversionFlags::Default),
+    xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::BC6HUF16, xiiImageConversionFlags::Default),
 
-    xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC1_UNORM, xiiImageConversionFlags::Default),
-    xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC7_UNORM, xiiImageConversionFlags::Default),
+    xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC1UNormalized, xiiImageConversionFlags::Default),
+    xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC7UNormalized, xiiImageConversionFlags::Default),
 
-    xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC1_UNORM_SRGB, xiiImageConversionFlags::Default),
-    xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC7_UNORM_SRGB, xiiImageConversionFlags::Default),
+    xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BC1UNormalizedSRGB, xiiImageConversionFlags::Default),
+    xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BC7UNormalizedSRGB, xiiImageConversionFlags::Default),
   };
 
   bool                     DeviceAndConversionTable::s_bDeviceAndTableInitialized = false;
@@ -320,26 +320,29 @@ public:
     return DeviceAndConversionTable::getDeviceAndConversionTable()->getConvertors();
   }
 
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    const xiiUInt32 targetWidth  = uiNumBlocksX * xiiImageFormat::GetBlockWidth(targetFormat);
-    const xiiUInt32 targetHeight = uiNumBlocksY * xiiImageFormat::GetBlockHeight(targetFormat);
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    Image srcImg;
-    srcImg.width      = targetWidth;
-    srcImg.height     = targetHeight;
-    srcImg.rowPitch   = static_cast<size_t>(xiiImageFormat::GetRowPitch(sourceFormat, targetWidth));
-    srcImg.slicePitch = static_cast<size_t>(xiiImageFormat::GetDepthPitch(sourceFormat, targetWidth, targetHeight));
+    const xiiUInt32 uiTargetWidth  = uiNumBlocksX * sourceFormatDescription.GetBlockWidth();
+    const xiiUInt32 uiTargetHeight = uiNumBlocksY * sourceFormatDescription.GetBlockHeight();
+
+    Image sourceImage;
+    sourceImage.width      = uiTargetWidth;
+    sourceImage.height     = uiTargetHeight;
+    sourceImage.rowPitch   = static_cast<size_t>(sourceFormatDescription.GetRowPitch(uiTargetWidth));
+    sourceImage.slicePitch = static_cast<size_t>(sourceFormatDescription.GetSlicePitch(uiTargetWidth, uiTargetHeight));
 
     // We don't trust anyone to handle sRGB correctly, so pretend we always want to compress linear -> linear even when it's actually sRGB -> sRGB.
-    srcImg.format = (DXGI_FORMAT)xiiImageFormatMappings::ToDxgiFormat(xiiImageFormat::AsLinear(sourceFormat));
-    srcImg.pixels = (uint8_t*)static_cast<const void*>(source.GetPtr());
+    sourceImage.format = (DXGI_FORMAT)xiiImageFormatMappings::ToDxgiFormat(xiiGALResourceFormat::AsLinear(sourceFormat));
+    sourceImage.pixels = (uint8_t*)static_cast<const void*>(pSource.GetPtr());
 
     ScratchImage dxSrcImage;
-    if (FAILED(dxSrcImage.InitializeFromImage(srcImg)))
+    if (FAILED(dxSrcImage.InitializeFromImage(sourceImage)))
       return XII_FAILURE;
 
-    const DXGI_FORMAT dxgiTargetFormat = (DXGI_FORMAT)xiiImageFormatMappings::ToDxgiFormat(xiiImageFormat::AsLinear(targetFormat));
+    const DXGI_FORMAT dxgiTargetFormat = (DXGI_FORMAT)xiiImageFormatMappings::ToDxgiFormat(xiiGALResourceFormat::AsLinear(targetFormat));
 
     ScratchImage dxDstImage;
 
@@ -350,8 +353,7 @@ public:
       ID3D11Device* pD3dDevice                    = deviceAndConversionTableScope->getDevice();
       if (pD3dDevice != nullptr)
       {
-        if (SUCCEEDED(Compress(pD3dDevice, dxSrcImage.GetImages(), dxSrcImage.GetImageCount(), dxSrcImage.GetMetadata(), dxgiTargetFormat,
-                               TEX_COMPRESS_PARALLEL, 1.0f, dxDstImage)))
+        if (SUCCEEDED(Compress(pD3dDevice, dxSrcImage.GetImages(), dxSrcImage.GetImageCount(), dxSrcImage.GetMetadata(), dxgiTargetFormat, TEX_COMPRESS_PARALLEL, 1.0f, dxDstImage)))
         {
           // Not all formats can be compressed on the GPU. Fall back to CPU in case GPU compression fails.
           bCompressionDone = true;
@@ -361,16 +363,14 @@ public:
 
     if (!bCompressionDone)
     {
-      if (SUCCEEDED(Compress(
-            dxSrcImage.GetImages(), dxSrcImage.GetImageCount(), dxSrcImage.GetMetadata(), dxgiTargetFormat, TEX_COMPRESS_PARALLEL, 1.0f, dxDstImage)))
+      if (SUCCEEDED(Compress(dxSrcImage.GetImages(), dxSrcImage.GetImageCount(), dxSrcImage.GetMetadata(), dxgiTargetFormat, TEX_COMPRESS_PARALLEL, 1.0f, dxDstImage)))
       {
         bCompressionDone = true;
       }
     }
     if (!bCompressionDone)
     {
-      if (SUCCEEDED(Compress(
-            dxSrcImage.GetImages(), dxSrcImage.GetImageCount(), dxSrcImage.GetMetadata(), dxgiTargetFormat, TEX_COMPRESS_DEFAULT, 1.0f, dxDstImage)))
+      if (SUCCEEDED(Compress(dxSrcImage.GetImages(), dxSrcImage.GetImageCount(), dxSrcImage.GetMetadata(), dxgiTargetFormat, TEX_COMPRESS_DEFAULT, 1.0f, dxDstImage)))
       {
         bCompressionDone = true;
       }
@@ -379,7 +379,7 @@ public:
     if (!bCompressionDone)
       return XII_FAILURE;
 
-    target.CopyFrom(xiiConstByteBlobPtr(dxDstImage.GetPixels(), static_cast<xiiUInt32>(dxDstImage.GetPixelsSize())));
+    pTarget.CopyFrom(xiiConstByteBlobPtr(dxDstImage.GetPixels(), static_cast<xiiUInt32>(dxDstImage.GetPixelsSize())));
 
     return XII_SUCCESS;
   }
