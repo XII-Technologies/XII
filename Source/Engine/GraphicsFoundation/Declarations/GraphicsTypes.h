@@ -623,6 +623,30 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
         return format;
     }
   }
+
+  /// \brief Returns the sRGB version of the given format if it exists, otherwise returns the given format.
+  XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsSrgb(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case RGBA8UNormalized:
+        return RGBA8UNormalizedSRGB;
+      case BGRA8UNormalized:
+        return BGRA8UNormalizedSRGB;
+      case BGRX8UNormalized:
+        return BGRX8UNormalizedSRGB;
+      case BC1UNormalized:
+        return BC1UNormalizedSRGB;
+      case BC2UNormalized:
+        return BC2UNormalizedSRGB;
+      case BC3UNormalized:
+        return BC3UNormalizedSRGB;
+      case BC7UNormalized:
+        return BC7UNormalizedSRGB;
+      default:
+        return format;
+    }
+  }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormat);
