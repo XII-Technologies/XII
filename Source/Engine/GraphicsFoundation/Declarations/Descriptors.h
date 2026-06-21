@@ -368,19 +368,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
   XII_ALWAYS_INLINE bool IsCompressed() const { return m_ComponentType == xiiGALResourceFormatComponentType::Compressed; }
 
   /// \brief Returns the number of bytes per texel (non-compressed) or per block (compressed).
-  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const {   return m_uiComponentSize * (IsCompressed() ? 1 : m_uiComponentCount); }
+  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (IsCompressed() ? 1 : m_uiComponentCount); }
 
   /// \brief Returns the width of a compression block (4 for BC formats).
-  XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth() const {   return IsCompressed() ? m_uiBlockWidth : 1; }
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth() const { return IsCompressed() ? m_uiBlockWidth : 1; }
 
   /// \brief Returns the height of a compression block (4 for BC formats).
-  XII_ALWAYS_INLINE xiiUInt32 GetBlockHeight() const {   return IsCompressed() ? m_uiBlockHeight : 1; }
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockHeight() const { return IsCompressed() ? m_uiBlockHeight : 1; }
 
   /// \brief Returns how many blocks are needed horizontally for a given width.
-  XII_ALWAYS_INLINE xiiUInt32 GetBlockCountX(xiiUInt32 uiWidth) const {   return (uiWidth + GetBlockWidth() - 1) / GetBlockWidth(); }
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockCountX(xiiUInt32 uiWidth) const { return (uiWidth + GetBlockWidth() - 1) / GetBlockWidth(); }
 
   /// \brief Returns how many blocks are needed vertically for a given height.
-  XII_ALWAYS_INLINE xiiUInt32 GetBlockCountY(xiiUInt32 uiHeight) const {   return (uiHeight + GetBlockHeight() - 1) / GetBlockHeight(); }
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockCountY(xiiUInt32 uiHeight) const { return (uiHeight + GetBlockHeight() - 1) / GetBlockHeight(); }
 
   /// \brief Returns the number of bytes in one row of texels or blocks.
   XII_ALWAYS_INLINE xiiUInt32 GetRowPitch(xiiUInt32 uiWidth) const
@@ -393,16 +393,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
   }
 
   /// \brief Returns the number of bytes in one 2D slice (height * rowPitch).
-  XII_ALWAYS_INLINE xiiUInt64 GetSlicePitch(xiiUInt32 uiWidth, xiiUInt32 uiHeight) const {   return GetRowPitch(uiWidth) * (IsCompressed() ? GetBlockCountY(uiHeight) : uiHeight); }
+  XII_ALWAYS_INLINE xiiUInt64 GetSlicePitch(xiiUInt32 uiWidth, xiiUInt32 uiHeight) const { return GetRowPitch(uiWidth) * (IsCompressed() ? GetBlockCountY(uiHeight) : uiHeight); }
 
   /// \brief Returns the number of texels per block (16 for BC1–BC5).
-  XII_ALWAYS_INLINE xiiUInt32 GetTexelsPerBlock() const {   return GetBlockWidth() * GetBlockHeight(); }
+  XII_ALWAYS_INLINE xiiUInt32 GetTexelsPerBlock() const { return GetBlockWidth() * GetBlockHeight(); }
 
   /// \brief Returns true if the format is typeless.
-  XII_ALWAYS_INLINE bool IsTypeless() const {   return m_bIsTypeless; }
+  XII_ALWAYS_INLINE bool IsTypeless() const { return m_bIsTypeless; }
 
   /// \brief Returns true if the format is UNorm or SNorm.
-  XII_ALWAYS_INLINE bool IsNormalized() const {   return m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalized || m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized; }
+  XII_ALWAYS_INLINE bool IsNormalized() const { return m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalized || m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized; }
 };
 
 /// \brief This describes the external memory description.

@@ -599,6 +599,30 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
 
   /// \brief Returns whether the given texture format is a sRGB format.
   XII_ALWAYS_INLINE static bool IsSrgb(xiiGALResourceFormat::Enum format) { return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB; }
+
+  /// \brief Returns the linear (non-sRGB) version of the given format if it exists, otherwise returns the given format.
+  XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsLinear(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case RGBA8UNormalizedSRGB:
+        return RGBA8UNormalized;
+      case BGRA8UNormalizedSRGB:
+        return BGRA8UNormalized;
+      case BGRX8UNormalizedSRGB:
+        return BGRX8UNormalized;
+      case BC1UNormalizedSRGB:
+        return BC1UNormalized;
+      case BC2UNormalizedSRGB:
+        return BC2UNormalized;
+      case BC3UNormalizedSRGB:
+        return BC3UNormalized;
+      case BC7UNormalizedSRGB:
+        return BC7UNormalized;
+      default:
+        return format;
+    }
+  }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormat);
