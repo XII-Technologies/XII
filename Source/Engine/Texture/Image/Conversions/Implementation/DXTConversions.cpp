@@ -2849,8 +2849,8 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -2885,8 +2885,8 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -2934,8 +2934,8 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -2976,8 +2976,8 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -3024,8 +3024,8 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiSourceStride = uiElementsPerBlock * sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = uiElementsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -3073,10 +3073,10 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    XII_ASSERT_DEV(targetFormatDescription.m_uiComponentSize == sizeof(xiiColorLinear16f), "Target format component size does not match expected size.");
+    XII_ASSERT_DEV(targetFormatDescription.GetElementSize() == sizeof(xiiColorLinear16f), "Target format component size does not match expected size.");
 
-    const xiiUInt32 uiSourceStride = s_bc67NumPixelsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    const xiiUInt32 uiTargetStride = s_bc67NumPixelsPerBlock * targetFormatDescription.m_uiComponentSize;
+    const xiiUInt32 uiSourceStride = s_bc67NumPixelsPerBlock * sourceFormatDescription.GetElementSize();
+    const xiiUInt32 uiTargetStride = s_bc67NumPixelsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer        = pSource.GetPtr();
     void*       pTargetPointer        = pTarget.GetPtr();
@@ -3111,8 +3111,8 @@ public:
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    xiiUInt32 uiSourceStride = s_bc67NumPixelsPerBlock * sourceFormatDescription.m_uiComponentSize;
-    xiiUInt32 uiTargetStride = s_bc67NumPixelsPerBlock * targetFormatDescription.m_uiComponentSize;
+    xiiUInt32 uiSourceStride = s_bc67NumPixelsPerBlock * sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = s_bc67NumPixelsPerBlock * targetFormatDescription.GetElementSize();
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -3171,7 +3171,7 @@ class xiiImageConversion_CompressBC4 : public xiiImageConversionStepCompressBloc
 
           for (xiiUInt32 x = 0; x < 4; ++x)
           {
-            sourceBlock[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.m_uiComponentSize] + uiBias;
+            sourceBlock[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.GetElementSize()] + uiBias;
           }
         }
 
@@ -3230,8 +3230,8 @@ class xiiImageConversion_CompressBC5 : public xiiImageConversionStepCompressBloc
 
           for (xiiUInt32 x = 0; x < 4; ++x)
           {
-            sourceBlockR[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.m_uiComponentSize] + uiBias;
-            sourceBlockG[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.m_uiComponentSize + 1] + uiBias;
+            sourceBlockR[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.GetElementSize()] + uiBias;
+            sourceBlockG[4 * y + x] = pSourcePointer[(x + 4 * uiBlockX) * sourceFormatDescription.GetElementSize() + 1] + uiBias;
           }
         }
 
