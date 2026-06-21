@@ -111,19 +111,19 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
   xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
-    xiiImageFormat::B8G8R8X8_UNORM,
-    xiiImageFormat::B8G8R8A8_UNORM,
-    xiiImageFormat::B8G8R8_UNORM,
-    xiiImageFormat::B5G5R5X1_UNORM,
-    xiiImageFormat::B5G6R5_UNORM,
+    xiiGALResourceFormat::B8G8R8X8_UNORM,
+    xiiGALResourceFormat::B8G8R8A8_UNORM,
+    xiiGALResourceFormat::B8G8R8_UNORM,
+    xiiGALResourceFormat::B5G5R5X1_UNORM,
+    xiiGALResourceFormat::B5G6R5_UNORM,
   };
 
   // Find a compatible format closest to the one the image currently has
   xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
-  if (format == xiiImageFormat::UNKNOWN)
+  if (format == xiiGALResourceFormat::UNKNOWN)
   {
-    xiiLog::Error("No conversion from format '{0}' to a format suitable for BMP files known.", xiiImageFormat::GetName(image.GetImageFormat()));
+    xiiLog::Error("No conversion from format '{0}' to a format suitable for BMP files known.", xiiGALResourceFormat::GetName(image.GetImageFormat()));
     return XII_FAILURE;
   }
 
@@ -156,7 +156,7 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   fileInfoHeader.m_width    = image.GetWidth(0);
   fileInfoHeader.m_height   = uiHeight;
   fileInfoHeader.m_planes   = 1;
-  fileInfoHeader.m_bitCount = static_cast<xiiUInt16>(xiiImageFormat::GetBitsPerPixel(format));
+  fileInfoHeader.m_bitCount = static_cast<xiiUInt16>(xiiGALResourceFormat::GetBitsPerPixel(format));
 
   fileInfoHeader.m_sizeImage = 0; // Can be zero unless we store the data compressed
 
@@ -172,18 +172,18 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
   switch (format)
   {
-    case xiiImageFormat::B8G8R8X8_UNORM:
-    case xiiImageFormat::B5G5R5X1_UNORM:
-    case xiiImageFormat::B8G8R8_UNORM:
+    case xiiGALResourceFormat::B8G8R8X8_UNORM:
+    case xiiGALResourceFormat::B5G5R5X1_UNORM:
+    case xiiGALResourceFormat::B8G8R8_UNORM:
       fileInfoHeader.m_compression = RGB;
       break;
 
-    case xiiImageFormat::B8G8R8A8_UNORM:
+    case xiiGALResourceFormat::B8G8R8A8_UNORM:
       fileInfoHeader.m_compression = BITFIELDS;
       uiHeaderVersion              = 4;
       break;
 
-    case xiiImageFormat::B5G6R5_UNORM:
+    case xiiGALResourceFormat::B5G6R5_UNORM:
       fileInfoHeader.m_compression = BITFIELDS;
       bWriteColorMask              = true;
       break;
@@ -235,10 +235,10 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     xiiBmpFileInfoHeaderV4 fileInfoHeaderV4;
     memset(&fileInfoHeaderV4, 0, sizeof(fileInfoHeaderV4));
 
-    fileInfoHeaderV4.m_redMask   = xiiImageFormat::GetRedMask(format);
-    fileInfoHeaderV4.m_greenMask = xiiImageFormat::GetGreenMask(format);
-    fileInfoHeaderV4.m_blueMask  = xiiImageFormat::GetBlueMask(format);
-    fileInfoHeaderV4.m_alphaMask = xiiImageFormat::GetAlphaMask(format);
+    fileInfoHeaderV4.m_redMask   = xiiGALResourceFormat::GetRedMask(format);
+    fileInfoHeaderV4.m_greenMask = xiiGALResourceFormat::GetGreenMask(format);
+    fileInfoHeaderV4.m_blueMask  = xiiGALResourceFormat::GetBlueMask(format);
+    fileInfoHeaderV4.m_alphaMask = xiiGALResourceFormat::GetAlphaMask(format);
 
     if (inout_stream.WriteBytes(&fileInfoHeaderV4, sizeof(fileInfoHeaderV4)) != XII_SUCCESS)
     {
@@ -256,9 +256,9 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     } colorMask;
 
 
-    colorMask.m_red   = xiiImageFormat::GetRedMask(format);
-    colorMask.m_green = xiiImageFormat::GetGreenMask(format);
-    colorMask.m_blue  = xiiImageFormat::GetBlueMask(format);
+    colorMask.m_red   = xiiGALResourceFormat::GetRedMask(format);
+    colorMask.m_green = xiiGALResourceFormat::GetGreenMask(format);
+    colorMask.m_blue  = xiiGALResourceFormat::GetBlueMask(format);
 
     if (inout_stream.WriteBytes(&colorMask, sizeof(colorMask)) != XII_SUCCESS)
     {
@@ -354,7 +354,7 @@ namespace
     ref_uiBpp = ref_fileInfoHeader.m_bitCount;
 
     // Find target format to load the image
-    xiiEnum<xiiGALResourceFormat> format = xiiImageFormat::UNKNOWN;
+    xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::UNKNOWN;
 
     switch (ref_fileInfoHeader.m_compression)
     {
@@ -368,19 +368,19 @@ namespace
             ref_bIndexed = true;
 
             // We always decompress indexed to BGRX, since the palette is specified in this format
-            format = xiiImageFormat::B8G8R8X8_UNORM;
+            format = xiiGALResourceFormat::B8G8R8X8_UNORM;
             break;
 
           case 16:
-            format = xiiImageFormat::B5G5R5X1_UNORM;
+            format = xiiGALResourceFormat::B5G5R5X1_UNORM;
             break;
 
           case 24:
-            format = xiiImageFormat::B8G8R8_UNORM;
+            format = xiiGALResourceFormat::B8G8R8_UNORM;
             break;
 
           case 32:
-            format = xiiImageFormat::B8G8R8X8_UNORM;
+            format = xiiGALResourceFormat::B8G8R8X8_UNORM;
         }
         break;
 
@@ -406,12 +406,12 @@ namespace
                 return XII_FAILURE;
               }
 
-              format = xiiImageFormat::FromPixelMask(colorMask.m_red, colorMask.m_green, colorMask.m_blue, 0, ref_uiBpp);
+              format = xiiGALResourceFormat::FromPixelMask(colorMask.m_red, colorMask.m_green, colorMask.m_blue, 0, ref_uiBpp);
             }
             else
             {
               // For header version four and higher, the color masks are part of the header
-              format = xiiImageFormat::FromPixelMask(fileInfoHeaderV4.m_redMask, fileInfoHeaderV4.m_greenMask, fileInfoHeaderV4.m_blueMask, fileInfoHeaderV4.m_alphaMask, ref_uiBpp);
+              format = xiiGALResourceFormat::FromPixelMask(fileInfoHeaderV4.m_redMask, fileInfoHeaderV4.m_greenMask, fileInfoHeaderV4.m_blueMask, fileInfoHeaderV4.m_alphaMask, ref_uiBpp);
             }
 
             break;
@@ -423,7 +423,7 @@ namespace
         {
           ref_bIndexed    = true;
           ref_bCompressed = true;
-          format          = xiiImageFormat::B8G8R8X8_UNORM;
+          format          = xiiGALResourceFormat::B8G8R8X8_UNORM;
         }
         break;
 
@@ -432,7 +432,7 @@ namespace
         {
           ref_bIndexed    = true;
           ref_bCompressed = true;
-          format          = xiiImageFormat::B8G8R8X8_UNORM;
+          format          = xiiGALResourceFormat::B8G8R8X8_UNORM;
         }
         break;
 
@@ -440,7 +440,7 @@ namespace
         XII_ASSERT_NOT_IMPLEMENTED;
     }
 
-    if (format == xiiImageFormat::UNKNOWN)
+    if (format == xiiGALResourceFormat::UNKNOWN)
     {
       xiiLog::Error("Unknown or unsupported BMP encoding.");
       return XII_FAILURE;
@@ -729,10 +729,10 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   else
   {
     // Format must match the number of bits in the file
-    if (xiiImageFormat::GetBitsPerPixel(header.GetImageFormat()) != uiBpp)
+    if (xiiGALResourceFormat::GetBitsPerPixel(header.GetImageFormat()) != uiBpp)
     {
       xiiLog::Error("The number of bits per pixel specified in the file ({0}) does not match the expected value of {1} for the format '{2}'.",
-                    uiBpp, xiiImageFormat::GetBitsPerPixel(header.GetImageFormat()), xiiImageFormat::GetName(header.GetImageFormat()));
+                    uiBpp, xiiGALResourceFormat::GetBitsPerPixel(header.GetImageFormat()), xiiGALResourceFormat::GetName(header.GetImageFormat()));
       return XII_FAILURE;
     }
 
