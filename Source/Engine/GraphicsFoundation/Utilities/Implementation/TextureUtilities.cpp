@@ -155,6 +155,8 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalized,     16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalizedSRGB, 16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
 
+    FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::NV12, 0, 0, xiiGALResourceFormatComponentType::Undefined, true, 1, 1);
+
     // clang-format on
 
 #undef FILL_TEXTURE_FORMAT_INFO
@@ -285,8 +287,6 @@ public:
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::RG8BG8UNormalized,        RG8BG8UNormalized,    RG8BG8UNormalized,    Unknown, RG8BG8UNormalized);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::GR8GB8UNormalized,        GR8GB8UNormalized,    GR8GB8UNormalized,    Unknown, GR8GB8UNormalized);
 
-    // http://www.g-truc.net/post-0335.html
-    // http://renderingpipeline.com/2012/07/texture-compression/
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC1Typeless,              BC1UNormalizedSRGB, Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC1UNormalized,           BC1UNormalized,     Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC1UNormalizedSRGB,       BC1UNormalizedSRGB, Unknown, Unknown, Unknown);
