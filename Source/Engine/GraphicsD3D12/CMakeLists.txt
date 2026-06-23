@@ -12,8 +12,10 @@ xii_create_target(LIBRARY ${PROJECT_NAME})
 # xii_enable_strict_warnings(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
-  PRIVATE
+  PUBLIC
   GraphicsFoundation
+
+  PRIVATE
   DirectX-Headers
   D3D12MemoryAllocator
   d3d12.lib

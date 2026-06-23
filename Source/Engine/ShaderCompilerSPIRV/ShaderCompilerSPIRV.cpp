@@ -12,7 +12,8 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <d3dcompiler.h>
 #endif
-#include <dxc/dxcapi.h>
+
+#include <dxcapi.h>
 
 /// \brief Smart COM pointer to automatically manage AddRef/Release.
 template <typename T>
