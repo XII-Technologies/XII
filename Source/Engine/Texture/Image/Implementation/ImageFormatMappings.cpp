@@ -4,7 +4,7 @@
 
 #include <Texture/Image/Formats/ImageFormatMappings.h>
 
-#include <DirectX-Headers/include/directx/dxgiformat.h>
+#include <directx/dxgiformat.h>
 
 #define MAKE_FOURCC(a, b, c, d) (a) | ((b) << 8) | ((c) << 16) | ((d) << 24)
 
