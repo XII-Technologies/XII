@@ -468,6 +468,7 @@ xiiGALResourceFormat::Enum xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc
 {
   switch (uiFourCc)
   {
+    // BC / DXT Compressed Formats.
     case MAKE_FOURCC('D', 'X', 'T', '1'):
       return xiiGALResourceFormat::BC1UNormalized;
 
@@ -487,28 +488,66 @@ xiiGALResourceFormat::Enum xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc
     case MAKE_FOURCC('B', 'C', '5', 'U'):
       return xiiGALResourceFormat::BC5UNormalized;
 
-    // old legacy DirectX formats
+#if 0
+    // Packed YUV Formats (Single-plane).
+    case MAKE_FOURCC('U', 'Y', 'V', 'Y'): // UYVY 4:2:2 packed
+      return xiiGALResourceFormat::UYVY;
+
+    case MAKE_FOURCC('Y', 'U', 'Y', '2'): // YUY2 4:2:2 packed
+      return xiiGALResourceFormat::YUY2;
+
+    case MAKE_FOURCC('A', 'Y', 'U', 'V'): // AYUV 4:4:4 packed
+      return xiiGALResourceFormat::AYUV;
+
+    // Planar YUV Formats (3-plane).
+    case MAKE_FOURCC('I', '4', '2', '0'): // I420 = Y + U + V (4:2:0)
+    case MAKE_FOURCC('I', 'Y', 'U', 'V'): // IYUV = same as I420
+      return xiiGALResourceFormat::I420;
+
+    case MAKE_FOURCC('Y', 'V', '1', '2'): // YV12 = Y + V + U (4:2:0)
+      return xiiGALResourceFormat::YV12;
+#endif
+
+    // Multi-planar YUV Formats (2-plane).
+    case MAKE_FOURCC('N', 'V', '1', '2'): // NV12 = Y + interleaved UV
+      return xiiGALResourceFormat::NV12;
+
+    case MAKE_FOURCC('P', '0', '1', '0'): // P010 = 10-bit YUV420
+      return xiiGALResourceFormat::P010;
+
+    case MAKE_FOURCC('P', '0', '1', '6'): // P016 = 16-bit YUV420
+      return xiiGALResourceFormat::P016;
+
+#if 0
+    // High-bit-depth YUV formats (2-plane or 3-plane).
+    case MAKE_FOURCC('P', '2', '1', '0'): // P210 = YUV422 10-bit
+      return xiiGALResourceFormat::P210;
+
+    case MAKE_FOURCC('P', '2', '1', '6'): // P216 = YUV422 16-bit
+      return xiiGALResourceFormat::P216;
+
+    case MAKE_FOURCC('P', '4', '1', '0'): // P410 = YUV444 10-bit
+      return xiiGALResourceFormat::P410;
+
+    case MAKE_FOURCC('P', '4', '1', '6'): // P416 = YUV444 16-bit
+      return xiiGALResourceFormat::P416;
+#endif
+
+    // Old legacy DirectX formats.
     case 116: // D3DFMT_A32B32G32R32F
       return xiiGALResourceFormat::RGBA32Float;
-
     case 115: // D3DFMT_G32R32F
       return xiiGALResourceFormat::RG32Float;
-
     case 114: // D3DFMT_R32F
       return xiiGALResourceFormat::R32Float;
-
     case 113: // D3DFMT_A16B16G16R16F
       return xiiGALResourceFormat::RGBA16Float;
-
     case 112: // D3DFMT_G16R16F
       return xiiGALResourceFormat::RG16Float;
-
     case 111: // D3DFMT_R16F
       return xiiGALResourceFormat::R16Float;
-
     case 110: // D3DFMT_Q16W16V16U16
       return xiiGALResourceFormat::RGBA16SNormalized;
-
     case 36: // D3DFMT_A16B16G16R16
       return xiiGALResourceFormat::RGBA16UNormalized;
 
