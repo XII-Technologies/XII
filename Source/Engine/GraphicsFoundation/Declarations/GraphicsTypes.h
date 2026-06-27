@@ -585,7 +585,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     BC7Typeless,                  ///< Four-component typeless block-compression format.
     BC7UNormalized,               ///< Four-component block-compression unsigned-normalized-integer format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
     BC7UNormalizedSRGB,           ///< Four-component block-compression unsigned-normalized-integer sRGB format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
-    NV12,                         ///< A multi-planar format that contains a 2D 8-bit luminance plane followed by a 2D 16-bit interleaved UV plane. This format is only supported for video decoding and cannot be used as a render target or shader resource.
+    NV12,                         ///< A multi-planar YUV 4:2:0 format with an 8-bit Y (luminance) plane followed by an interleaved 8-bit-per-channel UV plane at half width and half height. Common hardware decode output. Not usable as a render target, but can be sampled as a shader resource.
+    P010,                         ///< A multi-planar YUV 4:2:0 format with a 10-bit Y plane (stored in 16 bits per sample) followed by an interleaved 10-bit-per-channel UV plane (stored in 16 bits per channel) at half resolution. Used for HDR video. Not usable as a render target, but can be sampled as a shader resource.
+    P016,                         ///< A multi-planar YUV 4:2:0 format with a 16-bit Y plane followed by an interleaved 16-bit-per-channel UV plane at half resolution. Used for high-quality video pipelines. Not usable as a render target, but can be sampled as a shader resource.
 
     ENUM_COUNT,
 
@@ -600,6 +602,52 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
 
   /// \brief Returns whether the given texture format is a sRGB format.
   XII_ALWAYS_INLINE static bool IsSrgb(xiiGALResourceFormat::Enum format) { return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB; }
+
+  /// \brief Returns true if the given texture format is a typeless format, otherwise returns false.
+  XII_ALWAYS_INLINE static bool IsTypeless(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case RGBA32Typeless:
+      case RGB32Typeless:
+      case RGBA16Typeless:
+      case RG32Typeless:
+      case R32G8X24Typeless:
+      case RGB10A2Typeless:
+      case RGBA8Typeless:
+      case RG16Typeless:
+      case R32Typeless:
+      case R24G8Typeless:
+      case RG8Typeless:
+      case R16Typeless:
+      case R8Typeless:
+      case BC1Typeless:
+      case BC2Typeless:
+      case BC3Typeless:
+      case BC4Typeless:
+      case BC5Typeless:
+      case BGRA8Typeless:
+      case BGRX8Typeless:
+      case BC6HTypeless:
+      case BC7Typeless:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  XII_ALWAYS_INLINE static bool IsMultiplanar(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case NV12:
+      case P010:
+      case P016:
+        return true;
+      default:
+        return false;
+    }
+  }
 
   /// \brief Returns the linear (non-sRGB) version of the given format if it exists, otherwise returns the given format.
   XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsLinear(xiiGALResourceFormat::Enum format)

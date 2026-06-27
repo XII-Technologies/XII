@@ -42,9 +42,14 @@ public:
   /// \param format - The texture format for which to provide the information.
   ///
   /// \return A const reference to the xiiGALResourceFormatDescription structure containing the texture format description.
-  ///
-  /// \remarks This method must be externally synchronized.
   [[nodiscard]] static const xiiGALResourceFormatDescription& GetResourceFormatProperties(xiiEnum<xiiGALResourceFormat> format);
+
+  /// \brief This returns the multi-planar format information for a particular format.
+  ///
+  /// \param format - The texture format for which to provide the information.
+  ///
+  /// \return A const reference to the xiiGALMultiPlanarFormatDescription structure containing the multi-planar format description.
+  [[nodiscard]] static const xiiGALMultiPlanarFormatDescription& GetMultiPlanarFormatProperties(xiiEnum<xiiGALResourceFormat> format);
 
   /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
   [[nodiscard]] static const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount);

@@ -155,8 +155,6 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalized,     16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalizedSRGB, 16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
 
-    FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::NV12, 0, 0, xiiGALResourceFormatComponentType::Undefined, true, 1, 1);
-
     // clang-format on
 
 #undef FILL_TEXTURE_FORMAT_INFO
@@ -164,7 +162,14 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     for (xiiUInt32 i = xiiGALResourceFormat::Unknown; i < xiiGALResourceFormat::ENUM_COUNT; ++i)
     {
-      XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized format.");
+      if (!xiiGALResourceFormat::IsMultiplanar(static_cast<xiiGALResourceFormat::Enum>(i)))
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized single-plane format.");
+      }
+      else
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == xiiGALResourceFormat::Unknown, "Multi-planar formats must not be initialized in xiiGALResourceFormatDescription.");
+      }
     }
 #endif
 
@@ -173,12 +178,123 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
 
   if (format >= xiiGALResourceFormat::Unknown && format < xiiGALResourceFormat::ENUM_COUNT)
   {
-    const auto& description = formatDescriptions[format];
-    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected format.");
+    // Multi-planar formats must NOT be looked up in this descriptor.
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      XII_ASSERT_DEV(false, "Multi-planar format {} cannot be retrieved from xiiGALResourceFormatDescription. Use the multi-plane descriptor instead.", xiiArgEnum(format));
+    }
+
+    // Single-plane formats must be initialized correctly.
+    const xiiGALResourceFormatDescription& description = formatDescriptions[format];
+    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected or uninitialized single-plane format {0}.", xiiArgEnum(format));
+
     return description;
   }
 
-  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed rage [0, {1}].", format.GetValue(), 0, xiiGALResourceFormat::ENUM_COUNT - 1);
+  // Out-of-range format.
+  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed range [0, {1}].", xiiArgEnum(format), xiiGALResourceFormat::ENUM_COUNT - 1);
+
+  return formatDescriptions[xiiGALResourceFormat::Unknown];
+}
+
+const xiiGALMultiPlanarFormatDescription& xiiGALTextureUtilities::GetMultiPlanarFormatProperties(xiiEnum<xiiGALResourceFormat> format)
+{
+  static xiiGALMultiPlanarFormatDescription formatDescriptions[xiiGALResourceFormat::ENUM_COUNT];
+  static bool                               s_bIsInitialized = false;
+
+  // Note that this implementation is thread safe. Even if multiple threads call the function, the data may be initialized multiple times but the result will be the same.
+  if (!s_bIsInitialized)
+  {
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::NV12];
+      description.m_Format                            = xiiGALResourceFormat::NV12;
+
+      // Plane 0: Y (full resolution).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R8UNormalized;
+      plane0.m_uiBytesPerElement                        = 1;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half resolution, interleaved).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG8UNormalized;
+      plane1.m_uiBytesPerElement                        = 2;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 0.5f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P010];
+      description.m_Format                            = xiiGALResourceFormat::P010;
+
+      // Plane 0: Y (full resolution, 10-bit stored in 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half resolution, 10-bit stored in 16-bit per channel).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG16UNormalized;
+      plane1.m_uiBytesPerElement                        = 4;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 0.5f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P016];
+      description.m_Format                            = xiiGALResourceFormat::P016;
+
+      // Plane 0: Y (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half resolution, 16-bit per channel).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG16UNormalized;
+      plane1.m_uiBytesPerElement                        = 4;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 0.5f;
+    }
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    for (xiiUInt32 i = xiiGALResourceFormat::Unknown; i < xiiGALResourceFormat::ENUM_COUNT; ++i)
+    {
+      if (xiiGALResourceFormat::IsMultiplanar(static_cast<xiiGALResourceFormat::Enum>(i)))
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized multi-plane format.");
+      }
+      else
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == xiiGALResourceFormat::Unknown, "Single-plane formats must not be initialized in xiiGALMultiPlanarFormatDescription.");
+      }
+    }
+#endif
+
+    s_bIsInitialized = true;
+  }
+
+  if (format >= xiiGALResourceFormat::Unknown && format < xiiGALResourceFormat::ENUM_COUNT)
+  {
+    // Single-plane formats must NOT be looked up in this descriptor.
+    if (!xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      XII_ASSERT_DEV(false, "Single-plane format {} cannot be retrieved from xiiGALMultiPlanarFormatDescription. Use the single-plane descriptor instead.", xiiArgEnum(format));
+    }
+
+    // Multi-planar formats must be initialized correctly.
+    const xiiGALMultiPlanarFormatDescription& description = formatDescriptions[format];
+    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected or uninitialized multi-planar format {0}.", xiiArgEnum(format));
+
+    return description;
+  }
+
+  // Out-of-range format.
+  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed range [0, {1}].", xiiArgEnum(format), xiiGALResourceFormat::ENUM_COUNT - 1);
+
   return formatDescriptions[xiiGALResourceFormat::Unknown];
 }
 
@@ -352,7 +468,7 @@ public:
               return xiiGALResourceFormat::Unknown;
 
             default:
-              XII_REPORT_FAILURE("Unexpected texture view type");
+              XII_REPORT_FAILURE("Unexpected texture view type {}.", xiiArgEnum(xiiEnum<xiiGALTextureViewType>(viewType)));
               return xiiGALResourceFormat::Unknown;
           }
           static_assert(xiiGALTextureViewType::ENUM_COUNT == 6U, "Please handle the new view type in the switch above, if necessary.");
