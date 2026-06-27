@@ -266,6 +266,7 @@ const xiiGALMultiPlanarFormatDescription& xiiGALTextureUtilities::GetMultiPlanar
       if (xiiGALResourceFormat::IsMultiplanar(static_cast<xiiGALResourceFormat::Enum>(i)))
       {
         XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized multi-plane format.");
+        XII_ASSERT_DEV(formatDescriptions[i].IsValid(), "Encountered an invalid multi-plane format ({}).", xiiArgEnum(formatDescriptions[i].m_Format));
       }
       else
       {
