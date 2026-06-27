@@ -418,10 +418,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     float                         m_fHeightFactor     = 1.0f;                          ///< Height scaling relative to full resolution (0.5 for chroma).
   };
 
+  /// \brief Returns the number of planes in this multi-planar format.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneCount() const { return m_Planes.GetCount(); }
 
+  /// \brief Returns true if the specified plane index is valid.
   XII_ALWAYS_INLINE bool HasPlane(xiiUInt32 uiPlane) const { return uiPlane < m_Planes.GetCount(); }
 
+  /// \brief Returns the description of the specified plane.
   XII_ALWAYS_INLINE const Plane& GetPlane(xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -429,6 +432,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return m_Planes[uiPlane];
   }
 
+  /// \brief Returns the width of the specified plane, given the full resolution width.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneWidth(xiiUInt32 uiFullWidth, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -436,6 +440,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return static_cast<xiiUInt32>(uiFullWidth * m_Planes[uiPlane].m_fWidthFactor);
   }
 
+  /// \brief Returns the height of the specified plane, given the full resolution height.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneHeight(xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -443,6 +448,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return static_cast<xiiUInt32>(uiFullHeight * m_Planes[uiPlane].m_fHeightFactor);
   }
 
+  /// \brief Returns the row pitch (in bytes) of the specified plane, given the full resolution width.
   XII_ALWAYS_INLINE xiiUInt32 GetPlaneRowPitch(xiiUInt32 uiFullWidth, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -453,6 +459,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return uiWidth * p.m_uiBytesPerElement;
   }
 
+  /// \brief Returns the slice pitch (in bytes) of the specified plane, given the full resolution width and height.
   XII_ALWAYS_INLINE xiiUInt64 GetPlaneSlicePitch( xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
@@ -462,6 +469,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return static_cast<xiiUInt64>(GetPlaneRowPitch(uiFullWidth, uiPlane)) * uiHeight;
   }
 
+  /// \brief Returns true if the multi-planar format description is valid.
   XII_ALWAYS_INLINE bool IsValid() const
   {
     if (!xiiGALResourceFormat::IsMultiplanar(m_Format))
@@ -482,6 +490,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
     return true;
   }
 
+  /// \brief Returns the total size (in bytes) of all planes, given the full resolution width and height.
   XII_ALWAYS_INLINE xiiUInt64 GetTotalSize( xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight) const
   {
     xiiUInt64 uiTotalSize = 0ULL;

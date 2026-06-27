@@ -636,6 +636,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     }
   }
 
+  /// \brief Returns true if the given texture format is a multi-planar format, otherwise returns false.
   XII_ALWAYS_INLINE static bool IsMultiplanar(xiiGALResourceFormat::Enum format)
   {
     switch (format)
