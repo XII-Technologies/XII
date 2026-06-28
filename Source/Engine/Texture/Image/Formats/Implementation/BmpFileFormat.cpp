@@ -497,11 +497,11 @@ namespace
 
 } // namespace
 
-xiiResult xiiBmpFileFormat::ReadImagedescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
+xiiResult xiiBmpFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImage");
+  XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImageDescription");
 
   xiiBmpFileHeader     fileHeader;
   xiiBmpFileInfoHeader fileInfoHeader;
@@ -698,7 +698,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
     }
     else
     {
-      xiiDynamicArray<xiiUInt8> indexedData;
+      xiiTemporaryArray<xiiUInt8> indexedData;
       indexedData.SetCountUninitialized(uiDataSize);
       if (inout_stream.ReadBytes(&indexedData[0], uiDataSize) != uiDataSize)
       {

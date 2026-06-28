@@ -48,44 +48,44 @@ struct xiiImageConversion_NV12_sRGB : public xiiImageConversionStepDeplanarize
 
     for (xiiUInt32 y = 0; y < uiNumPixelsY; y += 2)
     {
-      const xiiUInt8* luma0  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
-      const xiiUInt8* luma1  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
-      const xiiUInt8* chroma = source[1].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y / 2);
+      const xiiUInt8* pLuma0  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
+      const xiiUInt8* pLuma1  = source[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
+      const xiiUInt8* pChroma = source[1].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y / 2);
 
-      xiiUInt8* rgba0 = target.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
-      xiiUInt8* rgba1 = target.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
+      xiiUInt8* pRGBA0 = target.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
+      xiiUInt8* pRGBA1 = target.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
 
       for (xiiUInt32 x = 0; x < uiNumPixelsX; x += 2)
       {
-        xiiVec3I32 p00 = YUV2RGB(xiiVec3I32(luma0[0], chroma[0], chroma[1]));
-        xiiVec3I32 p01 = YUV2RGB(xiiVec3I32(luma0[1], chroma[0], chroma[1]));
-        xiiVec3I32 p10 = YUV2RGB(xiiVec3I32(luma1[0], chroma[0], chroma[1]));
-        xiiVec3I32 p11 = YUV2RGB(xiiVec3I32(luma1[1], chroma[0], chroma[1]));
+        xiiVec3I32 p00 = YUV2RGB(xiiVec3I32(pLuma0[0], pChroma[0], pChroma[1]));
+        xiiVec3I32 p01 = YUV2RGB(xiiVec3I32(pLuma0[1], pChroma[0], pChroma[1]));
+        xiiVec3I32 p10 = YUV2RGB(xiiVec3I32(pLuma1[0], pChroma[0], pChroma[1]));
+        xiiVec3I32 p11 = YUV2RGB(xiiVec3I32(pLuma1[1], pChroma[0], pChroma[1]));
 
-        rgba0[0] = static_cast<xiiUInt8>(p00.x);
-        rgba0[1] = static_cast<xiiUInt8>(p00.y);
-        rgba0[2] = static_cast<xiiUInt8>(p00.z);
-        rgba0[3] = static_cast<xiiUInt8>(0xff);
-        rgba0[4] = static_cast<xiiUInt8>(p01.x);
-        rgba0[5] = static_cast<xiiUInt8>(p01.y);
-        rgba0[6] = static_cast<xiiUInt8>(p01.z);
-        rgba0[7] = static_cast<xiiUInt8>(0xff);
+        pRGBA0[0] = static_cast<xiiUInt8>(p00.x);
+        pRGBA0[1] = static_cast<xiiUInt8>(p00.y);
+        pRGBA0[2] = static_cast<xiiUInt8>(p00.z);
+        pRGBA0[3] = static_cast<xiiUInt8>(0xff);
+        pRGBA0[4] = static_cast<xiiUInt8>(p01.x);
+        pRGBA0[5] = static_cast<xiiUInt8>(p01.y);
+        pRGBA0[6] = static_cast<xiiUInt8>(p01.z);
+        pRGBA0[7] = static_cast<xiiUInt8>(0xff);
 
-        rgba1[0] = static_cast<xiiUInt8>(p10.x);
-        rgba1[1] = static_cast<xiiUInt8>(p10.y);
-        rgba1[2] = static_cast<xiiUInt8>(p10.z);
-        rgba1[3] = static_cast<xiiUInt8>(0xff);
-        rgba1[4] = static_cast<xiiUInt8>(p11.x);
-        rgba1[5] = static_cast<xiiUInt8>(p11.y);
-        rgba1[6] = static_cast<xiiUInt8>(p11.z);
-        rgba1[7] = static_cast<xiiUInt8>(0xff);
+        pRGBA1[0] = static_cast<xiiUInt8>(p10.x);
+        pRGBA1[1] = static_cast<xiiUInt8>(p10.y);
+        pRGBA1[2] = static_cast<xiiUInt8>(p10.z);
+        pRGBA1[3] = static_cast<xiiUInt8>(0xff);
+        pRGBA1[4] = static_cast<xiiUInt8>(p11.x);
+        pRGBA1[5] = static_cast<xiiUInt8>(p11.y);
+        pRGBA1[6] = static_cast<xiiUInt8>(p11.z);
+        pRGBA1[7] = static_cast<xiiUInt8>(0xff);
 
-        luma0 += 2;
-        luma1 += 2;
-        chroma += 2;
+        pLuma0 += 2;
+        pLuma1 += 2;
+        pChroma += 2;
 
-        rgba0 += 8;
-        rgba1 += 8;
+        pRGBA0 += 8;
+        pRGBA1 += 8;
       }
     }
 
@@ -110,36 +110,36 @@ struct xiiImageConversion_sRGB_NV12 : public xiiImageConversionStepPlanarize
 
     for (xiiUInt32 y = 0; y < uiNumPixelsY; y += 2)
     {
-      const xiiUInt8* rgba0 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
-      const xiiUInt8* rgba1 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
+      const xiiUInt8* pRGBA0 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
+      const xiiUInt8* pRGBA1 = source.GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
 
-      xiiUInt8* luma0  = target[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
-      xiiUInt8* luma1  = target[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
-      xiiUInt8* chroma = target[1].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y / 2);
+      xiiUInt8* pLuma0  = target[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y);
+      xiiUInt8* pLuma1  = target[0].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y + 1);
+      xiiUInt8* pChroma = target[1].GetPixelPointer<xiiUInt8>(0, 0, 0, 0, y / 2);
 
       for (xiiUInt32 x = 0; x < uiNumPixelsX; x += 2)
       {
-        xiiVec3I32 p00 = RGB2YUV(xiiVec3I32(rgba0[0], rgba0[1], rgba0[2]));
-        xiiVec3I32 p01 = RGB2YUV(xiiVec3I32(rgba0[4], rgba0[5], rgba0[6]));
-        xiiVec3I32 p10 = RGB2YUV(xiiVec3I32(rgba1[0], rgba1[1], rgba1[2]));
-        xiiVec3I32 p11 = RGB2YUV(xiiVec3I32(rgba1[4], rgba1[5], rgba1[6]));
+        xiiVec3I32 p00 = RGB2YUV(xiiVec3I32(pRGBA0[0], pRGBA0[1], pRGBA0[2]));
+        xiiVec3I32 p01 = RGB2YUV(xiiVec3I32(pRGBA0[4], pRGBA0[5], pRGBA0[6]));
+        xiiVec3I32 p10 = RGB2YUV(xiiVec3I32(pRGBA1[0], pRGBA1[1], pRGBA1[2]));
+        xiiVec3I32 p11 = RGB2YUV(xiiVec3I32(pRGBA1[4], pRGBA1[5], pRGBA1[6]));
 
-        luma0[0] = static_cast<xiiUInt8>(p00.x);
-        luma0[1] = static_cast<xiiUInt8>(p01.x);
-        luma1[0] = static_cast<xiiUInt8>(p10.x);
-        luma1[1] = static_cast<xiiUInt8>(p11.x);
+        pLuma0[0] = static_cast<xiiUInt8>(p00.x);
+        pLuma0[1] = static_cast<xiiUInt8>(p01.x);
+        pLuma1[0] = static_cast<xiiUInt8>(p10.x);
+        pLuma1[1] = static_cast<xiiUInt8>(p11.x);
 
         xiiVec3I32 c = (p00 + p01 + p10 + p11);
 
-        chroma[0] = static_cast<xiiUInt8>(c.y >> 2);
-        chroma[1] = static_cast<xiiUInt8>(c.z >> 2);
+        pChroma[0] = static_cast<xiiUInt8>(c.y >> 2);
+        pChroma[1] = static_cast<xiiUInt8>(c.z >> 2);
 
-        luma0 += 2;
-        luma1 += 2;
-        chroma += 2;
+        pLuma0 += 2;
+        pLuma1 += 2;
+        pChroma += 2;
 
-        rgba0 += 8;
-        rgba1 += 8;
+        pRGBA0 += 8;
+        pRGBA1 += 8;
       }
     }
 
