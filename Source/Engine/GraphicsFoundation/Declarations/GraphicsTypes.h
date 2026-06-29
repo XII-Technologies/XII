@@ -588,6 +588,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     NV12,                         ///< A multi-planar YUV 4:2:0 format with an 8-bit Y (luminance) plane followed by an interleaved 8-bit-per-channel UV plane at half width and half height. Common hardware decode output. Not usable as a render target, but can be sampled as a shader resource.
     P010,                         ///< A multi-planar YUV 4:2:0 format with a 10-bit Y plane (stored in 16 bits per sample) followed by an interleaved 10-bit-per-channel UV plane (stored in 16 bits per channel) at half resolution. Used for HDR video. Not usable as a render target, but can be sampled as a shader resource.
     P016,                         ///< A multi-planar YUV 4:2:0 format with a 16-bit Y plane followed by an interleaved 16-bit-per-channel UV plane at half resolution. Used for high-quality video pipelines. Not usable as a render target, but can be sampled as a shader resource.
+    YUY2,                         ///< A packed YUV 4:2:2 format with 8-bit samples arranged as Y0 U0 Y1 V0. Not usable as a render target, but can be sampled as a shader resource.
+    AYUV,                         ///< A packed YUV 4:4:4 format with 8-bit A, Y, U, and V channels. Not usable as a render target, but can be sampled as a shader resource.
+    P216,                         ///< A multi-planar YUV 4:2:2 format with a 16-bit Y plane followed by an interleaved 16-bit-per-channel UV plane at half horizontal resolution. Not usable as a render target, but can be sampled as a shader resource.
+    P416,                         ///< A multi-planar YUV 4:4:4 format with a 16-bit Y plane followed by separate 16-bit U and V planes. Not usable as a render target, but can be sampled as a shader resource.
 
     ENUM_COUNT,
 
@@ -644,6 +648,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
       case NV12:
       case P010:
       case P016:
+      case P216:
+      case P416:
         return true;
       default:
         return false;

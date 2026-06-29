@@ -155,6 +155,9 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalized,     16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalizedSRGB, 16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
 
+    FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::YUY2, 1, 4, xiiGALResourceFormatComponentType::UnsignedInteger, false, 2, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::AYUV, 1, 4, xiiGALResourceFormatComponentType::UnsignedInteger, false, 1, 1);
+
     // clang-format on
 
 #undef FILL_TEXTURE_FORMAT_INFO
@@ -258,6 +261,49 @@ const xiiGALMultiPlanarFormatDescription& xiiGALTextureUtilities::GetMultiPlanar
       plane1.m_uiBytesPerElement                        = 4;
       plane1.m_fWidthFactor                             = 0.5f;
       plane1.m_fHeightFactor                            = 0.5f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P216];
+      description.m_Format                            = xiiGALResourceFormat::P216;
+
+      // Plane 0: Y (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half horizontal resolution, full vertical resolution).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG16UNormalized;
+      plane1.m_uiBytesPerElement                        = 4;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 1.0f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P416];
+      description.m_Format                            = xiiGALResourceFormat::P416;
+
+      // Plane 0: Y (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: U (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane1.m_uiBytesPerElement                        = 2;
+      plane1.m_fWidthFactor                             = 1.0f;
+      plane1.m_fHeightFactor                            = 1.0f;
+
+      // Plane 2: V (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane2 = description.m_Planes.ExpandAndGetRef();
+      plane2.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane2.m_uiBytesPerElement                        = 2;
+      plane2.m_fWidthFactor                             = 1.0f;
+      plane2.m_fHeightFactor                            = 1.0f;
     }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -556,7 +602,7 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
 {
   xiiGALBufferToTextureCopyDescription bufferToTextureCopyDescription;
 
-  const auto& formatProperties = GetResourceFormatProperties(format);
+  const xiiGALResourceFormatDescription& formatProperties = GetResourceFormatProperties(format);
 
   XII_ASSERT_DEV(region.IsValid(), "");
 
@@ -571,8 +617,8 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
     XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "Format block width must be a power of 2.");
     XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "Format block height must be a power of 2.");
 
-    const auto uiBlockAlignedRegionWidth  = xiiMemoryUtils::AlignSize(uiUpdateRegionWidth, xiiUInt32{formatProperties.m_uiBlockWidth});
-    const auto uiBlockAlignedRegionHeight = xiiMemoryUtils::AlignSize(uiUpdateRegionHeight, xiiUInt32{formatProperties.m_uiBlockHeight});
+    const xiiUInt32 uiBlockAlignedRegionWidth  = xiiMemoryUtils::AlignSize(uiUpdateRegionWidth, xiiUInt32{formatProperties.m_uiBlockWidth});
+    const xiiUInt32 uiBlockAlignedRegionHeight = xiiMemoryUtils::AlignSize(uiUpdateRegionHeight, xiiUInt32{formatProperties.m_uiBlockHeight});
 
     bufferToTextureCopyDescription.m_uiRowSize  = xiiUInt64{uiBlockAlignedRegionWidth} / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize};
     bufferToTextureCopyDescription.m_uiRowCount = uiBlockAlignedRegionHeight / formatProperties.m_uiBlockHeight;
@@ -611,8 +657,8 @@ void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResour
 
   for (xiiUInt32 uiZ = 0; uiZ < uiDepthSliceCount; ++uiZ)
   {
-    const auto* pSourceSlice      = xiiMemoryUtils::AddByteOffset(sourceSubresource.m_pData.GetPtr(), sourceSubresource.m_uiDepthStride * uiZ);
-    auto*       pDestinationSlice = xiiMemoryUtils::AddByteOffset(pDestinationData, uiDestinationDepthStride * uiZ);
+    const xiiUInt8* pSourceSlice      = xiiMemoryUtils::AddByteOffset(sourceSubresource.m_pData.GetPtr(), sourceSubresource.m_uiDepthStride * uiZ);
+    void*           pDestinationSlice = xiiMemoryUtils::AddByteOffset(pDestinationData, uiDestinationDepthStride * uiZ);
 
     for (xiiUInt32 uiY = 0; uiY < uiRowCount; ++uiY)
     {

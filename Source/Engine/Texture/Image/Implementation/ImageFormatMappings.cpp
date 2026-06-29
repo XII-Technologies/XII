@@ -8,7 +8,7 @@
 
 #define MAKE_FOURCC(a, b, c, d) (a) | ((b) << 8) | ((c) << 16) | ((d) << 24)
 
-xiiUInt32 xiiImageFormatMappings::ToDxgiFormat(xiiGALResourceFormat::Enum format)
+xiiUInt32 xiiImageFormatMappings::ToDxgiFormat(xiiEnum<xiiGALResourceFormat> format)
 {
   switch (format)
   {
@@ -218,13 +218,21 @@ xiiUInt32 xiiImageFormatMappings::ToDxgiFormat(xiiGALResourceFormat::Enum format
       return DXGI_FORMAT_P010;
     case xiiGALResourceFormat::P016:
       return DXGI_FORMAT_P016;
+    case xiiGALResourceFormat::YUY2:
+      return DXGI_FORMAT_YUY2;
+    case xiiGALResourceFormat::AYUV:
+      return DXGI_FORMAT_AYUV;
+    case xiiGALResourceFormat::P216:
+      return DXGI_FORMAT_Y216;
+    case xiiGALResourceFormat::P416:
+      return DXGI_FORMAT_Y416;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return DXGI_FORMAT_UNKNOWN;
 }
 
-xiiGALResourceFormat::Enum xiiImageFormatMappings::FromDxgiFormat(xiiUInt32 uiDxgiFormat)
+xiiEnum<xiiGALResourceFormat> xiiImageFormatMappings::FromDxgiFormat(xiiUInt32 uiDxgiFormat)
 {
   switch (uiDxgiFormat)
   {
@@ -434,37 +442,62 @@ xiiGALResourceFormat::Enum xiiImageFormatMappings::FromDxgiFormat(xiiUInt32 uiDx
       return xiiGALResourceFormat::P010;
     case DXGI_FORMAT_P016:
       return xiiGALResourceFormat::P016;
+    case DXGI_FORMAT_YUY2:
+      return xiiGALResourceFormat::YUY2;
+    case DXGI_FORMAT_AYUV:
+      return xiiGALResourceFormat::AYUV;
+    case DXGI_FORMAT_Y216:
+      return xiiGALResourceFormat::P216;
+    case DXGI_FORMAT_Y416:
+      return xiiGALResourceFormat::P416;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return xiiGALResourceFormat::Unknown;
 }
 
-xiiUInt32 xiiImageFormatMappings::ToFourCc(xiiGALResourceFormat::Enum format)
+xiiUInt32 xiiImageFormatMappings::ToFourCc(xiiEnum<xiiGALResourceFormat> format)
 {
   switch (format)
   {
+    // BC / DXT Compressed Formats.
     case xiiGALResourceFormat::BC1UNormalized:
       return MAKE_FOURCC('D', 'X', 'T', '1');
-
     case xiiGALResourceFormat::BC2UNormalized:
       return MAKE_FOURCC('D', 'X', 'T', '3');
-
     case xiiGALResourceFormat::BC3UNormalized:
       return MAKE_FOURCC('D', 'X', 'T', '5');
-
     case xiiGALResourceFormat::BC4UNormalized:
-      return MAKE_FOURCC('A', 'T', 'I', '1');
-
+      return MAKE_FOURCC('B', 'C', '4', 'U');
     case xiiGALResourceFormat::BC5UNormalized:
-      return MAKE_FOURCC('A', 'T', 'I', '2');
+      return MAKE_FOURCC('B', 'C', '5', 'U');
+
+    // Packed YUV Formats (Single-plane).
+    case xiiGALResourceFormat::YUY2:
+      return MAKE_FOURCC('Y', 'U', 'Y', '2');
+    case xiiGALResourceFormat::AYUV:
+      return MAKE_FOURCC('A', 'Y', 'U', 'V');
+
+    // Multi-planar YUV Formats (2-plane).
+    case xiiGALResourceFormat::NV12:
+      return MAKE_FOURCC('N', 'V', '1', '2');
+    case xiiGALResourceFormat::P010:
+      return MAKE_FOURCC('P', '0', '1', '0');
+    case xiiGALResourceFormat::P016:
+      return MAKE_FOURCC('P', '0', '1', '6');
+
+    // High-bit-depth YUV formats (2-plane or 3-plane).
+    case xiiGALResourceFormat::P216:
+      return MAKE_FOURCC('P', '2', '1', '6');
+    case xiiGALResourceFormat::P416:
+      return MAKE_FOURCC('P', '4', '1', '6');
 
     default:
-      return 0;
+      return 0U;
   }
 }
 
-xiiGALResourceFormat::Enum xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc)
+xiiEnum<xiiGALResourceFormat> xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc)
 {
   switch (uiFourCc)
   {
@@ -488,25 +521,12 @@ xiiGALResourceFormat::Enum xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc
     case MAKE_FOURCC('B', 'C', '5', 'U'):
       return xiiGALResourceFormat::BC5UNormalized;
 
-#if 0
     // Packed YUV Formats (Single-plane).
-    case MAKE_FOURCC('U', 'Y', 'V', 'Y'): // UYVY 4:2:2 packed
-      return xiiGALResourceFormat::UYVY;
-
     case MAKE_FOURCC('Y', 'U', 'Y', '2'): // YUY2 4:2:2 packed
       return xiiGALResourceFormat::YUY2;
 
     case MAKE_FOURCC('A', 'Y', 'U', 'V'): // AYUV 4:4:4 packed
       return xiiGALResourceFormat::AYUV;
-
-    // Planar YUV Formats (3-plane).
-    case MAKE_FOURCC('I', '4', '2', '0'): // I420 = Y + U + V (4:2:0)
-    case MAKE_FOURCC('I', 'Y', 'U', 'V'): // IYUV = same as I420
-      return xiiGALResourceFormat::I420;
-
-    case MAKE_FOURCC('Y', 'V', '1', '2'): // YV12 = Y + V + U (4:2:0)
-      return xiiGALResourceFormat::YV12;
-#endif
 
     // Multi-planar YUV Formats (2-plane).
     case MAKE_FOURCC('N', 'V', '1', '2'): // NV12 = Y + interleaved UV
@@ -518,38 +538,12 @@ xiiGALResourceFormat::Enum xiiImageFormatMappings::FromFourCc(xiiUInt32 uiFourCc
     case MAKE_FOURCC('P', '0', '1', '6'): // P016 = 16-bit YUV420
       return xiiGALResourceFormat::P016;
 
-#if 0
     // High-bit-depth YUV formats (2-plane or 3-plane).
-    case MAKE_FOURCC('P', '2', '1', '0'): // P210 = YUV422 10-bit
-      return xiiGALResourceFormat::P210;
-
     case MAKE_FOURCC('P', '2', '1', '6'): // P216 = YUV422 16-bit
       return xiiGALResourceFormat::P216;
 
-    case MAKE_FOURCC('P', '4', '1', '0'): // P410 = YUV444 10-bit
-      return xiiGALResourceFormat::P410;
-
     case MAKE_FOURCC('P', '4', '1', '6'): // P416 = YUV444 16-bit
       return xiiGALResourceFormat::P416;
-#endif
-
-    // Old legacy DirectX formats.
-    case 116: // D3DFMT_A32B32G32R32F
-      return xiiGALResourceFormat::RGBA32Float;
-    case 115: // D3DFMT_G32R32F
-      return xiiGALResourceFormat::RG32Float;
-    case 114: // D3DFMT_R32F
-      return xiiGALResourceFormat::R32Float;
-    case 113: // D3DFMT_A16B16G16R16F
-      return xiiGALResourceFormat::RGBA16Float;
-    case 112: // D3DFMT_G16R16F
-      return xiiGALResourceFormat::RG16Float;
-    case 111: // D3DFMT_R16F
-      return xiiGALResourceFormat::R16Float;
-    case 110: // D3DFMT_Q16W16V16U16
-      return xiiGALResourceFormat::RGBA16SNormalized;
-    case 36: // D3DFMT_A16B16G16R16
-      return xiiGALResourceFormat::RGBA16UNormalized;
 
     default:
       return xiiGALResourceFormat::Unknown;
