@@ -32,7 +32,7 @@ const xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(xiiStringView sExt
   return nullptr;
 }
 
-xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageHeader& ref_header)
+xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiGALTextureCreationDescription& ref_header)
 {
   XII_LOG_BLOCK("Read Image Header", sFileName);
 

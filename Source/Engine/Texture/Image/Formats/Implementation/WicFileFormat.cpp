@@ -78,7 +78,7 @@ xiiResult xiiWicFileFormat::ReadFileData(xiiStreamReader& stream, xiiDynamicArra
   return XII_SUCCESS;
 }
 
-static void SetHeader(xiiImageHeader& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const TexMetadata& metadata)
+static void SetHeader(xiiGALTextureCreationDescription& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const TexMetadata& metadata)
 {
   ref_header.SetImageFormat(imageFormat);
 
@@ -86,9 +86,9 @@ static void SetHeader(xiiImageHeader& ref_header, xiiEnum<xiiGALResourceFormat> 
   ref_header.SetHeight(xiiUInt32(metadata.height));
   ref_header.SetDepth(xiiUInt32(metadata.depth));
 
-  ref_header.SetNumMipLevels(1);
-  ref_header.SetNumArrayIndices(xiiUInt32(metadata.IsCubemap() ? (metadata.arraySize / 6) : metadata.arraySize));
-  ref_header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
+  ref_header.SetMipLevelCount(1);
+  ref_header.SetArrayIndexCount(xiiUInt32(metadata.IsCubemap() ? (metadata.arraySize / 6) : metadata.arraySize));
+  ref_header.SetFaceCount(metadata.IsCubemap() ? 6 : 1);
 }
 
 xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
@@ -111,7 +111,7 @@ xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, 
 
   xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
     wicFlags |= WIC_FLAGS_FORCE_RGB;
@@ -119,7 +119,7 @@ xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, 
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
   }
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
     return XII_FAILURE;
@@ -154,7 +154,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
   xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
     wicFlags |= WIC_FLAGS_FORCE_RGB;
@@ -162,14 +162,14 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
   }
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
     return XII_FAILURE;
   }
 
   // Prepare destination image header and allocate storage
-  xiiImageHeader imageHeader;
+  xiiGALTextureCreationDescription imageHeader;
   SetHeader(imageHeader, imageFormat, metadata);
 
   ref_image.ResetAndAlloc(imageHeader);
@@ -226,21 +226,21 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
   // Convert into suitable output format
   xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
-    xiiImageFormat::R8G8B8A8_UNORM,
-    xiiImageFormat::R8G8B8A8_UNORM_SRGB,
-    xiiImageFormat::R8_UNORM,
-    xiiImageFormat::R16G16B16A16_UNORM,
-    xiiImageFormat::R16_UNORM,
-    xiiImageFormat::R32G32B32A32_FLOAT,
-    xiiImageFormat::R32G32B32_FLOAT,
+    xiiGALResourceFormat::RGBA8UNormalized,
+    xiiGALResourceFormat::RGBA8UNormalizedSRGB,
+    xiiGALResourceFormat::R8UNormalized,
+    xiiGALResourceFormat::RGBA16UNormalized,
+    xiiGALResourceFormat::R16UNormalized,
+    xiiGALResourceFormat::RGBA32Float,
+    xiiGALResourceFormat::RGB32Float,
   };
 
   // Find a compatible format closest to the one the image currently has
   xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
-  if (format == xiiImageFormat::UNKNOWN)
+  if (format == xiiGALResourceFormat::Unknown)
   {
-    xiiLog::Error("No conversion from format '{0}' to a format suitable for '{}' files known.", xiiImageFormat::GetName(image.GetImageFormat()), sFileExtension);
+    xiiLog::Error("No conversion from format '{0}' to a format suitable for '{}' files known.", xiiArgEnum(image.GetImageFormat()), sFileExtension);
     return XII_FAILURE;
   }
 

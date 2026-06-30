@@ -47,9 +47,9 @@ private:
     SingleChannel
   };
 
-  xiiResult ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const;
-  xiiResult DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiImageFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const;
-  xiiResult Assemble2DTexture(const xiiImageHeader& refImg, xiiImage& dst) const;
+  xiiResult ChooseOutputFormat(xiiEnum<xiiGALResourceFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const;
+  xiiResult DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiGALResourceFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const;
+  xiiResult Assemble2DTexture(const xiiGALTextureCreationDescription& refImg, xiiImage& dst) const;
   xiiResult AssembleCubemap(xiiImage& dst) const;
   xiiResult Assemble3DTexture(xiiImage& dst) const;
   xiiResult AdjustHdrExposure(xiiImage& img) const;
@@ -66,7 +66,7 @@ private:
   //////////////////////////////////////////////////////////////////////////
   // Output Generation
 
-  static xiiResult GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiImageFormat> format);
+  static xiiResult GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiGALResourceFormat> format);
   static xiiResult GenerateThumbnailOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiTargetRes);
   static xiiResult GenerateLowResOutput(const xiiImage& srcImg, xiiImage& dstImg, xiiUInt32 uiLowResMip);
 

@@ -61,7 +61,17 @@ const T* xiiImageView::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 u
   XII_ASSERT_DEV(y < GetNumBlocksY(uiMipLevel, uiPlaneIndex), "Invalid y coordinate ({}) for mip level {} and plane {}.", y, uiMipLevel, uiPlaneIndex);
   XII_ASSERT_DEV(z < GetNumBlocksZ(uiMipLevel, uiPlaneIndex), "Invalid z coordinate ({}) for mip level {} and plane {}.", z, uiMipLevel, uiPlaneIndex);
 
-  xiiUInt64 uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex) + z * GetDepthPitch(uiMipLevel, uiPlaneIndex) + y * GetRowPitch(uiMipLevel, uiPlaneIndex) + x * xiiImageFormat::GetBitsPerBlock(m_Format, uiPlaneIndex) / 8;
+  xiiUInt32 uiBytesPerBlock = 0;
+  if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
+  {
+    uiBytesPerBlock = xiiGALTextureUtilities::GetMultiPlanarFormatProperties(m_Description.m_Format).GetPlane(uiPlaneIndex).m_uiBytesPerElement;
+  }
+  else
+  {
+    uiBytesPerBlock = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format).GetElementSize();
+  }
+
+  xiiUInt64 uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex) + z * GetDepthPitch(uiMipLevel, uiPlaneIndex) + y * GetRowPitch(uiMipLevel, uiPlaneIndex) + x * uiBytesPerBlock;
 
   return reinterpret_cast<const T*>(&m_DataPtr[uiOffset]);
 }
@@ -75,5 +85,15 @@ T* xiiImage::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 
 template <typename T>
 void xiiImageView::ValidateDataTypeAccessor([[maybe_unused]] xiiUInt32 uiPlaneIndex) const
 {
-  XII_ASSERT_DEV((xiiImageFormat::GetBitsPerBlock(GetImageFormat(), uiPlaneIndex) / 8) % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
+  xiiUInt32 uiBytesPerBlock = 0;
+  if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
+  {
+    uiBytesPerBlock = xiiGALTextureUtilities::GetMultiPlanarFormatProperties(m_Description.m_Format).GetPlane(uiPlaneIndex).m_uiBytesPerElement;
+  }
+  else
+  {
+    uiBytesPerBlock = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format).GetElementSize();
+  }
+
+  XII_ASSERT_DEV(uiBytesPerBlock % xiiImageSizeofHelper<T>::Size == 0, "Accessor type is not suitable for interpreting contained data");
 }

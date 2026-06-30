@@ -19,7 +19,6 @@ XII_STATICLINK_LIBRARY(Texture)
   XII_STATICLINK_REFERENCE(Texture_Image_Formats_StbImageFileFormats);
   XII_STATICLINK_REFERENCE(Texture_Image_Formats_TgaFileFormat);
   XII_STATICLINK_REFERENCE(Texture_Image_Formats_WicFileFormat);
-  XII_STATICLINK_REFERENCE(Texture_Image_Implementation_ImageEnums);
   XII_STATICLINK_REFERENCE(Texture_Image_Implementation_ImageFormat);
   XII_STATICLINK_REFERENCE(Texture_TextureConverter_Implementation_Processor);
 }

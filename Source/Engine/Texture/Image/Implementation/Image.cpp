@@ -8,19 +8,78 @@
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 
+namespace
+{
+  xiiGALTextureCreationDescription MakeImageDescription(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALResourceFormat> format)
+  {
+    xiiGALTextureCreationDescription description;
+    description.m_Type               = uiDepth > 1 ? xiiGALResourceDimension::Texture3D : xiiGALResourceDimension::Texture2D;
+    description.m_Size               = xiiSizeU32(uiWidth, uiHeight);
+    description.m_uiArraySizeOrDepth = xiiMath::Max(1U, uiDepth);
+    description.m_Format             = format;
+    description.m_uiMipLevels        = 1U;
+
+    return description;
+  }
+
+  xiiEnum<xiiGALResourceFormat> GetPlaneFormat(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      return xiiGALTextureUtilities::GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_SubFormat;
+    }
+
+    XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
+    return format;
+  }
+
+  xiiUInt32 GetPlaneWidth(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiWidth, xiiUInt32 uiPlaneIndex)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      return xiiGALTextureUtilities::GetMultiPlanarFormatProperties(format).GetPlaneWidth(uiWidth, uiPlaneIndex);
+    }
+
+    XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
+    return uiWidth;
+  }
+
+  xiiUInt32 GetPlaneHeight(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiHeight, xiiUInt32 uiPlaneIndex)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      return xiiGALTextureUtilities::GetMultiPlanarFormatProperties(format).GetPlaneHeight(uiHeight, uiPlaneIndex);
+    }
+
+    XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
+    return uiHeight;
+  }
+
+  xiiUInt32 GetBytesPerBlock(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      return xiiGALTextureUtilities::GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_uiBytesPerElement;
+    }
+
+    XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
+    return xiiGALTextureUtilities::GetResourceFormatProperties(format).GetElementSize();
+  }
+} // namespace
+
 xiiImageView::xiiImageView()
 {
   Clear();
 }
 
-xiiImageView::xiiImageView(const xiiImageHeader& header, xiiConstByteBlobPtr imageData)
+xiiImageView::xiiImageView(const xiiGALTextureCreationDescription& description, xiiConstByteBlobPtr imageData)
 {
-  ResetAndViewExternalStorage(header, imageData);
+  ResetAndViewExternalStorage(description, imageData);
 }
 
 void xiiImageView::Clear()
 {
-  xiiImageHeader::Clear();
+  m_Description = {};
   m_SubImageOffsets.Clear();
   m_DataPtr.Clear();
 }
@@ -30,16 +89,16 @@ bool xiiImageView::IsValid() const
   return !m_DataPtr.IsEmpty();
 }
 
-void xiiImageView::ResetAndViewExternalStorage(const xiiImageHeader& header, xiiConstByteBlobPtr imageData)
+void xiiImageView::ResetAndViewExternalStorage(const xiiGALTextureCreationDescription& description, xiiConstByteBlobPtr imageData)
 {
-  static_cast<xiiImageHeader&>(*this) = header;
+  m_Description = description;
 
   xiiUInt64 uiDataSize = ComputeLayout();
 
   XII_IGNORE_UNUSED(uiDataSize);
   XII_ASSERT_DEV(imageData.GetCount() == uiDataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), uiDataSize);
 
-  // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage
+  // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage.
   m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
 }
 
@@ -47,7 +106,7 @@ xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
 {
   XII_LOG_BLOCK("Writing Image", sFileName);
 
-  if (m_Format == xiiGALResourceFormat::Unknown)
+  if (m_Description.m_Format == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Cannot write image '{0}' - image data is invalid or empty", sFileName);
     return XII_FAILURE;
@@ -77,55 +136,160 @@ xiiResult xiiImageView::SaveTo(xiiStringView sFileName) const
   return XII_FAILURE;
 }
 
-const xiiImageHeader& xiiImageView::GetHeader() const
+const xiiGALTextureCreationDescription& xiiImageView::GetDescription() const
 {
-  return *this;
+  return m_Description;
+}
+
+xiiEnum<xiiGALResourceFormat> xiiImageView::GetImageFormat() const
+{
+  return m_Description.m_Format;
+}
+
+xiiUInt32 xiiImageView::GetWidth(xiiUInt32 uiMipLevel /*= 0*/) const
+{
+  return xiiGALTextureUtilities::GetMipSize(m_Description.GetWidth(), uiMipLevel);
+}
+
+xiiUInt32 xiiImageView::GetHeight(xiiUInt32 uiMipLevel /*= 0*/) const
+{
+  return xiiGALTextureUtilities::GetMipSize(m_Description.GetHeight(), uiMipLevel);
+}
+
+xiiUInt32 xiiImageView::GetDepth(xiiUInt32 uiMipLevel /*= 0*/) const
+{
+  return xiiGALTextureUtilities::GetMipSize(m_Description.GetDepth(), uiMipLevel);
+}
+
+xiiUInt32 xiiImageView::GetMipLevelCount() const
+{
+  return m_Description.m_uiMipLevels;
+}
+
+xiiUInt32 xiiImageView::GetNumFaces() const
+{
+  return m_Description.IsCube() ? 6U : 1U;
+}
+
+xiiUInt32 xiiImageView::GetNumArrayIndices() const
+{
+  return m_Description.IsCube() ? m_Description.GetArraySize() / 6U : m_Description.GetArraySize();
+}
+
+xiiUInt32 xiiImageView::GetPlaneCount() const
+{
+  if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
+  {
+    return xiiGALTextureUtilities::GetMultiPlanarFormatProperties(m_Description.m_Format).GetPlaneCount();
+  }
+
+  return 1U;
+}
+
+xiiUInt32 xiiImageView::GetNumBlocksX(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
+{
+  const xiiUInt32 uiPlaneWidth = GetPlaneWidth(m_Description.m_Format, GetWidth(uiMipLevel), uiPlaneIndex);
+
+  if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
+  {
+    return uiPlaneWidth;
+  }
+
+  return xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format).GetBlockCountX(uiPlaneWidth);
+}
+
+xiiUInt32 xiiImageView::GetNumBlocksY(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
+{
+  const xiiUInt32 uiPlaneHeight = GetPlaneHeight(m_Description.m_Format, GetHeight(uiMipLevel), uiPlaneIndex);
+
+  if (xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format))
+  {
+    return uiPlaneHeight;
+  }
+
+  return xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format).GetBlockCountY(uiPlaneHeight);
+}
+
+xiiUInt32 xiiImageView::GetNumBlocksZ(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
+{
+  XII_IGNORE_UNUSED(uiPlaneIndex);
+  return GetDepth(uiMipLevel);
+}
+
+xiiUInt64 xiiImageView::GetRowPitch(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
+{
+  return static_cast<xiiUInt64>(GetNumBlocksX(uiMipLevel, uiPlaneIndex)) * GetBytesPerBlock(m_Description.m_Format, uiPlaneIndex);
+}
+
+xiiUInt64 xiiImageView::GetDepthPitch(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
+{
+  return GetRowPitch(uiMipLevel, uiPlaneIndex) * GetNumBlocksY(uiMipLevel, uiPlaneIndex);
+}
+
+xiiUInt64 xiiImageView::ComputeDataSize() const
+{
+  xiiUInt64 uiDataSize = 0;
+
+  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < GetNumArrayIndices(); uiArrayIndex++)
+  {
+    for (xiiUInt32 uiFace = 0; uiFace < GetNumFaces(); uiFace++)
+    {
+      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < GetMipLevelCount(); uiMipLevel++)
+      {
+        for (xiiUInt32 uiPlaneIndex = 0; uiPlaneIndex < GetPlaneCount(); uiPlaneIndex++)
+        {
+          uiDataSize += GetDepthPitch(uiMipLevel, uiPlaneIndex) * GetDepth(uiMipLevel);
+        }
+      }
+    }
+  }
+
+  return uiDataSize;
 }
 
 xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
-  xiiImageHeader header;
-  header.SetNumMipLevels(1);
-  header.SetNumFaces(1);
-  header.SetNumArrayIndices(1);
-
-  // Scale dimensions relative to the block size of the subformat
-  xiiEnum<xiiGALResourceFormat> subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
-  header.SetWidth(GetWidth(uiMipLevel) * xiiImageFormat::GetBlockWidth(subFormat) / xiiImageFormat::GetBlockWidth(m_Format, uiPlaneIndex));
-  header.SetHeight(xiiImageFormat::GetBlockHeight(m_Format, 0) * xiiImageFormat::GetBlockHeight(subFormat) / xiiImageFormat::GetBlockHeight(m_Format, uiPlaneIndex));
-  header.SetDepth(xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
-  header.SetImageFormat(xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex));
+  const xiiEnum<xiiGALResourceFormat> planeFormat = GetPlaneFormat(m_Description.m_Format, uiPlaneIndex);
+  xiiGALTextureCreationDescription    description = MakeImageDescription(GetNumBlocksX(uiMipLevel, uiPlaneIndex), 1, 1, planeFormat);
 
   xiiUInt64 offset = 0;
-
   offset += GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
   offset += z * GetDepthPitch(uiMipLevel, uiPlaneIndex);
   offset += y * GetRowPitch(uiMipLevel, uiPlaneIndex);
 
   xiiBlobPtr<const xiiUInt8> dataSlice = m_DataPtr.GetSubArray(offset, GetRowPitch(uiMipLevel, uiPlaneIndex));
-  return xiiImageView(header, xiiConstByteBlobPtr(dataSlice.GetPtr(), dataSlice.GetCount()));
+  return xiiImageView(description, xiiConstByteBlobPtr(dataSlice.GetPtr(), dataSlice.GetCount()));
 }
 
-void xiiImageView::ReinterpretAs(xiiEnum<xiiGALResourceFormat> format)
+void xiiImageView::ReinterpretAs(xiiGALResourceFormat::Enum format)
 {
-  XII_ASSERT_DEBUG(xiiImageFormat::IsCompressed(format) == xiiImageFormat::IsCompressed(GetImageFormat()), "Cannot reinterpret compressed and non-compressed formats");
-  XII_ASSERT_DEBUG(xiiImageFormat::GetBitsPerPixel(GetImageFormat()) == xiiImageFormat::GetBitsPerPixel(format), "Cannot reinterpret between formats of different sizes");
+  const bool bSourceCompressed = xiiGALResourceFormat::IsMultiplanar(m_Description.m_Format) ? false : xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format).IsCompressed();
+  const bool bTargetCompressed = xiiGALResourceFormat::IsMultiplanar(format) ? false : xiiGALTextureUtilities::GetResourceFormatProperties(format).IsCompressed();
 
-  SetImageFormat(format);
+  XII_ASSERT_DEBUG(bTargetCompressed == bSourceCompressed, "Cannot reinterpret compressed and non-compressed formats");
+
+  xiiGALTextureCreationDescription newDescription = m_Description;
+  newDescription.m_Format                         = format;
+
+  xiiImageView validationView;
+  validationView.m_Description = newDescription;
+  XII_ASSERT_DEBUG(validationView.ComputeDataSize() == ComputeDataSize(), "Cannot reinterpret between formats of different sizes");
+
+  m_Description.m_Format = format;
 }
 
 xiiUInt64 xiiImageView::ComputeLayout()
 {
   m_SubImageOffsets.Clear();
-  m_SubImageOffsets.Reserve(m_uiNumMipLevels * m_uiNumFaces * m_uiNumArrayIndices * GetPlaneCount());
+  m_SubImageOffsets.Reserve(GetMipLevelCount() * GetNumFaces() * GetNumArrayIndices() * GetPlaneCount());
 
   xiiUInt64 uiDataSize = 0;
 
-  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < m_uiNumArrayIndices; uiArrayIndex++)
+  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < GetNumArrayIndices(); uiArrayIndex++)
   {
-    for (xiiUInt32 uiFace = 0; uiFace < m_uiNumFaces; uiFace++)
+    for (xiiUInt32 uiFace = 0; uiFace < GetNumFaces(); uiFace++)
     {
-      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < m_uiNumMipLevels; uiMipLevel++)
+      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < GetMipLevelCount(); uiMipLevel++)
       {
         for (xiiUInt32 uiPlaneIndex = 0; uiPlaneIndex < GetPlaneCount(); uiPlaneIndex++)
         {
@@ -137,7 +301,6 @@ xiiUInt64 xiiImageView::ComputeLayout()
     }
   }
 
-  // Push back total size as a marker
   m_SubImageOffsets.PushBack(uiDataSize);
 
   return uiDataSize;
@@ -150,9 +313,9 @@ void xiiImageView::ValidateSubImageIndices(xiiUInt32 uiMipLevel, xiiUInt32 uiFac
   XII_IGNORE_UNUSED(uiArrayIndex);
   XII_IGNORE_UNUSED(uiPlaneIndex);
 
-  XII_ASSERT_DEV(uiMipLevel < m_uiNumMipLevels, "Invalid mip level");
-  XII_ASSERT_DEV(uiFace < m_uiNumFaces, "Invalid uiFace");
-  XII_ASSERT_DEV(uiArrayIndex < m_uiNumArrayIndices, "Invalid array slice");
+  XII_ASSERT_DEV(uiMipLevel < GetMipLevelCount(), "Invalid mip level");
+  XII_ASSERT_DEV(uiFace < GetNumFaces(), "Invalid uiFace");
+  XII_ASSERT_DEV(uiArrayIndex < GetNumArrayIndices(), "Invalid array slice");
   XII_ASSERT_DEV(uiPlaneIndex < GetPlaneCount(), "Invalid plane index");
 }
 
@@ -160,7 +323,7 @@ const xiiUInt64& xiiImageView::GetSubImageOffset(xiiUInt32 uiMipLevel, xiiUInt32
 {
   ValidateSubImageIndices(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
 
-  return m_SubImageOffsets[uiPlaneIndex + GetPlaneCount() * (uiMipLevel + m_uiNumMipLevels * (uiFace + m_uiNumFaces * uiArrayIndex))];
+  return m_SubImageOffsets[uiPlaneIndex + GetPlaneCount() * (uiMipLevel + GetMipLevelCount() * (uiFace + GetNumFaces() * uiArrayIndex))];
 }
 
 xiiImage::xiiImage()
@@ -168,14 +331,14 @@ xiiImage::xiiImage()
   Clear();
 }
 
-xiiImage::xiiImage(const xiiImageHeader& header)
+xiiImage::xiiImage(const xiiGALTextureCreationDescription& description)
 {
-  ResetAndAlloc(header);
+  ResetAndAlloc(description);
 }
 
-xiiImage::xiiImage(const xiiImageHeader& header, xiiByteBlobPtr externalData)
+xiiImage::xiiImage(const xiiGALTextureCreationDescription& description, xiiByteBlobPtr externalData)
 {
-  ResetAndUseExternalStorage(header, externalData);
+  ResetAndUseExternalStorage(description, externalData);
 }
 
 xiiImage::xiiImage(xiiImage&& other)
@@ -200,16 +363,10 @@ void xiiImage::Clear()
   xiiImageView::Clear();
 }
 
-void xiiImage::ResetAndAlloc(const xiiImageHeader& header)
+void xiiImage::ResetAndAlloc(const xiiGALTextureCreationDescription& description)
 {
-  const xiiUInt64 uiRequiredSize = header.ComputeDataSize();
-
-  // it is debatable whether this function should reuse external storage, at all
-  // however, it is especially dangerous to rely on the external storage being big enough, since many functions just take a xiiImage as a
-  // destination parameter and expect it to behave correctly when any of the Reset functions is called on it; it is not intuitive, that
-  // Reset may fail due to how the image was previously reset
-
-  // therefore, if external storage is insufficient, fall back to internal storage
+  m_Description = description;
+  const xiiUInt64 uiRequiredSize = ComputeDataSize();
 
   if (!UsesExternalStorage() || m_DataPtr.GetCount() < uiRequiredSize)
   {
@@ -218,19 +375,19 @@ void xiiImage::ResetAndAlloc(const xiiImageHeader& header)
     m_DataPtr = m_InternalStorage.GetBlobPtr<xiiUInt8>();
   }
 
-  xiiImageView::ResetAndViewExternalStorage(header, xiiConstByteBlobPtr(m_DataPtr.GetPtr(), m_DataPtr.GetCount()));
+  xiiImageView::ResetAndViewExternalStorage(description, xiiConstByteBlobPtr(m_DataPtr.GetPtr(), m_DataPtr.GetCount()));
 }
 
-void xiiImage::ResetAndUseExternalStorage(const xiiImageHeader& header, xiiByteBlobPtr externalData)
+void xiiImage::ResetAndUseExternalStorage(const xiiGALTextureCreationDescription& description, xiiByteBlobPtr externalData)
 {
   m_InternalStorage.Clear();
 
-  xiiImageView::ResetAndViewExternalStorage(header, externalData);
+  xiiImageView::ResetAndViewExternalStorage(description, externalData);
 }
 
 void xiiImage::ResetAndMove(xiiImage&& other)
 {
-  static_cast<xiiImageHeader&>(*this) = other.GetHeader();
+  m_Description = other.GetDescription();
 
   if (other.UsesExternalStorage())
   {
@@ -250,7 +407,7 @@ void xiiImage::ResetAndMove(xiiImage&& other)
 
 void xiiImage::ResetAndCopy(const xiiImageView& other)
 {
-  ResetAndAlloc(other.GetHeader());
+  ResetAndAlloc(other.GetDescription());
 
   memcpy(GetBlobPtr<xiiUInt8>().GetPtr(), other.GetBlobPtr<xiiUInt8>().GetPtr(), static_cast<size_t>(other.GetBlobPtr<xiiUInt8>().GetCount()));
 }
@@ -292,89 +449,61 @@ xiiResult xiiImage::Convert(xiiGALResourceFormat::Enum targetFormat)
 
 xiiImageView xiiImageView::GetSubImageView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/) const
 {
-  xiiImageHeader header;
-  header.SetNumMipLevels(1);
-  header.SetNumFaces(1);
-  header.SetNumArrayIndices(1);
-  header.SetWidth(GetWidth(uiMipLevel));
-  header.SetHeight(GetHeight(uiMipLevel));
-  header.SetDepth(GetDepth(uiMipLevel));
-  header.SetImageFormat(m_Format);
+  xiiGALTextureCreationDescription description = MakeImageDescription(GetWidth(uiMipLevel), GetHeight(uiMipLevel), GetDepth(uiMipLevel), m_Description.m_Format);
 
   const xiiUInt64& uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, 0);
   xiiUInt64        uiSize   = *(&uiOffset + GetPlaneCount()) - uiOffset;
 
   xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(uiOffset, uiSize);
 
-  return xiiImageView(header, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
+  return xiiImageView(description, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
 }
 
 xiiImage xiiImage::GetSubImageView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/)
 {
   xiiImageView constView = xiiImageView::GetSubImageView(uiMipLevel, uiFace, uiArrayIndex);
 
-  // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
-  return xiiImage(constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
+  return xiiImage(constView.GetDescription(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
 xiiImageView xiiImageView::GetPlaneView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
-  xiiImageHeader header;
-  header.SetNumMipLevels(1);
-  header.SetNumFaces(1);
-  header.SetNumArrayIndices(1);
-
-  // Scale dimensions relative to the block size of the first plane which determines the "nominal" width, height and depth
-  xiiEnum<xiiGALResourceFormat> subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
-  header.SetWidth(GetWidth(uiMipLevel) * xiiImageFormat::GetBlockWidth(subFormat) / xiiImageFormat::GetBlockWidth(m_Format, uiPlaneIndex));
-  header.SetHeight(GetHeight(uiMipLevel) * xiiImageFormat::GetBlockHeight(subFormat) / xiiImageFormat::GetBlockHeight(m_Format, uiPlaneIndex));
-  header.SetDepth(GetDepth(uiMipLevel) * xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
-  header.SetImageFormat(subFormat);
+  const xiiEnum<xiiGALResourceFormat> planeFormat = GetPlaneFormat(m_Description.m_Format, uiPlaneIndex);
+  xiiGALTextureCreationDescription    description = MakeImageDescription(GetPlaneWidth(m_Description.m_Format, GetWidth(uiMipLevel), uiPlaneIndex), GetPlaneHeight(m_Description.m_Format, GetHeight(uiMipLevel), uiPlaneIndex), GetDepth(uiMipLevel), planeFormat);
 
   const xiiUInt64& uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
   xiiUInt64        uiSize   = *(&uiOffset + 1) - uiOffset;
 
   xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(uiOffset, uiSize);
 
-  return xiiImageView(header, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
+  return xiiImageView(description, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
 }
 
 xiiImage xiiImage::GetPlaneView(xiiUInt32 uiMipLevel /* = 0 */, xiiUInt32 uiFace /* = 0 */, xiiUInt32 uiArrayIndex /* = 0 */, xiiUInt32 uiPlaneIndex /* = 0 */)
 {
   xiiImageView constView = xiiImageView::GetPlaneView(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
 
-  // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
-  return xiiImage(constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
+  return xiiImage(constView.GetDescription(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
 xiiImage xiiImage::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/)
 {
   xiiImageView constView = xiiImageView::GetSliceView(uiMipLevel, uiFace, uiArrayIndex, z, uiPlaneIndex);
 
-  // Create a xiiImage attached to the view. Const cast is safe here since we own the storage.
-  return xiiImage(constView.GetHeader(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
+  return xiiImage(constView.GetDescription(), xiiByteBlobPtr(const_cast<xiiUInt8*>(constView.GetBlobPtr<xiiUInt8>().GetPtr()), constView.GetBlobPtr<xiiUInt8>().GetCount()));
 }
 
 xiiImageView xiiImageView::GetSliceView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/) const
 {
-  xiiImageHeader header;
-  header.SetNumMipLevels(1);
-  header.SetNumFaces(1);
-  header.SetNumArrayIndices(1);
-
-  // Scale dimensions relative to the block size of the first plane which determines the "nominal" width, height and depth
-  xiiEnum<xiiGALResourceFormat> subFormat = xiiImageFormat::GetPlaneSubFormat(m_Format, uiPlaneIndex);
-  header.SetWidth(GetWidth(uiMipLevel) * xiiImageFormat::GetBlockWidth(subFormat) / xiiImageFormat::GetBlockWidth(m_Format, uiPlaneIndex));
-  header.SetHeight(GetHeight(uiMipLevel) * xiiImageFormat::GetBlockHeight(subFormat) / xiiImageFormat::GetBlockHeight(m_Format, uiPlaneIndex));
-  header.SetDepth(xiiImageFormat::GetBlockDepth(subFormat) / xiiImageFormat::GetBlockDepth(m_Format, uiPlaneIndex));
-  header.SetImageFormat(subFormat);
+  const xiiEnum<xiiGALResourceFormat> planeFormat = GetPlaneFormat(m_Description.m_Format, uiPlaneIndex);
+  xiiGALTextureCreationDescription    description = MakeImageDescription(GetPlaneWidth(m_Description.m_Format, GetWidth(uiMipLevel), uiPlaneIndex), GetPlaneHeight(m_Description.m_Format, GetHeight(uiMipLevel), uiPlaneIndex), 1, planeFormat);
 
   const xiiUInt64& uiOffset = GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
   xiiUInt64        uiSize   = GetDepthPitch(uiMipLevel, uiPlaneIndex);
 
   xiiBlobPtr<const xiiUInt8> subView = m_DataPtr.GetSubArray(uiOffset + z * uiSize, uiSize);
 
-  return xiiImageView(header, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
+  return xiiImageView(description, xiiConstByteBlobPtr(subView.GetPtr(), subView.GetCount()));
 }
 
 bool xiiImage::UsesExternalStorage() const

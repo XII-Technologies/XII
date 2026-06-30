@@ -235,10 +235,10 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     xiiBmpFileInfoHeaderV4 fileInfoHeaderV4;
     memset(&fileInfoHeaderV4, 0, sizeof(fileInfoHeaderV4));
 
-    fileInfoHeaderV4.m_redMask   = xiiGALResourceFormat::GetRedMask(format);
-    fileInfoHeaderV4.m_greenMask = xiiGALResourceFormat::GetGreenMask(format);
-    fileInfoHeaderV4.m_blueMask  = xiiGALResourceFormat::GetBlueMask(format);
-    fileInfoHeaderV4.m_alphaMask = xiiGALResourceFormat::GetAlphaMask(format);
+    fileInfoHeaderV4.m_redMask   = xiiGALTextureUtilities::GetRedMask(format);
+    fileInfoHeaderV4.m_greenMask = xiiGALTextureUtilities::GetGreenMask(format);
+    fileInfoHeaderV4.m_blueMask  = xiiGALTextureUtilities::GetBlueMask(format);
+    fileInfoHeaderV4.m_alphaMask = xiiGALTextureUtilities::GetAlphaMask(format);
 
     if (inout_stream.WriteBytes(&fileInfoHeaderV4, sizeof(fileInfoHeaderV4)) != XII_SUCCESS)
     {
@@ -256,9 +256,9 @@ xiiResult xiiBmpFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     } colorMask;
 
 
-    colorMask.m_red   = xiiGALResourceFormat::GetRedMask(format);
-    colorMask.m_green = xiiGALResourceFormat::GetGreenMask(format);
-    colorMask.m_blue  = xiiGALResourceFormat::GetBlueMask(format);
+    colorMask.m_red   = xiiGALTextureUtilities::GetRedMask(format);
+    colorMask.m_green = xiiGALTextureUtilities::GetGreenMask(format);
+    colorMask.m_blue  = xiiGALTextureUtilities::GetBlueMask(format);
 
     if (inout_stream.WriteBytes(&colorMask, sizeof(colorMask)) != XII_SUCCESS)
     {
@@ -299,7 +299,7 @@ namespace
     return (reinterpret_cast<const xiiUInt8*>(pData)[uiByteAddress] >> uiShiftAmount) & uiMask;
   }
 
-  xiiResult ReadImageInfo(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiBmpFileHeader& ref_fileHeader, xiiBmpFileInfoHeader& ref_fileInfoHeader, bool& ref_bIndexed, bool& ref_bCompressed, xiiUInt32& ref_uiBpp, xiiUInt32& ref_uiDataSize)
+  xiiResult ReadImageInfo(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_header, xiiBmpFileHeader& ref_fileHeader, xiiBmpFileInfoHeader& ref_fileInfoHeader, bool& ref_bIndexed, bool& ref_bCompressed, xiiUInt32& ref_uiBpp, xiiUInt32& ref_uiDataSize)
   {
     if (inout_stream.ReadBytes(&ref_fileHeader, sizeof(xiiBmpFileHeader)) != sizeof(xiiBmpFileHeader))
     {
@@ -406,12 +406,12 @@ namespace
                 return XII_FAILURE;
               }
 
-              format = xiiGALResourceFormat::FromPixelMask(colorMask.m_red, colorMask.m_green, colorMask.m_blue, 0, ref_uiBpp);
+              format = xiiGALTextureUtilities::FromPixelMask(colorMask.m_red, colorMask.m_green, colorMask.m_blue, 0, ref_uiBpp);
             }
             else
             {
               // For header version four and higher, the color masks are part of the header
-              format = xiiGALResourceFormat::FromPixelMask(fileInfoHeaderV4.m_redMask, fileInfoHeaderV4.m_greenMask, fileInfoHeaderV4.m_blueMask, fileInfoHeaderV4.m_alphaMask, ref_uiBpp);
+              format = xiiGALTextureUtilities::FromPixelMask(fileInfoHeaderV4.m_redMask, fileInfoHeaderV4.m_greenMask, fileInfoHeaderV4.m_blueMask, fileInfoHeaderV4.m_alphaMask, ref_uiBpp);
             }
 
             break;
@@ -483,10 +483,10 @@ namespace
     }
 
     // Set image data
-    ref_header.SetImageFormat(format);
-    ref_header.SetNumMipLevels(1);
-    ref_header.SetNumArrayIndices(1);
-    ref_header.SetNumFaces(1);
+    ref_header.SetFormat(format);
+    ref_header.SetMipLevelCount(1);
+    ref_header.SetArrayIndexCount(1);
+    ref_header.SetFaceCount(1);
 
     ref_header.SetWidth(uiWidth);
     ref_header.SetHeight(uiHeight);
@@ -519,7 +519,7 @@ xiiResult xiiBmpFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   XII_PROFILE_SCOPE("xiiBmpFileFormat::ReadImage");
 
   xiiBmpFileHeader     fileHeader;
-  xiiImageHeader       header;
+  xiiGALTextureCreationDescription       header;
   xiiBmpFileInfoHeader fileInfoHeader;
   bool                 bIndexed = false, bCompressed = false;
   xiiUInt32            uiBpp      = 0;

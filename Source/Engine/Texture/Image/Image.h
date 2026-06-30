@@ -6,6 +6,7 @@
 
 #include <Foundation/Containers/Blob.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
 
@@ -33,6 +34,28 @@ public:
 
   /// \brief Returns the description this image was constructed from.
   const xiiGALTextureCreationDescription& GetDescription() const;
+
+  /// \brief Returns the image resource format.
+  xiiEnum<xiiGALResourceFormat> GetImageFormat() const;
+
+  /// \brief Returns width/height/depth for the given mip level.
+  xiiUInt32 GetWidth(xiiUInt32 uiMipLevel = 0) const;
+  xiiUInt32 GetHeight(xiiUInt32 uiMipLevel = 0) const;
+  xiiUInt32 GetDepth(xiiUInt32 uiMipLevel = 0) const;
+
+  xiiUInt32 GetMipLevelCount() const;
+  xiiUInt32 GetNumFaces() const;
+  xiiUInt32 GetNumArrayIndices() const;
+  xiiUInt32 GetPlaneCount() const;
+
+  xiiUInt32 GetNumBlocksX(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+  xiiUInt32 GetNumBlocksY(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+  xiiUInt32 GetNumBlocksZ(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+
+  xiiUInt64 GetRowPitch(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+  xiiUInt64 GetDepthPitch(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+
+  xiiUInt64 ComputeDataSize() const;
 
   /// \brief Returns a view to the entire data contained in this image.
   template <typename T>
@@ -71,6 +94,7 @@ protected:
 
   xiiHybridArray<xiiUInt64, 16> m_SubImageOffsets;
   xiiBlobPtr<xiiUInt8>          m_DataPtr;
+  xiiGALTextureCreationDescription m_Description;
 };
 
 /// \brief A class containing image data and associated meta data.

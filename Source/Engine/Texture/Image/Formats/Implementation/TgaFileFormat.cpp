@@ -42,17 +42,17 @@ static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt3
 
   switch (image.GetImageFormat())
   {
-    case xiiImageFormat::R8G8B8A8_UNORM:
+    case xiiGALResourceFormat::RGBA8UNormalized:
       c.r = pPixel[0];
       c.g = pPixel[1];
       c.b = pPixel[2];
       c.a = pPixel[3];
       break;
-    case xiiImageFormat::B8G8R8A8_UNORM:
+    case xiiGALResourceFormat::BGRA8UNormalized:
       c.a = pPixel[3];
       // fall through
-    case xiiImageFormat::B8G8R8_UNORM:
-    case xiiImageFormat::B8G8R8X8_UNORM:
+    case xiiGALResourceFormat::BGRA8UNormalized:
+    case xiiGALResourceFormat::BGRX8UNormalized:
       c.r = pPixel[2];
       c.g = pPixel[1];
       c.b = pPixel[0];
@@ -69,18 +69,18 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 {
   // Technically almost arbitrary formats are supported, but we only use the common ones.
   xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
-    xiiImageFormat::R8G8B8A8_UNORM,
-    xiiImageFormat::B8G8R8A8_UNORM,
-    xiiImageFormat::B8G8R8X8_UNORM,
-    xiiImageFormat::B8G8R8_UNORM,
+    xiiGALResourceFormat::RGBA8UNormalized,
+    xiiGALResourceFormat::BGRA8UNormalized,
+    xiiGALResourceFormat::BGRX8UNormalized,
+    xiiGALResourceFormat::BGRA8UNormalized,
   };
 
   // Find a compatible format closest to the one the image currently has
   xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
-  if (format == xiiImageFormat::UNKNOWN)
+  if (format == xiiGALResourceFormat::Unknown)
   {
-    xiiLog::Error("No conversion from format '{0}' to a format suitable for TGA files known.", xiiImageFormat::GetName(image.GetImageFormat()));
+    xiiLog::Error("No conversion from format '{0}' to a format suitable for TGA files known.", xiiArgEnum(image.GetImageFormat()));
     return XII_FAILURE;
   }
 
@@ -120,12 +120,12 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     uiHeader[15] = static_cast<xiiUInt8>(image.GetHeight(0) / 256);
     uiHeader[12] = static_cast<xiiUInt8>(image.GetWidth(0) % 256);
     uiHeader[14] = static_cast<xiiUInt8>(image.GetHeight(0) % 256);
-    uiHeader[16] = static_cast<xiiUInt8>(xiiImageFormat::GetBitsPerPixel(image.GetImageFormat()));
+    uiHeader[16] = static_cast<xiiUInt8>(xiiGALTextureUtilities::GetBitsPerPixel(image.GetImageFormat()));
 
     inout_stream.WriteBytes(uiHeader, 18).IgnoreResult();
   }
 
-  const bool bAlpha = image.GetImageFormat() != xiiImageFormat::B8G8R8_UNORM;
+  const bool bAlpha = image.GetImageFormat() != xiiGALResourceFormat::BGRA8UNormalized;
 
   const xiiUInt32 uiWidth  = image.GetWidth(0);
   const xiiUInt32 uiHeight = image.GetHeight(0);
@@ -298,7 +298,7 @@ static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, TYPE& ref_dest)
   return ReadBytesChecked(inout_stream, &ref_dest, sizeof(TYPE));
 }
 
-static xiiResult ReadImageHeaderImpl(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, TgaHeader& ref_tgaHeader)
+static xiiResult ReadImageHeaderImpl(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_header, TgaHeader& ref_tgaHeader)
 {
   XII_SUCCEED_OR_RETURN(ReadBytesChecked(inout_stream, ref_tgaHeader.m_iImageIDLength));
   XII_SUCCEED_OR_RETURN(ReadBytesChecked(inout_stream, ref_tgaHeader.m_Ignored1));
@@ -325,15 +325,15 @@ static xiiResult ReadImageHeaderImpl(xiiStreamReader& inout_stream, xiiImageHead
   // Set image data
 
   if (uiBytesPerPixel == 1)
-    ref_header.SetImageFormat(xiiImageFormat::R8_UNORM);
+    ref_header.SetImageFormat(xiiGALResourceFormat::R8UNormalized);
   else if (uiBytesPerPixel == 3)
-    ref_header.SetImageFormat(xiiImageFormat::B8G8R8_UNORM);
+    ref_header.SetImageFormat(xiiGALResourceFormat::BGRA8UNormalized);
   else
-    ref_header.SetImageFormat(xiiImageFormat::B8G8R8A8_UNORM);
+    ref_header.SetImageFormat(xiiGALResourceFormat::BGRA8UNormalized);
 
-  ref_header.SetNumMipLevels(1);
-  ref_header.SetNumArrayIndices(1);
-  ref_header.SetNumFaces(1);
+  ref_header.SetMipLevelCount(1);
+  ref_header.SetArrayIndexCount(1);
+  ref_header.SetFaceCount(1);
 
   ref_header.SetWidth(ref_tgaHeader.m_iImageWidth);
   ref_header.SetHeight(ref_tgaHeader.m_iImageHeight);
@@ -358,7 +358,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
   XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImage");
 
-  xiiImageHeader imageHeader;
+  xiiGALTextureCreationDescription imageHeader;
   TgaHeader      tgaHeader;
   XII_SUCCEED_OR_RETURN(ReadImageHeaderImpl(inout_stream, imageHeader, tgaHeader));
 

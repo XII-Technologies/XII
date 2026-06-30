@@ -11,10 +11,10 @@
 
 xiiImageConversionEntry g_BC7EncConversions[] = {
   // Even at the lowest quality level of BC7Enc, BC1 encoding times are more than a magnitude worse than DXTextureConverter.
-  // xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC1_UNORM, xiiImageConversionFlags::Default),
-  // xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC1_UNORM_SRGB, xiiImageConversionFlags::Default),
-  xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC7_UNORM, xiiImageConversionFlags::Default),
-  xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC7_UNORM_SRGB, xiiImageConversionFlags::Default),
+  // xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC1UNormalized, xiiImageConversionFlags::Default),
+  // xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BC1UNormalizedSRGB, xiiImageConversionFlags::Default),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC7UNormalized, xiiImageConversionFlags::Default),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BC7UNormalizedSRGB, xiiImageConversionFlags::Default),
 };
 
 class xiiImageConversion_CompressBC7Enc : public xiiImageConversionStepCompressBlocks
@@ -37,12 +37,12 @@ public:
 
     switch (targetFormat)
     {
-      case xiiImageFormat::BC7_UNORM:
-      case xiiImageFormat::BC7_UNORM_SRGB:
+      case xiiGALResourceFormat::BC7UNormalized:
+      case xiiGALResourceFormat::BC7UNormalizedSRGB:
         rp.m_dxgi_format = DXGI_FORMAT_BC7_UNORM;
         break;
-      case xiiImageFormat::BC1_UNORM:
-      case xiiImageFormat::BC1_UNORM_SRGB:
+      case xiiGALResourceFormat::BC1UNormalized:
+      case xiiGALResourceFormat::BC1UNormalizedSRGB:
         rp.m_dxgi_format = DXGI_FORMAT_BC1_UNORM;
         break;
 

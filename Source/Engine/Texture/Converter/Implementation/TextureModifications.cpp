@@ -20,7 +20,7 @@ xiiResult xiiTextureConverterProcessor::ForceSRGBFormats()
         if (iTex != -1)
         {
           auto& img = m_Descriptor.m_InputImages[iTex];
-          img.ReinterpretAs(xiiImageFormat::AsSrgb(img.GetImageFormat()));
+          img.ReinterpretAs(xiiGALResourceFormat::AsSrgb(img.GetImageFormat()));
         }
       }
     }
@@ -78,7 +78,7 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
   xiiImageUtils::GenerateMipMaps(img, scratch, opt);
   img.ResetAndMove(std::move(scratch));
 
-  if (img.GetNumMipLevels() <= 1)
+  if (img.GetMipLevelCount() <= 1)
   {
     xiiLog::Error("Mipmap generation failed.");
     return XII_FAILURE;
@@ -138,8 +138,8 @@ xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiArrayPtr<xiiImage>
 
 xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
 {
-  xiiImageHeader newImageHeader = bumpMap.GetHeader();
-  newImageHeader.SetNumMipLevels(1);
+  xiiGALTextureCreationDescription newImageHeader = bumpMap.GetDescription();
+  newImageHeader.SetMipLevelCount(1);
   xiiImage newImage;
   newImage.ResetAndAlloc(newImageHeader);
 
@@ -152,7 +152,7 @@ xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiImage& bumpMap) co
 
   // we'll assume that both the input bump map and the new image are using
   // RGBA 32 bit floating point as an internal format which should be tightly packed
-  XII_ASSERT_DEV(bumpMap.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && bumpMap.GetRowPitch() % sizeof(xiiColor) == 0, "");
+  XII_ASSERT_DEV(bumpMap.GetImageFormat() == xiiGALResourceFormat::RGBA32Float && bumpMap.GetRowPitch() % sizeof(xiiColor) == 0, "");
 
   const xiiColor* bumpPixels   = bumpMap.GetPixelPointer<xiiColor>(0, 0, 0, 0, 0, 0);
   const auto      getBumpPixel = [&](xiiUInt32 x, xiiUInt32 y) -> float {
@@ -278,7 +278,7 @@ xiiResult xiiTextureConverterProcessor::ClampInputValues(xiiImage& image, float 
 {
   // we'll assume that at this point in the processing pipeline, the format is
   // RGBA32F which should result in tightly packed mipmaps.
-  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && image.GetRowPitch() % sizeof(float[4]) == 0, "");
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiGALResourceFormat::RGBA32Float && image.GetRowPitch() % sizeof(float[4]) == 0, "");
 
   for (auto& value : image.GetBlobPtr<float>())
   {
@@ -433,7 +433,7 @@ xiiResult xiiTextureConverterProcessor::InvertNormalMap(xiiImage& image)
 
   // we'll assume that at this point in the processing pipeline, the format is
   // RGBA32F which should result in tightly packed mipmaps.
-  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && image.GetRowPitch() % sizeof(float[4]) == 0, "");
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiGALResourceFormat::RGBA32Float && image.GetRowPitch() % sizeof(float[4]) == 0, "");
 
   for (auto& value : image.GetBlobPtr<xiiColor>())
   {

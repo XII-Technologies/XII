@@ -14,13 +14,13 @@
 #  include <Foundation/Threading/TaskSystem.h>
 
 xiiImageConversionEntry g_DXTexCpuConversions[] = {
-  xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::BC6H_UF16, xiiImageConversionFlags::Default),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::BC6HUF16, xiiImageConversionFlags::Default),
 
-  xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC1_UNORM, xiiImageConversionFlags::Default, 100),
-  xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::BC7_UNORM, xiiImageConversionFlags::Default, 100),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC1UNormalized, xiiImageConversionFlags::Default, 100),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BC7UNormalized, xiiImageConversionFlags::Default, 100),
 
-  xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC1_UNORM_SRGB, xiiImageConversionFlags::Default, 100),
-  xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::BC7_UNORM_SRGB, xiiImageConversionFlags::Default, 100),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BC1UNormalizedSRGB, xiiImageConversionFlags::Default, 100),
+  xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BC7UNormalizedSRGB, xiiImageConversionFlags::Default, 100),
 };
 
 class xiiImageConversion_CompressDxTexCpu : public xiiImageConversionStepCompressBlocks
@@ -33,7 +33,7 @@ public:
 
   virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 numBlocksX, xiiUInt32 numBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    if (targetFormat == xiiImageFormat::BC7_UNORM || targetFormat == xiiImageFormat::BC7_UNORM_SRGB)
+    if (targetFormat == xiiGALResourceFormat::BC7UNormalized || targetFormat == xiiGALResourceFormat::BC7UNormalizedSRGB)
     {
       const xiiUInt32 srcStride    = numBlocksX * 4 * 4;
       const xiiUInt32 targetStride = numBlocksX * 16;
@@ -64,7 +64,7 @@ public:
 
       return XII_SUCCESS;
     }
-    else if (targetFormat == xiiImageFormat::BC1_UNORM || targetFormat == xiiImageFormat::BC1_UNORM_SRGB)
+    else if (targetFormat == xiiGALResourceFormat::BC1UNormalized || targetFormat == xiiGALResourceFormat::BC1UNormalizedSRGB)
     {
       const xiiUInt32 srcStride    = numBlocksX * 4 * 4;
       const xiiUInt32 targetStride = numBlocksX * 8;
@@ -95,7 +95,7 @@ public:
 
       return XII_SUCCESS;
     }
-    else if (targetFormat == xiiImageFormat::BC6H_UF16)
+    else if (targetFormat == xiiGALResourceFormat::BC6HUF16)
     {
       const xiiUInt32 srcStride    = numBlocksX * 4 * 4 * sizeof(float);
       const xiiUInt32 targetStride = numBlocksX * 16;

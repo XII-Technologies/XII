@@ -53,7 +53,7 @@ xiiResult xiiTextureConverterProcessor::LoadInputImages()
   {
     const auto& img = m_Descriptor.m_InputImages[i];
 
-    if (img.GetImageFormat() == xiiImageFormat::UNKNOWN)
+    if (img.GetImageFormat() == xiiGALResourceFormat::Unknown)
     {
       xiiLog::Error("Unknown image format for '{}'", xiiArgSensitive(m_Descriptor.m_InputFiles[i], "File"));
       return XII_FAILURE;
@@ -65,9 +65,9 @@ xiiResult xiiTextureConverterProcessor::LoadInputImages()
 
 xiiResult xiiTextureConverterProcessor::ConvertAndScaleImage(xiiStringView sImageName, xiiImage& inout_Image, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiEnum<xiiTextureConverterUsage> usage)
 {
-  const bool bSingleChannel = xiiImageFormat::GetNumChannels(inout_Image.GetImageFormat()) == 1;
+  const bool bSingleChannel = xiiGALTextureUtilities::GetComponentCount(inout_Image.GetImageFormat()) == 1;
 
-  if (inout_Image.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Failed())
+  if (inout_Image.Convert(xiiGALResourceFormat::RGBA32Float).Failed())
   {
     xiiLog::Error("Could not convert '{}' to RGBA 32-Bit Float format.", sImageName);
     return XII_FAILURE;
@@ -75,7 +75,7 @@ xiiResult xiiTextureConverterProcessor::ConvertAndScaleImage(xiiStringView sImag
 
   // some scale operations fail when they are done in place, so use a scratch image as destination for now
   xiiImage scratch;
-  if (xiiImageUtils::Scale(inout_Image, scratch, uiResolutionX, uiResolutionY, nullptr, xiiImageAddressMode::Clamp, xiiImageAddressMode::Clamp).Failed())
+  if (xiiImageUtils::Scale(inout_Image, scratch, uiResolutionX, uiResolutionY, nullptr, xiiGALTextureAddressMode::Clamp, xiiGALTextureAddressMode::Clamp).Failed())
   {
     xiiLog::Error("Could not resize '{}' to {}x{}", sImageName, uiResolutionX, uiResolutionY);
     return XII_FAILURE;

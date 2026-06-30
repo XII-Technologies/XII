@@ -65,13 +65,13 @@ public:
     float m_alphaThreshold = 0.5f;
 
     /// The address mode for samples when filtering outside of the image dimensions in the horizontal direction.
-    xiiImageAddressMode::Enum m_addressModeU = xiiImageAddressMode::Clamp;
+    xiiGALTextureAddressMode::Enum m_addressModeU = xiiGALTextureAddressMode::Clamp;
 
     /// The address mode for samples when filtering outside of the image dimensions in the vertical direction.
-    xiiImageAddressMode::Enum m_addressModeV = xiiImageAddressMode::Clamp;
+    xiiGALTextureAddressMode::Enum m_addressModeV = xiiGALTextureAddressMode::Clamp;
 
     /// The address mode for samples when filtering outside of the image dimensions in the depth direction.
-    xiiImageAddressMode::Enum m_addressModeW = xiiImageAddressMode::Clamp;
+    xiiGALTextureAddressMode::Enum m_addressModeW = xiiGALTextureAddressMode::Clamp;
 
     /// The border color if texture address mode equals BORDER.
     xiiColor m_borderColor = xiiColor::Black;
@@ -81,10 +81,10 @@ public:
   };
 
   /// Scales the image.
-  static xiiResult Scale(const xiiImageView& source, xiiImage& ref_target, xiiUInt32 uiWidth, xiiUInt32 uiHeight, const xiiImageFilter* pFilter = nullptr, xiiImageAddressMode::Enum addressModeU = xiiImageAddressMode::Clamp, xiiImageAddressMode::Enum addressModeV = xiiImageAddressMode::Clamp, const xiiColor& borderColor = xiiColor::Black);
+  static xiiResult Scale(const xiiImageView& source, xiiImage& ref_target, xiiUInt32 uiWidth, xiiUInt32 uiHeight, const xiiImageFilter* pFilter = nullptr, xiiGALTextureAddressMode::Enum addressModeU = xiiGALTextureAddressMode::Clamp, xiiGALTextureAddressMode::Enum addressModeV = xiiGALTextureAddressMode::Clamp, const xiiColor& borderColor = xiiColor::Black);
 
   /// Scales the image.
-  static xiiResult Scale3D(const xiiImageView& source, xiiImage& ref_target, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, const xiiImageFilter* pFilter = nullptr, xiiImageAddressMode::Enum addressModeU = xiiImageAddressMode::Clamp, xiiImageAddressMode::Enum addressModeV = xiiImageAddressMode::Clamp, xiiImageAddressMode::Enum addressModeW = xiiImageAddressMode::Clamp, const xiiColor& borderColor = xiiColor::Black);
+  static xiiResult Scale3D(const xiiImageView& source, xiiImage& ref_target, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, const xiiImageFilter* pFilter = nullptr, xiiGALTextureAddressMode::Enum addressModeU = xiiGALTextureAddressMode::Clamp, xiiGALTextureAddressMode::Enum addressModeV = xiiGALTextureAddressMode::Clamp, xiiGALTextureAddressMode::Enum addressModeW = xiiGALTextureAddressMode::Clamp, const xiiColor& borderColor = xiiColor::Black);
 
   /// Genererates the mip maps for the image. The input texture must be in xiiImageFormat::R32_G32_B32_A32_FLOAT
   static void GenerateMipMaps(const xiiImageView& source, xiiImage& ref_target, const MipMapOptions& options);
@@ -119,33 +119,33 @@ public:
 
   static xiiResult CreateVolumeTextureFromSingleFile(xiiImage& ref_dstImg, const xiiImageView& srcImg);
 
-  static xiiUInt32 GetSampleIndex(xiiUInt32 uiNumTexels, xiiInt32 iIndex, xiiImageAddressMode::Enum addressMode, bool& out_bUseBorderColor);
+  static xiiUInt32 GetSampleIndex(xiiUInt32 uiNumTexels, xiiInt32 iIndex, xiiGALTextureAddressMode::Enum addressMode, bool& out_bUseBorderColor);
 
   /// \brief Samples the image at the given UV coordinates with nearest filtering.
   ///
   /// This function has to validate that the image is of the right format, and has to query the pixel pointer, which is slow.
   /// If you need to sample the image very often, use the overload that takes a pixel pointer instead of an image.
-  static xiiColor NearestSample(const xiiImageView& image, xiiImageAddressMode::Enum addressMode, xiiVec2 vUv);
+  static xiiColor NearestSample(const xiiImageView& image, xiiGALTextureAddressMode::Enum addressMode, xiiVec2 vUv);
 
   /// \brief Samples the image at the given UV coordinates with nearest filtering.
   ///
   /// Prefer this function over the one that takes a xiiImageView when you need to sample the image very often,
   /// as it does away with internal validation that would be redundant. Also, the pixel pointer given to this function
   /// should be retrieved only once from the source image, as xiiImage::GetPixelPointer() is rather slow due to validation overhead.
-  static xiiColor NearestSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiImageAddressMode::Enum addressMode, xiiVec2 vUv);
+  static xiiColor NearestSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiGALTextureAddressMode::Enum addressMode, xiiVec2 vUv);
 
   /// \brief Samples the image at the given UV coordinates with bilinear filtering.
   ///
   /// This function has to validate that the image is of the right format, and has to query the pixel pointer, which is slow.
   /// If you need to sample the image very often, use the overload that takes a pixel pointer instead of an image.
-  static xiiColor BilinearSample(const xiiImageView& image, xiiImageAddressMode::Enum addressMode, xiiVec2 vUv);
+  static xiiColor BilinearSample(const xiiImageView& image, xiiGALTextureAddressMode::Enum addressMode, xiiVec2 vUv);
 
   /// \brief Samples the image at the given UV coordinates with bilinear filtering.
   ///
   /// Prefer this function over the one that takes a xiiImageView when you need to sample the image very often,
   /// as it does away with internal validation that would be redundant. Also, the pixel pointer given to this function
   /// should be retrieved only once from the source image, as xiiImage::GetPixelPointer() is rather slow due to validation overhead.
-  static xiiColor BilinearSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiImageAddressMode::Enum addressMode, xiiVec2 vUv);
+  static xiiColor BilinearSample(const xiiColor* pPixelPointer, xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiGALTextureAddressMode::Enum addressMode, xiiVec2 vUv);
 
   /// \brief Copies channel 0, 1, 2 or 3 from srcImg into dstImg.
   ///

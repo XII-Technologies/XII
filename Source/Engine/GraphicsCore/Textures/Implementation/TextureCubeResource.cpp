@@ -70,10 +70,10 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   xiiTexFormat texFormat;
   texFormat.ReadHeader(*Stream);
 
-  const xiiUInt32 uiNumMipmapsLowRes = xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetNumMipLevels() : 6;
+  const xiiUInt32 uiNumMipmapsLowRes = xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetMipLevelCount() : 6;
 
-  const xiiUInt32 uiNumMipLevels    = xiiMath::Min(m_uiLoadedTextures == 0 ? uiNumMipmapsLowRes : pImage->GetNumMipLevels(), pImage->GetNumMipLevels());
-  const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
+  const xiiUInt32 uiNumMipLevels    = xiiMath::Min(m_uiLoadedTextures == 0 ? uiNumMipmapsLowRes : pImage->GetMipLevelCount(), pImage->GetMipLevelCount());
+  const xiiUInt32 uiHighestMipLevel = pImage->GetMipLevelCount() - uiNumMipLevels;
 
   if (pImage->GetWidth(uiHighestMipLevel) != pImage->GetHeight(uiHighestMipLevel))
   {
@@ -128,7 +128,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   {
     for (xiiUInt32 face = 0; face < pImage->GetNumFaces(); ++face)
     {
-      for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
+      for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetMipLevelCount(); ++mip)
       {
         xiiGALTextureSubResourceData& id = InitData.ExpandAndGetRef();
         id.m_pData                       = pImage->GetSubImageView(mip, face, arrayIndex).GetByteBlobPtr();

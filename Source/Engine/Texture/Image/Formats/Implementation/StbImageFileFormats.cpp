@@ -52,7 +52,7 @@ namespace
     writer->WriteBytes(pData, iSize).IgnoreResult();
   }
 
-  void* ReadImageData(xiiStreamReader& inout_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiImageHeader& ref_imageHeader, bool& ref_bIsHDR)
+  void* ReadImageData(xiiStreamReader& inout_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiGALTextureCreationDescription& ref_imageHeader, bool& ref_bIsHDR)
   {
     xiiStreamUtils::ReadAllAndAppend(inout_stream, ref_fileBuffer);
 
@@ -76,28 +76,28 @@ namespace
     }
     ref_fileBuffer.Clear();
 
-    xiiEnum<xiiGALResourceFormat> format = xiiImageFormat::UNKNOWN;
+    xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown;
     switch (numComp)
     {
       case 1:
-        format = (ref_bIsHDR) ? xiiImageFormat::R32_FLOAT : xiiImageFormat::R8_UNORM;
+        format = (ref_bIsHDR) ? xiiGALResourceFormat::R32Float : xiiGALResourceFormat::R8UNormalized;
         break;
       case 2:
-        format = (ref_bIsHDR) ? xiiImageFormat::R32G32_FLOAT : xiiImageFormat::R8G8_UNORM;
+        format = (ref_bIsHDR) ? xiiGALResourceFormat::RG32Float : xiiGALResourceFormat::RG8UNormalized;
         break;
       case 3:
-        format = (ref_bIsHDR) ? xiiImageFormat::R32G32B32_FLOAT : xiiImageFormat::R8G8B8_UNORM;
+        format = (ref_bIsHDR) ? xiiGALResourceFormat::RGB32Float : xiiGALResourceFormat::RGBA8UNormalized;
         break;
       case 4:
-        format = (ref_bIsHDR) ? xiiImageFormat::R32G32B32A32_FLOAT : xiiImageFormat::R8G8B8A8_UNORM;
+        format = (ref_bIsHDR) ? xiiGALResourceFormat::RGBA32Float : xiiGALResourceFormat::RGBA8UNormalized;
         break;
     }
 
     // Set properties and allocate.
     ref_imageHeader.SetImageFormat(format);
-    ref_imageHeader.SetNumMipLevels(1);
-    ref_imageHeader.SetNumArrayIndices(1);
-    ref_imageHeader.SetNumFaces(1);
+    ref_imageHeader.SetMipLevelCount(1);
+    ref_imageHeader.SetArrayIndexCount(1);
+    ref_imageHeader.SetFaceCount(1);
 
     ref_imageHeader.SetWidth(width);
     ref_imageHeader.SetHeight(height);
@@ -133,7 +133,7 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiIm
 
   bool                      isHDR = false;
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  xiiImageHeader            imageHeader;
+  xiiGALTextureCreationDescription            imageHeader;
   void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, imageHeader, isHDR);
 
   if (sourceImageData == nullptr)
@@ -141,7 +141,7 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiIm
 
   ref_image.ResetAndAlloc(imageHeader);
 
-  const size_t numComp = xiiImageFormat::GetNumChannels(imageHeader.GetImageFormat());
+  const size_t numComp = xiiGALTextureUtilities::GetComponentCount(imageHeader.GetImageFormat());
 
   const size_t elementsToCopy = static_cast<size_t>(imageHeader.GetWidth()) * static_cast<size_t>(imageHeader.GetHeight()) * numComp;
 
@@ -163,14 +163,14 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiIm
 
 xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& inout_stream, const xiiImageView& image, xiiStringView sFileExtension) const
 {
-  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {xiiImageFormat::R8_UNORM, xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8B8A8_UNORM};
+  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {xiiGALResourceFormat::R8UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::RGBA8UNormalized};
 
   // Find a compatible format closest to the one the image currently has
   xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
-  if (format == xiiImageFormat::UNKNOWN)
+  if (format == xiiGALResourceFormat::Unknown)
   {
-    xiiLog::Error("No conversion from format '{0}' to a format suitable for PNG files known.", xiiImageFormat::GetName(image.GetImageFormat()));
+    xiiLog::Error("No conversion from format '{0}' to a format suitable for PNG files known.", xiiArgEnum(image.GetImageFormat()));
     return XII_FAILURE;
   }
 
@@ -190,7 +190,7 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& inout_stream, cons
 
   if (sFileExtension.IsEqual_NoCase("png"))
   {
-    if (stbi_write_png_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 0))
+    if (stbi_write_png_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiGALTextureUtilities::GetComponentCount(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 0))
     {
       return XII_SUCCESS;
     }
@@ -198,7 +198,7 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& inout_stream, cons
 
   if (sFileExtension.IsEqual_NoCase("jpg") || sFileExtension.IsEqual_NoCase("jpeg"))
   {
-    if (stbi_write_jpg_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiImageFormat::GetNumChannels(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 95))
+    if (stbi_write_jpg_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiGALTextureUtilities::GetComponentCount(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr(), 95))
     {
       return XII_SUCCESS;
     }

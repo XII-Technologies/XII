@@ -124,7 +124,7 @@ struct xiiDdsCaps2
 static const xiiUInt32 xiiDdsMagic       = 0x20534444;
 static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
 
-static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
+static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
 {
   if (inout_stream.ReadBytes(&ref_ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
   {
@@ -169,16 +169,16 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
   xiiDdsHeaderDxt10 headerDxt10;
 
-  xiiEnum<xiiGALResourceFormat> format = xiiImageFormat::UNKNOWN;
+  xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown;
 
   // Data format specified in RGBA masks
   if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 ||
       (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
   {
-    format = xiiImageFormat::FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask,
+    format = xiiGALTextureUtilities::FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask,
                                            ref_ddsHeader.m_ddspf.m_uiABitMask, ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
 
-    if (format == xiiImageFormat::UNKNOWN)
+    if (format == xiiGALResourceFormat::Unknown)
     {
       xiiLog::Error("The pixel mask specified was not recognized (R: {0}, G: {1}, B: {2}, A: {3}, Bpp: {4}).",
                     xiiArgU(ref_ddsHeader.m_ddspf.m_uiRBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiGBitMask, 1, false, 16),
@@ -188,10 +188,10 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
     }
 
     // Verify that the format we found is correct
-    if (xiiImageFormat::GetBitsPerPixel(format) != ref_ddsHeader.m_ddspf.m_uiRGBBitCount)
+    if (xiiGALTextureUtilities::GetBitsPerPixel(format) != ref_ddsHeader.m_ddspf.m_uiRGBBitCount)
     {
       xiiLog::Error("The number of bits per pixel specified in the file ({0}) does not match the expected value of {1} for the format '{2}'.",
-                    ref_ddsHeader.m_ddspf.m_uiRGBBitCount, xiiImageFormat::GetBitsPerPixel(format), xiiImageFormat::GetName(format));
+                    ref_ddsHeader.m_ddspf.m_uiRGBBitCount, xiiGALTextureUtilities::GetBitsPerPixel(format), xiiArgEnum(format));
       return XII_FAILURE;
     }
   }
@@ -207,7 +207,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
       format = xiiImageFormatMappings::FromDxgiFormat(headerDxt10.m_uiDxgiFormat);
 
-      if (format == xiiImageFormat::UNKNOWN)
+      if (format == xiiGALResourceFormat::Unknown)
       {
         xiiLog::Error("The DXGI format {0} has no equivalent image format.", headerDxt10.m_uiDxgiFormat);
         return XII_FAILURE;
@@ -217,7 +217,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
     {
       format = xiiImageFormatMappings::FromFourCc(ref_ddsHeader.m_ddspf.m_uiFourCC);
 
-      if (format == xiiImageFormat::UNKNOWN)
+      if (format == xiiGALResourceFormat::Unknown)
       {
         xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 0)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 16)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 24)));
         return XII_FAILURE;
@@ -239,7 +239,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
   if (bHasMipMaps)
   {
-    ref_imageHeader.SetNumMipLevels(ref_ddsHeader.m_uiMipMapCount);
+    ref_imageHeader.SetMipLevelCount(ref_ddsHeader.m_uiMipMapCount);
   }
 
   // Cubemap and volume texture are mutually exclusive
@@ -251,7 +251,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
   if (bCubeMap)
   {
-    ref_imageHeader.SetNumFaces(6);
+    ref_imageHeader.SetFaceCount(6);
   }
   else if (bVolume)
   {
@@ -277,7 +277,7 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
 
-  xiiImageHeader imageHeader;
+  xiiGALTextureCreationDescription imageHeader;
   xiiDdsHeader   ddsHeader;
   XII_SUCCEED_OR_RETURN(ReadImageData(inout_stream, imageHeader, ddsHeader));
 
@@ -308,10 +308,10 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   XII_IGNORE_UNUSED(sFileExtension);
 
   const xiiEnum<xiiGALResourceFormat> format = image.GetImageFormat();
-  const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
+  const xiiUInt32            uiBpp  = xiiGALTextureUtilities::GetBitsPerPixel(format);
 
   const xiiUInt32 uiNumFaces        = image.GetNumFaces();
-  const xiiUInt32 uiNumMipLevels    = image.GetNumMipLevels();
+  const xiiUInt32 uiNumMipLevels    = image.GetMipLevelCount();
   const xiiUInt32 uiNumArrayIndices = image.GetNumArrayIndices();
 
   const xiiUInt32 uiWidth  = image.GetWidth(0);
@@ -418,10 +418,10 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
   fileHeader.m_ddspf.m_uiSize = 32;
 
-  xiiUInt32 uiRedMask   = xiiImageFormat::GetRedMask(format);
-  xiiUInt32 uiGreenMask = xiiImageFormat::GetGreenMask(format);
-  xiiUInt32 uiBlueMask  = xiiImageFormat::GetBlueMask(format);
-  xiiUInt32 uiAlphaMask = xiiImageFormat::GetAlphaMask(format);
+  xiiUInt32 uiRedMask   = xiiGALTextureUtilities::GetRedMask(format);
+  xiiUInt32 uiGreenMask = xiiGALTextureUtilities::GetGreenMask(format);
+  xiiUInt32 uiBlueMask  = xiiGALTextureUtilities::GetBlueMask(format);
+  xiiUInt32 uiAlphaMask = xiiGALTextureUtilities::GetAlphaMask(format);
 
   xiiUInt32 uiFourCc     = xiiImageFormatMappings::ToFourCc(format);
   xiiUInt32 uiDxgiFormat = xiiImageFormatMappings::ToDxgiFormat(format);
@@ -432,14 +432,14 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     // The format has a known mask and we would also recognize it as the same when reading back in, since multiple formats may have the same pixel
     // masks
     if ((uiRedMask | uiGreenMask | uiBlueMask | uiAlphaMask) &&
-        format == xiiImageFormat::FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
+        format == xiiGALTextureUtilities::FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
     {
       fileHeader.m_ddspf.m_uiFlags       = xiiDdpfFlags::ALPHAPIXELS | xiiDdpfFlags::RGB;
       fileHeader.m_ddspf.m_uiRBitMask    = uiRedMask;
       fileHeader.m_ddspf.m_uiGBitMask    = uiGreenMask;
       fileHeader.m_ddspf.m_uiBBitMask    = uiBlueMask;
       fileHeader.m_ddspf.m_uiABitMask    = uiAlphaMask;
-      fileHeader.m_ddspf.m_uiRGBBitCount = xiiImageFormat::GetBitsPerPixel(format);
+      fileHeader.m_ddspf.m_uiRGBBitCount = xiiGALTextureUtilities::GetBitsPerPixel(format);
     }
     // The format has a known FourCC
     else if (uiFourCc != 0)
@@ -459,7 +459,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     // We must write a DXT10 file, but there is no matching DXGI_FORMAT - we could also try converting, but that is rarely intended when writing .dds
     if (uiDxgiFormat == 0)
     {
-      xiiLog::Error("The image needs to be written as a DXT10 file, but no matching DXGI format was found for '{0}'.", xiiImageFormat::GetName(format));
+      xiiLog::Error("The image needs to be written as a DXT10 file, but no matching DXGI format was found for '{0}'.", xiiArgEnum(format));
       return XII_FAILURE;
     }
 

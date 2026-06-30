@@ -57,7 +57,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UnloadData(Unload WhatToUnload)
 
 void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData)
 {
-  const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
+  const xiiUInt32 uiHighestMipLevel = pImage->GetMipLevelCount() - uiNumMipLevels;
 
   const xiiEnum<xiiGALResourceFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
   const auto&                         formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
@@ -100,7 +100,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
   {
     for (xiiUInt32 face = 0; face < pImage->GetNumFaces(); ++face)
     {
-      for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
+      for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetMipLevelCount(); ++mip)
       {
         xiiGALTextureSubResourceData& id = ref_initData.ExpandAndGetRef();
         id.m_pData                       = pImage->GetSubImageView(mip, face, arrayIndex).GetByteBlobPtr();
@@ -163,7 +163,7 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
   XII_ASSERT_DEV(!bIsRenderTarget, "Render targets are not supported by regular 2D texture resources");
 
   {
-    const xiiUInt32 uiNumMipmapsLowRes   = xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetNumMipLevels() : xiiMath::Min(pImage->GetNumMipLevels(), 6U);
+    const xiiUInt32 uiNumMipmapsLowRes   = xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetMipLevelCount() : xiiMath::Min(pImage->GetMipLevelCount(), 6U);
     xiiUInt32       uiUploadNumMipLevels = 0;
     bool            bCouldLoadMore       = false;
 
@@ -191,12 +191,12 @@ xiiResourceLoadDesc xiiTexture2DResource::UpdateContent(xiiStreamReader* Stream)
     {
       if (m_uiLoadedTextures == 0)
       {
-        bCouldLoadMore       = uiNumMipmapsLowRes < pImage->GetNumMipLevels();
+        bCouldLoadMore       = uiNumMipmapsLowRes < pImage->GetMipLevelCount();
         uiUploadNumMipLevels = uiNumMipmapsLowRes;
       }
       else if (m_uiLoadedTextures == 1)
       {
-        uiUploadNumMipLevels = pImage->GetNumMipLevels();
+        uiUploadNumMipLevels = pImage->GetMipLevelCount();
       }
       else
       {
