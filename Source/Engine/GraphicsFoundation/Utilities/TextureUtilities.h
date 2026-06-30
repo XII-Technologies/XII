@@ -51,6 +51,208 @@ public:
   /// \return A const reference to the xiiGALMultiPlanarFormatDescription structure containing the multi-planar format description.
   [[nodiscard]] static const xiiGALMultiPlanarFormatDescription& GetMultiPlanarFormatProperties(xiiEnum<xiiGALResourceFormat> format);
 
+  [[nodiscard]] static XII_ALWAYS_INLINE bool IsCompressed(xiiEnum<xiiGALResourceFormat> format)
+  {
+    return !xiiGALResourceFormat::IsMultiplanar(format) && GetResourceFormatProperties(format).IsCompressed();
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetComponentCount(xiiEnum<xiiGALResourceFormat> format)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return GetMultiPlanarFormatProperties(format).GetPlaneCount();
+
+    return GetResourceFormatProperties(format).m_uiComponentCount;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerComponent(xiiEnum<xiiGALResourceFormat> format)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return GetMultiPlanarFormatProperties(format).GetPlane(0).m_uiBytesPerElement * 8U;
+
+    const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
+    return properties.IsCompressed() ? 0U : properties.m_uiComponentSize * 8U;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBytesPerBlock(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_uiBytesPerElement;
+
+    XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
+    return GetResourceFormatProperties(format).GetElementSize();
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerBlock(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
+  {
+    return GetBytesPerBlock(format, uiPlaneIndex) * 8U;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerPixel(xiiEnum<xiiGALResourceFormat> format)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return GetMultiPlanarFormatProperties(format).GetPlane(0).m_uiBytesPerElement * 8U;
+
+    const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
+    return properties.IsCompressed() ? (properties.GetElementSize() * 8U) / properties.GetTexelsPerBlock() : properties.GetElementSize() * 8U;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE float GetExactBitsPerPixel(xiiEnum<xiiGALResourceFormat> format)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return static_cast<float>(GetBitsPerPixel(format));
+
+    const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
+    return properties.IsCompressed() ? static_cast<float>(properties.GetElementSize() * 8U) / static_cast<float>(properties.GetTexelsPerBlock()) : static_cast<float>(properties.GetElementSize() * 8U);
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
+  {
+    XII_IGNORE_UNUSED(uiPlaneIndex);
+    return xiiGALResourceFormat::IsMultiplanar(format) ? 1U : GetResourceFormatProperties(format).GetBlockWidth();
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlockHeight(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
+  {
+    XII_IGNORE_UNUSED(uiPlaneIndex);
+    return xiiGALResourceFormat::IsMultiplanar(format) ? 1U : GetResourceFormatProperties(format).GetBlockHeight();
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlockDepth(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
+  {
+    XII_IGNORE_UNUSED(format);
+    XII_IGNORE_UNUSED(uiPlaneIndex);
+    return 1U;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE bool RequiresFirstLevelBlockAlignment(xiiEnum<xiiGALResourceFormat> format)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return false;
+
+    const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
+    return properties.GetBlockWidth() > 1U || properties.GetBlockHeight() > 1U;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetPlaneSubFormat(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_SubFormat;
+
+    XII_ASSERT_DEV(uiPlaneIndex == 0, "Single-plane formats only have plane 0.");
+    return format;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormatComponentType> GetComponentType(xiiEnum<xiiGALResourceFormat> format)
+  {
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+      return xiiGALResourceFormatComponentType::UnsignedInteger;
+
+    return GetResourceFormatProperties(format).m_ComponentType;
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetRedMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+        return 0x000000FFU;
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x00FF0000U;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+        return 0x0000F800U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x00007C00U;
+      default:
+        return 0U;
+    }
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetGreenMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x0000FF00U;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+        return 0x000007E0U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x000003E0U;
+      default:
+        return 0U;
+    }
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlueMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+        return 0x00FF0000U;
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x000000FFU;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x0000001FU;
+      default:
+        return 0U;
+    }
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetAlphaMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+        return 0xFF000000U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x00008000U;
+      default:
+        return 0U;
+    }
+  }
+
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> FromPixelMask(xiiUInt32 uiRedMask, xiiUInt32 uiGreenMask, xiiUInt32 uiBlueMask, xiiUInt32 uiAlphaMask, xiiUInt32 uiBitsPerPixel)
+  {
+    if (uiBitsPerPixel == 32U)
+    {
+      if (uiRedMask == 0x000000FFU && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x00FF0000U && uiAlphaMask == 0xFF000000U)
+        return xiiGALResourceFormat::RGBA8UNormalized;
+
+      if (uiRedMask == 0x00FF0000U && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x000000FFU && uiAlphaMask == 0xFF000000U)
+        return xiiGALResourceFormat::BGRA8UNormalized;
+
+      if (uiRedMask == 0x00FF0000U && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x000000FFU && uiAlphaMask == 0x00000000U)
+        return xiiGALResourceFormat::BGRX8UNormalized;
+    }
+
+    if (uiBitsPerPixel == 16U)
+    {
+      if (uiRedMask == 0x0000F800U && uiGreenMask == 0x000007E0U && uiBlueMask == 0x0000001FU)
+        return xiiGALResourceFormat::B5G6R5UNormalized;
+
+      if (uiRedMask == 0x00007C00U && uiGreenMask == 0x000003E0U && uiBlueMask == 0x0000001FU)
+        return xiiGALResourceFormat::B5G5R5A1UNormalized;
+    }
+
+    return xiiGALResourceFormat::Unknown;
+  }
+
   /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
   [[nodiscard]] static const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALResourceFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount);
 

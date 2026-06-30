@@ -62,15 +62,81 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiGALOptimizedClearValue           m_ClearValue            = {};                                 ///< Optimized clear value.
   void*                               m_pExistingNativeObject = nullptr;                            ///< Used to encapsulate existing native textures in objects usable by the GAL.
 
-  XII_ALWAYS_INLINE bool      IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
-  XII_ALWAYS_INLINE bool      Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
-  XII_ALWAYS_INLINE bool      Is2D() const { return m_Type == xiiGALResourceDimension::Texture2D || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
-  XII_ALWAYS_INLINE bool      Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
-  XII_ALWAYS_INLINE bool      IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
-  XII_ALWAYS_INLINE xiiUInt32 GetArraySize() const { return IsArray() ? m_uiArraySizeOrDepth : 1U; }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const { return m_Type; }
+  XII_ALWAYS_INLINE void                             SetType(xiiEnum<xiiGALResourceDimension> type) { m_Type = type; }
+
+  XII_ALWAYS_INLINE xiiSizeU32 GetSize() const { return m_Size; }
+  XII_ALWAYS_INLINE void       SetSize(xiiSizeU32 size) { m_Size = size; }
+
   XII_ALWAYS_INLINE xiiUInt32 GetWidth() const { return m_Size.width; }
-  XII_ALWAYS_INLINE xiiUInt32 GetHeight() const { return Is1D() ? 1U : m_Size.height; }
-  XII_ALWAYS_INLINE xiiUInt32 GetDepth() const { return Is3D() ? m_uiArraySizeOrDepth : 1U; }
+  XII_ALWAYS_INLINE void      SetWidth(xiiUInt32 uiWidth) { m_Size.width = uiWidth; }
+
+  XII_ALWAYS_INLINE xiiUInt32 GetHeight() const { return m_Size.height; }
+  XII_ALWAYS_INLINE void      SetHeight(xiiUInt32 uiHeight) { m_Size.height = uiHeight; }
+
+  XII_ALWAYS_INLINE xiiUInt32 GetDepth() const { return m_uiArraySizeOrDepth; }
+  XII_ALWAYS_INLINE void      SetDepth(xiiUInt32 uiDepth) { m_uiArraySizeOrDepth = uiDepth; }
+
+  XII_ALWAYS_INLINE xiiUInt32 GetArraySize() const { return m_uiArraySizeOrDepth; }
+  XII_ALWAYS_INLINE void      SetArraySize(xiiUInt32 uiArraySize) { m_uiArraySizeOrDepth = uiArraySize; }
+
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> GetFormat() const { return m_Format; }
+  XII_ALWAYS_INLINE void                          SetFormat(xiiEnum<xiiGALResourceFormat> format) { m_Format = format; }
+
+  XII_ALWAYS_INLINE xiiUInt32 GetMipLevelCount() const { return m_uiMipLevels; }
+  XII_ALWAYS_INLINE void      SetMipLevelCount(xiiUInt32 uiMipLevels) { m_uiMipLevels = uiMipLevels; }
+
+  XII_ALWAYS_INLINE xiiUInt32 GetSampleCount() const { return m_uiSampleCount; }
+  XII_ALWAYS_INLINE void      SetSampleCount(xiiUInt32 uiSampleCount) { m_uiSampleCount = uiSampleCount; }
+
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALBindFlags> GetBindFlags() const { return m_BindFlags; }
+  XII_ALWAYS_INLINE void                         SetBindFlags(xiiBitflags<xiiGALBindFlags> bindFlags) { m_BindFlags = bindFlags; }
+
+  XII_ALWAYS_INLINE xiiEnum<xiiGALResourceUsage> GetUsage() const { return m_Usage; }
+  XII_ALWAYS_INLINE void                         SetUsage(xiiEnum<xiiGALResourceUsage> usage) { m_Usage = usage; }
+
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALCPUAccessFlag> GetCPUAccessFlags() const { return m_CPUAccessFlags; }
+  XII_ALWAYS_INLINE void                             SetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> cpuAccessFlags) { m_CPUAccessFlags = cpuAccessFlags; }
+
+  XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> GetMiscFlags() const { return m_MiscFlags; }
+  XII_ALWAYS_INLINE void                                SetMiscFlags(xiiBitflags<xiiGALMiscTextureFlags> miscFlags) { m_MiscFlags = miscFlags; }
+
+  XII_ALWAYS_INLINE const xiiGALOptimizedClearValue& GetClearValue() const { return m_ClearValue; }
+  XII_ALWAYS_INLINE void                             SetClearValue(const xiiGALOptimizedClearValue& clearValue) { m_ClearValue = clearValue; }
+
+  XII_ALWAYS_INLINE bool Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
+  XII_ALWAYS_INLINE bool Is2D() const { return m_Type == xiiGALResourceDimension::Texture2D || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+  XII_ALWAYS_INLINE bool Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
+  XII_ALWAYS_INLINE bool IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+  XII_ALWAYS_INLINE bool IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+
+  XII_ALWAYS_INLINE xiiUInt32 ComputeNumberOfMipMaps() const { return xiiMath::Log2i(xiiMath::Max(GetWidth(), GetHeight(), GetDepth())) + 1U; }
+
+  XII_ALWAYS_INLINE void SetArrayIndexCount(xiiUInt32 uiArrayIndices)
+  {
+    if (IsCube())
+    {
+      m_uiArraySizeOrDepth = uiArrayIndices * 6U;
+      m_Type               = uiArrayIndices > 1U ? xiiGALResourceDimension::TextureCubeArray : xiiGALResourceDimension::TextureCube;
+    }
+    else
+    {
+      m_uiArraySizeOrDepth = uiArrayIndices;
+      m_Type               = uiArrayIndices > 1U ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+    }
+  }
+
+  XII_ALWAYS_INLINE void SetFaceCount(xiiUInt32 uiFaces)
+  {
+    if (uiFaces == 6U)
+    {
+      m_Type = GetArraySize() > 6U ? xiiGALResourceDimension::TextureCubeArray : xiiGALResourceDimension::TextureCube;
+    }
+    else if (IsCube())
+    {
+      m_Type = GetArraySize() > 1U ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+    }
+  }
 };
 
 /// \brief This describes the data for one texture sub-resource.
