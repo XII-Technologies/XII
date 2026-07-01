@@ -447,9 +447,9 @@ void xiiImageUtils::CropImage(const xiiImageView& input, const xiiVec2I32& vOffs
   const xiiUInt32 uiNewHeight = xiiMath::Min(vOffset.y + newsize.height, input.GetHeight()) - vOffset.y;
 
   xiiGALTextureCreationDescription outputHeader;
-  outputHeader.m_Size.width = uiNewWidth;
+  outputHeader.m_Size.width  = uiNewWidth;
   outputHeader.m_Size.height = uiNewHeight;
-  outputHeader.m_Format = input.GetImageFormat();
+  outputHeader.m_Format      = input.GetImageFormat();
   out_output.ResetAndAlloc(outputHeader);
 
   for (xiiUInt32 y = 0; y < uiNewHeight; ++y)
@@ -570,41 +570,43 @@ xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiIma
 
   XII_PROFILE_SCOPE("xiiImageUtils::ExtractLowerMipChain");
 
-  uiNumMips = xiiMath::Min(uiNumMips, xiiGALTextureUtilities::GetMipLevelCount(srcImgHeader));
+  xiiUInt32 uiTotalMips = xiiGALTextureUtilities::GetMipLevelCount(srcImgHeader);
+  uiNumMips             = xiiMath::Min(uiNumMips, uiTotalMips);
 
-  const xiiGALMipLevelProperties& mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(srcImgHeader, uiNumMips);
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(srcImgHeader.m_Format);
+  xiiUInt32                              uiStartMipLevel  = uiTotalMips - uiNumMips;
 
-
-
-  xiiUInt32 uiStartMipLevel = xiiGALTextureUtilities::GetMipLevelCount(srcImgHeader) - uiNumMips;
-
-  xiiEnum<xiiGALResourceFormat> format = srcImgHeader.m_Format;
-
-  if (xiiGALTextureUtilities::RequiresFirstLevelBlockAlignment(format))
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
-    // Some block compressed image formats require resolutions that are divisible by block size, therefore adjust startMipLevel accordingly
-    while (srcImgHeader.GetWidth(uiStartMipLevel) % xiiGALTextureUtilities::GetBlockWidth(srcImgHeader.m_Format) != 0 || srcImgHeader.GetHeight(uiStartMipLevel) % xiiGALTextureUtilities::GetBlockHeight(srcImgHeader.m_Format) != 0)
+    while (true)
     {
-      if (uiNumMips >= xiiGALTextureUtilities::GetMipLevelCount(srcImgHeader))
-        return XII_FAILURE;
+      const xiiGALMipLevelProperties& mipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(srcImgHeader, uiStartMipLevel);
+      const bool                      bWidthAligned      = (mipLevelProperties.m_LogicalSize.width == mipLevelProperties.m_StorageSize.width);
+      const bool                      bHeightAligned     = (mipLevelProperties.m_LogicalSize.height == mipLevelProperties.m_StorageSize.height);
+
+      if (bWidthAligned && bHeightAligned)
+        break; // Found a valid starting mip
 
       if (uiStartMipLevel == 0)
         return XII_FAILURE;
 
-      ++uiNumMips;
       --uiStartMipLevel;
+      ++uiNumMips;
+
+      if (uiNumMips > uiTotalMips)
+        return XII_FAILURE;
     }
   }
 
-  xiiGALTextureCreationDescription dstImgHeader = srcImgHeader;
-  dstImgHeader.SetWidth(srcImgHeader.GetWidth(uiStartMipLevel));
-  dstImgHeader.SetHeight(srcImgHeader.GetHeight(uiStartMipLevel));
-  dstImgHeader.SetDepth(srcImgHeader.GetDepth(startMipLevel));
-  dstImgHeader.SetFaceCount(srcImgHeader.GetNumFaces());
-  dstImgHeader.SetArrayIndexCount(srcImgHeader.GetNumArrayIndices());
-  dstImgHeader.SetMipLevelCount(uiNumMips);
+  const xiiGALMipLevelProperties& startMipLevelProperties = xiiGALTextureUtilities::GetMipLevelProperties(srcImgHeader, uiStartMipLevel);
 
-  const xiiUInt8* pDataBegin = srcImg.GetPixelPointer<xiiUInt8>(startMipLevel);
+  xiiGALTextureCreationDescription dstImgHeader = srcImgHeader;
+  dstImgHeader.m_Size.width                     = startMipLevelProperties.m_LogicalSize.width;
+  dstImgHeader.m_Size.height                    = startMipLevelProperties.m_LogicalSize.height;
+  dstImgHeader.m_uiArraySizeOrDepth             = startMipLevelProperties.m_uiDepth;
+  dstImgHeader.m_uiMipLevels                    = uiNumMips;
+
+  const xiiUInt8* pDataBegin = srcImg.GetPixelPointer<xiiUInt8>(uiStartMipLevel);
   const xiiUInt8* pDataEnd   = srcImg.GetByteBlobPtr().GetEndPtr();
   const ptrdiff_t dataSize   = reinterpret_cast<ptrdiff_t>(pDataEnd) - reinterpret_cast<ptrdiff_t>(pDataBegin);
 
