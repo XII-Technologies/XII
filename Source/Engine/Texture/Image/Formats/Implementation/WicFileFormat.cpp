@@ -80,15 +80,20 @@ xiiResult xiiWicFileFormat::ReadFileData(xiiStreamReader& stream, xiiDynamicArra
 
 static void SetHeader(xiiGALTextureCreationDescription& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const TexMetadata& metadata)
 {
-  ref_header.SetImageFormat(imageFormat);
+  ref_header.m_Format = imageFormat;
 
-  ref_header.SetWidth(xiiUInt32(metadata.width));
-  ref_header.SetHeight(xiiUInt32(metadata.height));
-  ref_header.SetDepth(xiiUInt32(metadata.depth));
+  ref_header.m_Size.width  = xiiUInt32(metadata.width);
+  ref_header.m_Size.height = xiiUInt32(metadata.height);
+  ref_header.m_uiMipLevels = 1;
 
-  ref_header.SetMipLevelCount(1);
-  ref_header.SetArrayIndexCount(xiiUInt32(metadata.IsCubemap() ? (metadata.arraySize / 6) : metadata.arraySize));
-  ref_header.SetFaceCount(metadata.IsCubemap() ? 6 : 1);
+  if (metadata.depth > 1)
+  {
+    ref_header.m_uiArraySizeOrDepth = xiiUInt32(metadata.depth);
+  }
+  else
+  {
+    ref_header.m_uiArraySizeOrDepth = xiiUInt32(metadata.arraySize);
+  }
 }
 
 xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
@@ -125,7 +130,7 @@ xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, 
     return XII_FAILURE;
   }
 
-  SetHeader(ref_header, imageFormat, metadata);
+  SetHeader(ref_description, imageFormat, metadata);
 
   return XII_SUCCESS;
 }
@@ -174,14 +179,16 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
   ref_image.ResetAndAlloc(imageHeader);
 
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(imageHeader.m_Format);
+
   // Read image data into destination image
-  xiiUInt64 destRowPitch = imageHeader.GetRowPitch();
+  xiiUInt64 destRowPitch = formatProperties.GetRowPitch(imageHeader.m_Size.width);
   xiiUInt32 itemIdx      = 0;
-  for (xiiUInt32 arrayIdx = 0; arrayIdx < imageHeader.GetNumArrayIndices(); ++arrayIdx)
+  for (xiiUInt32 arrayIdx = 0; arrayIdx < imageHeader.m_uiArraySizeOrDepth; ++arrayIdx)
   {
-    for (xiiUInt32 faceIdx = 0; faceIdx < imageHeader.GetNumFaces(); ++faceIdx, ++itemIdx)
+    for (xiiUInt32 faceIdx = 0; faceIdx < 1; ++faceIdx, ++itemIdx) // \todo: Support cubemaps and other multi-face formats.
     {
-      for (xiiUInt32 sliceIdx = 0; sliceIdx < imageHeader.GetDepth(); ++sliceIdx)
+      for (xiiUInt32 sliceIdx = 0; sliceIdx < 1; ++sliceIdx) // \todo Support 3D textures and other multi-slice formats.
       {
         const Image* sourceImage = scratchImage.GetImage(0, itemIdx, sliceIdx);
         xiiUInt8*    destPixels  = ref_image.GetPixelPointer<xiiUInt8>(0, faceIdx, arrayIdx, 0, 0, sliceIdx);
@@ -191,14 +198,14 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
           if (destRowPitch == sourceImage->rowPitch)
           {
             // Fast path: Just copy the entire thing
-            xiiMemoryUtils::Copy(destPixels, sourceImage->pixels, static_cast<size_t>(imageHeader.GetHeight() * destRowPitch));
+            xiiMemoryUtils::Copy(destPixels, sourceImage->pixels, static_cast<size_t>(imageHeader.m_Size.height * destRowPitch));
           }
           else
           {
             // Row pitches don't match - copy row by row
             xiiUInt64      bytesPerRow  = xiiMath::Min(destRowPitch, xiiUInt64(sourceImage->rowPitch));
             const uint8_t* sourcePixels = sourceImage->pixels;
-            for (xiiUInt32 rowIdx = 0; rowIdx < imageHeader.GetHeight(); ++rowIdx)
+            for (xiiUInt32 rowIdx = 0; rowIdx < imageHeader.m_Size.height; ++rowIdx)
             {
               xiiMemoryUtils::Copy(destPixels, sourcePixels, static_cast<size_t>(bytesPerRow));
 
