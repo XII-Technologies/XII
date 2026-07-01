@@ -737,6 +737,11 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
   return mipLevelProperties;
 }
 
+xiiUInt32 xiiGALTextureUtilities::GetMipLevelCount(const xiiGALTextureCreationDescription& textureDescription)
+{
+  return xiiMath::Log2i(xiiMath::Max(textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth, 1U)) + 1U;
+}
+
 xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture1DDescription() noexcept
 {
   return xiiGALTextureCreationDescription{

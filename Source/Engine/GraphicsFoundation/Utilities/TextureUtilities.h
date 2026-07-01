@@ -289,7 +289,11 @@ public:
   /// \brief This returns the mip size for a given mip level.
   [[nodiscard]] static xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel);
 
+  /// \brief This returns the mip level properties for a given texture and mip level.
   [[nodiscard]] static xiiGALMipLevelProperties GetMipLevelProperties(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiMipLevel);
+
+  /// \brief This returns the number of mip levels for a given texture.
+  [[nodiscard]] static xiiUInt32 GetMipLevelCount(const xiiGALTextureCreationDescription& textureDescription);
 
   /// \brief Returns an offset from the beginning of the buffer backing a staging texture to the specified location within the given subresource.
   ///
