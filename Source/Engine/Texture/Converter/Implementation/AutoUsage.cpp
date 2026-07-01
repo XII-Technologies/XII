@@ -71,9 +71,9 @@ static xiiTextureConverterUsage::Enum DetectUsageFromFilename(xiiStringView sFil
 static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image)
 {
   const xiiGALTextureCreationDescription&      header = image.GetDescription();
-  const xiiEnum<xiiGALResourceFormat> format = header.GetImageFormat();
+  const xiiEnum<xiiGALResourceFormat> format = header.m_Format;
 
-  if (header.GetDepth() > 1)
+  if (header.m_uiArraySizeOrDepth > 1)
   {
     // unsupported
     return xiiTextureConverterUsage::Auto;
@@ -122,7 +122,7 @@ static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image
 
     xiiUInt32 uiExtremeNormals = 0;
 
-    xiiUInt32 uiNumPixels = header.GetWidth() * header.GetHeight();
+    xiiUInt32 uiNumPixels = header.m_Size.width * header.m_Size.height;
     XII_ASSERT_DEBUG(uiNumPixels > 0, "Unexpected empty image.");
 
     // Sample no more than 10000 pixels

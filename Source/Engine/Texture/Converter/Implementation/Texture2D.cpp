@@ -13,7 +13,7 @@ xiiResult xiiTextureConverterProcessor::Assemble2DTexture(const xiiGALTextureCre
 
   xiiColor* pPixelOut = dst.GetPixelPointer<xiiColor>();
 
-  return Assemble2DSlice(m_Descriptor.m_ChannelMappings[0], refImg.GetWidth(), refImg.GetHeight(), pPixelOut);
+  return Assemble2DSlice(m_Descriptor.m_ChannelMappings[0], refImg.m_Size.width, refImg.m_Size.height, pPixelOut);
 }
 
 xiiResult xiiTextureConverterProcessor::Assemble2DSlice(const xiiTextureConverterSliceChannelMapping& mapping, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiColor* pPixelOut) const

@@ -50,16 +50,14 @@ static inline xiiColorLinearUB GetPixelColor(const xiiImageView& image, xiiUInt3
       break;
     case xiiGALResourceFormat::BGRA8UNormalized:
       c.a = pPixel[3];
-      // fall through
-    case xiiGALResourceFormat::BGRA8UNormalized:
+      [[fallthrough]];
     case xiiGALResourceFormat::BGRX8UNormalized:
       c.r = pPixel[2];
       c.g = pPixel[1];
       c.b = pPixel[0];
       break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return c;
@@ -145,7 +143,9 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
         inout_stream << c.r;
 
         if (bAlpha)
+        {
           inout_stream << c.a;
+        }
       }
     }
   }
@@ -188,7 +188,9 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
         else if (iRLE == 2) // equal values
         {
           if ((c == pc) && (iEqual < 128))
+          {
             ++iEqual;
+          }
           else
           {
             xiiUInt8 uiRepeat = static_cast<xiiUInt8>(iEqual + 127);
@@ -199,7 +201,9 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
             inout_stream << pc.r;
 
             if (bAlpha)
+            {
               inout_stream << pc.a;
+            }
 
             pc   = c;
             iRLE = 1;
@@ -226,7 +230,9 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
               inout_stream << unequal[i].r;
 
               if (bAlpha)
+              {
                 inout_stream << unequal[i].a;
+              }
             }
 
             pc   = c;
@@ -249,7 +255,9 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
       inout_stream << pc.r;
 
       if (bAlpha)
+      {
         inout_stream << pc.a;
+      }
     }
     else if (iRLE == 2) // equal values
     {
@@ -261,7 +269,9 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
       inout_stream << pc.r;
 
       if (bAlpha)
+      {
         inout_stream << pc.a;
+      }
     }
     else if (iRLE == 3)
     {
@@ -275,14 +285,15 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
         inout_stream << unequal[i].r;
 
         if (bAlpha)
+        {
           inout_stream << unequal[i].a;
+        }
       }
     }
   }
 
   return XII_SUCCESS;
 }
-
 
 static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, void* pDest, xiiUInt32 uiNumBytes)
 {
@@ -325,19 +336,18 @@ static xiiResult ReadImageHeaderImpl(xiiStreamReader& inout_stream, xiiGALTextur
   // Set image data
 
   if (uiBytesPerPixel == 1)
-    ref_header.SetImageFormat(xiiGALResourceFormat::R8UNormalized);
-  else if (uiBytesPerPixel == 3)
-    ref_header.SetImageFormat(xiiGALResourceFormat::BGRA8UNormalized);
+  {
+    ref_header.m_Format = xiiGALResourceFormat::R8UNormalized;
+  }
   else
-    ref_header.SetImageFormat(xiiGALResourceFormat::BGRA8UNormalized);
+  {
+    ref_header.m_Format = xiiGALResourceFormat::BGRA8UNormalized;
+  }
 
-  ref_header.SetMipLevelCount(1);
-  ref_header.SetArrayIndexCount(1);
-  ref_header.SetFaceCount(1);
-
-  ref_header.SetWidth(ref_tgaHeader.m_iImageWidth);
-  ref_header.SetHeight(ref_tgaHeader.m_iImageHeight);
-  ref_header.SetDepth(1);
+  ref_header.m_Size.width         = ref_tgaHeader.m_iImageWidth;
+  ref_header.m_Size.height        = ref_tgaHeader.m_iImageHeight;
+  ref_header.m_uiArraySizeOrDepth = 1;
+  ref_header.m_uiMipLevels        = 1;
 
   return XII_SUCCESS;
 }
@@ -359,7 +369,7 @@ xiiResult xiiTgaFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   XII_PROFILE_SCOPE("xiiTgaFileFormat::ReadImage");
 
   xiiGALTextureCreationDescription imageHeader;
-  TgaHeader      tgaHeader;
+  TgaHeader                        tgaHeader;
   XII_SUCCEED_OR_RETURN(ReadImageHeaderImpl(inout_stream, imageHeader, tgaHeader));
 
   const xiiUInt32 uiBytesPerPixel = tgaHeader.m_iBitsPerPixel / 8;
