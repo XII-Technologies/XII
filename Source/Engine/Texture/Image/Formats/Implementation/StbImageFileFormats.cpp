@@ -60,16 +60,16 @@ namespace
 
     ref_bIsHDR = !!stbi_is_hdr_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount());
 
-    void* sourceImageData = nullptr;
+    void* pSourceImageData = nullptr;
     if (ref_bIsHDR)
     {
-      sourceImageData = stbi_loadf_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &width, &height, &numComp, 0);
+      pSourceImageData = stbi_loadf_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &width, &height, &numComp, 0);
     }
     else
     {
-      sourceImageData = stbi_load_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &width, &height, &numComp, 0);
+      pSourceImageData = stbi_load_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &width, &height, &numComp, 0);
     }
-    if (!sourceImageData)
+    if (!pSourceImageData)
     {
       xiiLog::Error("stb_image failed to load: {0}", stbi_failure_reason());
       return nullptr;
@@ -94,16 +94,13 @@ namespace
     }
 
     // Set properties and allocate.
-    ref_imageHeader.SetImageFormat(format);
-    ref_imageHeader.SetMipLevelCount(1);
-    ref_imageHeader.SetArrayIndexCount(1);
-    ref_imageHeader.SetFaceCount(1);
+    ref_imageHeader.m_Format             = format;
+    ref_imageHeader.m_Size.width         = width;
+    ref_imageHeader.m_Size.height        = height;
+    ref_imageHeader.m_uiMipLevels        = 1;
+    ref_imageHeader.m_uiArraySizeOrDepth = 1;
 
-    ref_imageHeader.SetWidth(width);
-    ref_imageHeader.SetHeight(height);
-    ref_imageHeader.SetDepth(1);
-
-    return sourceImageData;
+    return pSourceImageData;
   }
 
 } // namespace
@@ -114,14 +111,14 @@ xiiResult xiiStbImageFileFormats::ReadImageDescription(xiiStreamReader& inout_st
 
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImageDescription");
 
-  bool                      isHDR = false;
+  bool                      bIsHDR = false;
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, ref_description, isHDR);
+  void*                     pSourceImageData = ReadImageData(inout_stream, fileBuffer, ref_description, bIsHDR);
 
-  if (sourceImageData == nullptr)
+  if (pSourceImageData == nullptr)
     return XII_FAILURE;
 
-  stbi_image_free(sourceImageData);
+  stbi_image_free(pSourceImageData);
   return XII_SUCCESS;
 }
 
@@ -131,33 +128,32 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiIm
 
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImage");
 
-  bool                      isHDR = false;
-  xiiDynamicArray<xiiUInt8> fileBuffer;
-  xiiGALTextureCreationDescription            imageHeader;
-  void*                     sourceImageData = ReadImageData(inout_stream, fileBuffer, imageHeader, isHDR);
+  bool                             bIsHDR = false;
+  xiiDynamicArray<xiiUInt8>        fileBuffer;
+  xiiGALTextureCreationDescription imageHeader;
+  void*                            pSourceImageData = ReadImageData(inout_stream, fileBuffer, imageHeader, bIsHDR);
 
-  if (sourceImageData == nullptr)
+  if (pSourceImageData == nullptr)
     return XII_FAILURE;
 
   ref_image.ResetAndAlloc(imageHeader);
 
-  const size_t numComp = xiiGALTextureUtilities::GetComponentCount(imageHeader.GetImageFormat());
-
-  const size_t elementsToCopy = static_cast<size_t>(imageHeader.GetWidth()) * static_cast<size_t>(imageHeader.GetHeight()) * numComp;
+  const xiiGALResourceFormatDescription& formatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(imageHeader.m_Format);
+  const size_t                           uiElementsToCopy  = static_cast<size_t>(imageHeader.m_Size.width) * static_cast<size_t>(imageHeader.m_Size.height) * formatDescription.m_uiComponentCount;
 
   // Set pixels. Different strategies depending on component count.
-  if (isHDR)
+  if (bIsHDR)
   {
     float* targetImageData = ref_image.GetBlobPtr<float>().GetPtr();
-    xiiMemoryUtils::Copy(targetImageData, (const float*)sourceImageData, elementsToCopy);
+    xiiMemoryUtils::Copy(targetImageData, (const float*)pSourceImageData, uiElementsToCopy);
   }
   else
   {
     xiiUInt8* targetImageData = ref_image.GetBlobPtr<xiiUInt8>().GetPtr();
-    xiiMemoryUtils::Copy(targetImageData, (const xiiUInt8*)sourceImageData, elementsToCopy);
+    xiiMemoryUtils::Copy(targetImageData, (const xiiUInt8*)pSourceImageData, uiElementsToCopy);
   }
 
-  stbi_image_free((void*)sourceImageData);
+  stbi_image_free((void*)pSourceImageData);
   return XII_SUCCESS;
 }
 
