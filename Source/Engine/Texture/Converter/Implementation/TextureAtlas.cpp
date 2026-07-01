@@ -140,7 +140,7 @@ xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCre
 xiiResult xiiTextureConverterProcessor::WriteTextureAtlasInfo(const xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiUInt32 uiNumLayers, xiiStreamWriter& stream)
 {
   xiiTextureAtlasRuntimeDescription runtimeAtlas;
-  runtimeAtlas.m_uiNumLayers = uiNumLayers;
+  runtimeAtlas.m_uiLayerCount = uiNumLayers;
 
   runtimeAtlas.m_Items.Reserve(atlasItems.GetCount());
 
@@ -234,9 +234,9 @@ xiiResult xiiTextureConverterProcessor::SortItemsIntoAtlas(xiiDynamicArray<Textu
 xiiResult xiiTextureConverterProcessor::CreateAtlasTexture(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiResX, xiiUInt32 uiResY, xiiImage& atlas, xiiInt32 layer)
 {
   xiiGALTextureCreationDescription imgHeader;
-  imgHeader.SetWidth(uiResX);
-  imgHeader.SetHeight(uiResY);
-  imgHeader.SetImageFormat(xiiGALResourceFormat::RGBA32Float);
+  imgHeader.m_Size.width = uiResX;
+  imgHeader.m_Size.height = uiResY;
+  imgHeader.m_Format = xiiGALResourceFormat::RGBA32Float;
   atlas.ResetAndAlloc(imgHeader);
 
   // make sure the target texture is filled with all black
@@ -268,7 +268,7 @@ xiiResult xiiTextureConverterProcessor::FillAtlasBorders(xiiDynamicArray<Texture
 {
   const xiiUInt32 uiBorderPixels = 2;
 
-  const xiiUInt32 uiNumMipmaps = atlas.GetDescription().GetMipLevelCount();
+  const xiiUInt32 uiNumMipmaps = atlas.GetDescription().m_uiMipLevels;
   for (xiiUInt32 uiMipLevel = 0; uiMipLevel < uiNumMipmaps; ++uiMipLevel)
   {
     for (auto& item : items)
@@ -328,7 +328,7 @@ xiiResult xiiTextureConverterProcessor::CreateAtlasLayerTexture(const xiiTexture
   xiiImage atlasImg;
   XII_SUCCEED_OR_RETURN(CreateAtlasTexture(atlasItems, uiTexWidth, uiTexHeight, atlasImg, layer));
 
-  xiiUInt32 uiNumMipmaps = atlasImg.GetDescription().ComputeNumberOfMipMaps();
+  xiiUInt32 uiNumMipmaps = xiiGALTextureUtilities::GetMipLevelCount(atlasImg.GetDescription());
   XII_SUCCEED_OR_RETURN(GenerateMipmaps(atlasImg, uiNumMipmaps));
 
   if (atlasDesc.m_Layers[layer].m_uiNumChannels == 4)

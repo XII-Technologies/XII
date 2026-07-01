@@ -34,7 +34,7 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
   XII_PROFILE_SCOPE("GenerateMipmaps");
 
   xiiImageUtils::MipMapOptions opt;
-  opt.m_numMipMaps = uiNumMips;
+  opt.m_uiMipLevelCount = uiNumMips;
 
   xiiImageFilterBox                  filterLinear;
   xiiImageFilterSincWithKaiserWindow filterKaiser;
@@ -45,25 +45,25 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
       return XII_SUCCESS;
 
     case xiiTextureConverterMipmapMode::Linear:
-      opt.m_filter = &filterLinear;
+      opt.m_pFilter = &filterLinear;
       break;
 
     case xiiTextureConverterMipmapMode::Kaiser:
-      opt.m_filter = &filterKaiser;
+      opt.m_pFilter = &filterKaiser;
       break;
   }
 
-  opt.m_addressModeU = m_Descriptor.m_AddressModeU;
-  opt.m_addressModeV = m_Descriptor.m_AddressModeV;
-  opt.m_addressModeW = m_Descriptor.m_AddressModeW;
+  opt.m_AddressModeU = m_Descriptor.m_AddressModeU;
+  opt.m_AddressModeV = m_Descriptor.m_AddressModeV;
+  opt.m_AddressModeW = m_Descriptor.m_AddressModeW;
 
-  opt.m_preserveCoverage = m_Descriptor.m_bPreserveMipmapCoverage;
-  opt.m_alphaThreshold   = m_Descriptor.m_fMipmapAlphaThreshold;
+  opt.m_bPreserveCoverage = m_Descriptor.m_bPreserveMipmapCoverage;
+  opt.m_fAlphaThreshold   = m_Descriptor.m_fMipmapAlphaThreshold;
 
-  opt.m_renormalizeNormals = m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap || m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap_Inverted || m_Descriptor.m_Usage == xiiTextureConverterUsage::BumpMap;
+  opt.m_bRenormalizeNormals = m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap || m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap_Inverted || m_Descriptor.m_Usage == xiiTextureConverterUsage::BumpMap;
 
   // Copy red to alpha channel if we only have a single channel input texture
-  if (opt.m_preserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
+  if (opt.m_bPreserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
   {
     auto imgData = img.GetBlobPtr<xiiColor>();
     auto pData   = imgData.GetPtr();
@@ -85,7 +85,7 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
   }
 
   // Copy alpha channel back to red
-  if (opt.m_preserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
+  if (opt.m_bPreserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
   {
     auto imgData = img.GetBlobPtr<xiiColor>();
     auto pData   = imgData.GetPtr();
@@ -139,7 +139,7 @@ xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiArrayPtr<xiiImage>
 xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
 {
   xiiGALTextureCreationDescription newImageHeader = bumpMap.GetDescription();
-  newImageHeader.SetMipLevelCount(1);
+  newImageHeader.m_uiMipLevels                    = 1;
   xiiImage newImage;
   newImage.ResetAndAlloc(newImageHeader);
 
