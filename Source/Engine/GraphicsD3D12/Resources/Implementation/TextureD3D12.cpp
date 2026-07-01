@@ -38,7 +38,7 @@ namespace
     out_sparseTextureProperties.m_uiMipTailOffset    = static_cast<xiiUInt64>(packedMipInfo.StartTileIndexInOverallResource) * out_sparseTextureProperties.m_uiBlockSize;
     out_sparseTextureProperties.m_uiMipTailSize      = static_cast<xiiUInt64>(packedMipInfo.NumTilesForPackedMips) * out_sparseTextureProperties.m_uiBlockSize;
 
-    if (description.GetArraySize() > 1U && packedMipInfo.NumTilesForPackedMips > 0U)
+    if (description.m_uiArraySizeOrDepth > 1U && packedMipInfo.NumTilesForPackedMips > 0U)
     {
       out_sparseTextureProperties.m_Flags |= xiiGALSparseTextureFlags::SingleMipTail;
       out_sparseTextureProperties.m_uiMipTailStride = out_sparseTextureProperties.m_uiMipTailSize;
@@ -50,7 +50,7 @@ namespace
     if (pStagingResource == nullptr)
       return XII_FAILURE;
 
-    const xiiUInt32 uiExpectedSubresourceCount = description.m_uiMipLevels * description.GetArraySize();
+    const xiiUInt32 uiExpectedSubresourceCount = description.m_uiMipLevels * description.m_uiArraySizeOrDepth;
     if (initialData.m_pSubResources.GetCount() != uiExpectedSubresourceCount)
     {
       xiiLog::Error("Invalid initial data for D3D12 staging texture: expected {} subresources, got {}.", uiExpectedSubresourceCount, initialData.m_pSubResources.GetCount());
@@ -70,7 +70,7 @@ namespace
 
     xiiUInt32 uiSubresourceIndex = 0U;
 
-    for (xiiUInt32 uiArraySlice = 0U; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+    for (xiiUInt32 uiArraySlice = 0U; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
     {
       for (xiiUInt32 uiMipLevel = 0U; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
       {
@@ -207,7 +207,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
   resourceDescription.Alignment           = 0U;
   resourceDescription.Width               = m_Description.m_Size.width;
   resourceDescription.Height              = m_Description.Is1D() ? 1U : m_Description.m_Size.height;
-  resourceDescription.DepthOrArraySize    = static_cast<xiiUInt16>(m_Description.Is3D() ? m_Description.GetDepth() : m_Description.GetArraySize());
+  resourceDescription.DepthOrArraySize    = static_cast<xiiUInt16>(m_Description.m_uiArraySizeOrDepth);
   resourceDescription.MipLevels           = static_cast<xiiUInt16>(m_Description.m_uiMipLevels);
   resourceDescription.Format              = xiiD3D12TypeConversions::GetFormat(m_Description.m_Format);
   resourceDescription.SampleDesc.Count    = m_Description.m_uiSampleCount;
@@ -267,7 +267,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
     if (bHasInitialData)
     {
       auto UploadStagingData = [&](xiiGALCommandListD3D12* pCommandListD3D12) -> xiiResult {
-        const xiiUInt32 uiSubresourceCount = m_Description.m_uiMipLevels * m_Description.GetArraySize();
+        const xiiUInt32 uiSubresourceCount = m_Description.m_uiMipLevels * m_Description.m_uiArraySizeOrDepth;
         if (pInitialData->m_pSubResources.GetCount() != uiSubresourceCount)
         {
           xiiLog::Error("Invalid D3D12 texture initial data: expected {} subresources, got {}.", uiSubresourceCount, pInitialData->m_pSubResources.GetCount());
@@ -297,7 +297,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
         pMappedMemory                                           = xiiMemoryUtils::AddByteOffset(pMappedMemory, stagingBufferAllocation.m_uiOffset);
         const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(m_Description.m_Format);
 
-        for (xiiUInt32 uiArraySlice = 0U; uiArraySlice < m_Description.GetArraySize(); ++uiArraySlice)
+        for (xiiUInt32 uiArraySlice = 0U; uiArraySlice < m_Description.m_uiArraySizeOrDepth; ++uiArraySlice)
         {
           for (xiiUInt32 uiMipLevel = 0U; uiMipLevel < m_Description.m_uiMipLevels; ++uiMipLevel)
           {
@@ -325,7 +325,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
 
         stagingBufferAllocation.m_pD3D12Buffer->Unmap(0, &writeRange);
 
-        for (xiiUInt32 uiArraySlice = 0U; uiArraySlice < m_Description.GetArraySize(); ++uiArraySlice)
+        for (xiiUInt32 uiArraySlice = 0U; uiArraySlice < m_Description.m_uiArraySizeOrDepth; ++uiArraySlice)
         {
           for (xiiUInt32 uiMipLevel = 0U; uiMipLevel < m_Description.m_uiMipLevels; ++uiMipLevel)
           {
