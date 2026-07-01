@@ -384,10 +384,10 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
 
       while (uiElementCount >= uiElementsPerBatch)
       {
-        const __m128i* pSource = reinterpret_cast<const __m128i*>(pSourcePointer);
-        __m128i*       pTarget = reinterpret_cast<__m128i*>(pTargetPointer);
+        const __m128i* pSourcePtr = reinterpret_cast<const __m128i*>(pSourcePointer);
+        __m128i*       pTargetPtr = reinterpret_cast<__m128i*>(pTargetPointer);
 
-        pTarget[0] = _mm_or_si128(pSource[0], mask);
+        pTargetPtr[0] = _mm_or_si128(pSourcePtr[0], mask);
 
         pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride * uiElementsPerBatch);
         pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride * uiElementsPerBatch);
