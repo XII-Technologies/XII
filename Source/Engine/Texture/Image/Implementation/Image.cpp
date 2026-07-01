@@ -148,17 +148,17 @@ xiiEnum<xiiGALResourceFormat> xiiImageView::GetImageFormat() const
 
 xiiUInt32 xiiImageView::GetWidth(xiiUInt32 uiMipLevel /*= 0*/) const
 {
-  return xiiGALTextureUtilities::GetMipSize(m_Description.GetWidth(), uiMipLevel);
+  return xiiGALTextureUtilities::GetMipSize(m_Description.m_Size.width, uiMipLevel);
 }
 
 xiiUInt32 xiiImageView::GetHeight(xiiUInt32 uiMipLevel /*= 0*/) const
 {
-  return xiiGALTextureUtilities::GetMipSize(m_Description.GetHeight(), uiMipLevel);
+  return xiiGALTextureUtilities::GetMipSize(m_Description.m_Size.height, uiMipLevel);
 }
 
 xiiUInt32 xiiImageView::GetDepth(xiiUInt32 uiMipLevel /*= 0*/) const
 {
-  return xiiGALTextureUtilities::GetMipSize(m_Description.GetDepth(), uiMipLevel);
+  return xiiGALTextureUtilities::GetMipSize(m_Description.m_uiArraySizeOrDepth, uiMipLevel);
 }
 
 xiiUInt32 xiiImageView::GetMipLevelCount() const
@@ -173,7 +173,7 @@ xiiUInt32 xiiImageView::GetNumFaces() const
 
 xiiUInt32 xiiImageView::GetNumArrayIndices() const
 {
-  return m_Description.IsCube() ? m_Description.GetArraySize() / 6U : m_Description.GetArraySize();
+  return m_Description.IsCube() ? m_Description.m_uiArraySizeOrDepth / 6U : m_Description.m_uiArraySizeOrDepth;
 }
 
 xiiUInt32 xiiImageView::GetPlaneCount() const

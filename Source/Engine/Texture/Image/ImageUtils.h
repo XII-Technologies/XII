@@ -49,35 +49,18 @@ public:
   /// \brief Copies the lower uiNumMips data of a 2D image into another one.
   static xiiResult ExtractLowerMipChain(const xiiImageView& src, xiiImage& ref_dst, xiiUInt32 uiNumMips);
 
-  /// Mip map generation options
+  /// Mip map generation options.
   struct MipMapOptions
   {
-    /// The filter to use for mipmap generation. Defaults to bilinear filtering (Triangle filter) if none is given.
-    const xiiImageFilter* m_filter = nullptr;
-
-    /// Rescale RGB components to unit length.
-    bool m_renormalizeNormals = false;
-
-    /// If true, the alpha values are scaled to preserve the average coverage when alpha testing is enabled,
-    bool m_preserveCoverage = false;
-
-    /// The alpha test threshold to use when m_preserveCoverage == true.
-    float m_alphaThreshold = 0.5f;
-
-    /// The address mode for samples when filtering outside of the image dimensions in the horizontal direction.
-    xiiGALTextureAddressMode::Enum m_addressModeU = xiiGALTextureAddressMode::Clamp;
-
-    /// The address mode for samples when filtering outside of the image dimensions in the vertical direction.
-    xiiGALTextureAddressMode::Enum m_addressModeV = xiiGALTextureAddressMode::Clamp;
-
-    /// The address mode for samples when filtering outside of the image dimensions in the depth direction.
-    xiiGALTextureAddressMode::Enum m_addressModeW = xiiGALTextureAddressMode::Clamp;
-
-    /// The border color if texture address mode equals BORDER.
-    xiiColor m_borderColor = xiiColor::Black;
-
-    /// How many mip maps should be generated. Pass 0 to generate all mip map levels.
-    xiiUInt32 m_numMipMaps = 0;
+    const xiiImageFilter*             m_pFilter             = nullptr;                         ///< The filter to use for mipmap generation. Defaults to bilinear filtering (Triangle filter) if none is given.
+    bool                              m_bRenormalizeNormals = false;                           ///< If true, the RGB components are scaled to unit length.
+    bool                              m_bPreserveCoverage   = false;                           ///< If true, the alpha values are scaled to preserve the average coverage when alpha testing is enabled.
+    float                             m_fAlphaThreshold     = 0.5f;                            ///< The alpha test threshold to use when PreserveCoverage == true.
+    xiiEnum<xiiGALTextureAddressMode> m_AddressModeU        = xiiGALTextureAddressMode::Clamp; ///< The address mode for samples when filtering outside of the image dimensions in the horizontal direction.
+    xiiEnum<xiiGALTextureAddressMode> m_AddressModeV        = xiiGALTextureAddressMode::Clamp; ///< The address mode for samples when filtering outside of the image dimensions in the vertical direction.
+    xiiEnum<xiiGALTextureAddressMode> m_AddressModeW        = xiiGALTextureAddressMode::Clamp; ///< The address mode for samples when filtering outside of the image dimensions in the depth direction.
+    xiiColor                          m_BorderColor         = xiiColor::Black;                 ///< The border color if texture address mode equals BORDER.
+    xiiUInt32                         m_uiMipLevelCount     = 0;                               ///< How many mip maps should be generated. Pass 0 to generate all mip map levels.
   };
 
   /// Scales the image.

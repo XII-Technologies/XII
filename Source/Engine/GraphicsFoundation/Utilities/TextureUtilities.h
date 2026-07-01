@@ -57,7 +57,7 @@ public:
     return !xiiGALResourceFormat::IsMultiplanar(format) && GetResourceFormatProperties(format).IsCompressed();
   }
 
-  /// \brief Returns the number of components for a given texture format. For compressed formats, this is 0.
+  /// \brief Returns the number of components for a given texture format.
   [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetComponentCount(xiiEnum<xiiGALResourceFormat> format)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
@@ -66,15 +66,13 @@ public:
     return GetResourceFormatProperties(format).m_uiComponentCount;
   }
 
-  /// \brief Returns the bits per component for a given texture format. For compressed formats, this is 0.
-  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerComponent(xiiEnum<xiiGALResourceFormat> format)
+  /// \brief Returns the bits per component for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBitsPerComponent(xiiEnum<xiiGALResourceFormat> format, xiiUInt32 uiPlaneIndex = 0)
   {
     if (xiiGALResourceFormat::IsMultiplanar(format))
-      return GetMultiPlanarFormatProperties(format).GetPlane(0).m_uiBytesPerElement * 8U;
+      return GetMultiPlanarFormatProperties(format).GetPlane(uiPlaneIndex).m_uiBytesPerElement * 8U;
 
-    const xiiGALResourceFormatDescription& properties = GetResourceFormatProperties(format);
-
-    return properties.IsCompressed() ? 0U : properties.m_uiComponentSize * 8U;
+    return GetResourceFormatProperties(format).m_uiComponentSize * 8U;
   }
 
   /// \brief Returns the bytes per block for a given texture format. For most formats, this is equal to the bytes per pixel. For compressed formats, this is the total number of bytes in a compression block.

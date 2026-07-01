@@ -715,7 +715,7 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
 
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
-    XII_ASSERT_DEV(formatProperties.m_uiBlockWidth > 1 && formatProperties.m_uiBlockHeight > 1, "");
+    XII_ASSERT_DEV(formatProperties.m_uiBlockWidth > 1 && formatProperties.m_uiBlockHeight > 1, "The compressed format requires a block width and height greater than 1.");
     XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "Compressed block width is expected to be a power of 2.");
     XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "Compressed block height is expected to be a power of 2.");
 
