@@ -1275,25 +1275,25 @@ public:
 
     while (uiElementCount)
     {
-      const R11G11B10* pSource  = reinterpret_cast<const R11G11B10*>(pSourcePointer);
-      xiiUInt32*       targetUi = reinterpret_cast<xiiUInt32*>(pTargetPointer);
+      const R11G11B10* pSourcePtr = reinterpret_cast<const R11G11B10*>(pSourcePointer);
+      xiiUInt32*       targetUi   = reinterpret_cast<xiiUInt32*>(pTargetPointer);
 
       // Adapted from XMLoadFloat3PK
       xiiUInt32 Mantissa;
       xiiUInt32 Exponent;
 
       // X Channel (6-bit mantissa)
-      Mantissa = pSource->p.xm;
+      Mantissa = pSourcePtr->p.xm;
 
-      if (pSource->p.xe == 0x1f) // INF or NAN
+      if (pSourcePtr->p.xe == 0x1f) // INF or NAN
       {
-        targetUi[0] = 0x7f800000 | (pSource->p.xm << 17);
+        targetUi[0] = 0x7f800000 | (pSourcePtr->p.xm << 17);
       }
       else
       {
-        if (pSource->p.xe != 0) // The value is normalized
+        if (pSourcePtr->p.xe != 0) // The value is normalized
         {
-          Exponent = pSource->p.xe;
+          Exponent = pSourcePtr->p.xe;
         }
         else if (Mantissa != 0) // The value is denormalized
         {
@@ -1317,17 +1317,17 @@ public:
       }
 
       // Y Channel (6-bit mantissa)
-      Mantissa = pSource->p.ym;
+      Mantissa = pSourcePtr->p.ym;
 
-      if (pSource->p.ye == 0x1f) // INF or NAN
+      if (pSourcePtr->p.ye == 0x1f) // INF or NAN
       {
-        targetUi[1] = 0x7f800000 | (pSource->p.ym << 17);
+        targetUi[1] = 0x7f800000 | (pSourcePtr->p.ym << 17);
       }
       else
       {
-        if (pSource->p.ye != 0) // The value is normalized
+        if (pSourcePtr->p.ye != 0) // The value is normalized
         {
-          Exponent = pSource->p.ye;
+          Exponent = pSourcePtr->p.ye;
         }
         else if (Mantissa != 0) // The value is denormalized
         {
@@ -1351,17 +1351,17 @@ public:
       }
 
       // Z Channel (5-bit mantissa)
-      Mantissa = pSource->p.zm;
+      Mantissa = pSourcePtr->p.zm;
 
-      if (pSource->p.ze == 0x1f) // INF or NAN
+      if (pSourcePtr->p.ze == 0x1f) // INF or NAN
       {
-        targetUi[2] = 0x7f800000 | (pSource->p.zm << 17);
+        targetUi[2] = 0x7f800000 | (pSourcePtr->p.zm << 17);
       }
       else
       {
-        if (pSource->p.ze != 0) // The value is normalized
+        if (pSourcePtr->p.ze != 0) // The value is normalized
         {
-          Exponent = pSource->p.ze;
+          Exponent = pSourcePtr->p.ze;
         }
         else if (Mantissa != 0) // The value is denormalized
         {
