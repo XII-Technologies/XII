@@ -105,7 +105,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 
   if (textureDescription.IsArray())
   {
-    XII_ASSERT_DEV(uiSlice < textureDescription.GetArraySize(), "Array slice ({}) is out of permitted range [0, {}].", textureDescription.GetArraySize() - 1);
+    XII_ASSERT_DEV(uiSlice < textureDescription.m_uiArraySizeOrDepth, "Array slice ({}) is out of permitted range [0, {}].", textureDescription.m_uiArraySizeOrDepth - 1);
   }
   else
   {
@@ -114,7 +114,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
-  xiiUInt32 uiMipWidth = xiiMath::Max(textureDescription.GetWidth() >> uiMipLevel, 1U);
+  xiiUInt32 uiMipWidth = xiiMath::Max(textureDescription.m_Size.width >> uiMipLevel, 1U);
 
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
@@ -132,7 +132,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 
   if (textureDescription.m_Type != xiiGALResourceDimension::Texture1D && textureDescription.m_Type != xiiGALResourceDimension::Texture1DArray)
   {
-    const xiiUInt32 uiMipHeight = xiiMath::Max(textureDescription.GetHeight() >> uiMipLevel, 1U);
+    const xiiUInt32 uiMipHeight = xiiMath::Max(textureDescription.m_Size.height >> uiMipLevel, 1U);
 
     if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
     {
@@ -152,7 +152,7 @@ void xiiGALCommandList::ValidateTextureRegion(const xiiGALTextureCreationDescrip
 
   if (textureDescription.m_Type == xiiGALResourceDimension::Texture3D)
   {
-    const xiiUInt32 uiMipDepth = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
+    const xiiUInt32 uiMipDepth = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMipLevel, 1U);
 
     XII_ASSERT_DEV(box.m_vMax.z <= uiMipDepth, "Region max Z coordinate ({}) is out of permitted range [0, {}].", box.m_vMax.z, uiMipDepth);
   }
@@ -1607,14 +1607,14 @@ void xiiGALCommandList::TransitionResourceStates(xiiArrayPtr<xiiGALStateTransiti
         XII_ASSERT_DEV(barrier.m_uiFirstMipLevel < textureDescription.m_uiMipLevels, "pResourceBarriers[{}].FirstMipLevel ({}) is out of range. Texture '{}' has only {} mip level (s).", uiBarrierIndex, barrier.m_uiFirstMipLevel, pTexture->GetDebugName(), textureDescription.m_uiMipLevels);
         XII_ASSERT_DEV(barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS || (barrier.m_uiFirstMipLevel + barrier.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "pResourceBarriers[{}] mip level range [{}, {}] is out of range. Texture '{}' has only {} mip level (s).", uiBarrierIndex, barrier.m_uiFirstMipLevel, barrier.m_uiMipLevelCount - 1, pTexture->GetDebugName(), textureDescription.m_uiMipLevels);
 
-        XII_ASSERT_DEV(barrier.m_uiFirstArraySlice < textureDescription.GetArraySize(), "pResourceBarriers[{}].FirstArraySlice ({}) is out of range. Array size of texture '{}' is {}.", uiBarrierIndex, barrier.m_uiFirstArraySlice, pTexture->GetDebugName(), textureDescription.GetArraySize());
-        XII_ASSERT_DEV(barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES || (barrier.m_uiFirstArraySlice + barrier.m_uiArraySliceCount) <= textureDescription.GetArraySize(), "pResourceBarriers[{}] array slice range [{}, {}] is out of range. Array size of texture '{}' is {}.", uiBarrierIndex, barrier.m_uiFirstArraySlice, barrier.m_uiArraySliceCount - 1, pTexture->GetDebugName(), textureDescription.GetArraySize());
+        XII_ASSERT_DEV(barrier.m_uiFirstArraySlice < textureDescription.m_uiArraySizeOrDepth, "pResourceBarriers[{}].FirstArraySlice ({}) is out of range. Array size of texture '{}' is {}.", uiBarrierIndex, barrier.m_uiFirstArraySlice, pTexture->GetDebugName(), textureDescription.m_uiArraySizeOrDepth);
+        XII_ASSERT_DEV(barrier.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES || (barrier.m_uiFirstArraySlice + barrier.m_uiArraySliceCount) <= textureDescription.m_uiArraySizeOrDepth, "pResourceBarriers[{}] array slice range [{}, {}] is out of range. Array size of texture '{}' is {}.", uiBarrierIndex, barrier.m_uiFirstArraySlice, barrier.m_uiArraySliceCount - 1, pTexture->GetDebugName(), textureDescription.m_uiArraySizeOrDepth);
 
         xiiEnum<xiiGALGraphicsDeviceType> adapterType = m_pDevice->GetDescription().m_GraphicsDeviceType;
         if (adapterType != xiiGALGraphicsDeviceType::Vulkan && adapterType != xiiGALGraphicsDeviceType::Direct3D12)
         {
           XII_ASSERT_DEV(barrier.m_uiFirstMipLevel == 0 && (barrier.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS || barrier.m_uiMipLevelCount == textureDescription.m_uiMipLevels), "Failed to transition texture '{}' in pResourceBarriers[{}], only whole resources can be transitioned on this device.", pTexture->GetDebugName(), uiBarrierIndex);
-          XII_ASSERT_DEV(barrier.m_uiFirstArraySlice == 0 && (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_MIP_LEVELS || barrier.m_uiArraySliceCount == textureDescription.GetArraySize()), "Failed to transition texture '{}' in pResourceBarriers[{}], only whole resources can be transitioned on this device.", pTexture->GetDebugName(), uiBarrierIndex);
+          XII_ASSERT_DEV(barrier.m_uiFirstArraySlice == 0 && (barrier.m_uiArraySliceCount == XII_GAL_REMAINING_MIP_LEVELS || barrier.m_uiArraySliceCount == textureDescription.m_uiArraySizeOrDepth), "Failed to transition texture '{}' in pResourceBarriers[{}], only whole resources can be transitioned on this device.", pTexture->GetDebugName(), uiBarrierIndex);
         }
       }
       else if (xiiGALBuffer* pBuffer = xiiDynamicCast<xiiGALBuffer*>(barrier.m_pResource))
@@ -1857,7 +1857,7 @@ xiiResult xiiGALCommandList::MapBuffer(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapT
   {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     XII_ASSERT_DEV(m_MappedBuffers.Contains(pBuffer), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
-    XII_ASSERT_DEV(*m_MappedBuffers.GetValue(pBuffer) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(pBuffer));
+    XII_ASSERT_DEV(*m_MappedBuffers.GetValue(pBuffer) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", xiiArgEnum(mapType), xiiArgEnum(*m_MappedBuffers.GetValue(pBuffer)));
 
     m_MappedBuffers.Remove(pBuffer);
 #endif
@@ -1873,7 +1873,7 @@ xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMa
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(pBuffer != nullptr, "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
   XII_ASSERT_DEV(m_MappedBuffers.Contains(pBuffer), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
-  XII_ASSERT_DEV(*m_MappedBuffers.GetValue(pBuffer) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(pBuffer));
+  XII_ASSERT_DEV(*m_MappedBuffers.GetValue(pBuffer) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", xiiArgEnum(mapType), xiiArgEnum(*m_MappedBuffers.GetValue(pBuffer)));
 
   m_MappedBuffers.Remove(pBuffer);
 #endif
@@ -2021,7 +2021,7 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTexture* pTexture, xiiG
 
   if (textureDescription.IsArray())
   {
-    XII_ASSERT_DEV(textureMipLevelData.m_uiArraySlice < textureDescription.GetArraySize(), "Array slice ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiArraySlice, textureDescription.GetArraySize() - 1);
+    XII_ASSERT_DEV(textureMipLevelData.m_uiArraySlice < textureDescription.m_uiArraySizeOrDepth, "Array slice ({}) is out of permitted range [0, {}].", textureMipLevelData.m_uiArraySlice, textureDescription.m_uiArraySizeOrDepth - 1);
   }
   else
   {
@@ -2046,7 +2046,7 @@ xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTexture* pTexture, xi
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(pTexture != nullptr, "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
   XII_ASSERT_DEV(textureMipLevelData.m_uiMipLevel < pTexture->GetDescription().m_uiMipLevels, "MapTextureSubresource arguments are invalid. The mip level is out of range.");
-  XII_ASSERT_DEV(textureMipLevelData.m_uiArraySlice < pTexture->GetDescription().GetArraySize(), "MapTextureSubresource arguments are invalid. The array slice is out of range.");
+  XII_ASSERT_DEV(textureMipLevelData.m_uiArraySlice < pTexture->GetDescription().m_uiArraySizeOrDepth, "MapTextureSubresource arguments are invalid. The array slice is out of range.");
 #endif
 
   return UnmapTextureSubresourcePlatform(pTexture, textureMipLevelData);

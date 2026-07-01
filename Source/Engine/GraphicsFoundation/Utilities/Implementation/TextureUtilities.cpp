@@ -536,8 +536,8 @@ private:
 
 xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment, xiiUInt32 uiLocationX, xiiUInt32 uiLocationY, xiiUInt32 uiLocationZ)
 {
-  XII_ASSERT_DEV(textureDescription.m_uiMipLevels > 0 && textureDescription.GetArraySize() > 0 && textureDescription.m_Size.HasNonZeroArea() && textureDescription.m_Format != xiiGALResourceFormat::Unknown, "");
-  XII_ASSERT_DEV((uiArraySlice < textureDescription.GetArraySize() && uiMipLevel < textureDescription.m_uiMipLevels) || (uiArraySlice == textureDescription.GetArraySize() && uiMipLevel == 0), "");
+  XII_ASSERT_DEV(textureDescription.m_uiMipLevels > 0 && textureDescription.m_uiArraySizeOrDepth > 0 && textureDescription.m_Size.HasNonZeroArea() && textureDescription.m_Format != xiiGALResourceFormat::Unknown, "");
+  XII_ASSERT_DEV((uiArraySlice < textureDescription.m_uiArraySizeOrDepth && uiMipLevel < textureDescription.m_uiMipLevels) || (uiArraySlice == textureDescription.m_uiArraySizeOrDepth && uiMipLevel == 0), "");
 
   xiiUInt64 uiOffset = 0;
   if (uiArraySlice > 0)
@@ -566,7 +566,7 @@ xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTe
     uiOffset += xiiMemoryUtils::AlignSize(mipLevelProperties.m_uiMipSize, xiiUInt64{uiAlignment});
   }
 
-  if (uiArraySlice == textureDescription.GetArraySize())
+  if (uiArraySlice == textureDescription.m_uiArraySizeOrDepth)
   {
     XII_ASSERT_DEV(uiLocationX == 0 && uiLocationY == 0 && uiLocationZ == 0, "Staging buffer size is requested: location must be (0, 0, 0).");
   }
@@ -709,9 +709,9 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
   xiiGALMipLevelProperties mipLevelProperties;
-  mipLevelProperties.m_LogicalSize.width  = xiiMath::Max(textureDescription.GetWidth() >> uiMipLevel, 1U);
-  mipLevelProperties.m_LogicalSize.height = xiiMath::Max(textureDescription.GetHeight() >> uiMipLevel, 1U);
-  mipLevelProperties.m_uiDepth            = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
+  mipLevelProperties.m_LogicalSize.width  = xiiMath::Max(textureDescription.m_Size.width >> uiMipLevel, 1U);
+  mipLevelProperties.m_LogicalSize.height = xiiMath::Max(textureDescription.m_Size.height >> uiMipLevel, 1U);
+  mipLevelProperties.m_uiDepth            = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMipLevel, 1U);
 
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
@@ -805,12 +805,12 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
   out_subresourceData.Clear();
   out_Data.Clear();
 
-  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.GetArraySize();
+  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.m_uiArraySizeOrDepth;
   out_subresourceData.Reserve(uiTotalSubResources);
 
   // First compute total size needed.
   xiiUInt64 uiTotalSize = 0;
-  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
   {
     for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
     {
@@ -826,7 +826,7 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
 
   // Now assign subresource pointers into the already allocated buffer.
   xiiUInt64 uiCurrentOffset = 0;
-  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
   {
     for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
     {
