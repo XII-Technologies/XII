@@ -153,14 +153,11 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
     return XII_FAILURE;
   }
 
-  ref_header.SetWidth(ref_exrImage.width);
-  ref_header.SetHeight(ref_exrImage.height);
-  ref_header.SetImageFormat(imageFormat);
-
-  ref_header.SetMipLevelCount(1);
-  ref_header.SetArrayIndexCount(1);
-  ref_header.SetFaceCount(1);
-  ref_header.SetDepth(1);
+  ref_header.m_Size.width         = ref_exrImage.width;
+  ref_header.m_Size.height        = ref_exrImage.height;
+  ref_header.m_Format             = imageFormat;
+  ref_header.m_uiMipLevels        = 1;
+  ref_header.m_uiArraySizeOrDepth = 1;
 
   return XII_SUCCESS;
 }
@@ -217,15 +214,15 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   InitEXRImage(&exrImage);
   XII_SCOPE_EXIT(FreeEXRImage(&exrImage));
 
-  xiiGALTextureCreationDescription            header;
-  xiiDynamicArray<xiiUInt8> fileBuffer;
+  xiiGALTextureCreationDescription header;
+  xiiDynamicArray<xiiUInt8>        fileBuffer;
 
   XII_SUCCEED_OR_RETURN(ReadImageData(ref_stream, fileBuffer, header, exrHeader, exrImage));
 
   ref_image.ResetAndAlloc(header);
 
-  const xiiUInt32 uiPixelCount     = header.GetWidth() * header.GetHeight();
-  const xiiUInt32 uiNumDstChannels = xiiGALTextureUtilities::GetComponentCount(header.GetImageFormat());
+  const xiiUInt32 uiPixelCount     = header.m_Size.width * header.m_Size.height;
+  const xiiUInt32 uiNumDstChannels = xiiGALTextureUtilities::GetComponentCount(header.m_Format);
   const xiiUInt32 uiNumSrcChannels = exrHeader.num_channels;
 
   xiiUInt32 uiSrcStride = 0;
