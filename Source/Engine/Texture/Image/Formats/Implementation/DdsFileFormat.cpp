@@ -353,25 +353,17 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     fileHeader.m_uiDepth = uiDepth;
   }
 
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(image.GetImageFormat());
 
-
-  switch (xiiGALTextureUtilities::GetComponentType(image.GetImageFormat()))
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
-    case xiiImageFormatType::LINEAR:
-      [[fallthrough]];
-    case xiiImageFormatType::PLANAR:
-      fileHeader.m_uiFlags |= xiiDdsdFlags::PITCH;
-      fileHeader.m_uiPitchOrLinearSize = static_cast<xiiUInt32>(image.GetRowPitch(0));
-      break;
-
-    case xiiImageFormatType::BLOCK_COMPRESSED:
-      fileHeader.m_uiFlags |= xiiDdsdFlags::LINEARSIZE;
-      fileHeader.m_uiPitchOrLinearSize = 0; /// \todo sub-image size
-      break;
-
-    default:
-      xiiLog::Error("Unknown image format type.");
-      return XII_FAILURE;
+    fileHeader.m_uiFlags |= xiiDdsdFlags::LINEARSIZE;
+    fileHeader.m_uiPitchOrLinearSize = 0; /// \todo sub-image size
+  }
+  else
+  {
+    fileHeader.m_uiFlags |= xiiDdsdFlags::PITCH;
+    fileHeader.m_uiPitchOrLinearSize = static_cast<xiiUInt32>(image.GetRowPitch(0));
   }
 
   fileHeader.m_uiCaps = xiiDdsCaps::TEXTURE;
