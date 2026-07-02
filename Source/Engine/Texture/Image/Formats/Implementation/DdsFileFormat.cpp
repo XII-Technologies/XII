@@ -8,118 +8,229 @@
 #include <Texture/Image/Formats/ImageFormatMappings.h>
 #include <Texture/Image/Image.h>
 
-XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiDdsFileFormat> g_ddsFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiDdsFileFormat> g_DdsFormat;
 
-struct xiiDdsPixelFormat
+namespace
 {
-  xiiUInt32 m_uiSize;
-  xiiUInt32 m_uiFlags;
-  xiiUInt32 m_uiFourCC;
-  xiiUInt32 m_uiRGBBitCount;
-  xiiUInt32 m_uiRBitMask;
-  xiiUInt32 m_uiGBitMask;
-  xiiUInt32 m_uiBBitMask;
-  xiiUInt32 m_uiABitMask;
-};
-
-struct xiiDdsHeader
-{
-  xiiUInt32         m_uiMagic;
-  xiiUInt32         m_uiSize;
-  xiiUInt32         m_uiFlags;
-  xiiUInt32         m_uiHeight;
-  xiiUInt32         m_uiWidth;
-  xiiUInt32         m_uiPitchOrLinearSize;
-  xiiUInt32         m_uiDepth;
-  xiiUInt32         m_uiMipMapCount;
-  xiiUInt32         m_uiReserved1[11];
-  xiiDdsPixelFormat m_ddspf;
-  xiiUInt32         m_uiCaps;
-  xiiUInt32         m_uiCaps2;
-  xiiUInt32         m_uiCaps3;
-  xiiUInt32         m_uiCaps4;
-  xiiUInt32         m_uiReserved2;
-};
-
-struct xiiDdsResourceDimension
-{
-  enum Enum
+  struct xiiDdsPixelFormat
   {
-    TEXTURE1D = 2,
-    TEXTURE2D = 3,
-    TEXTURE3D = 4,
+    xiiUInt32 m_uiSize;
+    xiiUInt32 m_uiFlags;
+    xiiUInt32 m_uiFourCC;
+    xiiUInt32 m_uiRGBBitCount;
+    xiiUInt32 m_uiRBitMask;
+    xiiUInt32 m_uiGBitMask;
+    xiiUInt32 m_uiBBitMask;
+    xiiUInt32 m_uiABitMask;
   };
-};
 
-struct xiiDdsResourceMiscFlags
-{
-  enum Enum
+  struct xiiDdsHeader
   {
-    TEXTURECUBE = 0x4,
+    xiiUInt32         m_uiMagic;
+    xiiUInt32         m_uiSize;
+    xiiUInt32         m_uiFlags;
+    xiiUInt32         m_uiHeight;
+    xiiUInt32         m_uiWidth;
+    xiiUInt32         m_uiPitchOrLinearSize;
+    xiiUInt32         m_uiDepth;
+    xiiUInt32         m_uiMipMapCount;
+    xiiUInt32         m_uiReserved1[11];
+    xiiDdsPixelFormat m_ddspf;
+    xiiUInt32         m_uiCaps;
+    xiiUInt32         m_uiCaps2;
+    xiiUInt32         m_uiCaps3;
+    xiiUInt32         m_uiCaps4;
+    xiiUInt32         m_uiReserved2;
   };
-};
 
-struct xiiDdsHeaderDxt10
-{
-  xiiUInt32 m_uiDxgiFormat;
-  xiiUInt32 m_uiResourceDimension;
-  xiiUInt32 m_uiMiscFlag;
-  xiiUInt32 m_uiArraySize;
-  xiiUInt32 m_uiMiscFlags2;
-};
-
-struct xiiDdsdFlags
-{
-  enum Enum
+  struct xiiDdsResourceDimension
   {
-    CAPS        = 0x000001,
-    HEIGHT      = 0x000002,
-    WIDTH       = 0x000004,
-    PITCH       = 0x000008,
-    PIXELFORMAT = 0x001000,
-    MIPMAPCOUNT = 0x020000,
-    LINEARSIZE  = 0x080000,
-    DEPTH       = 0x800000,
+    enum Enum
+    {
+      TEXTURE1D = 2,
+      TEXTURE2D = 3,
+      TEXTURE3D = 4,
+    };
   };
-};
 
-struct xiiDdpfFlags
-{
-  enum Enum
+  struct xiiDdsResourceMiscFlags
   {
-    ALPHAPIXELS = 0x00001,
-    ALPHA       = 0x00002,
-    FOURCC      = 0x00004,
-    RGB         = 0x00040,
-    YUV         = 0x00200,
-    LUMINANCE   = 0x20000,
+    enum Enum
+    {
+      TEXTURECUBE = 0x4,
+    };
   };
-};
 
-struct xiiDdsCaps
-{
-  enum Enum
+  struct xiiDdsHeaderDxt10
   {
-    COMPLEX = 0x000008,
-    MIPMAP  = 0x400000,
-    TEXTURE = 0x001000,
+    xiiUInt32 m_uiDxgiFormat;
+    xiiUInt32 m_uiResourceDimension;
+    xiiUInt32 m_uiMiscFlag;
+    xiiUInt32 m_uiArraySize;
+    xiiUInt32 m_uiMiscFlags2;
   };
-};
 
-struct xiiDdsCaps2
-{
-  enum Enum
+  struct xiiDdsdFlags
   {
-    CUBEMAP           = 0x000200,
-    CUBEMAP_POSITIVEX = 0x000400,
-    CUBEMAP_NEGATIVEX = 0x000800,
-    CUBEMAP_POSITIVEY = 0x001000,
-    CUBEMAP_NEGATIVEY = 0x002000,
-    CUBEMAP_POSITIVEZ = 0x004000,
-    CUBEMAP_NEGATIVEZ = 0x008000,
-    VOLUME            = 0x200000,
+    enum Enum
+    {
+      CAPS        = 0x000001,
+      HEIGHT      = 0x000002,
+      WIDTH       = 0x000004,
+      PITCH       = 0x000008,
+      PIXELFORMAT = 0x001000,
+      MIPMAPCOUNT = 0x020000,
+      LINEARSIZE  = 0x080000,
+      DEPTH       = 0x800000,
+    };
   };
-};
+
+  struct xiiDdpfFlags
+  {
+    enum Enum
+    {
+      ALPHAPIXELS = 0x00001,
+      ALPHA       = 0x00002,
+      FOURCC      = 0x00004,
+      RGB         = 0x00040,
+      YUV         = 0x00200,
+      LUMINANCE   = 0x20000,
+    };
+  };
+
+  struct xiiDdsCaps
+  {
+    enum Enum
+    {
+      COMPLEX = 0x000008,
+      MIPMAP  = 0x400000,
+      TEXTURE = 0x001000,
+    };
+  };
+
+  struct xiiDdsCaps2
+  {
+    enum Enum
+    {
+      CUBEMAP           = 0x000200,
+      CUBEMAP_POSITIVEX = 0x000400,
+      CUBEMAP_NEGATIVEX = 0x000800,
+      CUBEMAP_POSITIVEY = 0x001000,
+      CUBEMAP_NEGATIVEY = 0x002000,
+      CUBEMAP_POSITIVEZ = 0x004000,
+      CUBEMAP_NEGATIVEZ = 0x008000,
+      VOLUME            = 0x200000,
+    };
+  };
+
+  /// \brief Returns the red mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetRedMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+        return 0x000000FFU;
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x00FF0000U;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+        return 0x0000F800U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x00007C00U;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief Returns the green mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetGreenMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x0000FF00U;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+        return 0x000007E0U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x000003E0U;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief Returns the blue mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlueMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+        return 0x00FF0000U;
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x000000FFU;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x0000001FU;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief Returns the alpha mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetAlphaMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+        return 0xFF000000U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x00008000U;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief This returns the texture format for a given pixel mask and bits per pixel.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> FromPixelMask(xiiUInt32 uiRedMask, xiiUInt32 uiGreenMask, xiiUInt32 uiBlueMask, xiiUInt32 uiAlphaMask, xiiUInt32 uiBitsPerPixel)
+  {
+    if (uiBitsPerPixel == 32U)
+    {
+      if (uiRedMask == 0x000000FFU && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x00FF0000U && uiAlphaMask == 0xFF000000U)
+        return xiiGALResourceFormat::RGBA8UNormalized;
+
+      if (uiRedMask == 0x00FF0000U && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x000000FFU && uiAlphaMask == 0xFF000000U)
+        return xiiGALResourceFormat::BGRA8UNormalized;
+
+      if (uiRedMask == 0x00FF0000U && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x000000FFU && uiAlphaMask == 0x00000000U)
+        return xiiGALResourceFormat::BGRX8UNormalized;
+    }
+
+    if (uiBitsPerPixel == 16U)
+    {
+      if (uiRedMask == 0x0000F800U && uiGreenMask == 0x000007E0U && uiBlueMask == 0x0000001FU)
+        return xiiGALResourceFormat::B5G6R5UNormalized;
+
+      if (uiRedMask == 0x00007C00U && uiGreenMask == 0x000003E0U && uiBlueMask == 0x0000001FU)
+        return xiiGALResourceFormat::B5G5R5A1UNormalized;
+    }
+
+    return xiiGALResourceFormat::Unknown;
+  }
+} // namespace
 
 static const xiiUInt32 xiiDdsMagic       = 0x20534444;
 static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
@@ -174,7 +285,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreat
   // Data format specified in RGBA masks
   if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
   {
-    format = xiiGALTextureUtilities::FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask, ref_ddsHeader.m_ddspf.m_uiABitMask, ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
+    format = FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask, ref_ddsHeader.m_ddspf.m_uiABitMask, ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
 
     if (format == xiiGALResourceFormat::Unknown)
     {
@@ -407,10 +518,10 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
   fileHeader.m_ddspf.m_uiSize = 32;
 
-  xiiUInt32 uiRedMask   = xiiGALTextureUtilities::GetRedMask(format);
-  xiiUInt32 uiGreenMask = xiiGALTextureUtilities::GetGreenMask(format);
-  xiiUInt32 uiBlueMask  = xiiGALTextureUtilities::GetBlueMask(format);
-  xiiUInt32 uiAlphaMask = xiiGALTextureUtilities::GetAlphaMask(format);
+  xiiUInt32 uiRedMask   = GetRedMask(format);
+  xiiUInt32 uiGreenMask = GetGreenMask(format);
+  xiiUInt32 uiBlueMask  = GetBlueMask(format);
+  xiiUInt32 uiAlphaMask = GetAlphaMask(format);
 
   xiiUInt32 uiFourCc     = xiiImageFormatMappings::ToFourCc(format);
   xiiUInt32 uiDxgiFormat = xiiImageFormatMappings::ToDxgiFormat(format);
@@ -419,7 +530,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   if (!bDxt10)
   {
     // The format has a known mask and we would also recognize it as the same when reading back in, since multiple formats may have the same pixel masks
-    if ((uiRedMask | uiGreenMask | uiBlueMask | uiAlphaMask) && format == xiiGALTextureUtilities::FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
+    if ((uiRedMask | uiGreenMask | uiBlueMask | uiAlphaMask) && format == FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
     {
       fileHeader.m_ddspf.m_uiFlags       = xiiDdpfFlags::ALPHAPIXELS | xiiDdpfFlags::RGB;
       fileHeader.m_ddspf.m_uiRBitMask    = uiRedMask;

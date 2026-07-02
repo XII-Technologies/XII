@@ -16,7 +16,6 @@ static const xiiEnum<xiiGALResourceFormat> g_DefaultFormat = xiiGALResourceForma
 
 class xiiImageConversionTest : public xiiTestBaseClass
 {
-
 public:
   virtual const char* GetTestName() const override { return "Image Conversion"; }
 
