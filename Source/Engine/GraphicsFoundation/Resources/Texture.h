@@ -62,15 +62,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiGALOptimizedClearValue           m_ClearValue            = {};                                 ///< Optimized clear value.
   void*                               m_pExistingNativeObject = nullptr;                            ///< Used to encapsulate existing native textures in objects usable by the GAL.
 
-  constexpr XII_ALWAYS_INLINE bool      IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
-  constexpr XII_ALWAYS_INLINE bool      Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
-  constexpr XII_ALWAYS_INLINE bool      Is2D() const { return m_Type == xiiGALResourceDimension::Texture2D || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
-  constexpr XII_ALWAYS_INLINE bool      Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
-  constexpr XII_ALWAYS_INLINE bool      IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
-  constexpr XII_ALWAYS_INLINE xiiUInt32 GetArraySize() const { return IsArray() ? m_uiArraySizeOrDepth : 1U; }
-  constexpr XII_ALWAYS_INLINE xiiUInt32 GetWidth() const { return m_Size.width; }
-  constexpr XII_ALWAYS_INLINE xiiUInt32 GetHeight() const { return Is1D() ? 1U : m_Size.height; }
-  constexpr XII_ALWAYS_INLINE xiiUInt32 GetDepth() const { return Is3D() ? m_uiArraySizeOrDepth : 1U; }
+  /// \brief Returns true if the texture is a 1D texture or a 1D texture array.
+  XII_ALWAYS_INLINE bool Is1D() const { return m_Type == xiiGALResourceDimension::Texture1D || m_Type == xiiGALResourceDimension::Texture1DArray; }
+
+  /// \brief Returns true if the texture is a 2D texture or a 2D texture array.
+  XII_ALWAYS_INLINE bool Is2D() const { return m_Type == xiiGALResourceDimension::Texture2D || m_Type == xiiGALResourceDimension::Texture2DArray; }
+
+  /// \brief Returns true if the texture is a 3D texture.
+  XII_ALWAYS_INLINE bool Is3D() const { return m_Type == xiiGALResourceDimension::Texture3D; }
+
+  /// \brief Returns true if the texture is a cube map or a cube map array.
+  XII_ALWAYS_INLINE bool IsCube() const { return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
+
+  /// \brief Returns true if the texture is a 1D array, 2D array, cube map or cube map array.
+  XII_ALWAYS_INLINE bool IsArray() const { return m_Type == xiiGALResourceDimension::Texture1DArray || m_Type == xiiGALResourceDimension::Texture2DArray || m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray; }
 };
 
 /// \brief This describes the data for one texture sub-resource.

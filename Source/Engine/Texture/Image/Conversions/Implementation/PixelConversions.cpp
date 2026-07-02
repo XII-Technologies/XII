@@ -18,13 +18,10 @@
 
 namespace
 {
-  // 3D vector: 11/11/10 floating-point components
-  // The 3D vector is packed into 32 bits as follows: a 5-bit biased exponent
-  // and 6-bit mantissa for x component, a 5-bit biased exponent and
-  // 6-bit mantissa for y component, a 5-bit biased exponent and a 5-bit
-  // mantissa for z. The z component is stored in the most significant bits
-  // and the x component in the least significant bits. No sign bits so
-  // all partial-precision numbers are positive.
+  // 3D vector: 11/11/10 floating-point components.
+  // The 3D vector is packed into 32 bits as follows: a 5-bit biased exponent and 6-bit mantissa for x component, a 5-bit biased exponent and
+  // 6-bit mantissa for y component, a 5-bit biased exponent and a 5-bit mantissa for z. The z component is stored in the most significant bits
+  // and the x component in the least significant bits. No sign bits so all partial-precision numbers are positive.
   // (Z10Y11X11): [32] ZZZZZzzz zzzYYYYY yyyyyyXX XXXxxxxx [0
   union R11G11B10
   {
@@ -172,80 +169,96 @@ xiiUInt16 xiiCompressA1B5G5R5(xiiColorBaseUB color)
   return static_cast<xiiUInt16>((r << 11) | (g << 6) | (b << 1) | a);
 }
 
-template <xiiColorBaseUB (*decompressFunc)(xiiUInt16), xiiImageFormat::Enum templateSourceFormat>
+template <xiiColorBaseUB (*decompressFunc)(xiiUInt16), xiiGALResourceFormat::Enum templateSourceFormat>
 class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
 {
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
-    xiiImageFormat::Enum sourceFormatSrgb = xiiImageFormat::AsSrgb(templateSourceFormat);
-    XII_ASSERT_DEV(sourceFormatSrgb != templateSourceFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateSourceFormat));
+    static xiiStaticArray<xiiImageConversionEntry, 2U> supportedConversions;
+    static bool                                        bIsInitialized = false;
 
-    static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(templateSourceFormat, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(sourceFormatSrgb, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
-    };
+    if (!bIsInitialized)
+    {
+      supportedConversions.PushBack(xiiImageConversionEntry(templateSourceFormat, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default));
+
+      if (auto srgbFormat = xiiGALResourceFormat::AsSrgb(templateSourceFormat); srgbFormat != templateSourceFormat)
+      {
+        supportedConversions.PushBack(xiiImageConversionEntry(srgbFormat, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default));
+      }
+
+      bIsInitialized = true;
+    }
 
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 sourceStride = 2;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 2;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (numElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<xiiColorBaseUB*>(targetPointer) = decompressFunc(*reinterpret_cast<const xiiUInt16*>(sourcePointer));
+      *reinterpret_cast<xiiColorBaseUB*>(pTargetPointer) = decompressFunc(*reinterpret_cast<const xiiUInt16*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
   }
 };
 
-template <xiiUInt16 (*compressFunc)(xiiColorBaseUB), xiiImageFormat::Enum templateTargetFormat>
+template <xiiUInt16 (*compressFunc)(xiiColorBaseUB), xiiGALResourceFormat::Enum templateTargetFormat>
 class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
 {
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
-    xiiImageFormat::Enum targetFormatSrgb = xiiImageFormat::AsSrgb(templateTargetFormat);
-    XII_ASSERT_DEV(targetFormatSrgb != templateTargetFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateTargetFormat));
+    static xiiStaticArray<xiiImageConversionEntry, 2U> supportedConversions;
+    static bool                                        bIsInitialized = false;
 
-    static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, templateTargetFormat, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, targetFormatSrgb, xiiImageConversionFlags::Default),
-    };
+    if (!bIsInitialized)
+    {
+      supportedConversions.PushBack(xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, templateTargetFormat, xiiImageConversionFlags::Default));
+
+      if (auto srgbFormat = xiiGALResourceFormat::AsSrgb(templateTargetFormat); srgbFormat != templateTargetFormat)
+      {
+        supportedConversions.PushBack(xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, srgbFormat, xiiImageConversionFlags::Default));
+      }
+
+      bIsInitialized = true;
+    }
 
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 numElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 2;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 2;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (numElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<xiiUInt16*>(targetPointer) = compressFunc(*reinterpret_cast<const xiiColorBaseUB*>(sourcePointer));
+      *reinterpret_cast<xiiUInt16*>(pTargetPointer) = compressFunc(*reinterpret_cast<const xiiColorBaseUB*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      numElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -266,88 +279,88 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8A8_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::InPlace),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::B8G8R8A8_UNORM, xiiImageConversionFlags::InPlace),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::B8G8R8X8_UNORM, xiiImageConversionFlags::InPlace),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8A8_UNORM_SRGB, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::InPlace),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::B8G8R8A8_UNORM_SRGB, xiiImageConversionFlags::InPlace),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::B8G8R8X8_UNORM_SRGB, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::BGRA8UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BGRA8UNormalized, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::BGRX8UNormalized, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::BGRA8UNormalizedSRGB, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BGRA8UNormalizedSRGB, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::BGRX8UNormalizedSRGB, xiiImageConversionFlags::InPlace),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
 #if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX
-    if (IsAligned(sourcePointer) && IsAligned(targetPointer))
+    if (IsAligned(pSourcePointer) && IsAligned(pTargetPointer))
     {
 #  if XII_SSE_LEVEL >= XII_SSE_30
-      const xiiUInt32 elementsPerBatch = 8;
+      const xiiUInt32 uiElementsPerBatch = 8;
 
       __m128i shuffleMask = _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2);
 
       // Intel optimization manual, Color Pixel Format Conversion Using SSE3
-      while (uiNumElements >= elementsPerBatch)
+      while (uiElementCount >= uiElementsPerBatch)
       {
-        __m128i in0 = reinterpret_cast<const __m128i*>(sourcePointer)[0];
-        __m128i in1 = reinterpret_cast<const __m128i*>(sourcePointer)[1];
+        __m128i in0 = reinterpret_cast<const __m128i*>(pSourcePointer)[0];
+        __m128i in1 = reinterpret_cast<const __m128i*>(pSourcePointer)[1];
 
-        reinterpret_cast<__m128i*>(targetPointer)[0] = _mm_shuffle_epi8(in0, shuffleMask);
-        reinterpret_cast<__m128i*>(targetPointer)[1] = _mm_shuffle_epi8(in1, shuffleMask);
+        reinterpret_cast<__m128i*>(pTargetPointer)[0] = _mm_shuffle_epi8(in0, shuffleMask);
+        reinterpret_cast<__m128i*>(pTargetPointer)[1] = _mm_shuffle_epi8(in1, shuffleMask);
 
-        sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
-        targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        uiNumElements -= elementsPerBatch;
+        pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride * uiElementsPerBatch);
+        pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride * uiElementsPerBatch);
+
+        uiElementCount -= uiElementsPerBatch;
       }
 #  else
-      const xiiUInt32 elementsPerBatch = 8;
+      const xiiUInt32 uiElementsPerBatch = 8;
 
       __m128i mask1 = _mm_set1_epi32(0xff00ff00);
       __m128i mask2 = _mm_set1_epi32(0x00ff00ff);
 
       // Intel optimization manual, Color Pixel Format Conversion Using SSE2
-      while (uiNumElements >= elementsPerBatch)
+      while (uiElementCount >= uiElementsPerBatch)
       {
-        __m128i in0 = reinterpret_cast<const __m128i*>(sourcePointer)[0];
-        __m128i in1 = reinterpret_cast<const __m128i*>(sourcePointer)[1];
+        __m128i in0 = reinterpret_cast<const __m128i*>(pSourcePointer)[0];
+        __m128i in1 = reinterpret_cast<const __m128i*>(pSourcePointer)[1];
 
-        reinterpret_cast<__m128i*>(targetPointer)[0] =
-          _mm_or_si128(_mm_and_si128(in0, mask1), _mm_and_si128(_mm_or_si128(_mm_slli_epi32(in0, 16), _mm_srli_epi32(in0, 16)), mask2));
-        reinterpret_cast<__m128i*>(targetPointer)[1] =
-          _mm_or_si128(_mm_and_si128(in1, mask1), _mm_and_si128(_mm_or_si128(_mm_slli_epi32(in1, 16), _mm_srli_epi32(in1, 16)), mask2));
+        reinterpret_cast<__m128i*>(pTargetPointer)[0] = _mm_or_si128(_mm_and_si128(in0, mask1), _mm_and_si128(_mm_or_si128(_mm_slli_epi32(in0, 16), _mm_srli_epi32(in0, 16)), mask2));
+        reinterpret_cast<__m128i*>(pTargetPointer)[1] = _mm_or_si128(_mm_and_si128(in1, mask1), _mm_and_si128(_mm_or_si128(_mm_slli_epi32(in1, 16), _mm_srli_epi32(in1, 16)), mask2));
 
-        sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
-        targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        uiNumElements -= elementsPerBatch;
+        pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride * uiElementsPerBatch);
+        pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride * uiElementsPerBatch);
+        uiElementCount -= uiElementsPerBatch;
       }
 #  endif
     }
 #endif
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
       xiiUInt8 a, b, c, d;
-      a                                             = reinterpret_cast<const xiiUInt8*>(sourcePointer)[2];
-      b                                             = reinterpret_cast<const xiiUInt8*>(sourcePointer)[1];
-      c                                             = reinterpret_cast<const xiiUInt8*>(sourcePointer)[0];
-      d                                             = reinterpret_cast<const xiiUInt8*>(sourcePointer)[3];
-      reinterpret_cast<xiiUInt8*>(targetPointer)[0] = a;
-      reinterpret_cast<xiiUInt8*>(targetPointer)[1] = b;
-      reinterpret_cast<xiiUInt8*>(targetPointer)[2] = c;
-      reinterpret_cast<xiiUInt8*>(targetPointer)[3] = d;
+      a                                              = reinterpret_cast<const xiiUInt8*>(pSourcePointer)[2];
+      b                                              = reinterpret_cast<const xiiUInt8*>(pSourcePointer)[1];
+      c                                              = reinterpret_cast<const xiiUInt8*>(pSourcePointer)[0];
+      d                                              = reinterpret_cast<const xiiUInt8*>(pSourcePointer)[3];
+      reinterpret_cast<xiiUInt8*>(pTargetPointer)[0] = a;
+      reinterpret_cast<xiiUInt8*>(pTargetPointer)[1] = b;
+      reinterpret_cast<xiiUInt8*>(pTargetPointer)[2] = c;
+      reinterpret_cast<xiiUInt8*>(pTargetPointer)[3] = d;
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -359,47 +372,47 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      {xiiImageFormat::B8G8R8X8_UNORM, xiiImageFormat::B8G8R8A8_UNORM, xiiImageConversionFlags::InPlace},
-      {xiiImageFormat::B8G8R8X8_UNORM_SRGB, xiiImageFormat::B8G8R8A8_UNORM_SRGB, xiiImageConversionFlags::InPlace},
+      xiiImageConversionEntry(xiiGALResourceFormat::BGRX8UNormalized, xiiGALResourceFormat::BGRA8UNormalized, xiiImageConversionFlags::InPlace),
+      xiiImageConversionEntry(xiiGALResourceFormat::BGRX8UNormalizedSRGB, xiiGALResourceFormat::BGRA8UNormalizedSRGB, xiiImageConversionFlags::InPlace),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
 #if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_SSE_LEVEL >= XII_SSE_20
-    if (IsAligned(sourcePointer) && IsAligned(targetPointer))
+    if (IsAligned(pSourcePointer) && IsAligned(pTargetPointer))
     {
-      const xiiUInt32 elementsPerBatch = 4;
+      const xiiUInt32 uiElementsPerBatch = 4;
 
       __m128i mask = _mm_set1_epi32(0xFF000000);
 
-      while (uiNumElements >= elementsPerBatch)
+      while (uiElementCount >= uiElementsPerBatch)
       {
-        const __m128i* pSource = reinterpret_cast<const __m128i*>(sourcePointer);
-        __m128i*       pTarget = reinterpret_cast<__m128i*>(targetPointer);
+        const __m128i* pSourcePtr = reinterpret_cast<const __m128i*>(pSourcePointer);
+        __m128i*       pTargetPtr = reinterpret_cast<__m128i*>(pTargetPointer);
 
-        pTarget[0] = _mm_or_si128(pSource[0], mask);
+        pTargetPtr[0] = _mm_or_si128(pSourcePtr[0], mask);
 
-        sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
-        targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        uiNumElements -= elementsPerBatch;
+        pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride * uiElementsPerBatch);
+        pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride * uiElementsPerBatch);
+        uiElementCount -= uiElementsPerBatch;
       }
     }
 #endif
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      xiiUInt32 x = *(reinterpret_cast<const xiiUInt32*>(sourcePointer));
+      xiiUInt32 x = *(reinterpret_cast<const xiiUInt32*>(pSourcePointer));
 
 #if XII_ENABLED(XII_PLATFORM_LITTLE_ENDIAN)
       x |= 0xFF000000;
@@ -407,11 +420,12 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
       x |= 0x000000FF;
 #endif
 
-      *(reinterpret_cast<xiiUInt32*>(targetPointer)) = x;
+      *(reinterpret_cast<xiiUInt32*>(pTargetPointer)) = x;
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -424,42 +438,42 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_FLOAT, xiiImageFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_FLOAT, xiiImageFormat::R8G8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_FLOAT, xiiImageFormat::R8G8B8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32Float, xiiGALResourceFormat::R8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::RG8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 1;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 1;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
 #if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE || XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && XII_SSE_LEVEL >= XII_SSE_20
     {
-      const xiiUInt32 elementsPerBatch = 16;
+      const xiiUInt32 uiElementsPerBatch = 16;
 
       __m128 zero  = _mm_setzero_ps();
       __m128 one   = _mm_set1_ps(1.0f);
       __m128 scale = _mm_set1_ps(255.0f);
       __m128 half  = _mm_set1_ps(0.5f);
 
-      while (uiNumElements >= elementsPerBatch)
+      while (uiElementCount >= uiElementsPerBatch)
       {
-        __m128 float0 = _mm_loadu_ps(static_cast<const float*>(sourcePointer) + 0);
-        __m128 float1 = _mm_loadu_ps(static_cast<const float*>(sourcePointer) + 4);
-        __m128 float2 = _mm_loadu_ps(static_cast<const float*>(sourcePointer) + 8);
-        __m128 float3 = _mm_loadu_ps(static_cast<const float*>(sourcePointer) + 12);
+        __m128 float0 = _mm_loadu_ps(static_cast<const float*>(pSourcePointer) + 0);
+        __m128 float1 = _mm_loadu_ps(static_cast<const float*>(pSourcePointer) + 4);
+        __m128 float2 = _mm_loadu_ps(static_cast<const float*>(pSourcePointer) + 8);
+        __m128 float3 = _mm_loadu_ps(static_cast<const float*>(pSourcePointer) + 12);
 
         // Clamp NaN to zero
         float0 = _mm_and_ps(_mm_cmpord_ps(float0, zero), float0);
@@ -492,23 +506,23 @@ public:
         __m128i short0 = _mm_packs_epi32(int0, int1);
         __m128i short1 = _mm_packs_epi32(int2, int3);
 
-        _mm_storeu_si128(reinterpret_cast<__m128i*>(targetPointer), _mm_packus_epi16(short0, short1));
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pTargetPointer), _mm_packus_epi16(short0, short1));
 
-        sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
-        targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        uiNumElements -= elementsPerBatch;
+        pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride * uiElementsPerBatch);
+        pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride * uiElementsPerBatch);
+        uiElementCount -= uiElementsPerBatch;
       }
     }
 #endif
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
+      *reinterpret_cast<xiiUInt8*>(pTargetPointer) = xiiMath::ColorFloatToByte(*reinterpret_cast<const float*>(pSourcePointer));
 
-      *reinterpret_cast<xiiUInt8*>(targetPointer) = xiiMath::ColorFloatToByte(*reinterpret_cast<const float*>(sourcePointer));
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -521,29 +535,29 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 sourceStride = 16;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 16;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<xiiColorGammaUB*>(targetPointer) = *reinterpret_cast<const xiiColor*>(sourcePointer);
+      *reinterpret_cast<xiiColorGammaUB*>(pTargetPointer) = *reinterpret_cast<const xiiColor*>(pSourcePointer);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -556,35 +570,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_FLOAT, xiiImageFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_FLOAT, xiiImageFormat::R16G16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_FLOAT, xiiImageFormat::R16G16B16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R16G16B16A16_UNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32Float, xiiGALResourceFormat::R16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::RG16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGBA16UNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 2;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 2;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
+      *reinterpret_cast<xiiUInt16*>(pTargetPointer) = xiiMath::ColorFloatToShort(*reinterpret_cast<const float*>(pSourcePointer));
 
-      *reinterpret_cast<xiiUInt16*>(targetPointer) = xiiMath::ColorFloatToShort(*reinterpret_cast<const float*>(sourcePointer));
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -597,34 +611,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_FLOAT, xiiImageFormat::R16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_FLOAT, xiiImageFormat::R16G16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R16G16B16A16_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32Float, xiiGALResourceFormat::R16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::RG16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGBA16Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 16;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 2;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 2;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
 
-      *reinterpret_cast<xiiFloat16*>(targetPointer) = *reinterpret_cast<const float*>(sourcePointer);
+      *reinterpret_cast<xiiFloat16*>(pTargetPointer) = *reinterpret_cast<const float*>(pSourcePointer);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -638,34 +653,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_FLOAT, xiiImageFormat::R8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_FLOAT, xiiImageFormat::R8G8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R8G8B8A8_SNORM, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32Float, xiiGALResourceFormat::R8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::RG8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGBA8SNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 1;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 1;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
+      *reinterpret_cast<xiiInt8*>(pTargetPointer) = xiiMath::ColorFloatToSignedByte(*reinterpret_cast<const float*>(pSourcePointer));
 
-      *reinterpret_cast<xiiInt8*>(targetPointer) = xiiMath::ColorFloatToSignedByte(*reinterpret_cast<const float*>(sourcePointer));
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -678,34 +694,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8_UNORM, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UNORM, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8UNormalized, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UNormalized, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 1;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 1;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorByteToFloat(*reinterpret_cast<const xiiUInt8*>(sourcePointer));
+      *reinterpret_cast<float*>(pTargetPointer) = xiiMath::ColorByteToFloat(*reinterpret_cast<const xiiUInt8*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -718,29 +735,29 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 sourceStride = 4;
-    xiiUInt32 targetStride = 16;
+    xiiUInt32 uiSourceStride = 4;
+    xiiUInt32 uiTargetStride = 16;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<xiiColor*>(targetPointer) = *reinterpret_cast<const xiiColorGammaUB*>(sourcePointer);
+      *reinterpret_cast<xiiColor*>(pTargetPointer) = *reinterpret_cast<const xiiColorGammaUB*>(pSourcePointer);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -753,34 +770,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R16_UNORM, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_UNORM, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16_UNORM, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UNORM, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16UNormalized, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UNormalized, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UNormalized, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 2;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 2;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorShortToFloat(*reinterpret_cast<const xiiUInt16*>(sourcePointer));
+      *reinterpret_cast<float*>(pTargetPointer) = xiiMath::ColorShortToFloat(*reinterpret_cast<const xiiUInt16*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -793,34 +811,36 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R16_SNORM, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_SNORM, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SNORM, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16SNormalized, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SNormalized, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SNormalized, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 2;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 2;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorSignedShortToFloat(*reinterpret_cast<const xiiInt16*>(sourcePointer));
+      *reinterpret_cast<float*>(pTargetPointer) = xiiMath::ColorSignedShortToFloat(*reinterpret_cast<const xiiInt16*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -833,33 +853,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R16_FLOAT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_FLOAT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_FLOAT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16Float, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 2;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 2;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<float*>(targetPointer) = *reinterpret_cast<const xiiFloat16*>(sourcePointer);
+      *reinterpret_cast<float*>(pTargetPointer) = *reinterpret_cast<const xiiFloat16*>(pSourcePointer);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -872,33 +894,35 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8_SNORM, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_SNORM, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SNORM, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8SNormalized, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SNormalized, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 sourceStride = 1;
-    xiiUInt32 targetStride = 4;
+    xiiUInt32 uiSourceStride = 1;
+    xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<float*>(targetPointer) = xiiMath::ColorSignedByteToFloat(*reinterpret_cast<const xiiInt8*>(sourcePointer));
+      *reinterpret_cast<float*>(pTargetPointer) = xiiMath::ColorSignedByteToFloat(*reinterpret_cast<const xiiInt8*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -911,70 +935,39 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8_UNORM_SRGB, xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8_UNORM, xiiImageFormat::B8G8R8A8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8_UNORM_SRGB, xiiImageFormat::B8G8R8A8_UNORM_SRGB, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UNormalized, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const xiiUInt8* sourcePointer = static_cast<const xiiUInt8*>(source.GetPtr());
-    xiiUInt8*       targetPointer = static_cast<xiiUInt8*>(target.GetPtr());
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
-    const xiiUInt32 numChannels = sourceStride / sizeof(xiiUInt8);
+    const xiiUInt8* pSourcePointer = static_cast<const xiiUInt8*>(pSource.GetPtr());
+    xiiUInt8*       pTargetPointer = static_cast<xiiUInt8*>(pTarget.GetPtr());
 
-#if XII_ENABLED(XII_PLATFORM_LITTLE_ENDIAN)
-    if (numChannels == 3)
+    while (uiElementCount--)
     {
-      // Fast path for RGB -> RGBA
-      const xiiUInt32 elementsPerBatch = 4;
+      // Copy existing channels (R or RG).
+      memcpy(pTargetPointer, pSourcePointer, uiSourceStride);
 
-      while (uiNumElements >= elementsPerBatch)
+      // Zero-fill remaining channels (G/B if missing).
+      if (uiTargetStride > uiSourceStride)
       {
-        xiiUInt32 source0 = reinterpret_cast<const xiiUInt32*>(sourcePointer)[0];
-        xiiUInt32 source1 = reinterpret_cast<const xiiUInt32*>(sourcePointer)[1];
-        xiiUInt32 source2 = reinterpret_cast<const xiiUInt32*>(sourcePointer)[2];
-
-        xiiUInt32 target0 = source0 | 0xFF000000;
-        xiiUInt32 target1 = (source0 >> 24) | (source1 << 8) | 0xFF000000;
-        xiiUInt32 target2 = (source1 >> 16) | (source2 << 16) | 0xFF000000;
-        xiiUInt32 target3 = (source2 >> 8) | 0xFF000000;
-
-        reinterpret_cast<xiiUInt32*>(targetPointer)[0] = target0;
-        reinterpret_cast<xiiUInt32*>(targetPointer)[1] = target1;
-        reinterpret_cast<xiiUInt32*>(targetPointer)[2] = target2;
-        reinterpret_cast<xiiUInt32*>(targetPointer)[3] = target3;
-
-        sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride * elementsPerBatch);
-        targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride * elementsPerBatch);
-        uiNumElements -= elementsPerBatch;
+        memset(pTargetPointer + uiSourceStride, 0, uiTargetStride - uiSourceStride);
       }
-    }
-#endif
 
+      // Set alpha = 255 (UNORM8)
+      pTargetPointer[3] = 0xFF;
 
-    while (uiNumElements)
-    {
-      // Copy existing channels
-      memcpy(targetPointer, sourcePointer, numChannels);
-
-      // Fill others with zero
-      memset(targetPointer + numChannels, 0, 3 * sizeof(xiiUInt8) - numChannels);
-
-      // Set alpha to 1
-      targetPointer[3] = 0xFF;
-
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -987,37 +980,46 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_FLOAT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_FLOAT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_FLOAT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const float* sourcePointer = static_cast<const float*>(static_cast<const void*>(source.GetPtr()));
-    float*       targetPointer = static_cast<float*>(static_cast<void*>(target.GetPtr()));
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
-    const xiiUInt32 numChannels = sourceStride / sizeof(float);
+    const float* pSourcePointer = static_cast<const float*>(static_cast<const void*>(pSource.GetPtr()));
+    float*       pTargetPointer = static_cast<float*>(static_cast<void*>(pTarget.GetPtr()));
 
-    while (uiNumElements)
+    const xiiUInt32 uiSourceChannels = sourceFormatDescription.m_uiComponentCount; // 1, 2, or 3
+    const xiiUInt32 uiTargetChannels = targetFormatDescription.m_uiComponentCount; // always 4
+
+    while (uiElementCount--)
     {
-      // Copy existing channels
-      memcpy(targetPointer, sourcePointer, numChannels * sizeof(float));
+      // Copy existing float channels.
+      for (xiiUInt32 i = 0; i < uiSourceChannels; ++i)
+      {
+        pTargetPointer[i] = pSourcePointer[i];
+      }
 
-      // Fill others with zero
-      memset(targetPointer + numChannels, 0, sizeof(float) * (3 - numChannels));
+      // Zero-fill missing channels (up to RGB).
+      for (xiiUInt32 i = uiSourceChannels; i < uiTargetChannels - 1; ++i)
+      {
+        pTargetPointer[i] = 0.0f;
+      }
 
-      // Set alpha to 1
-      targetPointer[3] = 1.0f;
+      // Set alpha = 1.0f.
+      pTargetPointer[3] = 1.0f;
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
     }
 
     return XII_SUCCESS;
@@ -1030,100 +1032,93 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_UINT, xiiImageFormat::R32G32B32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_UINT, xiiImageFormat::R32G32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_UINT, xiiImageFormat::R32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_SINT, xiiImageFormat::R32G32B32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_SINT, xiiImageFormat::R32G32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_SINT, xiiImageFormat::R32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_FLOAT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_FLOAT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_UINT, xiiImageFormat::R32G32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_UINT, xiiImageFormat::R32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_SINT, xiiImageFormat::R32G32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_SINT, xiiImageFormat::R32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_FLOAT, xiiImageFormat::R16G16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_FLOAT, xiiImageFormat::R16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UNORM, xiiImageFormat::R16G16B16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UNORM, xiiImageFormat::R16G16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UNORM, xiiImageFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UINT, xiiImageFormat::R16G16_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UINT, xiiImageFormat::R16_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SNORM, xiiImageFormat::R16G16_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SNORM, xiiImageFormat::R16_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SINT, xiiImageFormat::R16G16_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SINT, xiiImageFormat::R16_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16_UNORM, xiiImageFormat::R16G16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16_UNORM, xiiImageFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_FLOAT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_UINT, xiiImageFormat::R32_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_SINT, xiiImageFormat::R32_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::D32_FLOAT_S8X24_UINT, xiiImageFormat::D32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::R8G8B8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::R8G8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, xiiImageFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM_SRGB, xiiImageFormat::R8G8B8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UINT, xiiImageFormat::R8G8_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UINT, xiiImageFormat::R8_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SNORM, xiiImageFormat::R8G8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SNORM, xiiImageFormat::R8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SINT, xiiImageFormat::R8G8_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SINT, xiiImageFormat::R8_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8A8_UNORM, xiiImageFormat::B8G8R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8A8_UNORM_SRGB, xiiImageFormat::B8G8R8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8X8_UNORM, xiiImageFormat::B8G8R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::B8G8R8X8_UNORM_SRGB, xiiImageFormat::B8G8R8_UNORM_SRGB, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_FLOAT, xiiImageFormat::R16_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_UNORM, xiiImageFormat::R16_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_UINT, xiiImageFormat::R16_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_SNORM, xiiImageFormat::R16_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_SINT, xiiImageFormat::R16_SINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8G8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8_UNORM, xiiImageFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UNORM, xiiImageFormat::R8_UNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UINT, xiiImageFormat::R8_UINT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_SNORM, xiiImageFormat::R8_SNORM, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_SINT, xiiImageFormat::R8_SINT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::RGB32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::RG32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::R32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::RGB32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::RG32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::R32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32UInt, xiiGALResourceFormat::RG32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32UInt, xiiGALResourceFormat::R32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32SInt, xiiGALResourceFormat::RG32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32SInt, xiiGALResourceFormat::R32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16Float, xiiGALResourceFormat::RG16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16Float, xiiGALResourceFormat::R16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UNormalized, xiiGALResourceFormat::RG16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UNormalized, xiiGALResourceFormat::R16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UInt, xiiGALResourceFormat::RG16UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UInt, xiiGALResourceFormat::R16UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SNormalized, xiiGALResourceFormat::RG16SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SNormalized, xiiGALResourceFormat::R16SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SInt, xiiGALResourceFormat::RG16SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SInt, xiiGALResourceFormat::R16SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32Float, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32UInt, xiiGALResourceFormat::R32UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32SInt, xiiGALResourceFormat::R32SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::D32FloatS8X24UInt, xiiGALResourceFormat::D32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, xiiGALResourceFormat::R8UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UInt, xiiGALResourceFormat::RG8UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UInt, xiiGALResourceFormat::R8UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::RG8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SNormalized, xiiGALResourceFormat::R8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SInt, xiiGALResourceFormat::RG8SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SInt, xiiGALResourceFormat::R8SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16Float, xiiGALResourceFormat::R16Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UNormalized, xiiGALResourceFormat::R16UNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UInt, xiiGALResourceFormat::R16UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SNormalized, xiiGALResourceFormat::R16SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SInt, xiiGALResourceFormat::R16SInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UInt, xiiGALResourceFormat::R8UInt, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SNormalized, xiiGALResourceFormat::R8SNormalized, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SInt, xiiGALResourceFormat::R8SInt, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
-    if (xiiImageFormat::GetBitsPerPixel(sourceFormat) == 32 && xiiImageFormat::GetBitsPerPixel(targetFormat) == 24)
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
+
+    bool bIsRGBA8 = !sourceFormatDescription.IsCompressed() && sourceFormatDescription.m_uiComponentSize == 1 && sourceFormatDescription.m_uiComponentCount == 4;
+    bool bIsRGB8  = !targetFormatDescription.IsCompressed() && targetFormatDescription.m_uiComponentSize == 1 && targetFormatDescription.m_uiComponentCount == 3;
+
+    if (bIsRGBA8 && bIsRGB8)
     {
       // Fast path for RGBA -> RGB
-      while (uiNumElements)
+      while (uiElementCount)
       {
-        const xiiUInt8* src = static_cast<const xiiUInt8*>(sourcePointer);
-        xiiUInt8*       dst = static_cast<xiiUInt8*>(targetPointer);
+        const xiiUInt8* src = static_cast<const xiiUInt8*>(pSourcePointer);
+        xiiUInt8*       dst = static_cast<xiiUInt8*>(pTargetPointer);
 
         dst[0] = src[0];
         dst[1] = src[1];
         dst[2] = src[2];
 
-        sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-        targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-        uiNumElements--;
+        pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+        pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+        uiElementCount--;
       }
     }
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      memcpy(targetPointer, sourcePointer, targetStride);
+      memcpy(pTargetPointer, pSourcePointer, uiTargetStride);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -1136,25 +1131,28 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_FLOAT, xiiImageFormat::R11G11B10_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_FLOAT, xiiImageFormat::R11G11B10_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32Float, xiiGALResourceFormat::RG11B10Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32Float, xiiGALResourceFormat::RG11B10Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
-    while (uiNumElements)
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
+
+    while (uiElementCount)
     {
       // Adapted from DirectXMath's XMStoreFloat3PK
       xiiUInt32 IValue[3];
-      memcpy(IValue, sourcePointer, 12);
+      memcpy(IValue, pSourcePointer, 12);
 
       xiiUInt32 Result[3];
 
@@ -1254,11 +1252,11 @@ public:
       }
 
       // Pack Result into memory
-      *reinterpret_cast<xiiUInt32*>(targetPointer) = (Result[0] & 0x7ff) | ((Result[1] & 0x7ff) << 11) | ((Result[2] & 0x3ff) << 22);
+      *reinterpret_cast<xiiUInt32*>(pTargetPointer) = (Result[0] & 0x7ff) | ((Result[1] & 0x7ff) << 11) | ((Result[2] & 0x3ff) << 22);
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -1271,42 +1269,45 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R11G11B10_FLOAT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R11G11B10_FLOAT, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG11B10Float, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG11B10Float, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
     };
 
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
-    while (uiNumElements)
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
+
+    while (uiElementCount)
     {
-      const R11G11B10* pSource  = reinterpret_cast<const R11G11B10*>(sourcePointer);
-      xiiUInt32*       targetUi = reinterpret_cast<xiiUInt32*>(targetPointer);
+      const R11G11B10* pSourcePtr = reinterpret_cast<const R11G11B10*>(pSourcePointer);
+      xiiUInt32*       targetUi   = reinterpret_cast<xiiUInt32*>(pTargetPointer);
 
       // Adapted from XMLoadFloat3PK
       xiiUInt32 Mantissa;
       xiiUInt32 Exponent;
 
       // X Channel (6-bit mantissa)
-      Mantissa = pSource->p.xm;
+      Mantissa = pSourcePtr->p.xm;
 
-      if (pSource->p.xe == 0x1f) // INF or NAN
+      if (pSourcePtr->p.xe == 0x1f) // INF or NAN
       {
-        targetUi[0] = 0x7f800000 | (pSource->p.xm << 17);
+        targetUi[0] = 0x7f800000 | (pSourcePtr->p.xm << 17);
       }
       else
       {
-        if (pSource->p.xe != 0) // The value is normalized
+        if (pSourcePtr->p.xe != 0) // The value is normalized
         {
-          Exponent = pSource->p.xe;
+          Exponent = pSourcePtr->p.xe;
         }
         else if (Mantissa != 0) // The value is denormalized
         {
@@ -1330,17 +1331,17 @@ public:
       }
 
       // Y Channel (6-bit mantissa)
-      Mantissa = pSource->p.ym;
+      Mantissa = pSourcePtr->p.ym;
 
-      if (pSource->p.ye == 0x1f) // INF or NAN
+      if (pSourcePtr->p.ye == 0x1f) // INF or NAN
       {
-        targetUi[1] = 0x7f800000 | (pSource->p.ym << 17);
+        targetUi[1] = 0x7f800000 | (pSourcePtr->p.ym << 17);
       }
       else
       {
-        if (pSource->p.ye != 0) // The value is normalized
+        if (pSourcePtr->p.ye != 0) // The value is normalized
         {
-          Exponent = pSource->p.ye;
+          Exponent = pSourcePtr->p.ye;
         }
         else if (Mantissa != 0) // The value is denormalized
         {
@@ -1364,17 +1365,17 @@ public:
       }
 
       // Z Channel (5-bit mantissa)
-      Mantissa = pSource->p.zm;
+      Mantissa = pSourcePtr->p.zm;
 
-      if (pSource->p.ze == 0x1f) // INF or NAN
+      if (pSourcePtr->p.ze == 0x1f) // INF or NAN
       {
-        targetUi[2] = 0x7f800000 | (pSource->p.zm << 17);
+        targetUi[2] = 0x7f800000 | (pSourcePtr->p.zm << 17);
       }
       else
       {
-        if (pSource->p.ze != 0) // The value is normalized
+        if (pSourcePtr->p.ze != 0) // The value is normalized
         {
-          Exponent = pSource->p.ze;
+          Exponent = pSourcePtr->p.ze;
         }
         else if (Mantissa != 0) // The value is denormalized
         {
@@ -1397,13 +1398,14 @@ public:
         targetUi[2] = ((Exponent + 112) << 23) | (Mantissa << 18);
       }
 
-      if (targetStride > sizeof(float) * 3)
+      if (uiTargetStride > sizeof(float) * 3)
       {
-        reinterpret_cast<float*>(targetPointer)[3] = 1.0f; // Write alpha channel
+        reinterpret_cast<float*>(pTargetPointer)[3] = 1.0f; // Write alpha channel.
       }
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -1416,64 +1418,69 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R11G11B10_FLOAT, xiiImageFormat::R16G16B16A16_FLOAT, xiiImageConversionFlags::Default)};
+      xiiImageConversionEntry(xiiGALResourceFormat::RG11B10Float, xiiGALResourceFormat::RGBA16Float, xiiImageConversionFlags::Default),
+    };
     return supportedConversions;
   }
 
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
-    xiiUInt32 sourceStride = xiiImageFormat::GetBitsPerPixel(sourceFormat) / 8;
-    xiiUInt32 targetStride = xiiImageFormat::GetBitsPerPixel(targetFormat) / 8;
+    const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    xiiUInt32 uiSourceStride = sourceFormatDescription.GetElementSize();
+    xiiUInt32 uiTargetStride = targetFormatDescription.GetElementSize();
 
-    while (uiNumElements)
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
+
+    while (uiElementCount)
     {
-      xiiUInt16*       result    = reinterpret_cast<xiiUInt16*>(targetPointer);
-      const R11G11B10* r11g11b10 = reinterpret_cast<const R11G11B10*>(sourcePointer);
+      xiiUInt16*       pResult    = reinterpret_cast<xiiUInt16*>(pTargetPointer);
+      const R11G11B10* pR11G11B10 = reinterpret_cast<const R11G11B10*>(pSourcePointer);
 
       // We can do a straight forward conversion here because R11G11B10 uses the same number of bits for the exponent as a half
       // This means that all special values, e.g. denormals, inf, nan map exactly.
-      result[0] = static_cast<xiiUInt16>((r11g11b10->p.xe << 10) | (r11g11b10->p.xm << 4));
-      result[1] = static_cast<xiiUInt16>((r11g11b10->p.ye << 10) | (r11g11b10->p.ym << 4));
-      result[2] = static_cast<xiiUInt16>((r11g11b10->p.ze << 10) | (r11g11b10->p.zm << 5));
-      result[3] = 0x3C00; // hex value of 1.0f as half
+      pResult[0] = static_cast<xiiUInt16>((pR11G11B10->p.xe << 10) | (pR11G11B10->p.xm << 4));
+      pResult[1] = static_cast<xiiUInt16>((pR11G11B10->p.ye << 10) | (pR11G11B10->p.ym << 4));
+      pResult[2] = static_cast<xiiUInt16>((pR11G11B10->p.ze << 10) | (pR11G11B10->p.zm << 5));
+      pResult[3] = 0x3C00; // Hex value of 1.0f as half.
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
   }
 };
 
-
 template <typename T>
 class xiiImageConversion_Int_To_F32 : public xiiImageConversionStepLinear
 {
 public:
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const override
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     XII_IGNORE_UNUSED(sourceFormat);
 
-    // Work with single channels instead of pixels
-    uiNumElements *= xiiImageFormat::GetBitsPerPixel(targetFormat) / 32;
+    // Work with single channels instead of pixels.
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
+    uiElementCount *= targetFormatDescription.GetElementSize();
 
-    const xiiUInt32 sourceStride = sizeof(T);
-    const xiiUInt32 targetStride = 4;
+    const xiiUInt32 uiSourceStride = sizeof(T);
+    const xiiUInt32 uiTargetStride = 4;
 
-    const void* sourcePointer = source.GetPtr();
-    void*       targetPointer = target.GetPtr();
+    const void* pSourcePointer = pSource.GetPtr();
+    void*       pTargetPointer = pTarget.GetPtr();
 
-    while (uiNumElements)
+    while (uiElementCount)
     {
-      *reinterpret_cast<float*>(targetPointer) = static_cast<float>(*reinterpret_cast<const T*>(sourcePointer));
+      *reinterpret_cast<float*>(pTargetPointer) = static_cast<float>(*reinterpret_cast<const T*>(pSourcePointer));
 
-      sourcePointer = xiiMemoryUtils::AddByteOffset(sourcePointer, sourceStride);
-      targetPointer = xiiMemoryUtils::AddByteOffset(targetPointer, targetStride);
-      uiNumElements--;
+      pSourcePointer = xiiMemoryUtils::AddByteOffset(pSourcePointer, uiSourceStride);
+      pTargetPointer = xiiMemoryUtils::AddByteOffset(pTargetPointer, uiTargetStride);
+      uiElementCount--;
     }
 
     return XII_SUCCESS;
@@ -1487,9 +1494,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8_UINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_UINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8UInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8UInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1501,9 +1508,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R8_SINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8_SINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_SINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R8SInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG8SInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8SInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1515,9 +1522,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R16_UINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_UINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_UINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16UInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16UInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16UInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1529,9 +1536,9 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R16_SINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16_SINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R16G16B16A16_SINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R16SInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG16SInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA16SInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1543,10 +1550,10 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_UINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_UINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_UINT, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_UINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32UInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32UInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32UInt, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32UInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
@@ -1558,27 +1565,22 @@ public:
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiImageFormat::R32_SINT, xiiImageFormat::R32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32_SINT, xiiImageFormat::R32G32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32_SINT, xiiImageFormat::R32G32B32_FLOAT, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiImageFormat::R32G32B32A32_SINT, xiiImageFormat::R32G32B32A32_FLOAT, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::R32SInt, xiiGALResourceFormat::R32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RG32SInt, xiiGALResourceFormat::RG32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGB32SInt, xiiGALResourceFormat::RGB32Float, xiiImageConversionFlags::Default),
+      xiiImageConversionEntry(xiiGALResourceFormat::RGBA32SInt, xiiGALResourceFormat::RGBA32Float, xiiImageConversionFlags::Default),
     };
     return supportedConversions;
   }
 };
 
 
-#define ADD_16BPP_CONVERSION(format)                                                                                                       \
-  static xiiImageConversionStep_Decompress16bpp<xiiDecompress##format, xiiImageFormat::format##_UNORM> s_conversion_xiiDecompress##format; \
-  static xiiImageConversionStep_Compress16bpp<xiiCompress##format, xiiImageFormat::format##_UNORM>     s_conversion_xiiCompress##format
+#define ADD_16BPP_CONVERSION(format)                                                                                                                  \
+  static xiiImageConversionStep_Decompress16bpp<xiiDecompress##format, xiiGALResourceFormat::format##UNormalized> s_conversion_xiiDecompress##format; \
+  static xiiImageConversionStep_Compress16bpp<xiiCompress##format, xiiGALResourceFormat::format##UNormalized>     s_conversion_xiiCompress##format
 
-ADD_16BPP_CONVERSION(A4B4G4R4);
-ADD_16BPP_CONVERSION(B4G4R4A4);
 ADD_16BPP_CONVERSION(B5G6R5);
-ADD_16BPP_CONVERSION(B5G5R5X1);
 ADD_16BPP_CONVERSION(B5G5R5A1);
-ADD_16BPP_CONVERSION(X1B5G5R5);
-ADD_16BPP_CONVERSION(A1B5G5R5);
 
 XII_STATICLINK_FORCE
 static xiiImageSwizzleConversion32_2103 s_conversion_swizzle2103;

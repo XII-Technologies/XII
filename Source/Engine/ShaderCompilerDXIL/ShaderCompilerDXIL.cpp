@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/ShaderCompiler/ShaderParser.h>
 
 #include <d3dcompiler.h>
-#include <dxc/dxcapi.h>
+#include <dxcapi.h>
 
 XII_DEFINE_AS_POD_TYPE(D3D12_SHADER_INPUT_BIND_DESC);
 

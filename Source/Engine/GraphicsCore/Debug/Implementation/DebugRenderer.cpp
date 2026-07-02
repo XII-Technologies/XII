@@ -1827,7 +1827,7 @@ namespace
     key.m_ColorFormat       = colorDescription.m_Format;
     key.m_DepthFormat       = depthDescription.m_Format;
     key.m_uiSampleCount     = static_cast<xiiUInt8>(xiiMath::Max(1U, colorDescription.m_uiSampleCount));
-    key.m_uiArraySliceCount = static_cast<xiiUInt8>(xiiMath::Max(colorDescription.GetArraySize(), depthDescription.GetArraySize()));
+    key.m_uiArraySliceCount = static_cast<xiiUInt8>(xiiMath::Max(colorDescription.m_uiArraySizeOrDepth, depthDescription.m_uiArraySizeOrDepth));
 
     auto it = s_RenderPassCache.Find(key);
     if (it.IsValid())

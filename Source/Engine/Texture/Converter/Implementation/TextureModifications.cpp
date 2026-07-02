@@ -20,7 +20,7 @@ xiiResult xiiTextureConverterProcessor::ForceSRGBFormats()
         if (iTex != -1)
         {
           auto& img = m_Descriptor.m_InputImages[iTex];
-          img.ReinterpretAs(xiiImageFormat::AsSrgb(img.GetImageFormat()));
+          img.ReinterpretAs(xiiGALResourceFormat::AsSrgb(img.GetImageFormat()));
         }
       }
     }
@@ -34,7 +34,7 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
   XII_PROFILE_SCOPE("GenerateMipmaps");
 
   xiiImageUtils::MipMapOptions opt;
-  opt.m_numMipMaps = uiNumMips;
+  opt.m_uiMipLevelCount = uiNumMips;
 
   xiiImageFilterBox                  filterLinear;
   xiiImageFilterSincWithKaiserWindow filterKaiser;
@@ -45,25 +45,25 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
       return XII_SUCCESS;
 
     case xiiTextureConverterMipmapMode::Linear:
-      opt.m_filter = &filterLinear;
+      opt.m_pFilter = &filterLinear;
       break;
 
     case xiiTextureConverterMipmapMode::Kaiser:
-      opt.m_filter = &filterKaiser;
+      opt.m_pFilter = &filterKaiser;
       break;
   }
 
-  opt.m_addressModeU = m_Descriptor.m_AddressModeU;
-  opt.m_addressModeV = m_Descriptor.m_AddressModeV;
-  opt.m_addressModeW = m_Descriptor.m_AddressModeW;
+  opt.m_AddressModeU = m_Descriptor.m_AddressModeU;
+  opt.m_AddressModeV = m_Descriptor.m_AddressModeV;
+  opt.m_AddressModeW = m_Descriptor.m_AddressModeW;
 
-  opt.m_preserveCoverage = m_Descriptor.m_bPreserveMipmapCoverage;
-  opt.m_alphaThreshold   = m_Descriptor.m_fMipmapAlphaThreshold;
+  opt.m_bPreserveCoverage = m_Descriptor.m_bPreserveMipmapCoverage;
+  opt.m_fAlphaThreshold   = m_Descriptor.m_fMipmapAlphaThreshold;
 
-  opt.m_renormalizeNormals = m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap || m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap_Inverted || m_Descriptor.m_Usage == xiiTextureConverterUsage::BumpMap;
+  opt.m_bRenormalizeNormals = m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap || m_Descriptor.m_Usage == xiiTextureConverterUsage::NormalMap_Inverted || m_Descriptor.m_Usage == xiiTextureConverterUsage::BumpMap;
 
   // Copy red to alpha channel if we only have a single channel input texture
-  if (opt.m_preserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
+  if (opt.m_bPreserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
   {
     auto imgData = img.GetBlobPtr<xiiColor>();
     auto pData   = imgData.GetPtr();
@@ -78,14 +78,14 @@ xiiResult xiiTextureConverterProcessor::GenerateMipmaps(xiiImage& img, xiiUInt32
   xiiImageUtils::GenerateMipMaps(img, scratch, opt);
   img.ResetAndMove(std::move(scratch));
 
-  if (img.GetNumMipLevels() <= 1)
+  if (img.GetMipLevelCount() <= 1)
   {
     xiiLog::Error("Mipmap generation failed.");
     return XII_FAILURE;
   }
 
   // Copy alpha channel back to red
-  if (opt.m_preserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
+  if (opt.m_bPreserveCoverage && channelMode == MipmapChannelMode::SingleChannel)
   {
     auto imgData = img.GetBlobPtr<xiiColor>();
     auto pData   = imgData.GetPtr();
@@ -138,8 +138,8 @@ xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiArrayPtr<xiiImage>
 
 xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiImage& bumpMap) const
 {
-  xiiImageHeader newImageHeader = bumpMap.GetHeader();
-  newImageHeader.SetNumMipLevels(1);
+  xiiGALTextureCreationDescription newImageHeader = bumpMap.GetDescription();
+  newImageHeader.m_uiMipLevels                    = 1;
   xiiImage newImage;
   newImage.ResetAndAlloc(newImageHeader);
 
@@ -152,7 +152,7 @@ xiiResult xiiTextureConverterProcessor::ConvertToNormalMap(xiiImage& bumpMap) co
 
   // we'll assume that both the input bump map and the new image are using
   // RGBA 32 bit floating point as an internal format which should be tightly packed
-  XII_ASSERT_DEV(bumpMap.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && bumpMap.GetRowPitch() % sizeof(xiiColor) == 0, "");
+  XII_ASSERT_DEV(bumpMap.GetImageFormat() == xiiGALResourceFormat::RGBA32Float && bumpMap.GetRowPitch() % sizeof(xiiColor) == 0, "");
 
   const xiiColor* bumpPixels   = bumpMap.GetPixelPointer<xiiColor>(0, 0, 0, 0, 0, 0);
   const auto      getBumpPixel = [&](xiiUInt32 x, xiiUInt32 y) -> float {
@@ -278,7 +278,7 @@ xiiResult xiiTextureConverterProcessor::ClampInputValues(xiiImage& image, float 
 {
   // we'll assume that at this point in the processing pipeline, the format is
   // RGBA32F which should result in tightly packed mipmaps.
-  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && image.GetRowPitch() % sizeof(float[4]) == 0, "");
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiGALResourceFormat::RGBA32Float && image.GetRowPitch() % sizeof(float[4]) == 0, "");
 
   for (auto& value : image.GetBlobPtr<float>())
   {
@@ -433,7 +433,7 @@ xiiResult xiiTextureConverterProcessor::InvertNormalMap(xiiImage& image)
 
   // we'll assume that at this point in the processing pipeline, the format is
   // RGBA32F which should result in tightly packed mipmaps.
-  XII_ASSERT_DEV(image.GetImageFormat() == xiiImageFormat::R32G32B32A32_FLOAT && image.GetRowPitch() % sizeof(float[4]) == 0, "");
+  XII_ASSERT_DEV(image.GetImageFormat() == xiiGALResourceFormat::RGBA32Float && image.GetRowPitch() % sizeof(float[4]) == 0, "");
 
   for (auto& value : image.GetBlobPtr<xiiColor>())
   {

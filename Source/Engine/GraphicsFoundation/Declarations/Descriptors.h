@@ -124,9 +124,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableSt
 {
   XII_DECLARE_POD_TYPE();
 
-  bool     m_bBorderSamplingModeSupported = false; ///< Indicates if device supports border texture addressing mode.
-  xiiUInt8 m_uiMaxAnisotropy              = 1U;    ///< Maximum anisotropy level supported by the device. If anisotropic filtering is not supported by the device, this value is 1.
-  bool     m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
+  bool      m_bBorderSamplingModeSupported = false; ///< Indicates if device supports border texture addressing mode.
+  xiiUInt32 m_uiMaxAnisotropy              = 1U;    ///< Maximum anisotropy level supported by the device. If anisotropic filtering is not supported by the device, this value is 1.
+  bool      m_bLODBiasSupported            = false; ///< Indicates if device supports MIP load bias.
 };
 
 /// \brief This describes the sampler properties.
@@ -356,6 +356,46 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
 {
   XII_DECLARE_POD_TYPE();
 
+  /// \brief Returns true if the format is block-compressed (BC, ETC, ASTC, etc.).
+  XII_ALWAYS_INLINE bool IsCompressed() const { return m_ComponentType == xiiGALResourceFormatComponentType::Compressed; }
+
+  /// \brief Returns the number of bytes per texel (non-compressed) or per block (compressed).
+  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (IsCompressed() ? 1 : m_uiComponentCount); }
+
+  /// \brief Returns the width of a compression block (4 for BC formats).
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth() const { return IsCompressed() ? m_uiBlockWidth : 1; }
+
+  /// \brief Returns the height of a compression block (4 for BC formats).
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockHeight() const { return IsCompressed() ? m_uiBlockHeight : 1; }
+
+  /// \brief Returns how many blocks are needed horizontally for a given width.
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockCountX(xiiUInt32 uiWidth) const { return (uiWidth + GetBlockWidth() - 1) / GetBlockWidth(); }
+
+  /// \brief Returns how many blocks are needed vertically for a given height.
+  XII_ALWAYS_INLINE xiiUInt32 GetBlockCountY(xiiUInt32 uiHeight) const { return (uiHeight + GetBlockHeight() - 1) / GetBlockHeight(); }
+
+  /// \brief Returns the number of bytes in one row of texels or blocks.
+  XII_ALWAYS_INLINE xiiUInt32 GetRowPitch(xiiUInt32 uiWidth) const
+  {
+    if (!IsCompressed())
+    {
+      return uiWidth * GetElementSize();
+    }
+    return GetBlockCountX(uiWidth) * GetElementSize();
+  }
+
+  /// \brief Returns the number of bytes in one 2D slice (height * rowPitch).
+  XII_ALWAYS_INLINE xiiUInt64 GetSlicePitch(xiiUInt32 uiWidth, xiiUInt32 uiHeight) const { return GetRowPitch(uiWidth) * (IsCompressed() ? GetBlockCountY(uiHeight) : uiHeight); }
+
+  /// \brief Returns the number of texels per block (16 for BC1–BC5).
+  XII_ALWAYS_INLINE xiiUInt32 GetTexelsPerBlock() const { return GetBlockWidth() * GetBlockHeight(); }
+
+  /// \brief Returns true if the format is typeless.
+  XII_ALWAYS_INLINE bool IsTypeless() const { return m_bIsTypeless; }
+
+  /// \brief Returns true if the format is UNorm or SNorm.
+  XII_ALWAYS_INLINE bool IsNormalized() const { return m_ComponentType == xiiGALResourceFormatComponentType::UnsignedNormalized || m_ComponentType == xiiGALResourceFormatComponentType::SignedNormalized; }
+
   xiiEnum<xiiGALResourceFormat>              m_Format           = xiiGALResourceFormat::Unknown;                ///< Texture format.
   xiiUInt8                                   m_uiComponentSize  = 0U;                                           ///< The size of one component in bytes.
   xiiUInt8                                   m_uiComponentCount = 0U;                                           ///< The number of components.
@@ -363,9 +403,107 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
   bool                                       m_bIsTypeless      = false;                                        ///< Indicates whether the format is a typeless format.
   xiiUInt8                                   m_uiBlockWidth     = 0U;                                           ///< For block-compressed formats, the compression block width.
   xiiUInt8                                   m_uiBlockHeight    = 0U;                                           ///< For block-compressed formats, the compression block height.
+};
 
-  /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
-  XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (m_ComponentType != xiiGALResourceFormatComponentType::Compressed ? m_uiComponentCount : 1); };
+/// \brief This describes the multi-planar format attributes. These attributes are intrinsic to the multi-planar format itself and do not depend on the format support.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xiiHashableStruct<xiiGALMultiPlanarFormatDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  struct Plane
+  {
+    xiiEnum<xiiGALResourceFormat> m_SubFormat         = xiiGALResourceFormat::Unknown; ///< Format of this plane (e.g., R8_UNORM, R8G8_UNORM, R16_UNORM).
+    xiiUInt8                      m_uiBytesPerElement = 0U;                            ///< Bytes per element in this plane.
+    float                         m_fWidthFactor      = 1.0f;                          ///< Width scaling relative to full resolution (0.5 for chroma).
+    float                         m_fHeightFactor     = 1.0f;                          ///< Height scaling relative to full resolution (0.5 for chroma).
+  };
+
+  /// \brief Returns the number of planes in this multi-planar format.
+  XII_ALWAYS_INLINE xiiUInt32 GetPlaneCount() const { return m_Planes.GetCount(); }
+
+  /// \brief Returns true if the specified plane index is valid.
+  XII_ALWAYS_INLINE bool HasPlane(xiiUInt32 uiPlane) const { return uiPlane < m_Planes.GetCount(); }
+
+  /// \brief Returns the description of the specified plane.
+  XII_ALWAYS_INLINE const Plane& GetPlane(xiiUInt32 uiPlane) const
+  {
+    XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
+
+    return m_Planes[uiPlane];
+  }
+
+  /// \brief Returns the width of the specified plane, given the full resolution width.
+  XII_ALWAYS_INLINE xiiUInt32 GetPlaneWidth(xiiUInt32 uiFullWidth, xiiUInt32 uiPlane) const
+  {
+    XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
+
+    return static_cast<xiiUInt32>(uiFullWidth * m_Planes[uiPlane].m_fWidthFactor);
+  }
+
+  /// \brief Returns the height of the specified plane, given the full resolution height.
+  XII_ALWAYS_INLINE xiiUInt32 GetPlaneHeight(xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
+  {
+    XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
+
+    return static_cast<xiiUInt32>(uiFullHeight * m_Planes[uiPlane].m_fHeightFactor);
+  }
+
+  /// \brief Returns the row pitch (in bytes) of the specified plane, given the full resolution width.
+  XII_ALWAYS_INLINE xiiUInt32 GetPlaneRowPitch(xiiUInt32 uiFullWidth, xiiUInt32 uiPlane) const
+  {
+    XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
+
+    const Plane&    p       = m_Planes[uiPlane];
+    const xiiUInt32 uiWidth = GetPlaneWidth(uiFullWidth, uiPlane);
+
+    return uiWidth * p.m_uiBytesPerElement;
+  }
+
+  /// \brief Returns the slice pitch (in bytes) of the specified plane, given the full resolution width and height.
+  XII_ALWAYS_INLINE xiiUInt64 GetPlaneSlicePitch(xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
+  {
+    XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
+
+    const xiiUInt32 uiHeight = GetPlaneHeight(uiFullHeight, uiPlane);
+
+    return static_cast<xiiUInt64>(GetPlaneRowPitch(uiFullWidth, uiPlane)) * uiHeight;
+  }
+
+  /// \brief Returns true if the multi-planar format description is valid.
+  XII_ALWAYS_INLINE bool IsValid() const
+  {
+    if (!xiiGALResourceFormat::IsMultiplanar(m_Format))
+      return false;
+
+    if (m_Planes.GetCount() == 0)
+      return false;
+
+    for (xiiUInt32 i = 0; i < m_Planes.GetCount(); ++i)
+    {
+      const Plane& p = m_Planes[i];
+      if (p.m_SubFormat == xiiGALResourceFormat::Unknown || p.m_uiBytesPerElement == 0 || p.m_fWidthFactor <= 0.0f || p.m_fHeightFactor <= 0.0f)
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// \brief Returns the total size (in bytes) of all planes, given the full resolution width and height.
+  XII_ALWAYS_INLINE xiiUInt64 GetTotalSize(xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight) const
+  {
+    xiiUInt64 uiTotalSize = 0ULL;
+
+    for (xiiUInt32 i = 0; i < m_Planes.GetCount(); ++i)
+    {
+      uiTotalSize += GetPlaneSlicePitch(uiFullWidth, uiFullHeight, i);
+    }
+    return uiTotalSize;
+  }
+
+  xiiEnum<xiiGALResourceFormat> m_Format = xiiGALResourceFormat::Unknown; ///< Multi-planar texture format.
+  xiiStaticArray<Plane, 4>      m_Planes;                                 ///< Array of formats for each plane.
 };
 
 /// \brief This describes the external memory description.

@@ -12,14 +12,12 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 xii_create_target(LIBRARY ${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
-  PRIVATE
+  PUBLIC
   GraphicsFoundation
-  dxcompiler.lib
-)
 
-target_include_directories(${PROJECT_NAME}
   PRIVATE
-  "${CMAKE_SOURCE_DIR}/Source/ThirdParty/DirectXShaderCompiler"
+  DirectXShaderCompiler
+  dxcompiler.lib
 )
 
 if(XII_CMAKE_COMPILER_CLANG)

@@ -20,7 +20,7 @@ xiiResult xiiTextureConverterProcessor::GenerateTextureAtlas(xiiMemoryStreamWrit
     return XII_FAILURE;
   }
 
-  xiiTextureAtlasCreationDesc       atlasDesc;
+  xiiTextureAtlasCreationDescription atlasDesc;
   xiiDynamicArray<TextureAtlasItem> atlasItems;
 
   if (atlasDesc.Load(m_Descriptor.m_sTextureAtlasDescFile).Failed())
@@ -68,7 +68,7 @@ xiiResult xiiTextureConverterProcessor::GenerateTextureAtlas(xiiMemoryStreamWrit
   return XII_SUCCESS;
 }
 
-xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const
+xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCreationDescription& atlasDesc, xiiDynamicArray<TextureAtlasItem>& items) const
 {
   items.Clear();
 
@@ -91,11 +91,11 @@ xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCre
         if (atlasDesc.m_Layers[layer].m_Usage == xiiTextureConverterUsage::Color)
         {
           // enforce sRGB format for all color textures
-          item.m_InputImage[layer].ReinterpretAs(xiiImageFormat::AsSrgb(item.m_InputImage[layer].GetImageFormat()));
+          item.m_InputImage[layer].ReinterpretAs(xiiGALResourceFormat::AsSrgb(item.m_InputImage[layer].GetImageFormat()));
         }
 
         xiiUInt32 uiResX = 0, uiResY = 0;
-        XII_SUCCEED_OR_RETURN(DetermineTargetResolution(item.m_InputImage[layer], xiiImageFormat::UNKNOWN, uiResX, uiResY));
+        XII_SUCCEED_OR_RETURN(DetermineTargetResolution(item.m_InputImage[layer], xiiGALResourceFormat::Unknown, uiResX, uiResY));
 
         XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sLayerInput[layer], item.m_InputImage[layer], uiResX, uiResY, atlasDesc.m_Layers[layer].m_Usage));
       }
@@ -113,7 +113,7 @@ xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCre
       }
 
       xiiUInt32 uiResX = 0, uiResY = 0;
-      XII_SUCCEED_OR_RETURN(DetermineTargetResolution(alphaImg, xiiImageFormat::UNKNOWN, uiResX, uiResY));
+      XII_SUCCEED_OR_RETURN(DetermineTargetResolution(alphaImg, xiiGALResourceFormat::Unknown, uiResX, uiResY));
 
       XII_SUCCEED_OR_RETURN(ConvertAndScaleImage(srcItem.m_sAlphaInput, alphaImg, uiResX, uiResY, xiiTextureConverterUsage::Linear));
 
@@ -139,8 +139,8 @@ xiiResult xiiTextureConverterProcessor::LoadAtlasInputs(const xiiTextureAtlasCre
 
 xiiResult xiiTextureConverterProcessor::WriteTextureAtlasInfo(const xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiUInt32 uiNumLayers, xiiStreamWriter& stream)
 {
-  xiiTextureAtlasRuntimeDesc runtimeAtlas;
-  runtimeAtlas.m_uiNumLayers = uiNumLayers;
+  xiiTextureAtlasRuntimeDescription runtimeAtlas;
+  runtimeAtlas.m_uiLayerCount = uiNumLayers;
 
   runtimeAtlas.m_Items.Reserve(atlasItems.GetCount());
 
@@ -233,10 +233,10 @@ xiiResult xiiTextureConverterProcessor::SortItemsIntoAtlas(xiiDynamicArray<Textu
 
 xiiResult xiiTextureConverterProcessor::CreateAtlasTexture(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiResX, xiiUInt32 uiResY, xiiImage& atlas, xiiInt32 layer)
 {
-  xiiImageHeader imgHeader;
-  imgHeader.SetWidth(uiResX);
-  imgHeader.SetHeight(uiResY);
-  imgHeader.SetImageFormat(xiiImageFormat::R32G32B32A32_FLOAT);
+  xiiGALTextureCreationDescription imgHeader;
+  imgHeader.m_Size.width  = uiResX;
+  imgHeader.m_Size.height = uiResY;
+  imgHeader.m_Format      = xiiGALResourceFormat::RGBA32Float;
   atlas.ResetAndAlloc(imgHeader);
 
   // make sure the target texture is filled with all black
@@ -268,7 +268,7 @@ xiiResult xiiTextureConverterProcessor::FillAtlasBorders(xiiDynamicArray<Texture
 {
   const xiiUInt32 uiBorderPixels = 2;
 
-  const xiiUInt32 uiNumMipmaps = atlas.GetHeader().GetNumMipLevels();
+  const xiiUInt32 uiNumMipmaps = atlas.GetDescription().m_uiMipLevels;
   for (xiiUInt32 uiMipLevel = 0; uiMipLevel < uiNumMipmaps; ++uiMipLevel)
   {
     for (auto& item : items)
@@ -318,7 +318,7 @@ xiiResult xiiTextureConverterProcessor::FillAtlasBorders(xiiDynamicArray<Texture
   return XII_SUCCESS;
 }
 
-xiiResult xiiTextureConverterProcessor::CreateAtlasLayerTexture(const xiiTextureAtlasCreationDesc& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg)
+xiiResult xiiTextureConverterProcessor::CreateAtlasLayerTexture(const xiiTextureAtlasCreationDescription& atlasDesc, xiiDynamicArray<TextureAtlasItem>& atlasItems, xiiInt32 layer, xiiImage& dstImg)
 {
   xiiUInt32 uiTexWidth, uiTexHeight;
   XII_SUCCEED_OR_RETURN(SortItemsIntoAtlas(atlasItems, uiTexWidth, uiTexHeight, layer));
@@ -328,7 +328,7 @@ xiiResult xiiTextureConverterProcessor::CreateAtlasLayerTexture(const xiiTexture
   xiiImage atlasImg;
   XII_SUCCEED_OR_RETURN(CreateAtlasTexture(atlasItems, uiTexWidth, uiTexHeight, atlasImg, layer));
 
-  xiiUInt32 uiNumMipmaps = atlasImg.GetHeader().ComputeNumberOfMipMaps();
+  xiiUInt32 uiNumMipmaps = xiiGALTextureUtilities::GetMipLevelCount(atlasImg.GetDescription());
   XII_SUCCEED_OR_RETURN(GenerateMipmaps(atlasImg, uiNumMipmaps));
 
   if (atlasDesc.m_Layers[layer].m_uiNumChannels == 4)
@@ -336,7 +336,7 @@ xiiResult xiiTextureConverterProcessor::CreateAtlasLayerTexture(const xiiTexture
     XII_SUCCEED_OR_RETURN(FillAtlasBorders(atlasItems, atlasImg, layer));
   }
 
-  xiiEnum<xiiImageFormat> OutputImageFormat;
+  xiiEnum<xiiGALResourceFormat> OutputImageFormat;
 
   XII_SUCCEED_OR_RETURN(ChooseOutputFormat(OutputImageFormat, atlasDesc.m_Layers[layer].m_Usage, atlasDesc.m_Layers[layer].m_uiNumChannels));
 

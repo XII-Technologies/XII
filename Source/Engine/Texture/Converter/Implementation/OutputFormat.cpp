@@ -5,31 +5,31 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
 
-static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTextureConverterCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
+static xiiEnum<xiiGALResourceFormat> DetermineOutputFormatPC(xiiTextureConverterUsage::Enum targetFormat, xiiTextureConverterCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
 {
   if (targetFormat == xiiTextureConverterUsage::NormalMap || targetFormat == xiiTextureConverterUsage::NormalMap_Inverted || targetFormat == xiiTextureConverterUsage::BumpMap)
   {
     if (compressionMode >= xiiTextureConverterCompressionMode::High)
-      return xiiImageFormat::BC5_UNORM;
+      return xiiGALResourceFormat::BC5UNormalized;
 
     if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-      return xiiImageFormat::R8G8_UNORM;
+      return xiiGALResourceFormat::RG8UNormalized;
 
     // TODO: in the rare case that the input texture has higher precision, we could use R16G16_UNORM or R16G16_FLOAT here
     // R16G16_UNORM isn't supported on all platforms, so R16G16_FLOAT may be better
-    // return xiiImageFormat::R16G16_FLOAT;
-    return xiiImageFormat::R8G8_UNORM;
+    // return xiiGALResourceFormat::RG16Float;
+    return xiiGALResourceFormat::RG8UNormalized;
   }
 
   if (targetFormat == xiiTextureConverterUsage::Color)
   {
     if (compressionMode >= xiiTextureConverterCompressionMode::High && uiNumChannels < 4)
-      return xiiImageFormat::BC1_UNORM_SRGB;
+      return xiiGALResourceFormat::BC1UNormalizedSRGB;
 
     if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-      return xiiImageFormat::BC7_UNORM_SRGB;
+      return xiiGALResourceFormat::BC7UNormalizedSRGB;
 
-    return xiiImageFormat::R8G8B8A8_UNORM_SRGB;
+    return xiiGALResourceFormat::RGBA8UNormalizedSRGB;
   }
 
   if (targetFormat == xiiTextureConverterUsage::Linear)
@@ -38,30 +38,30 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
     {
       case 1:
         if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-          return xiiImageFormat::BC4_UNORM;
+          return xiiGALResourceFormat::BC4UNormalized;
 
-        return xiiImageFormat::R8_UNORM;
+        return xiiGALResourceFormat::R8UNormalized;
 
       case 2:
         if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-          return xiiImageFormat::BC5_UNORM;
+          return xiiGALResourceFormat::BC5UNormalized;
 
-        return xiiImageFormat::R8G8_UNORM;
+        return xiiGALResourceFormat::RG8UNormalized;
 
       case 3:
         if (compressionMode >= xiiTextureConverterCompressionMode::High)
-          return xiiImageFormat::BC1_UNORM;
+          return xiiGALResourceFormat::BC1UNormalized;
 
         if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-          return xiiImageFormat::BC7_UNORM;
+          return xiiGALResourceFormat::BC7UNormalized;
 
-        return xiiImageFormat::R8G8B8A8_UNORM;
+        return xiiGALResourceFormat::RGBA8UNormalized;
 
       case 4:
         if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-          return xiiImageFormat::BC7_UNORM;
+          return xiiGALResourceFormat::BC7UNormalized;
 
-        return xiiImageFormat::R8G8B8A8_UNORM;
+        return xiiGALResourceFormat::RGBA8UNormalized;
 
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
@@ -74,35 +74,35 @@ static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTextureConverterUsage::En
     {
       case 1:
         if (compressionMode >= xiiTextureConverterCompressionMode::High)
-          return xiiImageFormat::BC6H_UF16;
+          return xiiGALResourceFormat::BC6HUF16;
 
-        return xiiImageFormat::R16_FLOAT;
+        return xiiGALResourceFormat::R16Float;
 
       case 2:
-        return xiiImageFormat::R16G16_FLOAT;
+        return xiiGALResourceFormat::RG16Float;
 
       case 3:
         if (compressionMode >= xiiTextureConverterCompressionMode::High)
-          return xiiImageFormat::BC6H_UF16;
+          return xiiGALResourceFormat::BC6HUF16;
 
         if (compressionMode >= xiiTextureConverterCompressionMode::Medium)
-          return xiiImageFormat::R11G11B10_FLOAT;
+          return xiiGALResourceFormat::RG11B10Float;
 
-        return xiiImageFormat::R16G16B16A16_FLOAT;
+        return xiiGALResourceFormat::RGBA16Float;
 
       case 4:
-        return xiiImageFormat::R16G16B16A16_FLOAT;
+        return xiiGALResourceFormat::RGBA16Float;
     }
   }
 
-  return xiiImageFormat::UNKNOWN;
+  return xiiGALResourceFormat::Unknown;
 }
 
-xiiResult xiiTextureConverterProcessor::ChooseOutputFormat(xiiEnum<xiiImageFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const
+xiiResult xiiTextureConverterProcessor::ChooseOutputFormat(xiiEnum<xiiGALResourceFormat>& out_Format, xiiEnum<xiiTextureConverterUsage> usage, xiiUInt32 uiNumChannels) const
 {
   XII_PROFILE_SCOPE("ChooseOutputFormat");
 
-  XII_ASSERT_DEV(out_Format == xiiImageFormat::UNKNOWN, "Output format already set");
+  XII_ASSERT_DEV(out_Format == xiiGALResourceFormat::Unknown, "Output format already set");
 
   switch (m_Descriptor.m_TargetPlatform)
   {
@@ -113,7 +113,7 @@ xiiResult xiiTextureConverterProcessor::ChooseOutputFormat(xiiEnum<xiiImageForma
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  if (out_Format == xiiImageFormat::UNKNOWN)
+  if (out_Format == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Failed to decide for an output image format.");
     return XII_FAILURE;

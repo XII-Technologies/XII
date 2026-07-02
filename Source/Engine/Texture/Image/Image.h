@@ -6,19 +6,19 @@
 
 #include <Foundation/Containers/Blob.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 #include <Texture/Image/Formats/ImageFileFormat.h>
-#include <Texture/Image/ImageHeader.h>
 
 /// \brief A class referencing image data and holding metadata about the image.
-class XII_TEXTURE_DLL xiiImageView : protected xiiImageHeader
+class XII_TEXTURE_DLL xiiImageView
 {
 public:
   /// \brief Constructs an empty image view.
   xiiImageView();
 
-  /// \brief Constructs an image view with the given header and image data.
-  xiiImageView(const xiiImageHeader& header, xiiConstByteBlobPtr imageData);
+  /// \brief Constructs an image view with the given description and image data.
+  xiiImageView(const xiiGALTextureCreationDescription& description, xiiConstByteBlobPtr imageData);
 
   /// \brief Constructs an empty image view.
   void Clear();
@@ -26,14 +26,36 @@ public:
   /// \brief Returns false if the image view does not reference any data yet.
   bool IsValid() const;
 
-  /// \brief Constructs an image view with the given header and image data.
-  void ResetAndViewExternalStorage(const xiiImageHeader& header, xiiConstByteBlobPtr imageData);
+  /// \brief Constructs an image view with the given description and image data.
+  void ResetAndViewExternalStorage(const xiiGALTextureCreationDescription& description, xiiConstByteBlobPtr imageData);
 
   /// \brief Convenience function to save the image to the given file.
   xiiResult SaveTo(xiiStringView sFileName) const;
 
-  /// \brief Returns the header this image was constructed from.
-  const xiiImageHeader& GetHeader() const;
+  /// \brief Returns the description this image was constructed from.
+  const xiiGALTextureCreationDescription& GetDescription() const;
+
+  /// \brief Returns the image resource format.
+  xiiEnum<xiiGALResourceFormat> GetImageFormat() const;
+
+  /// \brief Returns width/height/depth for the given mip level.
+  xiiUInt32 GetWidth(xiiUInt32 uiMipLevel = 0) const;
+  xiiUInt32 GetHeight(xiiUInt32 uiMipLevel = 0) const;
+  xiiUInt32 GetDepth(xiiUInt32 uiMipLevel = 0) const;
+
+  xiiUInt32 GetMipLevelCount() const;
+  xiiUInt32 GetNumFaces() const;
+  xiiUInt32 GetNumArrayIndices() const;
+  xiiUInt32 GetPlaneCount() const;
+
+  xiiUInt32 GetNumBlocksX(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+  xiiUInt32 GetNumBlocksY(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+  xiiUInt32 GetNumBlocksZ(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+
+  xiiUInt64 GetRowPitch(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+  xiiUInt64 GetDepthPitch(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiPlaneIndex = 0) const;
+
+  xiiUInt64 ComputeDataSize() const;
 
   /// \brief Returns a view to the entire data contained in this image.
   template <typename T>
@@ -58,26 +80,7 @@ public:
   const T* GetPixelPointer(xiiUInt32 uiMipLevel = 0, xiiUInt32 uiFace = 0, xiiUInt32 uiArrayIndex = 0, xiiUInt32 x = 0, xiiUInt32 y = 0, xiiUInt32 z = 0, xiiUInt32 uiPlaneIndex = 0) const;
 
   /// \brief Reinterprets the image with a given format; the format must have the same size in bits per pixel as the current one.
-  void ReinterpretAs(xiiImageFormat::Enum format);
-
-public:
-  using xiiImageHeader::GetDepth;
-  using xiiImageHeader::GetHeight;
-  using xiiImageHeader::GetWidth;
-
-  using xiiImageHeader::GetNumArrayIndices;
-  using xiiImageHeader::GetNumFaces;
-  using xiiImageHeader::GetNumMipLevels;
-  using xiiImageHeader::GetPlaneCount;
-
-  using xiiImageHeader::GetImageFormat;
-
-  using xiiImageHeader::GetNumBlocksX;
-  using xiiImageHeader::GetNumBlocksY;
-  using xiiImageHeader::GetNumBlocksZ;
-
-  using xiiImageHeader::GetDepthPitch;
-  using xiiImageHeader::GetRowPitch;
+  void ReinterpretAs(xiiGALResourceFormat::Enum format);
 
 protected:
   xiiUInt64 ComputeLayout();
@@ -91,6 +94,7 @@ protected:
 
   xiiHybridArray<xiiUInt64, 16> m_SubImageOffsets;
   xiiBlobPtr<xiiUInt8>          m_DataPtr;
+  xiiGALTextureCreationDescription m_Description;
 };
 
 /// \brief A class containing image data and associated meta data.
@@ -109,11 +113,11 @@ class XII_TEXTURE_DLL xiiImage : public xiiImageView
   /// Use Reset() instead
   void operator=(const xiiImageView& rhs) = delete;
 
-  /// \brief Constructs an image with the given header; allocating internal storage for it.
-  explicit xiiImage(const xiiImageHeader& header);
+  /// \brief Constructs an image with the given description; allocating internal storage for it.
+  explicit xiiImage(const xiiGALTextureCreationDescription& description);
 
-  /// \brief Constructs an image with the given header backed by user-supplied external storage.
-  explicit xiiImage(const xiiImageHeader& header, xiiByteBlobPtr externalData);
+  /// \brief Constructs an image with the given description backed by user-supplied external storage.
+  explicit xiiImage(const xiiGALTextureCreationDescription& description, xiiByteBlobPtr externalData);
 
   /// \brief Constructor from image view (copies the image data to internal storage)
   explicit xiiImage(const xiiImageView& other);
@@ -136,12 +140,12 @@ public:
   ///
   /// \note If this xiiImage was previously attached to external storage, this will reuse that storage.
   /// However, if the external storage is not sufficiently large, ResetAndAlloc() will detach from it and allocate internal storage.
-  void ResetAndAlloc(const xiiImageHeader& header);
+  void ResetAndAlloc(const xiiGALTextureCreationDescription& description);
 
-  /// \brief Constructs an image with the given header and attaches to the user-supplied external storage.
+  /// \brief Constructs an image with the given description and attaches to the user-supplied external storage.
   ///
   /// The user is responsible to keep the external storage alive as long as this xiiImage is alive.
-  void ResetAndUseExternalStorage(const xiiImageHeader& header, xiiByteBlobPtr externalData);
+  void ResetAndUseExternalStorage(const xiiGALTextureCreationDescription& description, xiiByteBlobPtr pExternalData);
 
   /// \brief Moves the given data into this object.
   ///
@@ -158,7 +162,7 @@ public:
   xiiResult LoadFrom(xiiStringView sFileName);
 
   /// \brief Convenience function to convert the image to the given format.
-  xiiResult Convert(xiiImageFormat::Enum targetFormat);
+  xiiResult Convert(xiiGALResourceFormat::Enum targetFormat);
 
   /// \brief Returns a view to the entire data contained in this image.
   template <typename T>

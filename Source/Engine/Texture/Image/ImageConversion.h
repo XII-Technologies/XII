@@ -2,30 +2,28 @@
 
 #pragma once
 
-#include <Foundation/Containers/StaticArray.h>
-#include <Foundation/Types/Bitflags.h>
+#include <Texture/TextureDLL.h>
+
 #include <Foundation/Utilities/EnumerableClass.h>
 
-#include <Texture/Image/Image.h>
+class xiiImageView;
 
 XII_DECLARE_FLAGS(xiiUInt8, xiiImageConversionFlags, InPlace);
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_TEXTURE_DLL, xiiImageConversionFlags);
+
 /// A structure describing the pairs of source/target format that may be converted using the conversion routine.
-struct xiiImageConversionEntry
+struct XII_TEXTURE_DLL xiiImageConversionEntry
 {
-  xiiImageConversionEntry(xiiImageFormat::Enum source, xiiImageFormat::Enum target, xiiImageConversionFlags::Enum flags, float fAdditionalPenalty = 0) :
-    m_sourceFormat(source), m_targetFormat(target), m_flags(flags), m_fAdditionalPenalty(fAdditionalPenalty)
+  xiiImageConversionEntry(xiiEnum<xiiGALResourceFormat> source, xiiEnum<xiiGALResourceFormat> target, xiiBitflags<xiiImageConversionFlags> flags, float fAdditionalPenalty = 0) :
+    m_SourceFormat(source), m_TargetFormat(target), m_Flags(flags), m_fAdditionalPenalty(fAdditionalPenalty)
   {
   }
 
-  const xiiImageFormat::Enum                 m_sourceFormat;
-  const xiiImageFormat::Enum                 m_targetFormat;
-  const xiiBitflags<xiiImageConversionFlags> m_flags;
-
-  /// This member adds an additional amount to the cost estimate for this conversion step.
-  /// It can be used to bias the choice between steps when there are comparable conversion
-  /// steps available.
-  float m_fAdditionalPenalty = 0.0f;
+  const xiiEnum<xiiGALResourceFormat>        m_SourceFormat;              ///< The source and target format of this conversion step. The actual conversion functionality is implemented in the derived classes of xiiImageConversionStep, which advertise the supported conversions through GetSupportedConversions().
+  const xiiEnum<xiiGALResourceFormat>        m_TargetFormat;              ///< The source and target format of this conversion step. The actual conversion functionality is implemented in the derived classes of xiiImageConversionStep, which advertise the supported conversions through GetSupportedConversions().
+  const xiiBitflags<xiiImageConversionFlags> m_Flags;                     ///< This member describes properties of the conversion step, e.g. whether it can be performed in-place or not.
+  float                                      m_fAdditionalPenalty = 0.0f; ///< This member adds an additional amount to the cost estimate for this conversion step. It can be used to bias the choice between steps when there are comparable conversion steps available.
 };
 
 /// \brief Interface for a single image conversion step.
@@ -53,7 +51,7 @@ class XII_TEXTURE_DLL xiiImageConversionStepLinear : public xiiImageConversionSt
 {
 public:
   /// \brief Converts a batch of pixels.
-  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt64 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const = 0;
+  virtual xiiResult ConvertPixels(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt64 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const = 0;
 };
 
 /// \brief Interface for a single image conversion step where the source format is compressed and the target format is uncompressed.
@@ -61,7 +59,7 @@ class XII_TEXTURE_DLL xiiImageConversionStepDecompressBlocks : public xiiImageCo
 {
 public:
   /// \brief Decompresses the given number of blocks.
-  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocks, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const = 0;
+  virtual xiiResult DecompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiNumBlocks, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const = 0;
 };
 
 /// \brief Interface for a single image conversion step where the source format is uncompressed and the target format is compressed.
@@ -69,7 +67,7 @@ class XII_TEXTURE_DLL xiiImageConversionStepCompressBlocks : public xiiImageConv
 {
 public:
   /// \brief Compresses the given number of blocks.
-  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const = 0;
+  virtual xiiResult CompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const = 0;
 };
 
 /// \brief Interface for a single image conversion step from a linear to a planar format.
@@ -77,7 +75,7 @@ class XII_TEXTURE_DLL xiiImageConversionStepPlanarize : public xiiImageConversio
 {
 public:
   /// \brief Converts a batch of pixels into the given target planes.
-  virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const = 0;
+  virtual xiiResult ConvertPixels(const xiiImageView& source, xiiArrayPtr<xiiImage> pTarget, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const = 0;
 };
 
 /// \brief Interface for a single image conversion step from a planar to a linear format.
@@ -85,31 +83,30 @@ class XII_TEXTURE_DLL xiiImageConversionStepDeplanarize : public xiiImageConvers
 {
 public:
   /// \brief Converts a batch of pixels from the given source planes.
-  virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> source, xiiImage target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat) const = 0;
+  virtual xiiResult ConvertPixels(xiiArrayPtr<xiiImageView> pSource, xiiImage target, xiiUInt32 uiNumPixelsX, xiiUInt32 uiNumPixelsY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const = 0;
 };
-
 
 /// \brief Helper class containing utilities to convert between different image formats and layouts.
 class XII_TEXTURE_DLL xiiImageConversion
 {
 public:
   /// \brief Checks if there is a known conversion path between the two formats
-  static bool IsConvertible(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat);
+  static bool IsConvertible(xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat);
 
   /// \brief Finds the image format from a given list of formats which is the cheapest to convert to.
-  static xiiImageFormat::Enum FindClosestCompatibleFormat(xiiImageFormat::Enum format, xiiArrayPtr<const xiiImageFormat::Enum> compatibleFormats);
+  static xiiEnum<xiiGALResourceFormat> FindClosestCompatibleFormat(xiiEnum<xiiGALResourceFormat> format, xiiArrayPtr<const xiiEnum<xiiGALResourceFormat>> pCompatibleFormats);
 
   /// \brief A single node along a computed conversion path.
   struct ConversionPathNode
   {
     XII_DECLARE_POD_TYPE();
 
-    const xiiImageConversionStep* m_step;
-    xiiImageFormat::Enum          m_sourceFormat;
-    xiiImageFormat::Enum          m_targetFormat;
-    xiiUInt32                     m_sourceBufferIndex;
-    xiiUInt32                     m_targetBufferIndex;
-    bool                          m_inPlace;
+    const xiiImageConversionStep* m_pStep;               ///< The conversion step to perform for this node. The actual conversion functionality is implemented in the derived classes of xiiImageConversionStep, which advertise the supported conversions through GetSupportedConversions().
+    xiiEnum<xiiGALResourceFormat> m_SourceFormat;        ///< The source format for this conversion step.
+    xiiEnum<xiiGALResourceFormat> m_TargetFormat;        ///< The target format for this conversion step.
+    xiiUInt32                     m_uiSourceBufferIndex; ///< The index of the source buffer for this conversion step. 0 means the original source data, 1 means the first scratch buffer, etc.
+    xiiUInt32                     m_uiTargetBufferIndex; ///< The index of the target buffer for this conversion step. 0 means the final target data, 1 means the first scratch buffer, etc.
+    bool                          m_bInPlace;            ///< Whether this conversion step can be performed in-place, i.e. whether the source and target buffer can be the same. If false, the source and target buffer must not be the same for this conversion step.
   };
 
   /// \brief Precomputes an optimal conversion path between two formats and the minimal number of required scratch buffers.
@@ -124,33 +121,33 @@ public:
   /// \param out_path               The generated path.
   /// \param out_numScratchBuffers  The number of scratch buffers required for the conversion path.
   /// \returns                      xii_SUCCESS if a path was found, xii_FAILURE otherwise.
-  static xiiResult BuildPath(xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, bool bSourceEqualsTarget, xiiHybridArray<ConversionPathNode, 16>& out_path, xiiUInt32& out_uiNumScratchBuffers);
+  static xiiResult BuildPath(xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, bool bSourceEqualsTarget, xiiHybridArray<ConversionPathNode, 16>& out_path, xiiUInt32& out_uiNumScratchBuffers);
 
   /// \brief  Converts the source image into a target image with the given format. Source and target may be the same.
-  static xiiResult Convert(const xiiImageView& source, xiiImage& ref_target, xiiImageFormat::Enum targetFormat);
+  static xiiResult Convert(const xiiImageView& source, xiiImage& ref_target, xiiEnum<xiiGALResourceFormat> targetFormat);
 
   /// \brief Converts the source image into a target image using a precomputed conversion path.
-  static xiiResult Convert(const xiiImageView& source, xiiImage& ref_target, xiiArrayPtr<ConversionPathNode> path, xiiUInt32 uiNumScratchBuffers);
+  static xiiResult Convert(const xiiImageView& source, xiiImage& ref_target, xiiArrayPtr<ConversionPathNode> pPath, xiiUInt32 uiNumScratchBuffers);
 
   /// \brief Converts the raw source data into a target data buffer with the given format. Source and target may be the same.
-  static xiiResult ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat);
+  static xiiResult ConvertRaw(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiElementCount, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat);
 
   /// \brief Converts the raw source data into a target data buffer using a precomputed conversion path.
-  static xiiResult ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiArrayPtr<ConversionPathNode> path, xiiUInt32 uiNumScratchBuffers);
+  static xiiResult ConvertRaw(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiElementCount, xiiArrayPtr<ConversionPathNode> pPath, xiiUInt32 uiNumScratchBuffers);
 
 private:
   xiiImageConversion();
   xiiImageConversion(const xiiImageConversion&);
 
-  static xiiResult ConvertSingleStep(const xiiImageConversionStep* pStep, const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum targetFormat);
+  static xiiResult ConvertSingleStep(const xiiImageConversionStep* pStep, const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> targetFormat);
 
-  static xiiResult ConvertSingleStepDecompress(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep);
+  static xiiResult ConvertSingleStepDecompress(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep);
 
-  static xiiResult ConvertSingleStepCompress(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep);
+  static xiiResult ConvertSingleStepCompress(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep);
 
-  static xiiResult ConvertSingleStepDeplanarize(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep);
+  static xiiResult ConvertSingleStepDeplanarize(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep);
 
-  static xiiResult ConvertSingleStepPlanarize(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep);
+  static xiiResult ConvertSingleStepPlanarize(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep);
 
   static void RebuildConversionTable();
 };

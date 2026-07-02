@@ -9,8 +9,8 @@ xiiSimdFloat xiiImageFilter::GetWidth() const
   return m_fWidth;
 }
 
-xiiImageFilter::xiiImageFilter(float width) :
-  m_fWidth(width)
+xiiImageFilter::xiiImageFilter(float fWidth) :
+  m_fWidth(fWidth)
 {
 }
 

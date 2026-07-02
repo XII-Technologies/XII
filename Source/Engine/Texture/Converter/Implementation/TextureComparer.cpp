@@ -67,25 +67,25 @@ xiiResult xiiTextureComparer::LoadInputImages()
     return XII_FAILURE;
   }
 
-  if (m_Descriptor.m_ActualImage.GetImageFormat() == xiiImageFormat::UNKNOWN)
+  if (m_Descriptor.m_ActualImage.GetImageFormat() == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unknown image format for '{}'", xiiArgSensitive(m_Descriptor.m_sActualFile, "File"));
     return XII_FAILURE;
   }
 
-  if (m_Descriptor.m_ExpectedImage.GetImageFormat() == xiiImageFormat::UNKNOWN)
+  if (m_Descriptor.m_ExpectedImage.GetImageFormat() == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unknown image format for '{}'", xiiArgSensitive(m_Descriptor.m_sExpectedFile, "File"));
     return XII_FAILURE;
   }
 
-  if (xiiImageConversion::Convert(m_Descriptor.m_ActualImage, m_Descriptor.m_ActualImage, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (xiiImageConversion::Convert(m_Descriptor.m_ActualImage, m_Descriptor.m_ActualImage, xiiGALResourceFormat::RGBA8UNormalized).Failed())
   {
     xiiLog::Error("Could not convert to RGBA8: '{}'", xiiArgSensitive(m_Descriptor.m_sActualFile, "File"));
     return XII_FAILURE;
   }
 
-  if (xiiImageConversion::Convert(m_Descriptor.m_ExpectedImage, m_Descriptor.m_ExpectedImage, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (xiiImageConversion::Convert(m_Descriptor.m_ExpectedImage, m_Descriptor.m_ExpectedImage, xiiGALResourceFormat::RGBA8UNormalized).Failed())
   {
     xiiLog::Error("Could not convert to RGBA8: '{}'", xiiArgSensitive(m_Descriptor.m_sExpectedFile, "File"));
     return XII_FAILURE;
@@ -114,14 +114,14 @@ xiiResult xiiTextureComparer::ExtractImages()
 
   xiiImageUtils::Normalize(m_OutputImageDiff, m_uiOutputMinDiffRgb, m_uiOutputMaxDiffRgb, m_uiOutputMinDiffAlpha, m_uiOutputMaxDiffAlpha);
 
-  XII_SUCCEED_OR_RETURN(xiiImageConversion::Convert(m_OutputImageDiff, m_OutputImageDiffRgb, xiiImageFormat::R8G8B8_UNORM));
+  XII_SUCCEED_OR_RETURN(xiiImageConversion::Convert(m_OutputImageDiff, m_OutputImageDiffRgb, xiiGALResourceFormat::RGBA8UNormalized));
 
   xiiImageUtils::ExtractAlphaChannel(m_OutputImageDiff, m_OutputImageDiffAlpha);
 
-  XII_SUCCEED_OR_RETURN(xiiImageConversion::Convert(m_Descriptor.m_ActualImage, m_ExtractedActualRgb, xiiImageFormat::R8G8B8_UNORM));
+  XII_SUCCEED_OR_RETURN(xiiImageConversion::Convert(m_Descriptor.m_ActualImage, m_ExtractedActualRgb, xiiGALResourceFormat::RGBA8UNormalized));
   xiiImageUtils::ExtractAlphaChannel(m_Descriptor.m_ActualImage, m_ExtractedActualAlpha);
 
-  XII_SUCCEED_OR_RETURN(xiiImageConversion::Convert(m_Descriptor.m_ExpectedImage, m_ExtractedExpectedRgb, xiiImageFormat::R8G8B8_UNORM));
+  XII_SUCCEED_OR_RETURN(xiiImageConversion::Convert(m_Descriptor.m_ExpectedImage, m_ExtractedExpectedRgb, xiiGALResourceFormat::RGBA8UNormalized));
   xiiImageUtils::ExtractAlphaChannel(m_Descriptor.m_ExpectedImage, m_ExtractedExpectedAlpha);
 
   return XII_SUCCESS;

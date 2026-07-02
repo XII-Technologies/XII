@@ -14,8 +14,9 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsFoundation
 
   PRIVATE
-  stb
+  DirectX-Headers
   DirectXTex
+  stb
 )
 
 if(XII_CMAKE_PLATFORM_LINUX)

@@ -234,12 +234,11 @@ public:
     if (pTextureD3D12)
     {
       const xiiGALTextureCreationDescription& description = pTextureD3D12->GetDescription();
-      const xiiUInt32                         uiArraySize = description.GetArraySize();
 
       if (uiArrayCount == XII_GAL_REMAINING_ARRAY_SLICES)
-        return uiArraySize;
+        return description.m_uiArraySizeOrDepth;
 
-      return (uiArrayCount > uiArraySize) ? uiArraySize : uiArrayCount;
+      return (uiArrayCount > description.m_uiArraySizeOrDepth) ? description.m_uiArraySizeOrDepth : uiArrayCount;
     }
     return 0;
   }
@@ -252,7 +251,7 @@ public:
       const xiiUInt32                         uiResolvedMipCount   = ResolveMipCount(pTextureD3D12, uiMipCount);
       const xiiUInt32                         uiResolvedSliceCount = ResolveArrayCount(pTextureD3D12, uiSliceCount);
 
-      return uiFirstMip == 0 && uiResolvedMipCount == description.m_uiMipLevels && uiFirstSlice == 0 && uiResolvedSliceCount == description.GetArraySize();
+      return uiFirstMip == 0 && uiResolvedMipCount == description.m_uiMipLevels && uiFirstSlice == 0 && uiResolvedSliceCount == description.m_uiArraySizeOrDepth;
     }
     return false;
   }
@@ -365,7 +364,7 @@ public:
       {
         // Partial range: expand per-subresource.
         const xiiUInt32 uiEndMip   = (m_Description.m_uiMipLevelCount == XII_GAL_REMAINING_MIP_LEVELS) ? description.m_uiMipLevels : (m_Description.m_uiFirstMipLevel + uiMipCount);
-        const xiiUInt32 uiEndSlice = (m_Description.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES) ? description.GetArraySize() : (m_Description.m_uiFirstArraySlice + uiSliceCount);
+        const xiiUInt32 uiEndSlice = (m_Description.m_uiArraySliceCount == XII_GAL_REMAINING_ARRAY_SLICES) ? description.m_uiArraySizeOrDepth : (m_Description.m_uiFirstArraySlice + uiSliceCount);
 
         DiscardIfAppropriate(description, d3dBarrier.Transition.StateBefore, uiEndMip, uiEndSlice);
 
@@ -373,7 +372,7 @@ public:
         {
           for (xiiUInt32 uiSlice = m_Description.m_uiFirstArraySlice; uiSlice < uiEndSlice; ++uiSlice)
           {
-            d3dBarrier.Transition.Subresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(uiMip, uiSlice, 0, description.m_uiMipLevels, description.GetArraySize());
+            d3dBarrier.Transition.Subresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(uiMip, uiSlice, 0, description.m_uiMipLevels, description.m_uiArraySizeOrDepth);
 
             m_pCommandListD3D12->GetD3D12CommandList()->ResourceBarrier(1U, &d3dBarrier);
           }
@@ -498,7 +497,7 @@ private:
 
       for (xiiUInt32 uiSlice = m_Description.m_uiFirstArraySlice; uiSlice < uiEndSlice; ++uiSlice)
       {
-        region.FirstSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(m_Description.m_uiFirstMipLevel, uiSlice, 0, textureDescription.m_uiMipLevels, textureDescription.GetArraySize());
+        region.FirstSubresource = xiiD3D12TypeConversions::CalculateSubResourceIndex(m_Description.m_uiFirstMipLevel, uiSlice, 0, textureDescription.m_uiMipLevels, textureDescription.m_uiArraySizeOrDepth);
 
         m_pCommandListD3D12->GetD3D12CommandList()->DiscardResource(GetD3D12Resource(m_Description.m_pResource), &region);
       }

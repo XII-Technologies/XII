@@ -10,13 +10,14 @@ class xiiStreamReader;
 class xiiStreamWriter;
 class xiiImage;
 class xiiImageView;
-class xiiImageHeader;
+
+struct xiiGALTextureCreationDescription;
 
 class XII_TEXTURE_DLL xiiImageFileFormat
 {
 public:
   /// \brief Reads only the header information for an image and ignores the data. Much faster than reading the entire image, if the pixel data is not needed.
-  virtual xiiResult ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const = 0;
+  virtual xiiResult ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const = 0;
 
   /// \brief Reads the data from the given stream and creates the image from it. Errors are written to the given xiiLogInterface.
   virtual xiiResult ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const = 0;
@@ -36,7 +37,7 @@ public:
   /// \brief Returns a xiiImageFileFormat that can write the given extension. Returns nullptr if there is no appropriate xiiImageFileFormat.
   static const xiiImageFileFormat* GetWriterFormat(xiiStringView sExtension);
 
-  static xiiResult ReadImageHeader(xiiStringView sFileName, xiiImageHeader& ref_header);
+  static xiiResult ReadImageDescription(xiiStringView sFileName, xiiGALTextureCreationDescription& ref_description);
 };
 
 /// \brief Base class for a registered (globally known) xiiImageFileFormat.

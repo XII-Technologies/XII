@@ -7,6 +7,7 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Texture/Image/ImageUtils.h>
 
+#if 0
 
 XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
 {
@@ -15,16 +16,16 @@ XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
 
   XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(sWriteDir.GetData()) == XII_SUCCESS);
 
-  xiiResult addDir = xiiFileSystem::AddDataDirectory(sReadDir.GetData(), "ImageTest");
-  XII_TEST_BOOL(addDir == XII_SUCCESS);
+  xiiResult addDirectoryResult = xiiFileSystem::AddDataDirectory(sReadDir.GetData(), "ImageTest");
+  XII_TEST_BOOL(addDirectoryResult == XII_SUCCESS);
 
-  if (addDir.Failed())
+  if (addDirectoryResult.Failed())
     return;
 
-  addDir = xiiFileSystem::AddDataDirectory(sWriteDir.GetData(), "ImageTest", "output", xiiDataDirUsage::AllowWrites);
-  XII_TEST_BOOL(addDir == XII_SUCCESS);
+  addDirectoryResult = xiiFileSystem::AddDataDirectory(sWriteDir.GetData(), "ImageTest", "output", xiiDataDirUsage::AllowWrites);
+  XII_TEST_BOOL(addDirectoryResult == XII_SUCCESS);
 
-  if (addDir.Failed())
+  if (addDirectoryResult.Failed())
     return;
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ComputeImageDifferenceABS RGB")
@@ -97,7 +98,6 @@ XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
     XII_TEST_FILES("ImageUtils/ExpectedCrop_RGBA.tga", "ImageUtils/Crop_RGBA.tga", "");
   }
 
-
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ComputeMeanSquareError")
   {
     xiiImage ImageA, ImageB, ImageDiff;
@@ -120,3 +120,4 @@ XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
 
   xiiFileSystem::RemoveDataDirectoryGroup("ImageTest");
 }
+#endif

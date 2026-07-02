@@ -585,6 +585,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
     BC7Typeless,                  ///< Four-component typeless block-compression format.
     BC7UNormalized,               ///< Four-component block-compression unsigned-normalized-integer format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
     BC7UNormalizedSRGB,           ///< Four-component block-compression unsigned-normalized-integer sRGB format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
+    NV12,                         ///< A multi-planar YUV 4:2:0 format with an 8-bit Y (luminance) plane followed by an interleaved 8-bit-per-channel UV plane at half width and half height. Common hardware decode output. Not usable as a render target, but can be sampled as a shader resource.
+    P010,                         ///< A multi-planar YUV 4:2:0 format with a 10-bit Y plane (stored in 16 bits per sample) followed by an interleaved 10-bit-per-channel UV plane (stored in 16 bits per channel) at half resolution. Used for HDR video. Not usable as a render target, but can be sampled as a shader resource.
+    P016,                         ///< A multi-planar YUV 4:2:0 format with a 16-bit Y plane followed by an interleaved 16-bit-per-channel UV plane at half resolution. Used for high-quality video pipelines. Not usable as a render target, but can be sampled as a shader resource.
+    YUY2,                         ///< A packed YUV 4:2:2 format with 8-bit samples arranged as Y0 U0 Y1 V0. Not usable as a render target, but can be sampled as a shader resource.
+    AYUV,                         ///< A packed YUV 4:4:4 format with 8-bit A, Y, U, and V channels. Not usable as a render target, but can be sampled as a shader resource.
+    P216,                         ///< A multi-planar YUV 4:2:2 format with a 16-bit Y plane followed by an interleaved 16-bit-per-channel UV plane at half horizontal resolution. Not usable as a render target, but can be sampled as a shader resource.
+    P416,                         ///< A multi-planar YUV 4:4:4 format with a 16-bit Y plane followed by separate 16-bit U and V planes. Not usable as a render target, but can be sampled as a shader resource.
 
     ENUM_COUNT,
 
@@ -599,6 +606,103 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormat
 
   /// \brief Returns whether the given texture format is a sRGB format.
   XII_ALWAYS_INLINE static bool IsSrgb(xiiGALResourceFormat::Enum format) { return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB; }
+
+  /// \brief Returns true if the given texture format is a typeless format, otherwise returns false.
+  XII_ALWAYS_INLINE static bool IsTypeless(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case RGBA32Typeless:
+      case RGB32Typeless:
+      case RGBA16Typeless:
+      case RG32Typeless:
+      case R32G8X24Typeless:
+      case RGB10A2Typeless:
+      case RGBA8Typeless:
+      case RG16Typeless:
+      case R32Typeless:
+      case R24G8Typeless:
+      case RG8Typeless:
+      case R16Typeless:
+      case R8Typeless:
+      case BC1Typeless:
+      case BC2Typeless:
+      case BC3Typeless:
+      case BC4Typeless:
+      case BC5Typeless:
+      case BGRA8Typeless:
+      case BGRX8Typeless:
+      case BC6HTypeless:
+      case BC7Typeless:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// \brief Returns true if the given texture format is a multi-planar format, otherwise returns false.
+  XII_ALWAYS_INLINE static bool IsMultiplanar(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case NV12:
+      case P010:
+      case P016:
+      case P216:
+      case P416:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// \brief Returns the linear (non-sRGB) version of the given format if it exists, otherwise returns the given format.
+  XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsLinear(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case RGBA8UNormalizedSRGB:
+        return RGBA8UNormalized;
+      case BGRA8UNormalizedSRGB:
+        return BGRA8UNormalized;
+      case BGRX8UNormalizedSRGB:
+        return BGRX8UNormalized;
+      case BC1UNormalizedSRGB:
+        return BC1UNormalized;
+      case BC2UNormalizedSRGB:
+        return BC2UNormalized;
+      case BC3UNormalizedSRGB:
+        return BC3UNormalized;
+      case BC7UNormalizedSRGB:
+        return BC7UNormalized;
+      default:
+        return format;
+    }
+  }
+
+  /// \brief Returns the sRGB version of the given format if it exists, otherwise returns the given format.
+  XII_ALWAYS_INLINE static xiiGALResourceFormat::Enum AsSrgb(xiiGALResourceFormat::Enum format)
+  {
+    switch (format)
+    {
+      case RGBA8UNormalized:
+        return RGBA8UNormalizedSRGB;
+      case BGRA8UNormalized:
+        return BGRA8UNormalizedSRGB;
+      case BGRX8UNormalized:
+        return BGRX8UNormalizedSRGB;
+      case BC1UNormalized:
+        return BC1UNormalizedSRGB;
+      case BC2UNormalized:
+        return BC2UNormalizedSRGB;
+      case BC3UNormalized:
+        return BC3UNormalizedSRGB;
+      case BC7UNormalized:
+        return BC7UNormalizedSRGB;
+      default:
+        return format;
+    }
+  }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceFormat);

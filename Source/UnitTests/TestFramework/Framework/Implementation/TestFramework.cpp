@@ -1329,7 +1329,7 @@ void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, const xiiImage
 bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, bool bIsLineImage, char* szErrorMsg)
 {
   xiiImage imgRgba;
-  if (xiiImageConversion::Convert(img, imgRgba, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (xiiImageConversion::Convert(img, imgRgba, xiiGALResourceFormat::RGBA8UNormalized).Failed())
   {
     safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Captured Image '%s' could not be converted to RGBA8", sImgName.GetData());
     return false;
@@ -1401,7 +1401,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
     return false;
   }
 
-  if (xiiImageConversion::Convert(imgExp, imgExpRgba, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (xiiImageConversion::Convert(imgExp, imgExpRgba, xiiGALResourceFormat::RGBA8UNormalized).Failed())
   {
     SaveResultImage();
 
@@ -1433,7 +1433,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
     xiiImageUtils::Normalize(imgDiffRgba, uiMinDiffRgb, uiMaxDiffRgb, uiMinDiffAlpha, uiMaxDiffAlpha);
 
     xiiImage imgDiffRgb;
-    xiiImageConversion::Convert(imgDiffRgba, imgDiffRgb, xiiImageFormat::R8G8B8_UNORM).IgnoreResult();
+    xiiImageConversion::Convert(imgDiffRgba, imgDiffRgb, xiiGALResourceFormat::RGBA8UNormalized).IgnoreResult();
 
     xiiStringBuilder sImgDiffName;
     sImgDiffName.SetFormat(":imgout/Images_Diff/{0}.png", sImgName);
@@ -1447,12 +1447,12 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
     imgDiffAlpha.SaveTo(sImgDiffAlphaName).IgnoreResult();
 
     xiiImage imgExpRgb;
-    xiiImageConversion::Convert(imgExpRgba, imgExpRgb, xiiImageFormat::R8G8B8_UNORM).IgnoreResult();
+    xiiImageConversion::Convert(imgExpRgba, imgExpRgb, xiiGALResourceFormat::RGBA8UNormalized).IgnoreResult();
     xiiImage imgExpAlpha;
     xiiImageUtils::ExtractAlphaChannel(imgExpRgba, imgExpAlpha);
 
     xiiImage imgRgb;
-    xiiImageConversion::Convert(imgRgba, imgRgb, xiiImageFormat::R8G8B8_UNORM).IgnoreResult();
+    xiiImageConversion::Convert(imgRgba, imgRgb, xiiGALResourceFormat::RGBA8UNormalized).IgnoreResult();
     xiiImage imgAlpha;
     xiiImageUtils::ExtractAlphaChannel(imgRgba, imgAlpha);
 

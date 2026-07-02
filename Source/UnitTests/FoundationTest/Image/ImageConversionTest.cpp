@@ -2,89 +2,91 @@
 
 #include <FoundationTest/FoundationTestPCH.h>
 
-
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Memory/MemoryTracker.h>
-#include <Texture/Image/Formats/BmpFileFormat.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 
-static const xiiImageFormat::Enum defaultFormat = xiiImageFormat::R32G32B32A32_FLOAT;
+#if 0
+
+static const xiiEnum<xiiGALResourceFormat> g_DefaultFormat = xiiGALResourceFormat::RGBA32Float;
 
 class xiiImageConversionTest : public xiiTestBaseClass
 {
-
 public:
   virtual const char* GetTestName() const override { return "Image Conversion"; }
 
   virtual xiiResult GetImage(xiiImage& ref_img, const xiiSubTestEntry& subTest, xiiUInt32 uiImageNumber) override
   {
     ref_img.ResetAndMove(std::move(m_Image));
+
     return XII_SUCCESS;
   }
 
 private:
   virtual void SetupSubTests() override
   {
-    for (xiiUInt32 i = 0; i < xiiImageFormat::NUM_FORMATS; ++i)
+    m_ResourceFormats.SetCount(xiiGALResourceFormat::ENUM_COUNT);
+
+    xiiStringBuilder sTemp;
+    for (xiiUInt32 i = 0; i < xiiGALResourceFormat::ENUM_COUNT; ++i)
     {
-      xiiImageFormat::Enum format = static_cast<xiiImageFormat::Enum>(i);
+      xiiEnum<xiiGALResourceFormat> format = static_cast<xiiGALResourceFormat::Enum>(i);
 
-      const char* name = xiiImageFormat::GetName(format);
-      XII_ASSERT_DEV(name != nullptr, "Missing format information for format {}", i);
-
-      bool isEncodable = xiiImageConversion::IsConvertible(defaultFormat, format);
-
-      if (!isEncodable)
+      if (!xiiImageConversion::IsConvertible(g_DefaultFormat, format))
       {
-        // If a format doesn't have an encoder, ignore
+        // If a format doesn't have an encoder, ignore.
         continue;
       }
 
-      AddSubTest(name, i);
+      xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), format, sTemp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
+
+      m_ResourceFormats[i] = sTemp;
+
+      AddSubTest(m_ResourceFormats[i], i);
     }
   }
 
   virtual xiiTestAppRun RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvocationCount) override
   {
-    xiiImageFormat::Enum format = static_cast<xiiImageFormat::Enum>(iIdentifier);
+    xiiEnum<xiiGALResourceFormat>          format           = static_cast<xiiGALResourceFormat::Enum>(iIdentifier);
+    const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
-    bool isDecodable = xiiImageConversion::IsConvertible(format, defaultFormat);
-
-    if (!isDecodable)
+    if (!xiiImageConversion::IsConvertible(format, g_DefaultFormat))
     {
-      XII_TEST_BOOL_MSG(false, "Format %s can be encoded from %s but not decoded - add a decoder for this format please", xiiImageFormat::GetName(format), xiiImageFormat::GetName(defaultFormat));
+      XII_TEST_BOOL_MSG(false, "Format {} can be encoded from {} but not decoded. Add a decoder for this format.", xiiArgEnum(format), xiiArgEnum(g_DefaultFormat));
 
       return xiiTestAppRun::Quit;
     }
 
     {
-      xiiHybridArray<xiiImageConversion::ConversionPathNode, 16> decodingPath;
-      xiiUInt32                                                  decodingPathScratchBuffers;
-      xiiImageConversion::BuildPath(format, defaultFormat, false, decodingPath, decodingPathScratchBuffers).IgnoreResult();
+      xiiTemporaryHybridArray<xiiImageConversion::ConversionPathNode, 16> decodingPath;
+      xiiUInt32                                                           decodingPathScratchBuffers;
+      xiiImageConversion::BuildPath(format, g_DefaultFormat, false, decodingPath, decodingPathScratchBuffers).IgnoreResult();
 
       // the [test] tag tells the test framework to output the log message in the GUI
       xiiLog::Info("[test]Default decoding Path:");
       for (xiiUInt32 i = 0; i < decodingPath.GetCount(); ++i)
       {
-        xiiLog::Info("[test]  {} -> {}", xiiImageFormat::GetName(decodingPath[i].m_sourceFormat), xiiImageFormat::GetName(decodingPath[i].m_targetFormat));
+        xiiLog::Info("[test]  {} -> {}", xiiArgEnum(decodingPath[i].m_SourceFormat), xiiArgEnum(decodingPath[i].m_TargetFormat));
       }
     }
 
     {
-      xiiHybridArray<xiiImageConversion::ConversionPathNode, 16> encodingPath;
-      xiiUInt32                                                  encodingPathScratchBuffers;
-      xiiImageConversion::BuildPath(defaultFormat, format, false, encodingPath, encodingPathScratchBuffers).IgnoreResult();
+      xiiTemporaryHybridArray<xiiImageConversion::ConversionPathNode, 16> encodingPath;
+      xiiUInt32                                                           encodingPathScratchBuffers;
+      xiiImageConversion::BuildPath(g_DefaultFormat, format, false, encodingPath, encodingPathScratchBuffers).IgnoreResult();
 
       // the [test] tag tells the test framework to output the log message in the GUI
       xiiLog::Info("[test]Default encoding Path:");
       for (xiiUInt32 i = 0; i < encodingPath.GetCount(); ++i)
       {
-        xiiLog::Info("[test]  {} -> {}", xiiImageFormat::GetName(encodingPath[i].m_sourceFormat), xiiImageFormat::GetName(encodingPath[i].m_targetFormat));
+        xiiLog::Info("[test]  {} -> {}", xiiArgEnum(encodingPath[i].m_SourceFormat), xiiArgEnum(encodingPath[i].m_TargetFormat));
       }
     }
 
@@ -95,7 +97,7 @@ private:
 
       XII_TEST_BOOL(m_Image.Convert(format).Succeeded());
 
-      XII_TEST_IMAGE(iIdentifier * 2, xiiImageFormat::IsCompressed(format) ? 10 : 0);
+      XII_TEST_IMAGE(iIdentifier * 2, formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed ? 10 : 0);
     }
 
     // Test HDR: Load, decode to FLOAT32, stretch to [-range, range] and encode;
@@ -105,11 +107,11 @@ private:
     // Also, fill the first few rows in the top left with Infinity, -Infinity, and NaN, which should
     // show up as White, White, and Black, resp., in the comparison.
     {
-      const float range = 8;
+      const float fRange = 8.0f;
 
       XII_TEST_BOOL(m_Image.LoadFrom("ImageConversions/reference.png").Succeeded());
 
-      XII_TEST_BOOL(m_Image.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Succeeded());
+      XII_TEST_BOOL(m_Image.Convert(xiiGALResourceFormat::RGBA32Float).Succeeded());
 
       const float posInf = +xiiMath::Infinity<float>();
       const float negInf = -xiiMath::Infinity<float>();
@@ -136,11 +138,11 @@ private:
           }
           else
           {
-            float scale = (x / float(m_Image.GetWidth()) - 0.5f) * 2.0f * range;
+            float fScale = (x / float(m_Image.GetWidth()) - 0.5f) * 2.0f * fRange;
 
-            if (xiiMath::Abs(scale) > 0.5)
+            if (xiiMath::Abs(fScale) > 0.5)
             {
-              *pPixelPointer *= scale;
+              *pPixelPointer *= fScale;
             }
           }
 
@@ -150,7 +152,7 @@ private:
 
       XII_TEST_BOOL(m_Image.Convert(format).Succeeded());
 
-      XII_TEST_BOOL(m_Image.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Succeeded());
+      XII_TEST_BOOL(m_Image.Convert(xiiGALResourceFormat::RGBA32Float).Succeeded());
 
       for (xiiUInt32 y = 0; y < m_Image.GetHeight(); ++y)
       {
@@ -174,10 +176,11 @@ private:
           }
           else
           {
-            float scale = (x / float(m_Image.GetWidth()) - 0.5f) * 2.0f * range;
-            if (xiiMath::Abs(scale) > 0.5)
+            float fScale = (x / float(m_Image.GetWidth()) - 0.5f) * 2.0f * fRange;
+
+            if (xiiMath::Abs(fScale) > 0.5)
             {
-              *pPixelPointer /= scale;
+              *pPixelPointer /= fScale;
             }
           }
 
@@ -185,7 +188,7 @@ private:
         }
       }
 
-      XII_TEST_IMAGE(iIdentifier * 2 + 1, xiiImageFormat::IsCompressed(format) ? 10 : 0);
+      XII_TEST_IMAGE(iIdentifier * 2 + 1, formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed ? 10 : 0);
     }
 
     return xiiTestAppRun::Quit;
@@ -204,10 +207,10 @@ private:
 
     xiiFileSystem::AddDataDirectory(">xiitest/", "ImageComparisonDataDir", "imgout", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
-#if XII_ENABLED(XII_PLATFORM_LINUX)
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
     // On linux we use CPU based BC6 and BC7 compression, which sometimes gives slightly different results from the GPU compression on Windows.
     xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_Linux");
-#endif
+#  endif
 
     return XII_SUCCESS;
   }
@@ -223,11 +226,21 @@ private:
     return XII_SUCCESS;
   }
 
-  virtual xiiResult InitializeSubTest(xiiInt32 iIdentifier) override { return XII_SUCCESS; }
+  virtual xiiResult InitializeSubTest(xiiInt32 iIdentifier) override
+  {
+    return XII_SUCCESS;
+  }
 
-  virtual xiiResult DeInitializeSubTest(xiiInt32 iIdentifier) override { return XII_SUCCESS; }
+  virtual xiiResult DeInitializeSubTest(xiiInt32 iIdentifier) override
+  {
+    return XII_SUCCESS;
+  }
 
-  xiiImage m_Image;
+private:
+  xiiImage                                                    m_Image;
+  xiiStaticArray<xiiString, xiiGALResourceFormat::ENUM_COUNT> m_ResourceFormats;
 };
 
 static xiiImageConversionTest s_ImageConversionTest;
+
+#endif

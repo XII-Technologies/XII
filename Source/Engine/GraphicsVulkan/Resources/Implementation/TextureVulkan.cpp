@@ -255,7 +255,7 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   vk::BufferCreateInfo vkStagingBufferCreateInfo = {};
   vkStagingBufferCreateInfo.pNext                = nullptr;
   vkStagingBufferCreateInfo.flags                = {};
-  vkStagingBufferCreateInfo.size                 = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, m_Description.GetArraySize(), 0, s_uiStagingBufferOffsetAlignment);
+  vkStagingBufferCreateInfo.size                 = xiiGALTextureUtilities::GetStagingTextureSubresourceOffset(m_Description, m_Description.m_uiArraySizeOrDepth, 0, s_uiStagingBufferOffsetAlignment);
 
   XII_ASSERT_DEV(m_Description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Read) || m_Description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Write), "Exactly one of xiiGALCPUAccessFlag::Read or xiiGALCPUAccessFlag::Write CPU access flags must be specified.");
 
@@ -310,7 +310,7 @@ vk::Result xiiGALTextureVulkan::CreateVulkanStagingBuffer(const xiiGALTextureDat
   {
     xiiUInt32 uiSubResourceIndex = 0;
 
-    for (xiiUInt32 uiLayer = 0; uiLayer < m_Description.GetArraySize(); ++uiLayer)
+    for (xiiUInt32 uiLayer = 0; uiLayer < m_Description.m_uiArraySizeOrDepth; ++uiLayer)
     {
       for (xiiUInt32 uiMip = 0; uiMip < m_Description.m_uiMipLevels; ++uiMip)
       {
@@ -356,7 +356,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
   m_SparseTextureProperties.m_vTileSize.z      = vkSparseRequirements[0].formatProperties.imageGranularity.depth;
   m_SparseTextureProperties.m_Flags            = xiiVulkanTypeConversions::GetSparseTextureFlags(vkSparseRequirements[0].formatProperties.flags);
 
-  if (m_Description.GetArraySize() == 1)
+  if (m_Description.m_uiArraySizeOrDepth == 1)
   {
     XII_ASSERT_DEV(m_SparseTextureProperties.m_uiMipTailOffset < vkMemoryRequirements.size || (m_SparseTextureProperties.m_uiMipTailOffset == vkMemoryRequirements.size && m_SparseTextureProperties.m_uiMipTailSize == 0), "");
     XII_ASSERT_DEV((m_SparseTextureProperties.m_uiMipTailOffset + m_SparseTextureProperties.m_uiMipTailSize) <= vkMemoryRequirements.size, "");
@@ -374,7 +374,7 @@ void xiiGALTextureVulkan::InitializeSparseTextureProperties()
       XII_ASSERT_DEV(m_SparseTextureProperties.m_uiMipTailStride > 0, "");
     }
 
-    XII_ASSERT_DEV((m_SparseTextureProperties.m_uiMipTailStride * m_Description.GetArraySize()) == vkMemoryRequirements.size, "");
+    XII_ASSERT_DEV((m_SparseTextureProperties.m_uiMipTailStride * m_Description.m_uiArraySizeOrDepth) == vkMemoryRequirements.size, "");
     XII_ASSERT_DEV((m_SparseTextureProperties.m_uiMipTailStride % vkMemoryRequirements.alignment) == 0, "");
     XII_ASSERT_DEV(m_SparseTextureProperties.m_uiMipTailOffset < m_SparseTextureProperties.m_uiMipTailStride, "");
     XII_ASSERT_DEV((m_SparseTextureProperties.m_uiMipTailOffset + m_SparseTextureProperties.m_uiMipTailSize) <= m_SparseTextureProperties.m_uiMipTailStride, "");
@@ -746,10 +746,10 @@ void xiiGALTextureVulkan::ComputeVkImageCreateInfo(const xiiSharedPtr<xiiGALDevi
 
   ref_vkImageCreateInfo.format        = xiiVulkanTypeConversions::GetFormat(internalTextureFormat);
   ref_vkImageCreateInfo.extent.width  = creationDescription.m_Size.width;
-  ref_vkImageCreateInfo.extent.height = creationDescription.Is1D() ? 1U : creationDescription.m_Size.height;
-  ref_vkImageCreateInfo.extent.depth  = creationDescription.Is3D() ? creationDescription.m_uiArraySizeOrDepth : 1U;
+  ref_vkImageCreateInfo.extent.height = creationDescription.m_Size.height;
+  ref_vkImageCreateInfo.extent.depth  = creationDescription.m_uiArraySizeOrDepth;
   ref_vkImageCreateInfo.mipLevels     = creationDescription.m_uiMipLevels;
-  ref_vkImageCreateInfo.arrayLayers   = creationDescription.GetArraySize();
+  ref_vkImageCreateInfo.arrayLayers   = creationDescription.m_uiArraySizeOrDepth;
   ref_vkImageCreateInfo.samples       = static_cast<vk::SampleCountFlagBits>(creationDescription.m_uiSampleCount);
   ref_vkImageCreateInfo.tiling        = vk::ImageTiling::eOptimal;
   ref_vkImageCreateInfo.usage         = xiiVulkanTypeConversions::GetImageUsageFlags(creationDescription.m_BindFlags, bIsMemoryLess, vkExtensionFeatures.m_FragmentDensityMap.fragmentDensityMap != vk::False);

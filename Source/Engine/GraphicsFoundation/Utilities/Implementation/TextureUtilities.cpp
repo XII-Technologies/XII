@@ -17,10 +17,10 @@ bool xiiGALTextureUtilities::IsIdentityComponentMapping(const xiiGALTextureCompo
 const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormatProperties(xiiEnum<xiiGALResourceFormat> format)
 {
   static xiiGALResourceFormatDescription formatDescriptions[xiiGALResourceFormat::ENUM_COUNT];
-  static bool                            bIsInitialized = false;
+  static bool                            s_bIsInitialized = false;
 
   // Note that this implementation is thread safe. Even if multiple threads call the function, the data may be initialized multiple times but the result will be the same.
-  if (!bIsInitialized)
+  if (!s_bIsInitialized)
   {
 #define FILL_TEXTURE_FORMAT_INFO(format, componentSize, componentCount, componentType, isTypeless, blockWidth, blockHeight) \
   formatDescriptions[format].m_Format           = format;                                                                   \
@@ -155,6 +155,9 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalized,     16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
     FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::BC7UNormalizedSRGB, 16, 4, xiiGALResourceFormatComponentType::Compressed,  false, 4, 4);
 
+    FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::YUY2, 1, 4, xiiGALResourceFormatComponentType::UnsignedInteger, false, 2, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALResourceFormat::AYUV, 1, 4, xiiGALResourceFormatComponentType::UnsignedInteger, false, 1, 1);
+
     // clang-format on
 
 #undef FILL_TEXTURE_FORMAT_INFO
@@ -162,21 +165,183 @@ const xiiGALResourceFormatDescription& xiiGALTextureUtilities::GetResourceFormat
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     for (xiiUInt32 i = xiiGALResourceFormat::Unknown; i < xiiGALResourceFormat::ENUM_COUNT; ++i)
     {
-      XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized format.");
+      if (!xiiGALResourceFormat::IsMultiplanar(static_cast<xiiGALResourceFormat::Enum>(i)))
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized single-plane format.");
+      }
+      else
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == xiiGALResourceFormat::Unknown, "Multi-planar formats must not be initialized in xiiGALResourceFormatDescription.");
+      }
     }
 #endif
 
-    bIsInitialized = true;
+    s_bIsInitialized = true;
   }
 
   if (format >= xiiGALResourceFormat::Unknown && format < xiiGALResourceFormat::ENUM_COUNT)
   {
-    const auto& description = formatDescriptions[format];
-    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected format.");
+    // Multi-planar formats must NOT be looked up in this descriptor.
+    if (xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      XII_ASSERT_DEV(false, "Multi-planar format {} cannot be retrieved from xiiGALResourceFormatDescription. Use the multi-plane descriptor instead.", xiiArgEnum(format));
+    }
+
+    // Single-plane formats must be initialized correctly.
+    const xiiGALResourceFormatDescription& description = formatDescriptions[format];
+    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected or uninitialized single-plane format {0}.", xiiArgEnum(format));
+
     return description;
   }
 
-  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed rage [0, {1}].", format.GetValue(), 0, xiiGALResourceFormat::ENUM_COUNT - 1);
+  // Out-of-range format.
+  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed range [0, {1}].", xiiArgEnum(format), xiiGALResourceFormat::ENUM_COUNT - 1);
+
+  return formatDescriptions[xiiGALResourceFormat::Unknown];
+}
+
+const xiiGALMultiPlanarFormatDescription& xiiGALTextureUtilities::GetMultiPlanarFormatProperties(xiiEnum<xiiGALResourceFormat> format)
+{
+  static xiiGALMultiPlanarFormatDescription formatDescriptions[xiiGALResourceFormat::ENUM_COUNT];
+  static bool                               s_bIsInitialized = false;
+
+  // Note that this implementation is thread safe. Even if multiple threads call the function, the data may be initialized multiple times but the result will be the same.
+  if (!s_bIsInitialized)
+  {
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::NV12];
+      description.m_Format                            = xiiGALResourceFormat::NV12;
+
+      // Plane 0: Y (full resolution).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R8UNormalized;
+      plane0.m_uiBytesPerElement                        = 1;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half resolution, interleaved).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG8UNormalized;
+      plane1.m_uiBytesPerElement                        = 2;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 0.5f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P010];
+      description.m_Format                            = xiiGALResourceFormat::P010;
+
+      // Plane 0: Y (full resolution, 10-bit stored in 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half resolution, 10-bit stored in 16-bit per channel).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG16UNormalized;
+      plane1.m_uiBytesPerElement                        = 4;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 0.5f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P016];
+      description.m_Format                            = xiiGALResourceFormat::P016;
+
+      // Plane 0: Y (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half resolution, 16-bit per channel).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG16UNormalized;
+      plane1.m_uiBytesPerElement                        = 4;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 0.5f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P216];
+      description.m_Format                            = xiiGALResourceFormat::P216;
+
+      // Plane 0: Y (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: UV (half horizontal resolution, full vertical resolution).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::RG16UNormalized;
+      plane1.m_uiBytesPerElement                        = 4;
+      plane1.m_fWidthFactor                             = 0.5f;
+      plane1.m_fHeightFactor                            = 1.0f;
+    }
+    {
+      xiiGALMultiPlanarFormatDescription& description = formatDescriptions[xiiGALResourceFormat::P416];
+      description.m_Format                            = xiiGALResourceFormat::P416;
+
+      // Plane 0: Y (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane0 = description.m_Planes.ExpandAndGetRef();
+      plane0.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane0.m_uiBytesPerElement                        = 2;
+      plane0.m_fWidthFactor                             = 1.0f;
+      plane0.m_fHeightFactor                            = 1.0f;
+
+      // Plane 1: U (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane1 = description.m_Planes.ExpandAndGetRef();
+      plane1.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane1.m_uiBytesPerElement                        = 2;
+      plane1.m_fWidthFactor                             = 1.0f;
+      plane1.m_fHeightFactor                            = 1.0f;
+
+      // Plane 2: V (full resolution, 16-bit).
+      xiiGALMultiPlanarFormatDescription::Plane& plane2 = description.m_Planes.ExpandAndGetRef();
+      plane2.m_SubFormat                                = xiiGALResourceFormat::R16UNormalized;
+      plane2.m_uiBytesPerElement                        = 2;
+      plane2.m_fWidthFactor                             = 1.0f;
+      plane2.m_fHeightFactor                            = 1.0f;
+    }
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+    for (xiiUInt32 i = xiiGALResourceFormat::Unknown; i < xiiGALResourceFormat::ENUM_COUNT; ++i)
+    {
+      if (xiiGALResourceFormat::IsMultiplanar(static_cast<xiiGALResourceFormat::Enum>(i)))
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALResourceFormat::Enum>(i), "Encountered an uninitialized multi-plane format.");
+        XII_ASSERT_DEV(formatDescriptions[i].IsValid(), "Encountered an invalid multi-plane format ({}).", xiiArgEnum(formatDescriptions[i].m_Format));
+      }
+      else
+      {
+        XII_ASSERT_DEV(formatDescriptions[i].m_Format == xiiGALResourceFormat::Unknown, "Single-plane formats must not be initialized in xiiGALMultiPlanarFormatDescription.");
+      }
+    }
+#endif
+
+    s_bIsInitialized = true;
+  }
+
+  if (format >= xiiGALResourceFormat::Unknown && format < xiiGALResourceFormat::ENUM_COUNT)
+  {
+    // Single-plane formats must NOT be looked up in this descriptor.
+    if (!xiiGALResourceFormat::IsMultiplanar(format))
+    {
+      XII_ASSERT_DEV(false, "Single-plane format {} cannot be retrieved from xiiGALMultiPlanarFormatDescription. Use the single-plane descriptor instead.", xiiArgEnum(format));
+    }
+
+    // Multi-planar formats must be initialized correctly.
+    const xiiGALMultiPlanarFormatDescription& description = formatDescriptions[format];
+    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected or uninitialized multi-planar format {0}.", xiiArgEnum(format));
+
+    return description;
+  }
+
+  // Out-of-range format.
+  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed range [0, {1}].", xiiArgEnum(format), xiiGALResourceFormat::ENUM_COUNT - 1);
+
   return formatDescriptions[xiiGALResourceFormat::Unknown];
 }
 
@@ -285,8 +450,6 @@ public:
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::RG8BG8UNormalized,        RG8BG8UNormalized,    RG8BG8UNormalized,    Unknown, RG8BG8UNormalized);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::GR8GB8UNormalized,        GR8GB8UNormalized,    GR8GB8UNormalized,    Unknown, GR8GB8UNormalized);
 
-    // http://www.g-truc.net/post-0335.html
-    // http://renderingpipeline.com/2012/07/texture-compression/
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC1Typeless,              BC1UNormalizedSRGB, Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC1UNormalized,           BC1UNormalized,     Unknown, Unknown, Unknown);
     INIT_TEX_VIEW_FORMAT_INFO(xiiGALResourceFormat::BC1UNormalizedSRGB,       BC1UNormalizedSRGB, Unknown, Unknown, Unknown);
@@ -352,7 +515,7 @@ public:
               return xiiGALResourceFormat::Unknown;
 
             default:
-              XII_REPORT_FAILURE("Unexpected texture view type");
+              XII_REPORT_FAILURE("Unexpected texture view type {}.", xiiArgEnum(xiiEnum<xiiGALTextureViewType>(viewType)));
               return xiiGALResourceFormat::Unknown;
           }
           static_assert(xiiGALTextureViewType::ENUM_COUNT == 6U, "Please handle the new view type in the switch above, if necessary.");
@@ -373,8 +536,8 @@ private:
 
 xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTextureCreationDescription& textureDescription, xiiUInt32 uiArraySlice, xiiUInt32 uiMipLevel, xiiUInt32 uiAlignment, xiiUInt32 uiLocationX, xiiUInt32 uiLocationY, xiiUInt32 uiLocationZ)
 {
-  XII_ASSERT_DEV(textureDescription.m_uiMipLevels > 0 && textureDescription.GetArraySize() > 0 && textureDescription.m_Size.HasNonZeroArea() && textureDescription.m_Format != xiiGALResourceFormat::Unknown, "");
-  XII_ASSERT_DEV((uiArraySlice < textureDescription.GetArraySize() && uiMipLevel < textureDescription.m_uiMipLevels) || (uiArraySlice == textureDescription.GetArraySize() && uiMipLevel == 0), "");
+  XII_ASSERT_DEV(textureDescription.m_uiMipLevels > 0 && textureDescription.m_uiArraySizeOrDepth > 0 && textureDescription.m_Size.HasNonZeroArea() && textureDescription.m_Format != xiiGALResourceFormat::Unknown, "");
+  XII_ASSERT_DEV((uiArraySlice < textureDescription.m_uiArraySizeOrDepth && uiMipLevel < textureDescription.m_uiMipLevels) || (uiArraySlice == textureDescription.m_uiArraySizeOrDepth && uiMipLevel == 0), "");
 
   xiiUInt64 uiOffset = 0;
   if (uiArraySlice > 0)
@@ -403,7 +566,7 @@ xiiUInt64 xiiGALTextureUtilities::GetStagingTextureLocationOffset(const xiiGALTe
     uiOffset += xiiMemoryUtils::AlignSize(mipLevelProperties.m_uiMipSize, xiiUInt64{uiAlignment});
   }
 
-  if (uiArraySlice == textureDescription.GetArraySize())
+  if (uiArraySlice == textureDescription.m_uiArraySizeOrDepth)
   {
     XII_ASSERT_DEV(uiLocationX == 0 && uiLocationY == 0 && uiLocationZ == 0, "Staging buffer size is requested: location must be (0, 0, 0).");
   }
@@ -439,7 +602,7 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
 {
   xiiGALBufferToTextureCopyDescription bufferToTextureCopyDescription;
 
-  const auto& formatProperties = GetResourceFormatProperties(format);
+  const xiiGALResourceFormatDescription& formatProperties = GetResourceFormatProperties(format);
 
   XII_ASSERT_DEV(region.IsValid(), "");
 
@@ -451,11 +614,11 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
   {
     // Align region update size by the block size.
 
-    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "");
-    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "Format block width must be a power of 2.");
+    XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "Format block height must be a power of 2.");
 
-    const auto uiBlockAlignedRegionWidth  = xiiMemoryUtils::AlignSize(uiUpdateRegionWidth, xiiUInt32{formatProperties.m_uiBlockWidth});
-    const auto uiBlockAlignedRegionHeight = xiiMemoryUtils::AlignSize(uiUpdateRegionHeight, xiiUInt32{formatProperties.m_uiBlockHeight});
+    const xiiUInt32 uiBlockAlignedRegionWidth  = xiiMemoryUtils::AlignSize(uiUpdateRegionWidth, xiiUInt32{formatProperties.m_uiBlockWidth});
+    const xiiUInt32 uiBlockAlignedRegionHeight = xiiMemoryUtils::AlignSize(uiUpdateRegionHeight, xiiUInt32{formatProperties.m_uiBlockHeight});
 
     bufferToTextureCopyDescription.m_uiRowSize  = xiiUInt64{uiBlockAlignedRegionWidth} / xiiUInt32{formatProperties.m_uiBlockWidth} * xiiUInt32{formatProperties.m_uiComponentSize};
     bufferToTextureCopyDescription.m_uiRowCount = uiBlockAlignedRegionHeight / formatProperties.m_uiBlockHeight;
@@ -488,14 +651,14 @@ xiiGALBufferToTextureCopyDescription xiiGALTextureUtilities::GetBufferToTextureC
 
 void xiiGALTextureUtilities::CopyTextureSubresource(const xiiGALTextureSubResourceData& sourceSubresource, xiiUInt32 uiRowCount, xiiUInt32 uiDepthSliceCount, xiiUInt64 uiRowSize, void* pDestinationData, xiiUInt64 uiDestinationRowStride, xiiUInt64 uiDestinationDepthStride)
 {
-  XII_ASSERT_DEV(pDestinationData != nullptr, "");
+  XII_ASSERT_DEV(pDestinationData != nullptr, "Destination data pointer must not be null.");
   XII_ASSERT_DEV(sourceSubresource.m_uiStride >= uiRowSize, "Source data row stride ({}) is smaller than the row size ({}).", sourceSubresource.m_uiStride, uiRowSize);
   XII_ASSERT_DEV(sourceSubresource.m_uiDepthStride >= uiRowSize, "Destination data row stride ({}) is smaller than the row size ({}).", uiDestinationDepthStride, uiRowSize);
 
   for (xiiUInt32 uiZ = 0; uiZ < uiDepthSliceCount; ++uiZ)
   {
-    const auto* pSourceSlice      = xiiMemoryUtils::AddByteOffset(sourceSubresource.m_pData.GetPtr(), sourceSubresource.m_uiDepthStride * uiZ);
-    auto*       pDestinationSlice = xiiMemoryUtils::AddByteOffset(pDestinationData, uiDestinationDepthStride * uiZ);
+    const xiiUInt8* pSourceSlice      = xiiMemoryUtils::AddByteOffset(sourceSubresource.m_pData.GetPtr(), sourceSubresource.m_uiDepthStride * uiZ);
+    void*           pDestinationSlice = xiiMemoryUtils::AddByteOffset(pDestinationData, uiDestinationDepthStride * uiZ);
 
     for (xiiUInt32 uiY = 0; uiY < uiRowCount; ++uiY)
     {
@@ -546,13 +709,13 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
   xiiGALMipLevelProperties mipLevelProperties;
-  mipLevelProperties.m_LogicalSize.width  = xiiMath::Max(textureDescription.GetWidth() >> uiMipLevel, 1U);
-  mipLevelProperties.m_LogicalSize.height = xiiMath::Max(textureDescription.GetHeight() >> uiMipLevel, 1U);
-  mipLevelProperties.m_uiDepth            = xiiMath::Max(textureDescription.GetDepth() >> uiMipLevel, 1U);
+  mipLevelProperties.m_LogicalSize.width  = xiiMath::Max(textureDescription.m_Size.width >> uiMipLevel, 1U);
+  mipLevelProperties.m_LogicalSize.height = xiiMath::Max(textureDescription.m_Size.height >> uiMipLevel, 1U);
+  mipLevelProperties.m_uiDepth            = xiiMath::Max(textureDescription.m_uiArraySizeOrDepth >> uiMipLevel, 1U);
 
   if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
-    XII_ASSERT_DEV(formatProperties.m_uiBlockWidth > 1 && formatProperties.m_uiBlockHeight > 1, "");
+    XII_ASSERT_DEV(formatProperties.m_uiBlockWidth > 1 && formatProperties.m_uiBlockHeight > 1, "The compressed format requires a block width and height greater than 1.");
     XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockWidth), "Compressed block width is expected to be a power of 2.");
     XII_ASSERT_DEV(xiiMath::IsPowerOf2(formatProperties.m_uiBlockHeight), "Compressed block height is expected to be a power of 2.");
 
@@ -572,6 +735,11 @@ xiiGALMipLevelProperties xiiGALTextureUtilities::GetMipLevelProperties(const xii
   }
 
   return mipLevelProperties;
+}
+
+xiiUInt32 xiiGALTextureUtilities::GetMipLevelCount(const xiiGALTextureCreationDescription& textureDescription)
+{
+  return xiiMath::Log2i(xiiMath::Max(textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth, 1U)) + 1U;
 }
 
 xiiGALTextureCreationDescription xiiGALTextureUtilities::GetDefaultTexture1DDescription() noexcept
@@ -642,12 +810,12 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
   out_subresourceData.Clear();
   out_Data.Clear();
 
-  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.GetArraySize();
+  const xiiUInt32 uiTotalSubResources = description.m_uiMipLevels * description.m_uiArraySizeOrDepth;
   out_subresourceData.Reserve(uiTotalSubResources);
 
   // First compute total size needed.
   xiiUInt64 uiTotalSize = 0;
-  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
   {
     for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
     {
@@ -663,7 +831,7 @@ xiiGALTextureData xiiGALTextureUtilities::GetZeroMemoryInitialData(const xiiGALT
 
   // Now assign subresource pointers into the already allocated buffer.
   xiiUInt64 uiCurrentOffset = 0;
-  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.GetArraySize(); ++uiArraySlice)
+  for (xiiUInt32 uiArraySlice = 0; uiArraySlice < description.m_uiArraySizeOrDepth; ++uiArraySlice)
   {
     for (xiiUInt32 uiMipLevel = 0; uiMipLevel < description.m_uiMipLevels; ++uiMipLevel)
     {

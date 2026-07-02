@@ -85,8 +85,8 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
     header.SetHeight(4);
     header.SetDepth(1);
     header.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM_SRGB);
-    header.SetNumMipLevels(1);
-    header.SetNumFaces(1);
+    header.SetMipLevelCount(1);
+    header.SetFaceCount(1);
     pData->m_Image.ResetAndAlloc(header);
     xiiUInt8* pPixels = pData->m_Image.GetPixelPointer<xiiUInt8>();
 

@@ -15,7 +15,7 @@
 
 XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiExrFileFormat> g_ExrFileFormat;
 
-xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiImageHeader& ref_header, EXRHeader& ref_exrHeader, EXRImage& ref_exrImage)
+xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiGALTextureCreationDescription& ref_header, EXRHeader& ref_exrHeader, EXRImage& ref_exrImage)
 {
   // read the entire file to memory
   xiiStreamUtils::ReadAllAndAppend(ref_stream, ref_fileBuffer);
@@ -62,7 +62,7 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
     return XII_FAILURE;
   }
 
-  xiiImageFormat::Enum imageFormat = xiiImageFormat::UNKNOWN;
+  xiiEnum<xiiGALResourceFormat> imageFormat = xiiGALResourceFormat::Unknown;
 
   switch (ref_exrHeader.num_channels)
   {
@@ -71,15 +71,15 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
       switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
-          imageFormat = xiiImageFormat::R32_FLOAT;
+          imageFormat = xiiGALResourceFormat::R32Float;
           break;
 
         case TINYEXR_PIXELTYPE_HALF:
-          imageFormat = xiiImageFormat::R16_FLOAT;
+          imageFormat = xiiGALResourceFormat::R16Float;
           break;
 
         case TINYEXR_PIXELTYPE_UINT:
-          imageFormat = xiiImageFormat::R32_UINT;
+          imageFormat = xiiGALResourceFormat::R32UInt;
           break;
       }
 
@@ -91,15 +91,15 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
       switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
-          imageFormat = xiiImageFormat::R32G32_FLOAT;
+          imageFormat = xiiGALResourceFormat::RG32Float;
           break;
 
         case TINYEXR_PIXELTYPE_HALF:
-          imageFormat = xiiImageFormat::R16G16_FLOAT;
+          imageFormat = xiiGALResourceFormat::RG16Float;
           break;
 
         case TINYEXR_PIXELTYPE_UINT:
-          imageFormat = xiiImageFormat::R32G32_UINT;
+          imageFormat = xiiGALResourceFormat::RG32UInt;
           break;
       }
 
@@ -111,15 +111,15 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
       switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
-          imageFormat = xiiImageFormat::R32G32B32_FLOAT;
+          imageFormat = xiiGALResourceFormat::RGB32Float;
           break;
 
         case TINYEXR_PIXELTYPE_HALF:
-          imageFormat = xiiImageFormat::R16G16B16A16_FLOAT;
+          imageFormat = xiiGALResourceFormat::RGBA16Float;
           break;
 
         case TINYEXR_PIXELTYPE_UINT:
-          imageFormat = xiiImageFormat::R32G32B32_UINT;
+          imageFormat = xiiGALResourceFormat::RGB32UInt;
           break;
       }
 
@@ -131,15 +131,15 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
       switch (ref_exrHeader.pixel_types[0])
       {
         case TINYEXR_PIXELTYPE_FLOAT:
-          imageFormat = xiiImageFormat::R32G32B32A32_FLOAT;
+          imageFormat = xiiGALResourceFormat::RGBA32Float;
           break;
 
         case TINYEXR_PIXELTYPE_HALF:
-          imageFormat = xiiImageFormat::R16G16B16A16_FLOAT;
+          imageFormat = xiiGALResourceFormat::RGBA16Float;
           break;
 
         case TINYEXR_PIXELTYPE_UINT:
-          imageFormat = xiiImageFormat::R32G32B32A32_UINT;
+          imageFormat = xiiGALResourceFormat::RGBA32UInt;
           break;
       }
 
@@ -147,29 +147,26 @@ xiiResult ReadImageData(xiiStreamReader& ref_stream, xiiDynamicArray<xiiUInt8>& 
     }
   }
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unsupported EXR file: {}-channel files with format '{}' are unsupported.", ref_exrHeader.num_channels, ref_exrHeader.pixel_types[0]);
     return XII_FAILURE;
   }
 
-  ref_header.SetWidth(ref_exrImage.width);
-  ref_header.SetHeight(ref_exrImage.height);
-  ref_header.SetImageFormat(imageFormat);
-
-  ref_header.SetNumMipLevels(1);
-  ref_header.SetNumArrayIndices(1);
-  ref_header.SetNumFaces(1);
-  ref_header.SetDepth(1);
+  ref_header.m_Size.width         = ref_exrImage.width;
+  ref_header.m_Size.height        = ref_exrImage.height;
+  ref_header.m_Format             = imageFormat;
+  ref_header.m_uiMipLevels        = 1;
+  ref_header.m_uiArraySizeOrDepth = 1;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiExrFileFormat::ReadImageDescription(xiiStreamReader& ref_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiExrFileFormat::ReadImageDescription");
 
   EXRHeader exrHeader;
   InitEXRHeader(&exrHeader);
@@ -180,7 +177,7 @@ xiiResult xiiExrFileFormat::ReadImageHeader(xiiStreamReader& ref_stream, xiiImag
   XII_SCOPE_EXIT(FreeEXRImage(&exrImage));
 
   xiiDynamicArray<xiiUInt8> fileBuffer;
-  return ReadImageData(ref_stream, fileBuffer, ref_header, exrHeader, exrImage);
+  return ReadImageData(ref_stream, fileBuffer, ref_description, exrHeader, exrImage);
 }
 
 static void CopyChannel(xiiUInt8* pDst, const xiiUInt8* pSrc, xiiUInt32 uiNumElements, xiiUInt32 uiElementSize, xiiUInt32 uiDstStride)
@@ -217,15 +214,15 @@ xiiResult xiiExrFileFormat::ReadImage(xiiStreamReader& ref_stream, xiiImage& ref
   InitEXRImage(&exrImage);
   XII_SCOPE_EXIT(FreeEXRImage(&exrImage));
 
-  xiiImageHeader            header;
-  xiiDynamicArray<xiiUInt8> fileBuffer;
+  xiiGALTextureCreationDescription header;
+  xiiDynamicArray<xiiUInt8>        fileBuffer;
 
   XII_SUCCEED_OR_RETURN(ReadImageData(ref_stream, fileBuffer, header, exrHeader, exrImage));
 
   ref_image.ResetAndAlloc(header);
 
-  const xiiUInt32 uiPixelCount     = header.GetWidth() * header.GetHeight();
-  const xiiUInt32 uiNumDstChannels = xiiImageFormat::GetNumChannels(header.GetImageFormat());
+  const xiiUInt32 uiPixelCount     = header.m_Size.width * header.m_Size.height;
+  const xiiUInt32 uiNumDstChannels = xiiGALTextureUtilities::GetComponentCount(header.m_Format);
   const xiiUInt32 uiNumSrcChannels = exrHeader.num_channels;
 
   xiiUInt32 uiSrcStride = 0;

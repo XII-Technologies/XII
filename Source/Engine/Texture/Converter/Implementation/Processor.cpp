@@ -49,11 +49,11 @@ xiiResult xiiTextureConverterProcessor::Process()
     xiiUInt32 uiNumChannelsUsed = 0;
     XII_SUCCEED_OR_RETURN(DetectNumChannels(m_Descriptor.m_ChannelMappings, uiNumChannelsUsed));
 
-    xiiEnum<xiiImageFormat> OutputImageFormat;
+    xiiEnum<xiiGALResourceFormat> OutputImageFormat;
 
     XII_SUCCEED_OR_RETURN(ChooseOutputFormat(OutputImageFormat, m_Descriptor.m_Usage, uiNumChannelsUsed));
 
-    xiiLog::Info("Output image format is '{}'", xiiImageFormat::GetName(OutputImageFormat));
+    xiiLog::Info("Output image format is '{}'", xiiArgEnum(OutputImageFormat));
 
     xiiUInt32 uiTargetResolutionX = 0;
     xiiUInt32 uiTargetResolutionY = 0;
@@ -75,7 +75,7 @@ xiiResult xiiTextureConverterProcessor::Process()
     xiiImage assembledImg;
     if (m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Texture2D || m_Descriptor.m_OutputType == xiiTextureConverterOutputType::None)
     {
-      XII_SUCCEED_OR_RETURN(Assemble2DTexture(m_Descriptor.m_InputImages[0].GetHeader(), assembledImg));
+      XII_SUCCEED_OR_RETURN(Assemble2DTexture(m_Descriptor.m_InputImages[0].GetDescription(), assembledImg));
 
       XII_SUCCEED_OR_RETURN(InvertNormalMap(assembledImg));
 
@@ -153,7 +153,7 @@ xiiResult xiiTextureConverterProcessor::DetectNumChannels(xiiArrayPtr<const xiiT
       xiiImage& img = m_Descriptor.m_InputImages[mapping.m_Channel[3].m_iInputImageIndex];
 
       const xiiUInt32 uiNumRequiredChannels = (xiiUInt32)mapping.m_Channel[3].m_ChannelValue + 1;
-      const xiiUInt32 uiNumActualChannels   = xiiImageFormat::GetNumChannels(img.GetImageFormat());
+      const xiiUInt32 uiNumActualChannels   = xiiGALTextureUtilities::GetComponentCount(img.GetImageFormat());
 
       if (uiNumActualChannels < uiNumRequiredChannels)
       {
@@ -161,7 +161,7 @@ xiiResult xiiTextureConverterProcessor::DetectNumChannels(xiiArrayPtr<const xiiT
         continue;
       }
 
-      if (img.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Failed())
+      if (img.Convert(xiiGALResourceFormat::RGBA32Float).Failed())
       {
         // can't convert -> will fail later anyway
         continue;
@@ -189,7 +189,7 @@ xiiResult xiiTextureConverterProcessor::DetectNumChannels(xiiArrayPtr<const xiiT
   return XII_SUCCESS;
 }
 
-xiiResult xiiTextureConverterProcessor::GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiImageFormat> format)
+xiiResult xiiTextureConverterProcessor::GenerateOutput(xiiImage&& src, xiiImage& dst, xiiEnum<xiiGALResourceFormat> format)
 {
   XII_PROFILE_SCOPE("GenerateOutput");
 
@@ -197,7 +197,7 @@ xiiResult xiiTextureConverterProcessor::GenerateOutput(xiiImage&& src, xiiImage&
 
   if (dst.Convert(format).Failed())
   {
-    xiiLog::Error("Failed to convert result image to output format '{}'", xiiImageFormat::GetName(format));
+    xiiLog::Error("Failed to convert result image to output format '{}'", xiiArgEnum(format));
     return XII_FAILURE;
   }
 
@@ -213,7 +213,7 @@ xiiResult xiiTextureConverterProcessor::GenerateThumbnailOutput(const xiiImage& 
 
   xiiUInt32 uiBestMip = 0;
 
-  for (xiiUInt32 m = 0; m < srcImg.GetNumMipLevels(); ++m)
+  for (xiiUInt32 m = 0; m < srcImg.GetMipLevelCount(); ++m)
   {
     if (srcImg.GetWidth(m) <= uiTargetRes && srcImg.GetHeight(m) <= uiTargetRes)
     {
@@ -265,9 +265,9 @@ xiiResult xiiTextureConverterProcessor::GenerateThumbnailOutput(const xiiImage& 
   dstImg.ResetAndMove(std::move(*pCurrentScratch));
 
   // we want to write out the thumbnail unchanged, so make sure it has a non-sRGB format
-  dstImg.ReinterpretAs(xiiImageFormat::AsLinear(dstImg.GetImageFormat()));
+  dstImg.ReinterpretAs(xiiGALResourceFormat::AsLinear(dstImg.GetImageFormat()));
 
-  if (dstImg.Convert(xiiImageFormat::R8G8B8A8_UNORM).Failed())
+  if (dstImg.Convert(xiiGALResourceFormat::RGBA8UNormalized).Failed())
   {
     xiiLog::Error("Failed to convert thumbnail image to RGBA8.");
     return XII_FAILURE;
@@ -316,7 +316,7 @@ xiiResult xiiTextureConverterProcessor::GenerateLowResOutput(const xiiImage& src
   XII_PROFILE_SCOPE("GenerateLowResOutput");
 
   // don't early out here in this case, otherwise external processes may consider the output to be incomplete
-  // if (srcImg.GetNumMipLevels() <= uiLowResMip)
+  // if (srcImg.GetMipLevelCount() <= uiLowResMip)
   // {
   //   // probably just a low-resolution input image, do not generate output, but also do not fail
   //   xiiLog::Warning("LowRes image not generated, original resolution is already below threshold.");

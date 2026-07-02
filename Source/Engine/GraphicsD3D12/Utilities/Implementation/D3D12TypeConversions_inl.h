@@ -374,6 +374,20 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiGALResourceF
       return DXGI_FORMAT_BC7_UNORM;
     case xiiGALResourceFormat::BC7UNormalizedSRGB:
       return DXGI_FORMAT_BC7_UNORM_SRGB;
+    case xiiGALResourceFormat::NV12:
+      return DXGI_FORMAT_NV12;
+    case xiiGALResourceFormat::P010:
+      return DXGI_FORMAT_P010;
+    case xiiGALResourceFormat::P016:
+      return DXGI_FORMAT_P016;
+    case xiiGALResourceFormat::YUY2:
+      return DXGI_FORMAT_YUY2;
+    case xiiGALResourceFormat::AYUV:
+      return DXGI_FORMAT_AYUV;
+    case xiiGALResourceFormat::P216:
+      return DXGI_FORMAT_Y216;
+    case xiiGALResourceFormat::P416:
+      return DXGI_FORMAT_Y416;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
@@ -584,6 +598,20 @@ XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiD3D12TypeConversions::GetGALForm
       return xiiGALResourceFormat::BC7UNormalized;
     case DXGI_FORMAT_BC7_UNORM_SRGB:
       return xiiGALResourceFormat::BC7UNormalizedSRGB;
+    case DXGI_FORMAT_NV12:
+      return xiiGALResourceFormat::NV12;
+    case DXGI_FORMAT_P010:
+      return xiiGALResourceFormat::P010;
+    case DXGI_FORMAT_P016:
+      return xiiGALResourceFormat::P016;
+    case DXGI_FORMAT_YUY2:
+      return xiiGALResourceFormat::YUY2;
+    case DXGI_FORMAT_AYUV:
+      return xiiGALResourceFormat::AYUV;
+    case DXGI_FORMAT_Y216:
+      return xiiGALResourceFormat::P216;
+    case DXGI_FORMAT_Y416:
+      return xiiGALResourceFormat::P416;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

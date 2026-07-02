@@ -2,12 +2,6 @@
 
 #include <Core/CorePCH.h>
 
-#include <Core/GameApplication/GameApplicationBase.h>
-#include <Core/Input/InputManager.h>
-#include <Core/Interfaces/FrameCaptureInterface.h>
-#include <Core/ResourceManager/ResourceManager.h>
-#include <Core/System/Window.h>
-#include <Core/System/WindowManager.h>
 #include <Foundation/Communication/GlobalEvent.h>
 #include <Foundation/Communication/Telemetry.h>
 #include <Foundation/Configuration/Singleton.h>
@@ -19,6 +13,14 @@
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Time/Timestamp.h>
+
+#include <Core/GameApplication/GameApplicationBase.h>
+#include <Core/Input/InputManager.h>
+#include <Core/Interfaces/FrameCaptureInterface.h>
+#include <Core/ResourceManager/ResourceManager.h>
+#include <Core/System/Window.h>
+#include <Core/System/WindowManager.h>
+
 #include <Texture/Image/Image.h>
 
 xiiGameApplicationBase* xiiGameApplicationBase::s_pGameApplicationBaseInstance = nullptr;
@@ -99,9 +101,6 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sCo
   private:
     virtual void Execute() override
     {
-      // Remove the Alpha channel before saving.
-      m_Image.Convert(xiiImageFormat::R8G8B8_UNORM_SRGB).IgnoreResult();
-
       if (m_Image.SaveTo(m_sPath).Succeeded())
       {
         xiiLog::Info("Screenshot: '{0}'", m_sPath);

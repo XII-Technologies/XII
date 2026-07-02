@@ -5,7 +5,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/Converter/TextureConverterProcessor.h>
 
-xiiResult xiiTextureConverterProcessor::Assemble2DTexture(const xiiImageHeader& refImg, xiiImage& dst) const
+xiiResult xiiTextureConverterProcessor::Assemble2DTexture(const xiiGALTextureCreationDescription& refImg, xiiImage& dst) const
 {
   XII_PROFILE_SCOPE("Assemble2DTexture");
 
@@ -13,7 +13,7 @@ xiiResult xiiTextureConverterProcessor::Assemble2DTexture(const xiiImageHeader& 
 
   xiiColor* pPixelOut = dst.GetPixelPointer<xiiColor>();
 
-  return Assemble2DSlice(m_Descriptor.m_ChannelMappings[0], refImg.GetWidth(), refImg.GetHeight(), pPixelOut);
+  return Assemble2DSlice(m_Descriptor.m_ChannelMappings[0], refImg.m_Size.width, refImg.m_Size.height, pPixelOut);
 }
 
 xiiResult xiiTextureConverterProcessor::Assemble2DSlice(const xiiTextureConverterSliceChannelMapping& mapping, xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY, xiiColor* pPixelOut) const
@@ -114,7 +114,7 @@ xiiResult xiiTextureConverterProcessor::Assemble2DSlice(const xiiTextureConverte
   return XII_SUCCESS;
 }
 
-xiiResult xiiTextureConverterProcessor::DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiImageFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const
+xiiResult xiiTextureConverterProcessor::DetermineTargetResolution(const xiiImage& image, xiiEnum<xiiGALResourceFormat> OutputImageFormat, xiiUInt32& out_uiTargetResolutionX, xiiUInt32& out_uiTargetResolutionY) const
 {
   XII_PROFILE_SCOPE("DetermineResolution");
 
@@ -148,9 +148,9 @@ xiiResult xiiTextureConverterProcessor::DetermineTargetResolution(const xiiImage
     out_uiTargetResolutionX = uiOrgResX / uiScaleFactor;
   }
 
-  if (OutputImageFormat != xiiImageFormat::UNKNOWN && xiiImageFormat::RequiresFirstLevelBlockAlignment(OutputImageFormat))
+  if (OutputImageFormat != xiiGALResourceFormat::Unknown && xiiGALTextureUtilities::RequiresFirstLevelBlockAlignment(OutputImageFormat))
   {
-    const xiiUInt32 blockWidth = xiiImageFormat::GetBlockWidth(OutputImageFormat);
+    const xiiUInt32 blockWidth = xiiGALTextureUtilities::GetBlockWidth(OutputImageFormat);
 
     xiiUInt32 currentWidth  = out_uiTargetResolutionX;
     xiiUInt32 currentHeight = out_uiTargetResolutionY;
@@ -162,7 +162,7 @@ xiiResult xiiTextureConverterProcessor::DetermineTargetResolution(const xiiImage
       issueWarning            = true;
     }
 
-    xiiUInt32 blockHeight = xiiImageFormat::GetBlockHeight(OutputImageFormat);
+    xiiUInt32 blockHeight = xiiGALTextureUtilities::GetBlockHeight(OutputImageFormat);
     if (out_uiTargetResolutionY % blockHeight != 0)
     {
       out_uiTargetResolutionY = xiiMath::RoundUp(out_uiTargetResolutionY, static_cast<xiiUInt16>(blockHeight));

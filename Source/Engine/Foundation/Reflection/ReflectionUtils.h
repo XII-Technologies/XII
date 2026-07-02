@@ -73,14 +73,15 @@ public:
 
   struct EnumConversionMode
   {
-    enum Enum
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
     {
-      FullyQualifiedName,
-      ValueNameOnly,
+      FullyQualifiedName = 0U, ///< The output will be the fully qualified name of the enum value, e.g. "xiiEnumType::Value".
+      ValueNameOnly,           ///< The output will be only the name of the enum value, e.g. "Value".
+
       Default = FullyQualifiedName
     };
-
-    using StorageType = xiiUInt8;
   };
 
   /// \brief Converts an enum or bitfield value into its string representation.

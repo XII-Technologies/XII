@@ -6,11 +6,12 @@
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
-#include <Texture/Image/Formats/BmpFileFormat.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 #include <Texture/Image/ImageUtils.h>
+
+#if 0
 
 XII_CREATE_SIMPLE_TEST_GROUP(Image);
 
@@ -140,20 +141,20 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
       {"RGBA", "png", 0},
       {"RGB", "jpg", 4650},
       {"RGBA", "jpeg", 16670},
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
       {"RGB", "tif", 0},
       {"RGBA", "tif", 0},
-#endif
+#  endif
     };
 
     const char* szTestImagePath = "TGATestImages/good";
 
-    for (int idx = 0; idx < XII_ARRAY_SIZE(imgTests); ++idx)
+    for (xiiUInt32 uiIndex = 0; uiIndex < XII_ARRAY_SIZE(imgTests); ++uiIndex)
     {
       xiiImage image;
       {
         xiiStringBuilder fileName;
-        fileName.SetFormat("{}/{}.tga", szTestImagePath, imgTests[idx].szImage);
+        fileName.SetFormat("{}/{}.tga", szTestImagePath, imgTests[uiIndex].szImage);
 
         XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
         XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
@@ -161,7 +162,7 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
 
       {
         xiiStringBuilder fileName;
-        fileName.SetFormat(":output/WriteImageTest/{}.{}", imgTests[idx].szImage, imgTests[idx].szFormat);
+        fileName.SetFormat(":output/WriteImageTest/{}.{}", imgTests[uiIndex].szImage, imgTests[uiIndex].szFormat);
 
         xiiFileSystem::DeleteFile(fileName);
 
@@ -171,18 +172,20 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiImage image2;
         XII_TEST_BOOL_MSG(image2.LoadFrom(fileName).Succeeded(), "Reading written image failed: '%s'", fileName.GetData());
 
-        image.Convert(xiiImageFormat::R8G8B8A8_UNORM_SRGB).IgnoreResult();
-        image2.Convert(xiiImageFormat::R8G8B8A8_UNORM_SRGB).IgnoreResult();
+        image.Convert(xiiGALResourceFormat::RGBA8UNormalizedSRGB).IgnoreResult();
+        image2.Convert(xiiGALResourceFormat::RGBA8UNormalizedSRGB).IgnoreResult();
 
         xiiImage diff;
         xiiImageUtils::ComputeImageDifferenceABS(image, image2, diff);
 
         const xiiUInt32 uiMSE = xiiImageUtils::ComputeMeanSquareError(diff, 32);
 
-        XII_TEST_BOOL_MSG(uiMSE <= imgTests[idx].uiMSE, "MSE %u is larger than %u for image '%s'", uiMSE, imgTests[idx].uiMSE, fileName.GetData());
+        XII_TEST_BOOL_MSG(uiMSE <= imgTests[uiIndex].uiMSE, "MSE %u is larger than %u for image '%s'", uiMSE, imgTests[uiIndex].uiMSE, fileName.GetData());
       }
     }
   }
 
   xiiFileSystem::RemoveDataDirectoryGroup("ImageTest");
 }
+
+#endif

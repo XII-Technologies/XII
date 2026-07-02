@@ -78,22 +78,27 @@ xiiResult xiiWicFileFormat::ReadFileData(xiiStreamReader& stream, xiiDynamicArra
   return XII_SUCCESS;
 }
 
-static void SetHeader(xiiImageHeader& ref_header, xiiImageFormat::Enum imageFormat, const TexMetadata& metadata)
+static void SetHeader(xiiGALTextureCreationDescription& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const TexMetadata& metadata)
 {
-  ref_header.SetImageFormat(imageFormat);
+  ref_header.m_Format = imageFormat;
 
-  ref_header.SetWidth(xiiUInt32(metadata.width));
-  ref_header.SetHeight(xiiUInt32(metadata.height));
-  ref_header.SetDepth(xiiUInt32(metadata.depth));
+  ref_header.m_Size.width  = xiiUInt32(metadata.width);
+  ref_header.m_Size.height = xiiUInt32(metadata.height);
+  ref_header.m_uiMipLevels = 1;
 
-  ref_header.SetNumMipLevels(1);
-  ref_header.SetNumArrayIndices(xiiUInt32(metadata.IsCubemap() ? (metadata.arraySize / 6) : metadata.arraySize));
-  ref_header.SetNumFaces(metadata.IsCubemap() ? 6 : 1);
+  if (metadata.depth > 1)
+  {
+    ref_header.m_uiArraySizeOrDepth = xiiUInt32(metadata.depth);
+  }
+  else
+  {
+    ref_header.m_uiArraySizeOrDepth = xiiUInt32(metadata.arraySize);
+  }
 }
 
-xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
-  XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageDescription");
 
   xiiDynamicArray<xiiUInt8> storage;
   XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
@@ -109,9 +114,9 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiIm
     return XII_FAILURE;
   }
 
-  xiiImageFormat::Enum imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
+  xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
     wicFlags |= WIC_FLAGS_FORCE_RGB;
@@ -119,13 +124,13 @@ xiiResult xiiWicFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiIm
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
   }
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
     return XII_FAILURE;
   }
 
-  SetHeader(ref_header, imageFormat, metadata);
+  SetHeader(ref_description, imageFormat, metadata);
 
   return XII_SUCCESS;
 }
@@ -152,9 +157,9 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   // Determine image format, re-reading image data if necessary
   metadata = scratchImage.GetMetadata();
 
-  xiiImageFormat::Enum imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
+  xiiEnum<xiiGALResourceFormat> imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
     wicFlags |= WIC_FLAGS_FORCE_RGB;
@@ -162,26 +167,28 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
   }
 
-  if (imageFormat == xiiImageFormat::UNKNOWN)
+  if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
     return XII_FAILURE;
   }
 
   // Prepare destination image header and allocate storage
-  xiiImageHeader imageHeader;
+  xiiGALTextureCreationDescription imageHeader;
   SetHeader(imageHeader, imageFormat, metadata);
 
   ref_image.ResetAndAlloc(imageHeader);
 
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(imageHeader.m_Format);
+
   // Read image data into destination image
-  xiiUInt64 destRowPitch = imageHeader.GetRowPitch();
+  xiiUInt64 destRowPitch = formatProperties.GetRowPitch(imageHeader.m_Size.width);
   xiiUInt32 itemIdx      = 0;
-  for (xiiUInt32 arrayIdx = 0; arrayIdx < imageHeader.GetNumArrayIndices(); ++arrayIdx)
+  for (xiiUInt32 arrayIdx = 0; arrayIdx < imageHeader.m_uiArraySizeOrDepth; ++arrayIdx)
   {
-    for (xiiUInt32 faceIdx = 0; faceIdx < imageHeader.GetNumFaces(); ++faceIdx, ++itemIdx)
+    for (xiiUInt32 faceIdx = 0; faceIdx < 1; ++faceIdx, ++itemIdx) // \todo: Support cubemaps and other multi-face formats.
     {
-      for (xiiUInt32 sliceIdx = 0; sliceIdx < imageHeader.GetDepth(); ++sliceIdx)
+      for (xiiUInt32 sliceIdx = 0; sliceIdx < 1; ++sliceIdx) // \todo Support 3D textures and other multi-slice formats.
       {
         const Image* sourceImage = scratchImage.GetImage(0, itemIdx, sliceIdx);
         xiiUInt8*    destPixels  = ref_image.GetPixelPointer<xiiUInt8>(0, faceIdx, arrayIdx, 0, 0, sliceIdx);
@@ -191,14 +198,14 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
           if (destRowPitch == sourceImage->rowPitch)
           {
             // Fast path: Just copy the entire thing
-            xiiMemoryUtils::Copy(destPixels, sourceImage->pixels, static_cast<size_t>(imageHeader.GetHeight() * destRowPitch));
+            xiiMemoryUtils::Copy(destPixels, sourceImage->pixels, static_cast<size_t>(imageHeader.m_Size.height * destRowPitch));
           }
           else
           {
             // Row pitches don't match - copy row by row
             xiiUInt64      bytesPerRow  = xiiMath::Min(destRowPitch, xiiUInt64(sourceImage->rowPitch));
             const uint8_t* sourcePixels = sourceImage->pixels;
-            for (xiiUInt32 rowIdx = 0; rowIdx < imageHeader.GetHeight(); ++rowIdx)
+            for (xiiUInt32 rowIdx = 0; rowIdx < imageHeader.m_Size.height; ++rowIdx)
             {
               xiiMemoryUtils::Copy(destPixels, sourcePixels, static_cast<size_t>(bytesPerRow));
 
@@ -225,22 +232,22 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   using namespace DirectX;
 
   // Convert into suitable output format
-  xiiImageFormat::Enum compatibleFormats[] = {
-    xiiImageFormat::R8G8B8A8_UNORM,
-    xiiImageFormat::R8G8B8A8_UNORM_SRGB,
-    xiiImageFormat::R8_UNORM,
-    xiiImageFormat::R16G16B16A16_UNORM,
-    xiiImageFormat::R16_UNORM,
-    xiiImageFormat::R32G32B32A32_FLOAT,
-    xiiImageFormat::R32G32B32_FLOAT,
+  xiiEnum<xiiGALResourceFormat> compatibleFormats[] = {
+    xiiGALResourceFormat::RGBA8UNormalized,
+    xiiGALResourceFormat::RGBA8UNormalizedSRGB,
+    xiiGALResourceFormat::R8UNormalized,
+    xiiGALResourceFormat::RGBA16UNormalized,
+    xiiGALResourceFormat::R16UNormalized,
+    xiiGALResourceFormat::RGBA32Float,
+    xiiGALResourceFormat::RGB32Float,
   };
 
   // Find a compatible format closest to the one the image currently has
-  xiiImageFormat::Enum format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
+  xiiEnum<xiiGALResourceFormat> format = xiiImageConversion::FindClosestCompatibleFormat(image.GetImageFormat(), compatibleFormats);
 
-  if (format == xiiImageFormat::UNKNOWN)
+  if (format == xiiGALResourceFormat::Unknown)
   {
-    xiiLog::Error("No conversion from format '{0}' to a format suitable for '{}' files known.", xiiImageFormat::GetName(image.GetImageFormat()), sFileExtension);
+    xiiLog::Error("No conversion from format '{0}' to a format suitable for '{}' files known.", xiiArgEnum(image.GetImageFormat()), sFileExtension);
     return XII_FAILURE;
   }
 

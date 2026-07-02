@@ -419,6 +419,21 @@ XII_ALWAYS_INLINE vk::Format xiiVulkanTypeConversions::GetFormat(xiiGALResourceF
     case xiiGALResourceFormat::BC7UNormalizedSRGB:
       return vk::Format::eBc7SrgbBlock;
 
+    case xiiGALResourceFormat::NV12:
+      return vk::Format::eG8B8R82Plane420Unorm;
+    case xiiGALResourceFormat::P010:
+      return vk::Format::eG10X6B10X6R10X62Plane420Unorm3Pack16;
+    case xiiGALResourceFormat::P016:
+      return vk::Format::eG16B16R162Plane420Unorm;
+    case xiiGALResourceFormat::YUY2:
+      return vk::Format::eG8B8G8R8422Unorm;
+    case xiiGALResourceFormat::AYUV:
+      return vk::Format::eG8B8R83Plane444Unorm;
+    case xiiGALResourceFormat::P216:
+      return vk::Format::eG16B16R163Plane422Unorm;
+    case xiiGALResourceFormat::P416:
+      return vk::Format::eG16B16R163Plane444Unorm;
+
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return vk::Format::eUndefined;
@@ -586,6 +601,13 @@ XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiVulkanTypeConversions::GetGALRes
       return xiiGALResourceFormat::BC7UNormalized;
     case vk::Format::eBc7SrgbBlock:
       return xiiGALResourceFormat::BC7UNormalizedSRGB;
+
+    case vk::Format::eG8B8R82Plane420Unorm:
+      return xiiGALResourceFormat::NV12;
+    case vk::Format::eG10X6B10X6R10X62Plane420Unorm3Pack16:
+      return xiiGALResourceFormat::P010;
+    case vk::Format::eG16B16R162Plane420Unorm:
+      return xiiGALResourceFormat::P016;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

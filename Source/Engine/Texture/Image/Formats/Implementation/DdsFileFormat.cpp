@@ -8,123 +8,234 @@
 #include <Texture/Image/Formats/ImageFormatMappings.h>
 #include <Texture/Image/Image.h>
 
-XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiDdsFileFormat> g_ddsFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiDdsFileFormat> g_DdsFormat;
 
-struct xiiDdsPixelFormat
+namespace
 {
-  xiiUInt32 m_uiSize;
-  xiiUInt32 m_uiFlags;
-  xiiUInt32 m_uiFourCC;
-  xiiUInt32 m_uiRGBBitCount;
-  xiiUInt32 m_uiRBitMask;
-  xiiUInt32 m_uiGBitMask;
-  xiiUInt32 m_uiBBitMask;
-  xiiUInt32 m_uiABitMask;
-};
-
-struct xiiDdsHeader
-{
-  xiiUInt32         m_uiMagic;
-  xiiUInt32         m_uiSize;
-  xiiUInt32         m_uiFlags;
-  xiiUInt32         m_uiHeight;
-  xiiUInt32         m_uiWidth;
-  xiiUInt32         m_uiPitchOrLinearSize;
-  xiiUInt32         m_uiDepth;
-  xiiUInt32         m_uiMipMapCount;
-  xiiUInt32         m_uiReserved1[11];
-  xiiDdsPixelFormat m_ddspf;
-  xiiUInt32         m_uiCaps;
-  xiiUInt32         m_uiCaps2;
-  xiiUInt32         m_uiCaps3;
-  xiiUInt32         m_uiCaps4;
-  xiiUInt32         m_uiReserved2;
-};
-
-struct xiiDdsResourceDimension
-{
-  enum Enum
+  struct xiiDdsPixelFormat
   {
-    TEXTURE1D = 2,
-    TEXTURE2D = 3,
-    TEXTURE3D = 4,
+    xiiUInt32 m_uiSize;
+    xiiUInt32 m_uiFlags;
+    xiiUInt32 m_uiFourCC;
+    xiiUInt32 m_uiRGBBitCount;
+    xiiUInt32 m_uiRBitMask;
+    xiiUInt32 m_uiGBitMask;
+    xiiUInt32 m_uiBBitMask;
+    xiiUInt32 m_uiABitMask;
   };
-};
 
-struct xiiDdsResourceMiscFlags
-{
-  enum Enum
+  struct xiiDdsHeader
   {
-    TEXTURECUBE = 0x4,
+    xiiUInt32         m_uiMagic;
+    xiiUInt32         m_uiSize;
+    xiiUInt32         m_uiFlags;
+    xiiUInt32         m_uiHeight;
+    xiiUInt32         m_uiWidth;
+    xiiUInt32         m_uiPitchOrLinearSize;
+    xiiUInt32         m_uiDepth;
+    xiiUInt32         m_uiMipMapCount;
+    xiiUInt32         m_uiReserved1[11];
+    xiiDdsPixelFormat m_ddspf;
+    xiiUInt32         m_uiCaps;
+    xiiUInt32         m_uiCaps2;
+    xiiUInt32         m_uiCaps3;
+    xiiUInt32         m_uiCaps4;
+    xiiUInt32         m_uiReserved2;
   };
-};
 
-struct xiiDdsHeaderDxt10
-{
-  xiiUInt32 m_uiDxgiFormat;
-  xiiUInt32 m_uiResourceDimension;
-  xiiUInt32 m_uiMiscFlag;
-  xiiUInt32 m_uiArraySize;
-  xiiUInt32 m_uiMiscFlags2;
-};
-
-struct xiiDdsdFlags
-{
-  enum Enum
+  struct xiiDdsResourceDimension
   {
-    CAPS        = 0x000001,
-    HEIGHT      = 0x000002,
-    WIDTH       = 0x000004,
-    PITCH       = 0x000008,
-    PIXELFORMAT = 0x001000,
-    MIPMAPCOUNT = 0x020000,
-    LINEARSIZE  = 0x080000,
-    DEPTH       = 0x800000,
+    enum Enum
+    {
+      TEXTURE1D = 2,
+      TEXTURE2D = 3,
+      TEXTURE3D = 4,
+    };
   };
-};
 
-struct xiiDdpfFlags
-{
-  enum Enum
+  struct xiiDdsResourceMiscFlags
   {
-    ALPHAPIXELS = 0x00001,
-    ALPHA       = 0x00002,
-    FOURCC      = 0x00004,
-    RGB         = 0x00040,
-    YUV         = 0x00200,
-    LUMINANCE   = 0x20000,
+    enum Enum
+    {
+      TEXTURECUBE = 0x4,
+    };
   };
-};
 
-struct xiiDdsCaps
-{
-  enum Enum
+  struct xiiDdsHeaderDxt10
   {
-    COMPLEX = 0x000008,
-    MIPMAP  = 0x400000,
-    TEXTURE = 0x001000,
+    xiiUInt32 m_uiDxgiFormat;
+    xiiUInt32 m_uiResourceDimension;
+    xiiUInt32 m_uiMiscFlag;
+    xiiUInt32 m_uiArraySize;
+    xiiUInt32 m_uiMiscFlags2;
   };
-};
 
-struct xiiDdsCaps2
-{
-  enum Enum
+  struct xiiDdsdFlags
   {
-    CUBEMAP           = 0x000200,
-    CUBEMAP_POSITIVEX = 0x000400,
-    CUBEMAP_NEGATIVEX = 0x000800,
-    CUBEMAP_POSITIVEY = 0x001000,
-    CUBEMAP_NEGATIVEY = 0x002000,
-    CUBEMAP_POSITIVEZ = 0x004000,
-    CUBEMAP_NEGATIVEZ = 0x008000,
-    VOLUME            = 0x200000,
+    enum Enum
+    {
+      CAPS        = 0x000001,
+      HEIGHT      = 0x000002,
+      WIDTH       = 0x000004,
+      PITCH       = 0x000008,
+      PIXELFORMAT = 0x001000,
+      MIPMAPCOUNT = 0x020000,
+      LINEARSIZE  = 0x080000,
+      DEPTH       = 0x800000,
+    };
   };
-};
+
+  struct xiiDdpfFlags
+  {
+    enum Enum
+    {
+      ALPHAPIXELS = 0x00001,
+      ALPHA       = 0x00002,
+      FOURCC      = 0x00004,
+      RGB         = 0x00040,
+      YUV         = 0x00200,
+      LUMINANCE   = 0x20000,
+    };
+  };
+
+  struct xiiDdsCaps
+  {
+    enum Enum
+    {
+      COMPLEX = 0x000008,
+      MIPMAP  = 0x400000,
+      TEXTURE = 0x001000,
+    };
+  };
+
+  struct xiiDdsCaps2
+  {
+    enum Enum
+    {
+      CUBEMAP           = 0x000200,
+      CUBEMAP_POSITIVEX = 0x000400,
+      CUBEMAP_NEGATIVEX = 0x000800,
+      CUBEMAP_POSITIVEY = 0x001000,
+      CUBEMAP_NEGATIVEY = 0x002000,
+      CUBEMAP_POSITIVEZ = 0x004000,
+      CUBEMAP_NEGATIVEZ = 0x008000,
+      VOLUME            = 0x200000,
+    };
+  };
+
+  /// \brief Returns the red mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetRedMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+        return 0x000000FFU;
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x00FF0000U;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+        return 0x0000F800U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x00007C00U;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief Returns the green mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetGreenMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x0000FF00U;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+        return 0x000007E0U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x000003E0U;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief Returns the blue mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetBlueMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+        return 0x00FF0000U;
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRX8UNormalized:
+      case xiiGALResourceFormat::BGRX8UNormalizedSRGB:
+        return 0x000000FFU;
+      case xiiGALResourceFormat::B5G6R5UNormalized:
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x0000001FU;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief Returns the alpha mask for a given texture format.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiUInt32 GetAlphaMask(xiiEnum<xiiGALResourceFormat> format)
+  {
+    switch (format)
+    {
+      case xiiGALResourceFormat::RGBA8UNormalized:
+      case xiiGALResourceFormat::RGBA8UNormalizedSRGB:
+      case xiiGALResourceFormat::BGRA8UNormalized:
+      case xiiGALResourceFormat::BGRA8UNormalizedSRGB:
+        return 0xFF000000U;
+      case xiiGALResourceFormat::B5G5R5A1UNormalized:
+        return 0x00008000U;
+      default:
+        return 0U;
+    }
+  }
+
+  /// \brief This returns the texture format for a given pixel mask and bits per pixel.
+  [[nodiscard]] static XII_ALWAYS_INLINE xiiEnum<xiiGALResourceFormat> FromPixelMask(xiiUInt32 uiRedMask, xiiUInt32 uiGreenMask, xiiUInt32 uiBlueMask, xiiUInt32 uiAlphaMask, xiiUInt32 uiBitsPerPixel)
+  {
+    if (uiBitsPerPixel == 32U)
+    {
+      if (uiRedMask == 0x000000FFU && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x00FF0000U && uiAlphaMask == 0xFF000000U)
+        return xiiGALResourceFormat::RGBA8UNormalized;
+
+      if (uiRedMask == 0x00FF0000U && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x000000FFU && uiAlphaMask == 0xFF000000U)
+        return xiiGALResourceFormat::BGRA8UNormalized;
+
+      if (uiRedMask == 0x00FF0000U && uiGreenMask == 0x0000FF00U && uiBlueMask == 0x000000FFU && uiAlphaMask == 0x00000000U)
+        return xiiGALResourceFormat::BGRX8UNormalized;
+    }
+
+    if (uiBitsPerPixel == 16U)
+    {
+      if (uiRedMask == 0x0000F800U && uiGreenMask == 0x000007E0U && uiBlueMask == 0x0000001FU)
+        return xiiGALResourceFormat::B5G6R5UNormalized;
+
+      if (uiRedMask == 0x00007C00U && uiGreenMask == 0x000003E0U && uiBlueMask == 0x0000001FU)
+        return xiiGALResourceFormat::B5G5R5A1UNormalized;
+    }
+
+    return xiiGALResourceFormat::Unknown;
+  }
+} // namespace
 
 static const xiiUInt32 xiiDdsMagic       = 0x20534444;
 static const xiiUInt32 xiiDdsDxt10FourCc = 0x30315844;
 
-static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
+static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_imageHeader, xiiDdsHeader& ref_ddsHeader)
 {
   if (inout_stream.ReadBytes(&ref_ddsHeader, sizeof(xiiDdsHeader)) != sizeof(xiiDdsHeader))
   {
@@ -158,8 +269,8 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
     return XII_FAILURE;
   }
 
-  ref_imageHeader.SetWidth(ref_ddsHeader.m_uiWidth);
-  ref_imageHeader.SetHeight(ref_ddsHeader.m_uiHeight);
+  ref_imageHeader.m_Size.width  = ref_ddsHeader.m_uiWidth;
+  ref_imageHeader.m_Size.height = ref_ddsHeader.m_uiHeight;
 
   if (ref_ddsHeader.m_ddspf.m_uiSize != 32)
   {
@@ -169,29 +280,25 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
   xiiDdsHeaderDxt10 headerDxt10;
 
-  xiiImageFormat::Enum format = xiiImageFormat::UNKNOWN;
+  xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown;
 
   // Data format specified in RGBA masks
-  if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 ||
-      (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
+  if ((ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHAPIXELS) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::RGB) != 0 || (ref_ddsHeader.m_ddspf.m_uiFlags & xiiDdpfFlags::ALPHA) != 0)
   {
-    format = xiiImageFormat::FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask,
-                                           ref_ddsHeader.m_ddspf.m_uiABitMask, ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
+    format = FromPixelMask(ref_ddsHeader.m_ddspf.m_uiRBitMask, ref_ddsHeader.m_ddspf.m_uiGBitMask, ref_ddsHeader.m_ddspf.m_uiBBitMask, ref_ddsHeader.m_ddspf.m_uiABitMask, ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
 
-    if (format == xiiImageFormat::UNKNOWN)
+    if (format == xiiGALResourceFormat::Unknown)
     {
-      xiiLog::Error("The pixel mask specified was not recognized (R: {0}, G: {1}, B: {2}, A: {3}, Bpp: {4}).",
-                    xiiArgU(ref_ddsHeader.m_ddspf.m_uiRBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiGBitMask, 1, false, 16),
-                    xiiArgU(ref_ddsHeader.m_ddspf.m_uiBBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiABitMask, 1, false, 16),
-                    ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
+      xiiLog::Error("The pixel mask specified was not recognized (R: {0}, G: {1}, B: {2}, A: {3}, Bpp: {4}).", xiiArgU(ref_ddsHeader.m_ddspf.m_uiRBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiGBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiBBitMask, 1, false, 16), xiiArgU(ref_ddsHeader.m_ddspf.m_uiABitMask, 1, false, 16), ref_ddsHeader.m_ddspf.m_uiRGBBitCount);
+
       return XII_FAILURE;
     }
 
     // Verify that the format we found is correct
-    if (xiiImageFormat::GetBitsPerPixel(format) != ref_ddsHeader.m_ddspf.m_uiRGBBitCount)
+    if (xiiGALTextureUtilities::GetBitsPerPixel(format) != ref_ddsHeader.m_ddspf.m_uiRGBBitCount)
     {
-      xiiLog::Error("The number of bits per pixel specified in the file ({0}) does not match the expected value of {1} for the format '{2}'.",
-                    ref_ddsHeader.m_ddspf.m_uiRGBBitCount, xiiImageFormat::GetBitsPerPixel(format), xiiImageFormat::GetName(format));
+      xiiLog::Error("The number of bits per pixel specified in the file ({0}) does not match the expected value of {1} for the format '{2}'.", ref_ddsHeader.m_ddspf.m_uiRGBBitCount, xiiGALTextureUtilities::GetBitsPerPixel(format), xiiArgEnum(format));
+
       return XII_FAILURE;
     }
   }
@@ -207,7 +314,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
       format = xiiImageFormatMappings::FromDxgiFormat(headerDxt10.m_uiDxgiFormat);
 
-      if (format == xiiImageFormat::UNKNOWN)
+      if (format == xiiGALResourceFormat::Unknown)
       {
         xiiLog::Error("The DXGI format {0} has no equivalent image format.", headerDxt10.m_uiDxgiFormat);
         return XII_FAILURE;
@@ -217,7 +324,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
     {
       format = xiiImageFormatMappings::FromFourCc(ref_ddsHeader.m_ddspf.m_uiFourCC);
 
-      if (format == xiiImageFormat::UNKNOWN)
+      if (format == xiiGALResourceFormat::Unknown)
       {
         xiiLog::Error("The FourCC code '{0}{1}{2}{3}' was not recognized.", xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 0)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 8)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 16)), xiiArgC((char)(ref_ddsHeader.m_ddspf.m_uiFourCC >> 24)));
         return XII_FAILURE;
@@ -230,16 +337,15 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
     return XII_FAILURE;
   }
 
-  ref_imageHeader.SetImageFormat(format);
+  ref_imageHeader.m_Format = format;
 
   const bool bHasMipMaps = (ref_ddsHeader.m_uiCaps & xiiDdsCaps::MIPMAP) != 0;
   const bool bCubeMap    = (ref_ddsHeader.m_uiCaps2 & xiiDdsCaps2::CUBEMAP) != 0;
   const bool bVolume     = (ref_ddsHeader.m_uiCaps2 & xiiDdsCaps2::VOLUME) != 0;
 
-
   if (bHasMipMaps)
   {
-    ref_imageHeader.SetNumMipLevels(ref_ddsHeader.m_uiMipMapCount);
+    ref_imageHeader.m_uiMipLevels = ref_ddsHeader.m_uiMipMapCount;
   }
 
   // Cubemap and volume texture are mutually exclusive
@@ -251,24 +357,24 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiImageHeader& re
 
   if (bCubeMap)
   {
-    ref_imageHeader.SetNumFaces(6);
+    ref_imageHeader.m_uiArraySizeOrDepth = 6;
   }
   else if (bVolume)
   {
-    ref_imageHeader.SetDepth(ref_ddsHeader.m_uiDepth);
+    ref_imageHeader.m_uiArraySizeOrDepth = ref_ddsHeader.m_uiDepth;
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiDdsFileFormat::ReadImageHeader(xiiStreamReader& inout_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension) const
+xiiResult xiiDdsFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& ref_description, xiiStringView sFileExtension) const
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageHeader");
+  XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImageDescription");
 
   xiiDdsHeader ddsHeader;
-  return ReadImageData(inout_stream, ref_header, ddsHeader);
+  return ReadImageData(inout_stream, ref_description, ddsHeader);
 }
 
 xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& ref_image, xiiStringView sFileExtension) const
@@ -277,7 +383,7 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
 
-  xiiImageHeader imageHeader;
+  xiiGALTextureCreationDescription imageHeader;
   xiiDdsHeader   ddsHeader;
   XII_SUCCEED_OR_RETURN(ReadImageData(inout_stream, imageHeader, ddsHeader));
 
@@ -307,11 +413,11 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 {
   XII_IGNORE_UNUSED(sFileExtension);
 
-  const xiiImageFormat::Enum format = image.GetImageFormat();
-  const xiiUInt32            uiBpp  = xiiImageFormat::GetBitsPerPixel(format);
+  const xiiEnum<xiiGALResourceFormat> format = image.GetImageFormat();
+  const xiiUInt32                     uiBpp  = xiiGALTextureUtilities::GetBitsPerPixel(format);
 
   const xiiUInt32 uiNumFaces        = image.GetNumFaces();
-  const xiiUInt32 uiNumMipLevels    = image.GetNumMipLevels();
+  const xiiUInt32 uiNumMipLevels    = image.GetMipLevelCount();
   const xiiUInt32 uiNumArrayIndices = image.GetNumArrayIndices();
 
   const xiiUInt32 uiWidth  = image.GetWidth(0);
@@ -358,23 +464,17 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     fileHeader.m_uiDepth = uiDepth;
   }
 
-  switch (xiiImageFormat::GetType(image.GetImageFormat()))
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(image.GetImageFormat());
+
+  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
   {
-    case xiiImageFormatType::LINEAR:
-      [[fallthrough]];
-    case xiiImageFormatType::PLANAR:
-      fileHeader.m_uiFlags |= xiiDdsdFlags::PITCH;
-      fileHeader.m_uiPitchOrLinearSize = static_cast<xiiUInt32>(image.GetRowPitch(0));
-      break;
-
-    case xiiImageFormatType::BLOCK_COMPRESSED:
-      fileHeader.m_uiFlags |= xiiDdsdFlags::LINEARSIZE;
-      fileHeader.m_uiPitchOrLinearSize = 0; /// \todo sub-image size
-      break;
-
-    default:
-      xiiLog::Error("Unknown image format type.");
-      return XII_FAILURE;
+    fileHeader.m_uiFlags |= xiiDdsdFlags::LINEARSIZE;
+    fileHeader.m_uiPitchOrLinearSize = 0; /// \todo sub-image size
+  }
+  else
+  {
+    fileHeader.m_uiFlags |= xiiDdsdFlags::PITCH;
+    fileHeader.m_uiPitchOrLinearSize = static_cast<xiiUInt32>(image.GetRowPitch(0));
   }
 
   fileHeader.m_uiCaps = xiiDdsCaps::TEXTURE;
@@ -418,10 +518,10 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
   fileHeader.m_ddspf.m_uiSize = 32;
 
-  xiiUInt32 uiRedMask   = xiiImageFormat::GetRedMask(format);
-  xiiUInt32 uiGreenMask = xiiImageFormat::GetGreenMask(format);
-  xiiUInt32 uiBlueMask  = xiiImageFormat::GetBlueMask(format);
-  xiiUInt32 uiAlphaMask = xiiImageFormat::GetAlphaMask(format);
+  xiiUInt32 uiRedMask   = GetRedMask(format);
+  xiiUInt32 uiGreenMask = GetGreenMask(format);
+  xiiUInt32 uiBlueMask  = GetBlueMask(format);
+  xiiUInt32 uiAlphaMask = GetAlphaMask(format);
 
   xiiUInt32 uiFourCc     = xiiImageFormatMappings::ToFourCc(format);
   xiiUInt32 uiDxgiFormat = xiiImageFormatMappings::ToDxgiFormat(format);
@@ -429,17 +529,15 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   // When not required to use a DXT10 texture, try to write a legacy DDS by specifying FourCC or pixel masks
   if (!bDxt10)
   {
-    // The format has a known mask and we would also recognize it as the same when reading back in, since multiple formats may have the same pixel
-    // masks
-    if ((uiRedMask | uiGreenMask | uiBlueMask | uiAlphaMask) &&
-        format == xiiImageFormat::FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
+    // The format has a known mask and we would also recognize it as the same when reading back in, since multiple formats may have the same pixel masks
+    if ((uiRedMask | uiGreenMask | uiBlueMask | uiAlphaMask) && format == FromPixelMask(uiRedMask, uiGreenMask, uiBlueMask, uiAlphaMask, uiBpp))
     {
       fileHeader.m_ddspf.m_uiFlags       = xiiDdpfFlags::ALPHAPIXELS | xiiDdpfFlags::RGB;
       fileHeader.m_ddspf.m_uiRBitMask    = uiRedMask;
       fileHeader.m_ddspf.m_uiGBitMask    = uiGreenMask;
       fileHeader.m_ddspf.m_uiBBitMask    = uiBlueMask;
       fileHeader.m_ddspf.m_uiABitMask    = uiAlphaMask;
-      fileHeader.m_ddspf.m_uiRGBBitCount = xiiImageFormat::GetBitsPerPixel(format);
+      fileHeader.m_ddspf.m_uiRGBBitCount = xiiGALTextureUtilities::GetBitsPerPixel(format);
     }
     // The format has a known FourCC
     else if (uiFourCc != 0)
@@ -459,7 +557,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
     // We must write a DXT10 file, but there is no matching DXGI_FORMAT - we could also try converting, but that is rarely intended when writing .dds
     if (uiDxgiFormat == 0)
     {
-      xiiLog::Error("The image needs to be written as a DXT10 file, but no matching DXGI format was found for '{0}'.", xiiImageFormat::GetName(format));
+      xiiLog::Error("The image needs to be written as a DXT10 file, but no matching DXGI format was found for '{0}'.", xiiArgEnum(format));
       return XII_FAILURE;
     }
 

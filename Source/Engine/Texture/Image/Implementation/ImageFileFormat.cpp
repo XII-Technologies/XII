@@ -32,9 +32,9 @@ const xiiImageFileFormat* xiiImageFileFormat::GetWriterFormat(xiiStringView sExt
   return nullptr;
 }
 
-xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageHeader& ref_header)
+xiiResult xiiImageFileFormat::ReadImageDescription(xiiStringView sFileName, xiiGALTextureCreationDescription& ref_header)
 {
-  XII_LOG_BLOCK("Read Image Header", sFileName);
+  XII_LOG_BLOCK("Read Image Description", sFileName);
 
   XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName));
 
@@ -49,7 +49,7 @@ xiiResult xiiImageFileFormat::ReadImageHeader(xiiStringView sFileName, xiiImageH
 
   if (const xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
   {
-    if (pFormat->ReadImageHeader(reader, ref_header, it) != XII_SUCCESS)
+    if (pFormat->ReadImageDescription(reader, ref_header, it) != XII_SUCCESS)
     {
       xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(sFileName, "File"));
       return XII_FAILURE;

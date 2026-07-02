@@ -70,33 +70,33 @@ static xiiTextureConverterUsage::Enum DetectUsageFromFilename(xiiStringView sFil
 
 static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image)
 {
-  const xiiImageHeader&      header = image.GetHeader();
-  const xiiImageFormat::Enum format = header.GetImageFormat();
+  const xiiGALTextureCreationDescription& header = image.GetDescription();
+  const xiiEnum<xiiGALResourceFormat>     format = header.m_Format;
 
-  if (header.GetDepth() > 1)
+  if (header.m_uiArraySizeOrDepth > 1)
   {
     // unsupported
     return xiiTextureConverterUsage::Auto;
   }
 
-  if (xiiImageFormat::IsSrgb(format))
+  if (xiiGALResourceFormat::IsSrgb(format))
   {
     // already sRGB so must be color
     return xiiTextureConverterUsage::Color;
   }
 
-  if (format == xiiImageFormat::BC5_UNORM)
+  if (format == xiiGALResourceFormat::BC5UNormalized)
   {
     return xiiTextureConverterUsage::NormalMap;
   }
 
-  if (xiiImageFormat::GetBitsPerChannel(format, xiiImageFormatChannel::R) > 8 || format == xiiImageFormat::BC6H_SF16 ||
-      format == xiiImageFormat::BC6H_UF16)
+  if (xiiGALTextureUtilities::GetBitsPerComponent(format, 0) > 8 || format == xiiGALResourceFormat::BC6HSF16 ||
+      format == xiiGALResourceFormat::BC6HUF16)
   {
     return xiiTextureConverterUsage::Hdr;
   }
 
-  if (xiiImageFormat::GetNumChannels(format) <= 2)
+  if (xiiGALTextureUtilities::GetComponentCount(format) <= 2)
   {
     return xiiTextureConverterUsage::Linear;
   }
@@ -104,10 +104,10 @@ static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image
   const xiiImage* pImgRGBA = &image;
   xiiImage        convertedRGBA;
 
-  if (image.GetImageFormat() != xiiImageFormat::R8G8B8A8_UNORM)
+  if (image.GetImageFormat() != xiiGALResourceFormat::RGBA8UNormalized)
   {
     pImgRGBA = &convertedRGBA;
-    if (xiiImageConversion::Convert(image, convertedRGBA, xiiImageFormat::R8G8B8A8_UNORM).Failed())
+    if (xiiImageConversion::Convert(image, convertedRGBA, xiiGALResourceFormat::RGBA8UNormalized).Failed())
     {
       // cannot convert to RGBA -> maybe some weird lookup table format
       return xiiTextureConverterUsage::Auto;
@@ -122,7 +122,7 @@ static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image
 
     xiiUInt32 uiExtremeNormals = 0;
 
-    xiiUInt32 uiNumPixels = header.GetWidth() * header.GetHeight();
+    xiiUInt32 uiNumPixels = header.m_Size.width * header.m_Size.height;
     XII_ASSERT_DEBUG(uiNumPixels > 0, "Unexpected empty image.");
 
     // Sample no more than 10000 pixels
