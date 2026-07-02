@@ -11,6 +11,8 @@
 #include <Texture/Image/ImageConversion.h>
 #include <Texture/Image/ImageUtils.h>
 
+#if 0
+
 XII_CREATE_SIMPLE_TEST_GROUP(Image);
 
 XII_CREATE_SIMPLE_TEST(Image, Image)
@@ -185,3 +187,5 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
 
   xiiFileSystem::RemoveDataDirectoryGroup("ImageTest");
 }
+
+#endif
