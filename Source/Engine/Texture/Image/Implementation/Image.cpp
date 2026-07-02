@@ -365,7 +365,7 @@ void xiiImage::Clear()
 
 void xiiImage::ResetAndAlloc(const xiiGALTextureCreationDescription& description)
 {
-  m_Description = description;
+  m_Description                  = description;
   const xiiUInt64 uiRequiredSize = ComputeDataSize();
 
   if (!UsesExternalStorage() || m_DataPtr.GetCount() < uiRequiredSize)

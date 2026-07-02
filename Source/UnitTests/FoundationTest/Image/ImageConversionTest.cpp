@@ -207,10 +207,10 @@ private:
 
     xiiFileSystem::AddDataDirectory(">xiitest/", "ImageComparisonDataDir", "imgout", xiiDataDirUsage::AllowWrites).IgnoreResult();
 
-#if XII_ENABLED(XII_PLATFORM_LINUX)
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
     // On linux we use CPU based BC6 and BC7 compression, which sometimes gives slightly different results from the GPU compression on Windows.
     xiiTestFramework::GetInstance()->SetImageReferenceOverrideFolderName("Images_Reference_Linux");
-#endif
+#  endif
 
     return XII_SUCCESS;
   }

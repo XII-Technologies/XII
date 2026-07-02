@@ -20,7 +20,7 @@ xiiResult xiiTextureConverterProcessor::GenerateTextureAtlas(xiiMemoryStreamWrit
     return XII_FAILURE;
   }
 
-  xiiTextureAtlasCreationDescription       atlasDesc;
+  xiiTextureAtlasCreationDescription atlasDesc;
   xiiDynamicArray<TextureAtlasItem> atlasItems;
 
   if (atlasDesc.Load(m_Descriptor.m_sTextureAtlasDescFile).Failed())
@@ -234,9 +234,9 @@ xiiResult xiiTextureConverterProcessor::SortItemsIntoAtlas(xiiDynamicArray<Textu
 xiiResult xiiTextureConverterProcessor::CreateAtlasTexture(xiiDynamicArray<TextureAtlasItem>& items, xiiUInt32 uiResX, xiiUInt32 uiResY, xiiImage& atlas, xiiInt32 layer)
 {
   xiiGALTextureCreationDescription imgHeader;
-  imgHeader.m_Size.width = uiResX;
+  imgHeader.m_Size.width  = uiResX;
   imgHeader.m_Size.height = uiResY;
-  imgHeader.m_Format = xiiGALResourceFormat::RGBA32Float;
+  imgHeader.m_Format      = xiiGALResourceFormat::RGBA32Float;
   atlas.ResetAndAlloc(imgHeader);
 
   // make sure the target texture is filled with all black

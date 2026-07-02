@@ -61,10 +61,10 @@ public:
 
   // Mipmaps / filtering
   xiiEnum<xiiTextureConverterMipmapMode> m_MipmapMode;
-  xiiEnum<xiiGALFilterType> m_FilterMode; // only used when writing to XII specific formats
-  xiiEnum<xiiGALTextureAddressMode>     m_AddressModeU;
-  xiiEnum<xiiGALTextureAddressMode>     m_AddressModeV;
-  xiiEnum<xiiGALTextureAddressMode>     m_AddressModeW;
+  xiiEnum<xiiGALFilterType>              m_FilterMode; // only used when writing to XII specific formats
+  xiiEnum<xiiGALTextureAddressMode>      m_AddressModeU;
+  xiiEnum<xiiGALTextureAddressMode>      m_AddressModeV;
+  xiiEnum<xiiGALTextureAddressMode>      m_AddressModeW;
   bool                             m_bPreserveMipmapCoverage = false;
   float                            m_fMipmapAlphaThreshold   = 0.5f;
 

@@ -460,7 +460,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
   }
 
   /// \brief Returns the slice pitch (in bytes) of the specified plane, given the full resolution width and height.
-  XII_ALWAYS_INLINE xiiUInt64 GetPlaneSlicePitch( xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
+  XII_ALWAYS_INLINE xiiUInt64 GetPlaneSlicePitch(xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight, xiiUInt32 uiPlane) const
   {
     XII_ASSERT_DEV(HasPlane(uiPlane), "Plane index ({}) out of range [0, {}).", uiPlane, m_Planes.GetCount());
 
@@ -491,7 +491,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMultiPlanarFormatDescription : public xi
   }
 
   /// \brief Returns the total size (in bytes) of all planes, given the full resolution width and height.
-  XII_ALWAYS_INLINE xiiUInt64 GetTotalSize( xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight) const
+  XII_ALWAYS_INLINE xiiUInt64 GetTotalSize(xiiUInt32 uiFullWidth, xiiUInt32 uiFullHeight) const
   {
     xiiUInt64 uiTotalSize = 0ULL;
 

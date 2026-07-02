@@ -70,8 +70,8 @@ static xiiTextureConverterUsage::Enum DetectUsageFromFilename(xiiStringView sFil
 
 static xiiTextureConverterUsage::Enum DetectUsageFromImage(const xiiImage& image)
 {
-  const xiiGALTextureCreationDescription&      header = image.GetDescription();
-  const xiiEnum<xiiGALResourceFormat> format = header.m_Format;
+  const xiiGALTextureCreationDescription& header = image.GetDescription();
+  const xiiEnum<xiiGALResourceFormat>     format = header.m_Format;
 
   if (header.m_uiArraySizeOrDepth > 1)
   {

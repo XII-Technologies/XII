@@ -269,7 +269,7 @@ static xiiResult ReadImageData(xiiStreamReader& inout_stream, xiiGALTextureCreat
     return XII_FAILURE;
   }
 
-  ref_imageHeader.m_Size.width = ref_ddsHeader.m_uiWidth;
+  ref_imageHeader.m_Size.width  = ref_ddsHeader.m_uiWidth;
   ref_imageHeader.m_Size.height = ref_ddsHeader.m_uiHeight;
 
   if (ref_ddsHeader.m_ddspf.m_uiSize != 32)
@@ -414,7 +414,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   XII_IGNORE_UNUSED(sFileExtension);
 
   const xiiEnum<xiiGALResourceFormat> format = image.GetImageFormat();
-  const xiiUInt32            uiBpp  = xiiGALTextureUtilities::GetBitsPerPixel(format);
+  const xiiUInt32                     uiBpp  = xiiGALTextureUtilities::GetBitsPerPixel(format);
 
   const xiiUInt32 uiNumFaces        = image.GetNumFaces();
   const xiiUInt32 uiNumMipLevels    = image.GetMipLevelCount();

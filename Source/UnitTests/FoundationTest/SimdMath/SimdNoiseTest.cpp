@@ -20,8 +20,8 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Perlin")
   {
     xiiGALTextureCreationDescription description;
-    description.m_Type = xiiGALResourceDimension::Texture2D;
-    description.m_Size = xiiSizeU32(128, 128);
+    description.m_Type   = xiiGALResourceDimension::Texture2D;
+    description.m_Size   = xiiSizeU32(128, 128);
     description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
 
     xiiImage image;
