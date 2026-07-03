@@ -7,7 +7,6 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
 #include <Texture/Image/ImageUtils.h>
-#include <Texture/Utilities/TextureFormat.h>
 #include <TextureConverter/TextureConverter.h>
 
 xiiTextureConverter::xiiTextureConverter() :
@@ -146,14 +145,11 @@ xiiResult xiiTextureConverter::WriteTexFile(xiiStreamWriter& inout_stream, const
 
   XII_SUCCEED_OR_RETURN(asset.Write(inout_stream));
 
-  xiiTexFormat texFormat;
-  texFormat.m_bSRGB         = xiiImageFormat::IsSrgb(image.GetImageFormat());
-  texFormat.m_AddressModeU  = m_Processor.m_Descriptor.m_AddressModeU;
-  texFormat.m_AddressModeV  = m_Processor.m_Descriptor.m_AddressModeV;
-  texFormat.m_AddressModeW  = m_Processor.m_Descriptor.m_AddressModeW;
-  texFormat.m_TextureFilter = m_Processor.m_Descriptor.m_FilterMode;
-
-  texFormat.WriteTextureHeader(inout_stream);
+  inout_stream << image.GetImageFormat();
+  inout_stream << m_Processor.m_Descriptor.m_AddressModeU;
+  inout_stream << m_Processor.m_Descriptor.m_AddressModeV;
+  inout_stream << m_Processor.m_Descriptor.m_AddressModeW;
+  inout_stream << m_Processor.m_Descriptor.m_FilterMode;
 
   xiiDdsFileFormat ddsWriter;
   if (ddsWriter.WriteImage(inout_stream, image, "dds").Failed())

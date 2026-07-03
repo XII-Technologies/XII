@@ -426,17 +426,17 @@ xiiResult xiiTextureConverter::ParseWrapModes()
 
   {
     xiiInt32 iValue                         = opt_AddressU.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeU = static_cast<xiiImageAddressMode::Enum>(iValue);
+    m_Processor.m_Descriptor.m_AddressModeU = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
   {
     xiiInt32 iValue                         = opt_AddressV.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-    m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiImageAddressMode::Enum>(iValue);
+    m_Processor.m_Descriptor.m_AddressModeV = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
   if (m_Processor.m_Descriptor.m_OutputType == xiiTextureConverterOutputType::Volume)
   {
     xiiInt32 iValue                         = opt_AddressW.GetOptionValue(xiiCommandLineOption::LogMode::AlwaysIfSpecified);
-    m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiImageAddressMode::Enum>(iValue);
+    m_Processor.m_Descriptor.m_AddressModeW = static_cast<xiiGALTextureAddressMode::Enum>(iValue);
   }
 
   return XII_SUCCESS;
@@ -451,7 +451,7 @@ xiiResult xiiTextureConverter::ParseFilterModes()
   }
 
   xiiInt32 iValue                       = opt_Filter.GetOptionValue(xiiCommandLineOption::LogMode::Always);
-  m_Processor.m_Descriptor.m_FilterMode = static_cast<xiiTextureFilterSetting::Enum>(iValue);
+  m_Processor.m_Descriptor.m_FilterMode = static_cast<xiiGALFilterType::Enum>(iValue);
   return XII_SUCCESS;
 }
 
