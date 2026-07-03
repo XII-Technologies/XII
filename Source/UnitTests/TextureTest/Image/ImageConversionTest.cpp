@@ -12,8 +12,6 @@
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
 
-#if 0
-
 static const xiiEnum<xiiGALResourceFormat> g_DefaultFormat = xiiGALResourceFormat::RGBA32Float;
 
 class xiiImageConversionTest : public xiiTestBaseClass
@@ -242,5 +240,3 @@ private:
 };
 
 static xiiImageConversionTest s_ImageConversionTest;
-
-#endif

@@ -7,8 +7,6 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Texture/Image/ImageUtils.h>
 
-#if 0
-
 XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
 {
   xiiStringBuilder sReadDir(">sdk/", xiiTestFramework::GetInstance()->GetRelTestDataPath());
@@ -120,4 +118,3 @@ XII_CREATE_SIMPLE_TEST(Image, ImageUtils)
 
   xiiFileSystem::RemoveDataDirectoryGroup("ImageTest");
 }
-#endif

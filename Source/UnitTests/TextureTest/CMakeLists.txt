@@ -9,17 +9,8 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
-  Foundation
+  Texture
   TestFramework
 )
 
-add_dependencies(${PROJECT_NAME}
-  FoundationTest_Plugin1
-  FoundationTest_Plugin2
-)
-
-xii_ci_add_test(${PROJECT_NAME})
-
-if(XII_CMAKE_COMPILER_MSVC)
-  target_compile_options(${PROJECT_NAME} PRIVATE /wd4244 /wd4018)
-endif()
+xii_ci_add_test(${PROJECT_NAME} NEEDS_HW_ACCESS)
