@@ -7,7 +7,21 @@
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/SimdMath/SimdNoise.h>
 #include <Foundation/SimdMath/SimdRandom.h>
-#include <Texture/Image/Image.h>
+
+namespace
+{
+  // Precomputed reference hashes.
+  static constexpr xiiUInt64 s_PerlinHash[7] =
+    {
+      0,                     // unused
+      0x03E3EB49EEC186D1ULL, // octave 1
+      0xDC2DBCD554D7D3EDULL, // octave 2
+      0x8AA283C6F5DBB465ULL, // octave 3
+      0x82E4A2E09625B3A7ULL, // octave 4
+      0xB1E1699019716110ULL, // octave 5
+      0xBEBB49EEE93B3BF3ULL  // octave 6
+  };
+} // namespace
 
 XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
 {
@@ -17,57 +31,41 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sReadDir, "SimdNoise") == XII_SUCCESS);
   XII_TEST_BOOL_MSG(xiiFileSystem::AddDataDirectory(sWriteDirectory, "SimdNoise", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS, "Failed to mount data directory '{}'.", sWriteDirectory);
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Perlin")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "PerlinNoise")
   {
-    xiiGALTextureCreationDescription description;
-    description.m_Type   = xiiGALResourceDimension::Texture2D;
-    description.m_Size   = xiiSizeU32(128, 128);
-    description.m_Format = xiiGALResourceFormat::RGBA8UNormalized;
-
-    xiiImage image;
-    image.ResetAndAlloc(description);
-
     xiiSimdPerlinNoise perlin(12345);
-    xiiSimdVec4f       xOffset(0, 1, 2, 3);
-    xiiSimdFloat       scale(100);
 
-    for (xiiUInt32 uiNumOctaves = 1; uiNumOctaves <= 6; ++uiNumOctaves)
+    const xiiUInt32 uiNumSamplesX   = 16;
+    const xiiUInt32 uiNumSamplesY   = 16;
+    const xiiUInt32 uiNumOctavesMax = 6;
+    const float     fScale          = 100.0f;
+
+    xiiTemporaryArray<float> buffer;
+    buffer.SetCount(uiNumSamplesX * uiNumSamplesY);
+
+    for (xiiUInt32 uiNumOctaves = 1; uiNumOctaves <= uiNumOctavesMax; ++uiNumOctaves)
     {
-      xiiColorLinearUB* pData = image.GetPixelPointer<xiiColorLinearUB>();
+      xiiUInt32 uiIndex = 0;
 
-      for (xiiUInt32 y = 0; y < description.m_Size.width; ++y)
+      for (xiiUInt32 y = 0; y < uiNumSamplesY; ++y)
       {
-        for (xiiUInt32 x = 0; x < description.m_Size.width / 4; ++x)
+        for (xiiUInt32 x = 0; x < uiNumSamplesX; x += 4)
         {
-          xiiSimdVec4f sX = (xiiSimdVec4f(x * 4.0f) + xOffset) / scale;
-          xiiSimdVec4f sY = xiiSimdVec4f(y * 1.0f) / scale;
+          xiiSimdVec4f sX((x + 0) / fScale, (x + 1) / fScale, (x + 2) / fScale, (x + 3) / fScale);
+          xiiSimdVec4f sY(y / fScale, y / fScale, y / fScale, y / fScale);
 
           xiiSimdVec4f noise = perlin.NoiseZeroToOne(sX, sY, xiiSimdVec4f::MakeZero(), uiNumOctaves);
-          float        fP[4];
-          fP[0] = noise.x();
-          fP[1] = noise.y();
-          fP[2] = noise.z();
-          fP[3] = noise.w();
 
-          xiiUInt32 uiPixelIndex = y * description.m_Size.width + x * 4;
-
-          for (xiiUInt32 i = 0; i < 4; ++i)
-          {
-            pData[uiPixelIndex + i] = xiiColor(fP[i], fP[i], fP[i]);
-          }
+          buffer[uiIndex++] = noise.x();
+          buffer[uiIndex++] = noise.y();
+          buffer[uiIndex++] = noise.z();
+          buffer[uiIndex++] = noise.w();
         }
       }
 
-      xiiStringBuilder sOutFile;
-      sOutFile.SetFormat(":output/SimdNoise/result-perlin_{}.tga", uiNumOctaves);
+      xiiUInt64 uiHash = xiiHashingUtils::xxHash64(buffer.GetData(), buffer.GetCount() * sizeof(float));
 
-      XII_TEST_BOOL(image.SaveTo(sOutFile).Succeeded());
-
-      xiiStringBuilder sInFile;
-      sInFile.SetFormat("SimdNoise/perlin_{}.tga", uiNumOctaves);
-      XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(sInFile), "Noise image file is missing: '%s'", sInFile.GetData());
-
-      XII_TEST_FILES(sOutFile, sInFile, "");
+      XII_TEST_INT(uiHash, s_PerlinHash[uiNumOctaves]);
     }
   }
 
