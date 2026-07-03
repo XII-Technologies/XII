@@ -13,4 +13,12 @@ target_link_libraries(${PROJECT_NAME}
   TestFramework
 )
 
+if(TARGET TextureConverter)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_TEXTURE_CONVERTER_PRESENT)
+  
+  add_dependencies(${PROJECT_NAME}
+    TextureConverter
+  )
+endif()
+
 xii_ci_add_test(${PROJECT_NAME} NEEDS_HW_ACCESS)
