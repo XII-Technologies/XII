@@ -7,10 +7,10 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Memory/MemoryTracker.h>
+#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
 #include <Texture/Image/ImageConversion.h>
-#include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
 static const xiiEnum<xiiGALResourceFormat> g_DefaultFormat = xiiGALResourceFormat::RGBA32Float;
 
@@ -30,8 +30,9 @@ public:
 private:
   virtual void SetupSubTests() override
   {
-    xiiStringBuilder sTemp;
+    m_ResourceFormats.SetCount(xiiGALResourceFormat::ENUM_COUNT);
 
+    xiiStringBuilder sTemp;
     for (xiiUInt32 i = 0; i < xiiGALResourceFormat::ENUM_COUNT; ++i)
     {
       xiiEnum<xiiGALResourceFormat> format = static_cast<xiiGALResourceFormat::Enum>(i);
@@ -44,13 +45,15 @@ private:
 
       xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), format, sTemp, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
 
-      AddSubTest(sTemp, i);
+      m_ResourceFormats[i] = sTemp;
+
+      AddSubTest(m_ResourceFormats[i], i);
     }
   }
 
   virtual xiiTestAppRun RunSubTest(xiiInt32 iIdentifier, xiiUInt32 uiInvocationCount) override
   {
-    xiiEnum<xiiGALResourceFormat> format = static_cast<xiiGALResourceFormat::Enum>(iIdentifier);
+    xiiEnum<xiiGALResourceFormat>          format           = static_cast<xiiGALResourceFormat::Enum>(iIdentifier);
     const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
     if (!xiiImageConversion::IsConvertible(format, g_DefaultFormat))
@@ -62,7 +65,7 @@ private:
 
     {
       xiiTemporaryHybridArray<xiiImageConversion::ConversionPathNode, 16> decodingPath;
-      xiiUInt32                                                  decodingPathScratchBuffers;
+      xiiUInt32                                                           decodingPathScratchBuffers;
       xiiImageConversion::BuildPath(format, g_DefaultFormat, false, decodingPath, decodingPathScratchBuffers).IgnoreResult();
 
       // the [test] tag tells the test framework to output the log message in the GUI
@@ -75,7 +78,7 @@ private:
 
     {
       xiiTemporaryHybridArray<xiiImageConversion::ConversionPathNode, 16> encodingPath;
-      xiiUInt32                                                  encodingPathScratchBuffers;
+      xiiUInt32                                                           encodingPathScratchBuffers;
       xiiImageConversion::BuildPath(g_DefaultFormat, format, false, encodingPath, encodingPathScratchBuffers).IgnoreResult();
 
       // the [test] tag tells the test framework to output the log message in the GUI
@@ -233,7 +236,8 @@ private:
   }
 
 private:
-  xiiImage m_Image;
+  xiiImage                                                    m_Image;
+  xiiStaticArray<xiiString, xiiGALResourceFormat::ENUM_COUNT> m_ResourceFormats;
 };
 
 static xiiImageConversionTest s_ImageConversionTest;

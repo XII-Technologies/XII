@@ -174,13 +174,20 @@ class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
 {
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
-    xiiEnum<xiiGALResourceFormat> sourceFormatSrgb = xiiGALResourceFormat::AsSrgb(templateSourceFormat);
-    XII_ASSERT_DEV(sourceFormatSrgb != templateSourceFormat, "Format '{}' should have a corresponding sRGB format.", xiiArgEnum(xiiEnum<xiiGALResourceFormat>(templateSourceFormat)));
+    static xiiStaticArray<xiiImageConversionEntry, 2U> supportedConversions;
+    static bool                                        bIsInitialized = false;
 
-    static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(templateSourceFormat, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(sourceFormatSrgb, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default),
-    };
+    if (!bIsInitialized)
+    {
+      supportedConversions.PushBack(xiiImageConversionEntry(templateSourceFormat, xiiGALResourceFormat::RGBA8UNormalized, xiiImageConversionFlags::Default));
+
+      if (auto srgbFormat = xiiGALResourceFormat::AsSrgb(templateSourceFormat); srgbFormat != templateSourceFormat)
+      {
+        supportedConversions.PushBack(xiiImageConversionEntry(srgbFormat, xiiGALResourceFormat::RGBA8UNormalizedSRGB, xiiImageConversionFlags::Default));
+      }
+
+      bIsInitialized = true;
+    }
 
     return supportedConversions;
   }
@@ -215,13 +222,20 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
 {
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
-    xiiEnum<xiiGALResourceFormat> targetFormatSrgb = xiiGALResourceFormat::AsSrgb(templateTargetFormat);
-    XII_ASSERT_DEV(targetFormatSrgb != templateTargetFormat, "Format '{}' should have a corresponding sRGB format.", xiiArgEnum(xiiEnum<xiiGALResourceFormat>(templateTargetFormat)));
+    static xiiStaticArray<xiiImageConversionEntry, 2U> supportedConversions;
+    static bool                                        bIsInitialized = false;
 
-    static xiiImageConversionEntry supportedConversions[] = {
-      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, templateTargetFormat, xiiImageConversionFlags::Default),
-      xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, targetFormatSrgb, xiiImageConversionFlags::Default),
-    };
+    if (!bIsInitialized)
+    {
+      supportedConversions.PushBack(xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalized, templateTargetFormat, xiiImageConversionFlags::Default));
+
+      if (auto srgbFormat = xiiGALResourceFormat::AsSrgb(templateTargetFormat); srgbFormat != templateTargetFormat)
+      {
+        supportedConversions.PushBack(xiiImageConversionEntry(xiiGALResourceFormat::RGBA8UNormalizedSRGB, srgbFormat, xiiImageConversionFlags::Default));
+      }
+
+      bIsInitialized = true;
+    }
 
     return supportedConversions;
   }
