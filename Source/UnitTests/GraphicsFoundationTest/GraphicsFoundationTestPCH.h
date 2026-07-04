@@ -13,4 +13,4 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-#include <GraphicsTest/TestingEnvironment/TestingEnvironment.h>
+#include <GraphicsFoundationTest/TestingEnvironment/TestingEnvironment.h>

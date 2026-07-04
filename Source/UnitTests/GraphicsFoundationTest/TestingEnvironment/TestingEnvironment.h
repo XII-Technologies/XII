@@ -12,32 +12,15 @@ class xiiGPUTestingEnvironmentInterface
 public:
   virtual ~xiiGPUTestingEnvironmentInterface() = default;
 
-  virtual xiiResult Initialize() = 0;
-  virtual void      Shutdown()   = 0;
-
-  virtual xiiResult CreateWindow(xiiUInt32 uiResolutionX = 960, xiiUInt32 uiResolutionY = 540) = 0;
-  virtual void      DestroyWindow()                                                            = 0;
-
-  virtual xiiWindow* GetWindow() const = 0;
+  virtual xiiStringView GetName() const = 0;
 
   virtual xiiGALDevice* GetDevice() const = 0;
 
-  virtual xiiGALSwapChain* GetSwapChain() const = 0;
+  virtual xiiResult Initialize() = 0;
 
-  // Convenience helpers for tests
-  virtual xiiResult CreateSwapChainForWindow(xiiUInt32 uiResolutionX = 960, xiiUInt32 uiResolutionY = 540) = 0;
-  virtual void      DestroySwapChain()                                                                     = 0;
+  virtual void Shutdown() = 0;
 
-  virtual xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const   = 0;
-  virtual xiiSharedPtr<xiiGALTexture> GetDepthStencilTexture() const = 0;
-
-  virtual void BeginFrame() = 0;
-  virtual void EndFrame()   = 0;
-
-  virtual void Present() = 0;
-
-  // Process window/OS messages to keep the environment responsive during tests
-  virtual void ProcessWindowMessages() = 0;
+  virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle = {}) = 0;
 };
 
 class xiiGPUTestingEnvironmentVulkan final : public xiiGPUTestingEnvironmentInterface
@@ -47,34 +30,41 @@ class xiiGPUTestingEnvironmentVulkan final : public xiiGPUTestingEnvironmentInte
 public:
   xiiGPUTestingEnvironmentVulkan();
 
-  virtual xiiResult Initialize() override final;
-  virtual void      Shutdown() override final;
+  ~xiiGPUTestingEnvironmentVulkan();
 
-  virtual xiiResult CreateWindow(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY) override final;
-  virtual void      DestroyWindow() override final;
+  virtual xiiResult Initialize() override;
 
-  XII_ALWAYS_INLINE virtual xiiWindow* GetWindow() const override final { return m_pWindow.Borrow(); }
+  virtual void Shutdown() override;
 
-  XII_ALWAYS_INLINE virtual xiiGALDevice* GetDevice() const override final { return m_pDevice.Borrow(); }
+  virtual xiiStringView GetName() const override { return "Vulkan"; }
 
-  XII_ALWAYS_INLINE virtual xiiGALSwapChain* GetSwapChain() const override final { return m_pSwapChain.Borrow(); }
+  virtual xiiGALDevice* GetDevice() const override { return m_pDevice.Borrow(); }
 
-  virtual xiiResult CreateSwapChainForWindow(xiiUInt32 uiResolutionX, xiiUInt32 uiResolutionY) override final;
-  virtual void      DestroySwapChain() override final;
-
-  XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALTexture> GetBackBufferTexture() const override final { return m_pSwapChain ? m_pSwapChain->GetBackBufferTexture() : xiiSharedPtr<xiiGALTexture>(); }
-  XII_ALWAYS_INLINE virtual xiiSharedPtr<xiiGALTexture> GetDepthStencilTexture() const override final { return m_pDepthStencilTexture; }
-
-  virtual void BeginFrame() override final;
-  virtual void EndFrame() override final;
-
-  virtual void Present() override final;
-
-  virtual void ProcessWindowMessages() override final;
+  virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle) override;
 
 private:
-  xiiUniquePtr<xiiWindow>       m_pWindow;
-  xiiSharedPtr<xiiGALDevice>    m_pDevice;
-  xiiSharedPtr<xiiGALSwapChain> m_pSwapChain;
-  xiiSharedPtr<xiiGALTexture>   m_pDepthStencilTexture;
+  xiiSharedPtr<xiiGALDevice> m_pDevice;
+};
+
+class xiiGPUTestingEnvironmentD3D12 final : public xiiGPUTestingEnvironmentInterface
+{
+  XII_DECLARE_SINGLETON_OF_INTERFACE(xiiGPUTestingEnvironmentD3D12, xiiGPUTestingEnvironmentInterface);
+
+public:
+  xiiGPUTestingEnvironmentD3D12();
+
+  ~xiiGPUTestingEnvironmentD3D12();
+
+  virtual xiiStringView GetName() const override { return "Direct3D 12"; }
+
+  virtual xiiGALDevice* GetDevice() const override { return m_pDevice.Borrow(); }
+
+  virtual xiiResult Initialize() override;
+
+  virtual void Shutdown() override;
+
+  virtual xiiUniquePtr<xiiWindowBase> CreateWindow(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiStringView sTitle) override;
+
+private:
+  xiiSharedPtr<xiiGALDevice> m_pDevice;
 };
