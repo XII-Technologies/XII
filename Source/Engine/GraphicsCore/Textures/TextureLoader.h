@@ -7,7 +7,6 @@
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Texture/Image/Image.h>
-#include <Texture/Utilities/TextureFormat.h>
 
 class XII_GRAPHICSCORE_DLL xiiTextureResourceLoader : public xiiResourceTypeLoader
 {
@@ -23,8 +22,8 @@ public:
     xiiMemoryStreamReader            m_Reader;
     xiiImage                         m_Image;
 
-    bool         m_bIsFallback = false;
-    xiiTexFormat m_TexFormat;
+    bool                          m_bIsFallback = false;
+    xiiEnum<xiiGALResourceFormat> m_ResourceFormat;
   };
 
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;

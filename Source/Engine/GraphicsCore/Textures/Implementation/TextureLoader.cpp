@@ -12,10 +12,8 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
-#include <GraphicsCore/Textures/TextureUtils.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
-#include <Texture/Utilities/TextureFormat.h>
 
 static xiiTextureResourceLoader s_TextureResourceLoader;
 
@@ -45,14 +43,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
     xiiResourceManager::SetResourceTypeLoader<xiiRenderToTexture2DResource>(nullptr);
   }
 
-  ON_HIGHLEVELSYSTEMS_STARTUP
-  {
-  }
-
-  ON_HIGHLEVELSYSTEMS_SHUTDOWN
-  {
-  }
-
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
@@ -78,34 +68,33 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
       xiiLog::Error("'{0}' is not a valid color name. Using 'RebeccaPurple' as fallback.", sName);
     }
 
-    pData->m_TexFormat.m_bSRGB = true;
+    xiiGALTextureCreationDescription description;
+    description.m_Type               = xiiGALResourceDimension::Texture2D;
+    description.m_Format             = xiiGALResourceFormat::RGBA8UNormalizedSRGB;
+    description.m_Size.width         = 4;
+    description.m_Size.height        = 4;
+    description.m_uiArraySizeOrDepth = 1;
+    description.m_uiMipLevels        = 1;
 
-    xiiImageHeader header;
-    header.SetWidth(4);
-    header.SetHeight(4);
-    header.SetDepth(1);
-    header.SetImageFormat(xiiImageFormat::R8G8B8A8_UNORM_SRGB);
-    header.SetMipLevelCount(1);
-    header.SetFaceCount(1);
-    pData->m_Image.ResetAndAlloc(header);
+    pData->m_Image.ResetAndAlloc(description);
+
     xiiUInt8* pPixels = pData->m_Image.GetPixelPointer<xiiUInt8>();
-
-    for (xiiUInt32 px = 0; px < 4 * 4 * 4; px += 4)
+    for (xiiUInt32 uiPixelIndex = 0; uiPixelIndex < 4 * 4 * 4; uiPixelIndex += 4)
     {
-      pPixels[px + 0] = color.r;
-      pPixels[px + 1] = color.g;
-      pPixels[px + 2] = color.b;
-      pPixels[px + 3] = color.a;
+      pPixels[uiPixelIndex + 0] = color.r;
+      pPixels[uiPixelIndex + 1] = color.g;
+      pPixels[uiPixelIndex + 2] = color.b;
+      pPixels[uiPixelIndex + 3] = color.a;
     }
   }
   else
   {
-    xiiFileReader File;
-    if (File.Open(pResource->GetResourceID()).Failed())
+    xiiFileReader file;
+    if (file.Open(pResource->GetResourceID()).Failed())
       return res;
 
-    const xiiStringBuilder sAbsolutePath = File.GetFilePathAbsolute();
-    res.m_sResourceDescription           = File.GetFilePathRelative().GetView();
+    const xiiStringBuilder sAbsolutePath = file.GetFilePathAbsolute();
+    res.m_sResourceDescription           = file.GetFilePathRelative().GetView();
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
     {
@@ -117,31 +106,18 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
     }
 #endif
 
-    /// In case this is not a proper asset (xiiTextureXX format), this is a hack to get the SRGB information for the texture
-    const xiiStringBuilder sName = xiiPathUtils::GetFileName(sAbsolutePath);
-    pData->m_TexFormat.m_bSRGB   = (sName.EndsWith_NoCase("_D") || sName.EndsWith_NoCase("_SRGB") || sName.EndsWith_NoCase("_diff"));
-
     if (sAbsolutePath.HasExtension("xiiBinTexture2D") || sAbsolutePath.HasExtension("xiiBinTexture3D") || sAbsolutePath.HasExtension("xiiBinTextureCube") || sAbsolutePath.HasExtension("xiiBinRenderTarget") || sAbsolutePath.HasExtension("xiiBinLUT"))
     {
-      if (LoadTexFile(File, *pData).Failed())
+      if (LoadTexFile(file, *pData).Failed())
         return res;
     }
     else
     {
-      // read whatever format, as long as xiiImage supports it
-      File.Close();
+      // Read whatever format, as long as xiiImage supports it.
+      file.Close();
 
       if (pData->m_Image.LoadFrom(pResource->GetResourceID()).Failed())
         return res;
-
-      if (pData->m_Image.GetImageFormat() == xiiImageFormat::B8G8R8_UNORM)
-      {
-        /// \todo A conversion to B8G8R8X8_UNORM currently fails
-
-        xiiLog::Warning("Texture resource uses inefficient BGR format, converting to BGRX: '{0}'", sAbsolutePath);
-        if (xiiImageConversion::Convert(pData->m_Image, pData->m_Image, xiiImageFormat::B8G8R8A8_UNORM).Failed())
-          return res;
-      }
     }
   }
 
