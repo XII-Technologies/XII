@@ -8,24 +8,25 @@
 #include <Core/World/Declarations.h>
 #include <Texture/Image/Image.h>
 
-struct xiiImageDataResourceDescriptor
+struct XII_GAMEENGINE_DLL xiiImageDataResourceDescriptor
 {
   xiiImage m_Image;
-
-  // xiiResult Serialize(xiiStreamWriter& stream) const;
-  // xiiResult Deserialize(xiiStreamReader& stream);
 };
 
 class XII_GAMEENGINE_DLL xiiImageDataResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiImageDataResource, xiiResource);
+
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiImageDataResource);
+
   XII_RESOURCE_DECLARE_CREATEABLE(xiiImageDataResource, xiiImageDataResourceDescriptor);
 
 public:
   xiiImageDataResource();
+
   ~xiiImageDataResource();
 
+  /// \brief Returns the descriptor that was used to create this resource. The data in the descriptor is only valid as long as the resource is loaded.
   const xiiImageDataResourceDescriptor& GetDescriptor() const { return *m_pDescriptor; }
 
 private:

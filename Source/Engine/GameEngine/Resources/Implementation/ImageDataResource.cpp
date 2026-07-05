@@ -7,7 +7,6 @@
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Formats/ImageFileFormat.h>
 #include <Texture/Image/Formats/StbImageFileFormats.h>
-#include <Texture/Utilities/TextureFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImageDataResource, 1, xiiRTTIDefaultAllocator<xiiImageDataResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -95,7 +94,6 @@ xiiResourceLoadDesc xiiImageDataResource::UpdateContent(xiiStreamReader* Stream)
     }
   }
 
-
   CreateResource(std::move(desc));
 
   res.m_State = xiiResourceState::Loaded;
@@ -124,27 +122,12 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiImageDataResource, xiiImageDataResourceDesc
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
 
-  if (m_pDescriptor->m_Image.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Failed())
+  if (m_pDescriptor->m_Image.Convert(xiiGALResourceFormat::RGBA32Float).Failed())
   {
     res.m_State = xiiResourceState::LoadedResourceMissing;
   }
 
   return res;
 }
-
-// xiiResult xiiImageDataResourceDescriptor::Serialize(xiiStreamWriter& stream) const
-//{
-//  XII_SUCCEED_OR_RETURN(xiiImageFileFormat::GetWriterFormat("png")->WriteImage(stream, m_Image, "png"));
-//
-//  return XII_SUCCESS;
-//}
-//
-// xiiResult xiiImageDataResourceDescriptor::Deserialize(xiiStreamReader& stream)
-//{
-//  XII_SUCCEED_OR_RETURN(xiiImageFileFormat::GetReaderFormat("png")->ReadImage(stream, m_Image, "png"));
-//
-//  return XII_SUCCESS;
-//}
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Utils_Implementation_ImageDataResource);
