@@ -429,7 +429,9 @@ xiiUInt16 xiiAnimGraphInstance::GetActiveStateNode(const xiiAnimGraphResourceDes
   }
 
   if (!bActiveIsValidInput)
+  {
     uiActiveNode = stateMachineNode.m_Inputs[0];
+  }
 
   for (const xiiAnimGraphTransition& transition : graph.m_Transitions)
   {
@@ -470,9 +472,13 @@ void xiiAnimGraphInstance::EvaluateNode(const xiiAnimGraphResourceDescriptor& gr
     case xiiAnimGraphNodeType::Output:
     {
       if (!node.m_Inputs.IsEmpty())
+      {
         EvaluateNodeIndex(graph, node.m_Inputs[0], skeleton, ref_pose);
+      }
       else
+      {
         ref_pose.ResetToRestPose(skeleton);
+      }
     }
     break;
 
@@ -575,10 +581,7 @@ void xiiAnimGraphInstance::EvaluateNode(const xiiAnimGraphResourceDescriptor& gr
       xiiUInt16  uiPreviousStateNode = xiiMath::MaxValue<xiiUInt16>();
       xiiTime    transitionStart     = xiiTime::MakeZero();
       xiiTime    transitionDuration  = xiiTime::MakeZero();
-      const bool bHasBlend           = m_StateMachinePreviousStates.TryGetValue(uiNodeIndex, uiPreviousStateNode) &&
-        m_StateMachineTransitionStarts.TryGetValue(uiNodeIndex, transitionStart) &&
-        m_StateMachineTransitionDurations.TryGetValue(uiNodeIndex, transitionDuration) &&
-        uiPreviousStateNode < graph.m_Nodes.GetCount() && transitionDuration.GetSeconds() > 0.0;
+      const bool bHasBlend           = m_StateMachinePreviousStates.TryGetValue(uiNodeIndex, uiPreviousStateNode) && m_StateMachineTransitionStarts.TryGetValue(uiNodeIndex, transitionStart) && m_StateMachineTransitionDurations.TryGetValue(uiNodeIndex, transitionDuration) && uiPreviousStateNode < graph.m_Nodes.GetCount() && transitionDuration.GetSeconds() > 0.0;
 
       if (bHasBlend)
       {
