@@ -41,16 +41,16 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileName;
         fileName.SetFormat("{0}.bmp", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName);
       }
 
       {
         xiiStringBuilder fileName;
         fileName.SetFormat(":output/{0}_out.bmp", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
       }
     }
   }
@@ -72,10 +72,10 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileName;
         fileName.SetFormat("{0}.bmp", testImagesBad[i]);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "File does not exist: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "File does not exist: '%s'", fileName);
 
         XII_LOG_BLOCK_MUTE();
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_FAILURE, "Reading image should have failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_FAILURE, "Reading image should have failed: '%s'", fileName);
       }
     }
   }
@@ -91,8 +91,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileName;
         fileName.SetFormat("{0}.tga", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName);
       }
 
       {
@@ -102,8 +102,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileNameExpected;
         fileNameExpected.SetFormat("{0}_expected.bmp", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
 
         XII_TEST_FILES(fileName, fileNameExpected, "");
       }
@@ -115,8 +115,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileNameExpected;
         fileNameExpected.SetFormat("{0}_expected.tga", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
 
         XII_TEST_FILES(fileName, fileNameExpected, "");
       }
@@ -154,8 +154,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileName;
         fileName.SetFormat("{}/{}.tga", szTestImagePath, imgTests[uiIndex].szImage);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName);
       }
 
       {
@@ -164,11 +164,11 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
 
         xiiFileSystem::DeleteFile(fileName);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
 
         xiiImage image2;
-        XII_TEST_BOOL_MSG(image2.LoadFrom(fileName).Succeeded(), "Reading written image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image2.LoadFrom(fileName).Succeeded(), "Reading written image failed: '%s'", fileName);
 
         image.Convert(xiiGALResourceFormat::RGBA8UNormalizedSRGB).IgnoreResult();
         image2.Convert(xiiGALResourceFormat::RGBA8UNormalizedSRGB).IgnoreResult();
@@ -178,7 +178,7 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
 
         const xiiUInt32 uiMSE = xiiImageUtils::ComputeMeanSquareError(diff, 32);
 
-        XII_TEST_BOOL_MSG(uiMSE <= imgTests[uiIndex].uiMSE, "MSE %u is larger than %u for image '%s'", uiMSE, imgTests[uiIndex].uiMSE, fileName.GetData());
+        XII_TEST_BOOL_MSG(uiMSE <= imgTests[uiIndex].uiMSE, "MSE %u is larger than %u for image '%s'", uiMSE, imgTests[uiIndex].uiMSE, fileName);
       }
     }
   }
