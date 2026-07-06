@@ -384,7 +384,7 @@ xiiResult xiiDdsFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   XII_PROFILE_SCOPE("xiiDdsFileFormat::ReadImage");
 
   xiiGALTextureCreationDescription imageHeader;
-  xiiDdsHeader   ddsHeader;
+  xiiDdsHeader                     ddsHeader;
   XII_SUCCEED_OR_RETURN(ReadImageData(inout_stream, imageHeader, ddsHeader));
 
   ref_image.ResetAndAlloc(imageHeader);

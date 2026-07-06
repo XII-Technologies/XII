@@ -14,7 +14,7 @@ struct XII_TEXTURE_DLL xiiTextureAtlasCreationDescription
   struct Layer
   {
     xiiEnum<xiiTextureConverterUsage> m_Usage;
-    xiiUInt8                 m_uiNumChannels = 4;
+    xiiUInt8                          m_uiNumChannels = 4;
   };
 
   struct Item

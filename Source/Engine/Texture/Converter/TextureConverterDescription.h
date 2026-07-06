@@ -12,7 +12,7 @@
 
 struct xiiTextureConverterChannelMapping
 {
-  xiiInt8                      m_iInputImageIndex = -1;
+  xiiInt8                               m_iInputImageIndex = -1;
   xiiTextureConverterChannelValue::Enum m_ChannelValue;
 };
 
@@ -65,8 +65,8 @@ public:
   xiiEnum<xiiGALTextureAddressMode>      m_AddressModeU;
   xiiEnum<xiiGALTextureAddressMode>      m_AddressModeV;
   xiiEnum<xiiGALTextureAddressMode>      m_AddressModeW;
-  bool                             m_bPreserveMipmapCoverage = false;
-  float                            m_fMipmapAlphaThreshold   = 0.5f;
+  bool                                   m_bPreserveMipmapCoverage = false;
+  float                                  m_fMipmapAlphaThreshold   = 0.5f;
 
   // Misc options
   xiiUInt8 m_uiDilateColor     = 0;

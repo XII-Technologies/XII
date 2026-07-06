@@ -94,5 +94,5 @@ private:
   // Comparer specific
 
   xiiTextureComparer m_Comparer;
-  xiiString      m_sHtmlTitle;
+  xiiString          m_sHtmlTitle;
 };

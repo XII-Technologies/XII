@@ -21,7 +21,7 @@ xiiResult xiiTextureConverterProcessor::GenerateTextureAtlas(xiiMemoryStreamWrit
   }
 
   xiiTextureAtlasCreationDescription atlasDesc;
-  xiiDynamicArray<TextureAtlasItem> atlasItems;
+  xiiDynamicArray<TextureAtlasItem>  atlasItems;
 
   if (atlasDesc.Load(m_Descriptor.m_sTextureAtlasDescFile).Failed())
   {

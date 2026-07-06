@@ -10,7 +10,7 @@
 
 struct FileSuffixToUsage
 {
-  const char*                 m_szSuffix = nullptr;
+  const char*                          m_szSuffix = nullptr;
   const xiiTextureConverterUsage::Enum m_Usage    = xiiTextureConverterUsage::Auto;
 };
 

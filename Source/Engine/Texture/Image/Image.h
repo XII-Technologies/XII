@@ -92,8 +92,8 @@ protected:
 
   const xiiUInt64& GetSubImageOffset(xiiUInt32 uiMipLevel, xiiUInt32 uiFace, xiiUInt32 uiArrayIndex, xiiUInt32 uiPlaneIndex) const;
 
-  xiiHybridArray<xiiUInt64, 16> m_SubImageOffsets;
-  xiiBlobPtr<xiiUInt8>          m_DataPtr;
+  xiiHybridArray<xiiUInt64, 16>    m_SubImageOffsets;
+  xiiBlobPtr<xiiUInt8>             m_DataPtr;
   xiiGALTextureCreationDescription m_Description;
 };
 

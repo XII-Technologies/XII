@@ -104,13 +104,13 @@ public:
   float m_fHdrExposureBias       = 0;
   float m_fAlphaThreshold        = 0.5f;
 
-  xiiEnum<xiiTextureFilterSetting> m_TextureFilter;
-  xiiEnum<xiiImageAddressMode>     m_AddressModeU;
-  xiiEnum<xiiImageAddressMode>     m_AddressModeV;
-  xiiEnum<xiiImageAddressMode>     m_AddressModeW;
-  xiiEnum<xiiTexture2DResolution>  m_Resolution;
+  xiiEnum<xiiTextureFilterSetting>  m_TextureFilter;
+  xiiEnum<xiiImageAddressMode>      m_AddressModeU;
+  xiiEnum<xiiImageAddressMode>      m_AddressModeV;
+  xiiEnum<xiiImageAddressMode>      m_AddressModeW;
+  xiiEnum<xiiTexture2DResolution>   m_Resolution;
   xiiEnum<xiiTextureConverterUsage> m_TextureUsage;
-  xiiEnum<xiiRenderTargetFormat>   m_RtFormat;
+  xiiEnum<xiiRenderTargetFormat>    m_RtFormat;
 
   xiiEnum<xiiTextureConverterCompressionMode> m_CompressionMode;
   xiiEnum<xiiTextureConverterMipmapMode>      m_MipmapMode;
