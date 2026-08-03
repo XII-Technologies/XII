@@ -324,8 +324,6 @@ xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
   if (!m_pDXGISwapChain3)
     return XII_SUCCESS;
 
-  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = xiiDynamicCast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetCommandQueue(xiiGALCommandQueueFlags::Graphics));
-
   {
     m_SwapChainTextures.Clear();
     m_pBackBufferTexture.Clear();

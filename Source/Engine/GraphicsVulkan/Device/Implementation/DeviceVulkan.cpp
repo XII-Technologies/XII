@@ -2918,7 +2918,7 @@ xiiResult xiiGALDeviceVulkan::InitializePhysicalDeviceProperties()
   }
 #endif
 
-  // Ensure that last pNext is null
+  // Ensure that last pNext is null.
   *pNextFeature  = nullptr;
   *pNextProperty = nullptr;
 
@@ -3334,7 +3334,7 @@ xiiUInt32 xiiGALDeviceVulkan::FindQueueFamily(vk::QueueFlags queueFlags, xiiArra
 
       // Queues supporting graphics and/or compute operations must report (1,1,1).
       // In minImageTransferGranularity, meaning that there are no additional restrictions on the granularity of image transfer operations for these queues (4.1).
-      XII_ASSERT_DEV(properties.minImageTransferGranularity.width == 1 && properties.minImageTransferGranularity.height == 1 && properties.minImageTransferGranularity.depth == 1, "");
+      XII_ASSERT_DEV(properties.minImageTransferGranularity.width == 1 && properties.minImageTransferGranularity.height == 1 && properties.minImageTransferGranularity.depth == 1, "Queue family does not meet the required minImageTransferGranularity of (1,1,1).");
     }
   }
 #endif

@@ -900,7 +900,7 @@ XII_ALWAYS_INLINE D3D12_STATIC_BORDER_COLOR xiiD3D12TypeConversions::GetStaticBo
   return D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
 }
 
-XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xiiGALQueryType::Enum e)
+XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryHeapType(xiiGALQueryType::Enum e)
 {
   switch (e)
   {
@@ -916,6 +916,25 @@ XII_ALWAYS_INLINE D3D12_QUERY_HEAP_TYPE xiiD3D12TypeConversions::GetQueryType(xi
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+}
+
+XII_ALWAYS_INLINE D3D12_QUERY_TYPE xiiD3D12TypeConversions::GetQueryType(xiiGALQueryType::Enum e)
+{
+  switch (e)
+  {
+    case xiiGALQueryType::Occlusion:
+      return D3D12_QUERY_TYPE_OCCLUSION;
+    case xiiGALQueryType::BinaryOcclusion:
+      return D3D12_QUERY_TYPE_BINARY_OCCLUSION;
+    case xiiGALQueryType::Duration:
+    case xiiGALQueryType::Timestamp:
+      return D3D12_QUERY_TYPE_TIMESTAMP;
+    case xiiGALQueryType::PipelineStatistics:
+      return D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return D3D12_QUERY_TYPE_TIMESTAMP;
 }
 
 XII_ALWAYS_INLINE D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS xiiD3D12TypeConversions::GetAccelerationStructureBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags)

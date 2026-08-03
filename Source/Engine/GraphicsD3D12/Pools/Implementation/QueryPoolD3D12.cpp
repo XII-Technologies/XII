@@ -18,29 +18,6 @@ namespace
     256U  // Duration
   };
 
-  static D3D12_QUERY_TYPE GetD3D12QueryType(xiiEnum<xiiGALQueryType> queryType)
-  {
-    switch (queryType)
-    {
-      case xiiGALQueryType::Occlusion:
-        return D3D12_QUERY_TYPE_OCCLUSION;
-
-      case xiiGALQueryType::BinaryOcclusion:
-        return D3D12_QUERY_TYPE_BINARY_OCCLUSION;
-
-      case xiiGALQueryType::Timestamp:
-      case xiiGALQueryType::Duration:
-        return D3D12_QUERY_TYPE_TIMESTAMP;
-
-      case xiiGALQueryType::PipelineStatistics:
-        return D3D12_QUERY_TYPE_PIPELINE_STATISTICS;
-
-      default:
-        XII_REPORT_FAILURE("Unsupported D3D12 query type '{}'.", xiiArgEnum(queryType));
-        return D3D12_QUERY_TYPE_TIMESTAMP;
-    }
-  }
-
   static xiiUInt32 GetQueryResultStride(xiiEnum<xiiGALQueryType> queryType)
   {
     switch (queryType)
@@ -56,7 +33,7 @@ namespace
 
       default:
         XII_REPORT_FAILURE("Unsupported D3D12 query type '{}'.", xiiArgEnum(queryType));
-        return sizeof(xiiUInt64);
+        return 0U;
     }
   }
 } // namespace
@@ -100,7 +77,7 @@ xiiGALQueryPoolD3D12::xiiGALQueryPoolD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiG
 
     m_QueryPools[queryType] = XII_NEW(pDeviceD3D12->GetAllocator(), QueryPoolInformation, pDeviceD3D12);
 
-    const D3D12_QUERY_HEAP_TYPE queryHeapType  = xiiD3D12TypeConversions::GetQueryType(queryType);
+    const D3D12_QUERY_HEAP_TYPE queryHeapType  = xiiD3D12TypeConversions::GetQueryHeapType(queryType);
     const D3D12_QUERY_TYPE      d3d12QueryType = GetD3D12QueryType(queryType);
     xiiUInt32                   uiQueryCount   = s_uiQueryPoolSizes[uiQueryType];
     if (queryType == xiiGALQueryType::Duration)
@@ -188,24 +165,6 @@ xiiUInt64 xiiGALQueryPoolD3D12::GetQueryReadbackOffset(xiiGALQueryType::Enum que
   XII_ASSERT_DEV(queryType > xiiGALQueryType::Undefined && queryType < xiiGALQueryType::ENUM_COUNT, "Invalid D3D12 query type.");
 
   return m_QueryPools[queryType]->GetQueryReadbackOffset(uiQueryIndex);
-}
-
-xiiUInt32 xiiGALQueryPoolD3D12::GetQueryResultStride(xiiGALQueryType::Enum queryType) const
-{
-  switch (queryType)
-  {
-    case xiiGALQueryType::Occlusion:
-    case xiiGALQueryType::BinaryOcclusion:
-    case xiiGALQueryType::Timestamp:
-    case xiiGALQueryType::Duration:
-      return sizeof(xiiUInt64);
-
-    case xiiGALQueryType::PipelineStatistics:
-      return sizeof(D3D12_QUERY_DATA_PIPELINE_STATISTICS);
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-  return 0;
 }
 
 ///////////////////////////////////////////////////////////
