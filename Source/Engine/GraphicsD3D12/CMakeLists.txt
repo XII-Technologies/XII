@@ -9,7 +9,7 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME})
 
-# xii_enable_strict_warnings(${PROJECT_NAME})
+xii_enable_strict_warnings(${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
@@ -22,6 +22,8 @@ target_link_libraries(${PROJECT_NAME}
   dxgi.lib
   dxguid.lib
 )
+
+xii_link_target_pix_event_runtime(${PROJECT_NAME})
 
 if("${XII_CMAKE_WINDOWS_SDK_VERSION}" VERSION_GREATER_EQUAL "10.0.19041.0")
   target_compile_definitions(${PROJECT_NAME} PRIVATE D3D12_H_HAS_MESH_SHADER=1)
