@@ -149,7 +149,7 @@ namespace xiiMath
 
   /// \brief Clamps "value" to the range [min; max]. Returns "value", if it is inside the range already
   template <typename T>
-  [[nodiscard]] constexpr T Clamp(T value, T min_val, T max_val); // [tested]
+  [[nodiscard]] constexpr T Clamp(T value, T minValue, T maxValue); // [tested]
 
   /// \brief Wraps uiValue around the maximum value, so that it stays within the range [0; uiExcludedMaxValue-1].
   ///

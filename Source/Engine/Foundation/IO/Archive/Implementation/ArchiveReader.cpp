@@ -156,10 +156,10 @@ bool xiiArchiveReader::ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 u
   return true;
 }
 
-bool xiiArchiveReader::ExtractFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const
+bool xiiArchiveReader::ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xiiUInt64 uiTotalBytes) const
 {
-  XII_IGNORE_UNUSED(bytesWritten);
-  XII_IGNORE_UNUSED(bytesTotal);
+  XII_IGNORE_UNUSED(uiBytesWritten);
+  XII_IGNORE_UNUSED(uiTotalBytes);
   return true;
 }
 

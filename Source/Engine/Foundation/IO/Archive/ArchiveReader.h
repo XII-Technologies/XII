@@ -40,7 +40,7 @@ protected:
   virtual bool ExtractNextFileCallback(xiiUInt32 uiCurEntry, xiiUInt32 uiMaxEntries, xiiStringView sSourceFile) const;
 
   /// \brief Called by ExtractFile() for progress reporting. Return false to abort.
-  virtual bool ExtractFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const;
+  virtual bool ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xiiUInt64 uiTotalBytes) const;
 
   xiiMemoryMappedFile m_MemFile;
   xiiArchiveTOC       m_ArchiveTOC;

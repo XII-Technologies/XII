@@ -175,7 +175,6 @@ public:
   /// \brief Reinterprets this array as a byte array.
   XII_ALWAYS_INLINE xiiArrayPtr<ByteType> ToByteArray() { return xiiArrayPtr<ByteType>(reinterpret_cast<ByteType*>(GetPtr()), GetCount() * sizeof(T)); }
 
-
   /// \brief Cast an ArrayPtr to an ArrayPtr to a different, but same size, type
   template <typename U>
   XII_ALWAYS_INLINE xiiArrayPtr<U> Cast()
