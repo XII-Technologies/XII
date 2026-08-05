@@ -133,9 +133,10 @@ protected:
   }
 
 
-  virtual bool ExtractFileProgressCallback(xiiUInt64 bytesWritten, xiiUInt64 bytesTotal) const override
+
+  virtual bool ExtractFileProgressCallback(xiiUInt64 uiBytesWritten, xiiUInt64 uiTotalBytes) const override
   {
-    // xiiLog::Dev("   {}%%", xiiArgU(100 * bytesWritten / bytesTotal));
+    // xiiLog::Dev("   {}%%", xiiArgU(100 * uiBytesWritten / uiTotalBytes));
     return true;
   }
 };
@@ -235,9 +236,13 @@ public:
         m_sInputs.PushBack(xiiOSFile::MakePathAbsoluteWithCWD(sArg));
 
         if (!xiiOSFile::ExistsDirectory(m_sInputs.PeekBack()))
+        {
           bInputsFolders = false;
+        }
         if (!xiiOSFile::ExistsFile(m_sInputs.PeekBack()))
+        {
           bInputsFiles = false;
+        }
       }
 
       if (bInputsFolders && !bInputsFiles)
@@ -250,8 +255,8 @@ public:
       }
       else
       {
-        xiiLog::Error("Inputs are ambiguous. Specify only folders for packing or only files for unpacking. Use -out as last argument to "
-                      "specify a target.");
+        xiiLog::Error("Inputs are ambiguous. Specify only folders for packing or only files for unpacking. Use -out as last argument to specify a target.");
+
         return XII_FAILURE;
       }
     }
