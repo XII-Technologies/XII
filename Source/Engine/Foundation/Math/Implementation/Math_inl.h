@@ -16,7 +16,7 @@ namespace xiiMath
   constexpr XII_ALWAYS_INLINE T Sign(T f)
   {
     return (f < 0 ? T(-1) : f > 0 ? T(1) :
-                                    0);
+                                    T(0));
   }
 
   template <typename T>
@@ -50,9 +50,9 @@ namespace xiiMath
   }
 
   template <typename T>
-  constexpr XII_ALWAYS_INLINE T Clamp(T value, T min_val, T max_val)
+  constexpr XII_ALWAYS_INLINE T Clamp(T value, T minValue, T maxValue)
   {
-    return value < min_val ? min_val : (max_val < value ? max_val : value);
+    return value < minValue ? minValue : (maxValue < value ? maxValue : value);
   }
 
   template <typename T>
@@ -62,32 +62,31 @@ namespace xiiMath
   }
 
   template <typename Type>
+    requires std::is_floating_point_v<Type>
   constexpr Type Invert(Type f)
   {
-    static_assert(std::is_floating_point_v<Type>);
-
     return ((Type)1) / f;
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 FirstBitLow(xiiUInt32 value)
+  XII_ALWAYS_INLINE xiiUInt32 FirstBitLow(xiiUInt32 uiValue)
   {
-    XII_ASSERT_DEBUG(value != 0, "FirstBitLow is undefined for 0");
+    XII_ASSERT_DEBUG(uiValue != 0, "FirstBitLow is undefined for 0.");
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    unsigned long uiIndex = 0;
-    _BitScanForward(&uiIndex, value);
+    unsigned long uiIndex = 0U;
+    _BitScanForward(&uiIndex, uiValue);
     return uiIndex;
 #elif XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
-    return __builtin_ctz(value);
+    return __builtin_ctz(uiValue);
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
     return 0;
 #endif
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 FirstBitLow(xiiUInt64 value)
+  XII_ALWAYS_INLINE xiiUInt32 FirstBitLow(xiiUInt64 uiValue)
   {
-    XII_ASSERT_DEBUG(value != 0, "FirstBitLow is undefined for 0");
+    XII_ASSERT_DEBUG(uiValue != 0, "FirstBitLow is undefined for 0.");
 
 #if __castxml__
     return 0;
@@ -95,62 +94,62 @@ namespace xiiMath
     unsigned long uiIndex = 0;
 #  if XII_ENABLED(XII_PLATFORM_64BIT)
 
-    _BitScanForward64(&uiIndex, value);
+    _BitScanForward64(&uiIndex, uiValue);
 #  else
-    uint32_t      lower      = static_cast<uint32_t>(value);
-    unsigned char returnCode = _BitScanForward(&uiIndex, lower);
-    if (returnCode == 0)
+    uint32_t      uiLower      = static_cast<uint32_t>(uiValue);
+    unsigned char uiReturnCode = _BitScanForward(&uiIndex, uiLower);
+    if (uiReturnCode == 0)
     {
-      uint32_t upper = static_cast<uint32_t>(value >> 32);
-      returnCode     = _BitScanForward(&uiIndex, upper);
-      if (returnCode > 0) // Only can happen in Release build when XII_ASSERT_DEBUG(value != 0) would fail.
+      uint32_t upper = static_cast<uint32_t>(uiValue >> 32);
+      uiReturnCode   = _BitScanForward(&uiIndex, upper);
+      if (uiReturnCode > 0) // Only can happen in Release build when XII_ASSERT_DEBUG(uiValue != 0) would fail.
       {
-        uiIndex += 32; // Add length of lower to index.
+        uiIndex += 32; // Add length of uiLower to index.
       }
     }
 #  endif
     return uiIndex;
 #elif XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
-    return __builtin_ctzll(value);
+    return __builtin_ctzll(uiValue);
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
     return 0;
 #endif
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 FirstBitHigh(xiiUInt32 value)
+  XII_ALWAYS_INLINE xiiUInt32 FirstBitHigh(xiiUInt32 uiValue)
   {
-    XII_ASSERT_DEBUG(value != 0, "FirstBitHigh is undefined for 0");
+    XII_ASSERT_DEBUG(uiValue != 0, "FirstBitHigh is undefined for 0.");
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
     unsigned long uiIndex = 0;
-    _BitScanReverse(&uiIndex, value);
+    _BitScanReverse(&uiIndex, uiValue);
     return uiIndex;
 #elif XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
-    return 31 - __builtin_clz(value);
+    return 31 - __builtin_clz(uiValue);
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
     return 0;
 #endif
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 FirstBitHigh(xiiUInt64 value)
+  XII_ALWAYS_INLINE xiiUInt32 FirstBitHigh(xiiUInt64 uiValue)
   {
-    XII_ASSERT_DEBUG(value != 0, "FirstBitHigh is undefined for 0");
+    XII_ASSERT_DEBUG(uiValue != 0, "FirstBitHigh is undefined for 0.");
 
 #if __castxml__
     return 0;
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS)
     unsigned long uiIndex = 0;
 #  if XII_ENABLED(XII_PLATFORM_64BIT)
-    _BitScanReverse64(&uiIndex, value);
+    _BitScanReverse64(&uiIndex, uiValue);
 #  else
-    uint32_t      upper      = static_cast<uint32_t>(value >> 32);
-    unsigned char returnCode = _BitScanReverse(&uiIndex, upper);
-    if (returnCode == 0)
+    uint32_t      uiUpper      = static_cast<uint32_t>(uiValue >> 32);
+    unsigned char uiReturnCode = _BitScanReverse(&uiIndex, uiUpper);
+    if (uiReturnCode == 0)
     {
-      uint32_t lower = static_cast<uint32_t>(value);
-      returnCode     = _BitScanReverse(&uiIndex, lower);
+      uint32_t uiLower = static_cast<uint32_t>(uiValue);
+      uiReturnCode     = _BitScanReverse(&uiIndex, uiLower);
     }
     else
     {
@@ -159,7 +158,7 @@ namespace xiiMath
 #  endif
     return uiIndex;
 #elif XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
-    return 63 - __builtin_clzll(value);
+    return 63 - __builtin_clzll(uiValue);
 #else
     XII_ASSERT_NOT_IMPLEMENTED;
     return 0;
@@ -173,39 +172,39 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt64 uiBitmask)
   {
-    const xiiUInt32 numLow  = CountTrailingZeros(static_cast<xiiUInt32>(uiBitmask & 0xFFFFFFFF));
-    const xiiUInt32 numHigh = CountTrailingZeros(static_cast<xiiUInt32>((uiBitmask >> 32u) & 0xFFFFFFFF));
+    const xiiUInt32 uiLow  = CountTrailingZeros(static_cast<xiiUInt32>(uiBitmask & 0xFFFFFFFF));
+    const xiiUInt32 uiHigh = CountTrailingZeros(static_cast<xiiUInt32>((uiBitmask >> 32u) & 0xFFFFFFFF));
 
-    return (numLow == 32) ? (32 + numHigh) : numLow;
+    return (uiLow == 32U) ? (32U + uiHigh) : uiLow;
   }
 
   XII_ALWAYS_INLINE xiiUInt32 CountLeadingZeros(xiiUInt32 uiBitmask)
   {
-    return (uiBitmask == 0) ? 32 : (31u - FirstBitHigh(uiBitmask));
+    return (uiBitmask == 0) ? 32U : (31U - FirstBitHigh(uiBitmask));
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountBits(xiiUInt32 value)
+  XII_ALWAYS_INLINE xiiUInt32 CountBits(xiiUInt32 uiValue)
   {
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_ENABLED(XII_PLATFORM_ARCH_X86) || (XII_ENABLED(XII_PLATFORM_ARCH_ARM) && XII_ENABLED(XII_PLATFORM_32BIT)))
 #  if XII_ENABLED(XII_PLATFORM_ARCH_X86)
-    return __popcnt(value);
+    return __popcnt(uiValue);
 #  else
-    return _CountOneBits(value);
+    return _CountOneBits(uiValue);
 #  endif
 #elif XII_ENABLED(XII_COMPILER_GCC) || XII_ENABLED(XII_COMPILER_CLANG)
-    return __builtin_popcount(value);
+    return __builtin_popcount(uiValue);
 #else
-    value = value - ((value >> 1) & 0x55555555u);
-    value = (value & 0x33333333u) + ((value >> 2) & 0x33333333u);
-    return ((value + (value >> 4) & 0xF0F0F0Fu) * 0x1010101u) >> 24;
+    uiValue = uiValue - ((uiValue >> 1) & 0x55555555u);
+    uiValue = (uiValue & 0x33333333u) + ((uiValue >> 2) & 0x33333333u);
+    return ((uiValue + (uiValue >> 4) & 0xF0F0F0Fu) * 0x1010101u) >> 24;
 #endif
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountBits(xiiUInt64 value)
+  XII_ALWAYS_INLINE xiiUInt32 CountBits(xiiUInt64 uiValue)
   {
     xiiUInt32 result = 0;
-    result += CountBits(xiiUInt32(value));
-    result += CountBits(xiiUInt32(value >> 32));
+    result += CountBits(xiiUInt32(uiValue));
+    result += CountBits(xiiUInt32(uiValue >> 32));
     return result;
   }
 

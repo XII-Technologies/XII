@@ -16,28 +16,25 @@
 
 #  include <DirectXTex/DirectXTex.h>
 
-using namespace DirectX;
-
 XII_DEFINE_AS_POD_TYPE(DirectX::Image); // Allow for storing this struct in XII containers.
 
-XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiWicFileFormat> g_wicFormat;
+XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiWicFileFormat> g_WicFormat;
 
 namespace
 {
   /// \brief Try to init COM, return true if we are the first(!) to successfully do so
   bool InitializeCOM()
   {
-    HRESULT result = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    if (result == S_OK)
+    HRESULT hResult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (hResult == S_OK)
     {
       // We were the first one - deinit on shutdown
       return true;
     }
-    else if (SUCCEEDED(result))
+    else if (SUCCEEDED(hResult))
     {
       // We were not the first one, but we still succeeded, so we deinit COM right away.
-      // Otherwise we might be the last one to call CoUninitialize(), but that is supposed to be the one who called
-      // CoInitialize[Ex]() first.
+      // Otherwise we might be the last one to call CoUninitialize(), but that is supposed to be the one who called CoInitialize[Ex]() first.
       CoUninitialize();
     }
 
@@ -72,16 +69,16 @@ xiiResult xiiWicFileFormat::ReadFileData(xiiStreamReader& stream, xiiDynamicArra
   if (storage.IsEmpty())
   {
     xiiLog::Error("Failure to retrieve image data.");
+
     return XII_FAILURE;
   }
 
   return XII_SUCCESS;
 }
 
-static void SetHeader(xiiGALTextureCreationDescription& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const TexMetadata& metadata)
+static void SetHeader(xiiGALTextureCreationDescription& ref_header, xiiEnum<xiiGALResourceFormat> imageFormat, const DirectX::TexMetadata& metadata)
 {
-  ref_header.m_Format = imageFormat;
-
+  ref_header.m_Format      = imageFormat;
   ref_header.m_Size.width  = xiiUInt32(metadata.width);
   ref_header.m_Size.height = xiiUInt32(metadata.height);
   ref_header.m_uiMipLevels = 1;
@@ -103,14 +100,15 @@ xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, 
   xiiDynamicArray<xiiUInt8> storage;
   XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
 
-  TexMetadata  metadata;
-  ScratchImage scratchImage;
-  WIC_FLAGS    wicFlags = WIC_FLAGS_ALL_FRAMES | WIC_FLAGS_IGNORE_SRGB /* just treat PNG, JPG etc as non-sRGB, we determine this through our 'Usage' later */;
+  DirectX::TexMetadata  metadata;
+  DirectX::ScratchImage scratchImage;
+  DirectX::WIC_FLAGS    wicFlags = DirectX::WIC_FLAGS_ALL_FRAMES | DirectX::WIC_FLAGS_IGNORE_SRGB /* just treat PNG, JPG etc as non-sRGB, we determine this through our 'Usage' later */;
 
-  HRESULT loadResult = GetMetadataFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, metadata);
-  if (FAILED(loadResult))
+  HRESULT hLoadResult = DirectX::GetMetadataFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, metadata);
+  if (FAILED(hLoadResult))
   {
-    xiiLog::Error("Failure to load image metadata. HRESULT:{}", xiiArgErrorCode(loadResult));
+    xiiLog::Error("Failure to load image metadata. HRESULT:{}", xiiArgErrorCode(hLoadResult));
+
     return XII_FAILURE;
   }
 
@@ -119,14 +117,18 @@ xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, 
   if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
-    wicFlags |= WIC_FLAGS_FORCE_RGB;
-    GetMetadataFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, metadata);
+
+    wicFlags |= DirectX::WIC_FLAGS_FORCE_RGB;
+
+    DirectX::GetMetadataFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, metadata);
+
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
   }
 
   if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Error("Unable to use image format from '{}' file.", sFileExtension);
+
     return XII_FAILURE;
   }
 
@@ -142,15 +144,15 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   xiiDynamicArray<xiiUInt8> storage;
   XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
 
-  TexMetadata  metadata;
-  ScratchImage scratchImage;
-  WIC_FLAGS    wicFlags = WIC_FLAGS_ALL_FRAMES | WIC_FLAGS_IGNORE_SRGB /* just treat PNG, JPG etc as non-sRGB, we determine this through our 'Usage' later */;
+  DirectX::TexMetadata  metadata;
+  DirectX::ScratchImage scratchImage;
+  DirectX::WIC_FLAGS    wicFlags = DirectX::WIC_FLAGS_ALL_FRAMES | DirectX::WIC_FLAGS_IGNORE_SRGB /* just treat PNG, JPG etc as non-sRGB, we determine this through our 'Usage' later */;
 
   // Read WIC data from local storage
-  HRESULT loadResult = LoadFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, nullptr, scratchImage);
-  if (FAILED(loadResult))
+  HRESULT hLoadResult = DirectX::LoadFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, nullptr, scratchImage);
+  if (FAILED(hLoadResult))
   {
-    xiiLog::Error("Failure to load image data. HRESULT:{}", xiiArgErrorCode(loadResult));
+    xiiLog::Error("Failure to load image data. HRESULT:{}", xiiArgErrorCode(hLoadResult));
     return XII_FAILURE;
   }
 
@@ -162,8 +164,9 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   if (imageFormat == xiiGALResourceFormat::Unknown)
   {
     xiiLog::Warning("Unable to use image format from '{}' file - trying conversion.", sFileExtension);
-    wicFlags |= WIC_FLAGS_FORCE_RGB;
-    LoadFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, nullptr, scratchImage);
+
+    wicFlags |= DirectX::WIC_FLAGS_FORCE_RGB;
+    DirectX::LoadFromWICMemory(storage.GetData(), storage.GetCount(), wicFlags, nullptr, scratchImage);
     imageFormat = xiiImageFormatMappings::FromDxgiFormat(metadata.format);
   }
 
@@ -182,35 +185,35 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(imageHeader.m_Format);
 
   // Read image data into destination image
-  xiiUInt64 destRowPitch = formatProperties.GetRowPitch(imageHeader.m_Size.width);
-  xiiUInt32 itemIdx      = 0;
+  xiiUInt64 uiDestinationRowPitch = formatProperties.GetRowPitch(imageHeader.m_Size.width);
+  xiiUInt32 uiItemIndex           = 0;
   for (xiiUInt32 arrayIdx = 0; arrayIdx < imageHeader.m_uiArraySizeOrDepth; ++arrayIdx)
   {
-    for (xiiUInt32 faceIdx = 0; faceIdx < 1; ++faceIdx, ++itemIdx) // \todo: Support cubemaps and other multi-face formats.
+    for (xiiUInt32 faceIdx = 0; faceIdx < 1; ++faceIdx, ++uiItemIndex) // \todo: Support cubemaps and other multi-face formats.
     {
       for (xiiUInt32 sliceIdx = 0; sliceIdx < 1; ++sliceIdx) // \todo Support 3D textures and other multi-slice formats.
       {
-        const Image* sourceImage = scratchImage.GetImage(0, itemIdx, sliceIdx);
-        xiiUInt8*    destPixels  = ref_image.GetPixelPointer<xiiUInt8>(0, faceIdx, arrayIdx, 0, 0, sliceIdx);
+        const DirectX::Image* pSourceImage = scratchImage.GetImage(0, uiItemIndex, sliceIdx);
+        xiiUInt8*             destPixels   = ref_image.GetPixelPointer<xiiUInt8>(0, faceIdx, arrayIdx, 0, 0, sliceIdx);
 
-        if (sourceImage && destPixels && sourceImage->pixels)
+        if (pSourceImage && destPixels && pSourceImage->pixels)
         {
-          if (destRowPitch == sourceImage->rowPitch)
+          if (uiDestinationRowPitch == pSourceImage->rowPitch)
           {
             // Fast path: Just copy the entire thing
-            xiiMemoryUtils::Copy(destPixels, sourceImage->pixels, static_cast<size_t>(imageHeader.m_Size.height * destRowPitch));
+            xiiMemoryUtils::Copy(destPixels, pSourceImage->pixels, static_cast<size_t>(imageHeader.m_Size.height * uiDestinationRowPitch));
           }
           else
           {
             // Row pitches don't match - copy row by row
-            xiiUInt64      bytesPerRow  = xiiMath::Min(destRowPitch, xiiUInt64(sourceImage->rowPitch));
-            const uint8_t* sourcePixels = sourceImage->pixels;
+            xiiUInt64      bytesPerRow  = xiiMath::Min(uiDestinationRowPitch, xiiUInt64(pSourceImage->rowPitch));
+            const uint8_t* sourcePixels = pSourceImage->pixels;
             for (xiiUInt32 rowIdx = 0; rowIdx < imageHeader.m_Size.height; ++rowIdx)
             {
               xiiMemoryUtils::Copy(destPixels, sourcePixels, static_cast<size_t>(bytesPerRow));
 
-              destPixels += destRowPitch;
-              sourcePixels += sourceImage->rowPitch;
+              destPixels += uiDestinationRowPitch;
+              sourcePixels += pSourceImage->rowPitch;
             }
           }
         }

@@ -14,7 +14,7 @@ macro(xii_requires_d3d12)
 endmacro()
 
 # #####################################
-# ## xii_link_target_dx11(<target>)
+# ## xii_link_target_d3d12(<target>)
 # #####################################
 function(xii_link_target_d3d12 TARGET_NAME)
   xii_requires_d3d12()
@@ -79,4 +79,27 @@ function(xii_link_target_d3d12 TARGET_NAME)
     )
   endif()
 
+endfunction()
+
+# #####################################
+# ## xii_link_target_pix_event_runtime(<target>)
+# #####################################
+function(xii_link_target_pix_event_runtime TARGET_NAME)
+  xii_requires_pix_event_runtime()
+
+  target_link_libraries(${TARGET_NAME} PRIVATE WinPixEventRuntime)
+
+  target_compile_definitions(${TARGET_NAME} PUBLIC BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT)
+
+  get_target_property(_PIX_DLL_PATH WinPixEventRuntime RUNTIME_DLL_PATH)
+  if (NOT _PIX_DLL_PATH)
+    message(FATAL_ERROR "WinPixEventRuntime target does not have RUNTIME_DLL_PATH property set.")
+  endif()
+
+  add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${_PIX_DLL_PATH}"
+        $<TARGET_FILE_DIR:${TARGET_NAME}>
+          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  )
 endfunction()

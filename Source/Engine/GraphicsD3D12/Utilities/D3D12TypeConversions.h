@@ -51,7 +51,8 @@ public:
   static bool                       TryGetDescriptorRangeType(xiiEnum<xiiGALShaderResourceType> resourceType, D3D12_DESCRIPTOR_RANGE_TYPE& out_rangeType);
   static D3D12_STATIC_BORDER_COLOR  GetStaticBorderColor(const xiiColor& color);
 
-  static D3D12_QUERY_HEAP_TYPE GetQueryType(xiiGALQueryType::Enum e);
+  static D3D12_QUERY_HEAP_TYPE GetQueryHeapType(xiiGALQueryType::Enum e);
+  static D3D12_QUERY_TYPE      GetQueryType(xiiGALQueryType::Enum e);
 
   static D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS GetAccelerationStructureBuildFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> flags);
 

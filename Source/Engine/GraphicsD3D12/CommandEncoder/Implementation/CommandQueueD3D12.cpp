@@ -63,7 +63,6 @@ xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandLis
   XII_ASSERT_DEV(m_pD3D12QueueFence != nullptr, "D3D12 command queue fence is not initialized.");
   XII_ASSERT_DEV(m_hFenceEvent != nullptr && m_hFenceEvent != INVALID_HANDLE_VALUE, "D3D12 command queue fence event handle is invalid.");
 
-  xiiGALDeviceD3D12*       pDeviceD3D12      = xiiDynamicCast<xiiGALDeviceD3D12*>(m_pDevice);
   xiiGALCommandListD3D12*  pCommandListD3D12 = xiiDynamicCast<xiiGALCommandListD3D12*>(pCommandList);
   ID3D12CommandList* const pD3D12CommandList = pCommandListD3D12->GetD3D12CommandList();
 

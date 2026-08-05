@@ -25,6 +25,7 @@ macro(xii_pull_config_vars)
 
   get_property(XII_CMAKE_RELPATH GLOBAL PROPERTY XII_CMAKE_RELPATH)
   get_property(XII_CMAKE_RELPATH_CODE GLOBAL PROPERTY XII_CMAKE_RELPATH_CODE)
+  get_property(XII_CONFIG_PRECOMPILED_PATH GLOBAL PROPERTY XII_CONFIG_PRECOMPILED_PATH)
   get_property(XII_CONFIG_PATH_7ZA GLOBAL PROPERTY XII_CONFIG_PATH_7ZA)
 
   get_property(XII_CONFIG_QT_WINX64_URL GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL)
@@ -384,6 +385,52 @@ macro(xii_requires_one_of)
   if(NOT VALID)
     return()
   endif()
+endmacro()
+
+# #####################################
+# ## xii_requires_build_type(<type1> (<type2>) ...)
+# #####################################
+macro(xii_requires_build_type)
+  if(${ARGC} EQUAL 0)
+    message(FATAL_ERROR "xii_requires_build_type needs at least one argument")
+  endif()
+
+  set(ALL_ARGS "${ARGN}")
+  set(XII_BUILD_TYPE_MATCH OFF)
+
+  foreach(_bt IN LISTS ALL_ARGS)
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "${_bt}")
+      set(XII_BUILD_TYPE_MATCH ON)
+    endif()
+  endforeach()
+
+  if(NOT XII_BUILD_TYPE_MATCH)
+    return()
+  endif()
+endmacro()
+
+# #####################################
+# ## xii_requires_debug()
+# #####################################
+macro(xii_requires_debug)
+  xii_pull_config_vars()
+  xii_requires_build_type("${XII_BUILDTYPENAME_DEBUG}")
+endmacro()
+
+# #####################################
+# ## xii_requires_development()
+# #####################################
+macro(xii_requires_development)
+  xii_pull_config_vars()
+  xii_requires_build_type("${XII_BUILDTYPENAME_DEBUG}" "${XII_BUILDTYPENAME_DEV}")
+endmacro()
+
+# #####################################
+# ## xii_requires_shipping()
+# #####################################
+macro(xii_requires_shipping)
+  xii_pull_config_vars()
+  xii_requires_build_type("${XII_BUILDTYPENAME_SHIPPING}")
 endmacro()
 
 # #####################################

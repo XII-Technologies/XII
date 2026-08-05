@@ -23,7 +23,6 @@ public:
   [[nodiscard]] ID3D12Resource*  GetReadbackBuffer(xiiGALQueryType::Enum queryType) const;
   [[nodiscard]] D3D12_QUERY_TYPE GetD3D12QueryType(xiiGALQueryType::Enum queryType) const;
   [[nodiscard]] xiiUInt64        GetQueryReadbackOffset(xiiGALQueryType::Enum queryType, xiiUInt32 uiQueryIndex) const;
-  [[nodiscard]] xiiUInt32        GetQueryResultStride(xiiGALQueryType::Enum queryType) const;
 
 private:
   friend class xiiMemoryUtils;

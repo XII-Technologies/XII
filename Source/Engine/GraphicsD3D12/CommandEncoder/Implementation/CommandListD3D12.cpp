@@ -28,6 +28,12 @@
 #include <GraphicsD3D12/States/RayTracingPipelineStateD3D12.h>
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
+#if BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT
+// PIX instrumentation is only enabled if one of the preprocessor symbols USE_PIX, DBG, _DEBUG, PROFILE, or PROFILE_BUILD is defined.
+#  define USE_PIX
+#  include <WinPixEventRuntime/include/pix3.h>
+#endif
+
 #include <vector>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D12, 1, xiiRTTINoAllocator)
@@ -186,6 +192,13 @@ namespace
 
     return false;
   }
+
+#if BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT
+  [[nodiscard]] xiiUInt32 xiiColorToPixColor(const xiiColor& color)
+  {
+    return (static_cast<xiiUInt32>(color.r * 255.0f) << 24) | (static_cast<xiiUInt32>(color.g * 255.0f) << 16) | (static_cast<xiiUInt32>(color.b * 255.0f) << 8) | static_cast<xiiUInt32>(color.a * 255.0f);
+  }
+#endif
 } // namespace
 
 ///////////////////////////////////////////////////////////////////////////
@@ -3186,18 +3199,31 @@ void xiiGALCommandListD3D12::DeviceWaitForFencePlatform(xiiGALFence* pFence, xii
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+#if BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT
+  xiiStringBuilder tmp;
+  PIXBeginEvent(m_pD3D12CommandList, xiiColorToPixColor(color), sName.GetData(tmp));
+#else
   XII_IGNORE_UNUSED(sName);
   XII_IGNORE_UNUSED(color);
+#endif
 }
 
 void xiiGALCommandListD3D12::EndDebugGroupPlatform()
 {
+#if BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT
+  PIXEndEvent(m_pD3D12CommandList);
+#endif
 }
 
 void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+#if BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT
+  xiiStringBuilder tmp;
+  PIXSetMarker(m_pD3D12CommandList, xiiColorToPixColor(color), sName.GetData(tmp));
+#else
   XII_IGNORE_UNUSED(sName);
   XII_IGNORE_UNUSED(color);
+#endif
 }
 
 void xiiGALCommandListD3D12::InvalidateStatePlatform()
