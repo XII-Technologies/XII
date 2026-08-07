@@ -537,18 +537,18 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
       xiiArrayPtr<const int> aPtr = a.GetArrayPtr();
       xiiArrayPtr<const int> bPtr = b.GetArrayPtr();
 
-      xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiNumAllocations;
+      xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiAllocationCount;
 
       XII_TEST_BOOL(arraySet.Contains(aPtr));
       XII_TEST_BOOL(arraySet.Contains(bPtr));
       XII_TEST_BOOL(arraySet.Contains(a));
 
-      XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+      XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
       XII_TEST_BOOL(arraySet.Remove(aPtr));
       XII_TEST_BOOL(arraySet.Remove(bPtr));
 
-      XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+      XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
     }
   }
 

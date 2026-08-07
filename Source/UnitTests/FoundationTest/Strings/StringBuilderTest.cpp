@@ -382,9 +382,9 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
 
     XII_TEST_BOOL(s.GetCharacterCount() == characterCountBefore);
 
-    xiiUInt64 iNumAllocs = allocator.GetStats().m_uiNumAllocations;
+    xiiUInt64 iNumAllocs = allocator.GetStats().m_uiAllocationCount;
     s.Append("blablablablablablablablablablablablablablablablablablablablablablablablablablablablablabla");
-    XII_TEST_BOOL(iNumAllocs == allocator.GetStats().m_uiNumAllocations);
+    XII_TEST_BOOL(iNumAllocs == allocator.GetStats().m_uiAllocationCount);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Convert to StringView")

@@ -209,7 +209,7 @@ void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiAllocatorTra
     XII_LOCK(*s_pTrackerData);
 
     AllocatorData& data = s_pTrackerData->m_AllocatorData[allocatorId];
-    data.m_Stats.m_uiNumAllocations++;
+    data.m_Stats.m_uiAllocationCount++;
     data.m_Stats.m_uiAllocationSize += uiSize;
     data.m_Stats.m_uiPerFrameAllocationSize += uiSize;
     data.m_Stats.m_PerFrameAllocationTime += allocationTime;
@@ -243,7 +243,7 @@ void xiiMemoryTracker::RemoveAllocation(xiiAllocatorId allocatorId, const void* 
     AllocationInfo info;
     if (data.m_Allocations.Remove(pPtr, &info))
     {
-      data.m_Stats.m_uiNumDeallocations++;
+      data.m_Stats.m_uiDeallocationCount++;
       data.m_Stats.m_uiAllocationSize -= info.m_uiSize;
 
       stackTrace = info.GetStackTrace();
@@ -274,7 +274,7 @@ void xiiMemoryTracker::RemoveAllAllocations(xiiAllocatorId allocatorId)
   for (auto it = data.m_Allocations.GetIterator(); it.IsValid(); ++it)
   {
     auto& info = it.Value();
-    data.m_Stats.m_uiNumDeallocations++;
+    data.m_Stats.m_uiDeallocationCount++;
     data.m_Stats.m_uiAllocationSize -= info.m_uiSize;
 
     if (data.m_TrackingMode >= xiiAllocatorTrackingMode::AllocationStatsAndStacktraces)

@@ -166,7 +166,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
       xiiConstructionCounterRelocatable::Reset();
 
       auto allocatorStats = proxyAllocator.GetStats();
-      XII_TEST_BOOL(allocatorStats.m_uiNumAllocations == allocatorStats.m_uiNumDeallocations); // check for memory leak?
+      XII_TEST_BOOL(allocatorStats.m_uiAllocationCount == allocatorStats.m_uiDeallocationCount); // check for memory leak?
     }
   }
 

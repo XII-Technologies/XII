@@ -467,28 +467,28 @@ XII_CREATE_SIMPLE_TEST(Containers, HashTable)
     XII_TEST_BOOL(!stringTable.Insert(sString, 4));
     XII_TEST_BOOL(stringTable.Insert(szString, 2));
 
-    xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiNumAllocations;
+    xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiAllocationCount;
 
     XII_TEST_BOOL(stringTable.Contains(szChar));
     XII_TEST_BOOL(stringTable.Contains(sView));
     XII_TEST_BOOL(stringTable.Contains(sBuilder));
     XII_TEST_BOOL(stringTable.Contains(sString));
 
-    XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+    XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
     XII_TEST_INT(*stringTable.GetValue(szChar), 1);
     XII_TEST_INT(*stringTable.GetValue(sView), 2);
     XII_TEST_INT(*stringTable.GetValue(sBuilder), 3);
     XII_TEST_INT(*stringTable.GetValue(sString), 4);
 
-    XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+    XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
     XII_TEST_BOOL(stringTable.Remove(szChar));
     XII_TEST_BOOL(stringTable.Remove(sView));
     XII_TEST_BOOL(stringTable.Remove(sBuilder));
     XII_TEST_BOOL(stringTable.Remove(sString));
 
-    XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+    XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Swap")

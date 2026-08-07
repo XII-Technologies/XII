@@ -42,12 +42,12 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiUInt64 m_uiNumAllocations   = 0; ///< total number of allocations
-    xiiUInt64 m_uiNumDeallocations = 0; ///< total number of deallocations
-    xiiUInt64 m_uiAllocationSize   = 0; ///< total allocation size in bytes
+    xiiUInt64 m_uiAllocationCount   = 0; ///< The total number of allocations.
+    xiiUInt64 m_uiDeallocationCount = 0; ///< The total number of deallocations.
+    xiiUInt64 m_uiAllocationSize    = 0; ///< The total allocation size in bytes.
 
-    xiiUInt64 m_uiPerFrameAllocationSize = 0; ///< allocation size in bytes in this frame
-    xiiTime   m_PerFrameAllocationTime;       ///< time spend on allocations in this frame
+    xiiUInt64 m_uiPerFrameAllocationSize = 0; ///< The allocation size in bytes in this frame.
+    xiiTime   m_PerFrameAllocationTime;       ///< Time spent on allocations in this frame.
   };
 
   xiiAllocator();

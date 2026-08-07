@@ -534,30 +534,30 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
       xiiArrayPtr<const int> aPtr = a.GetArrayPtr();
       xiiArrayPtr<const int> bPtr = b.GetArrayPtr();
 
-      xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiNumAllocations;
+      xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiAllocationCount;
 
       bool existed;
       auto it = arrayTable.FindOrAdd(aPtr, &existed);
       XII_TEST_BOOL(existed);
 
-      XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+      XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
       XII_TEST_BOOL(arrayTable.Contains(aPtr));
       XII_TEST_BOOL(arrayTable.Contains(bPtr));
       XII_TEST_BOOL(arrayTable.Contains(a));
 
-      XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+      XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
       XII_TEST_INT(*arrayTable.GetValue(aPtr), 1);
       XII_TEST_INT(*arrayTable.GetValue(bPtr), 2);
       XII_TEST_INT(*arrayTable.GetValue(a), 1);
 
-      XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+      XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
       XII_TEST_BOOL(arrayTable.Remove(aPtr));
       XII_TEST_BOOL(arrayTable.Remove(bPtr));
 
-      XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+      XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
     }
   }
 

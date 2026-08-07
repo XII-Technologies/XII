@@ -71,7 +71,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
 
     xiiAllocator::Stats stats = pAllocator->GetStats();
     XII_TEST_INT(stats.m_uiAllocationSize, uiExpectedSize * 2);
-    XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 2);
+    XII_TEST_INT(stats.m_uiAllocationCount - stats.m_uiDeallocationCount, 2);
   }
 
   XII_DELETE_ARRAY(pAllocator, TestArray);
@@ -81,7 +81,7 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
   {
     xiiAllocator::Stats stats = pAllocator->GetStats();
     XII_TEST_INT(stats.m_uiAllocationSize, 0);
-    XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 0);
+    XII_TEST_INT(stats.m_uiAllocationCount - stats.m_uiDeallocationCount, 0);
   }
 }
 
@@ -119,8 +119,8 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 
     xiiAllocator::Stats stats = allocator.GetStats();
 
-    XII_TEST_BOOL(stats.m_uiNumAllocations == 17);
-    XII_TEST_BOOL(stats.m_uiNumDeallocations == 0);
+    XII_TEST_BOOL(stats.m_uiAllocationCount == 17);
+    XII_TEST_BOOL(stats.m_uiDeallocationCount == 0);
     XII_TEST_BOOL(stats.m_uiAllocationSize == 17 * BLOCK_SIZE_IN_BYTES);
 
     for (xiiUInt32 i = 0; i < 200; ++i)
@@ -137,8 +137,8 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 
     stats = allocator.GetStats();
 
-    XII_TEST_BOOL(stats.m_uiNumAllocations == 217);
-    XII_TEST_BOOL(stats.m_uiNumDeallocations == 200);
+    XII_TEST_BOOL(stats.m_uiAllocationCount == 217);
+    XII_TEST_BOOL(stats.m_uiDeallocationCount == 200);
     XII_TEST_BOOL(stats.m_uiAllocationSize == 17 * BLOCK_SIZE_IN_BYTES);
 
     for (xiiUInt32 i = 0; i < 2000; ++i)
@@ -166,7 +166,7 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 
     stats = allocator.GetStats();
 
-    XII_TEST_BOOL(stats.m_uiNumAllocations - stats.m_uiNumDeallocations == 0);
+    XII_TEST_BOOL(stats.m_uiAllocationCount - stats.m_uiDeallocationCount == 0);
     XII_TEST_BOOL(stats.m_uiAllocationSize == 0);
   }
 

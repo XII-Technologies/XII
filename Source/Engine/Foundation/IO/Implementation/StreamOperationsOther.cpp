@@ -13,15 +13,15 @@
 
 void operator<<(xiiStreamWriter& ref_stream, const xiiAllocator::Stats& rhs)
 {
-  ref_stream << rhs.m_uiNumAllocations;
-  ref_stream << rhs.m_uiNumDeallocations;
+  ref_stream << rhs.m_uiAllocationCount;
+  ref_stream << rhs.m_uiDeallocationCount;
   ref_stream << rhs.m_uiAllocationSize;
 }
 
 void operator>>(xiiStreamReader& ref_stream, xiiAllocator::Stats& rhs)
 {
-  ref_stream >> rhs.m_uiNumAllocations;
-  ref_stream >> rhs.m_uiNumDeallocations;
+  ref_stream >> rhs.m_uiAllocationCount;
+  ref_stream >> rhs.m_uiDeallocationCount;
   ref_stream >> rhs.m_uiAllocationSize;
 }
 

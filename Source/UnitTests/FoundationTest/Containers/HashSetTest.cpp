@@ -480,21 +480,21 @@ XII_CREATE_SIMPLE_TEST(Containers, HashSet)
     XII_TEST_BOOL(!stringSet.Insert(sString));
     XII_TEST_BOOL(stringSet.Insert(szString));
 
-    xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiNumAllocations;
+    xiiUInt64 oldAllocCount = testAllocator.GetStats().m_uiAllocationCount;
 
     XII_TEST_BOOL(stringSet.Contains(szChar));
     XII_TEST_BOOL(stringSet.Contains(sView));
     XII_TEST_BOOL(stringSet.Contains(sBuilder));
     XII_TEST_BOOL(stringSet.Contains(sString));
 
-    XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+    XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
 
     XII_TEST_BOOL(stringSet.Remove(szChar));
     XII_TEST_BOOL(stringSet.Remove(sView));
     XII_TEST_BOOL(stringSet.Remove(sBuilder));
     XII_TEST_BOOL(stringSet.Remove(sString));
 
-    XII_TEST_INT(testAllocator.GetStats().m_uiNumAllocations, oldAllocCount);
+    XII_TEST_INT(testAllocator.GetStats().m_uiAllocationCount, oldAllocCount);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Swap")
