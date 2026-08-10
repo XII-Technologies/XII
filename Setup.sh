@@ -50,12 +50,14 @@ DEB_QT_PKGS=(
 # Fedora package lists
 # ----------------------------------------
 FEDORA_BASE_PKGS=(
+  cmake
+  ninja-build
+  git
   gcc
   gcc-c++
   clang
   clang-tools-extra
   libstdc++-devel
-  egl-wayland
   libuuid-devel
   freetype-devel
   ncurses-compat-libs
@@ -67,6 +69,10 @@ FEDORA_QT_PKGS=(
   qt6-qtsvg-devel
   qt6-qtbase-private-devel
   qt6-qtwayland-devel
+)
+
+FEDORA_WAYLAND_PKGS=(
+  egl-wayland
 )
 
 # ----------------------------------------
@@ -88,6 +94,7 @@ case "$DISTRO" in
     echo "Installing Fedora dependencies..."
     sudo dnf install -y \
       "${FEDORA_BASE_PKGS[@]}" \
+      "${FEDORA_WAYLAND_PKGS[@]}" \
       "${FEDORA_QT_PKGS[@]}"
 
     echo "Installing Vulkan packages..."
