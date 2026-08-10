@@ -56,6 +56,7 @@ fi
 if ! $NoSubmoduleUpdate; then
   CURRENT_COMMIT=$(git log -n 1 --format=%H)
   LAST_UPDATE_FILE="Data/Content/AssetCache/LastSubmoduleUpdate.txt"
+  LAST_UPDATE_DIR=$(dirname "$LAST_UPDATE_FILE")
 
   echo "Current commit: $CURRENT_COMMIT"
 
@@ -73,6 +74,9 @@ if ! $NoSubmoduleUpdate; then
   if $UPDATE_SUBMODULES; then
     echo "Updating submodules..."
     git submodule update --init
+
+    # Ensure directory exists before writing.
+    mkdir -p "$LAST_UPDATE_DIR"
     echo "$CURRENT_COMMIT" > "$LAST_UPDATE_FILE"
   fi
 fi
