@@ -1,180 +1,154 @@
-#!/bin/bash -e
+#!/bin/bash
+set -euo pipefail
 
-# -----------------------------
-# Parse arguments
-# -----------------------------
-opts=$(getopt \
-  --longoptions help,clang,setup,no-cmake,no-unitybuild,build-type: \
-  --name "$(basename "$0")" \
-  --options "" \
-  -- "$@"
-)
+# ----------------------------------------
+# Argument parsing
+# ----------------------------------------
+print_help() {
+  echo "Usage: $(basename "$0") [options]"
+  echo ""
+  echo "Options:"
+  echo "  --clang                 Use Clang instead of GCC"
+  echo "  --no-unitybuild         Disable unity builds"
+  echo "  --no-submodule-update   Skip git submodule update"
+  echo "  --solution-name NAME    Set custom solution name"
+  echo "  --workspace DIR         Override workspace directory"
+  echo "  --vulkan=[on|off]       Enable/disable Vulkan"
+  echo "  --d3d12=[on|off]        Enable/disable D3D12 (ignored on Linux)"
+  echo "  --build-type TYPE       Debug | Dev | Shipping"
+  echo ""
+  exit 0
+}
 
-eval set -- "$opts"
-
-RunCMake=true
+UseClang=true
+NoUnityBuild=false
+NoSubmoduleUpdate=false
+SolutionName=""
+WorkspaceDirectory=""
+VulkanSupport="on"
+D3D12Support="off"
 BuildType="Dev"
-NoUnityBuild=""
-UseClang=false
-Setup=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --help)
-      echo "Usage: $(basename $0) [--setup] [--clang] [--no-cmake] [--build-type Debug|Dev|Shipping] [--no-unitybuild]"
-      exit 0
-      ;;
-    --clang)        UseClang=true; shift ;;
-    --setup)        Setup=true; shift ;;
-    --no-cmake)     RunCMake=false; shift ;;
-    --no-unitybuild) NoUnityBuild="-DXII_ENABLE_FOLDER_UNITY_FILES=OFF"; shift ;;
-    --build-type)   BuildType=$2; shift 2 ;;
-    *)              break ;;
+    --help) print_help ;;
+    --clang) UseClang=true ;;
+    --no-unitybuild) NoUnityBuild=true ;;
+    --no-submodule-update) NoSubmoduleUpdate=true ;;
+    --solution-name) SolutionName="$2"; shift ;;
+    --workspace) WorkspaceDirectory="$2"; shift ;;
+    --vulkan=*) VulkanSupport="${1#*=}" ;;
+    --d3d12=*) D3D12Support="${1#*=}" ;; # ignored but accepted
+    --build-type) BuildType="$2"; shift ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
   esac
+  shift
 done
 
 if [[ "$BuildType" != "Debug" && "$BuildType" != "Dev" && "$BuildType" != "Shipping" ]]; then
-  >&2 echo "Invalid build-type: '$BuildType'. Supported: Debug, Dev, Shipping."
+  echo "Invalid build-type: $BuildType"
   exit 1
 fi
 
-# -----------------------------
-# Detect distribution
-# -----------------------------
-if [ ! -f "/etc/os-release" ]; then
-  >&2 echo "/etc/os-release missing. Cannot detect distribution."
-  exit 1
+# ----------------------------------------
+# Submodule update logic
+# ----------------------------------------
+if ! $NoSubmoduleUpdate; then
+  CURRENT_COMMIT=$(git log -n 1 --format=%H)
+  LAST_UPDATE_FILE="Data/Content/AssetCache/LastSubmoduleUpdate.txt"
+  LAST_UPDATE_DIR=$(dirname "$LAST_UPDATE_FILE")
+
+  echo "Current commit: $CURRENT_COMMIT"
+
+  UPDATE_SUBMODULES=true
+  if [[ -f "$LAST_UPDATE_FILE" ]]; then
+    LAST_COMMIT=$(cat "$LAST_UPDATE_FILE")
+    if [[ "$LAST_COMMIT" == "$CURRENT_COMMIT" ]]; then
+      echo "Submodules already up-to-date."
+      UPDATE_SUBMODULES=false
+    else
+      echo "Submodules were last updated at commit: $LAST_COMMIT"
+    fi
+  fi
+
+  if $UPDATE_SUBMODULES; then
+    echo "Updating submodules..."
+    git submodule update --init
+
+    # Ensure directory exists before writing.
+    mkdir -p "$LAST_UPDATE_DIR"
+    echo "$CURRENT_COMMIT" > "$LAST_UPDATE_FILE"
+  fi
 fi
 
-. /etc/os-release   # loads ID, VERSION_ID
-
-Distribution=$ID
-Version=$VERSION_ID
-
-# -----------------------------
-# Version comparison helpers
-# -----------------------------
-verlte() { [ "$1" = "$(echo -e "$1\n$2" | sort -V | head -n1)" ]; }
-verlt()  { [ "$1" = "$2" ] && return 1 || verlte "$1" "$2"; }
-
-# -----------------------------
-# Package selection
-# -----------------------------
-packages=()
-
-case "$Distribution" in
-  ubuntu)
-    if [[ "$Version" == "22.04" ]]; then
-      packages=(cmake build-essential ninja-build libwayland-dev libwayland-egl1 libwayland-cursor0 uuid-dev mold libfreetype-dev libtinfo5)
-    fi
-    ;;
-  linuxmint)
-    if [[ "$Version" == "21" ]]; then
-      packages=(cmake build-essential ninja-build libwayland-dev libwayland-egl1 libwayland-cursor0 uuid-dev mold libfreetype-dev libtinfo5)
-    fi
-    ;;
-  kali)
-    if [[ "$Version" =~ ^2023 ]]; then
-      packages=(cmake build-essential ninja-build libwayland-dev libwayland-egl1 libwayland-cursor0 uuid-dev mold libfreetype-dev libtinfo5)
-    fi
-    ;;
-  fedora)
-    if [[ "$Version" -ge 38 ]]; then
-      packages=(cmake gcc gcc-c++ ninja-build egl-wayland libuuid-devel mold freetype-devel ncurses-compat-libs)
-    fi
-    ;;
-esac
-
-if [[ ${#packages[@]} -eq 0 ]]; then
-  >&2 echo "Unsupported distribution/version: $Distribution $Version"
-  >&2 echo "Supported:"
-  >&2 echo "  * Ubuntu 22.04"
-  >&2 echo "  * Linux Mint 21"
-  >&2 echo "  * Kali Rolling 2023"
-  >&2 echo "  * Fedora 38+"
-  exit 1
-fi
-
-# -----------------------------
+# ----------------------------------------
 # Compiler selection
-# -----------------------------
+# ----------------------------------------
 if $UseClang; then
-  if [[ "$Distribution" == "fedora" ]]; then
-    packages+=(clang libstdc++-devel)
-  else
-    packages+=(clang libstdc++-dev)
-  fi
-  c_compiler=clang
-  cxx_compiler=clang++
+  C_COMPILER="clang"
+  CXX_COMPILER="clang++"
+  CompilerShort="clang"
 else
-  if [[ "$Distribution" == "fedora" ]]; then
-    packages+=(gcc gcc-c++)
-  else
-    packages+=(gcc g++)
-  fi
-  c_compiler=gcc
-  cxx_compiler=g++
+  C_COMPILER="gcc"
+  CXX_COMPILER="g++"
+  CompilerShort="gcc"
 fi
 
-# -----------------------------
-# Setup phase (install packages)
-# -----------------------------
-if $Setup; then
-  if [[ "$Distribution" == "fedora" ]]; then
-    qtVer=$(dnf info qt6-qtbase-devel 2>/dev/null | grep -o "6\.[0-9]*\.[0-9]")
-    echo "Detected Qt version: $qtVer"
-    if verlt "$qtVer" "6.3.0"; then
-      >&2 echo -e "\033[0;33mQt >= 6.3.0 not available in Fedora repos. Install manually."
-    else
-      packages+=(qt6-qtbase-devel qt6-qtsvg-devel qt6-qtbase-private-devel qt6-qtwayland-devel)
-    fi
-    git submodule update --init
-    echo "Installing packages via dnf: ${packages[*]}"
-    sudo dnf install -y "${packages[@]}"
-  else
-    qtVer=$(apt list qt6-base-dev 2>/dev/null | grep -o "6\.[0-9]*\.[0-9]")
-    echo "Detected Qt version: $qtVer"
-    if verlt "$qtVer" "6.3.0"; then
-      >&2 echo -e "\033[0;33mQt >= 6.3.0 not available in apt repos. Install manually."
-    else
-      packages+=(qt6-base-dev libqt6svg6-dev qt6-base-private-dev qt6-wayland)
-    fi
-    git submodule update --init
-    echo "Installing packages via apt: ${packages[*]}"
-    sudo apt install -y "${packages[@]}"
-  fi
+# ----------------------------------------
+# Workspace directory
+# ----------------------------------------
+if [[ -z "$WorkspaceDirectory" ]]; then
+  WorkspaceDirectory="linux-${BuildType}-${CompilerShort}"
 fi
 
-# -----------------------------
-# Compiler version check
-# -----------------------------
-if $UseClang; then
-  clangVer=$(clang --version 2>/dev/null | head -n1 | grep -o "[0-9]\+" | head -n1)
-  if [[ -z "$clangVer" || "$clangVer" -lt 18 ]]; then
-    >&2 echo "Clang >= 18 required. Found: $clangVer"
-    exit 1
-  fi
+mkdir -p "Workspace/$WorkspaceDirectory"
+
+# ----------------------------------------
+# CMake argument construction
+# ----------------------------------------
+CMAKE_ARGS=(
+  -S .
+  -B "Workspace/$WorkspaceDirectory"
+  -G Ninja
+  -DCMAKE_C_COMPILER="$C_COMPILER"
+  -DCMAKE_CXX_COMPILER="$CXX_COMPILER"
+  -DCMAKE_BUILD_TYPE="$BuildType"
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+)
+
+if $NoUnityBuild; then
+  CMAKE_ARGS+=(-DXII_ENABLE_FOLDER_UNITY_FILES=OFF)
 else
-  gccVer=$(gcc -dumpversion | cut -d. -f1)
-  if [[ -z "$gccVer" || "$gccVer" -lt 14 ]]; then
-    >&2 echo "GCC >= 14 required. Found: $gccVer"
-    exit 1
-  fi
+  CMAKE_ARGS+=(-DXII_ENABLE_FOLDER_UNITY_FILES=ON)
 fi
 
-# -----------------------------
-# CMake phase
-# -----------------------------
-CompilerShort=$($UseClang && echo "clang" || echo "gcc")
-
-if $RunCMake; then
-  BuildDir="build-${BuildType}-${CompilerShort}"
-  cmake -B "$BuildDir" -S . -G Ninja \
-    -DCMAKE_CXX_COMPILER="$cxx_compiler" \
-    -DCMAKE_C_COMPILER="$c_compiler" \
-    -DCMAKE_BUILD_TYPE="$BuildType" \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-    $NoUnityBuild \
-    -DXII_BUILD_VULKAN=ON && \
-  echo -e "\nRun 'ninja -C ${BuildDir}' to build"
+if [[ "$VulkanSupport" == "off" ]]; then
+  CMAKE_ARGS+=(-DXII_BUILD_VULKAN=OFF)
+else
+  CMAKE_ARGS+=(-DXII_BUILD_VULKAN=ON)
 fi
+
+# D3D12 is ignored on Linux but kept for parity
+if [[ "$D3D12Support" == "off" ]]; then
+  CMAKE_ARGS+=(-DXII_BUILD_D3D12=OFF)
+else
+  CMAKE_ARGS+=(-DXII_BUILD_D3D12=ON)
+fi
+
+if [[ -n "$SolutionName" ]]; then
+  CMAKE_ARGS+=("-XII_SOLUTION_NAME=$SolutionName")
+fi
+
+# ----------------------------------------
+# Run CMake
+# ----------------------------------------
+echo "Using workspace directory: Workspace/$WorkspaceDirectory"
+echo ""
+echo "Running CMake with:"
+printf '  %s\n' "${CMAKE_ARGS[@]}"
+echo ""
+
+cmake "${CMAKE_ARGS[@]}"
+
+echo ""
+echo "Run: ninja -C Workspace/$WorkspaceDirectory"
