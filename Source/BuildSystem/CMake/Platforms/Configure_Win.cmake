@@ -72,14 +72,10 @@ macro(xii_platformhook_find_vulkan)
     set(XII_DXC_PARENT "${XII_ROOT}/Workspace/shared")
 
     # Final extracted folder
-    set(XII_DXC_DIR "${XII_DXC_PARENT}/DXC-WinX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}")
+    set(XII_DXC_DIR "${XII_DXC_PARENT}/DXC-Windows-x64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}")
 
     # Download + extract into parent, creating the versioned folder
-    xii_download_and_extract(
-      "${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_URL}"
-      "${XII_DXC_PARENT}"
-      "DXC-WinX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}"
-    )
+    xii_download_and_extract("${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_URL}" "${XII_DXC_PARENT}" "DXC-Windows-x64-${XII_CONFIG_DIRECTXSHADERCOMPILER_WINX64_VERSION}")
 
   else()
     message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")

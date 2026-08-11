@@ -105,20 +105,25 @@ endmacro()
 
 macro(xii_platformhook_find_vulkan)
   if(XII_CMAKE_ARCHITECTURE_64BIT AND XII_CMAKE_ARCHITECTURE_X86)
-    set(XII_DXC_DIR "${XII_ROOT}/Workspace/shared/DXC-LinuxX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_VERSION}")
-    xii_download_and_extract("${XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_URL}" "${XII_DXC_DIR}" "DXC-LinuxX64-${XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_VERSION}")
+
+    # Parent folder for DXC
+    set(XII_DXC_PARENT "${XII_ROOT}/Workspace/shared")
+
+    # Final extracted folder
+    set(XII_DXC_DIR "${XII_DXC_PARENT}/DXC-Linux-x64-${XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_VERSION}")
+
+    # Download + extract into parent, creating the versioned folder
+    xii_download_and_extract("${XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_URL}" "${XII_DXC_PARENT}" "DXC-Linux-x64-${XII_CONFIG_DIRECTXSHADERCOMPILER_LINUXX64_VERSION}")
   else()
     message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")
   endif()
 
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(XIIVulkan DEFAULT_MSG XII_DXC_DIR)
-    
-  if(XII_CMAKE_ARCHITECTURE_64BIT AND XII_CMAKE_ARCHITECTURE_X86)
-    add_library(XIIVulkan::DXC SHARED IMPORTED)
-    set_target_properties(XIIVulkan::DXC PROPERTIES IMPORTED_LOCATION "${XII_DXC_DIR}/lib/libdxcompiler.so")
-    set_target_properties(XIIVulkan::DXC PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_DXC_DIR}/include")
-  else()
-    message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")
-  endif()
+
+  add_library(XIIVulkan::DXC SHARED IMPORTED)
+  set_target_properties(XIIVulkan::DXC PROPERTIES
+    IMPORTED_LOCATION "${XII_DXC_DIR}/lib/libdxcompiler.so"
+    INTERFACE_INCLUDE_DIRECTORIES "${XII_DXC_DIR}/include"
+  )
 endmacro()
