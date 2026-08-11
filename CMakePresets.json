@@ -14,6 +14,7 @@
         "binaryDir": "${sourceDir}/Workspace/${presetName}",
         "cacheVariables": {
           "XII_BUILD_VULKAN": "ON",
+          "XII_BUILD_D3D12": "ON",
           "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
           "XII_COMPILE_ENGINE_AS_DLL" : "ON"
         },
@@ -27,6 +28,7 @@
         "binaryDir": "${sourceDir}/Workspace/${presetName}",
         "cacheVariables": {
           "XII_BUILD_VULKAN": "ON",
+          "XII_BUILD_D3D12": "ON",
           "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
           "XII_COMPILE_ENGINE_AS_DLL" : "ON"
         },
@@ -40,6 +42,7 @@
         "cacheVariables": {
           "XII_EXPERIMENTAL_EDITOR_ON_LINUX": "ON",
           "XII_BUILD_VULKAN": "ON",
+          "XII_BUILD_D3D12": "OFF",
           "XII_ENABLE_FOLDER_UNITY_FILES" : "ON",
           "XII_COMPILE_ENGINE_AS_DLL" : "ON",
           "CMAKE_EXPORT_COMPILE_COMMANDS" : "ON"
