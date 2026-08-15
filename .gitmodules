@@ -1,6 +1,3 @@
-[submodule "Data/Tools/Precompiled"]
-	path = Data/Tools/Precompiled
-	url = https://github.com/XII-Technologies/PrecompiledTools.git
 [submodule "Source/ThirdParty/SDL"]
 	path = Source/ThirdParty/SDL
 	url = https://github.com/XII-Technologies/SDL.git
