@@ -418,7 +418,7 @@ xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
   XII_PROFILE_SCOPE(xiiPathUtils::GetFileNameAndExtension(sFileName));
 
   xiiFileReader reader;
-  if (reader.Open(sFileName) == XII_FAILURE)
+  if (reader.Open(sFileName).Failed())
   {
     xiiLog::Warning("Failed to open image file '{0}'", xiiArgSensitive(sFileName, "File"));
     return XII_FAILURE;
@@ -428,7 +428,7 @@ xiiResult xiiImage::LoadFrom(xiiStringView sFileName)
 
   if (const xiiImageFileFormat* pFormat = xiiImageFileFormat::GetReaderFormat(it))
   {
-    if (pFormat->ReadImage(reader, *this, it) != XII_SUCCESS)
+    if (pFormat->ReadImage(reader, *this, it).Failed())
     {
       xiiLog::Warning("Failed to read image file '{0}'", xiiArgSensitive(sFileName, "File"));
       return XII_FAILURE;

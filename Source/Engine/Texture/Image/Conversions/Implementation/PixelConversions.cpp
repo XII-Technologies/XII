@@ -707,10 +707,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
-    xiiUInt32 uiSourceStride = 1;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 1U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
