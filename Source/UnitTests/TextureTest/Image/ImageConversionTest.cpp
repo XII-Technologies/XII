@@ -105,7 +105,7 @@ private:
     // Also, fill the first few rows in the top left with Infinity, -Infinity, and NaN, which should
     // show up as White, White, and Black, resp., in the comparison.
     {
-      const float fRange = 8.0f;
+      constexpr float fRange = 8.0f;
 
       XII_TEST_BOOL(m_Image.LoadFrom("ImageConversions/Reference.png").Succeeded());
 
@@ -113,7 +113,7 @@ private:
 
       const float fPositiveInfinity = +xiiMath::Infinity<float>();
       const float fNegativeInfinity = -xiiMath::Infinity<float>();
-      const float fNaN    = xiiMath::NaN<float>();
+      const float fNaN              = xiiMath::NaN<float>();
 
       for (xiiUInt32 y = 0; y < m_Image.GetHeight(); ++y)
       {
