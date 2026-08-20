@@ -362,6 +362,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceFormatDescription : public xiiHa
   /// \brief Returns the number of bytes per texel (non-compressed) or per block (compressed).
   XII_ALWAYS_INLINE xiiUInt32 GetElementSize() const { return m_uiComponentSize * (IsCompressed() ? 1 : m_uiComponentCount); }
 
+  /// \brief Returns the number of bits per texel (non-compressed) or per block (compressed).
+  XII_ALWAYS_INLINE xiiUInt32 GetBitsPerPixel() const { return GetElementSize() * 8U; }
+
   /// \brief Returns the width of a compression block (4 for BC formats).
   XII_ALWAYS_INLINE xiiUInt32 GetBlockWidth() const { return IsCompressed() ? m_uiBlockWidth : 1; }
 
