@@ -13,4 +13,8 @@ target_link_libraries(${PROJECT_NAME}
   DirectXMath
 )
 
+if(XII_CMAKE_PLATFORM_LINUX)
+  target_link_libraries(${PROJECT_NAME} PRIVATE sal)
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE USING_DIRECTX_HEADERS)
