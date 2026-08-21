@@ -23,7 +23,13 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sReadDir, "ImageTest") == XII_SUCCESS);
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sWriteDir, "ImageTest", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  // On Linux, the stb_image library does not support loading BMP files with a palette.
+  // Therefore, we disable the BMP tests on Linux.
+  XII_TEST_BLOCK(xiiTestBlock::Disabled, "BMP - Good")
+#else
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "BMP - Good")
+#endif
   {
     const char* testImagesGood[] = {
       "BMPTestImages/Good/pal1",
@@ -47,8 +53,7 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
       "BMPTestImages/Good/rgb24",
       "BMPTestImages/Good/rgb24pal",
       "BMPTestImages/Good/rgb32",
-      "BMPTestImages/Good/rgb32bf"
-    };
+      "BMPTestImages/Good/rgb32bf"};
 
     for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testImagesGood); ++i)
     {
@@ -71,7 +76,11 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
     }
   }
 
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  XII_TEST_BLOCK(xiiTestBlock::Disabled, "BMP - Bad")
+#else
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "BMP - Bad")
+#endif
   {
     const char* testImagesBad[] = {
       "BMPTestImages/Bad/badbitcount",
