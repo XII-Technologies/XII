@@ -1,3 +1,5 @@
+#if !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)
+
 //-------------------------------------------------------------------------------------
 // BCDirectCompute.cpp
 //
@@ -640,3 +642,5 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage)
 
     return hr;
 }
+
+#endif // !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)

@@ -1,3 +1,5 @@
+#if !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)
+
 //-------------------------------------------------------------------------------------
 // DirectXTexD3D12.cpp
 //
@@ -895,3 +897,5 @@ HRESULT DirectX::CaptureTexture(
 
     return S_OK;
 }
+
+#endif // !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)

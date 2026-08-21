@@ -1,3 +1,5 @@
+#if !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)
+
 //-------------------------------------------------------------------------------------
 // DirectXTexCompressGPU.cpp
 //
@@ -522,3 +524,5 @@ HRESULT DirectX::CompressEx(
 
     return S_OK;
 }
+
+#endif // !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)

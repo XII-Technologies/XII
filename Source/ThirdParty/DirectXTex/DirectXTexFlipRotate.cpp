@@ -1,3 +1,5 @@
+#if !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)
+
 //-------------------------------------------------------------------------------------
 // DirectXTexFlipRotate.cpp
 //
@@ -409,3 +411,5 @@ HRESULT DirectX::FlipRotate(
 
     return S_OK;
 }
+
+#endif // !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)
