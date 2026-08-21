@@ -182,8 +182,10 @@ namespace DirectX
 //-------------------------------------------------------------------------------------
 // Templates
 //-------------------------------------------------------------------------------------
+#if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4127)
+#endif
     template <bool bRange> void OptimizeAlpha(float *pX, float *pY, const float *pPoints, uint32_t cSteps) noexcept
     {
         static const float pC6[] = { 5.0f / 5.0f, 4.0f / 5.0f, 3.0f / 5.0f, 2.0f / 5.0f, 1.0f / 5.0f, 0.0f / 5.0f };
@@ -309,7 +311,9 @@ namespace DirectX
         *pX = (fX < MIN_VALUE) ? MIN_VALUE : (fX > MAX_VALUE) ? MAX_VALUE : fX;
         *pY = (fY < MIN_VALUE) ? MIN_VALUE : (fY > MAX_VALUE) ? MAX_VALUE : fY;
     }
+#if defined(_MSC_VER)
 #pragma warning(pop)
+#endif
 
 //-------------------------------------------------------------------------------------
 // Functions
