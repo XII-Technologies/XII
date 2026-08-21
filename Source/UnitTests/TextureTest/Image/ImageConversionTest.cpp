@@ -67,7 +67,7 @@ private:
       xiiUInt32                                                           decodingPathScratchBuffers;
       xiiImageConversion::BuildPath(format, g_DefaultFormat, false, decodingPath, decodingPathScratchBuffers).IgnoreResult();
 
-      // the [test] tag tells the test framework to output the log message in the GUI
+      // The [test] tag tells the test framework to output the log message in the GUI.
       xiiLog::Info("[test]Default decoding Path:");
       for (xiiUInt32 i = 0; i < decodingPath.GetCount(); ++i)
       {
@@ -80,7 +80,7 @@ private:
       xiiUInt32                                                           encodingPathScratchBuffers;
       xiiImageConversion::BuildPath(g_DefaultFormat, format, false, encodingPath, encodingPathScratchBuffers).IgnoreResult();
 
-      // the [test] tag tells the test framework to output the log message in the GUI
+      // The [test] tag tells the test framework to output the log message in the GUI.
       xiiLog::Info("[test]Default encoding Path:");
       for (xiiUInt32 i = 0; i < encodingPath.GetCount(); ++i)
       {
@@ -91,7 +91,7 @@ private:
     // Test LDR: Load, encode to target format, then do image comparison (which internally decodes to BGR8_UNORM again).
     // This visualizes quantization for low bit formats, block compression artifacts, or whether formats have fewer than 3 channels.
     {
-      XII_TEST_BOOL(m_Image.LoadFrom("ImageConversions/reference.png").Succeeded());
+      XII_TEST_BOOL(m_Image.LoadFrom("ImageConversions/Reference.png").Succeeded());
 
       XII_TEST_BOOL(m_Image.Convert(format).Succeeded());
 
@@ -105,15 +105,15 @@ private:
     // Also, fill the first few rows in the top left with Infinity, -Infinity, and NaN, which should
     // show up as White, White, and Black, resp., in the comparison.
     {
-      const float fRange = 8.0f;
+      constexpr float fRange = 8.0f;
 
-      XII_TEST_BOOL(m_Image.LoadFrom("ImageConversions/reference.png").Succeeded());
+      XII_TEST_BOOL(m_Image.LoadFrom("ImageConversions/Reference.png").Succeeded());
 
       XII_TEST_BOOL(m_Image.Convert(xiiGALResourceFormat::RGBA32Float).Succeeded());
 
-      const float posInf = +xiiMath::Infinity<float>();
-      const float negInf = -xiiMath::Infinity<float>();
-      const float NaN    = xiiMath::NaN<float>();
+      const float fPositiveInfinity = +xiiMath::Infinity<float>();
+      const float fNegativeInfinity = -xiiMath::Infinity<float>();
+      const float fNaN              = xiiMath::NaN<float>();
 
       for (xiiUInt32 y = 0; y < m_Image.GetHeight(); ++y)
       {
@@ -124,15 +124,15 @@ private:
           // Fill with Inf or Nan resp. scale the image into positive and negative HDR range
           if (x < 30 && y < 10)
           {
-            *pPixelPointer = xiiColor(posInf, posInf, posInf, posInf);
+            *pPixelPointer = xiiColor(fPositiveInfinity, fPositiveInfinity, fPositiveInfinity, fPositiveInfinity);
           }
           else if (x < 30 && y < 20)
           {
-            *pPixelPointer = xiiColor(negInf, negInf, negInf, negInf);
+            *pPixelPointer = xiiColor(fNegativeInfinity, fNegativeInfinity, fNegativeInfinity, fNegativeInfinity);
           }
           else if (x < 30 && y < 30)
           {
-            *pPixelPointer = xiiColor(NaN, NaN, NaN, NaN);
+            *pPixelPointer = xiiColor(fNaN, fNaN, fNaN, fNaN);
           }
           else
           {

@@ -49,8 +49,6 @@ inline const xiiTimestamp operator+(const xiiTime& timeSpan, const xiiTimestamp&
   return xiiTimestamp::MakeFromInt(timestamp.GetInt64(xiiSIUnitOfTime::Microsecond) + (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
 }
 
-
-
 inline xiiUInt32 xiiDateTime::GetYear() const
 {
   return m_iYear;

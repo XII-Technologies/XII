@@ -46,28 +46,29 @@ XII_STATICLINK_FORCE static xiiImageFileFormatRegistrator<xiiStbImageFileFormats
 
 namespace
 {
-  void write_func(void* pContext, void* pData, int iSize)
+  void write_func(void* pContext, void* pData, xiiInt32 iSize)
   {
-    xiiStreamWriter* writer = static_cast<xiiStreamWriter*>(pContext);
-    writer->WriteBytes(pData, iSize).IgnoreResult();
+    xiiStreamWriter* pWriter = static_cast<xiiStreamWriter*>(pContext);
+
+    pWriter->WriteBytes(pData, iSize).IgnoreResult();
   }
 
   void* ReadImageData(xiiStreamReader& inout_stream, xiiDynamicArray<xiiUInt8>& ref_fileBuffer, xiiGALTextureCreationDescription& ref_imageHeader, bool& ref_bIsHDR)
   {
     xiiStreamUtils::ReadAllAndAppend(inout_stream, ref_fileBuffer);
 
-    int width, height, numComp;
+    xiiInt32 iWidth, iHeight, iComponentCount;
 
     ref_bIsHDR = !!stbi_is_hdr_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount());
 
     void* pSourceImageData = nullptr;
     if (ref_bIsHDR)
     {
-      pSourceImageData = stbi_loadf_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &width, &height, &numComp, 0);
+      pSourceImageData = stbi_loadf_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &iWidth, &iHeight, &iComponentCount, 0);
     }
     else
     {
-      pSourceImageData = stbi_load_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &width, &height, &numComp, 0);
+      pSourceImageData = stbi_load_from_memory(ref_fileBuffer.GetData(), ref_fileBuffer.GetCount(), &iWidth, &iHeight, &iComponentCount, 0);
     }
     if (!pSourceImageData)
     {
@@ -77,7 +78,7 @@ namespace
     ref_fileBuffer.Clear();
 
     xiiEnum<xiiGALResourceFormat> format = xiiGALResourceFormat::Unknown;
-    switch (numComp)
+    switch (iComponentCount)
     {
       case 1:
         format = (ref_bIsHDR) ? xiiGALResourceFormat::R32Float : xiiGALResourceFormat::R8UNormalized;
@@ -95,8 +96,8 @@ namespace
 
     // Set properties and allocate.
     ref_imageHeader.m_Format             = format;
-    ref_imageHeader.m_Size.width         = width;
-    ref_imageHeader.m_Size.height        = height;
+    ref_imageHeader.m_Size.width         = iWidth;
+    ref_imageHeader.m_Size.height        = iHeight;
     ref_imageHeader.m_uiMipLevels        = 1;
     ref_imageHeader.m_uiArraySizeOrDepth = 1;
 
@@ -111,9 +112,9 @@ xiiResult xiiStbImageFileFormats::ReadImageDescription(xiiStreamReader& inout_st
 
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImageDescription");
 
-  bool                      bIsHDR = false;
-  xiiDynamicArray<xiiUInt8> fileBuffer;
-  void*                     pSourceImageData = ReadImageData(inout_stream, fileBuffer, ref_description, bIsHDR);
+  bool                        bIsHDR = false;
+  xiiTemporaryArray<xiiUInt8> fileBuffer;
+  void*                       pSourceImageData = ReadImageData(inout_stream, fileBuffer, ref_description, bIsHDR);
 
   if (pSourceImageData == nullptr)
     return XII_FAILURE;
@@ -129,7 +130,7 @@ xiiResult xiiStbImageFileFormats::ReadImage(xiiStreamReader& inout_stream, xiiIm
   XII_PROFILE_SCOPE("xiiStbImageFileFormats::ReadImage");
 
   bool                             bIsHDR = false;
-  xiiDynamicArray<xiiUInt8>        fileBuffer;
+  xiiTemporaryArray<xiiUInt8>      fileBuffer;
   xiiGALTextureCreationDescription imageHeader;
   void*                            pSourceImageData = ReadImageData(inout_stream, fileBuffer, imageHeader, bIsHDR);
 
@@ -200,6 +201,14 @@ xiiResult xiiStbImageFileFormats::WriteImage(xiiStreamWriter& inout_stream, cons
     }
   }
 
+  if (sFileExtension.IsEqual_NoCase("bmp") || sFileExtension.IsEqual_NoCase("dib"))
+  {
+    if (stbi_write_bmp_to_func(write_func, &inout_stream, image.GetWidth(), image.GetHeight(), xiiGALTextureUtilities::GetComponentCount(image.GetImageFormat()), image.GetByteBlobPtr().GetPtr()))
+    {
+      return XII_SUCCESS;
+    }
+  }
+
   return XII_FAILURE;
 }
 
@@ -209,12 +218,15 @@ bool xiiStbImageFileFormats::CanReadFileType(xiiStringView sExtension) const
     return true;
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS)
+  // On Windows Desktop, we prefer to use WIC (xiiWicFileFormat)
 
-  // on Windows Desktop, we prefer to use WIC (xiiWicFileFormat)
   if (sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg"))
-  {
     return true;
-  }
+
+  // BMP Support.
+  if (sExtension.IsEqual_NoCase("bmp") || sExtension.IsEqual_NoCase("dib"))
+    return true;
+
 #endif
 
   return false;
@@ -222,11 +234,14 @@ bool xiiStbImageFileFormats::CanReadFileType(xiiStringView sExtension) const
 
 bool xiiStbImageFileFormats::CanWriteFileType(xiiStringView sExtension) const
 {
-  // even when WIC is available, prefer to write these files through STB, to get consistent output
+  // Even when WIC is available, prefer to write these files through STB, to get consistent output.
+
   if (sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg"))
-  {
     return true;
-  }
+
+  // BMP Support.
+  if (sExtension.IsEqual_NoCase("bmp") || sExtension.IsEqual_NoCase("dib"))
+    return true;
 
   return false;
 }

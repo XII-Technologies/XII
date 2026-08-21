@@ -1,3 +1,5 @@
+#if !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)
+
 //-------------------------------------------------------------------------------------
 // DirectXTexWIC.cpp
 //
@@ -1665,3 +1667,5 @@ namespace DirectX
 }
 
 #endif // !_NATIVE_WCHAR_T_DEFINED
+
+#endif // !defined(BUILDSYSTEM_DISABLE_DIRECTX_COMPONENTS)

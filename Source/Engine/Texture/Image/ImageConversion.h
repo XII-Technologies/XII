@@ -6,7 +6,7 @@
 
 #include <Foundation/Utilities/EnumerableClass.h>
 
-class xiiImageView;
+#include <Texture/Image/Image.h>
 
 XII_DECLARE_FLAGS(xiiUInt8, xiiImageConversionFlags, InPlace);
 

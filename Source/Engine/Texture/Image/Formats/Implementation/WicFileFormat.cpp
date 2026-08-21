@@ -97,7 +97,7 @@ xiiResult xiiWicFileFormat::ReadImageDescription(xiiStreamReader& inout_stream, 
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImageDescription");
 
-  xiiDynamicArray<xiiUInt8> storage;
+  xiiTemporaryArray<xiiUInt8> storage;
   XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
 
   DirectX::TexMetadata  metadata;
@@ -141,7 +141,7 @@ xiiResult xiiWicFileFormat::ReadImage(xiiStreamReader& inout_stream, xiiImage& r
 {
   XII_PROFILE_SCOPE("xiiWicFileFormat::ReadImage");
 
-  xiiDynamicArray<xiiUInt8> storage;
+  xiiTemporaryArray<xiiUInt8> storage;
   XII_SUCCEED_OR_RETURN(ReadFileData(inout_stream, storage));
 
   DirectX::TexMetadata  metadata;
@@ -269,8 +269,8 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
   }
 
   // Store xiiImage data in DirectXTex images
-  xiiDynamicArray<Image> outputImages;
-  DXGI_FORMAT            imageFormat = DXGI_FORMAT(xiiImageFormatMappings::ToDxgiFormat(image.GetImageFormat()));
+  xiiTemporaryArray<Image> outputImages;
+  DXGI_FORMAT              imageFormat = DXGI_FORMAT(xiiImageFormatMappings::ToDxgiFormat(image.GetImageFormat()));
   for (xiiUInt32 arrayIdx = 0; arrayIdx < image.GetNumArrayIndices(); ++arrayIdx)
   {
     for (xiiUInt32 faceIdx = 0; faceIdx < image.GetNumFaces(); ++faceIdx)
@@ -313,6 +313,10 @@ xiiResult xiiWicFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
 bool xiiWicFileFormat::CanReadFileType(xiiStringView sExtension) const
 {
+  // BMP Support.
+  if (sExtension.IsEqual_NoCase("bmp") || sExtension.IsEqual_NoCase("dib") || sExtension.IsEqual_NoCase("rle"))
+    return true;
+
   return sExtension.IsEqual_NoCase("png") || sExtension.IsEqual_NoCase("jpg") || sExtension.IsEqual_NoCase("jpeg") || sExtension.IsEqual_NoCase("tif") || sExtension.IsEqual_NoCase("tiff");
 }
 

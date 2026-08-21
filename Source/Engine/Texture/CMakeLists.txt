@@ -16,10 +16,13 @@ target_link_libraries(${PROJECT_NAME}
   PRIVATE
   DirectX-Headers
   DirectXTex
+  DirectXMath
   stb
 )
 
 if(XII_CMAKE_PLATFORM_LINUX)
+  target_link_libraries(${PROJECT_NAME} PRIVATE sal)
+
   if(XII_3RDPARTY_BC7ENC_RDO_SUPPORT)
     target_link_libraries(${PROJECT_NAME} PRIVATE bc7enc_rdo)
   endif()

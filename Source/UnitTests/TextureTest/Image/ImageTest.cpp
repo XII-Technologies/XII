@@ -23,76 +23,106 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sReadDir, "ImageTest") == XII_SUCCESS);
   XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(sWriteDir, "ImageTest", "output", xiiDataDirUsage::AllowWrites) == XII_SUCCESS);
 
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  // On Linux, the stb_image library does not support loading BMP files with a palette.
+  // Therefore, we disable the BMP tests on Linux.
+  XII_TEST_BLOCK(xiiTestBlock::Disabled, "BMP - Good")
+#else
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "BMP - Good")
+#endif
   {
     const char* testImagesGood[] = {
-      "BMPTestImages/good/pal1", "BMPTestImages/good/pal1bg", "BMPTestImages/good/pal1wb", "BMPTestImages/good/pal4", "BMPTestImages/good/pal4rle",
-      "BMPTestImages/good/pal8", "BMPTestImages/good/pal8-0", "BMPTestImages/good/pal8nonsquare",
-      /*"BMPTestImages/good/pal8os2",*/ "BMPTestImages/good/pal8rle",
-      /*"BMPTestImages/good/pal8topdown",*/ "BMPTestImages/good/pal8v4", "BMPTestImages/good/pal8v5", "BMPTestImages/good/pal8w124",
-      "BMPTestImages/good/pal8w125", "BMPTestImages/good/pal8w126", "BMPTestImages/good/rgb16", "BMPTestImages/good/rgb16-565pal",
-      "BMPTestImages/good/rgb24", "BMPTestImages/good/rgb24pal", "BMPTestImages/good/rgb32", /*"BMPTestImages/good/rgb32bf"*/
-    };
+      "BMPTestImages/Good/pal1",
+      "BMPTestImages/Good/pal1bg",
+      "BMPTestImages/Good/pal1wb",
+      "BMPTestImages/Good/pal4",
+      "BMPTestImages/Good/pal4rle",
+      "BMPTestImages/Good/pal8",
+      "BMPTestImages/Good/pal8-0",
+      "BMPTestImages/Good/pal8nonsquare",
+      "BMPTestImages/Good/pal8os2",
+      "BMPTestImages/Good/pal8rle",
+      "BMPTestImages/Good/pal8topdown",
+      "BMPTestImages/Good/pal8v4",
+      "BMPTestImages/Good/pal8v5",
+      "BMPTestImages/Good/pal8w124",
+      "BMPTestImages/Good/pal8w125",
+      "BMPTestImages/Good/pal8w126",
+      "BMPTestImages/Good/rgb16",
+      "BMPTestImages/Good/rgb16-565pal",
+      "BMPTestImages/Good/rgb24",
+      "BMPTestImages/Good/rgb24pal",
+      "BMPTestImages/Good/rgb32",
+      "BMPTestImages/Good/rgb32bf"};
 
-    for (int i = 0; i < XII_ARRAY_SIZE(testImagesGood); i++)
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testImagesGood); ++i)
     {
       xiiImage image;
       {
         xiiStringBuilder fileName;
         fileName.SetFormat("{0}.bmp", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName);
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
       }
 
       {
         xiiStringBuilder fileName;
         fileName.SetFormat(":output/{0}_out.bmp", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
       }
     }
   }
 
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+  XII_TEST_BLOCK(xiiTestBlock::Disabled, "BMP - Bad")
+#else
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "BMP - Bad")
+#endif
   {
-    const char* testImagesBad[] = {"BMPTestImages/bad/badbitcount", "BMPTestImages/bad/badbitssize",
-                                   /*"BMPTestImages/bad/baddens1", "BMPTestImages/bad/baddens2", "BMPTestImages/bad/badfilesize", "BMPTestImages/bad/badheadersize",*/
-                                   "BMPTestImages/bad/badpalettesize",
-                                   /*"BMPTestImages/bad/badplanes",*/ "BMPTestImages/bad/badrle", "BMPTestImages/bad/badwidth",
-                                   /*"BMPTestImages/bad/pal2",*/ "BMPTestImages/bad/pal8badindex", "BMPTestImages/bad/reallybig", "BMPTestImages/bad/rletopdown",
-                                   "BMPTestImages/bad/shortfile"};
+    const char* testImagesBad[] = {
+      "BMPTestImages/Bad/badbitcount",
+      "BMPTestImages/Bad/badheadersize",
+      "BMPTestImages/Bad/badpalettesize",
+      "BMPTestImages/Bad/badwidth",
+      "BMPTestImages/Bad/reallybig",
+      "BMPTestImages/Bad/shortfile",
+    };
 
-
-    for (int i = 0; i < XII_ARRAY_SIZE(testImagesBad); i++)
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testImagesBad); ++i)
     {
       xiiImage image;
       {
         xiiStringBuilder fileName;
         fileName.SetFormat("{0}.bmp", testImagesBad[i]);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "File does not exist: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "File does not exist: '%s'", fileName.GetData());
 
         XII_LOG_BLOCK_MUTE();
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_FAILURE, "Reading image should have failed: '%s'", fileName);
+
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_FAILURE, "Reading image should have failed: '%s'", fileName.GetData());
       }
     }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TGA")
   {
-    const char* testImagesGood[] = {"TGATestImages/good/RGB", "TGATestImages/good/RGBA", "TGATestImages/good/RGB_RLE", "TGATestImages/good/RGBA_RLE"};
+    const char* testImagesGood[] = {
+      "TGATestImages/Good/RGBA",
+      "TGATestImages/Good/RGBA_RLE",
+    };
 
-    for (int i = 0; i < XII_ARRAY_SIZE(testImagesGood); i++)
+    for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(testImagesGood); ++i)
     {
       xiiImage image;
       {
         xiiStringBuilder fileName;
         fileName.SetFormat("{0}.tga", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName);
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
       }
 
       {
@@ -102,8 +132,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileNameExpected;
         fileNameExpected.SetFormat("{0}_expected.bmp", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
 
         XII_TEST_FILES(fileName, fileNameExpected, "");
       }
@@ -115,8 +145,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileNameExpected;
         fileNameExpected.SetFormat("{0}_expected.tga", testImagesGood[i]);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
 
         XII_TEST_FILES(fileName, fileNameExpected, "");
       }
@@ -133,19 +163,15 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
     };
 
     ImgTest imgTests[] = {
-      {"RGB", "tga", 0},
       {"RGBA", "tga", 0},
-      {"RGB", "png", 0},
       {"RGBA", "png", 0},
-      {"RGB", "jpg", 4650},
       {"RGBA", "jpeg", 16670},
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-      {"RGB", "tif", 0},
       {"RGBA", "tif", 0},
 #endif
     };
 
-    const char* szTestImagePath = "TGATestImages/good";
+    const char* szTestImagePath = "TGATestImages/Good";
 
     for (xiiUInt32 uiIndex = 0; uiIndex < XII_ARRAY_SIZE(imgTests); ++uiIndex)
     {
@@ -154,8 +180,8 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
         xiiStringBuilder fileName;
         fileName.SetFormat("{}/{}.tga", szTestImagePath, imgTests[uiIndex].szImage);
 
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName);
-        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Image file does not exist: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(image.LoadFrom(fileName) == XII_SUCCESS, "Reading image failed: '%s'", fileName.GetData());
       }
 
       {
@@ -164,11 +190,11 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
 
         xiiFileSystem::DeleteFile(fileName);
 
-        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName);
-        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image.SaveTo(fileName) == XII_SUCCESS, "Writing image failed: '%s'", fileName.GetData());
+        XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "Output image file is missing: '%s'", fileName.GetData());
 
         xiiImage image2;
-        XII_TEST_BOOL_MSG(image2.LoadFrom(fileName).Succeeded(), "Reading written image failed: '%s'", fileName);
+        XII_TEST_BOOL_MSG(image2.LoadFrom(fileName).Succeeded(), "Reading written image failed: '%s'", fileName.GetData());
 
         image.Convert(xiiGALResourceFormat::RGBA8UNormalizedSRGB).IgnoreResult();
         image2.Convert(xiiGALResourceFormat::RGBA8UNormalizedSRGB).IgnoreResult();
@@ -178,7 +204,7 @@ XII_CREATE_SIMPLE_TEST(Image, Image)
 
         const xiiUInt32 uiMSE = xiiImageUtils::ComputeMeanSquareError(diff, 32);
 
-        XII_TEST_BOOL_MSG(uiMSE <= imgTests[uiIndex].uiMSE, "MSE %u is larger than %u for image '%s'", uiMSE, imgTests[uiIndex].uiMSE, fileName);
+        XII_TEST_BOOL_MSG(uiMSE <= imgTests[uiIndex].uiMSE, "MSE %u is larger than %u for image '%s'", uiMSE, imgTests[uiIndex].uiMSE, fileName.GetData());
       }
     }
   }

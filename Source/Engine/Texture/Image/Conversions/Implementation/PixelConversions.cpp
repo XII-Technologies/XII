@@ -197,8 +197,8 @@ class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 uiSourceStride = 2;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 2U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -245,8 +245,8 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 2;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 2U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -294,8 +294,8 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -308,7 +308,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
 
       __m128i shuffleMask = _mm_set_epi8(15, 12, 13, 14, 11, 8, 9, 10, 7, 4, 5, 6, 3, 0, 1, 2);
 
-      // Intel optimization manual, Color Pixel Format Conversion Using SSE3
+      // Intel Optimization Manual, Color Pixel Format Conversion Using SSE3.
       while (uiElementCount >= uiElementsPerBatch)
       {
         __m128i in0 = reinterpret_cast<const __m128i*>(pSourcePointer)[0];
@@ -328,7 +328,7 @@ struct xiiImageSwizzleConversion32_2103 : public xiiImageConversionStepLinear
       __m128i mask1 = _mm_set1_epi32(0xff00ff00);
       __m128i mask2 = _mm_set1_epi32(0x00ff00ff);
 
-      // Intel optimization manual, Color Pixel Format Conversion Using SSE2
+      // Intel Optimization Manual, Color Pixel Format Conversion Using SSE2.
       while (uiElementCount >= uiElementsPerBatch)
       {
         __m128i in0 = reinterpret_cast<const __m128i*>(pSourcePointer)[0];
@@ -383,8 +383,8 @@ struct xiiImageConversion_BGRX_BGRA : public xiiImageConversionStepLinear
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -453,8 +453,8 @@ public:
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
     uiElementCount *= targetFormatDescription.GetElementSize();
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 1;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 1U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -545,8 +545,8 @@ public:
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 uiSourceStride = 16;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 16U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -583,10 +583,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 16U;
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 2;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 2U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -624,10 +624,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 16U;
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 2;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 2U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -666,10 +666,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 8U;
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 1;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 1U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -707,10 +707,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
-    xiiUInt32 uiSourceStride = 1;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 1U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -745,8 +745,8 @@ public:
     XII_IGNORE_UNUSED(sourceFormat);
     XII_IGNORE_UNUSED(targetFormat);
 
-    xiiUInt32 uiSourceStride = 4;
-    xiiUInt32 uiTargetStride = 16;
+    xiiUInt32 uiSourceStride = 4U;
+    xiiUInt32 uiTargetStride = 16U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -783,10 +783,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
-    xiiUInt32 uiSourceStride = 2;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 2U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -825,10 +825,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
-    xiiUInt32 uiSourceStride = 2;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 2U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -866,10 +866,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
-    xiiUInt32 uiSourceStride = 2;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 2U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -907,10 +907,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
-    xiiUInt32 uiSourceStride = 1;
-    xiiUInt32 uiTargetStride = 4;
+    xiiUInt32 uiSourceStride = 1U;
+    xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
@@ -1466,10 +1466,10 @@ public:
 
     // Work with single channels instead of pixels.
     const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
-    uiElementCount *= targetFormatDescription.GetElementSize();
+    uiElementCount *= targetFormatDescription.GetBitsPerPixel() / 32U;
 
     const xiiUInt32 uiSourceStride = sizeof(T);
-    const xiiUInt32 uiTargetStride = 4;
+    const xiiUInt32 uiTargetStride = 4U;
 
     const void* pSourcePointer = pSource.GetPtr();
     void*       pTargetPointer = pTarget.GetPtr();
