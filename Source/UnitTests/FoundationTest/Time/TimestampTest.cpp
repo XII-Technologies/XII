@@ -24,15 +24,12 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
     // Kind of hard to hit a moving target, let's just test if it is in a probable range.
     XII_TEST_BOOL(currentTimestamp.IsValid());
     XII_TEST_BOOL_MSG(currentTimestamp.GetInt64(xiiSIUnitOfTime::Second) > 1384597970LL, "The current time is before this test was written!");
-    XII_TEST_BOOL_MSG(currentTimestamp.GetInt64(xiiSIUnitOfTime::Second) < 32531209845LL,
-                      "This current time is after the year 3000! If this is actually the case, please fix this test.");
+    XII_TEST_BOOL_MSG(currentTimestamp.GetInt64(xiiSIUnitOfTime::Second) < 32531209845LL, "This current time is after the year 3000! If this is actually the case, please fix this test.");
 
     // Sleep for 10 milliseconds
     xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
-    XII_TEST_BOOL_MSG(currentTimestamp.GetInt64(xiiSIUnitOfTime::Microsecond) < xiiTimestamp::CurrentTimestamp().GetInt64(xiiSIUnitOfTime::Microsecond),
-                      "Sleeping for 10 ms should cause the timestamp to change!");
-    XII_TEST_BOOL_MSG(!currentTimestamp.Compare(xiiTimestamp::CurrentTimestamp(), xiiTimestamp::CompareMode::Identical),
-                      "Sleeping for 10 ms should cause the timestamp to change!");
+    XII_TEST_BOOL_MSG(currentTimestamp.GetInt64(xiiSIUnitOfTime::Microsecond) < xiiTimestamp::CurrentTimestamp().GetInt64(xiiSIUnitOfTime::Microsecond), "Sleeping for 10 ms should cause the timestamp to change!");
+    XII_TEST_BOOL_MSG(!currentTimestamp.Compare(xiiTimestamp::CurrentTimestamp(), xiiTimestamp::CompareMode::Identical), "Sleeping for 10 ms should cause the timestamp to change!");
 
     // a valid timestamp should always be 'newer' than an invalid one
     XII_TEST_BOOL(currentTimestamp.Compare(xiiTimestamp::MakeInvalid(), xiiTimestamp::CompareMode::Newer) == true);
@@ -119,8 +116,7 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
     XII_TEST_INT(firstContactDataTime.GetYear(), 2063);
     XII_TEST_INT(firstContactDataTime.GetMonth(), 4);
     XII_TEST_INT(firstContactDataTime.GetDay(), 5);
-    XII_TEST_BOOL(firstContactDataTime.GetDayOfWeek() == 4 ||
-                  firstContactDataTime.GetDayOfWeek() == 255); // not supported on all platforms, should output 255 then
+    XII_TEST_BOOL(firstContactDataTime.GetDayOfWeek() == 4 || firstContactDataTime.GetDayOfWeek() == 255); // not supported on all platforms, should output 255 then
     XII_TEST_INT(firstContactDataTime.GetHour(), 0);
     XII_TEST_INT(firstContactDataTime.GetMinute(), 0);
     XII_TEST_INT(firstContactDataTime.GetSecond(), 0);
