@@ -105,33 +105,42 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiDateTime conversion")
   {
-    // Constructor
+    // 1. Constructor: invalid date/time
     xiiDateTime invalidDateTime;
     XII_TEST_BOOL(!invalidDateTime.GetTimestamp().IsValid());
 
-    const xiiTimestamp firstContact         = xiiTimestamp::MakeFromInt(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
-    xiiDateTime        firstContactDataTime = xiiDateTime::MakeFromTimestamp(firstContact);
+    // 2. Known UTC timestamp -> date/time fields
+    const xiiTimestamp firstContact = xiiTimestamp::MakeFromInt(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
 
-    // Getter
-    XII_TEST_INT(firstContactDataTime.GetYear(), 2063);
-    XII_TEST_INT(firstContactDataTime.GetMonth(), 4);
-    XII_TEST_INT(firstContactDataTime.GetDay(), 5);
-    XII_TEST_BOOL(firstContactDataTime.GetDayOfWeek() == 4 || firstContactDataTime.GetDayOfWeek() == 255); // not supported on all platforms, should output 255 then
-    XII_TEST_INT(firstContactDataTime.GetHour(), 0);
-    XII_TEST_INT(firstContactDataTime.GetMinute(), 0);
-    XII_TEST_INT(firstContactDataTime.GetSecond(), 0);
-    XII_TEST_INT(firstContactDataTime.GetMicroseconds(), 0);
+    xiiDateTime firstContactDateTime = xiiDateTime::MakeFromTimestamp(firstContact);
 
-    // SetTimestamp / GetTimestamp
+    XII_TEST_INT(firstContactDateTime.GetYear(), 2063);
+    XII_TEST_INT(firstContactDateTime.GetMonth(), 4);
+    XII_TEST_INT(firstContactDateTime.GetDay(), 5);
+
+    // Day-of-week is platform‑dependent; some platforms do not compute it.
+    XII_TEST_BOOL(firstContactDateTime.GetDayOfWeek() == 4 || firstContactDateTime.GetDayOfWeek() == 255);
+
+    XII_TEST_INT(firstContactDateTime.GetHour(), 0);
+    XII_TEST_INT(firstContactDateTime.GetMinute(), 0);
+    XII_TEST_INT(firstContactDateTime.GetSecond(), 0);
+    XII_TEST_INT(firstContactDateTime.GetMicroseconds(), 0);
+
+    // 3. Round‑trip: timestamp -> date/time -> timestamp
+    //    With UTC-only conversion, seconds must match exactly.
     xiiTimestamp currentTimestamp = xiiTimestamp::CurrentTimestamp();
-    xiiDateTime  currentDateTime;
-    currentDateTime.SetFromTimestamp(currentTimestamp).AssertSuccess();
-    xiiTimestamp currentTimestamp2 = currentDateTime.GetTimestamp();
-    // OS date time functions should be accurate within one second.
-    xiiInt64 iDiff = xiiMath::Abs(currentTimestamp.GetInt64(xiiSIUnitOfTime::Microsecond) - currentTimestamp2.GetInt64(xiiSIUnitOfTime::Microsecond));
-    XII_TEST_BOOL(iDiff <= 1000000);
 
-    // Setter
+    xiiDateTime currentDateTime;
+    currentDateTime.SetFromTimestamp(currentTimestamp).AssertSuccess();
+
+    xiiTimestamp currentTimestamp2 = currentDateTime.GetTimestamp();
+
+    // Compare only seconds (microseconds are dropped intentionally)
+    xiiInt64 diffSeconds = xiiMath::Abs(currentTimestamp.GetInt64(xiiSIUnitOfTime::Second) - currentTimestamp2.GetInt64(xiiSIUnitOfTime::Second));
+
+    XII_TEST_BOOL(diffSeconds == 0);
+
+    // 4. Setter: known UTC date/time -> timestamp
     xiiDateTime oneSmallStep;
     oneSmallStep.SetYear(1969);
     oneSmallStep.SetMonth(7);
@@ -144,6 +153,8 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
 
     xiiTimestamp oneSmallStepTimestamp = oneSmallStep.GetTimestamp();
     XII_TEST_BOOL(oneSmallStepTimestamp.IsValid());
+
+    // Expected UTC timestamp for 1969‑07‑21 02:56:00 UTC
     XII_TEST_INT(oneSmallStepTimestamp.GetInt64(xiiSIUnitOfTime::Second), -14159040LL);
   }
 

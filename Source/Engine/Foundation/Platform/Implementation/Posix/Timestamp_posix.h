@@ -33,30 +33,30 @@ bool operator!=(const tm& lhs, const tm& rhs)
 
 const xiiTimestamp xiiDateTime::GetTimestamp() const
 {
-  tm timeinfo = {0};
-
-  timeinfo.tm_sec   = m_uiSecond;     /* seconds after the minute - [0,59] */
-  timeinfo.tm_min   = m_uiMinute;     /* minutes after the hour - [0,59] */
-  timeinfo.tm_hour  = m_uiHour;       /* hours since midnight - [0,23] */
-  timeinfo.tm_mday  = m_uiDay;        /* day of the month - [1,31] */
-  timeinfo.tm_wday  = m_uiDayOfWeek;  /* day of the week - [0,6] */
-  timeinfo.tm_mon   = m_uiMonth - 1;  /* months since January - [0,11] */
-  timeinfo.tm_year  = m_iYear - 1900; /* years since 1900 */
-  timeinfo.tm_isdst = 0;              /* daylight savings time flag */
-  timeinfo.tm_zone  = "GMT";
-
-  tm timeinfoCopy = timeinfo;
-
-  time_t iTimeStamp = mktime(&timeinfo);
-  // mktime may have 'patched' our time to be valid, we don't want that to count as a valid date.
-  if (iTimeStamp == (time_t)-1 || timeinfoCopy != timeinfo)
+  // Validate fields like macOS and Windows
+  if (m_iYear < 1 || m_iYear > 9999)
     return xiiTimestamp::MakeInvalid();
 
-  iTimeStamp += timeinfo.tm_gmtoff;
-  // Subtract one hour if daylight saving time was activated by mktime.
-  if (timeinfo.tm_isdst == 1)
-    iTimeStamp -= 3600;
-  return xiiTimestamp::MakeFromInt(iTimeStamp, xiiSIUnitOfTime::Second);
+  if (m_uiMonth < 1 || m_uiMonth > 12)
+    return xiiTimestamp::MakeInvalid();
+
+  if (m_uiDay < 1 || m_uiDay > 31)
+    return xiiTimestamp::MakeInvalid();
+
+  tm timeinfo = {0};
+
+  timeinfo.tm_sec  = m_uiSecond;
+  timeinfo.tm_min  = m_uiMinute;
+  timeinfo.tm_hour = m_uiHour;
+  timeinfo.tm_mday = m_uiDay;
+  timeinfo.tm_mon  = m_uiMonth - 1;
+  timeinfo.tm_year = m_iYear - 1900;
+
+  time_t ts = timegm(&timeinfo);
+  if (ts == (time_t)-1)
+    return xiiTimestamp::MakeInvalid();
+
+  return xiiTimestamp::MakeFromInt(ts, xiiSIUnitOfTime::Second);
 }
 
 xiiResult xiiDateTime::SetFromTimestamp(xiiTimestamp timestamp)
