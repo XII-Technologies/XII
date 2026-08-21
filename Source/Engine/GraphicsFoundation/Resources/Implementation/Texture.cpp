@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <Foundation/IO/Stream.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Utilities/TextureUtilities.h>
 
@@ -330,5 +332,37 @@ xiiUInt64 xiiGALTexture::GetMemoryConsumption() const
 }
 
 #undef XII_GAL_TEXTURE_CHECK
+
+xiiStreamWriter& operator<<(xiiStreamWriter& inout_stream, const xiiGALTextureCreationDescription& in_creationDescription)
+{
+  inout_stream << in_creationDescription.m_Type;
+  inout_stream << in_creationDescription.m_Size;
+  inout_stream << in_creationDescription.m_uiArraySizeOrDepth;
+  inout_stream << in_creationDescription.m_Format;
+  inout_stream << in_creationDescription.m_uiMipLevels;
+  inout_stream << in_creationDescription.m_uiSampleCount;
+  inout_stream << in_creationDescription.m_BindFlags;
+  inout_stream << in_creationDescription.m_Usage;
+  inout_stream << in_creationDescription.m_CPUAccessFlags;
+  inout_stream << in_creationDescription.m_MiscFlags;
+
+  return inout_stream;
+}
+
+xiiStreamReader& operator>>(xiiStreamReader& inout_stream, xiiGALTextureCreationDescription& out_creationDescription)
+{
+  inout_stream >> out_creationDescription.m_Type;
+  inout_stream >> out_creationDescription.m_Size;
+  inout_stream >> out_creationDescription.m_uiArraySizeOrDepth;
+  inout_stream >> out_creationDescription.m_Format;
+  inout_stream >> out_creationDescription.m_uiMipLevels;
+  inout_stream >> out_creationDescription.m_uiSampleCount;
+  inout_stream >> out_creationDescription.m_BindFlags;
+  inout_stream >> out_creationDescription.m_Usage;
+  inout_stream >> out_creationDescription.m_CPUAccessFlags;
+  inout_stream >> out_creationDescription.m_MiscFlags;
+
+  return inout_stream;
+}
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Texture);

@@ -7,6 +7,8 @@
 #include <Foundation/Containers/Blob.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
+class xiiStreamWriter;
+
 /// \brief This describes the miscellaneous texture flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
 {
@@ -232,3 +234,7 @@ protected:
 private:
   void CreateDefaultResourceViews();
 };
+
+XII_GRAPHICSFOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiGALTextureCreationDescription description);
+
+XII_GRAPHICSFOUNDATION_DLL xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiGALTextureCreationDescription& out_description);
