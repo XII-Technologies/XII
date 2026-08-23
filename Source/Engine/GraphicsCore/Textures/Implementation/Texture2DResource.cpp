@@ -79,7 +79,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
       ref_td.m_TextureDescription.m_Type = xiiGALResourceDimension::TextureCube;
   }
 
-  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  if (formatProperties.IsCompressed())
   {
     ref_td.m_TextureDescription.m_Size.width  = xiiMath::RoundUp(ref_td.m_TextureDescription.m_Size.width, 4);
     ref_td.m_TextureDescription.m_Size.height = xiiMath::RoundUp(ref_td.m_TextureDescription.m_Size.height, 4);
@@ -102,7 +102,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 
         XII_ASSERT_DEV(pImage->GetDepthPitch(mip) < xiiMath::MaxValue<xiiUInt64>(), "Depth pitch exceeds xiiGAL limits.");
 
-        if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+        if (formatProperties.IsCompressed())
         {
           const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
 
@@ -196,7 +196,7 @@ xiiResourceLoadDescription xiiTexture2DResource::UpdateContent(xiiStreamReader* 
     {
       XII_ASSERT_DEBUG(m_uiLoadedTextures < 2, "Invalid texture upload");
 
-      xiiHybridArray<xiiGALTextureSubResourceData, 32> initData;
+      xiiTemporaryHybridArray<xiiGALTextureSubResourceData, 32> initData;
       FillOutDescriptor(td, pImage, uiUploadNumMipLevels, m_uiMemoryGPU[m_uiLoadedTextures], initData);
 
       // ignore its return value here, we build our own
