@@ -158,7 +158,7 @@ const xiiResource* xiiResource::GetCurrentlyUpdatingContent()
 }
 #endif
 
-void xiiResource::CallUpdateContent(xiiStreamReader* Stream)
+void xiiResource::CallUpdateContent(xiiStreamReader* pStream)
 {
   XII_PROFILE_SCOPE("CallUpdateContent");
 
@@ -167,10 +167,10 @@ void xiiResource::CallUpdateContent(xiiStreamReader* Stream)
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiResource* pPreviouslyUpdatingContent = g_pCurrentlyUpdatingContent;
   g_pCurrentlyUpdatingContent                   = this;
-  xiiResourceLoadDescription ld                        = UpdateContent(Stream);
+  xiiResourceLoadDescription ld                        = UpdateContent(pStream);
   g_pCurrentlyUpdatingContent                   = pPreviouslyUpdatingContent;
 #else
-  xiiResourceLoadDescription ld = UpdateContent(Stream);
+  xiiResourceLoadDescription ld = UpdateContent(pStream);
 #endif
 
   XII_ASSERT_DEV(ld.m_State != xiiResourceState::Invalid, "UpdateContent() did not return a valid resource load state");
@@ -228,8 +228,7 @@ float xiiResource::GetLoadingPriority(xiiTime now) const
     }
   }
 
-  // everything acquired in the last N seconds gets a higher priority
-  // by getting the lowest penalty
+  // everything acquired in the last N seconds gets a higher priority by getting the lowest penalty
   const float secondsSinceAcquire = (float)(now - GetLastAcquireTime()).GetSeconds();
   const float fTimePriority       = xiiMath::Min(10.0f, secondsSinceAcquire);
 
@@ -271,7 +270,7 @@ void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDescription& ld
   m_uiQualityLevelsDiscardable = ld.m_uiQualityLevelsDiscardable;
   m_uiQualityLevelsLoadable    = ld.m_uiQualityLevelsLoadable;
 
-  /* Update Memory Usage*/
+  // Update Memory Usage
   {
     xiiResource::MemoryUsage MemUsage;
     MemUsage.m_uiMemoryCPU = 0xFFFFFFFF;
