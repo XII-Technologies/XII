@@ -8,7 +8,6 @@
 #include <GraphicsCore/Components/Render/CameraComponent.h>
 #include <GraphicsCore/Pipeline/RenderWorldModule.h>
 #include <GraphicsCore/Pipeline/View.h>
-#include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :
   xiiComponentManager<xiiCameraComponent, xiiBlockStorageType::Compact>(pWorld)
@@ -154,7 +153,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 1, xiiComponentMode::Static)
     XII_MEMBER_PROPERTY("EditorShortcut", m_iEditorShortcut)->AddAttributes(new xiiDefaultValueAttribute(-1), new xiiClampValueAttribute(-1, 9)),
     XII_ENUM_ACCESSOR_PROPERTY("UsageHint", xiiCameraUsageHint, GetUsageHint, SetUsageHint),
     XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiCameraMode, GetCameraMode, SetCameraMode),
-    XII_ACCESSOR_PROPERTY("RenderTarget", GetRenderTargetFile, SetRenderTargetFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_Target", xiiDependencyFlags::Package)),
     XII_ACCESSOR_PROPERTY("RenderTargetOffset", GetRenderTargetRectOffset, SetRenderTargetRectOffset)->AddAttributes(new xiiClampValueAttribute(xiiVec2(0.0f), xiiVec2(0.9f))),
     XII_ACCESSOR_PROPERTY("RenderTargetSize", GetRenderTargetRectSize, SetRenderTargetRectSize)->AddAttributes(new xiiDefaultValueAttribute(xiiVec2(1.0f)), new xiiClampValueAttribute(xiiVec2(0.1f), xiiVec2(1.0f))),
     XII_ACCESSOR_PROPERTY("NearPlane", GetNearPlane, SetNearPlane)->AddAttributes(new xiiDefaultValueAttribute(0.25f), new xiiClampValueAttribute(0.01f, 4.0f)),
@@ -205,7 +203,6 @@ void xiiCameraComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
   m_IncludeTags.Save(s);
   m_ExcludeTags.Save(s);
 
-  s << m_hRenderTarget;
   s << m_vRenderTargetRectOffset;
   s << m_vRenderTargetRectSize;
   s << m_bShowStats;
@@ -231,7 +228,6 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
   m_IncludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
   m_ExcludeTags.Load(s, xiiTagRegistry::GetGlobalRegistry());
 
-  s >> m_hRenderTarget;
   s >> m_vRenderTargetRectOffset;
   s >> m_vRenderTargetRectSize;
   s >> m_bShowStats;
@@ -288,29 +284,6 @@ void xiiCameraComponent::SetUsageHint(xiiEnum<xiiCameraUsageHint> val)
   ActivateRenderToTexture();
 
   MarkAsModified();
-}
-
-void xiiCameraComponent::SetRenderTargetFile(xiiStringView sFile)
-{
-  DeactivateRenderToTexture();
-
-  if (!sFile.IsEmpty())
-  {
-    m_hRenderTarget = xiiResourceManager::LoadResource<xiiRenderToTexture2DResource>(sFile);
-  }
-  else
-  {
-    m_hRenderTarget.Invalidate();
-  }
-
-  ActivateRenderToTexture();
-
-  MarkAsModified();
-}
-
-xiiStringView xiiCameraComponent::GetRenderTargetFile() const
-{
-  return m_hRenderTarget.GetResourceID();
 }
 
 void xiiCameraComponent::SetRenderTargetRectOffset(xiiVec2 value)
@@ -532,14 +505,10 @@ void xiiCameraComponent::ActivateRenderToTexture()
   if (m_UsageHint != xiiCameraUsageHint::RenderTarget)
     return;
 
-  if (m_bRenderTargetInitialized || !m_hRenderTarget.IsValid() || !IsActiveAndInitialized())
+  if (m_bRenderTargetInitialized || !IsActiveAndInitialized())
     return;
 
-  xiiResourceLock<xiiRenderToTexture2DResource> pRenderTarget(m_hRenderTarget, xiiResourceAcquireMode::BlockTillLoaded_NeverFail);
-
-  if (pRenderTarget.GetAcquireResult() != xiiResourceAcquireResult::Final)
-    return;
-
+#if 0
   m_bRenderTargetInitialized = true;
 
   XII_ASSERT_DEV(m_hRenderTargetView.IsInvalidated(), "Render target view is already created");
@@ -553,9 +522,6 @@ void xiiCameraComponent::ActivateRenderToTexture()
   m_hRenderTargetView = GetWorld()->GetOrCreateModule<xiiRenderWorldModule>()->CreateView(sName, pView);
 
   pView->SetCamera(&m_RenderTargetCamera);
-
-  pRenderTarget->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiCameraComponent::ResourceChangeEventHandler, this));
-
   pView->SetRenderTargetView(pRenderTarget->GetGALTexture()->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
   const float maxSizeX = 1.0f - m_vRenderTargetRectOffset.x;
@@ -571,8 +537,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
   const float offsetY = m_vRenderTargetRectOffset.y * resY;
 
   pView->SetViewport(xiiRectFloat(offsetX, offsetY, width, height));
-
-  pRenderTarget->AddRenderView(m_hRenderTargetView);
+#endif
 
   GetWorld()->GetComponentManager<xiiCameraComponentManager>()->AddRenderTargetCamera(this);
 }
@@ -583,16 +548,6 @@ void xiiCameraComponent::DeactivateRenderToTexture()
     return;
 
   m_bRenderTargetInitialized = false;
-
-  XII_ASSERT_DEBUG(m_hRenderTarget.IsValid(), "Render Target should be valid");
-
-  if (m_hRenderTarget.IsValid())
-  {
-    xiiResourceLock<xiiRenderToTexture2DResource> pRenderTarget(m_hRenderTarget, xiiResourceAcquireMode::BlockTillLoaded);
-    pRenderTarget->RemoveRenderView(m_hRenderTargetView);
-
-    pRenderTarget->m_ResourceEvents.RemoveEventHandler(xiiMakeDelegate(&xiiCameraComponent::ResourceChangeEventHandler, this));
-  }
 
   if (!m_hRenderTargetView.IsInvalidated())
   {

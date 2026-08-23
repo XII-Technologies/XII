@@ -67,9 +67,6 @@ public:
   xiiEnum<xiiCameraUsageHint> GetUsageHint() const { return m_UsageHint; }   // [ property ]
   void                        SetUsageHint(xiiEnum<xiiCameraUsageHint> val); // [ property ]
 
-  void          SetRenderTargetFile(xiiStringView sFile); // [ property ]
-  xiiStringView GetRenderTargetFile() const;              // [ property ]
-
   void    SetRenderTargetRectOffset(xiiVec2 value);                               // [ property ]
   xiiVec2 GetRenderTargetRectOffset() const { return m_vRenderTargetRectOffset; } // [ property ]
 
@@ -125,7 +122,6 @@ private:
 
   xiiEnum<xiiCameraUsageHint>        m_UsageHint;
   xiiEnum<xiiCameraMode>             m_Mode;
-  xiiRenderToTexture2DResourceHandle m_hRenderTarget;
   float                              m_fNearPlane              = 0.25f;
   float                              m_fFarPlane               = 1000.0f;
   float                              m_fPerspectiveFieldOfView = 60.0f;
