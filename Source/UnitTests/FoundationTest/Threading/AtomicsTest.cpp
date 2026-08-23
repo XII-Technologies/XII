@@ -675,10 +675,10 @@ XII_CREATE_SIMPLE_TEST(Threading, Atomics)
     // xiiUInt64
     {
       XII_TEST_INT(g_AtomicVariablesU64.m_IncVariable, 2);
-      XII_TEST_INT(g_AtomicVariablesU64.m_DecVariable, 18446744073709551614);
+      XII_TEST_INT(g_AtomicVariablesU64.m_DecVariable, 18446744073709551614ULL);
 
       XII_TEST_INT(g_AtomicVariablesU64.m_AddVariable, 3);
-      XII_TEST_INT(g_AtomicVariablesU64.m_SubVariable, 18446744073709551613);
+      XII_TEST_INT(g_AtomicVariablesU64.m_SubVariable, 18446744073709551613ULL);
 
       XII_TEST_INT(g_AtomicVariablesU64.m_AndVariable, 0);
       XII_TEST_INT(g_AtomicVariablesU64.m_OrVariable, 7);
