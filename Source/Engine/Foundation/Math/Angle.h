@@ -35,7 +35,7 @@ public:
   [[nodiscard]] constexpr static xiiAngleTemplate<Type> MakeFromRadian(Type fRadian); // [tested]
 
   /// \brief Standard constructor, initializing with 0.
-  constexpr xiiAngleTemplate<Type>() :
+  constexpr xiiAngleTemplate() :
     m_fRadian(static_cast<Type>(0))
   {
   } // [tested]
@@ -89,7 +89,7 @@ public:
 
 private:
   /// \brief For internal use only.
-  constexpr explicit xiiAngleTemplate<Type>(Type fRadian) :
+  constexpr explicit xiiAngleTemplate(Type fRadian) :
     m_fRadian(fRadian)
   {
   }

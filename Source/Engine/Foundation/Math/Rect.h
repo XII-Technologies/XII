@@ -34,7 +34,7 @@ public:
   xiiRectTemplate(Type width, Type height);
 
   /// \brief Initializes x and y from pos, width and height from vSize.
-  xiiRectTemplate<Type>(const xiiVec2Template<Type>& vTopLeftPosition, const xiiVec2Template<Type>& vSize);
+  xiiRectTemplate(const xiiVec2Template<Type>& vTopLeftPosition, const xiiVec2Template<Type>& vSize);
 
   /// \brief Creates an 'invalid' rect.
   ///
