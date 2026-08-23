@@ -4,17 +4,12 @@
 
 #include <Foundation/Configuration/CVar.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-#include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/Image.h>
-#include <Texture/Utilities/TextureFormat.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTexture2DResource, 1, xiiRTTIDefaultAllocator<xiiTexture2DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-xiiCVarInt cvar_RenderingOffscreenTargetResolution1("Rendering.Offscreen.TargetResolution1", 256, xiiCVarFlags::Default, "Configurable render target resolution");
-xiiCVarInt cvar_RenderingOffscreenTargetResolution2("Rendering.Offscreen.TargetResolution2", 512, xiiCVarFlags::Default, "Configurable render target resolution");
 
 XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiTexture2DResource);
 
