@@ -98,7 +98,7 @@ enum class xiiResourceState : xiiUInt8
 };
 
 /// \brief Describes in which loading state a resource currently is, and how many different quality levels there are
-struct xiiResourceLoadDesc
+struct xiiResourceLoadDescription
 {
   xiiResourceState m_State = xiiResourceState::Invalid;
 

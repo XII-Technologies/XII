@@ -25,7 +25,7 @@ xiiShaderPermutationResource::xiiShaderPermutationResource() :
   m_bShaderPermutationValid = false;
 }
 
-xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiShaderPermutationResource::UnloadData(Unload WhatToUnload)
 {
   m_bShaderPermutationValid = false;
 
@@ -44,7 +44,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
 
   m_ActiveShaderStages = xiiGALShaderType::Unknown;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
@@ -52,14 +52,14 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
   return res;
 }
 
-xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiShaderPermutationResource::UpdateContent(xiiStreamReader* pStream)
 {
   xiiUInt32 uiGPUMemory             = 0;
   ModifyMemoryUsage().m_uiMemoryGPU = 0;
 
   m_bShaderPermutationValid = false;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
@@ -309,7 +309,7 @@ void xiiShaderPermutationResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryU
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiShaderPermutationResource, xiiShaderPermutationResourceDescriptor)
 {
-  xiiResourceLoadDesc ret;
+  xiiResourceLoadDescription ret;
   ret.m_State                      = xiiResourceState::Loaded;
   ret.m_uiQualityLevelsDiscardable = 0;
   ret.m_uiQualityLevelsLoadable    = 0;

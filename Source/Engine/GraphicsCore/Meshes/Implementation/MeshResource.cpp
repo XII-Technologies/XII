@@ -82,7 +82,7 @@ const xiiMeshResourceDescriptor& xiiMeshResource::GetDescriptor() const
   return m_Descriptor;
 }
 
-xiiResourceLoadDesc xiiMeshResource::UnloadData(Unload whatToUnload)
+xiiResourceLoadDescription xiiMeshResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
 
@@ -90,16 +90,16 @@ xiiResourceLoadDesc xiiMeshResource::UnloadData(Unload whatToUnload)
   m_hMeshBuffer.Invalidate();
   m_hMaterials.Clear();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Unloaded;
   return res;
 }
 
-xiiResourceLoadDesc xiiMeshResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiMeshResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Loaded;
@@ -175,7 +175,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
 
   m_Descriptor = std::move(descriptor);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = m_Descriptor.m_UsageFlags.IsSet(xiiMeshResourceUsageFlags::Streaming) ? 1U : 0U;
   res.m_State                      = xiiResourceState::Loaded;

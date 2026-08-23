@@ -31,11 +31,11 @@ xiiSurfaceResource::~xiiSurfaceResource()
   XII_ASSERT_DEV(m_pPhysicsMaterialJolt == nullptr, "Physics material has not been cleaned up properly");
 }
 
-xiiResourceLoadDesc xiiSurfaceResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiSurfaceResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -43,13 +43,13 @@ xiiResourceLoadDesc xiiSurfaceResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiSurfaceResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiSurfaceResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiSurfaceResource::UpdateContent", GetResourceIdOrDescription());
 
   m_Interactions.Clear();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
@@ -108,7 +108,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiSurfaceResource, xiiSurfaceResourceDescript
 {
   m_Descriptor = descriptor;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;

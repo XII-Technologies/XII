@@ -632,23 +632,23 @@ xiiParticleGraphResource::xiiParticleGraphResource() :
 
 xiiParticleGraphResource::~xiiParticleGraphResource() = default;
 
-xiiResourceLoadDesc xiiParticleGraphResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiParticleGraphResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
   m_Descriptor.Clear();
   m_uiPipelineHash = 0ULL;
 
-  xiiResourceLoadDesc resourceLoadDescription;
+  xiiResourceLoadDescription resourceLoadDescription;
   resourceLoadDescription.m_uiQualityLevelsDiscardable = 0U;
   resourceLoadDescription.m_uiQualityLevelsLoadable    = 0U;
   resourceLoadDescription.m_State                      = xiiResourceState::Unloaded;
   return resourceLoadDescription;
 }
 
-xiiResourceLoadDesc xiiParticleGraphResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiParticleGraphResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc resourceLoadDescription;
+  xiiResourceLoadDescription resourceLoadDescription;
   resourceLoadDescription.m_uiQualityLevelsDiscardable = 0U;
   resourceLoadDescription.m_uiQualityLevelsLoadable    = 0U;
 
@@ -685,7 +685,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiParticleGraphResource, xiiParticleGraphReso
   m_Descriptor     = descriptor;
   m_uiPipelineHash = m_Descriptor.ComputePipelineHash();
 
-  xiiResourceLoadDesc resourceLoadDescription;
+  xiiResourceLoadDescription resourceLoadDescription;
   resourceLoadDescription.m_State                      = m_Descriptor.Validate().Succeeded() ? xiiResourceState::Loaded : xiiResourceState::LoadedResourceMissing;
   resourceLoadDescription.m_uiQualityLevelsDiscardable = 0U;
   resourceLoadDescription.m_uiQualityLevelsLoadable    = 0U;

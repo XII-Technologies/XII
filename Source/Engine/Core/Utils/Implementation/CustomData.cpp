@@ -34,20 +34,20 @@ xiiCustomDataResourceBase::xiiCustomDataResourceBase() :
 
 xiiCustomDataResourceBase::~xiiCustomDataResourceBase() = default;
 
-xiiResourceLoadDesc xiiCustomDataResourceBase::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiCustomDataResourceBase::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
   return res;
 }
 
-xiiResourceLoadDesc xiiCustomDataResourceBase::UpdateContent_Internal(xiiStreamReader* pStream, const xiiRTTI& rtti)
+xiiResourceLoadDescription xiiCustomDataResourceBase::UpdateContent_Internal(xiiStreamReader* pStream, const xiiRTTI& rtti)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 

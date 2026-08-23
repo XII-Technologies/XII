@@ -42,12 +42,12 @@ XII_END_SUBSYSTEM_DECLARATION;
 xiiVisualScriptClassResource::xiiVisualScriptClassResource()  = default;
 xiiVisualScriptClassResource::~xiiVisualScriptClassResource() = default;
 
-xiiResourceLoadDesc xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload)
 {
   DeleteScriptType();
   DeleteAllScriptCoroutineTypes();
 
-  xiiResourceLoadDesc ld;
+  xiiResourceLoadDescription ld;
   ld.m_State                      = xiiResourceState::Unloaded;
   ld.m_uiQualityLevelsDiscardable = 0;
   ld.m_uiQualityLevelsLoadable    = 0;
@@ -55,9 +55,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload
   return ld;
 }
 
-xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiVisualScriptClassResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc ld;
+  xiiResourceLoadDescription ld;
   ld.m_uiQualityLevelsDiscardable = 0;
   ld.m_uiQualityLevelsLoadable    = 0;
   ld.m_State                      = xiiResourceState::LoadedResourceMissing;

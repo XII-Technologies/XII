@@ -114,9 +114,9 @@ void xiiPrefabResource::ApplyExposedParameterValues(const xiiArrayMap<xiiHashedS
   }
 }
 
-xiiResourceLoadDesc xiiPrefabResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiPrefabResource::UnloadData(Unload WhatToUnload)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -129,11 +129,11 @@ xiiResourceLoadDesc xiiPrefabResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiPrefabResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiPrefabResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiPrefabResource::UpdateContent", GetResourceIdOrDescription());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
@@ -216,7 +216,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiPrefabResource, xiiPrefabResourceDescriptor
 {
   XII_IGNORE_UNUSED(descriptor);
 
-  xiiResourceLoadDesc desc;
+  xiiResourceLoadDescription desc;
   desc.m_State                      = xiiResourceState::Loaded;
   desc.m_uiQualityLevelsDiscardable = 0;
   desc.m_uiQualityLevelsLoadable    = 0;

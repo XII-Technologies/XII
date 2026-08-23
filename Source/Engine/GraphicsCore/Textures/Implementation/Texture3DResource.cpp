@@ -28,7 +28,7 @@ xiiTexture3DResource::xiiTexture3DResource(xiiResource::DoUpdate ResourceUpdateT
 {
 }
 
-xiiResourceLoadDesc xiiTexture3DResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiTexture3DResource::UnloadData(Unload WhatToUnload)
 {
   if (m_uiLoadedTextures > 0)
   {
@@ -48,7 +48,7 @@ xiiResourceLoadDesc xiiTexture3DResource::UnloadData(Unload WhatToUnload)
     m_pSampler.Clear();
   }
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
   res.m_uiQualityLevelsLoadable    = 2 - m_uiLoadedTextures;
   res.m_State                      = m_uiLoadedTextures == 0 ? xiiResourceState::Unloaded : xiiResourceState::Loaded;
@@ -119,11 +119,11 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
   ref_td.m_InitialContent = InitDataPtr;
 }
 
-xiiResourceLoadDesc xiiTexture3DResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiTexture3DResource::UpdateContent(xiiStreamReader* Stream)
 {
   if (Stream == nullptr)
   {
-    xiiResourceLoadDesc res;
+    xiiResourceLoadDescription res;
     res.m_uiQualityLevelsDiscardable = 0;
     res.m_uiQualityLevelsLoadable    = 0;
     res.m_State                      = xiiResourceState::LoadedResourceMissing;
@@ -207,7 +207,7 @@ xiiResourceLoadDesc xiiTexture3DResource::UpdateContent(xiiStreamReader* Stream)
     }
 
     {
-      xiiResourceLoadDesc res;
+      xiiResourceLoadDescription res;
       res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
       res.m_uiQualityLevelsLoadable    = bCouldLoadMore ? 1 : 0;
       res.m_State                      = xiiResourceState::Loaded;
@@ -225,7 +225,7 @@ void xiiTexture3DResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDescriptor)
 {
-  xiiResourceLoadDesc ret;
+  xiiResourceLoadDescription ret;
   ret.m_uiQualityLevelsDiscardable = descriptor.m_uiQualityLevelsDiscardable;
   ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
   ret.m_State                      = xiiResourceState::Loaded;

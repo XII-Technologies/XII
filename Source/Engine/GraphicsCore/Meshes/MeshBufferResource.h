@@ -351,8 +351,8 @@ public:
   xiiSharedPtr<xiiGALBuffer> GetDrawCommandBuffer() const;
 
 private:
-  virtual xiiResourceLoadDesc UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   void CreateGpuBuffer(xiiSharedPtr<xiiGALBuffer>& out_pBuffer, xiiArrayPtr<const xiiUInt8> pData, xiiUInt32 uiStride, xiiBitflags<xiiGALBindFlags> bindFlags, xiiStringView sDebugName);

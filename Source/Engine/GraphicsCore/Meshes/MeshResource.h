@@ -284,8 +284,8 @@ public:
   xiiEnum<xiiMeshLodSelectionMode> GetLodMode() const;
 
 private:
-  virtual xiiResourceLoadDesc UnloadData(Unload whatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload whatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   /// \brief Creates the mesh buffer resource for this mesh based on the mesh buffer descriptor contained in the provided mesh resource descriptor, used to initialize the GPU buffers for this mesh.

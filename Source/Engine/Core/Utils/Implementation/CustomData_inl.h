@@ -27,7 +27,7 @@ void xiiCustomDataResource<T>::CreateAndLoadData(xiiAbstractObjectGraph& ref_gra
 }
 
 template <typename T>
-xiiResourceLoadDesc xiiCustomDataResource<T>::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiCustomDataResource<T>::UnloadData(Unload WhatToUnload)
 {
   if (GetData() != nullptr)
   {
@@ -38,7 +38,7 @@ xiiResourceLoadDesc xiiCustomDataResource<T>::UnloadData(Unload WhatToUnload)
 }
 
 template <typename T>
-xiiResourceLoadDesc xiiCustomDataResource<T>::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiCustomDataResource<T>::UpdateContent(xiiStreamReader* Stream)
 {
   return UpdateContent_Internal(Stream, *xiiGetStaticRTTI<T>());
 }

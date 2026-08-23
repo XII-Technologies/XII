@@ -17,9 +17,9 @@ xiiBlackboardTemplateResource::xiiBlackboardTemplateResource() :
 
 xiiBlackboardTemplateResource::~xiiBlackboardTemplateResource() = default;
 
-xiiResourceLoadDesc xiiBlackboardTemplateResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiBlackboardTemplateResource::UnloadData(Unload WhatToUnload)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -27,11 +27,11 @@ xiiResourceLoadDesc xiiBlackboardTemplateResource::UnloadData(Unload WhatToUnloa
   return res;
 }
 
-xiiResourceLoadDesc xiiBlackboardTemplateResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiBlackboardTemplateResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiBlackboardTemplateResource::UpdateContent", GetResourceDescription().GetData());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
@@ -73,7 +73,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiBlackboardTemplateResource, xiiBlackboardTe
 {
   m_Descriptor = std::move(descriptor);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;

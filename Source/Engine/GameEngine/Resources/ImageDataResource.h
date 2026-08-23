@@ -30,8 +30,8 @@ public:
   const xiiImageDataResourceDescriptor& GetDescriptor() const { return *m_pDescriptor; }
 
 private:
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiUniquePtr<xiiImageDataResourceDescriptor> m_pDescriptor;

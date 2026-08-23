@@ -387,7 +387,7 @@ const ozz::animation::Animation* xiiAnimationClipResource::GetOzzAnimation() con
 }
 #endif
 
-xiiResourceLoadDesc xiiAnimationClipResource::UnloadData(Unload whatToUnload)
+xiiResourceLoadDescription xiiAnimationClipResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
 
@@ -396,16 +396,16 @@ xiiResourceLoadDesc xiiAnimationClipResource::UnloadData(Unload whatToUnload)
   m_pOzzAnimation.Clear();
 #endif
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
-xiiResourceLoadDesc xiiAnimationClipResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiAnimationClipResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
@@ -467,7 +467,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiAnimationClipResource, xiiAnimationClipReso
   m_Descriptor = std::move(descriptor);
   LoadOzzAnimation(m_Descriptor.m_OzzAnimationData);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;

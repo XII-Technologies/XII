@@ -259,7 +259,7 @@ const ozz::animation::Skeleton* xiiSkeletonResource::GetOzzSkeleton() const
 }
 #endif
 
-xiiResourceLoadDesc xiiSkeletonResource::UnloadData(Unload whatToUnload)
+xiiResourceLoadDescription xiiSkeletonResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
 
@@ -270,16 +270,16 @@ xiiResourceLoadDesc xiiSkeletonResource::UnloadData(Unload whatToUnload)
   m_pOzzSkeleton.Clear();
 #endif
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
-xiiResourceLoadDesc xiiSkeletonResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiSkeletonResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
@@ -372,7 +372,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiSkeletonResource, xiiSkeletonResourceDescri
   LoadOzzSkeleton(m_Descriptor.m_OzzSkeletonData);
   BuildJointLookup();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;

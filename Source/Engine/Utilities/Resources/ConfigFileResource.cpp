@@ -144,7 +144,7 @@ const char* xiiConfigFileResource::GetString(xiiTempHashedString sName) const
   return "";
 }
 
-xiiResourceLoadDesc xiiConfigFileResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiConfigFileResource::UnloadData(Unload WhatToUnload)
 {
   m_IntData.Clear();
   m_FloatData.Clear();
@@ -152,16 +152,16 @@ xiiResourceLoadDesc xiiConfigFileResource::UnloadData(Unload WhatToUnload)
   m_StringData.Clear();
   m_BoolData.Clear();
 
-  xiiResourceLoadDesc d;
+  xiiResourceLoadDescription d;
   d.m_State                      = xiiResourceState::Unloaded;
   d.m_uiQualityLevelsDiscardable = 0;
   d.m_uiQualityLevelsLoadable    = 0;
   return d;
 }
 
-xiiResourceLoadDesc xiiConfigFileResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiConfigFileResource::UpdateContent(xiiStreamReader* Stream)
 {
-  xiiResourceLoadDesc d;
+  xiiResourceLoadDescription d;
   d.m_uiQualityLevelsDiscardable = 0;
   d.m_uiQualityLevelsLoadable    = 0;
   d.m_State                      = xiiResourceState::Loaded;

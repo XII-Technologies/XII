@@ -56,8 +56,8 @@ public:
 
 protected:
   virtual void                CreateAndLoadData(xiiAbstractObjectGraph& ref_graph, xiiRttiConverterContext& ref_context, const xiiAbstractObjectNode* pRootNode) = 0;
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  xiiResourceLoadDesc         UpdateContent_Internal(xiiStreamReader* pStream, const xiiRTTI& rtti);
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  xiiResourceLoadDescription         UpdateContent_Internal(xiiStreamReader* pStream, const xiiRTTI& rtti);
 };
 
 /// \brief Template resource type for sub-classed xiiCustomData types.
@@ -78,9 +78,9 @@ public:
 protected:
   virtual void CreateAndLoadData(xiiAbstractObjectGraph& graph, xiiRttiConverterContext& context, const xiiAbstractObjectNode* pRootNode) override;
 
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
 
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
 
   virtual void UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 

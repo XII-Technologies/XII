@@ -23,9 +23,9 @@ namespace
     }
 
   protected:
-    virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override
+    virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override
     {
-      xiiResourceLoadDesc ld;
+      xiiResourceLoadDescription ld;
       ld.m_State                      = xiiResourceState::Unloaded;
       ld.m_uiQualityLevelsDiscardable = 0;
       ld.m_uiQualityLevelsLoadable    = 0;
@@ -33,9 +33,9 @@ namespace
       return ld;
     }
 
-    virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override
+    virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override
     {
-      xiiResourceLoadDesc ld;
+      xiiResourceLoadDescription ld;
       ld.m_State                      = xiiResourceState::Loaded;
       ld.m_uiQualityLevelsDiscardable = 0;
       ld.m_uiQualityLevelsLoadable    = 0;

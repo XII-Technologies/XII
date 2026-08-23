@@ -138,7 +138,7 @@ void xiiResource::CallUnloadData(Unload WhatToUnload)
   e.m_Type      = xiiResourceEvent::Type::ResourceContentUnloading;
   xiiResourceManager::BroadcastResourceEvent(e);
 
-  xiiResourceLoadDesc ld = UnloadData(WhatToUnload);
+  xiiResourceLoadDescription ld = UnloadData(WhatToUnload);
 
   XII_ASSERT_DEV(ld.m_State != xiiResourceState::Invalid, "UnloadData() did not return a valid resource load state");
   XII_ASSERT_DEV(ld.m_uiQualityLevelsDiscardable != 0xFF, "UnloadData() did not fill out m_uiQualityLevelsDiscardable correctly");
@@ -167,10 +167,10 @@ void xiiResource::CallUpdateContent(xiiStreamReader* Stream)
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiResource* pPreviouslyUpdatingContent = g_pCurrentlyUpdatingContent;
   g_pCurrentlyUpdatingContent                   = this;
-  xiiResourceLoadDesc ld                        = UpdateContent(Stream);
+  xiiResourceLoadDescription ld                        = UpdateContent(Stream);
   g_pCurrentlyUpdatingContent                   = pPreviouslyUpdatingContent;
 #else
-  xiiResourceLoadDesc ld = UpdateContent(Stream);
+  xiiResourceLoadDescription ld = UpdateContent(Stream);
 #endif
 
   XII_ASSERT_DEV(ld.m_State != xiiResourceState::Invalid, "UpdateContent() did not return a valid resource load state");
@@ -259,7 +259,7 @@ void xiiResource::ReportResourceIsMissing()
   xiiLog::SeriousWarning("Missing Resource of Type '{2}': '{0}' ('{1}')", xiiArgSensitive(GetResourceID(), "ResourceID"), xiiArgSensitive(m_sResourceDescription, "ResourceDesc"), GetDynamicRTTI()->GetTypeName());
 }
 
-void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDesc& ld)
+void xiiResource::VerifyAfterCreateResource(const xiiResourceLoadDescription& ld)
 {
   XII_ASSERT_DEV(ld.m_State != xiiResourceState::Invalid, "CreateResource() did not return a valid resource load state");
   XII_ASSERT_DEV(ld.m_uiQualityLevelsDiscardable != 0xFF, "CreateResource() did not fill out m_uiQualityLevelsDiscardable correctly");

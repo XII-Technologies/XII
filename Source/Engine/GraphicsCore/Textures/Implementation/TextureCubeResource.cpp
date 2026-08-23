@@ -21,7 +21,7 @@ xiiTextureCubeResource::xiiTextureCubeResource() :
   m_uiWidthAndHeight = 0;
 }
 
-xiiResourceLoadDesc xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
 {
   if (m_uiLoadedTextures > 0)
   {
@@ -41,7 +41,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
     m_pSampler.Clear();
   }
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
   res.m_uiQualityLevelsLoadable    = 2 - m_uiLoadedTextures;
   res.m_State                      = m_uiLoadedTextures == 0 ? xiiResourceState::Unloaded : xiiResourceState::Loaded;
@@ -49,11 +49,11 @@ xiiResourceLoadDesc xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiTextureCubeResource::UpdateContent(xiiStreamReader* Stream)
 {
   if (Stream == nullptr)
   {
-    xiiResourceLoadDesc res;
+    xiiResourceLoadDescription res;
     res.m_uiQualityLevelsDiscardable = 0;
     res.m_uiQualityLevelsLoadable    = 0;
     res.m_State                      = xiiResourceState::LoadedResourceMissing;
@@ -79,7 +79,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   {
     xiiLog::Error("Cubemap width '{0}' is not identical to height '{1}'", pImage->GetWidth(uiHighestMipLevel), pImage->GetHeight(uiHighestMipLevel));
 
-    xiiResourceLoadDesc res;
+    xiiResourceLoadDescription res;
     res.m_uiQualityLevelsDiscardable = 0;
     res.m_uiQualityLevelsLoadable    = 0;
     res.m_State                      = xiiResourceState::LoadedResourceMissing;
@@ -168,7 +168,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   CreateResource(std::move(td));
 
   {
-    xiiResourceLoadDesc res;
+    xiiResourceLoadDescription res;
     res.m_uiQualityLevelsDiscardable = m_uiLoadedTextures;
 
     if (uiHighestMipLevel == 0)
@@ -190,7 +190,7 @@ void xiiTextureCubeResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResourceDescriptor)
 {
-  xiiResourceLoadDesc ret;
+  xiiResourceLoadDescription ret;
   ret.m_uiQualityLevelsDiscardable = descriptor.m_uiQualityLevelsDiscardable;
   ret.m_uiQualityLevelsLoadable    = descriptor.m_uiQualityLevelsLoadable;
   ret.m_State                      = xiiResourceState::Loaded;

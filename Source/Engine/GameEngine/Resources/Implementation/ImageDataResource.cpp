@@ -20,11 +20,11 @@ xiiImageDataResource::xiiImageDataResource() :
 
 xiiImageDataResource::~xiiImageDataResource() = default;
 
-xiiResourceLoadDesc xiiImageDataResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiImageDataResource::UnloadData(Unload WhatToUnload)
 {
   m_pDescriptor.Clear();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -32,11 +32,11 @@ xiiResourceLoadDesc xiiImageDataResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiImageDataResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiImageDataResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiImageDataResource::UpdateContent", GetResourceDescription().GetData());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
@@ -117,7 +117,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiImageDataResource, xiiImageDataResourceDesc
 
   *m_pDescriptor = std::move(descriptor);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
