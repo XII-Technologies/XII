@@ -13,6 +13,8 @@
 #include <GraphicsCore/Textures/TextureLoader.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 
 static xiiTextureResourceLoader s_TextureResourceLoader;
 
@@ -31,7 +33,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
     xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(&s_TextureResourceLoader);
     xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(&s_TextureResourceLoader);
     xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(&s_TextureResourceLoader);
-    xiiResourceManager::SetResourceTypeLoader<xiiRenderToTexture2DResource>(&s_TextureResourceLoader);
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -39,7 +40,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
     xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(nullptr);
-    xiiResourceManager::SetResourceTypeLoader<xiiRenderToTexture2DResource>(nullptr);
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
