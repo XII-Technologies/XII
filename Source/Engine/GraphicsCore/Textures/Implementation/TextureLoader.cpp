@@ -11,10 +11,10 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
-#include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Resources/Sampler.h>
 
 static xiiTextureResourceLoader s_TextureResourceLoader;
 

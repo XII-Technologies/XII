@@ -57,8 +57,8 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetMipLevelCount() - uiNumMipLevels;
 
-  const xiiEnum<xiiGALResourceFormat> format           = pImage->GetImageFormat();
-  const xiiGALResourceFormatDescription&                         formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
+  const xiiEnum<xiiGALResourceFormat>    format           = pImage->GetImageFormat();
+  const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(format);
 
   ref_td.m_TextureDescription.m_Format      = format;
   ref_td.m_TextureDescription.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);

@@ -60,8 +60,8 @@ xiiResourceLoadDescription xiiTextureCubeResource::UpdateContent(xiiStreamReader
   }
 
   xiiTextureCubeResourceDescriptor td;
-  xiiImage*                      pImage      = nullptr;
-  bool                           bIsFallback = false;
+  xiiImage*                        pImage      = nullptr;
+  bool                             bIsFallback = false;
 
   {
     *pStream >> td.m_TextureDescription;

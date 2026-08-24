@@ -352,10 +352,10 @@ private:                                                                        
 #  define XII_RESOURCE_VALIDATE_FALLBACK(SELF)
 #endif
 
-#define XII_RESOURCE_DECLARE_CREATEABLE(SELF, SELF_DESCRIPTOR)      \
-protected:                                                          \
+#define XII_RESOURCE_DECLARE_CREATEABLE(SELF, SELF_DESCRIPTOR)             \
+protected:                                                                 \
   xiiResourceLoadDescription CreateResource(SELF_DESCRIPTOR&& descriptor); \
-                                                                    \
+                                                                           \
 private:
 
 #define XII_RESOURCE_IMPLEMENT_CREATEABLE(SELF, SELF_DESCRIPTOR) xiiResourceLoadDescription SELF::CreateResource(SELF_DESCRIPTOR&& descriptor)

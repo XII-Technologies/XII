@@ -3043,7 +3043,7 @@ struct xiiDecalUploadData
   xiiRGTextureHandle m_hAtlasEmissive;
 
   xiiDynamicArray<xiiGPUDecalInstance, xiiAlignedAllocatorWrapper> m_Decals;
-  xiiUInt32                                                          m_uiDecalCount = 0U;
+  xiiUInt32                                                        m_uiDecalCount = 0U;
 };
 
 void xiiView::SetupDecalUpload(xiiDecalUploadData& data, xiiRGBuilder& builder)

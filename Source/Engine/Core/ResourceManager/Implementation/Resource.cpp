@@ -167,7 +167,7 @@ void xiiResource::CallUpdateContent(xiiStreamReader* pStream)
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiResource* pPreviouslyUpdatingContent = g_pCurrentlyUpdatingContent;
   g_pCurrentlyUpdatingContent                   = this;
-  xiiResourceLoadDescription ld                        = UpdateContent(pStream);
+  xiiResourceLoadDescription ld                 = UpdateContent(pStream);
   g_pCurrentlyUpdatingContent                   = pPreviouslyUpdatingContent;
 #else
   xiiResourceLoadDescription ld = UpdateContent(pStream);
