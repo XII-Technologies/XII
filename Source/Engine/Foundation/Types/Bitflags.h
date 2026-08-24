@@ -251,7 +251,7 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-// begin() /end() for range-based for-loop support
+// begin() and end() for range-based for-loop support
 template <typename T>
 typename xiiBitflags<T>::ConstIterator begin(const xiiBitflags<T>& container)
 {
