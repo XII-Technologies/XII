@@ -22,8 +22,9 @@ public:
     xiiMemoryStreamReader            m_Reader;
     xiiImage                         m_Image;
 
-    bool                          m_bIsFallback = false;
-    xiiEnum<xiiGALResourceFormat> m_ResourceFormat;
+    xiiGALTextureCreationDescription m_TextureDescription;
+    xiiGALSamplerCreationDescription m_SamplerDescription;
+    bool                             m_bIsFallback = false;
   };
 
   virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;

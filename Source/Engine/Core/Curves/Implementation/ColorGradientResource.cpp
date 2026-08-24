@@ -19,7 +19,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiColorGradientResource, xiiColorGradientReso
 {
   m_Descriptor = descriptor;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
@@ -27,11 +27,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiColorGradientResource, xiiColorGradientReso
   return res;
 }
 
-xiiResourceLoadDesc xiiColorGradientResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiColorGradientResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -41,11 +41,11 @@ xiiResourceLoadDesc xiiColorGradientResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiColorGradientResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiColorGradientResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiColorGradientResource::UpdateContent", GetResourceIdOrDescription());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 

@@ -23,7 +23,7 @@ xiiGALSampler::xiiGALSampler(xiiSharedPtr<xiiGALDevice> pDevice, const xiiGALSam
 
 xiiGALSampler::~xiiGALSampler() = default;
 
-xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiGALSamplerCreationDescription description)
+xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSamplerCreationDescription& description)
 {
   ref_stream << description.m_MinFilter;
   ref_stream << description.m_MagFilter;

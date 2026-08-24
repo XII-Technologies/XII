@@ -249,22 +249,22 @@ xiiUInt32 xiiAnimGraphResource::GetRuntimeHash() const
   return m_Descriptor.m_uiRuntimeHash;
 }
 
-xiiResourceLoadDesc xiiAnimGraphResource::UnloadData(Unload whatToUnload)
+xiiResourceLoadDescription xiiAnimGraphResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
 
   m_Descriptor.Clear();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Unloaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   return res;
 }
 
-xiiResourceLoadDesc xiiAnimGraphResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiAnimGraphResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
@@ -297,7 +297,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiAnimGraphResource, xiiAnimGraphResourceDesc
   descriptor.ComputeRuntimeHash();
   m_Descriptor = std::move(descriptor);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;

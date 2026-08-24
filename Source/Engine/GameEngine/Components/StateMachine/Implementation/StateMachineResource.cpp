@@ -29,11 +29,11 @@ xiiUniquePtr<xiiStateMachineInstance> xiiStateMachineResource::CreateInstance(xi
   return nullptr;
 }
 
-xiiResourceLoadDesc xiiStateMachineResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiStateMachineResource::UnloadData(Unload WhatToUnload)
 {
   m_pDescription = nullptr;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -41,11 +41,11 @@ xiiResourceLoadDesc xiiStateMachineResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiStateMachineResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiStateMachineResource::UpdateContent(xiiStreamReader* pStream)
 {
   XII_LOG_BLOCK("xiiStateMachineResource::UpdateContent", GetResourceDescription().GetData());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 

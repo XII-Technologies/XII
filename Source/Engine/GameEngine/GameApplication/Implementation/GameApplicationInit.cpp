@@ -110,17 +110,6 @@ void xiiGameApplication::Init_SetupDefaultResources()
     xiiResourceManager::SetResourceTypeMissingFallback<xiiTexture2DResource>(hMissingTexture);
   }
 
-  // Render to 2D Textures
-  {
-    xiiRenderToTexture2DResourceDescriptor desc;
-    desc.m_uiWidth  = 128;
-    desc.m_uiHeight = 128;
-
-    xiiRenderToTexture2DResourceHandle hMissingTexture = xiiResourceManager::CreateResource<xiiRenderToTexture2DResource>("R22DT_Missing", std::move(desc));
-
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiRenderToTexture2DResource>(hMissingTexture);
-  }
-
   // Cube Textures
   {
     /// \todo Loading Cubemap Texture

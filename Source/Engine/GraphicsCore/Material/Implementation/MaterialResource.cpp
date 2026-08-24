@@ -972,7 +972,7 @@ xiiStringView xiiMaterialResource::GetDefaultMaterialFileName(DefaultMaterialTyp
   }
 }
 
-xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiMaterialResource::UnloadData(Unload WhatToUnload)
 {
   if (m_Description.m_hBaseMaterial.IsValid())
   {
@@ -1001,7 +1001,7 @@ xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
   m_uiCacheIndex  = xiiInvalidIndex;
   m_pCachedValues = nullptr;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -1009,13 +1009,13 @@ xiiResourceLoadDesc xiiMaterialResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterStream)
+xiiResourceLoadDescription xiiMaterialResource::UpdateContent(xiiStreamReader* pOuterStream)
 {
   m_Description.Clear();
   m_LoadingDescription.Clear();
   m_RuntimeState = xiiMaterialRuntimeState();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
@@ -1351,7 +1351,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMaterialResource, xiiMaterialResourceDescri
   m_LoadingDescription = descriptor;
   UpdateRuntimeState();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_State                      = xiiResourceState::Loaded;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;

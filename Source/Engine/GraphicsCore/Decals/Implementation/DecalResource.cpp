@@ -78,7 +78,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalAtlasResource, xiiDecalAtlasResourceDe
   RebuildLookup();
   CreateGPUAtlases();
 
-  xiiResourceLoadDesc description;
+  xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
   description.m_uiQualityLevelsLoadable    = 0U;
   description.m_State                      = xiiResourceState::Loaded;
@@ -102,7 +102,7 @@ bool xiiDecalAtlasResource::TryGetAtlasEntry(const xiiHashedString& sDecalId, co
   return TryGetAtlasEntry(xiiTempHashedString(sDecalId), out_pEntry);
 }
 
-xiiResourceLoadDesc xiiDecalAtlasResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiDecalAtlasResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
@@ -115,20 +115,20 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UnloadData(Unload WhatToUnload)
   m_pAtlasSampler.Clear();
   m_uiMemoryGPU = 0U;
 
-  xiiResourceLoadDesc description;
+  xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
   description.m_uiQualityLevelsLoadable    = 0U;
   description.m_State                      = xiiResourceState::Unloaded;
   return description;
 }
 
-xiiResourceLoadDesc xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStream)
 {
   XII_LOG_BLOCK("xiiDecalAtlasResource::UpdateContent", GetResourceIdOrDescription());
 
   if (pStream == nullptr)
   {
-    xiiResourceLoadDesc description;
+    xiiResourceLoadDescription description;
     description.m_uiQualityLevelsDiscardable = 0U;
     description.m_uiQualityLevelsLoadable    = 0U;
     description.m_State                      = xiiResourceState::LoadedResourceMissing;
@@ -142,7 +142,7 @@ xiiResourceLoadDesc xiiDecalAtlasResource::UpdateContent(xiiStreamReader* pStrea
   RebuildLookup();
   CreateGPUAtlases();
 
-  xiiResourceLoadDesc description;
+  xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
   description.m_uiQualityLevelsLoadable    = 0U;
   description.m_State                      = xiiResourceState::Loaded;
@@ -340,33 +340,33 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalResource, xiiDecalResourceDescriptor)
 {
   m_Descriptor = descriptor;
 
-  xiiResourceLoadDesc description;
+  xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
   description.m_uiQualityLevelsLoadable    = 0U;
   description.m_State                      = xiiResourceState::Loaded;
   return description;
 }
 
-xiiResourceLoadDesc xiiDecalResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiDecalResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
   m_Descriptor = {};
 
-  xiiResourceLoadDesc description;
+  xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
   description.m_uiQualityLevelsLoadable    = 0U;
   description.m_State                      = xiiResourceState::Unloaded;
   return description;
 }
 
-xiiResourceLoadDesc xiiDecalResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiDecalResource::UpdateContent(xiiStreamReader* pStream)
 {
   XII_LOG_BLOCK("xiiDecalResource::UpdateContent", GetResourceIdOrDescription());
 
   if (pStream == nullptr)
   {
-    xiiResourceLoadDesc description;
+    xiiResourceLoadDescription description;
     description.m_uiQualityLevelsDiscardable = 0U;
     description.m_uiQualityLevelsLoadable    = 0U;
     description.m_State                      = xiiResourceState::LoadedResourceMissing;
@@ -376,7 +376,7 @@ xiiResourceLoadDesc xiiDecalResource::UpdateContent(xiiStreamReader* pStream)
   SkipResourceFileHeader(*pStream);
   m_Descriptor.Load(*pStream);
 
-  xiiResourceLoadDesc description;
+  xiiResourceLoadDescription description;
   description.m_uiQualityLevelsDiscardable = 0U;
   description.m_uiQualityLevelsLoadable    = 0U;
   description.m_State                      = xiiResourceState::Loaded;

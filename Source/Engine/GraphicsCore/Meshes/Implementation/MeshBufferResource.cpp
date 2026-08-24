@@ -793,7 +793,7 @@ const xiiMeshBufferResourceDescriptor& xiiMeshBufferResource::GetDescriptor() co
   return m_Descriptor;
 }
 
-xiiResourceLoadDesc xiiMeshBufferResource::UnloadData(Unload whatToUnload)
+xiiResourceLoadDescription xiiMeshBufferResource::UnloadData(Unload whatToUnload)
 {
   XII_IGNORE_UNUSED(whatToUnload);
 
@@ -806,16 +806,16 @@ xiiResourceLoadDesc xiiMeshBufferResource::UnloadData(Unload whatToUnload)
   m_Descriptor.Clear();
   m_uiMemoryGPU = 0U;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Unloaded;
   return res;
 }
 
-xiiResourceLoadDesc xiiMeshBufferResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiMeshBufferResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Loaded;
@@ -923,7 +923,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     m_Descriptor.m_IndexData.Clear();
   }
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0U;
   res.m_uiQualityLevelsLoadable    = 0U;
   res.m_State                      = xiiResourceState::Loaded;

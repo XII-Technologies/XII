@@ -17,29 +17,13 @@
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;
 
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTextureCubeResource> to create textures from data in memory.
-struct xiiTextureCubeResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiTextureCubeResourceDescriptor
 {
-  xiiTextureCubeResourceDescriptor() :
-    m_DescGAL(xiiGALTextureUtilities::GetDefaultTextureCubeDescription()),
-    m_SamplerDesc(xiiGALGraphicsUtilities::GetDefaultSamplerDescription()),
-    m_uiQualityLevelsDiscardable(0),
-    m_uiQualityLevelsLoadable(0)
-  {
-  }
-
-  /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL;
-  xiiGALSamplerCreationDescription m_SamplerDesc;
-
-  /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
-  xiiUInt8 m_uiQualityLevelsDiscardable;
-
-  /// How many additional quality levels can be loaded (typically from file).
-  xiiUInt8 m_uiQualityLevelsLoadable;
-
-  /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not
-  /// initialize data.
-  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
+  xiiGALTextureCreationDescription          m_TextureDescription         = xiiGALTextureUtilities::GetDefaultTexture2DDescription(); ///< Texture creation description.
+  xiiGALSamplerCreationDescription          m_SamplerDescription         = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();  ///< Sampler creation description.
+  xiiUInt8                                  m_uiQualityLevelsDiscardable = 0;                                                        ///< How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
+  xiiUInt8                                  m_uiQualityLevelsLoadable    = 0;                                                        ///< How many additional quality levels can be loaded (typically from file).
+  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;                                                                        ///< One texture subresource data per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
 };
 
 class XII_GRAPHICSCORE_DLL xiiTextureCubeResource : public xiiResource
@@ -58,8 +42,8 @@ public:
   xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
 
 protected:
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiUInt8                    m_uiLoadedTextures;

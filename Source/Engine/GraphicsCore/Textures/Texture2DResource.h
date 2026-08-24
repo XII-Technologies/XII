@@ -22,18 +22,11 @@ using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DReso
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture2DResource> to create textures from data in memory.
 struct XII_GRAPHICSCORE_DLL xiiTexture2DResourceDescriptor
 {
-  /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL     = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
-  xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
-
-  /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
-  xiiUInt8 m_uiQualityLevelsDiscardable = 0;
-
-  /// How many additional quality levels can be loaded (typically from file).
-  xiiUInt8 m_uiQualityLevelsLoadable = 0;
-
-  /// One texture subresource data per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
-  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
+  xiiGALTextureCreationDescription          m_TextureDescription         = xiiGALTextureUtilities::GetDefaultTexture2DDescription(); ///< Texture creation description.
+  xiiGALSamplerCreationDescription          m_SamplerDescription         = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();  ///< Sampler creation description.
+  xiiUInt8                                  m_uiQualityLevelsDiscardable = 0;                                                        ///< How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
+  xiiUInt8                                  m_uiQualityLevelsLoadable    = 0;                                                        ///< How many additional quality levels can be loaded (typically from file).
+  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;                                                                        ///< One texture subresource data per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not initialize data.
 };
 
 class XII_GRAPHICSCORE_DLL xiiTexture2DResource : public xiiResource
@@ -51,15 +44,15 @@ public:
   XII_ALWAYS_INLINE xiiUInt32                     GetHeight() const { return m_uiHeight; }
   XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const { return m_Type; }
 
-  static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
+  static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
   xiiSharedPtr<xiiGALTexture> GetGALTexture() const { return m_pGALTexture[m_uiLoadedTextures - 1]; }
   xiiSharedPtr<xiiGALSampler> GetGALSampler() const { return m_pSampler; }
 
 protected:
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
-  virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
+  virtual void                       UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiTexture2DResource(DoUpdate ResourceUpdateThread);
 

@@ -154,14 +154,14 @@ private:
 
   /// \brief Requests the resource to unload another quality level. If bFullUnload is true, the resource should unload all data, because it
   /// is going to be deleted afterwards.
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) = 0;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) = 0;
 
   void CallUpdateContent(xiiStreamReader* pStream);
 
   /// \brief Called whenever more data for the resource is available. The resource must read the stream to update it's data.
   ///
   /// pStream may be nullptr in case the resource data could not be found.
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* pStream) = 0;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) = 0;
 
   /// \brief Returns the resource type loader that should be used for this type of resource, unless it has been overridden on the
   /// xiiResourceManager.
@@ -223,7 +223,7 @@ private:
   virtual bool HasResourceTypeLoadingFallback() const = 0;
 
   /// \brief Called by xiiResourceMananger::CreateResource
-  void VerifyAfterCreateResource(const xiiResourceLoadDesc& ld);
+  void VerifyAfterCreateResource(const xiiResourceLoadDescription& ld);
 
   xiiUInt64          m_uiUniqueIDHash          = 0;
   xiiUInt32          m_uiResourceChangeCounter = 0;
@@ -352,10 +352,10 @@ private:                                                                        
 #  define XII_RESOURCE_VALIDATE_FALLBACK(SELF)
 #endif
 
-#define XII_RESOURCE_DECLARE_CREATEABLE(SELF, SELF_DESCRIPTOR)      \
-protected:                                                          \
-  xiiResourceLoadDesc CreateResource(SELF_DESCRIPTOR&& descriptor); \
-                                                                    \
+#define XII_RESOURCE_DECLARE_CREATEABLE(SELF, SELF_DESCRIPTOR)             \
+protected:                                                                 \
+  xiiResourceLoadDescription CreateResource(SELF_DESCRIPTOR&& descriptor); \
+                                                                           \
 private:
 
-#define XII_RESOURCE_IMPLEMENT_CREATEABLE(SELF, SELF_DESCRIPTOR) xiiResourceLoadDesc SELF::CreateResource(SELF_DESCRIPTOR&& descriptor)
+#define XII_RESOURCE_IMPLEMENT_CREATEABLE(SELF, SELF_DESCRIPTOR) xiiResourceLoadDescription SELF::CreateResource(SELF_DESCRIPTOR&& descriptor)

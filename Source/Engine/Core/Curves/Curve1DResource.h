@@ -30,8 +30,8 @@ public:
   const xiiCurve1DResourceDescriptor& GetDescriptor() const { return m_Descriptor; }
 
 private:
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiCurve1DResourceDescriptor m_Descriptor;

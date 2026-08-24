@@ -2626,11 +2626,11 @@ void xiiDebugRenderer::OnEngineStartup()
     memoryDesc.m_uiDepthStride = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
 
     xiiTexture2DResourceDescriptor desc;
-    desc.m_DescGAL               = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
-    desc.m_DescGAL.m_Size.width  = debugFontImage.GetWidth();
-    desc.m_DescGAL.m_Size.height = debugFontImage.GetHeight();
-    desc.m_DescGAL.m_Format      = xiiGALResourceFormat::R8UNormalized;
-    desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
+    desc.m_TextureDescription               = xiiGALTextureUtilities::GetDefaultTexture2DDescription();
+    desc.m_TextureDescription.m_Size.width  = debugFontImage.GetWidth();
+    desc.m_TextureDescription.m_Size.height = debugFontImage.GetHeight();
+    desc.m_TextureDescription.m_Format      = xiiGALResourceFormat::R8UNormalized;
+    desc.m_InitialContent                   = xiiMakeArrayPtr(&memoryDesc, 1);
 
     s_hDebugFontTexture = xiiResourceManager::CreateResource<xiiTexture2DResource>("DebugFontTexture", std::move(desc));
   }

@@ -3009,30 +3009,30 @@ namespace
   static constexpr xiiUInt32 k_uiDecalTileSize               = 16U;
   static constexpr xiiUInt32 k_uiMaxProjectedDecalsPerTile   = 12U;
   static constexpr xiiUInt32 k_uiMaxProjectedDecalTileStride = 1U + k_uiMaxProjectedDecalsPerTile;
-
-  struct alignas(16) xiiGPUDecalInstance
-  {
-    XII_DECLARE_POD_TYPE();
-
-    xiiMat4   m_WorldToDecal      = xiiMat4::MakeIdentity();
-    xiiVec4   m_AtlasUVRect       = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
-    xiiVec4   m_Tint              = xiiVec4(1.0f);
-    xiiVec4   m_UVOffsetScale     = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
-    xiiVec4   m_ExtentsOpacity    = xiiVec4(1.0f, 1.0f, 0.25f, 1.0f);
-    xiiVec4   m_WorldCenterRadius = xiiVec4::MakeZero();
-    xiiVec4   m_SurfaceParams     = xiiVec4(1.0f, 0.5f, 0.0f, 0.0f);
-    xiiUInt32 m_uiChannelMask     = 0U;
-    xiiUInt32 m_uiMode            = 0U;
-    xiiUInt32 m_uiPriority        = 0U;
-    xiiUInt32 m_uiFlags           = 0U;
-  };
-
-  static_assert((sizeof(xiiGPUDecalInstance) % 16U) == 0U);
 } // namespace
 
 ////////// GPU Decal Upload Data //////////
 //
 // Uploads extracted projected and mesh decal instances into a GPU-visible structured buffer and imports the active atlas set.
+
+struct alignas(16) xiiGPUDecalInstance
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiMat4   m_WorldToDecal      = xiiMat4::MakeIdentity();
+  xiiVec4   m_AtlasUVRect       = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
+  xiiVec4   m_Tint              = xiiVec4(1.0f);
+  xiiVec4   m_UVOffsetScale     = xiiVec4(0.0f, 0.0f, 1.0f, 1.0f);
+  xiiVec4   m_ExtentsOpacity    = xiiVec4(1.0f, 1.0f, 0.25f, 1.0f);
+  xiiVec4   m_WorldCenterRadius = xiiVec4::MakeZero();
+  xiiVec4   m_SurfaceParams     = xiiVec4(1.0f, 0.5f, 0.0f, 0.0f);
+  xiiUInt32 m_uiChannelMask     = 0U;
+  xiiUInt32 m_uiMode            = 0U;
+  xiiUInt32 m_uiPriority        = 0U;
+  xiiUInt32 m_uiFlags           = 0U;
+};
+
+static_assert((sizeof(xiiGPUDecalInstance) % 16U) == 0U);
 
 struct xiiDecalUploadData
 {

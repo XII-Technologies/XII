@@ -7,11 +7,12 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Utilities/AssetFileHeader.h>
-#include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureLoader.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/Image/ImageConversion.h>
 
@@ -32,7 +33,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
     xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(&s_TextureResourceLoader);
     xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(&s_TextureResourceLoader);
     xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(&s_TextureResourceLoader);
-    xiiResourceManager::SetResourceTypeLoader<xiiRenderToTexture2DResource>(&s_TextureResourceLoader);
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -40,7 +40,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, TextureResource)
     xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiTexture3DResource>(nullptr);
     xiiResourceManager::SetResourceTypeLoader<xiiTextureCubeResource>(nullptr);
-    xiiResourceManager::SetResourceTypeLoader<xiiRenderToTexture2DResource>(nullptr);
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -176,9 +175,10 @@ xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, L
   xiiAssetFileHeader AssetHash;
   XII_SUCCEED_OR_RETURN(AssetHash.Read(inout_stream));
 
-  ref_data.m_TexFormat.ReadHeader(inout_stream);
+  inout_stream >> ref_data.m_TextureDescription;
+  inout_stream >> ref_data.m_SamplerDescription;
 
-  if (ref_data.m_TexFormat.m_iRenderTargetResolutionX == 0)
+  if (ref_data.m_TextureDescription.m_Size.width == 0)
   {
     xiiDdsFileFormat fmt;
     return fmt.ReadImage(inout_stream, ref_data.m_Image, "dds");
@@ -191,11 +191,12 @@ xiiResult xiiTextureResourceLoader::LoadTexFile(xiiStreamReader& inout_stream, L
 
 void xiiTextureResourceLoader::WriteTextureLoadStream(xiiStreamWriter& w, const LoadedData& data)
 {
+  w << data.m_TextureDescription;
+  w << data.m_SamplerDescription;
+  w << data.m_bIsFallback;
+
   const xiiImage* pImage = &data.m_Image;
   w.WriteBytes(&pImage, sizeof(xiiImage*)).IgnoreResult();
-
-  w << data.m_bIsFallback;
-  data.m_TexFormat.WriteRenderTargetHeader(w);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_TextureLoader);

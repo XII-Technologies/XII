@@ -19,7 +19,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCurve1DResource, xiiCurve1DResourceDescript
 {
   m_Descriptor = descriptor;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
@@ -27,11 +27,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCurve1DResource, xiiCurve1DResourceDescript
   return res;
 }
 
-xiiResourceLoadDesc xiiCurve1DResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiCurve1DResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -41,11 +41,11 @@ xiiResourceLoadDesc xiiCurve1DResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiCurve1DResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiCurve1DResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiCurve1DResource::UpdateContent", GetResourceIdOrDescription());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 

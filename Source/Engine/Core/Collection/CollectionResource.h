@@ -91,8 +91,8 @@ public:
   xiiArrayPtr<const xiiTypelessResourceHandle> GetPreloadedResources() const { return m_PreloadedResources; }
 
 private:
-  virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* Stream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   mutable xiiMutex                           m_PreloadMutex;

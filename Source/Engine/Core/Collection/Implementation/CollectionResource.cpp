@@ -140,7 +140,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCollectionResource, xiiCollectionResourceDe
 {
   m_Collection = descriptor;
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Loaded;
@@ -148,11 +148,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCollectionResource, xiiCollectionResourceDe
   return res;
 }
 
-xiiResourceLoadDesc xiiCollectionResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiCollectionResource::UnloadData(Unload WhatToUnload)
 {
   XII_IGNORE_UNUSED(WhatToUnload);
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -176,11 +176,11 @@ xiiResourceLoadDesc xiiCollectionResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiCollectionResource::UpdateContent(xiiStreamReader* Stream)
+xiiResourceLoadDescription xiiCollectionResource::UpdateContent(xiiStreamReader* Stream)
 {
   XII_LOG_BLOCK("xiiCollectionResource::UpdateContent", GetResourceIdOrDescription());
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 

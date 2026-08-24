@@ -16,12 +16,12 @@ xiiShaderResource::xiiShaderResource() :
   m_bShaderResourceIsValid = false;
 }
 
-xiiResourceLoadDesc xiiShaderResource::UnloadData(Unload WhatToUnload)
+xiiResourceLoadDescription xiiShaderResource::UnloadData(Unload WhatToUnload)
 {
   m_bShaderResourceIsValid = false;
   m_PermutationVariablesUsed.Clear();
 
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
   res.m_State                      = xiiResourceState::Unloaded;
@@ -29,9 +29,9 @@ xiiResourceLoadDesc xiiShaderResource::UnloadData(Unload WhatToUnload)
   return res;
 }
 
-xiiResourceLoadDesc xiiShaderResource::UpdateContent(xiiStreamReader* pStream)
+xiiResourceLoadDescription xiiShaderResource::UpdateContent(xiiStreamReader* pStream)
 {
-  xiiResourceLoadDesc res;
+  xiiResourceLoadDescription res;
   res.m_uiQualityLevelsDiscardable = 0;
   res.m_uiQualityLevelsLoadable    = 0;
 
@@ -75,7 +75,7 @@ void xiiShaderResource::UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage)
 
 XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiShaderResource, xiiShaderResourceDescriptor)
 {
-  xiiResourceLoadDesc ret;
+  xiiResourceLoadDescription ret;
   ret.m_State                      = xiiResourceState::Loaded;
   ret.m_uiQualityLevelsDiscardable = 0;
   ret.m_uiQualityLevelsLoadable    = 0;

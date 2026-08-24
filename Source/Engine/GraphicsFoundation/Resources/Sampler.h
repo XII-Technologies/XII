@@ -88,6 +88,6 @@ protected:
   xiiGALSamplerCreationDescription m_Description;
 };
 
-XII_GRAPHICSFOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiGALSamplerCreationDescription description);
+XII_GRAPHICSFOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALSamplerCreationDescription& description);
 
 XII_GRAPHICSFOUNDATION_DLL xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiGALSamplerCreationDescription& out_description);

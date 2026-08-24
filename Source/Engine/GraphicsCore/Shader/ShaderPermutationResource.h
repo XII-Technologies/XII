@@ -39,8 +39,8 @@ public:
   XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALPermutationVariable> GetPermutationVariables() const { return m_PermutationVariables; }
 
 private:
-  virtual xiiResourceLoadDesc    UnloadData(Unload WhatToUnload) override;
-  virtual xiiResourceLoadDesc    UpdateContent(xiiStreamReader* pStream) override;
+  virtual xiiResourceLoadDescription UnloadData(Unload WhatToUnload) override;
+  virtual xiiResourceLoadDescription UpdateContent(xiiStreamReader* pStream) override;
   virtual void                   UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
   virtual xiiResourceTypeLoader* GetDefaultResourceTypeLoader() const override;
 

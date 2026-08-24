@@ -235,6 +235,6 @@ private:
   void CreateDefaultResourceViews();
 };
 
-XII_GRAPHICSFOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, xiiGALTextureCreationDescription description);
+XII_GRAPHICSFOUNDATION_DLL xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTextureCreationDescription& description);
 
 XII_GRAPHICSFOUNDATION_DLL xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiGALTextureCreationDescription& out_description);

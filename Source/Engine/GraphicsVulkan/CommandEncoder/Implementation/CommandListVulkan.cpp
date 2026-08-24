@@ -1372,7 +1372,7 @@ xiiResult xiiGALCommandListVulkan::CommitShaderResourcesPlatform(xiiEnum<xiiGALS
                   return XII_FAILURE;
                 }
 
-                vkDescriptorAccelStructInfo                            = {};
+                vkDescriptorAccelStructInfo                            = vk::WriteDescriptorSetAccelerationStructureKHR{};
                 vkDescriptorAccelStructInfo.pNext                      = nullptr;
                 vkDescriptorAccelStructInfo.accelerationStructureCount = 1U;
                 vkDescriptorAccelStructInfo.pAccelerationStructures    = &vkAccelerationStructure;

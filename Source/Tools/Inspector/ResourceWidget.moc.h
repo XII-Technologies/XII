@@ -52,7 +52,7 @@ private:
     xiiString                     m_sResourceType;
     xiiResourcePriority           m_Priority;
     xiiBitflags<xiiResourceFlags> m_Flags;
-    xiiResourceLoadDesc           m_LoadingState;
+    xiiResourceLoadDescription    m_LoadingState;
     xiiResource::MemoryUsage      m_Memory;
     xiiString                     m_sResourceDescription;
   };
