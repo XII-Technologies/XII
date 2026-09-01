@@ -323,9 +323,10 @@ public:
   virtual xiiResult CompressBlocks(xiiConstByteBlobPtr pSource, xiiByteBlobPtr pTarget, xiiUInt32 uiNumBlocksX, xiiUInt32 uiNumBlocksY, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat) const override
   {
     const xiiGALResourceFormatDescription& sourceFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(sourceFormat);
+    const xiiGALResourceFormatDescription& targetFormatDescription = xiiGALTextureUtilities::GetResourceFormatProperties(targetFormat);
 
-    const xiiUInt32 uiTargetWidth  = uiNumBlocksX * sourceFormatDescription.GetBlockWidth();
-    const xiiUInt32 uiTargetHeight = uiNumBlocksY * sourceFormatDescription.GetBlockHeight();
+    const xiiUInt32 uiTargetWidth  = uiNumBlocksX * targetFormatDescription.GetBlockWidth();
+    const xiiUInt32 uiTargetHeight = uiNumBlocksY * targetFormatDescription.GetBlockHeight();
 
     Image sourceImage;
     sourceImage.width      = uiTargetWidth;
