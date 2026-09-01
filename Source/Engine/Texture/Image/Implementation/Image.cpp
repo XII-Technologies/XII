@@ -148,17 +148,23 @@ xiiEnum<xiiGALResourceFormat> xiiImageView::GetImageFormat() const
 
 xiiUInt32 xiiImageView::GetWidth(xiiUInt32 uiMipLevel /*= 0*/) const
 {
-  return xiiGALTextureUtilities::GetMipSize(m_Description.m_Size.width, uiMipLevel);
+  XII_ASSERT_DEV(uiMipLevel < m_Description.m_uiMipLevels, "Invalid mip level {} for image with {} mip levels.", uiMipLevel, m_Description.m_uiMipLevels);
+
+  return xiiMath::Max(m_Description.m_Size.width >> uiMipLevel, 1U);
 }
 
 xiiUInt32 xiiImageView::GetHeight(xiiUInt32 uiMipLevel /*= 0*/) const
 {
-  return xiiGALTextureUtilities::GetMipSize(m_Description.m_Size.height, uiMipLevel);
+  XII_ASSERT_DEV(uiMipLevel < m_Description.m_uiMipLevels, "Invalid mip level {} for image with {} mip levels.", uiMipLevel, m_Description.m_uiMipLevels);
+
+  return xiiMath::Max(m_Description.m_Size.height >> uiMipLevel, 1U);
 }
 
 xiiUInt32 xiiImageView::GetDepth(xiiUInt32 uiMipLevel /*= 0*/) const
 {
-  return xiiGALTextureUtilities::GetMipSize(m_Description.m_uiArraySizeOrDepth, uiMipLevel);
+  XII_ASSERT_DEV(uiMipLevel < m_Description.m_uiMipLevels, "Invalid mip level {} for image with {} mip levels.", uiMipLevel, m_Description.m_uiMipLevels);
+
+  return xiiMath::Max(m_Description.m_uiArraySizeOrDepth >> uiMipLevel, 1U);
 }
 
 xiiUInt32 xiiImageView::GetMipLevelCount() const
