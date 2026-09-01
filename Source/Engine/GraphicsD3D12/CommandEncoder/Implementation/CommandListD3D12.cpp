@@ -3498,8 +3498,7 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
 
 void xiiGALCommandListD3D12::PrepareForDraw()
 {
-  if (m_pD3D12CommandList == nullptr)
-    return;
+  XII_ASSERT_DEBUG(m_pD3D12CommandList != nullptr, "Invalid command list.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   for (xiiUInt32 uiSlot = 0U; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
@@ -3511,36 +3510,30 @@ void xiiGALCommandListD3D12::PrepareForDraw()
   }
 #endif
 
-  if (m_VertexStreams.IsEmpty())
-    return;
-
-  std::vector<D3D12_VERTEX_BUFFER_VIEW> d3d12VertexBufferViews;
-  d3d12VertexBufferViews.resize(m_VertexStreams.GetCount());
-  for (D3D12_VERTEX_BUFFER_VIEW& vertexBufferView : d3d12VertexBufferViews)
-  {
-    vertexBufferView.BufferLocation = 0ULL;
-    vertexBufferView.SizeInBytes    = 0U;
-    vertexBufferView.StrideInBytes  = 0U;
-  }
+  xiiTemporaryHybridArray<D3D12_VERTEX_BUFFER_VIEW, 2U> d3d12VertexBufferViews;
+  d3d12VertexBufferViews.SetCountUninitialized(m_VertexStreams.GetCount());
 
   for (xiiUInt32 uiSlot = 0U; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
   {
-    const VertexStreamDescription& vertexStream       = m_VertexStreams[uiSlot];
-    xiiGALBufferD3D12*             pVertexBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(vertexStream.m_pBuffer);
-    if (pVertexBufferD3D12 == nullptr || pVertexBufferD3D12->GetD3D12Buffer() == nullptr)
-      continue;
+    const VertexStreamDescription& vertexStream = m_VertexStreams[uiSlot];
 
-    const xiiUInt64 uiVertexBufferSize = pVertexBufferD3D12->GetSize();
-    if (vertexStream.m_uiOffset >= uiVertexBufferSize)
-      continue;
+    if (xiiSharedPtr<xiiGALBufferD3D12> pBufferD3D12 = vertexStream.m_pBuffer.Downcast<xiiGALFramebufferD3D12>())
+    {
+      XII_ASSERT_DEV(vertexStream.m_uiOffset < pBufferD3D12->GetSize(), "Vertex buffer offset {} exceeds buffer size {}.", vertexStream.m_uiOffset, pBufferD3D12->GetSize());
 
-    D3D12_VERTEX_BUFFER_VIEW& vertexBufferView = d3d12VertexBufferViews[static_cast<size_t>(uiSlot)];
-    vertexBufferView.BufferLocation            = pVertexBufferD3D12->GetD3D12BufferGPUVirtualAddress() + vertexStream.m_uiOffset;
-    vertexBufferView.SizeInBytes               = static_cast<UINT>(xiiMath::Min<xiiUInt64>(uiVertexBufferSize - vertexStream.m_uiOffset, static_cast<xiiUInt64>(0xFFFFFFFFULL)));
-    vertexBufferView.StrideInBytes             = pVertexBufferD3D12->GetDescription().m_uiElementByteStride;
+      d3d12VertexBufferViews[uiSlot].BufferLocation = pBufferD3D12->GetD3D12BufferGPUVirtualAddress() + vertexStream.m_uiOffset;
+      d3d12VertexBufferViews[uiSlot].SizeInBytes    = pBufferD3D12->GetSize() - vertexStream.m_uiOffset;
+      d3d12VertexBufferViews[uiSlot].StrideInBytes  = pBufferD3D12->GetDescription().m_uiElementByteStride;
+    }
+    else
+    {
+      d3d12VertexBufferViews[uiSlot].BufferLocation = 0ULL;
+      d3d12VertexBufferViews[uiSlot].SizeInBytes    = 0U;
+      d3d12VertexBufferViews[uiSlot].StrideInBytes  = 0U;
+    }
   }
 
-  m_pD3D12CommandList->IASetVertexBuffers(0U, static_cast<UINT>(d3d12VertexBufferViews.size()), d3d12VertexBufferViews.data());
+  m_pD3D12CommandList->IASetVertexBuffers(0U, d3d12VertexBufferViews.GetCount(), d3d12VertexBufferViews.GetData());
 }
 
 void xiiGALCommandListD3D12::PrepareForIndexedDraw(xiiEnum<xiiGALValueType> indexType)

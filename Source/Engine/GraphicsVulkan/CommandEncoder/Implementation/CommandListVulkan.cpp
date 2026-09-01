@@ -3499,6 +3499,8 @@ void xiiGALCommandListVulkan::SetDebugNamePlatform(xiiStringView sName) const
 
 void xiiGALCommandListVulkan::PrepareForDraw()
 {
+  XII_ASSERT_DEBUG(m_vkCommandBuffer != VK_NULL_HANDLE, "Invalid command buffer.");
+
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   for (xiiUInt32 uiSlot = 0; uiSlot < m_VertexStreams.GetCount(); ++uiSlot)
   {
