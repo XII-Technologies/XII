@@ -4,7 +4,6 @@
 
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/GameApplication/WindowOutputTarget.h>
-#include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
@@ -101,9 +100,9 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   while (auto capture = m_pImageCapture->GetCapture())
   {
-    const auto& textureDescription = capture.m_pTexture->GetDescription();
+    const xiiGALTextureCreationDescription& textureDescription = capture.m_pTexture->GetDescription();
 
-    xiiDynamicArray<xiiUInt8> backbufferData;
+    xiiTemporaryArray<xiiUInt8> backbufferData;
     backbufferData.SetCountUninitialized(textureDescription.m_Size.width * textureDescription.m_Size.height * 4);
 
     pCommandList->Begin();
@@ -112,7 +111,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
       xiiGALMappedTextureSubresource mappedSubResource;
       pCommandList->MapTextureSubresource(capture.m_pTexture, mipLevelData, xiiGALMapType::Read, xiiGALMapFlags::DoNotWait, nullptr, mappedSubResource).IgnoreResult();
 
-      const auto& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
+      const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(textureDescription.m_Format);
 
       if (mappedSubResource.m_pData)
       {
@@ -133,11 +132,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
     m_pImageCapture->RecycleStagingTexture(std::move(capture.m_pTexture));
 
-    xiiImageHeader header;
-    header.SetWidth(textureDescription.m_Size.width);
-    header.SetHeight(textureDescription.m_Size.height);
-    header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(textureDescription.m_Format, true));
-    out_image.ResetAndAlloc(header);
+    out_image.ResetAndAlloc(textureDescription);
     xiiUInt8* pData = out_image.GetPixelPointer<xiiUInt8>();
 
     xiiMemoryUtils::Copy(pData, backbufferData.GetData(), backbufferData.GetCount());
