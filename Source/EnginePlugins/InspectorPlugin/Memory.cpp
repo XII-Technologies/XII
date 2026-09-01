@@ -32,7 +32,7 @@ namespace MemoryDetail
       msg.GetWriter() << (it.ParentId().IsInvalidated() ? xiiInvalidIndex : it.ParentId().m_Data);
       msg.GetWriter() << it.Stats();
 
-      uiTotalAllocations += it.Stats().m_uiNumAllocations;
+      uiTotalAllocations += it.Stats().m_uiAllocationCount;
       uiTotalPerFrameAllocationSize += it.Stats().m_uiPerFrameAllocationSize;
       TotalPerFrameAllocationTime += it.Stats().m_PerFrameAllocationTime;
 
