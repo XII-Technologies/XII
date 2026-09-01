@@ -753,6 +753,8 @@ void xiiGALCommandListVulkan::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArray
 
 void xiiGALCommandListVulkan::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
+  XII_ASSERT_DEBUG(m_vkCommandBuffer != VK_NULL_HANDLE, "Invalid command buffer.");
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   m_vkCommandBuffer.setStencilReference(vk::StencilFaceFlagBits::eFrontAndBack, uiStencilRef, pDeviceVulkan->GetVulkanDynamicDispatchLoader());
@@ -760,6 +762,8 @@ void xiiGALCommandListVulkan::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 
 void xiiGALCommandListVulkan::SetBlendFactorPlatform(const xiiColor& blendFactor)
 {
+  XII_ASSERT_DEBUG(m_vkCommandBuffer != VK_NULL_HANDLE, "Invalid command buffer.");
+
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
   m_vkCommandBuffer.setBlendConstants(blendFactor.GetData(), pDeviceVulkan->GetVulkanDynamicDispatchLoader());
@@ -768,6 +772,7 @@ void xiiGALCommandListVulkan::SetBlendFactorPlatform(const xiiColor& blendFactor
 void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
   XII_ASSERT_DEBUG(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
+  XII_ASSERT_DEBUG(m_vkCommandBuffer != VK_NULL_HANDLE, "Invalid command buffer.");
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
@@ -815,6 +820,7 @@ void xiiGALCommandListVulkan::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> p
 void xiiGALCommandListVulkan::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
   XII_ASSERT_DEBUG(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
+  XII_ASSERT_DEBUG(m_vkCommandBuffer != VK_NULL_HANDLE, "Invalid command buffer.");
 
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
