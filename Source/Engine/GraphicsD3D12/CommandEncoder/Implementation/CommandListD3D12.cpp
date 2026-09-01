@@ -34,8 +34,6 @@
 #  include <WinPixEventRuntime/include/pix3.h>
 #endif
 
-#include <vector>
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -757,27 +755,25 @@ void xiiGALCommandListD3D12::PushConstantsPlatform(xiiUInt32 uiOffset, xiiArrayP
 
 void xiiGALCommandListD3D12::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
-  if (m_pD3D12CommandList != nullptr)
-  {
-    m_pD3D12CommandList->OMSetStencilRef(uiStencilRef);
-  }
+  XII_ASSERT_DEBUG(m_pD3D12CommandList != nullptr, "Invalid D3D12 command list.");
+
+  m_pD3D12CommandList->OMSetStencilRef(uiStencilRef);
 }
 
 void xiiGALCommandListD3D12::SetBlendFactorPlatform(const xiiColor& blendFactor)
 {
-  if (m_pD3D12CommandList != nullptr)
-  {
-    m_pD3D12CommandList->OMSetBlendFactor(blendFactor.GetData());
-  }
+  XII_ASSERT_DEBUG(m_pD3D12CommandList != nullptr, "Invalid D3D12 command list.");
+
+  m_pD3D12CommandList->OMSetBlendFactor(blendFactor.GetData());
 }
 
 void xiiGALCommandListD3D12::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports)
 {
-  if (m_pD3D12CommandList == nullptr)
-    return;
+  XII_ASSERT_DEBUG(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
+  XII_ASSERT_DEBUG(m_pD3D12CommandList != nullptr, "Invalid D3D12 command list.");
 
-  std::vector<D3D12_VIEWPORT> d3d12Viewports;
-  d3d12Viewports.resize(pViewports.GetCount());
+  xiiTemporaryHybridArray<D3D12_VIEWPORT, 2U> d3d12Viewports;
+  d3d12Viewports.SetCountUninitialized(pViewports.GetCount());
 
   for (xiiUInt32 i = 0U; i < pViewports.GetCount(); ++i)
   {
@@ -792,35 +788,28 @@ void xiiGALCommandListD3D12::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pV
     d3d12Viewport.MaxDepth        = viewport.m_fMaxDepth;
   }
 
-  if (!d3d12Viewports.empty())
-  {
-    m_pD3D12CommandList->RSSetViewports(static_cast<UINT>(d3d12Viewports.size()), d3d12Viewports.data());
-  }
+  m_pD3D12CommandList->RSSetViewports(d3d12Viewports.GetCount(), d3d12Viewports.GetData());
 }
 
 void xiiGALCommandListD3D12::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)
 {
-  if (m_pD3D12CommandList == nullptr)
-    return;
+  XII_ASSERT_DEBUG(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
+  XII_ASSERT_DEBUG(m_pD3D12CommandList != nullptr, "Invalid D3D12 command list.");
 
-  std::vector<D3D12_RECT> d3d12ScissorRects;
-  d3d12ScissorRects.resize(pRects.GetCount());
+  xiiTemporaryHybridArray<D3D12_RECT, 2U> d3d12ScissorRects;
+  d3d12ScissorRects.SetCountUninitialized(pRects.GetCount());
 
-  for (xiiUInt32 i = 0U; i < pRects.GetCount(); ++i)
+  for (xiiUInt32 uiScissorRectIndex = 0U; uiScissorRectIndex < pRects.GetCount(); ++uiScissorRectIndex)
   {
-    const xiiRectU32& rect = pRects[i];
-
-    D3D12_RECT& d3d12Rect = d3d12ScissorRects[static_cast<size_t>(i)];
-    d3d12Rect.left        = static_cast<LONG>(rect.x);
-    d3d12Rect.top         = static_cast<LONG>(rect.y);
-    d3d12Rect.right       = static_cast<LONG>(rect.x + rect.width);
-    d3d12Rect.bottom      = static_cast<LONG>(rect.y + rect.height);
+    const xiiRectU32& rect      = pRects[uiScissorRectIndex];
+    D3D12_RECT&       d3d12Rect = d3d12ScissorRects[static_cast<size_t>(uiScissorRectIndex)];
+    d3d12Rect.left              = static_cast<LONG>(rect.x);
+    d3d12Rect.top               = static_cast<LONG>(rect.y);
+    d3d12Rect.right             = static_cast<LONG>(rect.x + rect.width);
+    d3d12Rect.bottom            = static_cast<LONG>(rect.y + rect.height);
   }
 
-  if (!d3d12ScissorRects.empty())
-  {
-    m_pD3D12CommandList->RSSetScissorRects(static_cast<UINT>(d3d12ScissorRects.size()), d3d12ScissorRects.data());
-  }
+  m_pD3D12CommandList->RSSetScissorRects(d3d12ScissorRects.GetCount(), d3d12ScissorRects.GetData());
 }
 
 void xiiGALCommandListD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset, xiiEnum<xiiGALStateTransitionMode> transitionMode)
