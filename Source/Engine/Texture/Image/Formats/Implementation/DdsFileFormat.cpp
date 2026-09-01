@@ -466,7 +466,7 @@ xiiResult xiiDdsFileFormat::WriteImage(xiiStreamWriter& inout_stream, const xiiI
 
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(image.GetImageFormat());
 
-  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  if (formatProperties.IsCompressed())
   {
     fileHeader.m_uiFlags |= xiiDdsdFlags::LINEARSIZE;
     fileHeader.m_uiPitchOrLinearSize = 0; /// \todo sub-image size

@@ -576,7 +576,7 @@ xiiResult xiiImageUtils::ExtractLowerMipChain(const xiiImageView& srcImg, xiiIma
   const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(srcImgHeader.m_Format);
   xiiUInt32                              uiStartMipLevel  = uiTotalMips - uiNumMips;
 
-  if (formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::Compressed)
+  if (formatProperties.IsCompressed())
   {
     while (true)
     {
