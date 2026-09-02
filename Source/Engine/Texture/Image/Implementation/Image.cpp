@@ -93,10 +93,10 @@ void xiiImageView::ResetAndViewExternalStorage(const xiiGALTextureCreationDescri
 {
   m_Description = description;
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt64 uiDataSize = ComputeLayout();
-
-  XII_IGNORE_UNUSED(uiDataSize);
   XII_ASSERT_DEV(imageData.GetCount() == uiDataSize, "Provided image storage ({} bytes) doesn't match required data size ({} bytes)", imageData.GetCount(), uiDataSize);
+#endif
 
   // Const cast is safe here as we will only perform non-const access if this is a xiiImage which owns mutable access to the storage.
   m_DataPtr = xiiBlobPtr<xiiUInt8>(const_cast<xiiUInt8*>(static_cast<const xiiUInt8*>(imageData.GetPtr())), imageData.GetCount());
@@ -258,13 +258,13 @@ xiiImageView xiiImageView::GetRowView(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 ui
   const xiiEnum<xiiGALResourceFormat> planeFormat = GetPlaneFormat(m_Description.m_Format, uiPlaneIndex);
   xiiGALTextureCreationDescription    description = MakeImageDescription(GetNumBlocksX(uiMipLevel, uiPlaneIndex), 1, 1, planeFormat);
 
-  xiiUInt64 offset = 0;
-  offset += GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
-  offset += z * GetDepthPitch(uiMipLevel, uiPlaneIndex);
-  offset += y * GetRowPitch(uiMipLevel, uiPlaneIndex);
+  xiiUInt64 uiOffset = 0U;
+  uiOffset += GetSubImageOffset(uiMipLevel, uiFace, uiArrayIndex, uiPlaneIndex);
+  uiOffset += z * GetDepthPitch(uiMipLevel, uiPlaneIndex);
+  uiOffset += y * GetRowPitch(uiMipLevel, uiPlaneIndex);
 
-  xiiBlobPtr<const xiiUInt8> dataSlice = m_DataPtr.GetSubArray(offset, GetRowPitch(uiMipLevel, uiPlaneIndex));
-  return xiiImageView(description, xiiConstByteBlobPtr(dataSlice.GetPtr(), dataSlice.GetCount()));
+  xiiBlobPtr<const xiiUInt8> pDataSlice = m_DataPtr.GetSubArray(uiOffset, GetRowPitch(uiMipLevel, uiPlaneIndex));
+  return xiiImageView(description, xiiConstByteBlobPtr(pDataSlice.GetPtr(), pDataSlice.GetCount()));
 }
 
 void xiiImageView::ReinterpretAs(xiiGALResourceFormat::Enum format)

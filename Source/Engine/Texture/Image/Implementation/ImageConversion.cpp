@@ -583,52 +583,51 @@ xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pS
 
 xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
-  for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
+  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < source.GetNumArrayIndices(); ++uiArrayIndex)
   {
-    for (xiiUInt32 face = 0; face < source.GetNumFaces(); face++)
+    for (xiiUInt32 uiFace = 0; uiFace < source.GetNumFaces(); ++uiFace)
     {
-      for (xiiUInt32 mipLevel = 0; mipLevel < source.GetMipLevelCount(); mipLevel++)
+      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < source.GetMipLevelCount(); ++uiMipLevel)
       {
-        const xiiUInt32 width  = target.GetWidth(mipLevel);
-        const xiiUInt32 height = target.GetHeight(mipLevel);
+        const xiiUInt32 uiWidth  = target.GetWidth(uiMipLevel);
+        const xiiUInt32 uiHeight = target.GetHeight(uiMipLevel);
 
-        const xiiUInt32 blockSizeX = xiiGALTextureUtilities::GetBlockWidth(sourceFormat);
-        const xiiUInt32 blockSizeY = xiiGALTextureUtilities::GetBlockHeight(sourceFormat);
+        const xiiUInt32 uiBlockSizeX = xiiGALTextureUtilities::GetBlockWidth(sourceFormat);
+        const xiiUInt32 uiBlockSizeY = xiiGALTextureUtilities::GetBlockHeight(sourceFormat);
 
-        const xiiUInt32 numBlocksX = source.GetNumBlocksX(mipLevel);
-        const xiiUInt32 numBlocksY = source.GetNumBlocksY(mipLevel);
+        const xiiUInt32 uiNumBlocksX = source.GetNumBlocksX(uiMipLevel);
+        const xiiUInt32 uiNumBlocksY = source.GetNumBlocksY(uiMipLevel);
 
-        const xiiUInt64 targetRowPitch      = target.GetRowPitch(mipLevel);
-        const xiiUInt32 targetBytesPerPixel = xiiGALTextureUtilities::GetBitsPerPixel(targetFormat) / 8;
+        const xiiUInt64 uiTargetRowPitch      = target.GetRowPitch(uiMipLevel);
+        const xiiUInt32 uiTargetBytesPerPixel = xiiGALTextureUtilities::GetBitsPerPixel(targetFormat) / 8;
 
-        // Decompress into a temp memory block so we don't have to explicitly handle the case where the image is not a multiple of the block
-        // size
-        xiiTemporaryHybridArray<xiiUInt8, 256> tempBuffer;
-        tempBuffer.SetCount(numBlocksX * blockSizeX * blockSizeY * targetBytesPerPixel);
+        // Decompress into a temp memory block so we don't have to explicitly handle the case where the image is not a multiple of the block size.
+        xiiTemporaryHybridArray<xiiUInt8, 256U> tempBuffer;
+        tempBuffer.SetCount(uiNumBlocksX * uiBlockSizeX * uiBlockSizeY * uiTargetBytesPerPixel);
 
-        for (xiiUInt32 uiSlice = 0; uiSlice < source.GetDepth(mipLevel); uiSlice++)
+        for (xiiUInt32 uiSlice = 0; uiSlice < source.GetDepth(uiMipLevel); uiSlice++)
         {
-          for (xiiUInt32 blockY = 0; blockY < numBlocksY; blockY++)
+          for (xiiUInt32 blockY = 0; blockY < uiNumBlocksY; blockY++)
           {
-            xiiImageView sourceRowView = source.GetRowView(mipLevel, face, arrayIndex, blockY, uiSlice);
+            xiiImageView sourceRowView = source.GetRowView(uiMipLevel, uiFace, uiArrayIndex, blockY, uiSlice);
 
-            if (static_cast<const xiiImageConversionStepDecompressBlocks*>(pStep)->DecompressBlocks(sourceRowView.GetByteBlobPtr(), xiiByteBlobPtr(tempBuffer.GetData(), tempBuffer.GetCount()), numBlocksX, sourceFormat, targetFormat).Failed())
+            if (static_cast<const xiiImageConversionStepDecompressBlocks*>(pStep)->DecompressBlocks(sourceRowView.GetByteBlobPtr(), xiiByteBlobPtr(tempBuffer.GetData(), tempBuffer.GetCount()), uiNumBlocksX, sourceFormat, targetFormat).Failed())
             {
               return XII_FAILURE;
             }
 
-            for (xiiUInt32 blockX = 0; blockX < numBlocksX; blockX++)
+            for (xiiUInt32 blockX = 0; blockX < uiNumBlocksX; blockX++)
             {
-              xiiUInt8* pTargetPointer = target.GetPixelPointer<xiiUInt8>(mipLevel, face, arrayIndex, blockX * blockSizeX, blockY * blockSizeY, uiSlice);
+              xiiUInt8* pTargetPointer = target.GetPixelPointer<xiiUInt8>(uiMipLevel, uiFace, uiArrayIndex, blockX * uiBlockSizeX, blockY * uiBlockSizeY, uiSlice);
 
               // Copy into actual target, clamping to image dimensions
-              xiiUInt32 uiCopyWidth  = xiiMath::Min(blockSizeX, width - blockX * blockSizeX);
-              xiiUInt32 uiCopyHeight = xiiMath::Min(blockSizeY, height - blockY * blockSizeY);
+              xiiUInt32 uiCopyWidth  = xiiMath::Min(uiBlockSizeX, uiWidth - blockX * uiBlockSizeX);
+              xiiUInt32 uiCopyHeight = xiiMath::Min(uiBlockSizeY, uiHeight - blockY * uiBlockSizeY);
               for (xiiUInt32 uiRow = 0; uiRow < uiCopyHeight; ++uiRow)
               {
-                memcpy(pTargetPointer, &tempBuffer[(blockX * blockSizeX + uiRow) * blockSizeY * targetBytesPerPixel], xiiMath::SafeMultiply32(uiCopyWidth, targetBytesPerPixel));
+                memcpy(pTargetPointer, &tempBuffer[(blockX * uiBlockSizeX + uiRow) * uiBlockSizeY * uiTargetBytesPerPixel], xiiMath::SafeMultiply32(uiCopyWidth, uiTargetBytesPerPixel));
 
-                pTargetPointer += targetRowPitch;
+                pTargetPointer += uiTargetRowPitch;
               }
             }
           }
@@ -642,48 +641,48 @@ xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& so
 
 xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
-  for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
+  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < source.GetNumArrayIndices(); ++uiArrayIndex)
   {
-    for (xiiUInt32 face = 0; face < source.GetNumFaces(); face++)
+    for (xiiUInt32 uiFace = 0; uiFace < source.GetNumFaces(); ++uiFace)
     {
-      for (xiiUInt32 mipLevel = 0; mipLevel < source.GetMipLevelCount(); mipLevel++)
+      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < source.GetMipLevelCount(); ++uiMipLevel)
       {
-        const xiiUInt32 sourceWidth  = source.GetWidth(mipLevel);
-        const xiiUInt32 sourceHeight = source.GetHeight(mipLevel);
+        const xiiUInt32 uiSourceWidth  = source.GetWidth(uiMipLevel);
+        const xiiUInt32 uiSourceHeight = source.GetHeight(uiMipLevel);
 
-        const xiiUInt32 numBlocksX = target.GetNumBlocksX(mipLevel);
-        const xiiUInt32 numBlocksY = target.GetNumBlocksY(mipLevel);
+        const xiiUInt32 uiNumBlocksX = target.GetNumBlocksX(uiMipLevel);
+        const xiiUInt32 uiNumBlocksY = target.GetNumBlocksY(uiMipLevel);
 
-        const xiiUInt32 targetWidth  = numBlocksX * xiiGALTextureUtilities::GetBlockWidth(targetFormat);
-        const xiiUInt32 targetHeight = numBlocksY * xiiGALTextureUtilities::GetBlockHeight(targetFormat);
+        const xiiUInt32 uiTargetWidth  = uiNumBlocksX * xiiGALTextureUtilities::GetBlockWidth(targetFormat);
+        const xiiUInt32 uiTargetHeight = uiNumBlocksY * xiiGALTextureUtilities::GetBlockHeight(targetFormat);
 
-        const xiiUInt64 sourceRowPitch      = source.GetRowPitch(mipLevel);
-        const xiiUInt32 sourceBytesPerPixel = xiiGALTextureUtilities::GetBitsPerPixel(sourceFormat) / 8;
+        const xiiUInt64 uiSourceRowPitch      = source.GetRowPitch(uiMipLevel);
+        const xiiUInt32 uiSourceBytesPerPixel = xiiGALTextureUtilities::GetBitsPerPixel(sourceFormat) / 8;
 
-        // Pad image to multiple of block size for compression
+        // Pad image to multiple of block size for compression.
         xiiGALTextureCreationDescription paddedSliceHeader;
-        paddedSliceHeader.m_Size.width  = targetWidth;
-        paddedSliceHeader.m_Size.height = targetHeight;
+        paddedSliceHeader.m_Size.width  = uiTargetWidth;
+        paddedSliceHeader.m_Size.height = uiTargetHeight;
         paddedSliceHeader.m_Format      = sourceFormat;
 
         xiiImage paddedSlice;
         paddedSlice.ResetAndAlloc(paddedSliceHeader);
 
-        for (xiiUInt32 uiSlice = 0; uiSlice < source.GetDepth(mipLevel); ++uiSlice)
+        for (xiiUInt32 uiSlice = 0; uiSlice < source.GetDepth(uiMipLevel); ++uiSlice)
         {
-          for (xiiUInt32 y = 0; y < targetHeight; ++y)
+          for (xiiUInt32 y = 0; y < uiTargetHeight; ++y)
           {
-            xiiUInt32 sourceY = xiiMath::Min(y, sourceHeight - 1);
+            xiiUInt32 uiSourceY = xiiMath::Min(y, uiSourceHeight - 1);
 
-            memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, 0, y), source.GetPixelPointer<void>(mipLevel, face, arrayIndex, 0, sourceY, uiSlice), static_cast<size_t>(sourceRowPitch));
+            memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, 0, y), source.GetPixelPointer<void>(uiMipLevel, uiFace, uiArrayIndex, 0, uiSourceY, uiSlice), static_cast<size_t>(uiSourceRowPitch));
 
-            for (xiiUInt32 x = sourceWidth; x < targetWidth; ++x)
+            for (xiiUInt32 x = uiSourceWidth; x < uiTargetWidth; ++x)
             {
-              memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, x, y), source.GetPixelPointer<void>(mipLevel, face, arrayIndex, sourceWidth - 1, sourceY, uiSlice), sourceBytesPerPixel);
+              memcpy(paddedSlice.GetPixelPointer<void>(0, 0, 0, x, y), source.GetPixelPointer<void>(uiMipLevel, uiFace, uiArrayIndex, uiSourceWidth - 1, uiSourceY, uiSlice), uiSourceBytesPerPixel);
             }
           }
 
-          xiiResult result = static_cast<const xiiImageConversionStepCompressBlocks*>(pStep)->CompressBlocks(paddedSlice.GetByteBlobPtr(), target.GetSliceView(mipLevel, face, arrayIndex, uiSlice).GetByteBlobPtr(), numBlocksX, numBlocksY, sourceFormat, targetFormat);
+          xiiResult result = static_cast<const xiiImageConversionStepCompressBlocks*>(pStep)->CompressBlocks(paddedSlice.GetByteBlobPtr(), target.GetSliceView(uiMipLevel, uiFace, uiArrayIndex, uiSlice).GetByteBlobPtr(), uiNumBlocksX, uiNumBlocksY, sourceFormat, targetFormat);
 
           if (result.Failed())
           {
@@ -699,31 +698,31 @@ xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& sour
 
 xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
-  for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
+  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < source.GetNumArrayIndices(); ++uiArrayIndex)
   {
-    for (xiiUInt32 face = 0; face < source.GetNumFaces(); face++)
+    for (xiiUInt32 uiFace = 0; uiFace < source.GetNumFaces(); ++uiFace)
     {
-      for (xiiUInt32 mipLevel = 0; mipLevel < source.GetMipLevelCount(); mipLevel++)
+      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < source.GetMipLevelCount(); ++uiMipLevel)
       {
-        const xiiUInt32 width  = target.GetWidth(mipLevel);
-        const xiiUInt32 height = target.GetHeight(mipLevel);
+        const xiiUInt32 uiWidth  = target.GetWidth(uiMipLevel);
+        const xiiUInt32 uiHeight = target.GetHeight(uiMipLevel);
 
         xiiTemporaryHybridArray<xiiImageView, 2> sourcePlanes;
         for (xiiUInt32 planeIndex = 0; planeIndex < source.GetPlaneCount(); ++planeIndex)
         {
-          const xiiUInt32 blockSizeX = xiiGALTextureUtilities::GetBlockWidth(sourceFormat, planeIndex);
-          const xiiUInt32 blockSizeY = xiiGALTextureUtilities::GetBlockHeight(sourceFormat, planeIndex);
+          const xiiUInt32 uiBlockSizeX = xiiGALTextureUtilities::GetBlockWidth(sourceFormat, planeIndex);
+          const xiiUInt32 uiBlockSizeY = xiiGALTextureUtilities::GetBlockHeight(sourceFormat, planeIndex);
 
-          if (width % blockSizeX != 0 || height % blockSizeY != 0)
+          if (uiWidth % uiBlockSizeX != 0 || uiHeight % uiBlockSizeY != 0)
           {
             // Input image must be aligned to block dimensions already.
             return XII_FAILURE;
           }
 
-          sourcePlanes.PushBack(source.GetPlaneView(mipLevel, face, arrayIndex, planeIndex));
+          sourcePlanes.PushBack(source.GetPlaneView(uiMipLevel, uiFace, uiArrayIndex, planeIndex));
         }
 
-        if (static_cast<const xiiImageConversionStepDeplanarize*>(pStep)->ConvertPixels(sourcePlanes, target.GetSubImageView(mipLevel, face, arrayIndex), width, height, sourceFormat, targetFormat).Failed())
+        if (static_cast<const xiiImageConversionStepDeplanarize*>(pStep)->ConvertPixels(sourcePlanes, target.GetSubImageView(uiMipLevel, uiFace, uiArrayIndex), uiWidth, uiHeight, sourceFormat, targetFormat).Failed())
         {
           return XII_FAILURE;
         }
@@ -736,31 +735,31 @@ xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& s
 
 xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& source, xiiImage& target, xiiEnum<xiiGALResourceFormat> sourceFormat, xiiEnum<xiiGALResourceFormat> targetFormat, const xiiImageConversionStep* pStep)
 {
-  for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
+  for (xiiUInt32 uiArrayIndex = 0; uiArrayIndex < source.GetNumArrayIndices(); ++uiArrayIndex)
   {
-    for (xiiUInt32 face = 0; face < source.GetNumFaces(); face++)
+    for (xiiUInt32 uiFace = 0; uiFace < source.GetNumFaces(); ++uiFace)
     {
-      for (xiiUInt32 mipLevel = 0; mipLevel < source.GetMipLevelCount(); mipLevel++)
+      for (xiiUInt32 uiMipLevel = 0; uiMipLevel < source.GetMipLevelCount(); ++uiMipLevel)
       {
-        const xiiUInt32 width  = target.GetWidth(mipLevel);
-        const xiiUInt32 height = target.GetHeight(mipLevel);
+        const xiiUInt32 uiWidth  = target.GetWidth(uiMipLevel);
+        const xiiUInt32 uiHeight = target.GetHeight(uiMipLevel);
 
         xiiTemporaryHybridArray<xiiImage, 2> targetPlanes;
         for (xiiUInt32 planeIndex = 0; planeIndex < target.GetPlaneCount(); ++planeIndex)
         {
-          const xiiUInt32 blockSizeX = xiiGALTextureUtilities::GetBlockWidth(targetFormat, planeIndex);
-          const xiiUInt32 blockSizeY = xiiGALTextureUtilities::GetBlockHeight(targetFormat, planeIndex);
+          const xiiUInt32 uiBlockSizeX = xiiGALTextureUtilities::GetBlockWidth(targetFormat, planeIndex);
+          const xiiUInt32 uiBlockSizeY = xiiGALTextureUtilities::GetBlockHeight(targetFormat, planeIndex);
 
-          if (width % blockSizeX != 0 || height % blockSizeY != 0)
+          if (uiWidth % uiBlockSizeX != 0 || uiHeight % uiBlockSizeY != 0)
           {
             // Input image must be aligned to block dimensions already.
             return XII_FAILURE;
           }
 
-          targetPlanes.PushBack(target.GetPlaneView(mipLevel, face, arrayIndex, planeIndex));
+          targetPlanes.PushBack(target.GetPlaneView(uiMipLevel, uiFace, uiArrayIndex, planeIndex));
         }
 
-        if (static_cast<const xiiImageConversionStepPlanarize*>(pStep)->ConvertPixels(source.GetSubImageView(mipLevel, face, arrayIndex), targetPlanes, width, height, sourceFormat, targetFormat).Failed())
+        if (static_cast<const xiiImageConversionStepPlanarize*>(pStep)->ConvertPixels(source.GetSubImageView(uiMipLevel, uiFace, uiArrayIndex), targetPlanes, uiWidth, uiHeight, sourceFormat, targetFormat).Failed())
         {
           return XII_FAILURE;
         }
