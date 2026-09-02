@@ -3278,16 +3278,16 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
   m_CommandListData.m_pBoundDepthStencilTarget = nullptr;
   m_CommandListData.m_uiBoundRenderTargetCount = 0U;
 
-  std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> d3d12RenderTargetHandles;
-  d3d12RenderTargetHandles.reserve(subpass.m_RenderTargetAttachments.GetCount());
-  bool bHasRenderTargetAttachmentGap = false;
+  xiiTemporaryHybridArray<D3D12_CPU_DESCRIPTOR_HANDLE, 2U> d3d12RenderTargetHandles;
+  d3d12RenderTargetHandles.Reserve(subpass.m_RenderTargetAttachments.GetCount());
 
+  bool bHasRenderTargetAttachmentGap = false;
   for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
   {
     const xiiGALAttachmentReferenceDescription& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
     if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
     {
-      if (!d3d12RenderTargetHandles.empty())
+      if (!d3d12RenderTargetHandles.IsEmpty())
       {
         bHasRenderTargetAttachmentGap = true;
       }
@@ -3323,7 +3323,7 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
     if (!TransitionOrVerifyResourceStateForRayTracing(m_pD3D12CommandList, pRenderTargetTextureD3D12.Borrow(), pRenderTargetTextureD3D12->GetD3D12Texture(), xiiGALStateTransitionMode::Transition, renderTargetState, xiiD3D12TypeConversions::GetResourceState(renderTargetState), "subpass render-target attachment", GetDebugName()))
       continue;
 
-    d3d12RenderTargetHandles.push_back(pRenderTargetViewD3D12->GetCPUDescriptorHandle());
+    d3d12RenderTargetHandles.PushBack(pRenderTargetViewD3D12->GetCPUDescriptorHandle());
     m_CommandListData.m_pBoundRenderTargets.PushBack(pRenderTargetViewD3D12);
 
     const xiiGALRenderPassAttachmentDescription& attachmentDescription = renderPassDescription.m_Attachments[attachmentReference.m_uiAttachmentIndex];
@@ -3399,10 +3399,10 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
     }
   }
 
-  m_CommandListData.m_uiBoundRenderTargetCount = static_cast<xiiUInt32>(d3d12RenderTargetHandles.size());
+  m_CommandListData.m_uiBoundRenderTargetCount = d3d12RenderTargetHandles.GetCount();
   m_CommandListData.m_pBoundDepthStencilTarget = pDepthStencilViewD3D12;
 
-  m_pD3D12CommandList->OMSetRenderTargets(m_CommandListData.m_uiBoundRenderTargetCount, m_CommandListData.m_uiBoundRenderTargetCount > 0U ? d3d12RenderTargetHandles.data() : nullptr, FALSE, pDepthStencilViewD3D12 != nullptr ? &d3d12DepthStencilHandle : nullptr);
+  m_pD3D12CommandList->OMSetRenderTargets(m_CommandListData.m_uiBoundRenderTargetCount, m_CommandListData.m_uiBoundRenderTargetCount > 0U ? d3d12RenderTargetHandles.GetData() : nullptr, FALSE, pDepthStencilViewD3D12 != nullptr ? &d3d12DepthStencilHandle : nullptr);
 
   if (pDepthAttachmentReference != nullptr && pDepthStencilViewD3D12 != nullptr && pDepthStencilTextureD3D12 != nullptr)
   {
