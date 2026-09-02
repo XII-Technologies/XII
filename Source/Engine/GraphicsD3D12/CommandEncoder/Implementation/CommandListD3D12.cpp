@@ -3517,12 +3517,12 @@ void xiiGALCommandListD3D12::PrepareForDraw()
   {
     const VertexStreamDescription& vertexStream = m_VertexStreams[uiSlot];
 
-    if (xiiSharedPtr<xiiGALBufferD3D12> pBufferD3D12 = vertexStream.m_pBuffer.Downcast<xiiGALFramebufferD3D12>())
+    if (xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(vertexStream.m_pBuffer))
     {
       XII_ASSERT_DEV(vertexStream.m_uiOffset < pBufferD3D12->GetSize(), "Vertex buffer offset {} exceeds buffer size {}.", vertexStream.m_uiOffset, pBufferD3D12->GetSize());
 
       d3d12VertexBufferViews[uiSlot].BufferLocation = pBufferD3D12->GetD3D12BufferGPUVirtualAddress() + vertexStream.m_uiOffset;
-      d3d12VertexBufferViews[uiSlot].SizeInBytes    = pBufferD3D12->GetSize() - vertexStream.m_uiOffset;
+      d3d12VertexBufferViews[uiSlot].SizeInBytes    = static_cast<xiiUInt32>(pBufferD3D12->GetSize() - vertexStream.m_uiOffset);
       d3d12VertexBufferViews[uiSlot].StrideInBytes  = pBufferD3D12->GetDescription().m_uiElementByteStride;
     }
     else
