@@ -122,6 +122,15 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiDateTime& ar
   return szTmp;
 }
 
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTimestamp& arg0)
+{
+  const xiiDateTime arg = xiiDateTime::MakeFromTimestamp(arg0);
+
+  xiiStringUtils::snprintf(szTmp, uiLength, "%04u-%02u-%02u_%02u-%02u-%02u-%03u", arg.GetYear(), arg.GetMonth(), arg.GetDay(), arg.GetHour(), arg.GetMinute(), arg.GetSecond(), arg.GetMicroseconds() / 1000);
+
+  return szTmp;
+}
+
 namespace
 {
   // This implementation chooses a 3-character-long short name for each of the twelve months

@@ -22,7 +22,7 @@ xiiMat4Template<Type>::xiiMat4Template(const Type* const pData, xiiMatrixLayout:
   }
   else
   {
-    for (int i = 0; i < 4; ++i)
+    for (xiiUInt32 i = 0; i < 4; ++i)
     {
       Element(0, i) = pData[i * 4 + 0];
       Element(1, i) = pData[i * 4 + 1];
@@ -97,7 +97,7 @@ template <typename Type>
 xiiMat4Template<Type> xiiMat4Template<Type>::MakeFromRowMajorArray(const Type* const pData)
 {
   xiiMat4Template<Type> res;
-  for (int i = 0; i < 4; ++i)
+  for (xiiUInt32 i = 0; i < 4; ++i)
   {
     res.Element(0, i) = pData[i * 4 + 0];
     res.Element(1, i) = pData[i * 4 + 1];
