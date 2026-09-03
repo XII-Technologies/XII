@@ -1018,7 +1018,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 3);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "delete folder")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Delete folder")
   {
     xiiStringBuilder sFolderPath(sOutputFolder);
     sFolderPath.AppendPath("FOLDER12");
@@ -1040,14 +1040,12 @@ void FileSystemModelTest()
     }
 
     {
-      xiiFolderChangedEvent expected[] = {
-        xiiFolderChangedEvent(MakePath(sFolderPath), xiiFolderChangedEvent::Type::FolderRemoved)};
+      xiiFolderChangedEvent expected[] = {xiiFolderChangedEvent(MakePath(sFolderPath), xiiFolderChangedEvent::Type::FolderRemoved)};
       CompareFolders(xiiMakeArrayPtr(expected));
     }
 
     {
-      xiiFileChangedEvent expected[] = {
-        xiiFileChangedEvent(MakePath(sFilePath), {}, xiiFileChangedEvent::Type::FileRemoved)};
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sFilePath), {}, xiiFileChangedEvent::Type::FileRemoved)};
       CompareFiles(xiiMakeArrayPtr(expected));
     }
 
@@ -1149,7 +1147,9 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModelNonNTFS)
 {
   auto* pForceNonNTFS = static_cast<xiiCVarBool*>(xiiCVar::FindCVarByName("DirectoryWatcher.ForceNonNTFS"));
   *pForceNonNTFS      = true;
+
   FileSystemModelTest();
+
   *pForceNonNTFS = false;
 }
 #  endif
