@@ -266,10 +266,10 @@ xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColor
   const xiiUInt8 uiBrightness = (xiiUInt8)xiiMath::Clamp<xiiInt32>(DarkUIBrightness + iBrightnessOffset, 0, 9);
   const float    fSaturation  = DarkUISaturation - (uiSaturationStep * 0.2f);
 
-  if (const char* sep = sCategory.FindSubString("/"))
+  if (const char* szSeparator = sCategory.FindSubString("/"))
   {
-    // chop off everything behind the first separator
-    sCategory = xiiStringView(sCategory.GetStartPointer(), sep);
+    // Chop off everything behind the first separator.
+    sCategory = xiiStringView(sCategory.GetStartPointer(), szSeparator);
   }
 
   if (sCategory.IsEqual_NoCase("AI"))
