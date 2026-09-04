@@ -227,8 +227,7 @@ struct xiiArgDateTime
   /// \brief Initialized a formatting object for a xiiDateTime instance.
   ///
   /// \param dateTime The xiiDateTime instance to format.
-  /// \param bUseNames Indicates whether to use names for days of week and months (true) or a purely numerical representation (false).
-  /// \param bShowTimeZoneIndicator Whether to indicate the timezone of the xiiDateTime object.
+  /// \param uiFormattingFlags The formatting flags to use.
   inline explicit xiiArgDateTime(const xiiDateTime& dateTime, xiiUInt32 uiFormattingFlags = Default) :
     m_Value(dateTime), m_uiFormattingFlags(uiFormattingFlags)
   {

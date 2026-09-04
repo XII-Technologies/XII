@@ -21,7 +21,7 @@ class XII_CORE_DLL xiiWorld final
 {
 public:
   /// \brief Creates a new world with the given name.
-  xiiWorld(xiiWorldDescription& ref_desc);
+  xiiWorld(xiiWorldDescription& ref_description);
   ~xiiWorld();
 
   /// \brief Deletes all game objects in a world
