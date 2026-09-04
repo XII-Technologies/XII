@@ -123,10 +123,11 @@ public:
   /// \brief Returns true if the rectangle contains the provided point
   [[nodiscard]] bool Contains(const xiiVec2Template<Type>& vPoint) const;
 
+  /// \brief Returns true if the rectangle contains the provided rectangle completely (no intersecting edges).
   [[nodiscard]] bool Contains(const xiiRectTemplate<Type>& r) const;
 
   /// \brief Returns true if the rectangle overlaps the provided rectangle.
-  /// Also returns true if the rectangles are contained within each other completely(no intersecting edges).
+  /// Also returns true if the rectangles are contained within each other completely (no intersecting edges).
   [[nodiscard]] bool Overlaps(const xiiRectTemplate<Type>& other) const;
 
   /// \brief Extends this rectangle so that the provided rectangle is completely contained within it.
