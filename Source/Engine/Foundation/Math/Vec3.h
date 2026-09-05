@@ -33,28 +33,27 @@ public:
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to Not-a-Number (NaN).
-  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static xiiVec3Template<Type> MakeNaN() { return xiiVec3Template<Type>(xiiMath::NaN<Type>()); }
+  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static constexpr xiiVec3Template<Type> MakeNaN() { return xiiVec3Template<Type>(xiiMath::NaN<Type>()); }
 
   /// \brief Returns a vector with all components set to zero.
-  [[nodiscard]] static xiiVec3Template<Type> MakeZero() { return xiiVec3Template<Type>(0); } // [tested]
+  [[nodiscard]] static constexpr xiiVec3Template<Type> MakeZero() { return xiiVec3Template<Type>(0); } // [tested]
 
   /// \brief Returns a vector initialized to the X unit vector (1, 0, 0).
-  [[nodiscard]] static xiiVec3Template<Type> MakeAxisX() { return xiiVec3Template<Type>(1, 0, 0); } // [tested]
+  [[nodiscard]] static constexpr xiiVec3Template<Type> MakeAxisX() { return xiiVec3Template<Type>(1, 0, 0); } // [tested]
 
   /// \brief Returns a vector initialized to the Y unit vector (0, 1, 0).
-  [[nodiscard]] static xiiVec3Template<Type> MakeAxisY() { return xiiVec3Template<Type>(0, 1, 0); } // [tested]
+  [[nodiscard]] static constexpr xiiVec3Template<Type> MakeAxisY() { return xiiVec3Template<Type>(0, 1, 0); } // [tested]
 
   /// \brief Returns a vector initialized to the Z unit vector (0, 0, 1).
-  [[nodiscard]] static xiiVec3Template<Type> MakeAxisZ() { return xiiVec3Template<Type>(0, 0, 1); } // [tested]
+  [[nodiscard]] static constexpr xiiVec3Template<Type> MakeAxisZ() { return xiiVec3Template<Type>(0, 0, 1); } // [tested]
 
   /// \brief Returns a vector initialized to x,y,z
-  [[nodiscard]] static xiiVec3Template<Type> Make(Type x, Type y, Type z) { return xiiVec3Template<Type>(x, y, z); } // [tested]
+  [[nodiscard]] static constexpr xiiVec3Template<Type> Make(Type x, Type y, Type z) { return xiiVec3Template<Type>(x, y, z); } // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
   {
-    XII_ASSERT_ALWAYS(!IsNaN(), "This object contains NaN values. This can happen when you forgot to initialize it before using it. Please "
-                                "check that all code-paths properly initialize this object.");
+    XII_ASSERT_ALWAYS(!IsNaN(), "This object contains NaN values. This can happen when you forgot to initialize it before using it. Please check that all code-paths properly initialize this object.");
   }
 #endif
 
