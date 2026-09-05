@@ -13,12 +13,14 @@ class xiiMessageLoop;
 /// \brief Event data for xiiIpcChannel::m_Events
 struct XII_FOUNDATION_DLL xiiIpcChannelEvent
 {
-  enum Type
+  using StorageType = xiiUInt8;
+
+  enum Type : StorageType
   {
-    Disconnected, ///< Server or client are in a dormant state.
-    Connecting,   ///< The server is listening for clients or the client is trying to find the server.
-    Connected,    ///< Client and server are connected to each other.
-    NewMessages,  ///< Sent when a new messages have been received or when disconnected to wake up any thread waiting for messages.
+    Disconnected = 0U, ///< Server or client are in a dormant state.
+    Connecting,        ///< The server is listening for clients or the client is trying to find the server.
+    Connected,         ///< Client and server are connected to each other.
+    NewMessages,       ///< Sent when a new messages have been received or when disconnected to wake up any thread waiting for messages.
   };
 
   xiiIpcChannelEvent() = default;
@@ -45,6 +47,7 @@ public:
   struct Mode
   {
     using StorageType = xiiUInt8;
+
     enum Enum : StorageType
     {
       Server,
@@ -56,6 +59,7 @@ public:
   struct ConnectionState
   {
     using StorageType = xiiUInt8;
+
     enum Enum : StorageType
     {
       Disconnected,

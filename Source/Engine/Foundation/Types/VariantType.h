@@ -97,13 +97,15 @@ XII_DEFINE_AS_POD_TYPE(xiiVariantType::Enum);
 
 struct xiiVariantClass
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
-    Invalid,
-    DirectCast,     ///< A standard type
-    PointerCast,    ///< Any cast to T*
+    Invalid = 0U,
+    DirectCast,     ///< A standard type.
+    PointerCast,    ///< Any cast to T*.
     TypedObject,    ///< xiiTypedObject cast. Needed because at no point does and xiiVariant ever store a xiiTypedObject so it can't be returned as a const reference.
-    CustomTypeCast, ///< Custom object types
+    CustomTypeCast, ///< Custom object types.
   };
 };
 

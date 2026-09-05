@@ -1039,14 +1039,6 @@ struct LerpFunc
       case xiiVariantType::UInt32:
       case xiiVariantType::Float:
       case xiiVariantType::Color:
-#if 0 // These cause compile errors through ambiguous overloads.
-      case xiiVariantType::Vector2I:
-      case xiiVariantType::Vector3I:
-      case xiiVariantType::Vector4I:
-      case xiiVariantType::Vector2U:
-      case xiiVariantType::Vector3U:
-      case xiiVariantType::Vector4U:
-#endif
       case xiiVariantType::Vector2:
       case xiiVariantType::Vector3:
       case xiiVariantType::Vector4:
@@ -1064,14 +1056,6 @@ struct LerpFunc
       case xiiVariantType::Int64:
       case xiiVariantType::UInt64:
       case xiiVariantType::Double:
-#if 0 // These cause compile errors through ambiguous overloads.
-      case xiiVariantType::Vector2I64:
-      case xiiVariantType::Vector3I64:
-      case xiiVariantType::Vector4I64:
-      case xiiVariantType::Vector2U64:
-      case xiiVariantType::Vector3U64:
-      case xiiVariantType::Vector4U64:
-#endif
       case xiiVariantType::Vector2d:
       case xiiVariantType::Vector3d:
       case xiiVariantType::Vector4d:

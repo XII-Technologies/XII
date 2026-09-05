@@ -840,7 +840,7 @@ const xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xii
   if (pRtti == nullptr)
     return nullptr;
 
-  xiiHybridArray<const xiiAbstractProperty*, 32> props;
+  xiiTemporaryHybridArray<const xiiAbstractProperty*, 32> props;
   pRtti->GetAllProperties(props);
   if (uiPropertyIndex < props.GetCount())
   {
@@ -1043,7 +1043,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xi
   else if (pEnumerationRtti->IsDerivedFrom<xiiBitflagsBase>())
   {
     xiiStringBuilder                  temp = sValue;
-    xiiHybridArray<xiiStringView, 32> values;
+    xiiTemporaryHybridArray<xiiStringView, 32> values;
     temp.Split(false, values, "|");
     for (auto sValueSplit : values)
     {
@@ -1287,9 +1287,9 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, cons
     {
       auto pSpecific = static_cast<const xiiAbstractSetProperty*>(pProp);
 
-      xiiHybridArray<xiiVariant, 16> values;
+      xiiTemporaryHybridArray<xiiVariant, 16> values;
       pSpecific->GetValues(pObject, values);
-      xiiHybridArray<xiiVariant, 16> values2;
+      xiiTemporaryHybridArray<xiiVariant, 16> values2;
       pSpecific->GetValues(pObject2, values2);
 
       const xiiUInt32 uiCount  = values.GetCount();
@@ -1338,9 +1338,9 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, cons
     {
       auto pSpecific = static_cast<const xiiAbstractMapProperty*>(pProp);
 
-      xiiHybridArray<xiiString, 16> keys;
+      xiiTemporaryHybridArray<xiiString, 16> keys;
       pSpecific->GetKeys(pObject, keys);
-      xiiHybridArray<xiiString, 16> keys2;
+      xiiTemporaryHybridArray<xiiString, 16> keys2;
       pSpecific->GetKeys(pObject2, keys2);
 
       const xiiUInt32 uiCount  = keys.GetCount();
@@ -1714,7 +1714,7 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(const xiiRTTI* pRtti)
 
 void xiiReflectionUtils::SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, void* pObject)
 {
-  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  xiiTemporaryHybridArray<const xiiAbstractProperty*, 32> properties;
   pRtti->GetAllProperties(properties);
 
   for (auto pProp : properties)
