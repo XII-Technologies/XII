@@ -178,12 +178,9 @@ inline void xiiStringBuilder::ToLower()
 inline void xiiStringBuilder::ChangeCharacter(iterator& ref_it, xiiUInt32 uiCharacter)
 {
   XII_ASSERT_DEV(ref_it.IsValid(), "The given character iterator does not point to a valid character.");
-  XII_ASSERT_DEV(ref_it.GetData() >= GetData() && ref_it.GetData() < GetData() + GetElementCount(),
-                 "The given character iterator does not point into this string. It was either created from another string, or this string "
-                 "has been reallocated in the mean time.");
+  XII_ASSERT_DEV(ref_it.GetData() >= GetData() && ref_it.GetData() < GetData() + GetElementCount(), "The given character iterator does not point into this string. It was either created from another string, or this string has been reallocated in the mean time.");
 
-  // this is only an optimization for pure ASCII strings
-  // without it, the code below would still work
+  // This is only an optimization for pure ASCII strings. Without it, the code below would still work.
   if (xiiUnicodeUtils::IsASCII(*ref_it) && xiiUnicodeUtils::IsASCII(uiCharacter))
   {
     char* pPos = const_cast<char*>(ref_it.GetData()); // yes, I know...

@@ -434,17 +434,12 @@ xiiResult xiiFrustum::TryMakeFromCorners(xiiFrustum& out_frustum, const xiiVec3 
 {
   xiiFrustum res;
 
-  res.m_Planes[PlaneType::LeftPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::NearBottomLeft], pCorners[FrustumCorner::NearTopLeft]);
-
-  res.m_Planes[PlaneType::RightPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearTopRight], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::FarTopRight]);
-
+  res.m_Planes[PlaneType::LeftPlane]   = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::NearBottomLeft], pCorners[FrustumCorner::NearTopLeft]);
+  res.m_Planes[PlaneType::RightPlane]  = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearTopRight], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::FarTopRight]);
   res.m_Planes[PlaneType::BottomPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearBottomLeft], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::NearBottomRight]);
-
-  res.m_Planes[PlaneType::TopPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::NearTopRight], pCorners[FrustumCorner::FarTopRight]);
-
-  res.m_Planes[PlaneType::FarPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::FarBottomLeft]);
-
-  res.m_Planes[PlaneType::NearPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearTopLeft], pCorners[FrustumCorner::NearBottomRight], pCorners[FrustumCorner::NearTopRight]);
+  res.m_Planes[PlaneType::TopPlane]    = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::NearTopRight], pCorners[FrustumCorner::FarTopRight]);
+  res.m_Planes[PlaneType::FarPlane]    = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::FarBottomLeft]);
+  res.m_Planes[PlaneType::NearPlane]   = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearTopLeft], pCorners[FrustumCorner::NearBottomRight], pCorners[FrustumCorner::NearTopRight]);
 
   if (res.IsValid())
   {

@@ -225,15 +225,15 @@ typename xiiListBase<T>::Iterator xiiListBase<T>::Insert(const Iterator& pos)
   XII_ASSERT_DEV(pos.m_pElement != nullptr, "The iterator (pos) is invalid.");
 
   ++m_uiCount;
-  ListElement* elem = AcquireNode();
+  ListElement* pElement = AcquireNode();
 
-  elem->m_pNext = pos.m_pElement;
-  elem->m_pPrev = pos.m_pElement->m_pPrev;
+  pElement->m_pNext = pos.m_pElement;
+  pElement->m_pPrev = pos.m_pElement->m_pPrev;
 
-  pos.m_pElement->m_pPrev->m_pNext = elem;
-  pos.m_pElement->m_pPrev          = elem;
+  pos.m_pElement->m_pPrev->m_pNext = pElement;
+  pos.m_pElement->m_pPrev          = pElement;
 
-  return Iterator(elem);
+  return Iterator(pElement);
 }
 
 template <typename T>
@@ -242,16 +242,16 @@ typename xiiListBase<T>::Iterator xiiListBase<T>::Insert(const Iterator& pos, co
   XII_ASSERT_DEV(pos.m_pElement != nullptr, "The iterator (pos) is invalid.");
 
   ++m_uiCount;
-  ListElement* elem = AcquireNode();
-  elem->m_Data      = data;
+  ListElement* pElement = AcquireNode();
+  pElement->m_Data      = data;
 
-  elem->m_pNext = pos.m_pElement;
-  elem->m_pPrev = pos.m_pElement->m_pPrev;
+  pElement->m_pNext = pos.m_pElement;
+  pElement->m_pPrev = pos.m_pElement->m_pPrev;
 
-  pos.m_pElement->m_pPrev->m_pNext = elem;
-  pos.m_pElement->m_pPrev          = elem;
+  pos.m_pElement->m_pPrev->m_pNext = pElement;
+  pos.m_pElement->m_pPrev          = pElement;
 
-  return Iterator(elem);
+  return Iterator(pElement);
 }
 
 template <typename T>

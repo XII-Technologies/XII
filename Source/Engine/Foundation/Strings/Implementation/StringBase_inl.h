@@ -57,7 +57,9 @@ template <typename Derived>
 const char* xiiStringBase<Derived>::FindSubString(xiiStringView sStringToFind, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
+  {
     szStartSearchAt = InternalGetData();
+  }
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
@@ -68,7 +70,9 @@ template <typename Derived>
 const char* xiiStringBase<Derived>::FindSubString_NoCase(xiiStringView sStringToFind, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
+  {
     szStartSearchAt = InternalGetData();
+  }
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
@@ -79,7 +83,9 @@ template <typename Derived>
 inline const char* xiiStringBase<Derived>::FindLastSubString(xiiStringView sStringToFind, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
+  {
     szStartSearchAt = InternalGetDataEnd();
+  }
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
@@ -90,7 +96,9 @@ template <typename Derived>
 inline const char* xiiStringBase<Derived>::FindLastSubString_NoCase(xiiStringView sStringToFind, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
+  {
     szStartSearchAt = InternalGetDataEnd();
+  }
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
@@ -101,7 +109,9 @@ template <typename Derived>
 inline const char* xiiStringBase<Derived>::FindWholeWord(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
+  {
     szStartSearchAt = InternalGetData();
+  }
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
@@ -112,7 +122,9 @@ template <typename Derived>
 inline const char* xiiStringBase<Derived>::FindWholeWord_NoCase(const char* szSearchFor, xiiStringUtils::XII_CHARACTER_FILTER isDelimiterCB, const char* szStartSearchAt /* = nullptr */) const
 {
   if (szStartSearchAt == nullptr)
+  {
     szStartSearchAt = InternalGetData();
+  }
 
   XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
@@ -170,11 +182,11 @@ bool xiiStringBase<Derived>::IsEqualN_NoCase(xiiStringView sOther, xiiUInt32 uiC
 template <typename Derived>
 const char* xiiStringBase<Derived>::ComputeCharacterPosition(xiiUInt32 uiCharacterIndex) const
 {
-  const char* pos = InternalGetData();
-  if (xiiUnicodeUtils::MoveToNextUtf8(pos, InternalGetDataEnd(), uiCharacterIndex).Failed())
+  const char* pPosition = InternalGetData();
+  if (xiiUnicodeUtils::MoveToNextUtf8(pPosition, InternalGetDataEnd(), uiCharacterIndex).Failed())
     return nullptr;
 
-  return pos;
+  return pPosition;
 }
 
 template <typename Derived>

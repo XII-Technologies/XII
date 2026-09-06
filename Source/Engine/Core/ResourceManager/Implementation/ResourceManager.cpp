@@ -701,11 +701,11 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
 
   xiiTempHashedString sHashedResourceID(sResourceID);
 
-  xiiHashedString* redirection;
-  if (s_pState->m_NamedResources.TryGetValue(sHashedResourceID, redirection))
+  xiiHashedString* pRedirection;
+  if (s_pState->m_NamedResources.TryGetValue(sHashedResourceID, pRedirection))
   {
-    sHashedResourceID = *redirection;
-    sResourceID       = redirection->GetView();
+    sHashedResourceID = *pRedirection;
+    sResourceID       = pRedirection->GetView();
   }
 
   LoadedResources& lr = s_pState->m_LoadedResources[pRtti];
@@ -786,9 +786,9 @@ const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti
 
 xiiString xiiResourceManager::GenerateUniqueResourceID(xiiStringView sResourceIDPrefix)
 {
-  xiiStringBuilder resourceID;
-  resourceID.SetFormat("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
-  return resourceID;
+  xiiStringBuilder sResourceID;
+  sResourceID.SetFormat("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
+  return sResourceID;
 }
 
 xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID)
@@ -845,8 +845,8 @@ void xiiResourceManager::RegisterNamedResource(xiiStringView sLookupName, xiiStr
 
   xiiTempHashedString lookup(sLookupName);
 
-  xiiHashedString redirection;
-  redirection.Assign(sRedirectionResource);
+  xiiHashedString sRedirection;
+  sRedirection.Assign(sRedirectionResource);
 
   s_pState->m_NamedResources[lookup] = redirection;
 }

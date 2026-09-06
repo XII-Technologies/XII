@@ -525,6 +525,7 @@ class XII_FOUNDATION_DLL xiiAssetBrowserAttribute : public xiiTypeWidgetAttribut
 
 public:
   xiiAssetBrowserAttribute() = default;
+
   xiiAssetBrowserAttribute(xiiStringView sTypeFilter, xiiBitflags<xiiDependencyFlags> depencyFlags = xiiDependencyFlags::Thumbnail | xiiDependencyFlags::Package) :
     m_DependencyFlags(depencyFlags)
   {

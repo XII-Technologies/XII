@@ -35,6 +35,7 @@ public:
 
   /// \brief Helper method to skip a number of bytes. Returns the actual number of bytes skipped.
   virtual xiiUInt64 SkipBytes(xiiUInt64 uiBytesToSkip) override;
+
   /// \brief Whether the end of the file was reached during reading.
   ///
   /// \note This is not 100% accurate, it does not guarantee that if it returns false, that the next read will return any data.

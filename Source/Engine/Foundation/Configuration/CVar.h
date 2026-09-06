@@ -13,13 +13,16 @@ class xiiCVar;
 /// \brief Describes of which type a CVar is. Use that info to cast a xiiCVar* to the proper derived class.
 struct xiiCVarType
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
-    Int,    ///< Can cast the xiiCVar* to xiiCVarInt*
-    Float,  ///< Can cast the xiiCVar* to xiiCVarFloat*
-    Double, ///< Can cast the xiiCVar* to xiiCVarDouble*
-    Bool,   ///< Can cast the xiiCVar* to xiiCVarBool*
-    String, ///< Can cast the xiiCVar* to xiiCVarString*
+    Int = 0U, ///< Can cast the xiiCVar* to xiiCVarInt*.
+    Float,    ///< Can cast the xiiCVar* to xiiCVarFloat*.
+    Double,   ///< Can cast the xiiCVar* to xiiCVarDouble*.
+    Bool,     ///< Can cast the xiiCVar* to xiiCVarBool*.
+    String,   ///< Can cast the xiiCVar* to xiiCVarString*.
+
     ENUM_COUNT
   };
 };
@@ -29,7 +32,7 @@ struct xiiCVarFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     None = 0,
 
@@ -71,7 +74,7 @@ struct xiiCVarEvent
   {
   }
 
-  enum Type
+  enum Type : xiiUInt8
   {
     ValueChanged,            ///< Sent whenever the 'Current' value of the CVar is changed.
     DelayedSyncValueChanged, ///< Sent whenever the 'DelayedSync' value of the CVar changes. It might actually change back to the 'Current' value though.
@@ -254,12 +257,15 @@ private:
 /// \brief Each CVar stores several values internally. The 'Current' value is the most important one.
 struct xiiCVarValue
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
-    Current,     ///< The value that should be used.
-    Default,     ///< The 'default' value of the CVar. Can be used to reset a variable to its default state.
-    Stored,      ///< The value that was read from disk (or the default). Can be used to reset a CVar to the 'saved' state, if desired.
-    DelayedSync, ///< The state that will be stored for later. This is identical to 'Current' unless the 'RequiresDelayedSync' flag is set (in which case the 'Current' value only changes when the code requests so).
+    Current = 0U, ///< The value that should be used.
+    Default,      ///< The 'default' value of the CVar. Can be used to reset a variable to its default state.
+    Stored,       ///< The value that was read from disk (or the default). Can be used to reset a CVar to the 'saved' state, if desired.
+    DelayedSync,  ///< The state that will be stored for later. This is identical to 'Current' unless the 'RequiresDelayedSync' flag is set (in which case the 'Current' value only changes when the code requests so).
+
     ENUM_COUNT
   };
 };
