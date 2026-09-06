@@ -458,6 +458,36 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
     XII_TEST_BOOL(b.x() == 9.0f && b.y() == 7.0f && b.z() == 5.0f && b.w() == 3.0f);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetCombined")
+  {
+    xiiSimdVec4f a(2.0f, 4.0f, 6.0f, 8.0f);
+    xiiSimdVec4f b(3.0f, 5.0f, 7.0f, 9.0f);
+
+    xiiSimdVec4f c = a.GetCombined<xiiSwizzle::XXXX>(b);
+    XII_TEST_BOOL(c.x() == a.x() && c.y() == a.x() && c.z() == b.x() && c.w() == b.x());
+
+    c = a.GetCombined<xiiSwizzle::YYYX>(b);
+    XII_TEST_BOOL(c.x() == a.y() && c.y() == a.y() && c.z() == b.y() && c.w() == b.x());
+
+    c = a.GetCombined<xiiSwizzle::ZZZX>(b);
+    XII_TEST_BOOL(c.x() == a.z() && c.y() == a.z() && c.z() == b.z() && c.w() == b.x());
+
+    c = a.GetCombined<xiiSwizzle::WWWX>(b);
+    XII_TEST_BOOL(c.x() == a.w() && c.y() == a.w() && c.z() == b.w() && c.w() == b.x());
+
+    c = a.GetCombined<xiiSwizzle::WZYX>(b);
+    XII_TEST_BOOL(c.x() == a.w() && c.y() == a.z() && c.z() == b.y() && c.w() == b.x());
+
+    c = a.GetCombined<xiiSwizzle::XYZW>(b);
+    XII_TEST_BOOL(c.x() == a.x() && c.y() == a.y() && c.z() == b.z() && c.w() == b.w());
+
+    c = a.GetCombined<xiiSwizzle::WZYX>(b);
+    XII_TEST_BOOL(c.x() == a.w() && c.y() == a.z() && c.z() == b.y() && c.w() == b.x());
+
+    c = a.GetCombined<xiiSwizzle::YYYY>(b);
+    XII_TEST_BOOL(c.x() == a.y() && c.y() == a.y() && c.z() == b.y() && c.w() == b.y());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Operators")
   {
     {

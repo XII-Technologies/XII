@@ -126,6 +126,21 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Get() const
   return result;
 }
 
+template <xiiSwizzle::Enum s>
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::GetCombined(const xiiSimdVec4i& other) const
+{
+  xiiSimdVec4i result;
+
+  const xiiInt32* v = &m_v.x;
+  const xiiInt32* o = &other.m_v.x;
+  result.m_v.x      = v[(s & 0x3000) >> 12];
+  result.m_v.y      = v[(s & 0x0300) >> 8];
+  result.m_v.z      = o[(s & 0x0030) >> 4];
+  result.m_v.w      = o[(s & 0x0003)];
+
+  return result;
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator-() const
 {
   return -m_v;
