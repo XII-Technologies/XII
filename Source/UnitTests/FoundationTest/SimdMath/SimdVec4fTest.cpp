@@ -435,6 +435,12 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
       XII_TEST_BOOL(!a.IsNaN<3>());
       XII_TEST_BOOL(a.IsValid<2>());
       XII_TEST_BOOL(!a.IsValid<3>());
+
+      a.Set(-1.0f, -2.0f, -3.0f, -4.0f);
+      XII_TEST_BOOL(a.IsValid<1>());
+      XII_TEST_BOOL(a.IsValid<2>());
+      XII_TEST_BOOL(a.IsValid<3>());
+      XII_TEST_BOOL(a.IsValid<4>());
     }
   }
 

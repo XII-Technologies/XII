@@ -225,8 +225,15 @@ inline bool xiiSimdVec4f::IsNaN() const
 template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
 {
-  const xiiInt32 mask = XII_BIT(N) - 1;
-  return (xiiInternal::NeonMoveMask(vcgeq_u32(vreinterpretq_u32_f32(m_v), vmovq_n_u32(0x7f800000))) & mask) == 0;
+  // Check the 8 exponent bits.
+  // NAN -> (exponent = all 1, mantissa = non-zero)
+  // INF -> (exponent = all 1, mantissa = zero)
+
+  uint32x4_t uiExponentMask = vmovq_n_u32(0x7f800000);
+  uint32x4_t uiExponentIs1 = vceqq_u32(vandq_u32(vreinterpretq_u32_f32(m_v), uiExponentMask), uiExponentMask);
+
+  const xiiInt32 uiMask = XII_BIT(N) - 1;
+  return (xiiInternal::NeonMoveMask(uiExponentIs1) & uiMask) == 0;
 }
 
 template <xiiInt32 N>
