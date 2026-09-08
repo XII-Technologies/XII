@@ -29,9 +29,10 @@ xiiFileSystem::FileSystemData* xiiFileSystem::s_pData = nullptr;
 xiiString                      xiiFileSystem::s_sSdkRootDir;
 xiiMap<xiiString, xiiString>   xiiFileSystem::s_SpecialDirectories;
 
-
 void xiiFileSystem::RegisterDataDirectoryFactory(xiiDataDirFactory factory, float fPriority /*= 0*/)
 {
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
+
   XII_LOCK(s_pData->m_FsMutex);
 
   auto& data       = s_pData->m_DataDirFactories.ExpandAndGetRef();
@@ -153,6 +154,7 @@ bool xiiFileSystem::RemoveDataDirectory(xiiStringView sRootName)
   xiiStringBuilder sCleanRootName = sRootName;
   CleanUpRootName(sCleanRootName);
 
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   for (xiiUInt32 i = 0; i < s_pData->m_DataDirectories.GetCount();)
@@ -247,6 +249,7 @@ const xiiDataDirectoryInfo* xiiFileSystem::FindDataDirectoryWithRoot(xiiStringVi
   if (sRootName.IsEmpty())
     return nullptr;
 
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   for (const auto& dd : s_pData->m_DataDirectories)
@@ -283,6 +286,7 @@ const xiiDataDirectoryInfo& xiiFileSystem::GetDataDirectoryInfo(xiiUInt32 uiData
 
 xiiStringView xiiFileSystem::GetDataDirRelativePath(xiiStringView sPath, xiiUInt32 uiDataDir)
 {
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   // if an absolute path is given, this will check whether the absolute path would fall into this data directory
@@ -329,6 +333,7 @@ xiiStringView xiiFileSystem::GetDataDirRelativePath(xiiStringView sPath, xiiUInt
 
 xiiDataDirectoryInfo* xiiFileSystem::GetDataDirForRoot(const xiiString& sRoot)
 {
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   for (xiiInt32 i = (xiiInt32)s_pData->m_DataDirectories.GetCount() - 1; i >= 0; --i)
@@ -339,7 +344,6 @@ xiiDataDirectoryInfo* xiiFileSystem::GetDataDirForRoot(const xiiString& sRoot)
 
   return nullptr;
 }
-
 
 void xiiFileSystem::DeleteFile(xiiStringView sFile)
 {
@@ -769,6 +773,7 @@ xiiResult xiiFileSystem::FindFolderWithSubPath(xiiStringBuilder& ref_sResult, xi
 
 bool xiiFileSystem::ResolveAssetRedirection(xiiStringView sPathOrAssetGuid, xiiStringBuilder& out_sRedirection)
 {
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   for (auto& dd : s_pData->m_DataDirectories)
@@ -827,6 +832,7 @@ void xiiFileSystem::ReloadAllExternalDataDirectoryConfigs()
 {
   XII_LOG_BLOCK("ReloadAllExternalDataDirectoryConfigs");
 
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   for (auto& dd : s_pData->m_DataDirectories)
@@ -843,6 +849,7 @@ void xiiFileSystem::Startup()
 void xiiFileSystem::Shutdown()
 {
   {
+    XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
     XII_LOCK(s_pData->m_FsMutex);
 
     s_pData->m_DataDirFactories.Clear();
@@ -980,6 +987,7 @@ xiiMutex& xiiFileSystem::GetMutex()
 
 void xiiFileSystem::StartSearch(xiiFileSystemIterator& ref_iterator, xiiStringView sSearchTerm, xiiBitflags<xiiFileSystemIteratorFlags> flags /*= xiiFileSystemIteratorFlags::Default*/)
 {
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
   XII_LOCK(s_pData->m_FsMutex);
 
   xiiTemporaryHybridArray<xiiString, 16> folders;
