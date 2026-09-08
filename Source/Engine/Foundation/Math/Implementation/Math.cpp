@@ -82,14 +82,14 @@ xiiUInt32 xiiMath::GreatestCommonDivisor(xiiUInt32 a, xiiUInt32 b)
   // https://lemire.me/blog/2013/12/26/fastest-way-to-compute-the-greatest-common-divisor/
   if (a == 0)
   {
-    return a;
+    return b;
   }
   if (b == 0)
   {
-    return b;
+    return a;
   }
 
-  xiiUInt32 shift = FirstBitLow(a | b);
+  xiiUInt32 uiShift = FirstBitLow(a | b);
   a >>= FirstBitLow(a);
   do
   {
@@ -100,42 +100,42 @@ xiiUInt32 xiiMath::GreatestCommonDivisor(xiiUInt32 a, xiiUInt32 b)
     }
     b = b - a;
   } while (b != 0);
-  return a << shift;
+  return a << uiShift;
 }
 
 xiiResult xiiMath::TryMultiply32(xiiUInt32& out_uiResult, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c, xiiUInt32 d)
 {
-  xiiUInt64 result = static_cast<xiiUInt64>(a) * static_cast<xiiUInt64>(b);
+  xiiUInt64 uiResult = static_cast<xiiUInt64>(a) * static_cast<xiiUInt64>(b);
 
-  if (result > 0xFFFFFFFFllu)
+  if (uiResult > 0xFFFFFFFFllu)
   {
     return XII_FAILURE;
   }
 
-  result *= static_cast<xiiUInt64>(c);
+  uiResult *= static_cast<xiiUInt64>(c);
 
-  if (result > 0xFFFFFFFFllu)
+  if (uiResult > 0xFFFFFFFFllu)
   {
     return XII_FAILURE;
   }
 
-  result *= static_cast<xiiUInt64>(d);
+  uiResult *= static_cast<xiiUInt64>(d);
 
-  if (result > 0xFFFFFFFFllu)
+  if (uiResult > 0xFFFFFFFFllu)
   {
     return XII_FAILURE;
   }
 
-  out_uiResult = static_cast<xiiUInt32>(result & 0xFFFFFFFFllu);
+  out_uiResult = static_cast<xiiUInt32>(uiResult & 0xFFFFFFFFllu);
   return XII_SUCCESS;
 }
 
 xiiUInt32 xiiMath::SafeMultiply32(xiiUInt32 a, xiiUInt32 b, xiiUInt32 c, xiiUInt32 d)
 {
-  xiiUInt32 result = 0;
-  if (TryMultiply32(result, a, b, c, d).Succeeded())
+  xiiUInt32 uiResult = 0;
+  if (TryMultiply32(uiResult, a, b, c, d).Succeeded())
   {
-    return result;
+    return uiResult;
   }
 
   XII_REPORT_FAILURE("Safe multiplication failed: {0} * {1} * {2} * {3} exceeds UInt32 range.", a, b, c, d);
@@ -200,10 +200,10 @@ xiiResult xiiMath::TryMultiply64(xiiUInt64& out_uiResult, xiiUInt64 a, xiiUInt64
 
 xiiUInt64 xiiMath::SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt64 d)
 {
-  xiiUInt64 result = 0;
-  if (TryMultiply64(result, a, b, c, d).Succeeded())
+  xiiUInt64 uiResult = 0;
+  if (TryMultiply64(uiResult, a, b, c, d).Succeeded())
   {
-    return result;
+    return uiResult;
   }
 
   XII_REPORT_FAILURE("Safe multiplication failed: {0} * {1} * {2} * {3} exceeds xiiUInt64 range.", a, b, c, d);
@@ -213,10 +213,10 @@ xiiUInt64 xiiMath::SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt
 #if XII_ENABLED(XII_PLATFORM_32BIT)
 size_t xiiMath::SafeConvertToSizeT(xiiUInt64 uiValue)
 {
-  size_t result = 0;
-  if (TryConvertToSizeT(result, uiValue).Succeeded())
+  size_t uiResult = 0;
+  if (TryConvertToSizeT(uiResult, uiValue).Succeeded())
   {
-    return result;
+    return uiResult;
   }
 
   XII_REPORT_FAILURE("Given value ({}) can't be converted to size_t because it is too big.", uiValue);

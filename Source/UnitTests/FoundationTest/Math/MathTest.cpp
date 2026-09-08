@@ -863,6 +863,8 @@ XII_CREATE_SIMPLE_TEST(Math, General)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GreatestCommonDivisor")
   {
     XII_TEST_INT(xiiMath::GreatestCommonDivisor(13, 13), 13);
+    XII_TEST_INT(xiiMath::GreatestCommonDivisor(13, 0), 13);
+    XII_TEST_INT(xiiMath::GreatestCommonDivisor(0, 637), 637);
     XII_TEST_INT(xiiMath::GreatestCommonDivisor(37, 600), 1);
     XII_TEST_INT(xiiMath::GreatestCommonDivisor(20, 100), 20);
     XII_TEST_INT(xiiMath::GreatestCommonDivisor(624129, 2061517), 18913);
