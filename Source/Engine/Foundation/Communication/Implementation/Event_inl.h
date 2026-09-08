@@ -200,6 +200,7 @@ void xiiEventBase<EventData, MutexType, EventType>::Broadcast(EventData eventDat
       return;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    XII_ASSERT_ALWAYS(m_pSelf != nullptr, "This xiiEvent is broadcasted before it was initialized.");
     XII_ASSERT_ALWAYS(m_pSelf == this, "The xiiEvent was relocated in memory. This is not allowed, as it breaks the Unsubscribers.");
 #endif
 
