@@ -33,7 +33,7 @@ namespace xiiExpression
   {
     using StorageType = xiiUInt8;
 
-    enum Enum
+    enum Enum : StorageType
     {
       Unknown,
 
@@ -73,17 +73,16 @@ namespace xiiExpression
   /// \brief Describes an expression function and its signature, e.g. how many input parameter it has and their type
   struct FunctionDesc
   {
-    xiiHashedString                                        m_sName;
-    xiiSmallArray<xiiEnum<xiiExpression::RegisterType>, 8> m_InputTypes;
-    xiiUInt8                                               m_uiNumRequiredInputs = 0;
-    xiiEnum<xiiExpression::RegisterType>                   m_OutputType;
+    using TypeList = xiiSmallArray<xiiEnum<xiiExpression::RegisterType>, 8>;
+
+    xiiHashedString                      m_sName;
+    TypeList                             m_InputTypes;
+    xiiUInt8                             m_uiNumRequiredInputs = 0;
+    xiiEnum<xiiExpression::RegisterType> m_OutputType;
 
     bool operator==(const FunctionDesc& other) const
     {
-      return m_sName == other.m_sName &&
-        m_InputTypes == other.m_InputTypes &&
-        m_uiNumRequiredInputs == other.m_uiNumRequiredInputs &&
-        m_OutputType == other.m_OutputType;
+      return m_sName == other.m_sName && m_InputTypes == other.m_InputTypes && m_uiNumRequiredInputs == other.m_uiNumRequiredInputs && m_OutputType == other.m_OutputType;
     }
 
     bool operator<(const FunctionDesc& other) const;
