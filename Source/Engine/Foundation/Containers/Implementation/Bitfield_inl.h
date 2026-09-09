@@ -192,6 +192,14 @@ void xiiBitfield<Container>::ClearBit(xiiUInt32 uiBit)
 }
 
 template <class Container>
+void xiiBitfield<Container>::FlipBit(xiiUInt32 uiBit)
+{
+  XII_ASSERT_DEBUG(uiBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, m_uiCount);
+
+  m_Container[GetBitInt(uiBit)] ^= GetBitMask(uiBit);
+}
+
+template <class Container>
 XII_ALWAYS_INLINE void xiiBitfield<Container>::SetBitValue(xiiUInt32 uiBit, bool bValue)
 {
   if (bValue)
@@ -319,6 +327,51 @@ void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNum
   for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
   {
     ClearBit(i);
+  }
+}
+
+template <class Container>
+void xiiBitfield<Container>::FlipBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
+{
+  if (m_uiCount == 0 || uiNumBits == 0)
+    return;
+
+  XII_ASSERT_DEBUG(uiFirstBit < m_uiCount, "Cannot access bit {0}, the bitfield only has {1} bits.", uiFirstBit, m_uiCount);
+
+  const xiiUInt32 uiLastBit = uiFirstBit + uiNumBits - 1;
+
+  const xiiUInt32 uiFirstInt = GetBitInt(uiFirstBit);
+  const xiiUInt32 uiLastInt  = GetBitInt(uiLastBit);
+
+  // All within the same int.
+  if (uiFirstInt == uiLastInt)
+  {
+    for (xiiUInt32 i = uiFirstBit; i <= uiLastBit; ++i)
+    {
+      FlipBit(i);
+    }
+    return;
+  }
+
+  const xiiUInt32 uiNextIntBit = (uiFirstInt + 1) * 32;
+  const xiiUInt32 uiPrevIntBit = uiLastInt * 32;
+
+  // Flip the bits in the first int individually.
+  for (xiiUInt32 i = uiFirstBit; i < uiNextIntBit; ++i)
+  {
+    FlipBit(i);
+  }
+
+  // Flip the bits in the ints in between with one operation.
+  for (xiiUInt32 i = uiFirstInt + 1; i < uiLastInt; ++i)
+  {
+    m_Container[i] = ~m_Container[i];
+  }
+
+  // Flip the bits in the last int individually.
+  for (xiiUInt32 i = uiPrevIntBit; i <= uiLastBit; ++i)
+  {
+    FlipBit(i);
   }
 }
 
