@@ -148,7 +148,7 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
     return xiiStatus(xiiFmt("Failed to launch '{}'", sDumpToolPath));
 
   if (proc.WaitToFinish().Failed())
-    return xiiStatus("Waiting for MiniDumpTool to finish failed.");
+    return xiiStatus("Waiting for xiiMiniDumpTool to finish failed.");
 
   return XII_SUCCESS;
 }

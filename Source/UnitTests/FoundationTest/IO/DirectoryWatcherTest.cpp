@@ -166,6 +166,30 @@ void DirectoryWatcherTest()
     }
   };
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Git")
+  {
+    xiiOSFile::DeleteFolder(sTestRootPath).IgnoreResult();
+    XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(sTestRootPath).Succeeded());
+
+    CreateFile("index");
+
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateFile("index.lock");
+    DeleteFile("index");
+    Rename("index.lock", "index");
+
+    ExpectedEvent expectedEvents[] = {
+      {"index.lock", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
+      {"index", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File},
+      {"index.lock", xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::File},
+      {"index", xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::File},
+
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Create File")
   {
     xiiOSFile::DeleteFolder(sTestRootPath).IgnoreResult();
@@ -182,7 +206,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple delete file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Delete File")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Deletes).Succeeded());
@@ -195,7 +219,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple modify file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Modify File")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Writes).Succeeded());
@@ -214,7 +238,7 @@ void DirectoryWatcherTest()
     DeleteFile("test.file");
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple rename file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Rename File")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -232,7 +256,7 @@ void DirectoryWatcherTest()
     DeleteFile("supertest.file");
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change file casing")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change File Casing")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -250,7 +274,7 @@ void DirectoryWatcherTest()
     DeleteFile("Rename.file");
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending file remove event #1")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows Check For Correct Handling Of Pending File Remove Event #1")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -265,7 +289,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending file remove event #2")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows Check For Correct Handling Of Pending File Remove Event #2")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -284,7 +308,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple create directory")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Create Directory")
   {
     xiiOSFile::DeleteFolder(sTestRootPath).IgnoreResult();
     XII_TEST_BOOL(xiiOSFile::CreateDirectoryStructure(sTestRootPath).Succeeded());
@@ -300,7 +324,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple delete directory")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Delete Directory")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Deletes).Succeeded());
@@ -313,7 +337,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple rename directory")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple Rename Directory")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames).Succeeded());
@@ -330,7 +354,7 @@ void DirectoryWatcherTest()
     DeleteDirectory("supertestDir");
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change directory casing")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change Directory Casing")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -348,7 +372,7 @@ void DirectoryWatcherTest()
     DeleteDirectory("RenameDir");
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending directory remove event #1")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows Check For Correct Handling Of Pending Directory Remove Event #1")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -363,7 +387,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending directory remove event #2")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows Check For Correct Handling Of Pending Directory Remove Event #2")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -399,7 +423,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subdirectory delete file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subdirectory Delete File")
   {
 
     xiiDirectoryWatcher watcher;
@@ -413,7 +437,7 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subdirectory modify file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subdirectory Modify File")
   {
     xiiDirectoryWatcher watcher;
     XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
@@ -430,15 +454,11 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GUI Create Folder & file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GUI Create Folder & File")
   {
     DeleteDirectory("sub", false);
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(
-                           sTestRootPath,
-                           xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                             xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories)
-                    .Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
 
     CreateDirectory("New Folder");
 
@@ -470,11 +490,7 @@ void DirectoryWatcherTest()
   {
     DeleteDirectory("sub", false);
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(
-                           sTestRootPath,
-                           xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                             xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories)
-                    .Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
 
     CreateDirectory("New Folder");
     Rename("New Folder", "sub");
@@ -501,16 +517,12 @@ void DirectoryWatcherTest()
     CheckExpectedEvents(watcher, expectedEvents3);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GUI Create Folder & file fast subdir")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GUI Create Folder & File Fast Subdirectory")
   {
     DeleteDirectory("sub", false);
 
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(
-                           sTestRootPath,
-                           xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                             xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories)
-                    .Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
 
     CreateDirectory("New Folder/subsub");
     Rename("New Folder", "sub");
@@ -542,11 +554,7 @@ void DirectoryWatcherTest()
     DeleteDirectory("../sub2", false);
 
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(
-                           sTestRootPath,
-                           xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                             xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories)
-                    .Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
 
     CreateDirectory("sub2/subsub2");
     CreateFile("sub2/file1");
@@ -587,11 +595,7 @@ void DirectoryWatcherTest()
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Create, Delete, Create")
   {
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(
-                           sTestRootPath,
-                           xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                             xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories)
-                    .Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
 
     CreateDirectory("sub2/subsub2");
     CreateFile("sub2/file1");
@@ -634,11 +638,7 @@ void DirectoryWatcherTest()
   {
     DeleteDirectory("sub", false);
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(
-                           sTestRootPath,
-                           xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                             xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames)
-                    .Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames).Succeeded());
 
     CreateFile("file2.txt");
 
@@ -680,27 +680,15 @@ void DirectoryWatcherTest()
 
     watchPath = sTestRootPath;
     watchPath.AppendPath("watch1");
-    XII_TEST_BOOL(watchers[0].OpenDirectory(
-                               watchPath,
-                               xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                                 xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames)
-                    .Succeeded());
+    XII_TEST_BOOL(watchers[0].OpenDirectory(watchPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames).Succeeded());
 
     watchPath = sTestRootPath;
     watchPath.AppendPath("watch2");
-    XII_TEST_BOOL(watchers[1].OpenDirectory(
-                               watchPath,
-                               xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                                 xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames)
-                    .Succeeded());
+    XII_TEST_BOOL(watchers[1].OpenDirectory(watchPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames).Succeeded());
 
     watchPath = sTestRootPath;
     watchPath.AppendPath("watch3");
-    XII_TEST_BOOL(watchers[2].OpenDirectory(
-                               watchPath,
-                               xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes |
-                                 xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames)
-                    .Succeeded());
+    XII_TEST_BOOL(watchers[2].OpenDirectory(watchPath, xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Renames).Succeeded());
 
     CreateFile("watch1/file2.txt");
 
