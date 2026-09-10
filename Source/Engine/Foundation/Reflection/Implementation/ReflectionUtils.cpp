@@ -413,6 +413,7 @@ namespace
       XII_IGNORE_UNUSED(pVector);
       XII_IGNORE_UNUSED(uiComponent);
       XII_IGNORE_UNUSED(fValue);
+
       XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
     }
   };
@@ -422,6 +423,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 2U, "uiComponent out of range.");
+
       auto vec = pVector->Get<xiiVec2Template<T>>();
       switch (uiComponent)
       {
@@ -441,6 +444,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 3U, "uiComponent out of range.");
+
       auto vec = pVector->Get<xiiVec3Template<T>>();
       switch (uiComponent)
       {
@@ -463,6 +468,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 4U, "uiComponent out of range.");
+
       auto vec = pVector->Get<xiiVec4Template<T>>();
       switch (uiComponent)
       {
@@ -503,6 +510,7 @@ namespace
       XII_IGNORE_UNUSED(pVector);
       XII_IGNORE_UNUSED(uiComponent);
       XII_IGNORE_UNUSED(out_fValue);
+
       XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
     }
   };
@@ -512,6 +520,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 2U, "uiComponent out of range.");
+
       const auto& vec = pVector->Get<xiiVec2Template<T>>();
       switch (uiComponent)
       {
@@ -530,6 +540,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 3U, "uiComponent out of range.");
+
       const auto& vec = pVector->Get<xiiVec3Template<T>>();
       switch (uiComponent)
       {
@@ -551,6 +563,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 4U, "uiComponent out of range.");
+
       const auto& vec = pVector->Get<xiiVec4Template<T>>();
       switch (uiComponent)
       {

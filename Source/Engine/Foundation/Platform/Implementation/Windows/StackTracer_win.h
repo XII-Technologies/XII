@@ -121,6 +121,9 @@ namespace
     // Thus, when using XII together with for example a third party library that also records stack traces, just calling SymInitialize will fail and we do not get any callstacks.
     // This multi-step approach below has worked in known problematic scenarios, but no guarantee that there isn't a better "right way" to do it.
 
+    if (s_pImplementation->symbolInitialize == nullptr || s_pImplementation->symRefreshModuleList == nullptr || s_pImplementation->symCleanup == nullptr)
+      return false;
+
     // Try SymInitialize first
     if ((*s_pImplementation->symbolInitialize)(GetCurrentProcess(), nullptr, TRUE))
       return true;

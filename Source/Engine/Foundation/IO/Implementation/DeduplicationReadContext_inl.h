@@ -31,6 +31,8 @@ xiiResult xiiDeduplicationReadContext::ReadObject(xiiStreamReader& ref_stream, T
 
   if (bIsRealObject)
   {
+    XII_ASSERT_DEBUG(pAllocator != nullptr, "Valid allocator required.");
+
     ref_pObject = XII_NEW(pAllocator, T);
     XII_SUCCEED_OR_RETURN(xiiStreamReaderUtil::Deserialize<T>(ref_stream, *ref_pObject));
 

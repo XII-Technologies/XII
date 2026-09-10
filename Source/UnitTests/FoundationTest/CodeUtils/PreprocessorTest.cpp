@@ -72,7 +72,10 @@ public:
           m_sOutput.Append("Warning: ");
           break;
         case xiiPreprocessor::ProcessingEvent::BeginExpansion:
-          m_sOutput.AppendFormat("In Macro: '{0}'", xiiString(event.m_pToken->m_DataView));
+          if (event.m_pToken != nullptr)
+          {
+            m_sOutput.AppendFormat("In Macro: '{0}'", xiiString(event.m_pToken->m_DataView));
+          }
           break;
         case xiiPreprocessor::ProcessingEvent::EndExpansion:
           break;
