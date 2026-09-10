@@ -42,9 +42,11 @@ void xiiTaskSystem::SetWorkerThreadCount(xiiInt32 iShortTasks, xiiInt32 iLongTas
   xiiUInt32 uiLongTasks  = static_cast<xiiUInt32>(xiiMath::Max<xiiInt32>(iLongTasks, 1));
 
   // if nothing has changed, do nothing
-  if (s_pThreadState->m_uiMaxWorkersToUse[xiiWorkerThreadType::ShortTasks] == uiShortTasks &&
-      s_pThreadState->m_uiMaxWorkersToUse[xiiWorkerThreadType::LongTasks] == uiLongTasks)
+  if (s_pThreadState->m_uiMaxWorkersToUse[xiiWorkerThreadType::ShortTasks] == uiShortTasks && s_pThreadState->m_uiMaxWorkersToUse[xiiWorkerThreadType::LongTasks] == uiLongTasks)
     return;
+
+  xiiLog::Dev("CPU core count: {}", iCpuCores);
+  xiiLog::Dev("Setting worker thread count to {} (short) / {} (long).", uiShortTasks, uiLongTasks);
 
   StopWorkerThreads();
 

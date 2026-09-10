@@ -173,6 +173,22 @@ namespace xiiMath
     return 0xFFFFFFFFu;
   }
 
+#if XII_ENABLED(XII_COMPILER_CLANG)
+#  if XII_ENABLED(XII_PLATFORM_32BIT)
+  template <>
+  constexpr size_t MaxValue()
+  {
+    return 0xFFFFFFFFu;
+  }
+#  else
+  template <>
+  constexpr size_t MaxValue()
+  {
+    return 0xFFFFFFFFFFFFFFFFull;
+  }
+#  endif
+#endif
+
   template <>
   constexpr xiiUInt64 MaxValue()
   {
