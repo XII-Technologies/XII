@@ -69,7 +69,7 @@ namespace
       int  bytesNeeded = WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), nullptr, 0, nullptr, nullptr);
       if (bytesNeeded > 0)
       {
-        xiiHybridArray<char, 1024> dir;
+        xiiTemporaryHybridArray<char, 1024> dir;
         dir.SetCountUninitialized(bytesNeeded);
         WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), dir.GetData(), dir.GetCount(), nullptr, nullptr);
 
@@ -109,7 +109,7 @@ namespace
       int  bytesNeeded = WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), nullptr, 0, nullptr, nullptr);
       if (bytesNeeded > 0)
       {
-        xiiHybridArray<char, 1024> dir;
+        xiiTemporaryHybridArray<char, 1024> dir;
         dir.SetCountUninitialized(bytesNeeded);
         WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), dir.GetData(), dir.GetCount(), nullptr, nullptr);
 
@@ -127,13 +127,15 @@ namespace
         break;
       }
       else
+      {
         info = (const FILE_NOTIFY_INFORMATION*)(((xiiUInt8*)info) + info->NextEntryOffset);
+      }
     }
   }
 
   void PostProcessNonNTFSChanges(xiiDynamicArray<Change>& ref_changes, xiiFileSystemMirrorType* pMirror)
   {
-    xiiHybridArray<xiiInt32, 4> nextOp;
+    xiiTemporaryHybridArray<xiiInt32, 4> nextOp;
     // Figure what changes belong to the same object by creating a linked list of changes. This part is tricky as we basically have to handle all the oddities that xiiDirectoryWatcher::EnumerateChanges already does again to figure out which operations belong to the same object.
     {
       xiiMap<xiiStringView, xiiUInt32> lastChangeAtPath;
@@ -163,17 +165,22 @@ namespace
         switch (currentChange.Action)
         {
           case FILE_ACTION_ADDED:
+          {
             lastChangeAtPath.Insert(currentChange.eventFilePath, i);
-            break;
+          }
+          break;
           case FILE_ACTION_REMOVED:
+          {
             if (lastChangeAtPath.TryGetValue(currentChange.eventFilePath, uiUniqueItemIndex))
             {
               nextOp[*uiUniqueItemIndex] = i;
               *uiUniqueItemIndex         = i;
             }
             pendingRemoveOrRename = i;
-            break;
+          }
+          break;
           case FILE_ACTION_MODIFIED:
+          {
             if (lastChangeAtPath.TryGetValue(currentChange.eventFilePath, uiUniqueItemIndex))
             {
               nextOp[*uiUniqueItemIndex] = i;
@@ -183,8 +190,10 @@ namespace
             {
               lastChangeAtPath[currentChange.eventFilePath] = i;
             }
-            break;
+          }
+          break;
           case FILE_ACTION_RENAMED_OLD_NAME:
+          {
             if (lastChangeAtPath.TryGetValue(currentChange.eventFilePath, uiUniqueItemIndex))
             {
               nextOp[*uiUniqueItemIndex] = i;
@@ -195,13 +204,16 @@ namespace
               lastChangeAtPath[currentChange.eventFilePath] = i;
             }
             lastMoveFrom = i;
-            break;
+          }
+          break;
           case FILE_ACTION_RENAMED_NEW_NAME:
+          {
             XII_ASSERT_DEBUG(lastMoveFrom != -1, "last move from should be present when encountering FILE_ACTION_RENAMED_NEW_NAME");
             nextOp[lastMoveFrom] = i;
             lastChangeAtPath.Remove(ref_changes[lastMoveFrom].eventFilePath);
             lastChangeAtPath.Insert(currentChange.eventFilePath, i);
-            break;
+          }
+          break;
         }
       }
     }
@@ -212,7 +224,7 @@ namespace
     pendingChanges.SetCount(ref_changes.GetCount(), true);
 
     // Get start of first object.
-    xiiHybridArray<Change*, 4> objectChanges;
+    xiiTemporaryHybridArray<Change*, 4> objectChanges;
     auto                       it = pendingChanges.GetIterator();
     while (it.IsValid())
     {
@@ -244,10 +256,10 @@ namespace
         else
         {
           bool typeFound = false;
-          for (Change* currentChange : objectChanges)
+          for (Change* pCurrentChange : objectChanges)
           {
             xiiFileStats stats;
-            if (xiiOSFile::GetFileStats(currentChange->eventFilePath, stats).Succeeded())
+            if (xiiOSFile::GetFileStats(pCurrentChange->eventFilePath, stats).Succeeded())
             {
               isFile    = !stats.m_bIsDirectory;
               typeFound = true;
@@ -262,9 +274,9 @@ namespace
         }
 
         // Apply type to all objects in the chain.
-        for (Change* currentChange : objectChanges)
+        for (Change* pCurrentChange : objectChanges)
         {
-          currentChange->isFile = isFile;
+          pCurrentChange->isFile = isFile;
         }
       }
 
@@ -308,7 +320,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     xiiStringView sRoot = sAbsolutePath.GetSubString(0, static_cast<xiiUInt32>(szFirst - sTemp.GetData()) + 1);
 
     WCHAR szFileSystemName[8];
-    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot), nullptr, 0, nullptr, nullptr, nullptr, szFileSystemName, sizeof(szFileSystemName));
+    BOOL  res        = GetVolumeInformationW(xiiStringWChar(sRoot), nullptr, 0, nullptr, nullptr, nullptr, szFileSystemName, XII_ARRAY_SIZE(szFileSystemName));
     m_pImpl->m_bNTFS = res == TRUE && xiiStringUtf8(szFileSystemName).GetView() == "NTFS" && !cvar_ForceNonNTFS.GetValue();
   }
 
@@ -336,8 +348,8 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     m_pImpl->m_filter |= FILE_NOTIFY_CHANGE_DIR_NAME;
   }
 
-  m_pImpl->m_directoryHandle = CreateFileW(xiiDosDevicePath(sPath), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                                           nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
+  m_pImpl->m_directoryHandle = CreateFileW(xiiDosDevicePath(sPath), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
+
   if (m_pImpl->m_directoryHandle == INVALID_HANDLE_VALUE)
   {
     return XII_FAILURE;
@@ -394,9 +406,9 @@ void xiiDirectoryWatcherImpl::DoRead()
 
 void xiiDirectoryWatcherImpl::EnumerateChangesImpl(xiiStringView sDirectoryPath, xiiTime waitUpTo, const xiiDelegate<void(const Change&)>& callback)
 {
-  xiiHybridArray<Change, 6> changes;
+  xiiTemporaryHybridArray<Change, 6> changes;
 
-  xiiHybridArray<xiiUInt8, 4096> buffer;
+  xiiTemporaryHybridArray<xiiUInt8, 4096> buffer;
   while (WaitForSingleObject(m_overlappedEvent, static_cast<DWORD>(waitUpTo.GetMilliseconds())) == WAIT_OBJECT_0)
   {
     waitUpTo = xiiTime::MakeZero(); // only wait on the first call to GetQueuedCompletionStatus
@@ -659,7 +671,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
 
 void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo)
 {
-  xiiHybridArray<HANDLE, 16> events;
+  xiiTemporaryHybridArray<HANDLE, 16> events;
   events.SetCount(watchers.GetCount());
 
   for (xiiUInt32 i = 0; i < watchers.GetCount(); ++i)

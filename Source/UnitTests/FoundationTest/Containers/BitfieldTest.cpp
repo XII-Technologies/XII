@@ -369,7 +369,6 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
   }
 }
 
-
 XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetAllBits / ClearAllBits")
