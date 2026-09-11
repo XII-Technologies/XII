@@ -498,16 +498,18 @@ xiiDataDirectoryReader* xiiFileSystem::GetFileReader(xiiStringView sFile, xiiFil
     // Let the data directory try to open the file.
     xiiDataDirectoryReader* pReader = s_pData->m_DataDirectories[i].m_pDataDirType->OpenFileToRead(sRelPath, FileShareMode, bOneSpecificDataDir);
 
-    if (bAllowFileEvents && pReader != nullptr)
+    if (pReader != nullptr)
     {
-      // Broadcast that this file has been opened.
-      FileEvent fe;
-      fe.m_EventType        = FileEventType::OpenFileSucceeded;
-      fe.m_sFileOrDirectory = sRelPath;
-      fe.m_sOther           = sRootName;
-      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirType;
-      s_pData->m_Event.Broadcast(fe);
-
+      if (bAllowFileEvents)
+      {
+        // Broadcast that this file has been opened.
+        FileEvent fe;
+        fe.m_EventType        = FileEventType::OpenFileSucceeded;
+        fe.m_sFileOrDirectory = sRelPath;
+        fe.m_sOther           = sRootName;
+        fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirType;
+        s_pData->m_Event.Broadcast(fe);
+      }
       return pReader;
     }
   }
@@ -537,10 +539,8 @@ xiiDataDirectoryWriter* xiiFileSystem::GetFileWriter(xiiStringView sFile, xiiFil
 
   if (!xiiPathUtils::IsAbsolutePath(sFile))
   {
-    XII_ASSERT_DEV(sFile.StartsWith(":"),
-                   "Only native absolute paths or rooted paths (starting with a colon and then the data dir root name) are allowed for "
-                   "writing to files. This path is neither: '{0}'",
-                   sFile);
+    XII_ASSERT_DEV(sFile.StartsWith(":"), "Only native absolute paths or rooted paths (starting with a colon and then the data dir root name) are allowed for writing to files. This path is neither: '{0}'", sFile);
+
     sFile = ExtractRootName(sFile, sRootName);
   }
 
@@ -574,16 +574,18 @@ xiiDataDirectoryWriter* xiiFileSystem::GetFileWriter(xiiStringView sFile, xiiFil
 
     xiiDataDirectoryWriter* pWriter = s_pData->m_DataDirectories[i].m_pDataDirType->OpenFileToWrite(sRelPath, FileShareMode);
 
-    if (bAllowFileEvents && pWriter != nullptr)
+    if (pWriter != nullptr)
     {
-      // Broadcast that this file has been created.
-      FileEvent fe;
-      fe.m_EventType        = FileEventType::CreateFileSucceeded;
-      fe.m_sFileOrDirectory = sRelPath;
-      fe.m_sOther           = sRootName;
-      fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirType;
-      s_pData->m_Event.Broadcast(fe);
-
+      if (bAllowFileEvents)
+      {
+        // Broadcast that this file has been created.
+        FileEvent fe;
+        fe.m_EventType        = FileEventType::CreateFileSucceeded;
+        fe.m_sFileOrDirectory = sRelPath;
+        fe.m_sOther           = sRootName;
+        fe.m_pDataDir         = s_pData->m_DataDirectories[i].m_pDataDirType;
+        s_pData->m_Event.Broadcast(fe);
+      }
       return pWriter;
     }
   }
@@ -606,7 +608,7 @@ xiiResult xiiFileSystem::ResolvePath(xiiStringView sPath, xiiStringBuilder* out_
 
   XII_LOCK(s_pData->m_FsMutex);
 
-  xiiStringBuilder absPath, relPath;
+  xiiStringBuilder sAbsolutePath, sRelativePath;
 
   if (sPath.StartsWith(":"))
   {
@@ -622,28 +624,28 @@ xiiResult xiiFileSystem::ResolvePath(xiiStringView sPath, xiiStringBuilder* out_
     if (out_pDataDir != nullptr)
       *out_pDataDir = pDataDir;
 
-    relPath = sPath.GetShrunk(sRootName.GetCharacterCount() + 2);
+    sRelativePath = sPath.GetShrunk(sRootName.GetCharacterCount() + 2);
 
-    absPath = pDataDir->m_pDataDirType->GetRedirectedDataDirectoryPath(); /// \todo We might also need the none-redirected path as an output
-    absPath.AppendPath(relPath);
+    sAbsolutePath = pDataDir->m_pDataDirType->GetRedirectedDataDirectoryPath(); /// \todo We might also need the none-redirected path as an output
+    sAbsolutePath.AppendPath(sRelativePath);
   }
   else if (xiiPathUtils::IsAbsolutePath(sPath))
   {
-    absPath = sPath;
-    absPath.MakeCleanPath();
+    sAbsolutePath = sPath;
+    sAbsolutePath.MakeCleanPath();
 
     for (xiiUInt32 dd = s_pData->m_DataDirectories.GetCount(); dd > 0; --dd)
     {
       auto& dir = s_pData->m_DataDirectories[dd - 1];
 
-      if (xiiPathUtils::IsSubPath(dir.m_pDataDirType->GetRedirectedDataDirectoryPath(), absPath))
+      if (xiiPathUtils::IsSubPath(dir.m_pDataDirType->GetRedirectedDataDirectoryPath(), sAbsolutePath))
       {
         if (out_pAbsolutePath)
-          *out_pAbsolutePath = absPath;
+          *out_pAbsolutePath = sAbsolutePath;
 
         if (out_pDataDirRelativePath)
         {
-          *out_pDataDirRelativePath = absPath;
+          *out_pDataDirRelativePath = sAbsolutePath;
           out_pDataDirRelativePath->MakeRelativeTo(dir.m_pDataDirType->GetRedirectedDataDirectoryPath()).IgnoreResult();
         }
 
@@ -677,19 +679,19 @@ xiiResult xiiFileSystem::ResolvePath(xiiStringView sPath, xiiStringBuilder* out_
       }
     }
 
-    relPath = pReader->GetFilePath();
+    sRelativePath = pReader->GetFilePath();
 
-    absPath = pReader->GetDataDirectory()->GetRedirectedDataDirectoryPath(); /// \todo We might also need the none-redirected path as an output
-    absPath.AppendPath(relPath);
+    sAbsolutePath = pReader->GetDataDirectory()->GetRedirectedDataDirectoryPath(); /// \todo We might also need the none-redirected path as an output
+    sAbsolutePath.AppendPath(sRelativePath);
 
     pReader->Close();
   }
 
   if (out_pAbsolutePath)
-    *out_pAbsolutePath = absPath;
+    *out_pAbsolutePath = sAbsolutePath;
 
   if (out_pDataDirRelativePath)
-    *out_pDataDirRelativePath = relPath;
+    *out_pDataDirRelativePath = sRelativePath;
 
   return XII_SUCCESS;
 }
