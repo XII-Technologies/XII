@@ -83,8 +83,8 @@ bool xiiSpawnComponent::SpawnOnce(const xiiVec3& vLocalOffset)
       const xiiVec3 vTiltAxis = xiiVec3(0, 1, 0);
       const xiiVec3 vTurnAxis = xiiVec3(1, 0, 0);
 
-      const xiiAngle tiltAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, (double)m_MaxDeviation.GetRadian()));
-      const xiiAngle turnAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0));
+      const xiiAngle tiltAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleMinMax(0.0, (double)m_MaxDeviation.GetRadian()));
+      const xiiAngle turnAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleMinMax(0.0, xiiMath::Pi<double>() * 2.0));
 
       xiiQuat qTilt, qTurn, qDeviate;
       qTilt    = xiiQuat::MakeFromAxisAndAngle(vTiltAxis, tiltAngle);
@@ -136,7 +136,7 @@ void xiiSpawnComponent::ScheduleSpawn()
 
   xiiWorld* pWorld = GetWorld();
 
-  const xiiTime tKill = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleInRange(m_MinDelay.GetSeconds(), m_DelayRange.GetSeconds()));
+  const xiiTime tKill = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleMinMax(m_MinDelay.GetSeconds(), m_DelayRange.GetSeconds()));
 
   PostMessage(msg, tKill);
 }

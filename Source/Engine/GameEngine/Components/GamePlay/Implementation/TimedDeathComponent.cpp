@@ -66,7 +66,7 @@ void xiiTimedDeathComponent::OnSimulationStarted()
 
   xiiWorld* pWorld = GetWorld();
 
-  const xiiTime tKill = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleInRange(m_MinDelay.GetSeconds(), m_DelayRange.GetSeconds()));
+  const xiiTime tKill = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleMinMax(m_MinDelay.GetSeconds(), m_DelayRange.GetSeconds()));
 
   PostMessage(msg, tKill);
 

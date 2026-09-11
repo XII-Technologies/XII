@@ -30,26 +30,26 @@ XII_CREATE_SIMPLE_TEST(Math, Random)
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IntInRange")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IntMinMax")
   {
     xiiRandom r;
     r.Initialize(0xBBCCDDEEFF0011AAULL);
 
-    XII_TEST_INT(r.IntInRange(5, 1), 5);
-    XII_TEST_INT(r.IntInRange(-5, 1), -5);
+    XII_TEST_INT(r.IntMinMax(5, 5), 5);
+    XII_TEST_INT(r.IntMinMax(-5, -5), -5);
 
     for (xiiInt32 i = 2; i < 10000; ++i)
     {
-      const xiiInt32 val = r.IntInRange(i, i);
+      const xiiInt32 val = r.IntMinMax(i, i + i);
       XII_TEST_BOOL(val >= i);
-      XII_TEST_BOOL(val < i + i);
+      XII_TEST_BOOL(val <= i + i);
     }
 
     for (xiiInt32 i = 2; i < 10000; ++i)
     {
-      const xiiInt32 val = r.IntInRange(-i, 2 * i);
+      const xiiInt32 val = r.IntMinMax(-i, i);
       XII_TEST_BOOL(val >= -i);
-      XII_TEST_BOOL(val < -i + 2 * i);
+      XII_TEST_BOOL(val <= i);
     }
   }
 
@@ -81,9 +81,9 @@ XII_CREATE_SIMPLE_TEST(Math, Random)
     xiiRandom r;
     r.Initialize(0x11AABBCCDDEEFFULL);
 
-    xiiUInt32             falseCount = 0;
-    xiiUInt32             trueCount  = 0;
-    xiiDynamicArray<bool> values;
+    xiiUInt32               falseCount = 0;
+    xiiUInt32               trueCount  = 0;
+    xiiTemporaryArray<bool> values;
     values.SetCount(1000);
 
     for (int i = 0; i < 1000; ++i)
@@ -143,19 +143,19 @@ XII_CREATE_SIMPLE_TEST(Math, Random)
     xiiRandom r;
     r.Initialize(0xFF0011AABBCCDDEEULL);
 
-    XII_TEST_DOUBLE(r.DoubleInRange(5, 0), 5, 0.0);
-    XII_TEST_DOUBLE(r.DoubleInRange(-5, 0), -5, 0.0);
+    XII_TEST_DOUBLE(r.DoubleMinMax(5, 5), 5, 0.0);
+    XII_TEST_DOUBLE(r.DoubleMinMax(-5, -5), -5, 0.0);
 
     for (xiiInt32 i = 2; i < 10000; ++i)
     {
-      const double val = r.DoubleInRange(i, i);
+      const double val = r.DoubleMinMax(i, i + i);
       XII_TEST_BOOL(val >= i);
       XII_TEST_BOOL(val < i + i);
     }
 
     for (xiiInt32 i = 2; i < 10000; ++i)
     {
-      const double val = r.DoubleInRange(-i, 2 * i);
+      const double val = r.DoubleMinMax(-i, i);
       XII_TEST_BOOL(val >= -i);
       XII_TEST_BOOL(val < -i + 2 * i);
     }
@@ -215,19 +215,19 @@ XII_CREATE_SIMPLE_TEST(Math, Random)
     xiiRandom r;
     r.Initialize(0xFF0011AABBCCDDEEULL);
 
-    XII_TEST_FLOAT(r.FloatInRange(5, 0), 5, 0.f);
-    XII_TEST_FLOAT(r.FloatInRange(-5, 0), -5, 0.f);
+    XII_TEST_FLOAT(r.FloatMinMax(5, 5), 5, 0.f);
+    XII_TEST_FLOAT(r.FloatMinMax(-5, -5), -5, 0.f);
 
     for (xiiInt32 i = 2; i < 10000; ++i)
     {
-      const float val = r.FloatInRange(static_cast<float>(i), static_cast<float>(i));
+      const float val = r.FloatMinMax(static_cast<float>(i), static_cast<float>(i + i));
       XII_TEST_BOOL(val >= i);
       XII_TEST_BOOL(val < i + i);
     }
 
     for (xiiInt32 i = 2; i < 10000; ++i)
     {
-      const float val = r.FloatInRange(static_cast<float>(-i), 2 * static_cast<float>(i));
+      const float val = r.FloatMinMax(static_cast<float>(-i), static_cast<float>(i));
       XII_TEST_BOOL(val >= -i);
       XII_TEST_BOOL(val < -i + 2 * i);
     }
@@ -270,7 +270,7 @@ XII_CREATE_SIMPLE_TEST(Math, Random)
 
     r.Save(writer);
 
-    xiiDynamicArray<xiiUInt32> temp;
+    xiiTemporaryArray<xiiUInt32> temp;
     temp.SetCountUninitialized(1000);
 
     for (int i = 0; i < 1000; ++i)
@@ -329,7 +329,7 @@ XII_CREATE_SIMPLE_TEST(Math, RandomGauss)
     xiiRandomGauss r;
     r.Initialize(0xABCDEF0012345678ULL, 100, fVariance);
 
-    xiiDynamicArray<xiiUInt32> Values;
+    xiiTemporaryArray<xiiUInt32> Values;
     Values.SetCount(100);
 
     xiiUInt32 uiMaxValue = 0;
@@ -357,7 +357,7 @@ XII_CREATE_SIMPLE_TEST(Math, RandomGauss)
     xiiRandomGauss r;
     r.Initialize(0xABCDEF0012345678ULL, 100, fVariance);
 
-    xiiDynamicArray<xiiUInt32> Values;
+    xiiTemporaryArray<xiiUInt32> Values;
     Values.SetCount(2 * 100);
 
     xiiUInt32 uiMaxValue = 0;
@@ -396,7 +396,7 @@ XII_CREATE_SIMPLE_TEST(Math, RandomGauss)
 
     r.Save(writer);
 
-    xiiDynamicArray<xiiUInt32> temp;
+    xiiTemporaryArray<xiiUInt32> temp;
     temp.SetCountUninitialized(1000);
 
     for (int i = 0; i < 1000; ++i)
