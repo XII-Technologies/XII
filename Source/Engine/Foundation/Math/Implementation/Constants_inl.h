@@ -180,12 +180,6 @@ namespace xiiMath
   {
     return 0xFFFFFFFFu;
   }
-#  else
-  template <>
-  constexpr size_t MaxValue()
-  {
-    return 0xFFFFFFFFFFFFFFFFull;
-  }
 #  endif
 #endif
 
