@@ -111,10 +111,10 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     c /= a;
     XII_TEST_DOUBLE(c, 0.2, xiiMath::SmallEpsilon<double>());
 
-    XII_TEST_BOOL(c.IsEqual(0.201, xiiMath::HugeEpsilon<double>()));
-    XII_TEST_BOOL(c.IsEqual(0.199, xiiMath::HugeEpsilon<double>()));
-    XII_TEST_BOOL(!c.IsEqual(0.202, xiiMath::HugeEpsilon<double>()));
-    XII_TEST_BOOL(!c.IsEqual(0.198, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(c.IsEqual(0.20000005, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(c.IsEqual(0.19999995, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(!c.IsEqual(0.2000002, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(!c.IsEqual(0.1999998, xiiMath::HugeEpsilon<double>()));
 
     c = b;
     XII_TEST_BOOL(c == b);
