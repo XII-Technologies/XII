@@ -14,12 +14,12 @@ namespace
   static constexpr xiiUInt64 s_PerlinHash[7] =
     {
       0,                     // unused
-      0x03E3EB49EEC186D1ULL, // octave 1
-      0xDC2DBCD554D7D3EDULL, // octave 2
-      0x8AA283C6F5DBB465ULL, // octave 3
-      0x82E4A2E09625B3A7ULL, // octave 4
-      0xB1E1699019716110ULL, // octave 5
-      0xBEBB49EEE93B3BF3ULL  // octave 6
+      0xDFE237CBAC0B7B33ULL, // octave 1
+      0xF4475E3826424486ULL, // octave 2
+      0x3CDBF15B1AB55974ULL, // octave 3
+      0xF28CAE2573BEABF9ULL, // octave 4
+      0x7FE442EB5A4DA646ULL, // octave 5
+      0x59AF16D3CC97641DULL  // octave 6
   };
 } // namespace
 
