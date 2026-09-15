@@ -1,3 +1,5 @@
+/// Copyright (c) Theophilus Eriata. All Rights Reserved.
+
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Math/Transform.h>
