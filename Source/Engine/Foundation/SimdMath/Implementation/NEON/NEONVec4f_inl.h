@@ -230,7 +230,7 @@ XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
   // INF -> (exponent = all 1, mantissa = zero)
 
   uint32x4_t uiExponentMask = vmovq_n_u32(0x7f800000);
-  uint32x4_t uiExponentIs1 = vceqq_u32(vandq_u32(vreinterpretq_u32_f32(m_v), uiExponentMask), uiExponentMask);
+  uint32x4_t uiExponentIs1  = vceqq_u32(vandq_u32(vreinterpretq_u32_f32(m_v), uiExponentMask), uiExponentMask);
 
   const xiiInt32 uiMask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(uiExponentIs1) & uiMask) == 0;

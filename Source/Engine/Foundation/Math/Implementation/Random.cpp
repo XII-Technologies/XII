@@ -229,7 +229,7 @@ xiiUInt32 xiiRandomGauss::UnsignedValue()
 
 xiiInt32 xiiRandomGauss::SignedValue()
 {
-  const double   fRand = m_Generator.DoubleMinMax(-m_fAreaSum, m_fAreaSum);
+  const double    fRand = m_Generator.DoubleMinMax(-m_fAreaSum, m_fAreaSum);
   const xiiUInt32 uiMax = m_GaussAreaSum.GetCount();
 
   if (fRand >= 0.0)

@@ -872,7 +872,7 @@ class xiiVariantHelper
     XII_ALWAYS_INLINE void operator()()
     {
       xiiStringBuilder tmp;
-      *m_pResult = xiiConversionUtils::ToString(m_pThis->Cast<T>(), tmp);  // NOLINT (clang-analyzer-core.CallAndMessage)
+      *m_pResult = xiiConversionUtils::ToString(m_pThis->Cast<T>(), tmp); // NOLINT (clang-analyzer-core.CallAndMessage)
     }
 
     const xiiVariant* m_pThis   = nullptr;
