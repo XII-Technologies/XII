@@ -111,10 +111,10 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     c /= a;
     XII_TEST_DOUBLE(c, 0.2, xiiMath::SmallEpsilon<double>());
 
-    XII_TEST_BOOL(c.IsEqual(0.201, xiiMath::HugeEpsilon<double>()));
-    XII_TEST_BOOL(c.IsEqual(0.199, xiiMath::HugeEpsilon<double>()));
-    XII_TEST_BOOL(!c.IsEqual(0.202, xiiMath::HugeEpsilon<double>()));
-    XII_TEST_BOOL(!c.IsEqual(0.198, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(c.IsEqual(0.20000005, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(c.IsEqual(0.19999995, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(!c.IsEqual(0.2000002, xiiMath::HugeEpsilon<double>()));
+    XII_TEST_BOOL(!c.IsEqual(0.1999998, xiiMath::HugeEpsilon<double>()));
 
     c = b;
     XII_TEST_BOOL(c == b);
@@ -143,18 +143,18 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdDouble)
     XII_TEST_DOUBLE(a.GetReciprocal<xiiMathDoubleBits::BITS_14>(), 0.5, xiiMath::HugeEpsilon<double>());
 #endif
 
-    XII_TEST_DOUBLE(a.GetSqrt(), 1.41421356, xiiMath::SmallEpsilon<double>());
-    XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::FULL>(), 1.41421356, xiiMath::SmallEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetSqrt(), 1.4142135623730951, xiiMath::SmallEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::FULL>(), 1.4142135623730951, xiiMath::SmallEpsilon<double>());
 #if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
-    XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::BITS_27>(), 1.41421356, xiiMath::DefaultEpsilon<double>());
-    XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::BITS_14>(), 1.41421356, xiiMath::HugeEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::BITS_27>(), 1.4142135623730951, xiiMath::DefaultEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetSqrt<xiiMathDoubleBits::BITS_14>(), 1.4142135623730951, xiiMath::HugeEpsilon<double>());
 #endif
 
-    XII_TEST_DOUBLE(a.GetInvSqrt(), 0.70710678, xiiMath::SmallEpsilon<double>());
-    XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::FULL>(), 0.70710678, xiiMath::SmallEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetInvSqrt(), 0.70710678118654746, xiiMath::SmallEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::FULL>(), 0.70710678118654746, xiiMath::SmallEpsilon<double>());
 #if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_512)
-    XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::BITS_27>(), 0.70710678, xiiMath::DefaultEpsilon<double>());
-    XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::BITS_14>(), 0.70710678, xiiMath::HugeEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::BITS_27>(), 0.70710678118654746, xiiMath::DefaultEpsilon<double>());
+    XII_TEST_DOUBLE(a.GetInvSqrt<xiiMathDoubleBits::BITS_14>(), 0.70710678118654746, xiiMath::HugeEpsilon<double>());
 #endif
 
     xiiSimdDouble b = 5.0;

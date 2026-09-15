@@ -117,6 +117,18 @@ XII_ALWAYS_INLINE bool xiiSmallArrayBase<T, Size>::operator==(const xiiSmallArra
 }
 
 template <typename T, xiiUInt16 Size>
+XII_ALWAYS_INLINE bool xiiSmallArrayBase<T, Size>::operator<(const xiiSmallArrayBase<T, Size>& rhs) const
+{
+  return GetArrayPtr() < rhs.GetArrayPtr();
+}
+
+template <typename T, xiiUInt16 Size>
+XII_ALWAYS_INLINE bool xiiSmallArrayBase<T, Size>::operator<(const xiiArrayPtr<const T>& rhs) const
+{
+  return GetArrayPtr() < rhs;
+}
+
+template <typename T, xiiUInt16 Size>
 XII_ALWAYS_INLINE const T& xiiSmallArrayBase<T, Size>::operator[](const xiiUInt32 uiIndex) const
 {
   XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);

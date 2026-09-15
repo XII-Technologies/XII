@@ -7,7 +7,9 @@ xiiMat3Template<Type>::xiiMat3Template()
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
   for (xiiUInt32 i = 0; i < 9; ++i)
+  {
     m_fElementsCM[i] = TypeNaN;
+  }
 #endif
 }
 

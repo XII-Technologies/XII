@@ -83,7 +83,7 @@ public:
   template <typename T>
   void DeallocateBlock(xiiDataBlock<T, BlockSizeInByte>& ref_block);
 
-
+  /// \brief Returns the name of this allocator instance.
   xiiStringView GetName() const;
 
   /// \brief Returns the unique identifier for this allocator instance.

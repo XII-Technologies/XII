@@ -35,16 +35,15 @@ public:
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to Not-a-Number (NaN).
-  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static xiiVec4Template<Type> MakeNaN() { return xiiVec4Template<Type>(xiiMath::NaN<Type>()); }
+  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static constexpr xiiVec4Template<Type> MakeNaN() { return xiiVec4Template<Type>(xiiMath::NaN<Type>()); }
 
   /// \brief Returns a vector with all components set to zero.
-  [[nodiscard]] static xiiVec4Template<Type> MakeZero() { return xiiVec4Template<Type>(0); } // [tested]
+  [[nodiscard]] static constexpr xiiVec4Template<Type> MakeZero() { return xiiVec4Template<Type>(0); } // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
   {
-    XII_ASSERT_ALWAYS(!IsNaN(), "This object contains NaN values. This can happen when you forgot to initialize it before using it. Please "
-                                "check that all code-paths properly initialize this object.");
+    XII_ASSERT_ALWAYS(!IsNaN(), "This object contains NaN values. This can happen when you forgot to initialize it before using it. Please check that all code-paths properly initialize this object.");
   }
 #endif
 

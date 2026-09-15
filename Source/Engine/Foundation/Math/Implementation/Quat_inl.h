@@ -177,7 +177,7 @@ bool xiiQuatTemplate<Type>::IsNaN() const
 template <typename Type>
 bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther, Type fEpsilon) const
 {
-  if (GetVectorPart().IsEqual(qOther.GetVectorPart(), (Type)0.00001) && xiiMath::IsEqual(w, qOther.w, (Type)0.00001))
+  if (GetVectorPart().IsEqual(qOther.GetVectorPart(), fEpsilon) && xiiMath::IsEqual(w, qOther.w, fEpsilon))
   {
     return true;
   }
@@ -188,10 +188,10 @@ bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther,
   GetRotationAxisAndAngle(vA1, A1);
   qOther.GetRotationAxisAndAngle(vA2, A2);
 
-  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
     return true;
 
-  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(360.0f * fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
     return true;
 
   return false;

@@ -37,7 +37,7 @@ xiiTransformTemplate<Type> xiiTransformTemplate<Type>::MakeFromMat4(const xiiMat
   res.m_vPosition = mMat.GetTranslationVector();
   res.m_vScale    = mRot.GetScalingFactors();
   mRot.SetScalingFactors(xiiVec3Template<Type>(1)).IgnoreResult();
-  res.m_qRotation = xiiQuat::MakeFromMat3(mRot);
+  res.m_qRotation = xiiQuatTemplate<Type>::MakeFromMat3(mRot);
   return res;
 }
 
@@ -107,7 +107,7 @@ inline bool xiiTransformTemplate<Type>::IsValid() const
 template <typename Type>
 XII_ALWAYS_INLINE const xiiMat4Template<Type> xiiTransformTemplate<Type>::GetAsMat4() const
 {
-  auto result = m_qRotation.GetAsMat4();
+  xiiMat4Template<Type> result = m_qRotation.GetAsMat4();
 
   result.m_fElementsCM[0] *= m_vScale.x;
   result.m_fElementsCM[1] *= m_vScale.x;
@@ -127,7 +127,6 @@ XII_ALWAYS_INLINE const xiiMat4Template<Type> xiiTransformTemplate<Type>::GetAsM
 
   return result;
 }
-
 
 template <typename Type>
 XII_ALWAYS_INLINE void xiiTransformTemplate<Type>::operator+=(const xiiVec3Template<Type>& v)
@@ -160,7 +159,7 @@ XII_ALWAYS_INLINE xiiVec3Template<Type> xiiTransformTemplate<Type>::TransformDir
 template <typename Type>
 XII_ALWAYS_INLINE const xiiTransformTemplate<Type> operator*(const xiiQuatTemplate<Type>& q, const xiiTransformTemplate<Type>& t)
 {
-  xiiTransform r;
+  xiiTransformTemplate<Type> r;
 
   r.m_vPosition = t.m_vPosition;
   r.m_qRotation = q * t.m_qRotation;
@@ -172,7 +171,7 @@ XII_ALWAYS_INLINE const xiiTransformTemplate<Type> operator*(const xiiQuatTempla
 template <typename Type>
 XII_ALWAYS_INLINE const xiiTransformTemplate<Type> operator*(const xiiTransformTemplate<Type>& t, const xiiQuatTemplate<Type>& q)
 {
-  xiiTransform r;
+  xiiTransformTemplate<Type> r;
 
   r.m_vPosition = t.m_vPosition;
   r.m_qRotation = t.m_qRotation * q;

@@ -265,7 +265,9 @@ static xiiResult ParseLine(const xiiString& sLine, xiiStringBuilder& out_sVarNam
 
     // Remove all trailing spaces.
     while (sSubString.EndsWith(" "))
+    {
       sSubString.Shrink(0, 1);
+    }
 
     out_sVarName = sSubString;
   }
@@ -275,19 +277,27 @@ static xiiResult ParseLine(const xiiString& sLine, xiiStringBuilder& out_sVarNam
 
     // Remove all spaces.
     while (sSubString.StartsWith(" "))
+    {
       sSubString.Shrink(1, 0);
+    }
 
     // Remove all trailing spaces.
     while (sSubString.EndsWith(" "))
+    {
       sSubString.Shrink(0, 1);
+    }
 
     // Remove " and start and end.
 
     if (sSubString.StartsWith("\""))
+    {
       sSubString.Shrink(1, 0);
+    }
 
     if (sSubString.EndsWith("\""))
+    {
       sSubString.Shrink(0, 1);
+    }
 
     out_sVarValue = sSubString;
   }
@@ -316,9 +326,13 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiD
         if (!bOnlyNewOnes || pCVar->m_bHasNeverBeenLoaded)
         {
           if (!pCVar->m_sPluginName.IsEmpty())
+          {
             PluginCVars[pCVar->m_sPluginName].PushBack(pCVar);
+          }
           else
+          {
             PluginCVars["Static"].PushBack(pCVar);
+          }
         }
       }
 
@@ -463,7 +477,9 @@ void xiiCVar::LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArra
         }
 
         if (bSetAsCurrentValue)
+        {
           pCVar->SetToDelayedSyncValue();
+        }
       }
     }
   }

@@ -65,7 +65,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
       XII_TEST_BOOL(bf.IsBitSet(i));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCount / SetBit / ClearBit / SetBitValue / SetCountUninitialized")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCount / SetBit / FlipBit / ClearBit / SetBitValue / SetCountUninitialized")
   {
     xiiHybridBitfield<512> bf; // using a hybrid array
 
@@ -116,6 +116,16 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
     {
       XII_TEST_BOOL(bf.IsBitSet(i) == ((i % 3) == 0));
     }
+
+    for (xiiUInt32 i = 0; i < bf.GetCount(); i += 2)
+    {
+      bf.FlipBit(i);
+    }
+
+    for (xiiUInt32 i = 0; i < bf.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(bf.IsBitSet(i) == (((0b011100 >> (i % 6)) & 1) == 1));
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetBitRange")
@@ -160,6 +170,32 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
       xiiUInt32 uiEnd   = xiiMath::Min(uiStart + (size / 3 * 2), size - 1);
 
       bf.ClearBitRange(uiStart, uiEnd - uiStart + 1);
+
+      for (xiiUInt32 count = 0; count < uiStart; ++count)
+        XII_TEST_BOOL(bf.IsBitSet(count));
+      for (xiiUInt32 count = uiStart; count <= uiEnd; ++count)
+        XII_TEST_BOOL(!bf.IsBitSet(count));
+      for (xiiUInt32 count = uiEnd + 1; count < bf.GetCount(); ++count)
+        XII_TEST_BOOL(bf.IsBitSet(count));
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "FlipBitRange")
+  {
+    for (xiiUInt32 size = 1; size < 1024; ++size)
+    {
+      xiiBitfield<xiiDeque<xiiUInt32>> bf; // using a deque
+      bf.SetCount(size, true);
+
+      XII_TEST_INT(bf.GetCount(), size);
+
+      for (xiiUInt32 count = 0; count < bf.GetCount(); ++count)
+        XII_TEST_BOOL(bf.IsBitSet(count));
+
+      xiiUInt32 uiStart = size / 2;
+      xiiUInt32 uiEnd   = xiiMath::Min(uiStart + (size / 3 * 2), size - 1);
+
+      bf.FlipBitRange(uiStart, uiEnd - uiStart + 1);
 
       for (xiiUInt32 count = 0; count < uiStart; ++count)
         XII_TEST_BOOL(bf.IsBitSet(count));
@@ -332,7 +368,6 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
     }
   }
 }
-
 
 XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 {

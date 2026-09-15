@@ -248,6 +248,7 @@ XII_ALWAYS_INLINE void xiiSharedPtr<T>::ReleaseReferenceIfValid()
     if (m_pInstance->ReleaseRef() == 0)
     {
       auto pNonConstInstance = const_cast<typename xiiTypeTraits<T>::NonConstType*>(m_pInstance);
+      XII_ASSERT_DEV(m_pAllocator != nullptr, "Faux shared pointers should never be released.");
       XII_DELETE(m_pAllocator, pNonConstInstance);
     }
 

@@ -5,36 +5,41 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Time/Time.h>
 
+/// \brief Defines the SI units of time that can be used with xiiTimestamp.
 struct xiiSIUnitOfTime
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
-    Nanosecond,  ///< SI-unit of time (10^-9 second)
-    Microsecond, ///< SI-unit of time (10^-6 second)
-    Millisecond, ///< SI-unit of time (10^-3 second)
-    Second,      ///< SI-unit of time (base unit)
+    Nanosecond = 0U, ///< SI-unit of time (10^-9 second).
+    Microsecond,     ///< SI-unit of time (10^-6 second).
+    Millisecond,     ///< SI-unit of time (10^-3 second).
+    Second,          ///< SI-unit of time (base unit).
   };
 };
 
 /// \brief The timestamp class encapsulates a date in time as microseconds since Unix epoch.
 ///
-/// The value is represented by a xiiInt64 and allows storing time stamps from roughly
-/// -291030 BC to 293970 AC.
+/// The value is represented by a xiiInt64 and allows storing time stamps from roughly -291030 BC to 293970 AC.
+///
 /// Use this class to efficiently store a timestamp that is valid across platforms.
 class XII_FOUNDATION_DLL xiiTimestamp
 {
 public:
   struct CompareMode
   {
-    enum Enum
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
     {
-      FileTimeEqual, ///< Uses a resolution that guarantees that a file's timestamp is considered equal on all platforms.
-      Identical,     ///< Uses maximal stored resolution.
-      Newer,         ///< Just compares values and returns true if the left-hand side is larger than the right hand side
+      FileTimeEqual = 0U, ///< Uses a resolution that guarantees that a file's timestamp is considered equal on all platforms.
+      Identical,          ///< Uses maximal stored resolution.
+      Newer,              ///< Just compares values and returns true if the left-hand side is larger than the right hand side.
     };
   };
 
-  /// \brief  Returns the current timestamp. Returned value will always be valid.
+  /// \brief Returns the current timestamp. Returned value will always be valid.
   ///
   /// Depending on the platform the precision varies between seconds and nanoseconds.
   static const xiiTimestamp CurrentTimestamp(); // [tested]
@@ -89,6 +94,7 @@ private:
   static constexpr const xiiInt64 XII_INVALID_TIME_STAMP = xiiMath::MinValue<xiiInt64>();
 
   XII_ALLOW_PRIVATE_PROPERTIES(xiiTimestamp);
+
   /// \brief The date is stored as microseconds since Unix epoch.
   xiiInt64 m_iTimestamp = XII_INVALID_TIME_STAMP;
 };
@@ -126,14 +132,12 @@ public:
   /// \brief Converts this instance' values into a xiiTimestamp.
   ///
   /// The conversion is done via the OS and can fail for values that are outside the supported range.
-  /// In this case, the returned value will be invalid. Anything after 1970 and before the
-  /// not so distant future should be safe.
+  /// In this case, the returned value will be invalid. Anything after 1970 and before the not so distant future should be safe.
   [[nodiscard]] const xiiTimestamp GetTimestamp() const; // [tested]
 
   /// \brief Sets this instance to the given timestamp.
   ///
-  /// The conversion is done via the OS and will fail for invalid dates and values outside the supported range,
-  /// in which case XII_FAILURE will be returned.
+  /// The conversion is done via the OS and will fail for invalid dates and values outside the supported range, in which case XII_FAILURE will be returned.
   /// Anything after 1970 and before the not so distant future should be safe.
   xiiResult SetFromTimestamp(xiiTimestamp timestamp);
 
@@ -188,29 +192,25 @@ public:
   void SetMicroseconds(xiiUInt32 uiMicroSeconds); // [tested]
 
 private:
-  /// \brief The fraction of a second in microseconds of this date [0, 999999].
-  xiiUInt32 m_uiMicroseconds = 0;
-  /// \brief The year of this date [-32k, +32k].
-  xiiInt16 m_iYear = 0;
-  /// \brief The month of this date [1, 12].
-  xiiUInt8 m_uiMonth = 0;
-  /// \brief The day of this date [1, 31].
-  xiiUInt8 m_uiDay = 0;
-  /// \brief The day of week of this date [0, 6].
-  xiiUInt8 m_uiDayOfWeek = 0;
-  /// \brief The hour of this date [0, 23].
-  xiiUInt8 m_uiHour = 0;
-  /// \brief The number of minutes of this date [0, 59].
-  xiiUInt8 m_uiMinute = 0;
-  /// \brief The number of seconds of this date [0, 59].
-  xiiUInt8 m_uiSecond = 0;
+  xiiUInt32 m_uiMicroseconds = 0; ///< The fraction of a second in microseconds of this date [0, 999999].
+  xiiInt16  m_iYear          = 0; ///< The year of this date [-32k, +32k].
+  xiiUInt8  m_uiMonth        = 0; ///< The month of this date [1, 12].
+  xiiUInt8  m_uiDay          = 0; ///< The day of this date [1, 31].
+  xiiUInt8  m_uiDayOfWeek    = 0; ///< The day of week of this date [0, 6].
+  xiiUInt8  m_uiHour         = 0; ///< The hour of this date [0, 23].
+  xiiUInt8  m_uiMinute       = 0; ///< The number of minutes of this date [0, 59].
+  xiiUInt8  m_uiSecond       = 0; ///< The number of seconds of this date [0, 59].
 };
 
 XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiDateTime& arg);
 
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTimestamp& arg);
+
 struct xiiArgDateTime
 {
-  enum FormattingFlags
+  using StorageType = xiiUInt16;
+
+  enum FormattingFlags : StorageType
   {
     ShowDate         = XII_BIT(0),
     TextualDate      = ShowDate | XII_BIT(1),
@@ -225,10 +225,9 @@ struct xiiArgDateTime
   };
 
   /// \brief Initialized a formatting object for a xiiDateTime instance.
+  ///
   /// \param dateTime The xiiDateTime instance to format.
-  /// \param bUseNames Indicates whether to use names for days of week and months (true)
-  ///        or a purely numerical representation (false).
-  /// \param bShowTimeZoneIndicator Whether to indicate the timezone of the xiiDateTime object.
+  /// \param uiFormattingFlags The formatting flags to use.
   inline explicit xiiArgDateTime(const xiiDateTime& dateTime, xiiUInt32 uiFormattingFlags = Default) :
     m_Value(dateTime), m_uiFormattingFlags(uiFormattingFlags)
   {

@@ -672,8 +672,8 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
       }
 
       EndArray();
-    }
       return;
+    }
     case xiiVariant::Type::VariantDictionary:
     {
       BeginObject();
@@ -685,8 +685,8 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
         AddVariableVariant(element.Key(), element.Value());
       }
       EndObject();
-    }
       return;
+    }
 
     default:
       break;
@@ -694,7 +694,6 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
 
   XII_REPORT_FAILURE("The Variant Type {0} is not supported by xiiJSONWriter::WriteVariant.", value.GetType());
 }
-
 
 bool xiiJSONWriter::HadWriteError() const
 {

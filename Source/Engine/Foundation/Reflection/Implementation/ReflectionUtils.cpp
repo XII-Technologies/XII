@@ -413,6 +413,7 @@ namespace
       XII_IGNORE_UNUSED(pVector);
       XII_IGNORE_UNUSED(uiComponent);
       XII_IGNORE_UNUSED(fValue);
+
       XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
     }
   };
@@ -422,6 +423,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 2U, "uiComponent out of range.");
+
       auto vec = pVector->Get<xiiVec2Template<T>>();
       switch (uiComponent)
       {
@@ -441,6 +444,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 3U, "uiComponent out of range.");
+
       auto vec = pVector->Get<xiiVec3Template<T>>();
       switch (uiComponent)
       {
@@ -463,6 +468,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(xiiVariant* pVector, xiiUInt32 uiComponent, double fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 4U, "uiComponent out of range.");
+
       auto vec = pVector->Get<xiiVec4Template<T>>();
       switch (uiComponent)
       {
@@ -503,6 +510,7 @@ namespace
       XII_IGNORE_UNUSED(pVector);
       XII_IGNORE_UNUSED(uiComponent);
       XII_IGNORE_UNUSED(out_fValue);
+
       XII_ASSERT_DEBUG(false, "xiiReflectionUtils::SetComponent was called with a non-vector variant '{0}'", pVector->GetType());
     }
   };
@@ -512,6 +520,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 2U, "uiComponent out of range.");
+
       const auto& vec = pVector->Get<xiiVec2Template<T>>();
       switch (uiComponent)
       {
@@ -530,6 +540,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 3U, "uiComponent out of range.");
+
       const auto& vec = pVector->Get<xiiVec3Template<T>>();
       switch (uiComponent)
       {
@@ -551,6 +563,8 @@ namespace
   {
     XII_FORCE_INLINE static void impl(const xiiVariant* pVector, xiiUInt32 uiComponent, double& out_fValue)
     {
+      XII_ASSERT_DEBUG(uiComponent < 4U, "uiComponent out of range.");
+
       const auto& vec = pVector->Get<xiiVec4Template<T>>();
       switch (uiComponent)
       {
@@ -840,7 +854,7 @@ const xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xii
   if (pRtti == nullptr)
     return nullptr;
 
-  xiiHybridArray<const xiiAbstractProperty*, 32> props;
+  xiiTemporaryHybridArray<const xiiAbstractProperty*, 32> props;
   pRtti->GetAllProperties(props);
   if (uiPropertyIndex < props.GetCount())
   {
@@ -1043,7 +1057,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xi
   else if (pEnumerationRtti->IsDerivedFrom<xiiBitflagsBase>())
   {
     xiiStringBuilder                  temp = sValue;
-    xiiHybridArray<xiiStringView, 32> values;
+    xiiTemporaryHybridArray<xiiStringView, 32> values;
     temp.Split(false, values, "|");
     for (auto sValueSplit : values)
     {
@@ -1287,9 +1301,9 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, cons
     {
       auto pSpecific = static_cast<const xiiAbstractSetProperty*>(pProp);
 
-      xiiHybridArray<xiiVariant, 16> values;
+      xiiTemporaryHybridArray<xiiVariant, 16> values;
       pSpecific->GetValues(pObject, values);
-      xiiHybridArray<xiiVariant, 16> values2;
+      xiiTemporaryHybridArray<xiiVariant, 16> values2;
       pSpecific->GetValues(pObject2, values2);
 
       const xiiUInt32 uiCount  = values.GetCount();
@@ -1338,9 +1352,9 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, cons
     {
       auto pSpecific = static_cast<const xiiAbstractMapProperty*>(pProp);
 
-      xiiHybridArray<xiiString, 16> keys;
+      xiiTemporaryHybridArray<xiiString, 16> keys;
       pSpecific->GetKeys(pObject, keys);
-      xiiHybridArray<xiiString, 16> keys2;
+      xiiTemporaryHybridArray<xiiString, 16> keys2;
       pSpecific->GetKeys(pObject2, keys2);
 
       const xiiUInt32 uiCount  = keys.GetCount();
@@ -1714,7 +1728,7 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(const xiiRTTI* pRtti)
 
 void xiiReflectionUtils::SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, void* pObject)
 {
-  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  xiiTemporaryHybridArray<const xiiAbstractProperty*, 32> properties;
   pRtti->GetAllProperties(properties);
 
   for (auto pProp : properties)

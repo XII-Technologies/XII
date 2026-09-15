@@ -319,6 +319,12 @@ XII_CREATE_SIMPLE_TEST(Containers, SmallArray)
     XII_TEST_BOOL(a1 == a2);
 
     XII_TEST_BOOL((a1 != a2) == false);
+
+    XII_TEST_BOOL((a1 < a2) == false);
+    a2.PushBack(100);
+    XII_TEST_BOOL(a1 < a2);
+    a1.PushBack(99);
+    XII_TEST_BOOL(a1 < a2);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Index operator")

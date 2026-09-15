@@ -191,7 +191,10 @@ void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, xiiStringView
 xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& ref_accessor, const xiiRTTI* pType)
 {
   xiiUInt32 uiPropertiesSet = 0;
-  XII_TEST_BOOL(pType != nullptr);
+  if (!XII_TEST_BOOL(pType != nullptr))
+    return 0;
+
+  XII_ANALYSIS_ASSUME(pType != nullptr);
 
   // Call for base class
   if (pType->GetParentType() != nullptr)

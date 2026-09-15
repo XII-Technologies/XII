@@ -630,10 +630,9 @@ void xiiResourceManager::OnEngineShutdown()
   xiiResourceManagerEvent e;
   e.m_Type = xiiResourceManagerEvent::Type::ManagerShuttingDown;
 
-  // in case of a crash inside the event broadcast or ExecuteAllResourceCleanupCallbacks():
-  // you might have a resource type added through a dynamic plugin that has already been unloaded,
-  // but the event handler is still referenced
-  // to fix this, call xiiResource::CleanupDynamicPluginReferences() on that resource type during engine shutdown (see xiiStartup)
+  // In case of a crash inside the event broadcast or ExecuteAllResourceCleanupCallbacks():
+  // - You might have a resource type added through a dynamic plugin that has already been unloaded, but the event handler is still referenced.
+  // - To fix this, call xiiResource::CleanupDynamicPluginReferences() on that resource type during engine shutdown (see xiiStartup).
   s_pState->m_ManagerEvents.Broadcast(e);
 
   ExecuteAllResourceCleanupCallbacks();
@@ -701,11 +700,11 @@ xiiResource* xiiResourceManager::GetResource(const xiiRTTI* pRtti, xiiStringView
 
   xiiTempHashedString sHashedResourceID(sResourceID);
 
-  xiiHashedString* redirection;
-  if (s_pState->m_NamedResources.TryGetValue(sHashedResourceID, redirection))
+  xiiHashedString* pRedirection;
+  if (s_pState->m_NamedResources.TryGetValue(sHashedResourceID, pRedirection))
   {
-    sHashedResourceID = *redirection;
-    sResourceID       = redirection->GetView();
+    sHashedResourceID = *pRedirection;
+    sResourceID       = pRedirection->GetView();
   }
 
   LoadedResources& lr = s_pState->m_LoadedResources[pRtti];
@@ -751,7 +750,9 @@ void xiiResourceManager::UnregisterResourceOverrideType(const xiiRTTI* pDerivedT
     for (xiiUInt32 i = infos.GetCount(); i > 0; --i)
     {
       if (infos[i - 1].m_pDerivedType == pDerivedTypeToUse)
+      {
         infos.RemoveAtAndSwap(i - 1);
+      }
     }
   }
 }
@@ -786,9 +787,9 @@ const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti
 
 xiiString xiiResourceManager::GenerateUniqueResourceID(xiiStringView sResourceIDPrefix)
 {
-  xiiStringBuilder resourceID;
-  resourceID.SetFormat("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
-  return resourceID;
+  xiiStringBuilder sResourceID;
+  sResourceID.SetFormat("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
+  return sResourceID;
 }
 
 xiiTypelessResourceHandle xiiResourceManager::GetExistingResourceByType(const xiiRTTI* pResourceType, xiiStringView sResourceID)
@@ -843,20 +844,20 @@ void xiiResourceManager::RegisterNamedResource(xiiStringView sLookupName, xiiStr
 {
   XII_LOCK(s_ResourceMutex);
 
-  xiiTempHashedString lookup(sLookupName);
+  xiiTempHashedString sLookup(sLookupName);
 
-  xiiHashedString redirection;
-  redirection.Assign(sRedirectionResource);
+  xiiHashedString sRedirection;
+  sRedirection.Assign(sRedirectionResource);
 
-  s_pState->m_NamedResources[lookup] = redirection;
+  s_pState->m_NamedResources[sLookup] = sRedirection;
 }
 
 void xiiResourceManager::UnregisterNamedResource(xiiStringView sLookupName)
 {
   XII_LOCK(s_ResourceMutex);
 
-  xiiTempHashedString hash(sLookupName);
-  s_pState->m_NamedResources.Remove(hash);
+  xiiTempHashedString sHash(sLookupName);
+  s_pState->m_NamedResources.Remove(sHash);
 }
 
 void xiiResourceManager::SetResourceLowResData(const xiiTypelessResourceHandle& hResource, xiiStreamReader* pStream)
@@ -888,15 +889,15 @@ void xiiResourceManager::SetResourceLowResData(const xiiTypelessResourceHandle& 
 
   // Update Memory Usage
   {
-    xiiResource::MemoryUsage MemUsage;
-    MemUsage.m_uiMemoryCPU = 0xFFFFFFFF;
-    MemUsage.m_uiMemoryGPU = 0xFFFFFFFF;
-    pResource->UpdateMemoryUsage(MemUsage);
+    xiiResource::MemoryUsage memoryUsage;
+    memoryUsage.m_uiMemoryCPU = 0xFFFFFFFF;
+    memoryUsage.m_uiMemoryGPU = 0xFFFFFFFF;
+    pResource->UpdateMemoryUsage(memoryUsage);
 
-    XII_ASSERT_DEV(MemUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", pResource->GetResourceID());
-    XII_ASSERT_DEV(MemUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", pResource->GetResourceID());
+    XII_ASSERT_DEV(memoryUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", pResource->GetResourceID());
+    XII_ASSERT_DEV(memoryUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", pResource->GetResourceID());
 
-    pResource->m_MemoryUsage = MemUsage;
+    pResource->m_MemoryUsage = memoryUsage;
   }
 }
 

@@ -38,6 +38,7 @@ public:
   XII_FORCE_INLINE static xiiColor GetColor(Enum schemeColor, xiiUInt8 uiBrightness, float fSaturation = 1.0f, float fAlpha = 1.0f)
   {
     XII_ASSERT_DEV(uiBrightness <= 9, "Brightness is too large");
+
     const xiiColor c = s_Colors[schemeColor][uiBrightness];
     const float    l = c.GetLuminance();
     return xiiMath::Lerp(xiiColor(l, l, l), c, fSaturation).WithAlpha(fAlpha);
@@ -80,15 +81,15 @@ public:
   }
 
   /// \see GetCategoryColor()
-  enum class CategoryColorUsage
+  enum class CategoryColorUsage : xiiUInt8
   {
-    ViewportIcon,    // shape icons in 3D viewport
-    MenuEntryIcon,   // tint color for icons in a menu
-    SceneTreeIcon,   // tint color for icons in a scene tree
-    OverlayIcon,     // tint color for overlay icons on top of thumbnails (asset browser)
-    BorderColor,     // color for a border frame around UI elements
-    BorderIconColor, // color for icons embedded in a border frame
-    AssetMenuIcon,   // tint color for icons in asset browser menus
+    ViewportIcon,    ///< Shape icons in 3D viewport.
+    MenuEntryIcon,   ///< Tint color for icons in a menu.
+    SceneTreeIcon,   ///< Tint color for icons in a scene tree.
+    OverlayIcon,     ///< Tint color for overlay icons on top of thumbnails (asset browser).
+    BorderColor,     ///< Color for a border frame around UI elements.
+    BorderIconColor, ///< Color for icons embedded in a border frame.
+    AssetMenuIcon,   ///< Tint color for icons in asset browser menus.
   };
 
   using CategoryColorFunc = xiiColor (*)(xiiStringView sCategory, CategoryColorUsage usage);

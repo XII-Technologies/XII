@@ -390,7 +390,93 @@ void FileSystemModelTest()
     ClearFolders();
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Add file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Git")
+  {
+    xiiStringBuilder sIndex(sOutputFolder);
+    sIndex.AppendPath("index");
+    xiiStringBuilder sLock(sOutputFolder);
+    sLock.AppendPath("index.lock");
+
+    XII_TEST_RESULT(xiitCreateFile(sIndex));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() > 0)
+        break;
+    }
+    {
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sIndex), {}, xiiFileChangedEvent::Type::FileAdded)};
+      CompareFiles(xiiMakeArrayPtr(expected));
+      ClearFiles();
+    }
+
+#  if XII_ENABLED(XII_PLATFORM_LINUX)
+    // EXT3 filesystem only support second resolution so we won't detect the modification if it is done within the same second.
+    // As we intend to swap the index and index.lock files later, we need to make sure the two files have sufficiently different modification dates so that the swap of the files is detected as a change to the original file.
+    xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(1.0));
+#  endif
+
+    XII_TEST_RESULT(xiitCreateFile(sLock));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() > 0)
+        break;
+    }
+    {
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sLock), {}, xiiFileChangedEvent::Type::FileAdded)};
+      CompareFiles(xiiMakeArrayPtr(expected));
+      ClearFiles();
+    }
+
+    XII_TEST_RESULT(xiiOSFile::DeleteFile(sIndex));
+    XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(sLock, sIndex));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() >= 2)
+        break;
+    }
+
+    xiiFileChangedEvent expected[] = {
+      xiiFileChangedEvent(MakePath(sIndex), {}, xiiFileChangedEvent::Type::FileChanged),
+      xiiFileChangedEvent(MakePath(sLock), {}, xiiFileChangedEvent::Type::FileRemoved)};
+    CompareFiles(xiiMakeArrayPtr(expected));
+    ClearFiles();
+    CompareFolders({});
+
+    XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), 1);
+    XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 1);
+
+    // Cleanup test
+    XII_TEST_RESULT(xiiOSFile::DeleteFile(sIndex));
+
+    for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
+    {
+      xiiFileSystemModel::GetSingleton()->MainThreadTick();
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
+      XII_LOCK(fileEventLock);
+      if (fileEvents.GetCount() > 0)
+        break;
+    }
+    ClearFiles();
+    ClearFolders();
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Add File")
   {
     xiiStringBuilder sFilePath(sOutputFolder);
     sFilePath.AppendPath("rootFile.txt");
@@ -416,7 +502,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 1);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "modify file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Modify File")
   {
     xiiStringBuilder sFilePath(sOutputFolder);
     sFilePath.AppendPath("rootFile.txt");
@@ -452,7 +538,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 1);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "rename file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Rename File")
   {
     xiiStringBuilder sFilePathOld(sOutputFolder);
     sFilePathOld.AppendPath("rootFile.txt");
@@ -483,7 +569,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 1);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Add folder")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Add Folder")
   {
     xiiStringBuilder sFolderPath(sOutputFolder);
     sFolderPath.AppendPath("Folder1");
@@ -509,7 +595,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 2);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "move file")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Move File")
   {
     xiiStringBuilder sFilePathOld(sOutputFolder);
     sFilePathOld.AppendPath("rootFile2.txt");
@@ -540,7 +626,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 2);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "move folder")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Move Folder")
   {
     xiiStringBuilder sFolderPathOld(sOutputFolder);
     sFolderPathOld.AppendPath("Folder1");
@@ -1018,7 +1104,7 @@ void FileSystemModelTest()
     XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFolders()->GetCount(), 3);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "delete folder")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Delete folder")
   {
     xiiStringBuilder sFolderPath(sOutputFolder);
     sFolderPath.AppendPath("FOLDER12");
@@ -1040,14 +1126,12 @@ void FileSystemModelTest()
     }
 
     {
-      xiiFolderChangedEvent expected[] = {
-        xiiFolderChangedEvent(MakePath(sFolderPath), xiiFolderChangedEvent::Type::FolderRemoved)};
+      xiiFolderChangedEvent expected[] = {xiiFolderChangedEvent(MakePath(sFolderPath), xiiFolderChangedEvent::Type::FolderRemoved)};
       CompareFolders(xiiMakeArrayPtr(expected));
     }
 
     {
-      xiiFileChangedEvent expected[] = {
-        xiiFileChangedEvent(MakePath(sFilePath), {}, xiiFileChangedEvent::Type::FileRemoved)};
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(MakePath(sFilePath), {}, xiiFileChangedEvent::Type::FileRemoved)};
       CompareFiles(xiiMakeArrayPtr(expected));
     }
 
@@ -1149,7 +1233,9 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModelNonNTFS)
 {
   auto* pForceNonNTFS = static_cast<xiiCVarBool*>(xiiCVar::FindCVarByName("DirectoryWatcher.ForceNonNTFS"));
   *pForceNonNTFS      = true;
+
   FileSystemModelTest();
+
   *pForceNonNTFS = false;
 }
 #  endif

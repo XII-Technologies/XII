@@ -1,13 +1,18 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
+//===--- MemberVarCheckCheck.cpp - clang-tidy -----------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
 #include "NameCheck.h"
-
 #include "clang/AST/ASTContext.h"
-
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
 #include "clang/Basic/CharInfo.h"
-
 #include <stdio.h>
 
 using namespace clang::ast_matchers;
@@ -39,8 +44,12 @@ namespace clang
         }
         if (name.size() > 1 && (isUppercase(name[1]) || isDigit(name[1])))
         {
-          result = std::string(name.begin(), name.begin() + 1);
-          name.erase(0, 1);
+          // x, y and z are not considered invalid prefixes and should be kept.
+          if (name[0] != 'x' && name[0] != 'y' && name[0] != 'z')
+          {
+            result = std::string(name.begin(), name.begin() + 1);
+            name.erase(0, 1);
+          }
         }
         else if (name.size() > 2 && (isUppercase(name[2]) || isDigit(name[2])))
         {
@@ -106,13 +115,13 @@ namespace clang
             *prefixAdded = true;
           return newName.insert(0, "m");
         }
-        else if (typeName.startswith("xiiQuat") || typeName == "xiiSimdQuat" || typeName == "xiiSimdQuatd")
+        else if (typeName.startswith("xiiQuat") || typeName == "xiiSimdQuat")
         {
           if (prefixAdded)
             *prefixAdded = true;
           return newName.insert(0, "q");
         }
-        else if (typeName == "xiiSimdFloat" || typeName == "xiiSimdDouble")
+        else if (typeName == "xiiSimdFloat")
         {
           if (prefixAdded)
             *prefixAdded = true;
@@ -174,7 +183,8 @@ namespace clang
 
         if (type->isPointerType())
         {
-          const BuiltinType* pointeeType = dyn_cast<BuiltinType>(type->getPointeeType());
+          const BuiltinType* pointeeType =
+            dyn_cast<BuiltinType>(type->getPointeeType());
           if (pointeeType && pointeeType->isCharType())
           {
             if (oldPrefix == "p")
@@ -229,7 +239,8 @@ namespace clang
             if (builtinType)
             {
               auto builtinKind = builtinType->getKind();
-              if (builtinKind == BuiltinType::Float || builtinKind == BuiltinType::Double)
+              if (builtinKind == BuiltinType::Float ||
+                  builtinKind == BuiltinType::Double)
               {
                 return newName.insert(0, "f");
               }
@@ -266,10 +277,13 @@ namespace clang
               }
               else
               {
-                const TemplateSpecializationType* templateSpecialization = dyn_cast<TemplateSpecializationType>(type);
+                const TemplateSpecializationType* templateSpecialization =
+                  dyn_cast<TemplateSpecializationType>(type);
                 if (templateSpecialization)
                 {
-                  auto templateName     = templateSpecialization->getTemplateName().getAsTemplateDecl()->getName();
+                  auto templateName = templateSpecialization->getTemplateName()
+                                        .getAsTemplateDecl()
+                                        ->getName();
                   bool localPrefixAdded = false;
                   newName               = AddPrefixForType(templateName, std::move(newName), &localPrefixAdded);
                   if (localPrefixAdded)
@@ -292,16 +306,17 @@ namespace clang
           newName = oldPrefix + newName;
         }
 
+
         return newName;
       }
 
-      NameCheck::NameCheck(StringRef Name, ClangTidyContext* Context) :
-        RenamerClangTidyCheck(Name, Context)
+      NameCheck::NameCheck(StringRef Name, ClangTidyContext* Context) : RenamerClangTidyCheck(Name, Context)
       {
       }
 
       llvm::Optional<RenamerClangTidyCheck::FailureInfo>
-      NameCheck::getDeclFailureInfo(const NamedDecl* Decl, const SourceManager& SM) const
+      NameCheck::getDeclFailureInfo(const NamedDecl*     Decl,
+                                    const SourceManager& SM) const
       {
         const FieldDecl*   field = dyn_cast<FieldDecl>(Decl);
         const VarDecl*     var   = dyn_cast<VarDecl>(Decl);
@@ -569,37 +584,33 @@ namespace clang
       }
 
       llvm::Optional<clang::tidy::RenamerClangTidyCheck::FailureInfo>
-      NameCheck::getMacroFailureInfo(const Token& MacroNameTok, const SourceManager& SM) const
+      NameCheck::getMacroFailureInfo(const Token&         MacroNameTok,
+                                     const SourceManager& SM) const
       {
         return std::nullopt;
       }
 
       RenamerClangTidyCheck::DiagInfo
-      NameCheck::getDiagInfo(const NamingCheckId& ID, const NamingCheckFailure& Failure) const
+      NameCheck::getDiagInfo(const NamingCheckId&      ID,
+                             const NamingCheckFailure& Failure) const
       {
         if (Failure.Info.KindName == "field")
         {
           return DiagInfo{
             "class / struct member '%0' does not follow the naming convention",
-            [&](DiagnosticBuilder& Diag) {
-              Diag << ID.second;
-            }};
+            [&](DiagnosticBuilder& Diag) { Diag << ID.second; }};
         }
         else if (Failure.Info.KindName == "param")
         {
           return DiagInfo{
             "parameter '%0' does not follow the naming convention (%1)",
-            [&](DiagnosticBuilder& Diag) {
-              Diag << ID.second << Failure.Info.Fixup;
-            }};
+            [&](DiagnosticBuilder& Diag) { Diag << ID.second << Failure.Info.Fixup; }};
         }
         else if (Failure.Info.KindName == "paramRef")
         {
           return DiagInfo{
             "non const reference parameter '%0' does not follow the naming convention. non-const reference parameters should start with 'in_', 'out_' or 'inout_'.",
-            [&](DiagnosticBuilder& Diag) {
-              Diag << ID.second;
-            }};
+            [&](DiagnosticBuilder& Diag) { Diag << ID.second; }};
         }
         return {};
       }

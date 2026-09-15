@@ -18,6 +18,7 @@ public:
     m_pChannel->SetReceiveCallback(xiiMakeDelegate(&ChannelTester::ReceiveMessageData, this));
     m_pChannel->m_Events.AddEventHandler(xiiMakeDelegate(&ChannelTester::OnIpcEventReceived, this));
   }
+
   ~ChannelTester()
   {
     m_pChannel->m_Events.RemoveEventHandler(xiiMakeDelegate(&ChannelTester::OnIpcEventReceived, this));
@@ -37,7 +38,9 @@ public:
     while (sw.GetRunningTotal() < timeout)
     {
       xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+
       XII_LOCK(m_Mutex);
+
       if (!m_ReceivedEvents.IsEmpty())
       {
         xiiIpcChannelEvent e = m_ReceivedEvents.PeekFront();
@@ -52,6 +55,7 @@ public:
   void ReceiveMessageData(xiiArrayPtr<const xiiUInt8> data)
   {
     XII_LOCK(m_Mutex);
+
     if (m_bPing)
     {
       m_pChannel->Send(data);
@@ -68,6 +72,7 @@ public:
     if (res.Succeeded())
     {
       XII_LOCK(m_Mutex);
+
       if (m_ReceivedMessages.GetCount() > 0)
       {
         auto res2 = m_ReceivedMessages.PeekFront();

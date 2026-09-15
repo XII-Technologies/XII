@@ -1,7 +1,5 @@
 /// Copyright (c) Theophilus Eriata. All Rights Reserved.
 
-#pragma once
-
 /*
 You can classify bytes in a UTF-8 stream as follows:
   With the high bit set to 0, it's a single byte value.
@@ -106,7 +104,9 @@ void xiiUnicodeUtils::EncodeUtf32ToUtf16(xiiUInt32 uiUtf32, UInt16Iterator& ref_
     *ref_szUtf16Output++ = static_cast<uint16_t>((uiUtf32 & 0x3ff) + utf8::internal::TRAIL_SURROGATE_MIN);
   }
   else
+  {
     *ref_szUtf16Output++ = static_cast<uint16_t>(uiUtf32);
+  }
 }
 
 template <typename WCharIterator>
@@ -261,6 +261,7 @@ inline xiiResult xiiUnicodeUtils::MoveToPriorUtf8(const char*& ref_szUtf8, const
 
   return XII_SUCCESS;
 }
+
 template <typename T>
 constexpr T* xiiUnicodeUtils::GetMaxStringEnd()
 {

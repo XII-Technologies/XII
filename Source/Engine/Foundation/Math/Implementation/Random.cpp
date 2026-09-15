@@ -5,19 +5,41 @@
 #include <Foundation/Math/Random.h>
 #include <Foundation/Time/Timestamp.h>
 
-xiiRandom::xiiRandom()
+// clang-format off
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiRandom, xiiNoBase, 1, xiiRTTINoAllocator)
 {
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_uiState); ++i)
-    m_uiState[i] = 0;
-
-  m_uiIndex = 0xFFFFFFFF;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(UInt)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(UIntInRange, In, "Range")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(UInt32Index, In, "ArraySize", In, "FallbackValue")->AddFlags(xiiPropertyFlags::PureFunction)->AddAttributes(new xiiFunctionArgumentAttributes(1, new xiiDefaultValueAttribute(-1))),
+    XII_SCRIPT_FUNCTION_PROPERTY(UInt16Index, In, "ArraySize", In, "FallbackValue")->AddFlags(xiiPropertyFlags::PureFunction)->AddAttributes(new xiiFunctionArgumentAttributes(1, new xiiDefaultValueAttribute(-1))),
+    XII_SCRIPT_FUNCTION_PROPERTY(IntMinMax, In, "MinValue", In, "MaxValue")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(Bool)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(DoubleZeroToOneExclusive)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(DoubleZeroToOneInclusive)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(DoubleMinMax, In, "MinValue", In, "MaxValue")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(DoubleVariance, In, "Value", In, "Variance")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(DoubleVarianceAroundZero, In, "AbsMaxValue")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(FloatZeroToOneExclusive)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(FloatZeroToOneInclusive)->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(FloatMinMax, In, "MinValue", In, "MaxValue")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(FloatVariance, In, "Value", In, "Variance")->AddFlags(xiiPropertyFlags::PureFunction),
+    XII_SCRIPT_FUNCTION_PROPERTY(FloatVarianceAroundZero, In, "AbsMaxValue")->AddFlags(xiiPropertyFlags::PureFunction),
+  }
+  XII_END_FUNCTIONS;
 }
+XII_END_STATIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiRandom::xiiRandom()  = default;
+xiiRandom::~xiiRandom() = default;
 
 void xiiRandom::Initialize(xiiUInt64 uiSeed)
 {
   // make sure the seed is never zero
   // otherwise the state will become zero and the RNG will produce only zeros
-  uiSeed |= 0x0102030405060708;
+  uiSeed ^= 0x0102030405060708llu;
 
   m_uiIndex = 0;
 
@@ -34,29 +56,27 @@ void xiiRandom::Initialize(xiiUInt64 uiSeed)
   }
 }
 
-
 void xiiRandom::InitializeFromCurrentTime()
 {
   // needed to fix quick calls to this function that would result in an identical timestamp (it's not high resolution enough for that)
-  static xiiAtomicInteger32 uiRandomIncrement;
+  static xiiAtomicInteger32 rndAdd;
 
   xiiTimestamp ts = xiiTimestamp::CurrentTimestamp();
-  Initialize(static_cast<xiiUInt64>(ts.GetInt64(xiiSIUnitOfTime::Nanosecond)) + uiRandomIncrement.Increment());
+  Initialize(static_cast<xiiUInt64>(ts.GetInt64(xiiSIUnitOfTime::Nanosecond)) + rndAdd.Increment());
 }
 
-void xiiRandom::Save(xiiStreamWriter& ref_stream) const
+void xiiRandom::Save(xiiStreamWriter& inout_stream) const
 {
-  ref_stream << m_uiIndex;
+  inout_stream << m_uiIndex;
 
-  ref_stream.WriteBytes(&m_uiState[0], sizeof(xiiUInt32) * 16).IgnoreResult();
+  inout_stream.WriteBytes(&m_uiState[0], sizeof(xiiUInt32) * 16).IgnoreResult();
 }
 
-
-void xiiRandom::Load(xiiStreamReader& ref_stream)
+void xiiRandom::Load(xiiStreamReader& inout_stream)
 {
-  ref_stream >> m_uiIndex;
+  inout_stream >> m_uiIndex;
 
-  ref_stream.ReadBytes(&m_uiState[0], sizeof(xiiUInt32) * 16);
+  inout_stream.ReadBytes(&m_uiState[0], sizeof(xiiUInt32) * 16);
 }
 
 xiiUInt32 xiiRandom::UInt()
@@ -100,21 +120,27 @@ xiiUInt32 xiiRandom::UIntInRange(xiiUInt32 uiRange)
   return result % uiRange;
 }
 
-xiiInt32 xiiRandom::IntInRange(xiiInt32 iMinValue, xiiUInt32 uiRange)
+xiiUInt32 xiiRandom::UInt32Index(xiiUInt32 uiArraySize, xiiUInt32 uiFallbackValue /*= xiiInvalidIndex*/)
 {
-  return iMinValue + (xiiInt32)UIntInRange(uiRange);
+  if (uiArraySize == 0)
+    return uiFallbackValue;
+
+  return UIntInRange(uiArraySize);
+}
+
+xiiUInt16 xiiRandom::UInt16Index(xiiUInt16 uiArraySize, xiiUInt16 uiFallbackValue /*= 0xFFFF*/)
+{
+  if (uiArraySize == 0)
+    return uiFallbackValue;
+
+  return static_cast<xiiUInt16>(UIntInRange(uiArraySize));
 }
 
 xiiInt32 xiiRandom::IntMinMax(xiiInt32 iMinValue, xiiInt32 iMaxValue)
 {
   XII_ASSERT_DEBUG(iMinValue <= iMaxValue, "Invalid min/max values");
 
-  return IntInRange(iMinValue, iMaxValue - iMinValue + 1);
-}
-
-double xiiRandom::DoubleInRange(double fMinValue, double fRange)
-{
-  return fMinValue + DoubleZeroToOneExclusive() * fRange;
+  return iMinValue + (xiiInt32)UIntInRange(iMaxValue - iMinValue + 1);
 }
 
 double xiiRandom::DoubleMinMax(double fMinValue, double fMaxValue)
@@ -189,7 +215,7 @@ void xiiRandomGauss::SetupTable(xiiUInt32 uiMaxValue, float fSigma)
 
 xiiUInt32 xiiRandomGauss::UnsignedValue()
 {
-  const double fRand = m_Generator.DoubleInRange(0, m_fAreaSum);
+  const double fRand = m_Generator.DoubleMinMax(0, m_fAreaSum);
 
   const xiiUInt32 uiMax = m_GaussAreaSum.GetCount();
   for (xiiUInt32 i = 0; i < uiMax; ++i)
@@ -203,7 +229,7 @@ xiiUInt32 xiiRandomGauss::UnsignedValue()
 
 xiiInt32 xiiRandomGauss::SignedValue()
 {
-  const double    fRand = m_Generator.DoubleInRange(-m_fAreaSum, m_fAreaSum * 2.0);
+  const double    fRand = m_Generator.DoubleMinMax(-m_fAreaSum, m_fAreaSum);
   const xiiUInt32 uiMax = m_GaussAreaSum.GetCount();
 
   if (fRand >= 0.0)
@@ -230,24 +256,24 @@ xiiInt32 xiiRandomGauss::SignedValue()
   }
 }
 
-void xiiRandomGauss::Save(xiiStreamWriter& ref_stream) const
+void xiiRandomGauss::Save(xiiStreamWriter& inout_stream) const
 {
-  ref_stream << m_GaussAreaSum.GetCount();
-  ref_stream << m_fSigma;
-  m_Generator.Save(ref_stream);
+  inout_stream << m_GaussAreaSum.GetCount();
+  inout_stream << m_fSigma;
+  m_Generator.Save(inout_stream);
 }
 
-void xiiRandomGauss::Load(xiiStreamReader& ref_stream)
+void xiiRandomGauss::Load(xiiStreamReader& inout_stream)
 {
   xiiUInt32 uiMax = 0;
-  ref_stream >> uiMax;
+  inout_stream >> uiMax;
 
   float fVariance = 0.0f;
-  ref_stream >> fVariance;
+  inout_stream >> fVariance;
 
   SetupTable(uiMax, fVariance);
 
-  m_Generator.Load(ref_stream);
+  m_Generator.Load(inout_stream);
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Random);

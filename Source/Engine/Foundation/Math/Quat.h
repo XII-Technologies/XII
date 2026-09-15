@@ -141,10 +141,10 @@ public:
 
   // *** Euler Angle Conversions ***
 public:
-  /// \brief Converts the quaternion to Euler angles
+  /// \brief Converts the quaternion to Euler angles.
   void GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const; // [tested]
 
-  /// \brief Sets the quaternion from Euler angles
+  /// \brief Sets the quaternion from Euler angles.
   [[nodiscard]] static xiiQuatTemplate<Type> MakeFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z); // [tested]
 };
 

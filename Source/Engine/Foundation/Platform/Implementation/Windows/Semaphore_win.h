@@ -25,24 +25,24 @@ xiiResult xiiSemaphore::Create(xiiUInt32 uiInitialTokenCount, xiiStringView sSha
 {
   XII_ASSERT_DEV(m_hSemaphore == nullptr, "Semaphore can't be recreated.");
 
-  LPSECURITY_ATTRIBUTES secAttr = nullptr; // default
-  const DWORD           flags   = 0;       // reserved but unused
-  const DWORD           access  = STANDARD_RIGHTS_ALL | SEMAPHORE_MODIFY_STATE /* needed for ReleaseSemaphore */;
+  LPSECURITY_ATTRIBUTES pSecurityAttributes = nullptr; // Default.
+  const DWORD           uiFlags             = 0;       // Reserved but unused.
+  const DWORD           uiAccess            = STANDARD_RIGHTS_ALL | SEMAPHORE_MODIFY_STATE /* needed for ReleaseSemaphore */;
 
   if (sSharedName.IsEmpty())
   {
-    // create an unnamed semaphore
+    // Create an unnamed semaphore.
 
-    m_hSemaphore = CreateSemaphoreExW(secAttr, uiInitialTokenCount, xiiMath::MaxValue<xiiInt32>(), nullptr, flags, access);
+    m_hSemaphore = CreateSemaphoreExW(pSecurityAttributes, uiInitialTokenCount, xiiMath::MaxValue<xiiInt32>(), nullptr, uiFlags, uiAccess);
   }
   else
   {
-    // create a named semaphore in the 'Local' namespace
-    // these are visible session wide, ie. all processes by the same user account can see these, but not across users
+    // Create a named semaphore in the 'Local' namespace.
+    // These are visible session wide, ie. all processes by the same user account can see these, but not across users.
 
-    const xiiStringBuilder semaphoreName("Local\\", sSharedName);
+    const xiiStringBuilder sSemaphoreName("Local\\", sSharedName);
 
-    m_hSemaphore = CreateSemaphoreExW(secAttr, uiInitialTokenCount, xiiMath::MaxValue<xiiInt32>(), xiiStringWChar(semaphoreName).GetData(), flags, access);
+    m_hSemaphore = CreateSemaphoreExW(pSecurityAttributes, uiInitialTokenCount, xiiMath::MaxValue<xiiInt32>(), xiiStringWChar(sSemaphoreName).GetData(), uiFlags, uiAccess);
   }
 
   if (m_hSemaphore == nullptr)
@@ -57,14 +57,14 @@ xiiResult xiiSemaphore::Open(xiiStringView sSharedName)
 {
   XII_ASSERT_DEV(m_hSemaphore == nullptr, "Semaphore can't be recreated.");
 
-  const DWORD access         = SYNCHRONIZE /* needed for WaitForSingleObject */ | SEMAPHORE_MODIFY_STATE /* needed for ReleaseSemaphore */;
-  const BOOL  inheriteHandle = FALSE;
+  const DWORD uiAccess         = SYNCHRONIZE /* Required for WaitForSingleObject */ | SEMAPHORE_MODIFY_STATE /* Required for ReleaseSemaphore */;
+  const BOOL  uiInheriteHandle = FALSE;
 
   XII_ASSERT_DEV(!sSharedName.IsEmpty(), "Name of semaphore to open mustn't be empty.");
 
-  const xiiStringBuilder semaphoreName("Local\\", sSharedName);
+  const xiiStringBuilder sSemaphoreName("Local\\", sSharedName);
 
-  m_hSemaphore = OpenSemaphoreW(access, inheriteHandle, xiiStringWChar(semaphoreName).GetData());
+  m_hSemaphore = OpenSemaphoreW(uiAccess, uiInheriteHandle, xiiStringWChar(sSemaphoreName).GetData());
 
   if (m_hSemaphore == nullptr)
   {

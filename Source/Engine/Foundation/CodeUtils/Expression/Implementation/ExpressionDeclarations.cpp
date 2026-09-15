@@ -185,12 +185,12 @@ namespace
 } // namespace
 
 xiiExpressionFunction xiiDefaultExpressionFunctions::s_RandomFunc = {
-  {xiiMakeHashedString("Random"), xiiMakeArrayPtr(s_RandomInputTypes), 1, RegisterType::Float},
+  {xiiMakeHashedString("Random"), xiiExpression::FunctionDesc::TypeList(s_RandomInputTypes), 1, RegisterType::Float},
   &Random,
 };
 
 xiiExpressionFunction xiiDefaultExpressionFunctions::s_PerlinNoiseFunc = {
-  {xiiMakeHashedString("PerlinNoise"), xiiMakeArrayPtr(s_PerlinNoiseInputTypes), 3, RegisterType::Float},
+  {xiiMakeHashedString("PerlinNoise"), xiiExpression::FunctionDesc::TypeList(s_PerlinNoiseInputTypes), 3, RegisterType::Float},
   &PerlinNoise,
 };
 

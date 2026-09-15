@@ -47,6 +47,10 @@ public:
   /// \brief Compares this array to another contiguous array type.
   bool operator==(const xiiSmallArrayBase<T, Size>& rhs) const; // [tested]
 
+  /// \brief Compares this array to another contiguous array type.
+  bool operator<(const xiiSmallArrayBase<T, Size>& rhs) const; // [tested]
+  bool operator<(const xiiArrayPtr<const T>& rhs) const;       // [tested]
+
   /// \brief Returns the element at the given index. Does bounds checks in debug builds.
   const T& operator[](xiiUInt32 uiIndex) const; // [tested]
 
@@ -223,7 +227,7 @@ public:
   xiiSmallArray();
 
   xiiSmallArray(const xiiSmallArray<T, Size, AllocatorWrapper>& other);
-  xiiSmallArray(const xiiArrayPtr<const T>& other);
+  explicit xiiSmallArray(const xiiArrayPtr<const T>& other);
   xiiSmallArray(xiiSmallArray<T, Size, AllocatorWrapper>&& other);
 
   ~xiiSmallArray();

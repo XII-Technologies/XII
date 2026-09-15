@@ -144,6 +144,12 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Get() const
   return __builtin_shufflevector(m_v, m_v, XII_TO_SHUFFLE(s));
 }
 
+template <xiiSwizzle::Enum s>
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::GetCombined(const xiiSimdVec4i& other) const
+{
+  return __builtin_shufflevector(m_v, other.m_v, XII_TO_SHUFFLE(s));
+}
+
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator-() const
 {
   return vnegq_s32(m_v);

@@ -459,12 +459,12 @@ namespace
   }
 
   xiiExpressionFunction s_TestFunc1 = {
-    {xiiMakeHashedString("TestFunc"), xiiMakeArrayPtr(s_TestFunc1InputTypes), 2, xiiExpression::RegisterType::Float},
+    {xiiMakeHashedString("TestFunc"), xiiExpression::FunctionDesc::TypeList(s_TestFunc1InputTypes), 2, xiiExpression::RegisterType::Float},
     &TestFunc1,
   };
 
   xiiExpressionFunction s_TestFunc2 = {
-    {xiiMakeHashedString("TestFunc"), xiiMakeArrayPtr(s_TestFunc2InputTypes), 3, xiiExpression::RegisterType::Float},
+    {xiiMakeHashedString("TestFunc"), xiiExpression::FunctionDesc::TypeList(s_TestFunc2InputTypes), 3, xiiExpression::RegisterType::Float},
     &TestFunc2,
   };
 

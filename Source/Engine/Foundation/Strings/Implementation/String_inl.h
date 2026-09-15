@@ -57,8 +57,7 @@ void xiiHybridStringBase<Size>::Clear()
 template <xiiUInt16 Size>
 XII_ALWAYS_INLINE const char* xiiHybridStringBase<Size>::GetData() const
 {
-  XII_ASSERT_DEBUG(!m_Data.IsEmpty(), "xiiHybridString has been corrupted, the array can never be empty. This can happen when you access a "
-                                      "string that was previously std::move'd into another string.");
+  XII_ASSERT_DEBUG(!m_Data.IsEmpty(), "xiiHybridString has been corrupted, the array can never be empty. This can happen when you access a string that was previously std::move'd into another string.");
 
   return &m_Data[0];
 }

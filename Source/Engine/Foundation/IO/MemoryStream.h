@@ -207,14 +207,32 @@ public:
   xiiMemoryStreamContainerWrapperStorage(CONTAINER* pContainer) { m_pStorage = pContainer; }
 
   virtual xiiUInt64 GetStorageSize64() const override { return m_pStorage->GetCount(); }
-  virtual void      Clear() override { m_pStorage->Clear(); }
-  virtual void      Compact() override { m_pStorage->Compact(); }
+
+  virtual void Clear() override
+  {
+    if constexpr (!std::is_const<CONTAINER>::value)
+    {
+      m_pStorage->Clear();
+    }
+  }
+
+  virtual void Compact() override
+  {
+    if constexpr (!std::is_const<CONTAINER>::value)
+    {
+      m_pStorage->Compact();
+    }
+  }
+
   virtual xiiUInt64 GetHeapMemoryUsage() const override { return m_pStorage->GetHeapMemoryUsage(); }
 
   virtual void Reserve(xiiUInt64 uiBytes) override
   {
-    XII_ASSERT_DEV(uiBytes <= xiiMath::MaxValue<xiiUInt32>(), "xiiMemoryStreamContainerWrapperStorage only supports 32 bit addressable sizes.");
-    m_pStorage->Reserve(static_cast<xiiUInt32>(uiBytes));
+    if constexpr (!std::is_const<CONTAINER>::value)
+    {
+      XII_ASSERT_DEV(uiBytes <= xiiMath::MaxValue<xiiUInt32>(), "xiiMemoryStreamContainerWrapperStorage only supports 32 bit addressable sizes.");
+      m_pStorage->Reserve(static_cast<xiiUInt32>(uiBytes));
+    }
   }
 
   virtual xiiResult CopyToStream(xiiStreamWriter& ref_stream) const override
@@ -232,17 +250,27 @@ public:
 
   virtual xiiArrayPtr<xiiUInt8> GetContiguousMemoryRange(xiiUInt64 uiStartByte) override
   {
-    if (uiStartByte >= m_pStorage->GetCount())
-      return {};
+    if constexpr (!std::is_const<CONTAINER>::value)
+    {
+      if (uiStartByte >= m_pStorage->GetCount())
+        return {};
 
-    return xiiArrayPtr<xiiUInt8>(m_pStorage->GetData() + uiStartByte, m_pStorage->GetCount() - static_cast<xiiUInt32>(uiStartByte));
+      return xiiArrayPtr<xiiUInt8>(m_pStorage->GetData() + uiStartByte, m_pStorage->GetCount() - static_cast<xiiUInt32>(uiStartByte));
+    }
+    else
+    {
+      return {};
+    }
   }
 
 private:
   virtual void SetInternalSize(xiiUInt64 uiSize) override
   {
-    XII_ASSERT_DEV(uiSize <= xiiMath::MaxValue<xiiUInt32>(), "xiiMemoryStreamContainerWrapperStorage only supports up to 4GB sizes.");
-    m_pStorage->SetCountUninitialized(static_cast<xiiUInt32>(uiSize));
+    if (!std::is_const<CONTAINER>::value)
+    {
+      XII_ASSERT_DEV(uiSize <= xiiMath::MaxValue<xiiUInt32>(), "xiiMemoryStreamContainerWrapperStorage only supports up to 4GB sizes.");
+      m_pStorage->SetCountUninitialized(static_cast<xiiUInt32>(uiSize));
+    }
   }
 
   CONTAINER* m_pStorage;

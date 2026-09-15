@@ -66,39 +66,42 @@ XII_CREATE_SIMPLE_TEST(Basics, TagSet)
     TempTestRegistry.RegisterTag("TEST_TAG1");
 
     const xiiTag* TestTag1 = TempTestRegistry.GetTagByName("TEST_TAG1");
-    XII_TEST_BOOL(TestTag1 != nullptr);
+    if (XII_TEST_BOOL(TestTag1 != nullptr))
+    {
+      XII_ANALYSIS_ASSUME(TestTag1 != nullptr);
 
-    const xiiTag& TestTag2 = TempTestRegistry.RegisterTag("TEST_TAG2");
+      const xiiTag& TestTag2 = TempTestRegistry.RegisterTag("TEST_TAG2");
 
-    XII_TEST_BOOL(TestTag2.IsValid());
+      XII_TEST_BOOL(TestTag2.IsValid());
 
-    xiiTagSet tagSet;
+      xiiTagSet tagSet;
 
-    XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == false);
-    XII_TEST_BOOL(tagSet.IsSet(TestTag2) == false);
+      XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == false);
+      XII_TEST_BOOL(tagSet.IsSet(TestTag2) == false);
 
-    tagSet.Set(TestTag2);
+      tagSet.Set(TestTag2);
 
-    XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == false);
-    XII_TEST_BOOL(tagSet.IsSet(TestTag2) == true);
-    XII_TEST_INT(tagSet.GetNumTagsSet(), 1);
+      XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == false);
+      XII_TEST_BOOL(tagSet.IsSet(TestTag2) == true);
+      XII_TEST_INT(tagSet.GetNumTagsSet(), 1);
 
-    tagSet.Set(*TestTag1);
+      tagSet.Set(*TestTag1);
 
-    XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == true);
-    XII_TEST_BOOL(tagSet.IsSet(TestTag2) == true);
-    XII_TEST_INT(tagSet.GetNumTagsSet(), 2);
+      XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == true);
+      XII_TEST_BOOL(tagSet.IsSet(TestTag2) == true);
+      XII_TEST_INT(tagSet.GetNumTagsSet(), 2);
 
-    tagSet.Remove(*TestTag1);
+      tagSet.Remove(*TestTag1);
 
-    XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == false);
-    XII_TEST_BOOL(tagSet.IsSet(TestTag2) == true);
-    XII_TEST_INT(tagSet.GetNumTagsSet(), 1);
+      XII_TEST_BOOL(tagSet.IsSet(*TestTag1) == false);
+      XII_TEST_BOOL(tagSet.IsSet(TestTag2) == true);
+      XII_TEST_INT(tagSet.GetNumTagsSet(), 1);
 
-    xiiTagSet tagSet2 = tagSet;
-    XII_TEST_BOOL(tagSet2.IsSet(*TestTag1) == false);
-    XII_TEST_BOOL(tagSet2.IsSet(TestTag2) == true);
-    XII_TEST_INT(tagSet2.GetNumTagsSet(), 1);
+      xiiTagSet tagSet2 = tagSet;
+      XII_TEST_BOOL(tagSet2.IsSet(*TestTag1) == false);
+      XII_TEST_BOOL(tagSet2.IsSet(TestTag2) == true);
+      XII_TEST_INT(tagSet2.GetNumTagsSet(), 1);
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Many Tags")

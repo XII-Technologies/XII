@@ -56,13 +56,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiWorld, xiiNoBase, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiWorld::xiiWorld(xiiWorldDescription& ref_desc) :
-  m_Data(ref_desc)
+xiiWorld::xiiWorld(xiiWorldDescription& ref_description) :
+  m_Data(ref_description)
 {
   m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "WorldUpdate", xiiTaskNesting::Never, xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
   m_Data.m_pCoordinateSystemProvider->m_pOwnerWorld = this;
 
-  xiiStringBuilder sb = ref_desc.m_sName.GetString();
+  xiiStringBuilder sb = ref_description.m_sName.GetString();
   sb.Append(".Update");
   m_pUpdateTask->ConfigureTask(sb, xiiTaskNesting::Maybe);
 

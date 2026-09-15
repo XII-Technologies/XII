@@ -214,7 +214,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
   // random rotation around the spawn direction
   {
-    double randomAngle = pWorld->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0);
+    double randomAngle = pWorld->GetRandomNumberGenerator().DoubleMinMax(0.0, xiiMath::Pi<double>() * 2.0);
 
     xiiMat3 rotMat = xiiMat3::MakeAxisRotation(vDir, xiiAngle::MakeFromRadian((float)randomAngle));
 
