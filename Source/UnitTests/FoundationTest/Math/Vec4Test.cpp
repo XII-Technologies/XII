@@ -20,11 +20,9 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     }
 #else
     // Placement new of the default constructor should not have any effect on the previous data.
-    xiiVec4T::ComponentType testBlock[4] = {
-      (xiiVec4T::ComponentType)1, (xiiVec4T::ComponentType)2, (xiiVec4T::ComponentType)3, (xiiVec4T::ComponentType)4};
-    xiiVec4T* pDefCtor = ::new ((void*)&testBlock[0]) xiiVec4T;
-    XII_TEST_BOOL(pDefCtor->x == (xiiVec4T::ComponentType)1 && pDefCtor->y == (xiiVec4T::ComponentType)2 && pDefCtor->z == (xiiVec4T::ComponentType)3 &&
-                  pDefCtor->w == (xiiVec4T::ComponentType)4);
+    xiiVec4T::ComponentType testBlock[4] = {(xiiVec4T::ComponentType)1, (xiiVec4T::ComponentType)2, (xiiVec4T::ComponentType)3, (xiiVec4T::ComponentType)4};
+    xiiVec4T*               pDefCtor     = ::new ((void*)&testBlock[0]) xiiVec4T;
+    XII_TEST_BOOL(pDefCtor->x == (xiiVec4T::ComponentType)1 && pDefCtor->y == (xiiVec4T::ComponentType)2 && pDefCtor->z == (xiiVec4T::ComponentType)3 && pDefCtor->w == (xiiVec4T::ComponentType)4);
 #endif
 
     // Make sure the class didn't accidentally change in size.
@@ -86,15 +84,12 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     xiiMathTestType fLength        = vLengthAndNorm.GetLengthAndNormalize();
     XII_TEST_FLOAT(vLengthAndNorm.GetLength(), 1.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
     XII_TEST_FLOAT(fLength, 6.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
-    XII_TEST_FLOAT(vLengthAndNorm.x * vLengthAndNorm.x + vLengthAndNorm.y * vLengthAndNorm.y + vLengthAndNorm.z * vLengthAndNorm.z +
-                     vLengthAndNorm.w * vLengthAndNorm.w,
-                   1.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
+    XII_TEST_FLOAT(vLengthAndNorm.x * vLengthAndNorm.x + vLengthAndNorm.y * vLengthAndNorm.y + vLengthAndNorm.z * vLengthAndNorm.z + vLengthAndNorm.w * vLengthAndNorm.w, 1.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
     XII_TEST_BOOL(vLengthAndNorm.IsNormalized(xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // GetNormalized
     xiiVec4T vGetNorm = vOp1.GetNormalized();
-    XII_TEST_FLOAT(vGetNorm.x * vGetNorm.x + vGetNorm.y * vGetNorm.y + vGetNorm.z * vGetNorm.z + vGetNorm.w * vGetNorm.w, 1.0f,
-                   xiiMath::SmallEpsilon<xiiMathTestType>());
+    XII_TEST_FLOAT(vGetNorm.x * vGetNorm.x + vGetNorm.y * vGetNorm.y + vGetNorm.z * vGetNorm.z + vGetNorm.w * vGetNorm.w, 1.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
     XII_TEST_BOOL(vGetNorm.IsNormalized(xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // Normalize
@@ -139,8 +134,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     if (xiiMath::SupportsNaN<xiiMathTestType>())
     {
       xiiMathTestType TypeNaN     = xiiMath::NaN<xiiMathTestType>();
-      const xiiVec4T  nanArray[4] = {xiiVec4T(TypeNaN, 0.0f, 0.0f, 0.0f), xiiVec4T(0.0f, TypeNaN, 0.0f, 0.0f), xiiVec4T(0.0f, 0.0f, TypeNaN, 0.0f),
-                                     xiiVec4T(0.0f, 0.0f, 0.0f, TypeNaN)};
+      const xiiVec4T  nanArray[4] = {xiiVec4T(TypeNaN, 0.0f, 0.0f, 0.0f), xiiVec4T(0.0f, TypeNaN, 0.0f, 0.0f), xiiVec4T(0.0f, 0.0f, TypeNaN, 0.0f), xiiVec4T(0.0f, 0.0f, 0.0f, TypeNaN)};
 
       // IsNaN
       for (int i = 0; i < 4; ++i)
@@ -165,8 +159,8 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
   {
     const xiiVec4T vOp1(-4.0, 0.2f, -7.0f, -0.0f);
     const xiiVec4T vOp2(2.0, 0.3f, 0.0f, 1.0f);
-    const xiiVec4T compArray[4] = {
-      xiiVec4T(1.0f, 0.0f, 0.0f, 0.0f), xiiVec4T(0.0f, 1.0f, 0.0f, 0.0f), xiiVec4T(0.0f, 0.0f, 1.0f, 0.0f), xiiVec4T(0.0f, 0.0f, 0.0f, 1.0f)};
+    const xiiVec4T compArray[4] = {xiiVec4T(1.0f, 0.0f, 0.0f, 0.0f), xiiVec4T(0.0f, 1.0f, 0.0f, 0.0f), xiiVec4T(0.0f, 0.0f, 1.0f, 0.0f), xiiVec4T(0.0f, 0.0f, 0.0f, 1.0f)};
+
     // IsIdentical
     XII_TEST_BOOL(vOp1.IsIdentical(vOp1));
     for (int i = 0; i < 4; ++i)
@@ -307,39 +301,25 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     XII_TEST_VEC4(vOp1.Abs(), xiiVec4T(4.0, 0.2f, 7.0f, 0.0f), xiiMath::SmallEpsilon<xiiMathTestType>());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Distance Squared (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "DistanceTo")
   {
-    xiiVec4 v1(0.0f, -2.0f, 7.0f, 10.0f);
-    xiiVec4 v2(8.0f, 4.0f, 3.0f, -10.0f);
+    xiiVec4T v1(0.0f, 0.0f, 0.0f, 0.0f);
+    xiiVec4T v2(3.0f, 0.0f, 0.0f, 0.0f);
+    XII_TEST_FLOAT(v1.GetDistanceTo(v2), 3.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
 
-    XII_TEST_FLOAT(v1.DistanceSquared(v2), 516.0f, 0.000001f);
-
-    v1.Set(12012.0f, 212121.0f, 1298129.0f, 100.0f);
-    v2.Set(-12121.0f, -2123.0f, -12891.0f, -100.0f);
-
-    XII_TEST_FLOAT(v1.DistanceSquared(v2), 1765256373625.0f, 0.000001f);
-
-    v1.Set(1000000.0f, 1000000.0f, 1000000.0f, 100.0f);
-    v2.Set(-1000000.0f, -1000000.0f, -1000000.0f, -100.0f);
-
-    XII_TEST_FLOAT(v1.DistanceSquared(v2), 12000000010000.0f, 0.000001f);
+    v1 = xiiVec4T(1.0f, 2.0f, 3.0f, 4.0f);
+    v2 = xiiVec4T(4.0f, 6.0f, 3.0f, 0.0f);
+    XII_TEST_FLOAT(v1.GetDistanceTo(v2), 6.403124237f, xiiMath::SmallEpsilon<xiiMathTestType>());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Distance Squared (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SquaredDistanceTo")
   {
-    xiiVec4d v1(0.0, -2.0, 7.0, 10.0);
-    xiiVec4d v2(8.0, 4.0, 3.0, -10.0);
+    xiiVec4T v1(0.0f, 0.0f, 0.0f, 0.0f);
+    xiiVec4T v2(3.0f, 0.0f, 0.0f, 0.0f);
+    XII_TEST_FLOAT(v1.GetSquaredDistanceTo(v2), 9.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
 
-    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 516.0, 0.000001);
-
-    v1.Set(12012.0, 212121.0, 1298129.0, 100.0);
-    v2.Set(-12121.0, -2123.0, -12891.0, -100.0);
-
-    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 1765256373625.0, 0.000001);
-
-    v1.Set(1000000.0, 1000000.0, 1000000.0, 100.0);
-    v2.Set(-1000000.0, -1000000.0, -1000000.0, -100.0);
-
-    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 12000000040000.0, 0.000001);
+    v1 = xiiVec4T(1.0f, 2.0f, 3.0f, 4.0f);
+    v2 = xiiVec4T(4.0f, 6.0f, 3.0f, 0.0f);
+    XII_TEST_FLOAT(v1.GetSquaredDistanceTo(v2), 41.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
   }
 }

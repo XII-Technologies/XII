@@ -163,18 +163,21 @@ bool xiiVec3Template<Type>::IsValid() const
 }
 
 template <typename Type>
-XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec3Template<Type>::Distance(const xiiVec3Template<Type>& vPoint) const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec3Template<Type>::GetDistanceTo(const xiiVec3Template<Type>& rhs) const
 {
-  return (xiiMath::Sqrt(DistanceSquared(vPoint)));
+  XII_NAN_ASSERT(this);
+  XII_NAN_ASSERT(&rhs);
+
+  return (*this - rhs).GetLength();
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec3Template<Type>::DistanceSquared(const xiiVec3Template<Type>& vPoint) const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec3Template<Type>::GetSquaredDistanceTo(const xiiVec3Template<Type>& rhs) const
 {
-  XII_NAN_ASSERT(&vPoint);
   XII_NAN_ASSERT(this);
+  XII_NAN_ASSERT(&rhs);
 
-  return (xiiMath::Square(vPoint.x - x) + xiiMath::Square(vPoint.y - y) + xiiMath::Square(vPoint.z - z));
+  return (*this - rhs).GetLengthSquared();
 }
 
 template <typename Type>

@@ -121,12 +121,11 @@ public:
   /// \brief Checks that all components are finite numbers.
   bool IsValid() const; // [tested]
 
-  /// \brief Returns the distance between two 2D Vectors.
-  XII_DECLARE_IF_FLOAT_TYPE Type Distance(const xiiVec2Template<Type>& vPoint) const; // [tested]
+  /// \brief Returns the distance between two this position and rhs.
+  XII_DECLARE_IF_FLOAT_TYPE Type GetDistanceTo(const xiiVec2Template<Type>& rhs) const; // [tested]
 
-  /// \brief Returns the squared distance between two 2D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
-  /// vectors regardless of the magnitude.
-  Type DistanceSquared(const xiiVec2Template<Type>& vPoint) const; // [tested]
+  /// \brief Returns the squared distance between this position and rhs.
+  XII_DECLARE_IF_FLOAT_TYPE Type GetSquaredDistanceTo(const xiiVec2Template<Type>& rhs) const; // [tested]
 
 
   // *** Operators ***

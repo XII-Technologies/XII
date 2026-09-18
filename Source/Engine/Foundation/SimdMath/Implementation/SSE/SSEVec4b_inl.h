@@ -114,6 +114,6 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4b::Select(const xiiSimdVec4b& vCmp, co
 #if XII_SSE_LEVEL >= XII_SSE_41
   return _mm_blendv_ps(vFalse.m_v, vTrue.m_v, vCmp.m_v);
 #else
-  return _mm_or_ps(_mm_andnot_ps(cmp.m_v, ifFalse.m_v), _mm_and_ps(cmp.m_v, ifTrue.m_v));
+  return _mm_or_ps(_mm_andnot_ps(vCmp.m_v, vFalse.m_v), _mm_and_ps(vCmp.m_v, vTrue.m_v));
 #endif
 }

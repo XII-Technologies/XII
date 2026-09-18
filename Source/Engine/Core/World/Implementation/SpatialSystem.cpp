@@ -90,7 +90,7 @@ xiiGameObject* xiiScriptExtensionClass_Spatial::FindClosestObjectInSphere(xiiWor
     float fDistanceSqr = xiiMath::HighValue<float>();
 
     pWorld->GetSpatialSystem()->FindObjectsInSphere(xiiBoundingSphere::MakeFromCenterAndRadius(vCenter, fRadius), params, [&](xiiGameObject* go) -> xiiVisitorExecution::Enum {
-      const float fSqr = go->GetGlobalPosition().DistanceSquared(vCenter);
+      const float fSqr = go->GetGlobalPosition().GetSquaredDistanceTo(vCenter);
 
       if (fSqr < fDistanceSqr)
       {

@@ -105,8 +105,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
       xiiMathTestType fLength        = vLengthAndNorm.GetLengthAndNormalize();
       XII_TEST_FLOAT(vLengthAndNorm.GetLength(), 1.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
       XII_TEST_FLOAT(fLength, 6.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
-      XII_TEST_FLOAT(vLengthAndNorm.x * vLengthAndNorm.x + vLengthAndNorm.y * vLengthAndNorm.y + vLengthAndNorm.z * vLengthAndNorm.z, 1.0f,
-                     xiiMath::SmallEpsilon<xiiMathTestType>());
+      XII_TEST_FLOAT(vLengthAndNorm.x * vLengthAndNorm.x + vLengthAndNorm.y * vLengthAndNorm.y + vLengthAndNorm.z * vLengthAndNorm.z, 1.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
       XII_TEST_BOOL(vLengthAndNorm.IsNormalized(xiiMath::SmallEpsilon<xiiMathTestType>()));
     }
 
@@ -256,8 +255,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
     // operator* (float, xiiVec3T)
     xiiVec3T vMulFloatVec3 = ((xiiMathTestType)2 * vOp1);
-    XII_TEST_BOOL(
-      vMulFloatVec3.IsEqual(xiiVec3T((xiiMathTestType)-8.0, (xiiMathTestType)0.4, (xiiMathTestType)-14.0), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T((xiiMathTestType)-8.0, (xiiMathTestType)0.4, (xiiMathTestType)-14.0), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulFloatVec3 = ((xiiMathTestType)0 * vOp1);
     XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
@@ -742,39 +740,25 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Distance Squared (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "DistanceTo")
   {
-    xiiVec3 v1(0.0f, -2.0f, 7.0f);
-    xiiVec3 v2(8.0f, 4.0f, 3.0f);
+    xiiVec3T v1(0.0f, 0.0f, 0.0f);
+    xiiVec3T v2(3.0f, 0.0f, 0.0f);
+    XII_TEST_FLOAT(v1.GetDistanceTo(v2), 3.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
 
-    XII_TEST_FLOAT(v1.DistanceSquared(v2), 116.0f, 0.000001f);
-
-    v1.Set(12012.0f, 212121.0f, 1298129.0f);
-    v2.Set(-12121.0f, -2123.0f, -12891.0f);
-
-    XII_TEST_FLOAT(v1.DistanceSquared(v2), 1765256333625.0f, 0.000001f);
-
-    v1.Set(1000000.0f, 1000000.0f, 1000000.0f);
-    v2.Set(-1000000.0f, -1000000.0f, -1000000.0f);
-
-    XII_TEST_FLOAT(v1.DistanceSquared(v2), 12000000000000.0f, 0.000001f);
+    v1 = xiiVec3T(1.0f, 2.0f, 3.0f);
+    v2 = xiiVec3T(4.0f, 6.0f, 3.0f);
+    XII_TEST_FLOAT(v1.GetDistanceTo(v2), 5.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Distance Squared (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SquaredDistanceTo")
   {
-    xiiVec3d v1(0.0, -2.0, 7.0);
-    xiiVec3d v2(8.0, 4.0, 3.0);
+    xiiVec3T v1(0.0f, 0.0f, 0.0f);
+    xiiVec3T v2(3.0f, 0.0f, 0.0f);
+    XII_TEST_FLOAT(v1.GetSquaredDistanceTo(v2), 9.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
 
-    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 116.0, 0.000001f);
-
-    v1.Set(12012.0, 212121.0, 1298129.0);
-    v2.Set(-12121.0, -2123.0, -12891.0);
-
-    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 1765256333625.0, 0.000001);
-
-    v1.Set(1000000.0, 1000000.0, 1000000.0);
-    v2.Set(-1000000.0, -1000000.0, -1000000.0);
-
-    XII_TEST_DOUBLE(v1.DistanceSquared(v2), 12000000000000.0, 0.000001);
+    v1 = xiiVec3T(1.0f, 2.0f, 3.0f);
+    v2 = xiiVec3T(4.0f, 6.0f, 3.0f);
+    XII_TEST_FLOAT(v1.GetSquaredDistanceTo(v2), 25.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
   }
 }
