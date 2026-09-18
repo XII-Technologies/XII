@@ -99,12 +99,17 @@ xiiStringView xiiPathUtils::GetFileName(xiiStringView sPath, bool bRemoveFullExt
   // reduce the problem to just the filename + extension
   sPath = GetFileNameAndExtension(sPath);
 
-  xiiStringView ext = GetFileExtension(sPath, bRemoveFullExtension);
+  return GetWithoutExtension(sPath, bRemoveFullExtension);
+}
 
-  if (ext.IsEmpty())
+xiiStringView xiiPathUtils::GetWithoutExtension(xiiStringView sPath, bool bRemoveFullExtension)
+{
+  xiiStringView sExtension = GetFileExtension(sPath, bRemoveFullExtension);
+
+  if (sExtension.IsEmpty())
     return sPath;
 
-  return xiiStringView(sPath.GetStartPointer(), sPath.GetEndPointer() - ext.GetElementCount() - 1);
+  return xiiStringView(sPath.GetStartPointer(), sPath.GetEndPointer() - sExtension.GetElementCount() - 1);
 }
 
 xiiStringView xiiPathUtils::GetFileDirectory(xiiStringView sPath)

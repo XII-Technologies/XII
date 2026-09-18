@@ -60,6 +60,9 @@ public:
   /// If the path already ends with a path separator, the result will be empty.
   static xiiStringView GetFileName(xiiStringView sPath, bool bRemoveFullExtension = false); // [tested]
 
+  /// \brief Returns the path, excluding the file extension.
+  static xiiStringView GetWithoutExtension(xiiStringView sPath, bool bRemoveFullExtension = false);
+
   /// \brief Returns the substring that represents the file name including the file extension.
   ///
   /// Returns an empty string, if sPath already ends in a path separator, or is empty itself.
