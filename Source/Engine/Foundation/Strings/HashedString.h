@@ -131,7 +131,7 @@ public:
   XII_ALWAYS_INLINE operator const char*() const { return GetData(); }
 
   // \brief Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
-  XII_ALWAYS_INLINE bool operator==(const char* sz) const { return GetString().GetView() == xiiStringView(sz); }
+  XII_ALWAYS_INLINE bool operator==(const char* szString) const { return GetString().GetView() == xiiStringView(szString); }
 
 private:
   static void       InitHashedString();
@@ -141,9 +141,9 @@ private:
 };
 
 // \brief Since we allow to cast implicitly to const char*, we need these overloads to not do a pure pointer comparison.
-XII_ALWAYS_INLINE bool operator==(const char* sz, const xiiHashedString& rhs)
+XII_ALWAYS_INLINE bool operator==(const char* szString, const xiiHashedString& rhs)
 {
-  return rhs.GetView() == xiiStringView(sz);
+  return rhs.GetView() == xiiStringView(szString);
 }
 
 /// \brief Helper function to create a xiiHashedString. This can be used to initialize static hashed string variables.

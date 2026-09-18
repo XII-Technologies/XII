@@ -92,7 +92,7 @@ public:
 
   /// \brief Constructor. Initializes the flags to the default value.
   XII_ALWAYS_INLINE xiiBitflags() :
-    m_Value(T::Default) // [tested]
+    m_Value(static_cast<StorageType>(T::Default)) // [tested]
   {
   }
 
