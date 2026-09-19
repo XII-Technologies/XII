@@ -41,8 +41,7 @@ namespace
 {
   [[nodiscard]] ID3D12CommandSignature* CreateIndirectCommandSignature(ID3D12Device* pD3D12Device, D3D12_INDIRECT_ARGUMENT_TYPE argumentType, xiiUInt32 uiByteStride)
   {
-    if (pD3D12Device == nullptr)
-      return nullptr;
+    XII_ASSERT_DEBUG(pD3D12Device != nullptr, "Invalid D3D12 device pointer.");
 
     D3D12_INDIRECT_ARGUMENT_DESC argumentDescription = {};
     argumentDescription.Type                         = argumentType;
@@ -128,21 +127,6 @@ namespace
     return descriptorAllocation.m_pDescriptorHeap != nullptr && descriptorAllocation.m_CPUHandle.ptr != 0U && descriptorAllocation.m_GPUHandle.ptr != 0U && descriptorAllocation.m_uiDescriptorSize != 0U;
   }
 
-  [[nodiscard]] bool HasStencilComponent(xiiEnum<xiiGALResourceFormat> format)
-  {
-    switch (format)
-    {
-      case xiiGALResourceFormat::D24UNormalizedS8UInt:
-      case xiiGALResourceFormat::D32FloatS8X24UInt:
-      case xiiGALResourceFormat::X24TypelessG8UInt:
-      case xiiGALResourceFormat::X32TypelessG8X24UInt:
-        return true;
-
-      default:
-        return false;
-    }
-  }
-
   [[nodiscard]] bool SubpassUsesAttachment(const xiiGALSubPassDescription& subpass, xiiUInt32 uiAttachmentIndex)
   {
     for (const xiiGALAttachmentReferenceDescription& attachmentReference : subpass.m_InputAttachments)
@@ -193,7 +177,7 @@ namespace
   }
 
 #if BUILDSYSTEM_ENABLE_PIX_EVENT_RUNTIME_SUPPORT
-  [[nodiscard]] xiiUInt32 xiiColorToPixColor(const xiiColor& color)
+  [[nodiscard]] XII_ALWAYS_INLINE xiiUInt32 xiiColorToPixColor(const xiiColor& color)
   {
     return (static_cast<xiiUInt32>(color.r * 255.0f) << 24) | (static_cast<xiiUInt32>(color.g * 255.0f) << 16) | (static_cast<xiiUInt32>(color.b * 255.0f) << 8) | static_cast<xiiUInt32>(color.a * 255.0f);
   }
@@ -3410,12 +3394,12 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
     const xiiUInt32 uiDepthAttachmentIndex = pDepthAttachmentReference->m_uiAttachmentIndex;
     if (uiDepthAttachmentIndex < renderPassDescription.m_Attachments.GetCount())
     {
-      const xiiGALRenderPassAttachmentDescription& depthAttachmentDescription = renderPassDescription.m_Attachments[uiDepthAttachmentIndex];
-      const bool                                   bFirstDepthUse             = !WasAttachmentUsedInPreviousSubpass(renderPassDescription, uiDepthAttachmentIndex, uiSubpassIndex);
+      const bool bFirstDepthUse = !WasAttachmentUsedInPreviousSubpass(renderPassDescription, uiDepthAttachmentIndex, uiSubpassIndex);
 
       if (bFirstDepthUse)
       {
-        const xiiGALResourceFormatDescription& formatProperties = xiiGALTextureUtilities::GetResourceFormatProperties(depthAttachmentDescription.m_Format);
+        const xiiGALRenderPassAttachmentDescription& depthAttachmentDescription = renderPassDescription.m_Attachments[uiDepthAttachmentIndex];
+        const xiiGALResourceFormatDescription&       formatProperties           = xiiGALTextureUtilities::GetResourceFormatProperties(depthAttachmentDescription.m_Format);
 
         D3D12_CLEAR_FLAGS d3d12ClearFlags = static_cast<D3D12_CLEAR_FLAGS>(0U);
         if (depthAttachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
