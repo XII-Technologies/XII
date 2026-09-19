@@ -3405,7 +3405,7 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
         if (depthAttachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
           d3d12ClearFlags |= D3D12_CLEAR_FLAG_DEPTH;
 
-        if (HasStencilComponent(depthAttachmentDescription.m_Format) && depthAttachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear && formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
+        if (depthAttachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear && formatProperties.m_ComponentType == xiiGALResourceFormatComponentType::DepthStencil)
           d3d12ClearFlags |= D3D12_CLEAR_FLAG_STENCIL;
 
         if (d3d12ClearFlags != static_cast<D3D12_CLEAR_FLAGS>(0U))
