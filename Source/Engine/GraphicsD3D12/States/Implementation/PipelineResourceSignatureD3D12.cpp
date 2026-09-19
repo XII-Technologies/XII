@@ -17,7 +17,7 @@ xiiGALPipelineResourceSignatureD3D12::~xiiGALPipelineResourceSignatureD3D12() = 
 
 xiiResult xiiGALPipelineResourceSignatureD3D12::InitPlatform()
 {
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 void xiiGALPipelineResourceSignatureD3D12::SetDebugNamePlatform(xiiStringView sName) const
