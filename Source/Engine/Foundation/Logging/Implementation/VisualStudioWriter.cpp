@@ -13,6 +13,13 @@ void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& ev
   if (eventData.m_EventType == xiiLogMsgType::Flush)
     return;
 
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  if (eventData.m_sTag.IsEqual_NoCase("beep"))
+  {
+    MessageBeep(0xFFFFFFFFU);
+  }
+#  endif
+
   static xiiMutex WriterLock; // will only be created if this writer is used at all
   XII_LOCK(WriterLock);
 
