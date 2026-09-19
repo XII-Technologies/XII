@@ -291,7 +291,7 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
 
   ID3D12Device5* pD3D12Device5 = nullptr;
   {
-    const HRESULT hResult = pD3D12Device->QueryInterface(IID_PPV_ARGS(&pD3D12Device5));
+    const HRESULT hResult = pD3D12Device->QueryInterface(__uuidof(ID3D12Device5), reinterpret_cast<void**>(static_cast<ID3D12Device5**>(&pD3D12Device5)));
     if (FAILED(hResult) || pD3D12Device5 == nullptr)
     {
       xiiLog::Error("Failed to create D3D12 ray tracing pipeline '{}': ID3D12Device5 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -581,7 +581,7 @@ xiiResult xiiGALRayTracingPipelineStateD3D12::InitPlatform()
   }
 
   {
-    const HRESULT hResult = m_pD3D12StateObject->QueryInterface(IID_PPV_ARGS(&m_pD3D12StateObjectProperties));
+    const HRESULT hResult = m_pD3D12StateObject->QueryInterface(__uuidof(ID3D12StateObjectProperties), reinterpret_cast<void**>(static_cast<ID3D12StateObjectProperties**>(&m_pD3D12StateObjectProperties)));
     if (FAILED(hResult) || m_pD3D12StateObjectProperties == nullptr)
     {
       xiiLog::Error("Failed to create D3D12 ray tracing pipeline '{}': could not query ID3D12StateObjectProperties ({}).", GetDebugName(), xiiHRESULTtoString(hResult));

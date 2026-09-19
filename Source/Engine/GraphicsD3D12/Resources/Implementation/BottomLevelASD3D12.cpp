@@ -73,7 +73,7 @@ xiiResult xiiGALBottomLevelASD3D12::InitPlatform()
   if (uiAccelerationStructureSize == 0U)
   {
     ID3D12Device5* pD3D12Device5 = nullptr;
-    HRESULT        hResult       = pDeviceD3D12->GetD3D12Device()->QueryInterface(IID_PPV_ARGS(&pD3D12Device5));
+    HRESULT        hResult       = pDeviceD3D12->GetD3D12Device()->QueryInterface(__uuidof(ID3D12Device5), reinterpret_cast<void**>(static_cast<ID3D12Device5**>(&pD3D12Device5)));
     if (FAILED(hResult) || pD3D12Device5 == nullptr)
     {
       xiiLog::Error("Failed to create D3D12 BLAS '{}': ID3D12Device5 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));

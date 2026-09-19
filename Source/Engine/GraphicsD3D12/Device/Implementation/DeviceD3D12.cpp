@@ -503,7 +503,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
     XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
 
-    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(pD3D12InfoQueue), reinterpret_cast<void**>(static_cast<ID3D12InfoQueue**>(&pD3D12InfoQueue)))))
+    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(ID3D12InfoQueue), reinterpret_cast<void**>(static_cast<ID3D12InfoQueue**>(&pD3D12InfoQueue)))))
     {
       // Suppress messages based on their severity level.
       D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
@@ -652,7 +652,7 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 
   ID3D12DebugDevice* pD3D12DebugDevice;
   XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12DebugDevice));
-  if (SUCCEEDED(m_pD3D12Device->QueryInterface(IID_PPV_ARGS(&pD3D12DebugDevice))))
+  if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(ID3D12DebugDevice), reinterpret_cast<void**>(static_cast<ID3D12DebugDevice**>(&pD3D12DebugDevice)))))
   {
     OutputDebugStringW(L" +++++ Live D3D12 Objects (DETAIL): +++++\n");
 

@@ -59,6 +59,7 @@ namespace
 
     return pCommandSignature;
   }
+
   enum class D3D12PipelineRootBindingType : xiiUInt8
   {
     None = 0U,
@@ -1033,7 +1034,7 @@ xiiResult xiiGALCommandListD3D12::CommitShaderResourcesPlatform(xiiEnum<xiiGALSt
         }
 
         ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-        const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+        const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
         if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
         {
           xiiLog::Error("Failed to bind ray tracing pipeline on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -1771,7 +1772,7 @@ void xiiGALCommandListD3D12::DrawMeshPlatform(const xiiGALDrawMeshDescription& d
     return;
 
   ID3D12GraphicsCommandList6* pD3D12CommandList6 = nullptr;
-  if (FAILED(m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList6))) || pD3D12CommandList6 == nullptr)
+  if (FAILED(m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList6), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList6**>(&pD3D12CommandList6)))) || pD3D12CommandList6 == nullptr)
   {
     xiiLog::Error("Failed to issue DrawMesh on D3D12 command list '{}': ID3D12GraphicsCommandList6 is unavailable.", GetDebugName());
     return;
@@ -1924,7 +1925,7 @@ void xiiGALCommandListD3D12::TraceRaysPlatform(const xiiGALTraceRaysDescription&
     return;
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  if (FAILED(m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4))) || pD3D12CommandList4 == nullptr)
+  if (FAILED(m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)))) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to issue TraceRays on D3D12 command list '{}': ID3D12GraphicsCommandList4 is unavailable.", GetDebugName());
     return;
@@ -2098,7 +2099,7 @@ void xiiGALCommandListD3D12::BuildBLASPlatform(const xiiGALBuildBLASDescription&
   }
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
   if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to build BLAS on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -2271,7 +2272,7 @@ void xiiGALCommandListD3D12::BuildTLASPlatform(const xiiGALBuildTLASDescription&
   }
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
   if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to build TLAS on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -2341,7 +2342,7 @@ void xiiGALCommandListD3D12::CopyBLASPlatform(const xiiGALCopyBLASDescription& d
   }
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
   if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to copy BLAS on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -2386,7 +2387,7 @@ void xiiGALCommandListD3D12::CopyTLASPlatform(const xiiGALCopyTLASDescription& d
   }
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
   if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to copy TLAS on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -2431,7 +2432,7 @@ void xiiGALCommandListD3D12::WriteBLASCompactedSizePlatform(const xiiGALWriteBLA
   }
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
   if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to write BLAS compacted size on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -2486,7 +2487,7 @@ void xiiGALCommandListD3D12::WriteTLASCompactedSizePlatform(const xiiGALWriteTLA
   }
 
   ID3D12GraphicsCommandList4* pD3D12CommandList4 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList4));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList4**>(&pD3D12CommandList4)));
   if (FAILED(hResult) || pD3D12CommandList4 == nullptr)
   {
     xiiLog::Error("Failed to write TLAS compacted size on D3D12 command list '{}': ID3D12GraphicsCommandList4 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -3111,7 +3112,7 @@ void xiiGALCommandListD3D12::SetShadingRatePlatform(xiiBitflags<xiiGALShadingRat
     return;
 
   ID3D12GraphicsCommandList5* pD3D12CommandList5 = nullptr;
-  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList5));
+  const HRESULT               hResult            = m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList5), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList5**>(&pD3D12CommandList5)));
   if (FAILED(hResult) || pD3D12CommandList5 == nullptr)
   {
     xiiLog::Error("Failed to set shading rate on D3D12 command list '{}': ID3D12GraphicsCommandList5 interface is unavailable ({}).", GetDebugName(), xiiHRESULTtoString(hResult));
@@ -3463,7 +3464,7 @@ void xiiGALCommandListD3D12::BindSubpassAttachments(xiiGALRenderPassD3D12* pRend
   if (m_CommandListState.m_bIsShadingRateSet)
   {
     ID3D12GraphicsCommandList5* pD3D12CommandList5 = nullptr;
-    if (SUCCEEDED(m_pD3D12CommandList->QueryInterface(IID_PPV_ARGS(&pD3D12CommandList5))) && pD3D12CommandList5 != nullptr)
+    if (SUCCEEDED(m_pD3D12CommandList->QueryInterface(__uuidof(ID3D12GraphicsCommandList5), reinterpret_cast<void**>(static_cast<ID3D12GraphicsCommandList5**>(&pD3D12CommandList5)))) && pD3D12CommandList5 != nullptr)
     {
       XII_SCOPE_EXIT(
         {

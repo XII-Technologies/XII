@@ -185,7 +185,7 @@ xiiResult xiiGALTextureD3D12::InitPlatform(const xiiGALTextureData* pInitialData
       ID3D12Resource* pTextureObject        = static_cast<ID3D12Resource*>(m_Description.m_pExistingNativeObject);
       ID3D12Resource* pD3D12TextureResource = nullptr;
 
-      if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D12Resource), (void**)&pD3D12TextureResource)))
+      if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D12Resource), reinterpret_cast<void**>(static_cast<ID3D12Resource**>(&pD3D12TextureResource)))))
       {
         xiiLog::Error("The interface interface of the corresponding object is not a texture object.");
         return XII_FAILURE;
