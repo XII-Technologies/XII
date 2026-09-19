@@ -538,7 +538,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     }
 
     // We can prevent the GPU from overclocking or underclocking to get consistent timings.
-    m_pD3D12Device->SetStablePowerState(TRUE);
+    // Note: Requires Windows Developer Mode to be enabled.
+    // m_pD3D12Device->SetStablePowerState(TRUE);
   }
 #endif
 
