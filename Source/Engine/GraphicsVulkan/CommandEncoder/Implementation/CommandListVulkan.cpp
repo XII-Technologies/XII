@@ -437,7 +437,7 @@ void xiiGALCommandListVulkan::UpdateBufferRegion(xiiGALBufferVulkan* pBufferVulk
 {
   xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan = m_pDevice.Downcast<xiiGALDeviceVulkan>();
 
-  XII_ASSERT_DEV((uiDestinationOffset + uiSizeInBytes) <= pBufferVulkan->GetDescription().m_uiSize, "Update region is out of buffer range which will result in undefined behavior.");
+  XII_ASSERT_DEV((uiDestinationOffset + uiSizeInBytes) <= pBufferVulkan->GetSize(), "Update region is out of buffer range which will result in undefined behavior.");
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "Buffer and Texture updates and copies are not permitted while a render pass is active.");
 
   TransitionOrVerifyBufferState(pBufferVulkan, xiiGALStateTransitionMode::Transition, xiiGALResourceStateFlags::CopyDestination, vk::AccessFlagBits::eTransferWrite, "Updating buffer (xiiGALCommandListVulkan::UpdateBufferRegion)");
@@ -2664,7 +2664,7 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
 
       void* pMappedMemory = nullptr;
       VK_SUCCEED_OR_RETURN_XII_FAILURE(pVulkanMemoryAllocator->MapMemory(dynamicBufferAllocation.m_VulkanAllocation, &pMappedMemory));
-      VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(dynamicBufferAllocation.m_VulkanAllocation, dynamicBufferAllocation.m_uiOffset, pBufferVulkan->GetSize()));
+      VK_ASSERT_DEV(pVulkanMemoryAllocator->InvalidateAllocation(dynamicBufferAllocation.m_VulkanAllocation, dynamicBufferAllocation.m_uiOffset, bufferDescription.m_uiSize));
 
       pMappedData                      = xiiMemoryUtils::AddByteOffset(pMappedMemory, dynamicBufferAllocation.m_uiOffset);
       mappedBuffer.m_DynamicAllocation = dynamicBufferAllocation;
@@ -2680,11 +2680,14 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
   }
   else
   {
-    XII_REPORT_FAILURE("Unknown map type.");
+    XII_REPORT_FAILURE("Failed to map Vulkan buffer '{}': unsupported map type {}.", pBufferVulkan->GetDebugName(), xiiArgEnum(mapType));
   }
 
   if (pMappedData == nullptr)
+  {
+    xiiLog::Error("Failed to map Vulkan buffer '{}': mapped data pointer is null.", pBufferVulkan->GetDebugName());
     return XII_FAILURE;
+  }
 
   XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mappedBuffer), "Buffer '{}' has already been mapped.", pBufferVulkan->GetDebugName());
 
@@ -2693,20 +2696,19 @@ xiiResult xiiGALCommandListVulkan::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
 
 xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
-  xiiSharedPtr<xiiGALDeviceVulkan> pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
-  xiiVulkanMemoryAllocator*        pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
-  xiiGALBufferVulkan*              pBufferVulkan          = xiiDynamicCast<xiiGALBufferVulkan*>(pBuffer);
+  xiiSharedPtr<xiiGALDeviceVulkan>       pDeviceVulkan          = m_pDevice.Downcast<xiiGALDeviceVulkan>();
+  xiiVulkanMemoryAllocator*              pVulkanMemoryAllocator = pDeviceVulkan->GetVulkanMemoryAllocator();
+  xiiGALBufferVulkan*                    pBufferVulkan          = xiiDynamicCast<xiiGALBufferVulkan*>(pBuffer);
+  const xiiGALBufferCreationDescription& bufferDescription      = pBufferVulkan->GetDescription();
 
   XII_ASSERT_DEV(m_CommandListState.m_vkRenderPass == VK_NULL_HANDLE, "State transitions are not permitted while a render pass is active.");
 
-  const xiiGALBufferCreationDescription& bufferDescription = pBufferVulkan->GetDescription();
-
   MappedBufferKey mappedBufferKey = {.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType};
-  MappedBuffer*   mappedBuffer    = nullptr;
+  MappedBuffer*   pMappedBuffer   = nullptr;
 
-  if (m_MappedBuffers.TryGetValue(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, mappedBuffer))
+  if (m_MappedBuffers.TryGetValue(MappedBufferKey{.m_pBufferVulkan = pBufferVulkan, .m_MapType = mapType}, pMappedBuffer))
   {
-    XII_ASSERT_DEV(mappedBuffer->m_MapType == mapType, "Map type mismatch.");
+    XII_ASSERT_DEV(pMappedBuffer->m_MapType == mapType, "Map type (expected: {}, actual: {}).", xiiArgEnum(mapType), xiiArgEnum(pMappedBuffer->m_MapType));
 
     if (mapType == xiiGALMapType::Read)
     {
@@ -2725,10 +2727,10 @@ xiiResult xiiGALCommandListVulkan::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xi
       }
       else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
       {
-        VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(mappedBuffer->m_DynamicAllocation.m_VulkanAllocation, mappedBuffer->m_DynamicAllocation.m_uiOffset, pBuffer->GetSize()));
-        pVulkanMemoryAllocator->UnmapMemory(mappedBuffer->m_DynamicAllocation.m_VulkanAllocation);
+        VK_ASSERT_DEV(pVulkanMemoryAllocator->FlushAllocation(pMappedBuffer->m_DynamicAllocation.m_VulkanAllocation, pMappedBuffer->m_DynamicAllocation.m_uiOffset, bufferDescription.m_uiSize));
+        pVulkanMemoryAllocator->UnmapMemory(pMappedBuffer->m_DynamicAllocation.m_VulkanAllocation);
 
-        UpdateBufferRegion(pBufferVulkan, mappedBuffer->m_DynamicAllocation.m_vkBuffer, mappedBuffer->m_DynamicAllocation.m_uiOffset, 0U, pBufferVulkan->GetSize());
+        UpdateBufferRegion(pBufferVulkan, pMappedBuffer->m_DynamicAllocation.m_vkBuffer, pMappedBuffer->m_DynamicAllocation.m_uiOffset, 0U, bufferDescription.m_uiSize);
       }
     }
 

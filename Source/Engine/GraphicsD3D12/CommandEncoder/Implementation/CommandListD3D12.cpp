@@ -2739,66 +2739,129 @@ void xiiGALCommandListD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffe
 
 xiiResult xiiGALCommandListD3D12::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
-  XII_IGNORE_UNUSED(mapFlags);
+  xiiGALBufferD3D12*                     pBufferD3D12      = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
+  const xiiGALBufferCreationDescription& bufferDescription = pBufferD3D12->GetDescription();
 
-  pMappedData = nullptr;
-  if (pBuffer == nullptr)
-    return XII_FAILURE;
+  MappedBuffer mappedBuffer = {.m_MapType = mapType, .m_DynamicAllocation = {}};
+  pMappedData               = nullptr;
 
-  xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
-  if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+  if (mapType == xiiGALMapType::Read)
   {
-    xiiLog::Error("Failed to map D3D12 buffer: incompatible backend buffer type.");
+    XII_ASSERT_DEV(bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified, "The buffer must be created with resource usage xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified to be mapped for reading.");
+
+    if (!mapFlags.IsSet(xiiGALMapFlags::DoNotWait))
+    {
+      xiiLog::Warning("D3D12 backend never waits for GPU when mapping staging buffers for reading. Applications must use fences or other synchronization methods to explicitly synchronize access and use xiiGALMapFlags::DoNotWait flag.");
+    }
+
+    D3D12_RANGE readRange = {.Begin = 0U, .End = bufferDescription.m_uiSize};
+
+    if (FAILED(pBufferD3D12->GetD3D12Buffer()->Map(0U, &readRange, &pMappedData)))
+    {
+      xiiLog::Error("Failed to map D3D12 buffer '{}' for reading.", pBufferD3D12->GetDebugName());
+      return XII_FAILURE;
+    }
+  }
+  else if (mapType == xiiGALMapType::Write)
+  {
+    if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
+    {
+      D3D12_RANGE writeRange = {.Begin = 0U, .End = bufferDescription.m_uiSize};
+
+      if (FAILED(pBufferD3D12->GetD3D12Buffer()->Map(0U, &writeRange, &pMappedData)))
+      {
+        xiiLog::Error("Failed to map D3D12 buffer '{}' for writing.", pBufferD3D12->GetDebugName());
+        return XII_FAILURE;
+      }
+    }
+    else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
+    {
+      XII_ASSERT_DEV(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite), "Failed to map buffer '{}': D3D12 buffer must be mapped for writing with xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.", pBufferD3D12->GetDebugName());
+
+      xiiGALDynamicBufferAllocationD3D12 dynamicBufferAllocation = m_CommandListData.m_pDynamicBufferPoolD3D12->Allocate(bufferDescription.m_uiSize);
+      D3D12_RANGE                        writeRange              = {.Begin = dynamicBufferAllocation.m_uiOffset, .End = bufferDescription.m_uiSize};
+      void*                              pMappedMemory           = nullptr;
+
+      if (FAILED(dynamicBufferAllocation.m_pD3D12Buffer->Map(0U, &writeRange, &pMappedMemory)))
+      {
+        xiiLog::Error("Failed to allocate dynamic memory for mapping D3D12 buffer '{}' for writing.", pBufferD3D12->GetDebugName());
+        return XII_FAILURE;
+      }
+      pMappedData                      = pMappedMemory;
+      mappedBuffer.m_DynamicAllocation = dynamicBufferAllocation;
+    }
+    else
+    {
+      xiiLog::Error("Only xiiGALResourceUsage::Dynamic, xiiGALResourceUsage::Staging, and xiiGALResourceUsage::Unified D3D12 buffers can be mapped for writing.");
+    }
+  }
+  else if (mapType == xiiGALMapType::ReadWrite)
+  {
+    xiiLog::Error("Failed to map D3D12 buffer '{}': D3D12 backend does not support read-write mapping for buffers.", pBufferD3D12->GetDebugName());
+    return XII_FAILURE;
+  }
+  else
+  {
+    XII_REPORT_FAILURE("Failed to map D3D12 buffer '{}': unsupported map type {}.", pBufferD3D12->GetDebugName(), xiiArgEnum(mapType));
+  }
+
+  if (pMappedData == nullptr)
+  {
+    xiiLog::Error("Failed to map D3D12 buffer '{}': mapped data pointer is null.", pBufferD3D12->GetDebugName());
     return XII_FAILURE;
   }
 
-  const xiiGALBufferCreationDescription& description = pBufferD3D12->GetDescription();
-  if ((mapType == xiiGALMapType::Read || mapType == xiiGALMapType::ReadWrite) && !description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
-  {
-    xiiLog::Error("Failed to map D3D12 buffer '{}' for reading: CPU read access flag is missing.", pBufferD3D12->GetDebugName());
-    return XII_FAILURE;
-  }
-  if ((mapType == xiiGALMapType::Write || mapType == xiiGALMapType::ReadWrite) && !description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
-  {
-    xiiLog::Error("Failed to map D3D12 buffer '{}' for writing: CPU write access flag is missing.", pBufferD3D12->GetDebugName());
-    return XII_FAILURE;
-  }
-
-  D3D12_RANGE readRange = {};
-  if (mapType == xiiGALMapType::Read || mapType == xiiGALMapType::ReadWrite)
-  {
-    readRange.Begin = 0U;
-    readRange.End   = static_cast<SIZE_T>(pBufferD3D12->GetSize());
-  }
-
-  if (FAILED(pBufferD3D12->GetD3D12Buffer()->Map(0U, &readRange, &pMappedData)) || pMappedData == nullptr)
-  {
-    xiiLog::Error("Failed to map D3D12 buffer '{}'.", pBufferD3D12->GetDebugName());
-    return XII_FAILURE;
-  }
+  XII_VERIFY(!m_MappedBuffers.Insert(MappedBufferKey{.m_pBufferD3D12 = pBufferD3D12, .m_MapType = mapType}, mappedBuffer), "Buffer '{}' has already been mapped.", pBufferD3D12->GetDebugName());
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListD3D12::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
-  if (pBuffer == nullptr)
-    return XII_FAILURE;
+  xiiGALBufferD3D12*                     pBufferD3D12      = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
+  const xiiGALBufferCreationDescription& bufferDescription = pBufferD3D12->GetDescription();
 
-  xiiGALBufferD3D12* pBufferD3D12 = xiiDynamicCast<xiiGALBufferD3D12*>(pBuffer);
-  if (pBufferD3D12 == nullptr || pBufferD3D12->GetD3D12Buffer() == nullptr)
+  MappedBufferKey mappedBufferKey = {.m_pBufferD3D12 = pBufferD3D12, .m_MapType = mapType};
+  MappedBuffer*   pMappedBuffer   = nullptr;
+
+  if (m_MappedBuffers.TryGetValue(MappedBufferKey{.m_pBufferD3D12 = pBufferD3D12, .m_MapType = mapType}, pMappedBuffer))
   {
-    xiiLog::Error("Failed to unmap D3D12 buffer: incompatible backend buffer type.");
+    XII_ASSERT_DEV(pMappedBuffer->m_MapType == mapType, "Map type (expected: {}, actual: {}).", xiiArgEnum(mapType), xiiArgEnum(pMappedBuffer->m_MapType));
+
+    if (mapType == xiiGALMapType::Read)
+    {
+      if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
+      {
+        D3D12_RANGE readRange = {.Begin = 0U, .End = bufferDescription.m_uiSize};
+
+        pBufferD3D12->GetD3D12Buffer()->Unmap(0U, &readRange);
+      }
+    }
+    else if (mapType == xiiGALMapType::Write)
+    {
+      if (bufferDescription.m_Usage == xiiGALResourceUsage::Staging || bufferDescription.m_Usage == xiiGALResourceUsage::Unified)
+      {
+        D3D12_RANGE writeRange = {.Begin = 0U, .End = bufferDescription.m_uiSize};
+
+        pBufferD3D12->GetD3D12Buffer()->Unmap(0U, &writeRange);
+      }
+      else if (bufferDescription.m_Usage == xiiGALResourceUsage::Dynamic)
+      {
+        D3D12_RANGE writeRange = {.Begin = pMappedBuffer->m_DynamicAllocation.m_uiOffset, .End = bufferDescription.m_uiSize};
+
+        pMappedBuffer->m_DynamicAllocation.m_pD3D12Buffer->Unmap(0U, &writeRange);
+
+        UpdateBufferRegion(pBufferD3D12, pMappedBuffer->m_DynamicAllocation.m_pD3D12Buffer, pMappedBuffer->m_DynamicAllocation.m_uiOffset, 0U, bufferDescription.m_uiSize);
+      }
+    }
+
+    XII_VERIFY(m_MappedBuffers.Remove(mappedBufferKey), "");
+  }
+  else
+  {
+    xiiLog::Error("Failed to unmap buffer '{}'. The buffer has either been unmapped, or has not been mapped.", pBufferD3D12->GetDebugName());
     return XII_FAILURE;
   }
-
-  D3D12_RANGE writtenRange = {};
-  if (mapType == xiiGALMapType::Write || mapType == xiiGALMapType::ReadWrite)
-  {
-    writtenRange.Begin = 0U;
-    writtenRange.End   = static_cast<SIZE_T>(pBufferD3D12->GetSize());
-  }
-  pBufferD3D12->GetD3D12Buffer()->Unmap(0U, &writtenRange);
 
   return XII_SUCCESS;
 }
@@ -3576,11 +3639,13 @@ void xiiGALCommandListD3D12::PrepareForRayTracing()
   XII_VERIFY(CommitShaderResourcesPlatform(xiiGALStateTransitionMode::Transition).Succeeded(), "Failed to commit shader resources for ray tracing dispatch.");
 }
 
-[[nodiscard]] inline bool ResourceStateHasWriteAccess(xiiBitflags<xiiGALResourceStateFlags> flags)
+void xiiGALCommandListD3D12::UpdateBufferRegion(xiiGALBufferD3D12* pBufferD3D12, ID3D12Resource* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSizeInBytes)
 {
-  xiiBitflags<xiiGALResourceStateFlags> writeAccessStates = xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::BuildASWrite;
+  XII_ASSERT_DEV((uiDestinationOffset + uiSizeInBytes) <= pBufferD3D12->GetSize(), "Update region is out of buffer range which will result in undefined behavior.");
 
-  return writeAccessStates.IsAnySet(flags);
+  /// \todo Transition the destination buffer to a copy destination state if it is not already in that state.
+
+  m_pD3D12CommandList->CopyBufferRegion(pBufferD3D12->GetD3D12Buffer(), uiDestinationOffset, pSourceBuffer, uiSourceOffset, uiSizeInBytes);
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_CommandEncoder_Implementation_CommandListD3D12);

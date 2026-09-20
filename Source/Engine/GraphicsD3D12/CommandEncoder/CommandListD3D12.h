@@ -169,6 +169,80 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) const override final;
 
 private:
+  struct MappedTextureKey
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiGALTextureD3D12* m_pTextureD3D12;
+    xiiUInt32 const     m_uiMipLevel;
+    xiiUInt32 const     m_uiArraySlice;
+
+    bool operator==(const MappedTextureKey& rhs) const
+    {
+      return m_pTextureD3D12 == rhs.m_pTextureD3D12 && m_uiMipLevel == rhs.m_uiMipLevel && m_uiArraySlice == rhs.m_uiArraySlice;
+    }
+
+    struct Hasher
+    {
+      static xiiUInt32 Hash(const MappedTextureKey& key)
+      {
+        xiiHashStreamWriter32 writer;
+
+        writer << key.m_pTextureD3D12;
+        writer << key.m_uiMipLevel;
+        writer << key.m_uiArraySlice;
+
+        return writer.GetHashValue();
+      }
+
+      static bool Equal(const MappedTextureKey& a, const MappedTextureKey& b)
+      {
+        return a == b;
+      }
+    };
+  };
+
+  struct MappedTexture
+  {
+    xiiGALBufferToTextureCopyDescription m_CopyDescription;
+    xiiGALDynamicBufferAllocationD3D12   m_DynamicAllocation;
+  };
+
+  struct MappedBufferKey
+  {
+    xiiGALBufferD3D12*     m_pBufferD3D12 = nullptr;
+    xiiEnum<xiiGALMapType> m_MapType;
+
+    bool operator==(const MappedBufferKey& rhs) const
+    {
+      return m_pBufferD3D12 == rhs.m_pBufferD3D12 && m_MapType == rhs.m_MapType;
+    }
+
+    struct Hasher
+    {
+      static xiiUInt32 Hash(const MappedBufferKey& key)
+      {
+        xiiHashStreamWriter32 writer;
+
+        writer << key.m_pBufferD3D12;
+        writer << key.m_MapType;
+
+        return writer.GetHashValue();
+      }
+
+      static bool Equal(const MappedBufferKey& a, const MappedBufferKey& b)
+      {
+        return a == b;
+      }
+    };
+  };
+
+  struct MappedBuffer
+  {
+    xiiEnum<xiiGALMapType>             m_MapType = xiiGALMapType::ENUM_COUNT;
+    xiiGALDynamicBufferAllocationD3D12 m_DynamicAllocation;
+  };
+
   struct FenceInfo
   {
     XII_DECLARE_POD_TYPE();
@@ -184,6 +258,9 @@ private:
   void PrepareForDispatchCompute();
   void PrepareForRayTracing();
 
+public:
+  void UpdateBufferRegion(xiiGALBufferD3D12* pBufferD3D12, ID3D12Resource* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSizeInBytes);
+
 private:
   xiiGALCommandListPoolD3D12::AutoCommandList m_CommandListAllocation;
   ID3D12CommandAllocator*                     m_pD3D12CommandAllocator = nullptr;
@@ -196,4 +273,7 @@ private:
   xiiUInt64                                   m_uiSubmittedFenceValue = 0ULL;
 
   xiiDynamicArray<D3D12_RESOURCE_BARRIER> m_PendingResourceBarriers;
+
+  xiiHashTable<MappedBufferKey, MappedBuffer, MappedBufferKey::Hasher>    m_MappedBuffers;
+  xiiHashTable<MappedTextureKey, MappedTexture, MappedTextureKey::Hasher> m_MappedTextures;
 };
